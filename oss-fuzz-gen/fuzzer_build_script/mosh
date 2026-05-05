@@ -1,0 +1,11 @@
+# Use libstdc++, not libc++, since the base image's prebuild libraries require
+# libstdc++.
+export CXXFLAGS="$CXXFLAGS -stdlib=libstdc++"
+
+cd $SRC/mosh/src/fuzz
+
+make -j$n CFLAGS+="$CFLAGS" CXXFLAGS+="$CXXFLAGS"
+
+for fuzzer in *_fuzzer; do
+  cp $fuzzer $OUT
+done

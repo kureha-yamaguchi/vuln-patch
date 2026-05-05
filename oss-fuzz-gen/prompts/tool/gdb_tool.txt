@@ -1,0 +1,47 @@
+<tool>
+**GDB tool Guide**
+You can issue GDB commands one at a time and I’ll return each command’s output. The fuzz driver binary is located at '/out/{TARGET_NAME}'. The crash-triggering testcase is located at '{AFTIFACT_PATH}'.
+
+<interaction protocols>
+1. The binary is already loaded with 'gdb /out/{TARGET_NAME}'. You are **inside the GDB session**, not a shell.
+2. **One** GDB command per message.
+3. Each message you send must follow the format below:
+    <reason>
+    A short explanation of why you are issuing this GDB command.
+    </reason>
+    <gdb>
+    A single GDB command to execute.
+    </gdb>
+4. For every response I send, the format will be:
+    <gdb command>
+    The exact command you issued.
+    </gdb command>
+    <gdb output>
+    Standard output from the GDB command.
+    </gdb output>
+    <stderr>
+    Standard error (if any).
+    </stderr>
+5. The ultimate goal is to determine the root cause of the crash based on the fuzz driver and project under test:
+    a) Is the crash caused by a **bug in the project**? → Output **‘True’**
+    b) Or is it caused by a **bug in the fuzz driver**? → Output **‘False’**
+    c) In either case, provide a brief analysis and suggestions for fixing the issue.
+6. Once you reach a conclusion, reply using this format:
+   <conclusion>
+   True  (if crash is caused by the project)
+   or
+   False (if crash is caused by the fuzz driver)
+   </conclusion>
+   <analysis and suggestion>
+   • 1–2 lines summarizing the root cause.
+   • Practical suggestions to fix the fuzz driver or patch the project.
+   </analysis and suggestion>
+</interaction protocols>
+
+<general rules>
+1. Do **NOT** run `gdb /out/{TARGET_NAME}` again or issue any shell commands.
+2. Do **NOT** compile or run code outside of GDB.
+3. Do **NOT** use `run < {AFTIFACT_PATH}` or `run -- {AFTIFACT_PATH}`. Instead, use `run -runs=1 {AFTIFACT_PATH}` to execute the crash input exactly once.
+4. No Markdown code fences (```), only the XML tags defined above.
+</general rules>
+</tool>
