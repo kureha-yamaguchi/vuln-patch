@@ -540,6 +540,9 @@ def main():
   # right API endpoint is used throughout.
   introspector.set_introspector_endpoints(args.introspector_endpoint)
 
+  if args.oss_fuzz_dir:
+    introspector.set_local_oss_fuzz_dir(args.oss_fuzz_dir)
+
   run_one_experiment.prepare(args.oss_fuzz_dir)
 
   experiment_targets = prepare_experiment_targets(args)

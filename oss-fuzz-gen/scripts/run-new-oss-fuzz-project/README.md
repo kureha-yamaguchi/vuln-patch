@@ -47,6 +47,16 @@ BASE_OFG=$PWD
 # To start, you need to specify which model you will
 # be using for the experiments. You need to set the MODEL
 # environment variable now.
+OSS_FUZZ_GEN_MODEL='openai/gpt-oss-20b'
+
+export HF_HOME=./.cache/huggingface
+
+export STRONGREJECT_VLLM_URL=http://localhost:8000/v1
+export OPENBLAS_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OMP_NUM_THREADS=1
+export HF_DATASETS_NUM_PROC=1
+export TOKENIZERS_PARALLELISM=false
 
 # Create a working set up.
 ./scripts/run-new-oss-fuzz-project/setup.sh

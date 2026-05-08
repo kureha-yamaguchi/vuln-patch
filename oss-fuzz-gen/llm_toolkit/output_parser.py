@@ -78,6 +78,8 @@ def parse_code(response_path: str) -> str:
 def filter_code(response: str) -> str:
   # TODO(dongge): Merge this into prompt_builder.post_process_generated_code().
   solution = response.split('</solution>')[0]
+  if '<solution>' in solution:
+    solution = solution.split('<solution>', 1)[1]
   lines = solution.splitlines()
   lines = _parse_code_block_by_marker(lines, '```c', '```')
   lines = _parse_code_block_by_marker(lines, '```java', '```')
@@ -101,6 +103,8 @@ def parse_triage(triage_path: str) -> tuple[str, str]:
   with open(triage_path) as file:
     triage = file.read()
   solution = triage.split('</solution>')[0]
+  if '<solution>' in solution:
+    solution = solution.split('<solution>', 1)[1]
   lines = solution.splitlines()
   for line in lines:
     if "False" in line:

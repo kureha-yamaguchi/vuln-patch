@@ -57,6 +57,10 @@ ORACLE_ONLY_FUNCTIONS_WITH_HEADER_DECLARATIONS = bool(
 
 DEFAULT_INTROSPECTOR_ENDPOINT = 'https://introspector.oss-fuzz.com/api'
 INTROSPECTOR_ENDPOINT = ''
+
+# When set, _extract_introspector_report will read from this local OSS-Fuzz
+# directory instead of fetching from GCS. Set via set_local_oss_fuzz_dir().
+LOCAL_OSS_FUZZ_DIR = ''
 INTROSPECTOR_CFG = ''
 INTROSPECTOR_ORACLE_FAR_REACH = ''
 INTROSPECTOR_ORACLE_KEYWORD = ''
@@ -1143,6 +1147,25 @@ def get_target_name(project_name: str, harness: str) -> Optional[str]:
 
 
 ##### Helper logic for downloading fuzz introspector reports.
+
+
+def set_local_oss_fuzz_dir(path: str) -> None:
+  """Sets the local OSS-Fuzz directory used as a fallback for report lookup."""
+  global LOCAL_OSS_FUZZ_DIR
+  LOCAL_OSS_FUZZ_DIR = path
+
+
+def _identify_local_report(project_name: str) -> Optional[str]:
+  """Returns the path to a local summary.json for |project_name|, or None."""
+  if not LOCAL_OSS_FUZZ_DIR:
+    return None
+  summary_path = os.path.join(LOCAL_OSS_FUZZ_DIR, 'build', 'out',
+                              project_name, 'inspector', 'summary.json')
+  if os.path.isfile(summary_path):
+    return summary_path
+  return None
+
+
 # Download introspector report.
 def _identify_latest_report(project_name: str):
   """Returns the latest summary in the FuzzIntrospector bucket."""
@@ -1160,6 +1183,14 @@ def _identify_latest_report(project_name: str):
 
 def _extract_introspector_report(project_name):
   """Queries and extracts FuzzIntrospector report data of |project_name|."""
+  local_path = _identify_local_report(project_name)
+  if local_path:
+    try:
+      with open(local_path) as f:
+        return json.load(f)
+    except Exception:
+      pass
+
   project_url = _identify_latest_report(project_name)
   if not project_url:
     return None
