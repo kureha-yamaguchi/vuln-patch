@@ -8,8 +8,8 @@ with the patch itself, is then sent to a local OpenAI-compatible LLM
 (Ollama or LM Studio) which is asked to return a compilable libFuzzer
 harness exercising the touched code.
 
-Example usage:
-uv run -m run -c --project_name Closure #Choose from Chart/Closure/Lang/Math/Time
+Example usage (choose project_name from Chart/Closure/Lang/Math/Time):
+uv run -m run -c --project_name Closure
 
 """
 
@@ -161,7 +161,7 @@ def create_prompt_from_data(language, buggy_dir, context):
     That means, the entrypoint of the harness should be the function
     <code>int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)</code>
 
-    - Make sure that the fuzz harness you write will explore code coverage in the target codebase, using the touched functions provided.
+    - Make sure that the fuzz harness you write will explore code coverage for variant analysis in the target codebase, addressing the root cause of the vulnerability using the touched functions provided.
 
 
     The only thing you should return is the code itself. Please do not return any other textual description, and the code you return should be fully compilable.
