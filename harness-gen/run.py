@@ -49,6 +49,8 @@ def parse_args():
     parser.add_argument("-m", "--max_attempts", type=int, default=50,
                         help="Hard cap on total generation attempts "
                              "(default: 50)")
+    parser.add_argument("--max_repair_failures", type=int, default=2,
+                        help="maximum number of failures in a row before resetting the prompt context")
     return parser.parse_args()
 
 
@@ -89,10 +91,11 @@ def main():
     # 5) Run the campaign: regenerate + recompile until we have
     #    target_successes wins or hit max_attempts.
     campaign = HarnessCampaign(
-        generator=HarnessGenerator(),
+        generator=HarnessGenerator(temperature=0.6, top_p=1.0),
         builder=HarnessBuilder(jazzer_api_jar=jazzer_api_jar),
         target_successes=args.target_successes,
         max_attempts=args.max_attempts,
+        max_repair_failures=args.max_repair_failures
     )
     result = campaign.run(messages, selection.buggy_dir)
 

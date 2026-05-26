@@ -19,7 +19,7 @@ class HarnessGenerator:
                  base_url: str = config.LOCAL_LLM_BASE_URL,
                  api_key: str = config.LOCAL_LLM_API_KEY,
                  model: str = config.LOCAL_LLM_MODEL,
-                 temperature: float = 1.0,
+                 temperature: float = 0.6,
                  top_p: float = 1.0):
         self._client = openai.OpenAI(base_url=base_url, api_key=api_key)
         self.model = model
