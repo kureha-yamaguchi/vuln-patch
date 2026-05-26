@@ -225,3 +225,6 @@ __marimo__/
 drr/*
 defects4j/*
 legacy/*
+
+# uv
+uv.lock

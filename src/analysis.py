@@ -42,8 +42,9 @@ class TargetAnalyzer:
 
     # `identifier(` — any Java call or declaration on a changed line.
     _JAVA_CALL_RE = re.compile(r'\b([A-Za-z_]\w*)\s*\(')
-
-    def __init__(self, language: str = 'Java'):
+    _PACKAGE_RE = re.compile(r'^\s*package\s+([\w.]+)\s*;')
+    
+    def __init__(self, language: str = 'jvm'):
         self.language = language
 
     def analyze(self, patch_path: str, buggy_dir: str) -> PatchContext:
@@ -125,8 +126,6 @@ class TargetAnalyzer:
                 xrefs=[x.function_source_code_as_text() for x in xrefs],
             ))
         return functions
-
-    _PACKAGE_RE = re.compile(r'^\s*package\s+([\w.]+)\s*;')
 
     def _resolve_package(self, modified_files: List[str],
                          buggy_dir: str) -> Optional[str]:

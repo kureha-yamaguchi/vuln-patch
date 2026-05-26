@@ -75,7 +75,7 @@ def main():
 
     # 3) Extract the patch + every project function it touches +
     #    cross-references for each of those functions.
-    context = TargetAnalyzer(language=args.language).analyze(
+    context = TargetAnalyzer().analyze(
         patch_path=selection.patch_path,
         buggy_dir=selection.buggy_dir,
     )

@@ -1,0 +1,10 @@
+[project]
+name = "vuln-patch"
+version = "0.1.0"
+description = "Pipeline for automatically generating fuzzing harnesses for sibling bugs to ensure that the patch fixes the root cause of the vulnerability. Our goal is to reduce semantically incorrect patches through automated variant analysis."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fuzz-introspector>=0.1.10",
+    "openai>=1.0.0",
+]
