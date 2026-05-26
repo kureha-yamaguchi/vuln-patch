@@ -1,2 +1,0 @@
-cp $SRC/fuzz_* .
-$CXX $CXXFLAGS $LIB_FUZZING_ENGINE ./fuzz_cctz.cc ./libcctz.a  -I../include/ -o $OUT/fuzz_cctz
