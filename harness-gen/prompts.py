@@ -1,7 +1,7 @@
 """Build the chat-completion prompt that asks the LLM to write a Jazzer
 harness for the patched code."""
 import os
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from analysis import PatchContext, TouchedFunction
 
@@ -22,7 +22,7 @@ class PromptBuilder:
         prompt += self._patch_block(context.patch_text)
         for fn in context.functions:
             prompt += self._function_block(fn)
-        prompt += self._guidelines()
+        prompt += self._guidelines(context.package)
 
         print("#" * 20 + " prompt " + "#" * 20)
         print(prompt)
@@ -31,7 +31,11 @@ class PromptBuilder:
         # gpt-oss models follow the OpenAI "harmony" chat format. The
         # local servers (Ollama / LM Studio) apply that template
         # automatically when you use the standard chat-completions API,
-        # so we don't have to do anything special here.
+        # so we don't have to do anything special here. Putting the
+        # long instructions as a user message (rather than system)
+        # tends to give better results with gpt-oss-20b because its
+        # system channel is intended for short, stable instructions
+        # like a persona / policy.
         return [
             {'role': 'system', 'content':
                 f'You are an expert {self.language} security engineer '
@@ -40,8 +44,11 @@ class PromptBuilder:
             {'role': 'user', 'content': prompt},
         ]
 
+    # --- sections --------------------------------------------------------
+
     def _intro(self, codebase: str) -> str:
         return ("""Hello. You are a %s security engineer and you need to write a fuzzing harness for a codebase you are analysing.
+
                 The codebase is called %s. A patch has been applied that touches the functions listed below. Your harness should exercise those functions so the behaviour changed by the patch is reachable from the fuzz entrypoint.\n""" % (self.language, codebase))
 
     def _patch_block(self, patch_text: str) -> str:
@@ -70,20 +77,50 @@ class PromptBuilder:
                 block += '<xref>\n%s\n</xref>\n' % xref
         return block
 
-    def _guidelines(self) -> str:
-        guidleine = """I expect you to be great at writing fuzz harnesses and already have a lot of experience writing Jazzer harnesses for Java. You should use the knowledge you have to compose the harness for me. Here are a few more guidelines:
+    def _guidelines(self, package: Optional[str]) -> str:
+        if package:
+            package_line = (
+                f"    - Declare the harness in package `{package}` "
+                f"(`package {package};` at the top of the file). "
+                "Putting it in the same package as the touched code lets "
+                "it access package-private types, fields, and methods "
+                "directly — do NOT use reflection to reach private state."
+            )
+        else:
+            package_line = (
+                "    - Declare the harness in the same package as the "
+                "touched code (read the `package X.Y.Z;` line at the top "
+                "of the modified file shown in the patch above and copy "
+                "it). Same-package access lets you call package-private "
+                "methods and constructors directly — do NOT use "
+                "reflection to reach private state."
+            )
 
-        - The harness must be a Jazzer (JVM libFuzzer port) harness. The entrypoint must be exactly:
+        return """I expect you to be great at writing fuzz harnesses and already have a lot of experience writing Jazzer harnesses for Java. You should use the knowledge you have to compose the harness for me. Here are a few more guidelines:
 
-        public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+            - The harness must be a Jazzer (JVM libFuzzer port) harness. The entrypoint must be exactly:
 
-        - Wrap the entrypoint in a public class named `FuzzHarness` in the default package (no `package` statement) so it can be compiled directly with javac.
+            public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
 
-        - Use `data.consumeString`, `data.consumeInt`, `data.consumeBytes`, etc. to derive the inputs your target functions need from the fuzzer-supplied bytes. Catch checked exceptions the target declares and either rethrow them as RuntimeException or simply return, so only unexpected exceptions surface as findings.
+            - Name the public class `FuzzHarness`.
 
-        - Make sure the harness explores the code path changed by the patch so the root cause of the bug is reachable from the fuzz entrypoint. Prefer driving the touched functions through the same call sites shown in the cross-references above.
+            %s
 
-        - Return ONLY the raw Java source for FuzzHarness.java. No markdown code fences, no commentary, no surrounding explanation. The file must compile as-is with javac against the project's classpath plus jazzer-api.jar.
-        """
+            - FuzzedDataProvider has the following method signatures. Use ONLY these — do not invent overloads:
 
-        return guidleine
+                int     consumeInt()                       // any int
+                int     consumeInt(int min, int max)       // inclusive bounds
+                boolean consumeBoolean()
+                String  consumeString(int maxLength)       // ONE arg, not (min, max)
+                String  consumeAsciiString(int maxLength)
+                String  consumeRemainingAsString()
+                byte[]  consumeBytes(int maxLength)
+                byte[]  consumeRemainingAsBytes()
+                int     remainingBytes()                   // bytes left in the buffer
+
+            - Use those to derive the inputs the target functions need. Catch checked exceptions the target declares and either rethrow them as RuntimeException or simply return, so only unexpected exceptions surface as findings.
+
+            - Make sure the harness explores the code path changed by the patch so the root cause of the bug is reachable from the fuzz entrypoint. Prefer driving the touched functions through the same call sites shown in the cross-references above.
+
+            - Return ONLY the raw Java source for FuzzHarness.java. No markdown code fences, no commentary, no surrounding explanation. The file must compile as-is with javac against the project's classpath plus jazzer-api.jar.
+            """ % package_line

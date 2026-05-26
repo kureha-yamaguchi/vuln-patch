@@ -1,8 +1,9 @@
 """Extract the patch + touched functions + cross-references from a
 buggy Defects4J checkout using fuzz-introspector."""
+import os
 import re
 from dataclasses import dataclass, field, asdict
-from typing import List, Set, Tuple
+from typing import List, Optional, Set, Tuple
 
 from fuzz_introspector import commands as fi_commands
 
@@ -23,6 +24,12 @@ class PatchContext:
     modified_files: List[str]
     patch_text: str
     functions: List[TouchedFunction]
+    # JVM package the touched code lives in (e.g.
+    # 'com.google.javascript.jscomp'). None if we couldn't resolve it
+    # from the modified files on disk. The harness is asked to declare
+    # this package so it can reach package-private members without
+    # reflection.
+    package: Optional[str] = None
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -45,10 +52,12 @@ class TargetAnalyzer:
         )
         project = self._light_project(buggy_dir)
         functions = self._resolve_functions(project, candidate_names)
+        package = self._resolve_package(modified_files, buggy_dir)
         return PatchContext(
             modified_files=modified_files,
             patch_text=patch_text,
             functions=functions,
+            package=package,
         )
 
     # --- internals -------------------------------------------------------
@@ -116,3 +125,33 @@ class TargetAnalyzer:
                 xrefs=[x.function_source_code_as_text() for x in xrefs],
             ))
         return functions
+
+    _PACKAGE_RE = re.compile(r'^\s*package\s+([\w.]+)\s*;')
+
+    def _resolve_package(self, modified_files: List[str],
+                         buggy_dir: str) -> Optional[str]:
+        """Read the `package X.Y.Z;` declaration from the first modified
+        Java source file we can find on disk. This is the ground truth
+        for where the harness should live so it can access package-
+        private members (e.g. Compiler.getOptions(),
+        CompilerOptions.dependencyOptions in Closure) without reflection.
+
+        Returns None if no modified file is readable or none of them
+        declares a package — in which case the prompt falls back to
+        instructing the model to discover the package itself.
+        """
+        for rel_path in modified_files:
+            if not rel_path.endswith('.java'):
+                continue
+            full_path = os.path.join(buggy_dir, rel_path)
+            if not os.path.isfile(full_path):
+                continue
+            try:
+                with open(full_path) as fh:
+                    for line in fh:
+                        m = self._PACKAGE_RE.match(line)
+                        if m:
+                            return m.group(1)
+            except OSError:
+                continue
+        return None
