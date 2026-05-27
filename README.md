@@ -1,6 +1,6 @@
-# vuln-patch
+# Addressing the Root Cause: Automated Fuzzing Harness Generator for Variant Analysis
 
-Pipeline for automatically generating Jazzer fuzzing harnesses for Defects4J bugs, given an APR tool generated patch from the [drr](https://github.com/ASSERT-KTH/drr) dataset. The goal is to detect semantically incorrect (overfitting) patches by verifying that a set of harnesses exposing the root cause of the vulnerability still triggers on the patched version.
+Pipeline for automatically generating Jazzer fuzzing harnesses for [Defects4J](https://github.com/rjust/defects4j) bugs, given an APR tool generated patch from the [drr](https://github.com/ASSERT-KTH/drr) dataset. The goal is to detect semantically incorrect (overfitting) patches by verifying that a set of harnesses exposing the root cause of the vulnerability still triggers on the patched version.
 
 ## Overview
 
