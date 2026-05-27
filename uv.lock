@@ -624,6 +624,18 @@ wheels = [
 ]
 
 [[package]]
+name = "javalang"
+version = "0.13.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/df/37/b2b7d47b6dd9fdbc6864305ddf9060c1ebce4e743e8d74e565a27395f312/javalang-0.13.0.tar.gz", hash = "sha256:1681a5a480a58116d42a7eedfd132abe25e6c0ffe552868d581ad84e6aa3424c", size = 21085, upload-time = "2020-03-28T16:02:29.288Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/e0/12344443d66b9a84844171be90112892a371da6db09866741774b8bc0a2f/javalang-0.13.0-py3-none-any.whl", hash = "sha256:b203c258919b085b44b43b89effcba7291bb2d90c02906b915b39e86aa9fd8e6", size = 22052, upload-time = "2020-03-28T16:02:28.19Z" },
+]
+
+[[package]]
 name = "jinja2"
 version = "3.1.6"
 source = { registry = "https://pypi.org/simple" }
@@ -1977,12 +1989,14 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "fuzz-introspector" },
+    { name = "javalang" },
     { name = "openai" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "fuzz-introspector", specifier = ">=0.1.10" },
+    { name = "javalang" },
     { name = "openai", specifier = ">=1.0.0" },
 ]
 
