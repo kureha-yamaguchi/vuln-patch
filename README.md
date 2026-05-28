@@ -11,6 +11,7 @@ For a selected patch, the pipeline:
 3. Builds a chat-completion prompt and sends it to an LLM
 4. Extracts and compiles the generated Jazzer harness
 5. Repeats until a target number of harnesses compile successfully
+6. Copies the buggy checkout, applies the DRR patch, and runs each compiled harness against the patched code with Jazzer — harnesses that still crash indicate the patch is overfitting
 
 ## Dependencies
 

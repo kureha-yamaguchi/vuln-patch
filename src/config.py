@@ -32,6 +32,22 @@ JAZZER_API_URL = (
     f'jazzer-api/{JAZZER_VERSION}/jazzer-api-{JAZZER_VERSION}.jar'
 )
 
+# Jazzer standalone jar — used to *run* harnesses (not just compile them).
+JAZZER_STANDALONE_JAR = os.getenv(
+    'JAZZER_STANDALONE_JAR',
+    os.path.expanduser(f'~/.cache/jazzer/jazzer-{JAZZER_VERSION}.jar'),
+)
+JAZZER_STANDALONE_URL = (
+    f'https://repo.maven.apache.org/maven2/com/code-intelligence/'
+    f'jazzer/{JAZZER_VERSION}/jazzer-{JAZZER_VERSION}.jar'
+)
+
+# Jazzer exits with this code when it finds a finding (crash/exception).
+JAZZER_CRASH_EXIT_CODE = 77
+
+# Per-harness fuzzing time limit in seconds.
+FUZZ_TIMEOUT_SECONDS = int(os.getenv('FUZZ_TIMEOUT_SECONDS', '30'))
+
 # --- drr patch dataset -----------------------------------------------------
 DRR_CORRECT_DIR     = '../drr/Patches/Dcorrect'
 DRR_OVERFITTING_DIR = '../drr/Patches/Doverfitting'

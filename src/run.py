@@ -1,21 +1,22 @@
 """Generate Jazzer harnesses for a Defects4J bug given a patch from the
 ASSERT-KTH/drr dataset. Keep regenerating with the same prompt until a
-target number of harnesses compile against the buggy project.
+target number of harnesses compile against the buggy project, then fuzz
+the successful harnesses against the patched code to check for overfitting.
 
 Pipeline stages (each lives in its own module):
 
-    PatchSelector       (patches.py)   pick a random patch (given correct/overfitting label and project namne label) + d4j checkout
-    TargetAnalyzer      (analysis.py)  parse patch + run fuzz-introspector
-    PromptBuilder       (prompts.py)   build the chat-completion prompt
-    HarnessGenerator    (llm.py)       call the local LLM
-    HarnessBuilder      (build.py)     extract + javac the generated source
-    HarnessCampaign     (campaign.py)  loop generate→build until N succeed
-    JazzerEnvironment   (jazzer.py)    resolve the jazzer-api jar
-    config              (config.py)    env-driven constants
+    PatchSelector       (patches.py)    pick a random patch + d4j checkout
+    TargetAnalyzer      (analysis.py)   parse patch + run fuzz-introspector
+    PromptBuilder       (prompts.py)    build the chat-completion prompt
+    HarnessGenerator    (llm.py)        call the local LLM
+    HarnessBuilder      (build.py)      extract + javac the generated source
+    HarnessCampaign     (campaign.py)   loop generate→build until N succeed
+    JazzerEnvironment   (jazzer.py)     resolve jazzer jars
+    FuzzRunner          (fuzz_runner.py) run harnesses against patched code
+    config              (config.py)     env-driven constants
 
 Example usage (choose project_name from Chart/Closure/Lang/Math/Time):
-    uv run -m run -c --project_name Closure
-    uv run -m run -c --project_name Closure -n 5 -m 50
+    uv run -m run -o --project_name Lang -n 5 -m 50 --fuzz_timeout 60
 """
 import argparse
 import json
@@ -24,6 +25,7 @@ import sys
 from analysis import TargetAnalyzer
 from build import HarnessBuilder
 from campaign import HarnessCampaign, CampaignResult
+from fuzz_runner import FuzzRunner
 from jazzer import JazzerEnvironment
 from llm import HarnessGenerator
 from patches import PatchSelector
@@ -51,6 +53,10 @@ def parse_args():
                              "(default: 50)")
     parser.add_argument("--max_repair_failures", type=int, default=2,
                         help="maximum number of failures in a row before resetting the prompt context")
+    parser.add_argument("--fuzz_timeout", type=int, default=60,
+                        metavar="SECONDS",
+                        help="seconds Jazzer runs per harness against the "
+                             "patched code (default: 30; 0 to skip fuzzing)")
     return parser.parse_args()
 
 
@@ -61,9 +67,12 @@ def main():
         print("Please select either --correct flag or --overfitting flag")
         sys.exit(1)
 
-    # 1) Make sure the Jazzer API jar is available before we spend time
-    #    checking out the project and prompting the LLM.
-    jazzer_api_jar = JazzerEnvironment().ensure()
+    # 1) Resolve Jazzer jars up front so failures surface before the slow
+    #    checkout + LLM campaign.
+    jazzer_env = JazzerEnvironment()
+    jazzer_api_jar = jazzer_env.ensure()
+    jazzer_standalone_jar = (jazzer_env.ensure_driver()
+                             if args.fuzz_timeout > 0 else None)
 
     # 2) Pick a random patch and check out the corresponding buggy d4j
     #    version.
@@ -101,6 +110,20 @@ def main():
 
     _print_summary(selection, result)
 
+    # 6) Fuzz every successful harness against the patched code to check
+    #    whether the vulnerability is still reachable (overfitting signal).
+    if args.fuzz_timeout > 0 and result.successful_results:
+        print("\n" + "#" * 20 + " fuzzing patched code " + "#" * 20)
+        fuzz_results = FuzzRunner(
+            jazzer_standalone_jar=jazzer_standalone_jar,
+            timeout_seconds=args.fuzz_timeout,
+        ).run_all(
+            successful_results=result.successful_results,
+            patch_path=selection.patch_path,
+            buggy_dir=selection.buggy_dir,
+        )
+        _print_fuzz_summary(fuzz_results)
+
     sys.exit(0 if result.converged else 2)
 
 
@@ -113,11 +136,29 @@ def _print_summary(selection, result: CampaignResult) -> None:
     print(f"attempts used : {result.attempts}")
     print(f"wins          : {result.achieved_successes}")
     print(f"success rate  : {result.success_rate:.1%}")
-    print(f"converged     : {result.converged}")
     if result.successful_results:
         print("successful harnesses:")
         for br in result.successful_results:
             print(f"  - {br.harness_path}")
+    print("#" * 50)
+
+
+def _print_fuzz_summary(fuzz_results) -> None:
+    triggered = [r for r in fuzz_results if r.triggered]
+    clean     = [r for r in fuzz_results if not r.triggered and not r.timed_out]
+    timeouts  = [r for r in fuzz_results if r.timed_out]
+
+    print("\n" + "#" * 20 + " fuzz summary " + "#" * 20)
+    print(f"harnesses run  : {len(fuzz_results)}")
+    print(f"crashed        : {len(triggered)}  "
+          "(vulnerability still reachable — patch may be overfitting)")
+    print(f"clean          : {len(clean)}  "
+          "(vulnerability not triggered — patch appears to fix the bug)")
+    print(f"timed out      : {len(timeouts)}")
+    if triggered:
+        print("crashing harnesses:")
+        for r in triggered:
+            print(f"  - {r.harness_path}")
     print("#" * 50)
 
 
