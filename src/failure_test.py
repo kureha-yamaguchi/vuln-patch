@@ -52,7 +52,7 @@ class FailureTestExtractor:
     _METHOD_DECL_TEMPLATE = (
         r'(?:^|[\n\r;])[ \t]*'
         r'('                                # group 1: method declaration
-        r'(?:@\w+(?:\s*\([^)]*\))?\s+)*'    # annotations on the same line
+        r'(?:@\w+(?:\s*\([^()]*(?:\([^()]*\)[^()]*)*\))?\s+)*'  # annotations on the same line
         r'(?:(?:public|protected|private|static|final|synchronized|'
         r'abstract|default)\s+)*'
         r'(?:void|[A-Za-z_][\w<>,\[\]\s.?]*?)\s+'
@@ -103,11 +103,18 @@ class FailureTestExtractor:
         `defects4j export -p dir.src.tests`. May not exist on every
         project layout — callers must cope with None."""
         try:
-            rel = subprocess.run(
+            raw = subprocess.run(
                 ['defects4j', 'export', '-p', 'dir.src.tests'],
                 cwd=buggy_dir, check=True, capture_output=True, text=True,
             ).stdout.strip()
-            return os.path.join(buggy_dir, rel) if rel else None
+            for part in raw.split(':'):
+                part = part.strip()
+                if not part:
+                    continue
+                candidate = os.path.join(buggy_dir, part)
+                if os.path.isdir(candidate):
+                    return candidate
+            return None
         except subprocess.CalledProcessError:
             return None
 
