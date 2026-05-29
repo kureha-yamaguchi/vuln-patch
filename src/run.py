@@ -5,15 +5,16 @@ the successful harnesses against the patched code to check for overfitting.
 
 Pipeline stages (each lives in its own module):
 
-    PatchSelector       (patches.py)    pick a random patch + d4j checkout
-    TargetAnalyzer      (analysis.py)   parse patch + run fuzz-introspector
-    PromptBuilder       (prompts.py)    build the chat-completion prompt
-    HarnessGenerator    (llm.py)        call the local LLM
-    HarnessBuilder      (build.py)      extract + javac the generated source
-    HarnessCampaign     (campaign.py)   loop generate→build until N succeed
-    JazzerEnvironment   (jazzer.py)     resolve jazzer jars
+    PatchSelector       (patches.py)     pick a random patch + d4j checkout
+    FailureTestExtractor(failure_test.py) read the d4j bug-triggering test
+    TargetAnalyzer      (analysis.py)    parse patch + run fuzz-introspector
+    PromptBuilder       (prompts.py)     build the chat-completion prompt
+    HarnessGenerator    (llm.py)         call the local LLM
+    HarnessBuilder      (build.py)       extract + javac the generated source
+    HarnessCampaign     (campaign.py)    loop generate→build until N succeed
+    JazzerEnvironment   (jazzer.py)      resolve jazzer jars
     FuzzRunner          (fuzz_runner.py) run harnesses against patched code
-    config              (config.py)     env-driven constants
+    config              (config.py)      env-driven constants
 
 Example usage (choose project_name from Chart/Closure/Lang/Math/Time):
     uv run -m run -o --project_name Lang -n 5 -m 50 --fuzz_timeout 60
@@ -25,6 +26,7 @@ import sys
 from analysis import TargetAnalyzer
 from build import HarnessBuilder
 from campaign import HarnessCampaign, CampaignResult
+from failure_test import FailureTestExtractor
 from fuzz_runner import FuzzRunner
 from jazzer import JazzerEnvironment
 from llm import HarnessGenerator
@@ -82,8 +84,15 @@ def main():
         overfitting=args.overfitting,
     ).select()
 
-    # 3) Extract the patch + every project function it touches +
-    #    cross-references for each of those functions.
+    # 3a) Extract the bug-triggering test(s) shipped with this d4j bug.
+    #     They seed the prompt with a worked example of a crashing
+    #     input — the LLM sees what values already drive the buggy code
+    #     path and shapes its FuzzedDataProvider calls accordingly.
+    failure_tests = FailureTestExtractor().extract(selection.buggy_dir)
+    _print_failure_tests(failure_tests)
+
+    # 3b) Extract the patch + every project function it touches +
+    #     cross-references for each of those functions.
     context = TargetAnalyzer().analyze(
         patch_path=selection.patch_path,
         buggy_dir=selection.buggy_dir,
@@ -95,6 +104,7 @@ def main():
     messages = PromptBuilder(language=args.language).build(
         buggy_dir=selection.buggy_dir,
         context=context,
+        failure_tests=failure_tests,
     )
 
     # 5) Run the campaign: regenerate + recompile until we have
@@ -125,6 +135,16 @@ def main():
         _print_fuzz_summary(fuzz_results)
 
     sys.exit(0 if result.converged else 2)
+
+
+def _print_failure_tests(failure_tests) -> None:
+    if not failure_tests:
+        print("No bug-triggering tests found — continuing without seed.")
+        return
+    print(f"Found {len(failure_tests)} bug-triggering test(s):")
+    for ft in failure_tests:
+        marker = '✓' if ft.has_source else '?'
+        print(f"  {marker} {ft.test_class}::{ft.test_method}")
 
 
 def _print_summary(selection, result: CampaignResult) -> None:
