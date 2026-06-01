@@ -2,6 +2,7 @@
 Defects4J project version it corresponds to."""
 import os
 import random
+import shutil
 import subprocess
 from dataclasses import dataclass
 
@@ -68,7 +69,10 @@ class PatchSelector:
             config.D4J_CHECKOUT_ROOT,
             f'{self.project_name}_{bug_id}_buggy',
         )
-        if not os.path.isdir(buggy_dir):
+        config_file = os.path.join(buggy_dir, '.defects4j.config')
+        if not os.path.isfile(config_file):
+            if os.path.isdir(buggy_dir):
+                shutil.rmtree(buggy_dir)
             subprocess.run(
                 ['defects4j', 'checkout',
                  '-p', self.project_name, '-v', f'{bug_id}b',
