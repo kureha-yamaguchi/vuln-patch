@@ -1,19 +1,160 @@
-"""Apply a DRR patch to a copy of the buggy checkout, then run each
-compiled Jazzer harness against the patched code to detect whether the
-harness still triggers a crash — the key signal for overfitting patches.
+"""Run compiled Jazzer harnesses against a project and report whether
+they crash.
 
-Pipeline:
+This module serves two callers:
+
+  * `HarnessVerifier` (used *inside* the campaign) runs a harness for a
+    short budget against the *buggy* checkout. A harness is only accepted
+    into the set if it crashes here — proof it actually reaches the root
+    cause rather than merely compiling.
+
+  * `FuzzRunner` (used *after* the campaign) applies the DRR patch to a
+    copy of the checkout and runs each accepted harness against the
+    *patched* code. A harness that still crashes is evidence the patch is
+    overfitting — it didn't address the root cause the harness exercises.
+
+Both share `run_jazzer`, which is the single place that knows how to
+invoke Jazzer and decide "did this crash". `crash_signature` distils a
+crash into a stable string so the campaign can tell sibling bugs apart.
+
+Pipeline (post-campaign):
     PatchedProjectBuilder   copy buggy dir, apply patch, compile
     FuzzRunner              run Jazzer per harness, collect FuzzRunResult
 """
 import os
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 from build import BuildResult
 import config
+
+
+@dataclass
+class JazzerOutcome:
+    """Raw result of running Jazzer once against some classpath."""
+    triggered: bool
+    timed_out: bool
+    returncode: int
+    stdout: str
+    stderr: str
+
+    @property
+    def combined_output(self) -> str:
+        return f"{self.stdout}\n{self.stderr}"
+
+
+def run_jazzer(jazzer_standalone_jar: str,
+               target_class: str,
+               harness_dir: str,
+               project_cp: str,
+               timeout_seconds: int) -> JazzerOutcome:
+    """Run one Jazzer harness against `project_cp` and report whether it
+    crashed within `timeout_seconds`. Shared by the buggy-version gate
+    and the patched-version overfitting check so crash detection is
+    defined in exactly one place."""
+    classpath = os.pathsep.join([
+        jazzer_standalone_jar,
+        project_cp,
+        harness_dir,
+    ])
+    cmd = [
+        'java', '-cp', classpath,
+        'com.code_intelligence.jazzer.Jazzer',
+        f'--target_class={target_class}',
+        '--',
+        f'-max_total_time={timeout_seconds}',
+    ]
+
+    timed_out = False
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True,
+            timeout=timeout_seconds + 15,
+        )
+        returncode = proc.returncode
+        stdout, stderr = proc.stdout, proc.stderr
+    except subprocess.TimeoutExpired as exc:
+        timed_out = True
+        returncode = -1
+        stdout = exc.stdout or ''
+        stderr = exc.stderr or ''
+        # subprocess may hand back bytes on timeout depending on platform.
+        if isinstance(stdout, bytes):
+            stdout = stdout.decode('utf-8', 'replace')
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode('utf-8', 'replace')
+
+    triggered = (
+        not timed_out and (
+            returncode == config.JAZZER_CRASH_EXIT_CODE or
+            '== Java Exception' in stderr or
+            '== Java Exception' in stdout
+        )
+    )
+    return JazzerOutcome(
+        triggered=triggered,
+        timed_out=timed_out,
+        returncode=returncode,
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+
+# Jazzer prints the offending throwable on a line like
+#   == Java Exception: java.lang.ArrayIndexOutOfBoundsException: ...
+_EXC_RE = re.compile(r'==\s*Java Exception:\s*([\w.$]+)')
+# Stack frames look like `\tat pkg.Class.method(File.java:NN)`.
+_FRAME_RE = re.compile(r'\bat\s+([\w.$]+)\.([\w$<>]+)\(')
+
+
+def crash_signature(output: str) -> Optional[str]:
+    """Distil a Jazzer crash into a stable signature: the exception type
+    plus the first application stack frame (`Class.method`). Used by the
+    campaign to tell whether a new harness found a *different* bug than
+    the ones already in the set — the core signal for surfacing siblings
+    rather than re-finding the same fault. Returns None if no crash is
+    discernible in `output`."""
+    exc_match = _EXC_RE.search(output)
+    if not exc_match:
+        return None
+    exc_type = exc_match.group(1)
+
+    top_frame = None
+    for cls, method in _FRAME_RE.findall(output):
+        # Skip Jazzer/JDK frames; the first project frame is the most
+        # informative anchor for "where" the crash happened.
+        if (cls.startswith('com.code_intelligence.jazzer')
+                or cls.startswith('java.')
+                or cls.startswith('jdk.')
+                or cls.startswith('sun.')):
+            continue
+        top_frame = f"{cls}.{method}"
+        break
+
+    return f"{exc_type}@{top_frame}" if top_frame else exc_type
+
+
+def covered_functions(output: str) -> List[str]:
+    """Best-effort list of project functions named in a crash's stack
+    trace (`Class.method`), JDK/Jazzer frames removed. These are
+    functions the harness demonstrably *reached*, used to update the
+    set-coverage context fed to subsequent generations."""
+    out: List[str] = []
+    seen = set()
+    for cls, method in _FRAME_RE.findall(output):
+        if (cls.startswith('com.code_intelligence.jazzer')
+                or cls.startswith('java.')
+                or cls.startswith('jdk.')
+                or cls.startswith('sun.')):
+            continue
+        key = f"{cls}.{method}"
+        if key not in seen:
+            seen.add(key)
+            out.append(key)
+    return out
 
 
 @dataclass
@@ -117,50 +258,22 @@ class FuzzRunner:
     def _run_one(self, build_result: BuildResult,
                  patched_cp: str) -> FuzzRunResult:
         harness_dir = os.path.dirname(build_result.harness_path)
-        classpath = os.pathsep.join([
-            self.jazzer_standalone_jar,
-            patched_cp,
-            harness_dir,
-        ])
-        cmd = [
-            'java', '-cp', classpath,
-            'com.code_intelligence.jazzer.Jazzer',
-            f'--target_class={build_result.class_name}',
-            '--',
-            f'-max_total_time={self.timeout_seconds}',
-        ]
-
-        timed_out = False
-        try:
-            proc = subprocess.run(
-                cmd, capture_output=True, text=True,
-                timeout=self.timeout_seconds + 15,
-            )
-            returncode = proc.returncode
-            stdout, stderr = proc.stdout, proc.stderr
-        except subprocess.TimeoutExpired as exc:
-            timed_out = True
-            returncode = -1
-            stdout = exc.stdout or ''
-            stderr = exc.stderr or ''
-
-        triggered = (
-            not timed_out and (
-                returncode == config.JAZZER_CRASH_EXIT_CODE or
-                '== Java Exception' in stderr or
-                '== Java Exception' in stdout
-            )
+        outcome = run_jazzer(
+            jazzer_standalone_jar=self.jazzer_standalone_jar,
+            target_class=build_result.class_name,
+            harness_dir=harness_dir,
+            project_cp=patched_cp,
+            timeout_seconds=self.timeout_seconds,
         )
-
         return FuzzRunResult(
             harness_path=build_result.harness_path,
             class_name=build_result.class_name,
             attempt_label=build_result.attempt_label,
-            triggered=triggered,
-            timed_out=timed_out,
-            returncode=returncode,
-            stdout=stdout,
-            stderr=stderr,
+            triggered=outcome.triggered,
+            timed_out=outcome.timed_out,
+            returncode=outcome.returncode,
+            stdout=outcome.stdout,
+            stderr=outcome.stderr,
         )
 
 
@@ -173,3 +286,64 @@ def _print_fuzz_result(r: FuzzRunResult) -> None:
     else:
         print(f"  ✓  clean run (exit {r.returncode})"
               " — vulnerability not triggered on patched code")
+
+
+@dataclass
+class VerificationResult:
+    """Outcome of the short in-campaign run against the *buggy* checkout.
+
+    `crashed` is the acceptance gate: only harnesses that crash the
+    known-buggy code are admitted to the set. `signature` and
+    `reached_functions` feed the variant-analysis context so subsequent
+    generations can steer toward *different* faults and *uncovered*
+    reachable functions."""
+    crashed: bool
+    timed_out: bool
+    returncode: int
+    signature: Optional[str]
+    reached_functions: List[str]
+    stdout: str
+    stderr: str
+
+
+class HarnessVerifier:
+    """Run a freshly compiled harness against the *buggy* checkout for a
+    short budget and report whether it crashes.
+
+    This is the teeth behind the "compiles AND triggers" convergence
+    criterion. A harness that compiles but cannot crash the buggy code
+    does not interrogate the root cause and is worthless for detecting
+    overfitting on the patched code, so the campaign rejects it.
+
+    The buggy classpath is the one the harness was compiled against, so
+    we reuse `HarnessBuilder`'s cache rather than recomputing it.
+    """
+
+    def __init__(self,
+                 jazzer_standalone_jar: str,
+                 buggy_classpath: str,
+                 timeout_seconds: int = config.VERIFY_TIMEOUT_SECONDS):
+        self.jazzer_standalone_jar = jazzer_standalone_jar
+        self.buggy_classpath = buggy_classpath
+        self.timeout_seconds = timeout_seconds
+
+    def verify(self, build_result: BuildResult) -> VerificationResult:
+        harness_dir = os.path.dirname(build_result.harness_path)
+        outcome = run_jazzer(
+            jazzer_standalone_jar=self.jazzer_standalone_jar,
+            target_class=build_result.class_name,
+            harness_dir=harness_dir,
+            project_cp=self.buggy_classpath,
+            timeout_seconds=self.timeout_seconds,
+        )
+        combined = outcome.combined_output
+        return VerificationResult(
+            crashed=outcome.triggered,
+            timed_out=outcome.timed_out,
+            returncode=outcome.returncode,
+            signature=crash_signature(combined) if outcome.triggered else None,
+            reached_functions=(covered_functions(combined)
+                               if outcome.triggered else []),
+            stdout=outcome.stdout,
+            stderr=outcome.stderr,
+        )
