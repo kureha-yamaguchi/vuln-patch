@@ -40,20 +40,52 @@ def deep_label(d: Optional[dict]) -> str:
     return base
 
 
+# Per-codebase product + vendor labels for the `software` column. Falls
+# back to a humanised version of the codebase key if not in the map.
+_CODEBASE_TO_LABEL = {
+    'chrome':                'Google Chrome (V8/Blink)',
+    'mozilla-gecko':         'Mozilla Firefox (Gecko/SpiderMonkey)',
+    'apple-webkit':          'Apple WebKit (Safari engine, open source)',
+    'apple-ios':             'Apple iOS (closed source)',
+    'apple-os':              'Apple macOS (closed source)',
+    'apple-macos':           'Apple macOS (closed source)',
+    'microsoft-windows':     'Microsoft Windows (closed source)',
+    'ie-jscript':            'Microsoft IE / JScript (closed source, EOL)',
+    'windows-kernel':        'Microsoft Windows kernel (closed source)',
+    'windows-clfs':          'Microsoft Windows CLFS driver (closed source)',
+    'edge':                  'Microsoft Edge legacy / Chakra (closed source, EOL)',
+    'microsoft-office':      'Microsoft Office (closed source)',
+    'mali-gpu-driver':       'ARM Mali GPU kernel driver (AOSP, open source)',
+    'android-kernel':        'Android (AOSP, open source)',
+    'qualcomm-android':      'Qualcomm Adreno GPU (Android, partial open source)',
+    'linux-kernel':          'Linux kernel (open source)',
+    'samsung-android':       'Samsung Android device driver (closed source)',
+    'winrar':                'RARLAB WinRAR (closed source)',
+    'adobe-reader':          'Adobe Acrobat Reader (closed source)',
+    'fuzzilli':              'Project Zero Fuzzilli (open source, fuzzer)',
+    'unknown':               'unknown',
+}
+
+
+def _label_for(cb: str) -> str:
+    return _CODEBASE_TO_LABEL.get(cb, cb)
+
+
 def software_label(audit: Optional[dict]) -> str:
-    """Human-readable `later_codebase / prior_codebase` pair. When both
-    sides are known and equal, collapse to a single value; otherwise
-    show both with a comparator (`=` same, `≠` different, `?` unknown)."""
+    """Human-readable `later_codebase / prior_codebase` with full
+    product + vendor names. Collapses to a single value when both
+    sides agree; otherwise shows both with a comparator."""
     if not audit:
-        return 'unknown / unknown'
+        return _label_for('unknown')
     later_cb = audit.get('later_codebase') or 'unknown'
     prior_cb = audit.get('prior_codebase') or 'unknown'
+    later_label = _label_for(later_cb)
+    prior_label = _label_for(prior_cb)
     if later_cb == prior_cb and later_cb != 'unknown':
-        return later_cb
+        return later_label
     if 'unknown' in (later_cb, prior_cb):
-        return f'{later_cb} / {prior_cb}'
-    # Both known but different — use a clear separator.
-    return f'{later_cb} ≠ {prior_cb}'
+        return f'{later_label} / {prior_label}'
+    return f'{later_label} ≠ {prior_label}'
 
 
 def audit_label(audit: Optional[dict]) -> str:
@@ -148,14 +180,43 @@ def _link(label_url: Tuple[str, str]) -> str:
     return f'[{label}]({url})'
 
 
+def _cve_nvd_link(bug_id: str) -> str:
+    """Return a clickable NVD link for a CVE-id, or a bug-tracker link
+    for a non-CVE identifier."""
+    if bug_id.startswith('CVE-'):
+        return f'[{bug_id}](https://nvd.nist.gov/vuln/detail/{bug_id})'
+    if bug_id.startswith('chromium-p0:'):
+        n = bug_id.split(':', 1)[1]
+        return f'[{bug_id}](https://bugs.chromium.org/p/project-zero/issues/detail?id={n})'
+    if bug_id.startswith('chromium:'):
+        n = bug_id.split(':', 1)[1]
+        return f'[{bug_id}](https://bugs.chromium.org/p/chromium/issues/detail?id={n})'
+    if bug_id.startswith('mozilla:'):
+        n = bug_id.split(':', 1)[1]
+        return f'[{bug_id}](https://bugzilla.mozilla.org/show_bug.cgi?id={n})'
+    if bug_id.startswith('github:'):
+        rest = bug_id.split(':', 1)[1]
+        m = re.match(r'([^/]+)/([^@]+)@([0-9a-f]+)', rest)
+        if m:
+            owner, repo, sha = m.group(1), m.group(2), m.group(3)
+            return f'[{bug_id}](https://github.com/{owner}/{repo}/commit/{sha})'
+    return bug_id
+
+
 def links_label(s: dict) -> str:
     """Compact column showing where the pair was found and any patch
     URLs we resolved. Links are rendered as markdown so they're
-    clickable. `tried:` lists upstream-commit URLs from the LATER
-    bug's RCA prose — i.e. patch candidates the resolver knew about
-    (it then dedupes + filters via the denylist/source-files rule
-    before fetching, so not every one was actually fetched)."""
+    clickable. `nvd:` is the NVD entry for the LATER CVE (or the
+    bug-tracker entry for a non-CVE identifier). `tried:` lists
+    upstream-commit URLs from the LATER bug's RCA prose — i.e.
+    patch candidates the resolver knew about (it then dedupes +
+    filters via the denylist/source-files rule before fetching, so
+    not every one was actually fetched)."""
     parts: List[str] = []
+    # NVD links for both sides — useful starting point for a human
+    # following up on a pair.
+    parts.append(f'nvd-L:{_cve_nvd_link(s["later_cve"])}')
+    parts.append(f'nvd-P:{_cve_nvd_link(s["prior_cve"])}')
     ev = (s.get('evidence') or [{}])[0]
     ev_url = ev.get('url') or ''
     if ev_url:
@@ -185,8 +246,10 @@ def links_label(s: dict) -> str:
     return ' '.join(parts)
 
 
-def render_row(s: dict, d: Optional[dict], audit: Optional[dict]) -> str:
+def render_row(s: dict, d: Optional[dict], audit: Optional[dict],
+               why: str = '') -> str:
     cite = (s.get('llm_cited_sentence') or '').replace('|', '\\|').replace('\n', ' ')[:120]
+    why_cell = (why or '').replace('|', '\\|').replace('\n', ' ')
     return (
         f"| {s['later_cve']} | {s['prior_cve']} | "
         f"{software_label(audit)} | "
@@ -194,18 +257,21 @@ def render_row(s: dict, d: Optional[dict], audit: Optional[dict]) -> str:
         f"{s['llm_confidence']:.2f} | "
         f"{deep_label(d)} | "
         f"{audit_label(audit)} | "
+        f"{why_cell} | "
         f"{links_label(s)} | "
         f"{cite} |"
     )
 
 
 HEADER = (
-    "| later | prior | software | llm_kind | conf | deep | audit | links | cited_sentence |"
+    "| later | prior | software | llm_kind | conf | deep | audit | why | links | cited_sentence |"
 )
-SEP = "|---|---|---|---|---|---|---|---|---|"
+SEP = "|---|---|---|---|---|---|---|---|---|---|"
 
 
-def render_table(title: str, rows: list) -> str:
+def render_table(title: str, rows: list,
+                 bucket_reasons: Optional[Dict[Tuple[str, str], str]] = None
+                 ) -> str:
     out: List[str] = []
     out.append(f"## {title} — {len(rows)} pairs\n")
     if not rows:
@@ -214,9 +280,64 @@ def render_table(title: str, rows: list) -> str:
     out.append(HEADER)
     out.append(SEP)
     for s, d, a in rows:
-        out.append(render_row(s, d, a))
+        why = ''
+        if bucket_reasons is not None:
+            why = bucket_reasons.get((s['later_cve'], s['prior_cve']), '')
+        out.append(render_row(s, d, a, why))
     out.append('')
     return '\n'.join(out)
+
+
+def _categorize(s: dict, d: Optional[dict],
+                a: Optional[dict]) -> Tuple[str, str]:
+    """Bucket a confirmed seed pair. Returns (bucket, why)."""
+    deep_kind = d.get('diff_kind') if d else None
+    skip_reason = (d or {}).get('skip_reason') or ''
+
+    # DROPPED: self-pair OR codebase-audit disagrees (cross-vendor).
+    if skip_reason.startswith('self-pair'):
+        return ('DROPPED', 'self-pair: both sides resolved to the same fix')
+    if a and a.get('verdict') == 'disagrees':
+        lc = a.get('later_codebase', '?')
+        pc = a.get('prior_codebase', '?')
+        return ('DROPPED', f'cross-codebase ({lc} vs {pc}) — likely '
+                          f'same-actor / same-operation, not a code-level sibling')
+
+    # INCOMPLETE_FIX: deep verifier confirmed at the diff level, OR
+    # LLM-prose says incomplete_fix/regression with high confidence
+    # and deep skipped (couldn't run).
+    if deep_kind == 'incomplete_fix_confirmed':
+        return ('INCOMPLETE_FIX', 'deep verifier confirmed incomplete-fix at code level')
+    if s['llm_relationship_kind'] in ('incomplete_fix', 'regression') \
+            and s['llm_confidence'] >= 0.85 \
+            and skip_reason.startswith('no patches'):
+        return ('INCOMPLETE_FIX',
+                f"prose-LLM said {s['llm_relationship_kind']} (conf "
+                f"{s['llm_confidence']:.2f}); patches not fetchable")
+
+    # SAME_ROOT_CAUSE: deep verifier ratified same-root-cause OR
+    # one-extends-other, OR LLM-prose says same_root_cause with
+    # same_codebase and deep skipped.
+    if deep_kind in ('same_root_cause_confirmed', 'one_extends_other'):
+        return ('SAME_ROOT_CAUSE',
+                f'deep verifier ratified ({deep_kind})')
+    if s['llm_relationship_kind'] == 'same_root_cause' \
+            and s['llm_same_codebase'] \
+            and s['llm_confidence'] >= 0.80 \
+            and skip_reason.startswith('no patches'):
+        return ('SAME_ROOT_CAUSE',
+                f"prose-LLM said same_root_cause (conf "
+                f"{s['llm_confidence']:.2f}); patches not fetchable")
+
+    # UNRELATED: deep verifier said unrelated/insufficient_data
+    # — the pair was probably a false positive from the prose pass.
+    if deep_kind in ('unrelated', 'insufficient_data'):
+        return ('UNRELATED',
+                f'deep verifier rejected as {deep_kind} after reading '
+                f'both diffs')
+
+    # Anything else: low confidence, no deep info, no fit above.
+    return ('UNSURE', 'low-confidence prose, no deep verification, no clear fit')
 
 
 def main() -> int:
@@ -242,35 +363,51 @@ def main() -> int:
     ax = {(a['later'], a['prior']): a for a in audits}
 
     confirmed = [s for s in seeds if s.get('confirmed')]
-    strong, medium, unsure = [], [], []
+    buckets: Dict[str, list] = {
+        'INCOMPLETE_FIX': [],
+        'SAME_ROOT_CAUSE': [],
+        'UNRELATED': [],
+        'DROPPED': [],
+        'UNSURE': [],
+    }
+    bucket_reasons: Dict[Tuple[str, str], str] = {}
     for s in confirmed:
         d = dx.get((s['later_cve'], s['prior_cve']))
         a = ax.get((s['later_cve'], s['prior_cve']))
-        deep_kind = d['diff_kind'] if d else None
-        # Audit disagreement bumps a pair from MEDIUM/STRONG to UNSURE so it
-        # gets manual attention.
-        audit_disagrees = bool(a and a['verdict'] == 'disagrees')
-        if (deep_kind in ('incomplete_fix_confirmed',
-                          'same_root_cause_confirmed')
-                and not audit_disagrees):
-            strong.append((s, d, a))
-        elif audit_disagrees:
-            unsure.append((s, d, a))
-        elif (s['llm_relationship_kind'] == 'incomplete_fix'
-              and s['llm_confidence'] >= 0.9) \
-             or s['llm_relationship_kind'] == 'regression' \
-             or (s['llm_relationship_kind'] == 'same_root_cause'
-                 and s['llm_same_codebase']
-                 and s['llm_confidence'] >= 0.85):
-            medium.append((s, d, a))
-        else:
-            unsure.append((s, d, a))
+        bucket, why = _categorize(s, d, a)
+        buckets[bucket].append((s, d, a))
+        bucket_reasons[(s['later_cve'], s['prior_cve'])] = why
 
     out_md = [
         '# Confirmed P0 variant-pair findings',
         '',
-        f'**Total: {len(confirmed)} pairs** '
-        f'(strong {len(strong)}, medium {len(medium)}, unsure {len(unsure)})',
+        f'**Total: {len(confirmed)} pairs** — bucketed for the '
+        f'incomplete-fix-database use case:',
+        '',
+        f'- **INCOMPLETE_FIX** ({len(buckets["INCOMPLETE_FIX"])}) — '
+        f'the gold target: patches that were incomplete and caused a '
+        f'follow-up CVE. Either the deep diff verifier confirmed this '
+        f'at the code level, or the prose-LLM said incomplete_fix / '
+        f'regression with high confidence and we just couldn\'t fetch '
+        f'patches to verify.',
+        f'- **SAME_ROOT_CAUSE** ({len(buckets["SAME_ROOT_CAUSE"])}) — '
+        f'real sibling pairs (shared root cause / same bug class) but '
+        f'NOT necessarily incomplete-fix relationships. Useful for the '
+        f'broader variant-CVE database, less central to the '
+        f'patches-that-failed thesis.',
+        f'- **UNRELATED** ({len(buckets["UNRELATED"])}) — the prose-LLM '
+        f'flagged these as variants but the deep verifier read the '
+        f'actual diffs and rejected them. After the trusted-owner '
+        f'filter on github-search results, the remaining `unrelated` '
+        f'verdicts are mostly correct rejections; before the filter '
+        f'they were dominated by wrong-repo resolutions.',
+        f'- **DROPPED** ({len(buckets["DROPPED"])}) — pairs we exclude '
+        f'from the dataset: codebase audit says cross-vendor (e.g. '
+        f'Apple iOS bug paired with a Chrome bug because they were '
+        f'used in the same attack), or both sides resolve to the same '
+        f'commit (self-pair).',
+        f'- **UNSURE** ({len(buckets["UNSURE"])}) — low-confidence '
+        f'prose verdicts that didn\'t fit any of the above.',
         '',
         '_Column legend:_',
         '',
@@ -315,24 +452,16 @@ def main() -> int:
         'in that case). `tried:<host>` lists up to 3 other commit '
         'URLs the LATER bug\'s RCA mentioned, so you can see what '
         'patch candidates the resolver had to choose from.',
+        '- **why** — short note explaining why this pair landed in '
+        'this bucket (e.g. *"deep verifier confirmed incomplete-fix '
+        'at code level"*, *"prose-LLM said same_root_cause; patches '
+        'not fetchable"*).',
         '',
-        '_Group definitions:_',
-        '',
-        '- **STRONG** — deep diff-relate verifier confirmed code-level '
-        'relatedness (`incomplete_fix_confirmed` or '
-        '`same_root_cause_confirmed`) and the codebase audit did not '
-        'flag a disagreement.',
-        '- **MEDIUM** — high-confidence LLM-prose verdict but the deep '
-        'verifier could not run (e.g. no patches fetchable for both '
-        'sides).',
-        '- **UNSURE** — lower-confidence LLM-prose verdict, or deep '
-        'verifier returned `unrelated`/`insufficient_data`, or the '
-        'codebase audit disagrees with the LLM\'s `same_codebase` '
-        'claim.',
-        '',
-        render_table('STRONG', strong),
-        render_table('MEDIUM', medium),
-        render_table('UNSURE', unsure),
+        render_table('INCOMPLETE_FIX', buckets['INCOMPLETE_FIX'], bucket_reasons),
+        render_table('SAME_ROOT_CAUSE', buckets['SAME_ROOT_CAUSE'], bucket_reasons),
+        render_table('UNRELATED', buckets['UNRELATED'], bucket_reasons),
+        render_table('DROPPED', buckets['DROPPED'], bucket_reasons),
+        render_table('UNSURE', buckets['UNSURE'], bucket_reasons),
     ]
     md = '\n'.join(out_md)
 
@@ -340,7 +469,8 @@ def main() -> int:
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(md)
     print(f"wrote {out_path}")
-    print(f"  strong={len(strong)}, medium={len(medium)}, unsure={len(unsure)}")
+    for k, v in buckets.items():
+        print(f"  {k:18s} {len(v)}")
     return 0
 
 
