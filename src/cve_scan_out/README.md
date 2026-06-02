@@ -10,41 +10,43 @@ data lives in `external/`.
 ```
 cve_scan_out/
 ├── README.md                          ← this file
+├── seeds_table.md                     ← key human-readable report
+│                                        (auto-regenerated)
 │
-├── candidates.json                    ← Pipeline outputs (regeneratable)
-├── seeds.json
-├── seeds.csv
-├── seeds_table.md
-├── deep_relate.json
-├── deep_relate.csv
-├── codebase_audit.json
+├── pipeline/                          ← Pipeline JSON/CSV
+│   ├── candidates.json                  (regeneratable; .json gitignored)
+│   ├── seeds.json
+│   ├── seeds.csv
+│   ├── deep_relate.json
+│   ├── deep_relate.csv
+│   └── codebase_audit.json
 │
-├── verified/                          ← Manual / scripted verification
+├── verified/                          ← Human / scripted verification
 │   ├── README.md
-│   ├── findings_table_claude.md       ← per-row verification of every
+│   ├── findings_table_claude.md         per-row verification of every
 │   │                                    confirmed seed pair
-│   ├── findings_urls.md               ← three-tier patch-URL table
+│   ├── findings_urls.md                 three-tier patch-URL table
 │   │                                    (resolved / lookup-needed /
 │   │                                    closed-source) + script results
-│   └── resolve_remaining_cls.py       ← Gerrit / NVD / GHSL URL-resolver
-│                                        script that produced the
-│                                        iterated entries in findings_urls.md
+│   └── resolve_remaining_cls.py         Gerrit / NVD / GHSL resolver
+│                                        that produced the iterated
+│                                        entries in findings_urls.md
 │
 └── external/                          ← Third-party datasets (not from
-    │                                    this pipeline)
-    ├── README.md
-    └── liu_seeds_linux.json           ← Liu et al. (arXiv 2511.17799)
-                                         Linux kernel incomplete-fix
+    ├── README.md                        this pipeline)
+    └── liu_seeds_linux.json             Liu et al. (arXiv 2511.17799)
+                                         Linux-kernel incomplete-fix
                                          ground-truth subset
 ```
 
 ## Pipeline phases → which artifact
 
 ```
-                       run_p0_harvest                 run_diff_relate           run_inspect_unsure       make_seeds_table
-                             │                              │                            │                       │
-                             ▼                              ▼                            ▼                       ▼
-                  candidates.json + seeds.{json,csv}    deep_relate.{json,csv}     codebase_audit.json     seeds_table.md
+   run_p0_harvest             run_diff_relate         run_inspect_unsure        make_seeds_table
+         │                          │                          │                         │
+         ▼                          ▼                          ▼                         ▼
+  pipeline/candidates.json   pipeline/deep_relate.{json,csv}   pipeline/         seeds_table.md
+  pipeline/seeds.{json,csv}                                    codebase_audit.json    (at root)
 ```
 
 ## Pipeline output schemas
@@ -149,12 +151,13 @@ codebase-audit explanation, and clickable evidence + patch URLs.
 
 ## What to look at first
 
-- **For the dataset**: [seeds_table.md](seeds_table.md) (grouped Markdown)
-  and [seeds.csv](seeds.csv) (flat).
+- **For the dataset**: [seeds_table.md](seeds_table.md) (grouped
+  Markdown report at root) and [pipeline/seeds.csv](pipeline/seeds.csv)
+  (flat CSV).
 - **For per-pair human verification**: [verified/findings_table_claude.md](verified/findings_table_claude.md).
 - **For patch URLs (3 tiers)**: [verified/findings_urls.md](verified/findings_urls.md).
-- **For LLM same_codebase disagreements** worth manual review:
-  [codebase_audit.json](codebase_audit.json) filtered to
-  `verdict == "disagrees"`.
-- **For deep code-level confirmations**: [deep_relate.csv](deep_relate.csv)
+- **For LLM `same_codebase` disagreements** worth manual review:
+  [pipeline/codebase_audit.json](pipeline/codebase_audit.json) filtered
+  to `verdict == "disagrees"`.
+- **For deep code-level confirmations**: [pipeline/deep_relate.csv](pipeline/deep_relate.csv)
   (only related rows).

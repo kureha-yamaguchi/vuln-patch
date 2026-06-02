@@ -341,10 +341,14 @@ def _categorize(s: dict, d: Optional[dict],
 
 
 def main() -> int:
+    # Read pipeline JSON from pipeline/, write the human-readable
+    # seeds_table.md to the parent output dir so a reader hits the
+    # report first when they ls the directory.
+    pipeline_dir = config.CVE_SCAN_PIPELINE_DIR
     out_dir = config.CVE_SCAN_OUTPUT_DIR
-    seeds_path = os.path.join(out_dir, 'seeds.json')
-    deep_path = os.path.join(out_dir, 'deep_relate.json')
-    audit_path = os.path.join(out_dir, 'codebase_audit.json')
+    seeds_path = os.path.join(pipeline_dir, 'seeds.json')
+    deep_path = os.path.join(pipeline_dir, 'deep_relate.json')
+    audit_path = os.path.join(pipeline_dir, 'codebase_audit.json')
 
     if not os.path.isfile(seeds_path):
         print(f"error: {seeds_path} not found", file=sys.stderr)

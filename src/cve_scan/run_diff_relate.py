@@ -33,10 +33,11 @@ def parse_args():
                     "over patch unified diffs.",
     )
     p.add_argument('--seeds', type=str,
-                   default=os.path.join(config.CVE_SCAN_OUTPUT_DIR,
+                   default=os.path.join(config.CVE_SCAN_PIPELINE_DIR,
                                         'seeds.json'),
-                   help='Path to seeds.json from the harvester '
-                        '(default: ./cve_scan_out/seeds.json).')
+                   help=f'Path to seeds.json from the harvester '
+                        f'(default: '
+                        f'{config.CVE_SCAN_PIPELINE_DIR}/seeds.json).')
     p.add_argument('--all', action='store_true',
                    help='Analyze every seed in the file, not just the '
                         '`confirmed=True` ones.')
@@ -52,9 +53,9 @@ def parse_args():
                    help='GitHub token for higher API rate limits '
                         '(falls back to GITHUB_TOKEN env var).')
     p.add_argument('--out', type=str,
-                   default=config.CVE_SCAN_OUTPUT_DIR,
+                   default=config.CVE_SCAN_PIPELINE_DIR,
                    help=f'Directory for output JSON/CSV '
-                        f'(default: {config.CVE_SCAN_OUTPUT_DIR}).')
+                        f'(default: {config.CVE_SCAN_PIPELINE_DIR}).')
     return p.parse_args()
 
 

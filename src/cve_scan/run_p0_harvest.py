@@ -51,9 +51,9 @@ def parse_args():
                         help="GitHub token for higher API rate limits "
                              "(falls back to GITHUB_TOKEN env var).")
     parser.add_argument('--out', type=str,
-                        default=config.CVE_SCAN_OUTPUT_DIR,
+                        default=config.CVE_SCAN_PIPELINE_DIR,
                         help=f"Directory for output JSON/CSV "
-                             f"(default: {config.CVE_SCAN_OUTPUT_DIR}).")
+                             f"(default: {config.CVE_SCAN_PIPELINE_DIR}).")
     return parser.parse_args()
 
 

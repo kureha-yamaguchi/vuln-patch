@@ -246,9 +246,9 @@ def run(seeds_path: str, diffs_path: str) -> List[PairAssessment]:
 
 
 def main():
-    seeds_path = os.path.join(config.CVE_SCAN_OUTPUT_DIR, 'seeds.json')
-    diffs_path = os.path.join(config.CVE_SCAN_OUTPUT_DIR, 'deep_relate.json')
-    out_dir = config.CVE_SCAN_OUTPUT_DIR
+    seeds_path = os.path.join(config.CVE_SCAN_PIPELINE_DIR, 'seeds.json')
+    diffs_path = os.path.join(config.CVE_SCAN_PIPELINE_DIR, 'deep_relate.json')
+    out_dir = config.CVE_SCAN_PIPELINE_DIR
     assessments = run(seeds_path, diffs_path)
 
     os.makedirs(out_dir, exist_ok=True)
