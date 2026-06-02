@@ -91,15 +91,52 @@ BUGZILLA_MOZILLA_ATTACH_RE = re.compile(
 class Patch:
     """A fetched unified diff and the list of files it touches."""
     bug_id: str                  # the bug this patch was found for
-    host: str                    # 'github' | 'kernelorg' | 'chromium-review'
+    host: str                    # 'github' | 'kernelorg' | 'chromium-review' | ...
     commit_url: str              # the human-readable commit URL
     raw_url: str                 # the URL we actually fetched
-    sha: Optional[str]           # commit sha if applicable
+    sha: Optional[str]           # commit sha (None for Gerrit/Bugzilla)
     files: List[str] = field(default_factory=list)
     local_path: Optional[str] = None
 
     def as_dict(self) -> dict:
         return asdict(self)
+
+    def identity_keys(self) -> List[str]:
+        """All tokens that uniquely identify this patch for self-pair
+        detection. Two patches are the "same fix" iff any of their
+        identity keys match (with sha-prefix tolerance, see
+        :func:`_patches_collide`).
+
+        - Git patches contribute ``sha:<sha>``.
+        - Gerrit patches contribute ``gerrit:<change-num>`` extracted
+          from the chromium-review URL.
+        - Bugzilla patches contribute ``bugzilla:<bug-num>``.
+        - Anything else falls back to ``url:<normalised-commit-url>``
+          (fragment stripped, trailing slash removed, lower-cased —
+          query string preserved because for many trackers it carries
+          identity, e.g. ``?id=NNN``).
+
+        The url fallback is ONLY emitted when no more-specific token was
+        extracted — otherwise sibling Bugzilla bugs would collide on
+        the host (``bz.moz/show_bug.cgi`` part) even though their bug
+        numbers differ."""
+        out: List[str] = []
+        if self.sha:
+            out.append(f'sha:{self.sha}')
+        if self.host == 'chromium-review':
+            m = CHROMIUM_REVIEW_RE.search(self.commit_url or '')
+            if m:
+                change = m.group(1) or m.group(2) or m.group(3)
+                if change:
+                    out.append(f'gerrit:{change}')
+        if self.host == 'bugzilla-mozilla':
+            m = BUGZILLA_MOZILLA_BUG_RE.search(self.commit_url or '')
+            if m:
+                out.append(f'bugzilla:{m.group(1)}')
+        if not out and self.commit_url:
+            norm = re.sub(r'#.*$', '', self.commit_url).rstrip('/').lower()
+            out.append(f'url:{norm}')
+        return out
 
 
 @dataclass
@@ -249,6 +286,43 @@ BOILERPLATE_FILE_RES = [
 
 def _is_boilerplate_file(path: str) -> bool:
     return any(p.search(path) for p in BOILERPLATE_FILE_RES)
+
+
+def _patches_collide(lp: List['Patch'], pp: List['Patch']) -> bool:
+    """True if any (later, prior) patch pair shares an identity key.
+
+    Two patches share an identity iff any of:
+      - Their SHAs prefix-match (handles 12-char ↔ 40-char forms);
+      - Their Gerrit change numbers are equal;
+      - Their Bugzilla bug numbers are equal;
+      - Their canonical commit URLs are equal.
+    """
+    if not lp or not pp:
+        return False
+
+    # Split SHA identities out so we can do prefix matching across
+    # variable-length forms; the other identity tokens are matched as
+    # plain set intersections.
+    def _split(patches: List['Patch']):
+        shas, others = [], set()
+        for p in patches:
+            for tok in p.identity_keys():
+                if tok.startswith('sha:'):
+                    shas.append(tok[4:])
+                else:
+                    others.add(tok)
+        return shas, others
+
+    later_shas, later_others = _split(lp)
+    prior_shas, prior_others = _split(pp)
+
+    if later_others & prior_others:
+        return True
+    for ls in later_shas:
+        for ps in prior_shas:
+            if ls.startswith(ps) or ps.startswith(ls):
+                return True
+    return False
 
 
 # Repos whose commits we never want to count as "the fix" for any CVE
@@ -1101,29 +1175,21 @@ class CodeOverlapChecker:
     @staticmethod
     def _overlap(later: str, prior: str,
                  lp: List[Patch], pp: List[Patch]) -> CodeOverlap:
-        # Drop pairs where the same git SHA appears on both sides — this
-        # happens when a github:owner/repo@sha "prior" was extracted from
-        # the later's own RCA prose; the two sides aren't separate fixes.
-        later_shas = {p.sha for p in lp if p.sha}
-        prior_shas = {p.sha for p in pp if p.sha}
-        if later_shas and prior_shas:
-            collision = False
-            for ls in later_shas:
-                for ps in prior_shas:
-                    # Allow short-prefix vs full-sha matches (e.g. 12 vs 40
-                    # chars) — common when one URL was the truncated form.
-                    if ls.startswith(ps) or ps.startswith(ls):
-                        collision = True
-                        break
-                if collision:
-                    break
-            if collision:
-                return CodeOverlap(
-                    later=later, prior=prior,
-                    later_patches=lp, prior_patches=pp,
-                    status='no_patches',
-                    note='self-pair: both sides resolved to the same commit',
-                )
+        # Self-pair detection: drop pairs where both sides resolved to
+        # the same upstream fix. Covers four cases:
+        #   1. github SHA on both sides (a github:owner/repo@sha "prior"
+        #      extracted from the later's own RCA)
+        #   2. Gerrit change-number on both sides (when both CVEs link
+        #      to the same chromium-review change)
+        #   3. Bugzilla bug-number on both sides (one CVE === one bug)
+        #   4. Identical canonical commit URLs across hosts
+        if _patches_collide(lp, pp):
+            return CodeOverlap(
+                later=later, prior=prior,
+                later_patches=lp, prior_patches=pp,
+                status='no_patches',
+                note='self-pair: both sides resolved to the same fix',
+            )
 
         later_files = {f for p in lp for f in p.files}
         prior_files = {f for p in pp for f in p.files}

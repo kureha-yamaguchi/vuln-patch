@@ -32,7 +32,9 @@ from typing import Any, Dict, List, Optional
 
 from . import config
 from .classifier import BudgetExceededError, Classifier
-from .code_overlap import CodeOverlap, CodeOverlapChecker, Patch
+from .code_overlap import (
+    CodeOverlap, CodeOverlapChecker, Patch, _patches_collide,
+)
 
 
 # --------------------------------------------------------------------------
@@ -282,14 +284,15 @@ class DiffRelateAnalyzer:
                 self._print_progress(idx, len(target), dec, related)
                 continue
 
-            # Reject self-pairs: when the resolver picked up the same git
-            # commit for both sides (e.g. a github:owner/repo@sha "prior"
-            # extracted from the later's own RCA, where the sha is a
-            # prefix of the later's full sha). Comparing a commit to
-            # itself yields trivial "same_root_cause" — useless signal.
-            ls, ps = later_patch.sha or '', prior_patch.sha or ''
-            if ls and ps and (ls.startswith(ps) or ps.startswith(ls)):
-                dec.skip_reason = 'self-pair (later and prior resolved to same commit)'
+            # Reject self-pairs: when the resolver picked up the same
+            # upstream fix for both sides — happens for github (a
+            # github:owner/repo@sha "prior" extracted from the later's
+            # own RCA), Gerrit (two CVEs link to the same chromium-review
+            # change), Bugzilla (one CVE === one bug), and any cross-host
+            # case where commit URLs canonicalise to the same string.
+            # See :func:`code_overlap._patches_collide` for the full rule.
+            if _patches_collide([later_patch], [prior_patch]):
+                dec.skip_reason = 'self-pair (later and prior resolved to same fix)'
                 decisions.append(dec)
                 self._print_progress(idx, len(target), dec, related)
                 continue
@@ -374,9 +377,15 @@ class DiffRelateAnalyzer:
     @staticmethod
     def _print_progress(idx: int, total: int,
                         dec: DiffRelateDecision, related: int) -> None:
-        if not (dec.later_patch_available and dec.prior_patch_available):
+        # `skip_reason` may be set even when both patches are available
+        # (self-pair, budget-exhausted) — prefer it over the default
+        # `diff_kind` so the line accurately reflects what happened.
+        if dec.skip_reason:
             mark = '·'
-            status = dec.skip_reason or 'skipped'
+            status = dec.skip_reason
+        elif not (dec.later_patch_available and dec.prior_patch_available):
+            mark = '·'
+            status = 'skipped'
         else:
             mark = '✓' if dec.diff_related else '×'
             status = (f"kind={dec.diff_kind:30s} "
