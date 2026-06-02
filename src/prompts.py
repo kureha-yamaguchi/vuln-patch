@@ -127,7 +127,9 @@ class PromptBuilder:
     def _failure_test_block(self, failure_tests: List[FailureTest]) -> str:
         """Seed the prompt with the bug-triggering test(s) shipped by
         Defects4J. The LLM should treat the inputs they construct as a
-        worked example of values that already reach the root cause."""
+        worked example of values that already reach the root cause. When
+        we know the throwable the test fails with, we name it so the
+        harness aims to reproduce that specific crash."""
         parts: List[str] = [
             "A known failing test in the project already triggers "
             "this bug. Treat the inputs it constructs as a worked "
@@ -138,6 +140,20 @@ class PromptBuilder:
             "to produce values similar in shape and content to "
             "the ones the test uses.",
         ]
+        crash_types = sorted({ft.exception_type for ft in failure_tests
+                              if ft.exception_type})
+        if crash_types:
+            joined = ', '.join(crash_types)
+            parts.append(
+                "On the buggy version this fault surfaces as an uncaught "
+                f"{joined}. Your harness should drive the touched code "
+                "into that same failure so Jazzer reports it as a "
+                "finding. Do NOT catch and swallow that throwable — let "
+                "it propagate out of fuzzerTestOneInput. Only catch the "
+                "checked exceptions the target method declares (returning "
+                "or rethrowing as RuntimeException), so the genuine fault "
+                "is the only thing that surfaces."
+            )
         for ft in failure_tests:
             if ft.method_source:
                 parts.extend([

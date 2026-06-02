@@ -27,7 +27,7 @@ import config
 from analysis import TargetAnalyzer
 from build import HarnessBuilder
 from campaign import HarnessCampaign, CampaignResult
-from failure_test import FailureTestExtractor
+from failure_test import FailureTestExtractor, is_crashing_bug
 from fuzz_runner import FuzzRunner, HarnessVerifier
 from jazzer import JazzerEnvironment
 from llm import HarnessGenerator
@@ -104,8 +104,26 @@ def main():
     #     They seed the prompt with a worked example of a crashing
     #     input — the LLM sees what values already drive the buggy code
     #     path and shapes its FuzzedDataProvider calls accordingly.
-    failure_tests = FailureTestExtractor().extract(selection.buggy_dir)
+    failure_tests = FailureTestExtractor().extract(
+        selection.buggy_dir,
+        project_name=selection.project_name,
+        bug_id=selection.bug_id,
+    )
     _print_failure_tests(failure_tests)
+
+    # 3a-bis) Scope gate: this pipeline currently handles only *crashing*
+    #     bugs, whose trigger test fails with a thrown application
+    #     exception. Semantic bugs (trigger test fails a JUnit assertion)
+    #     need the differential oracle that isn't built yet, and the crash
+    #     gate would just burn the whole attempt budget failing on them —
+    #     exactly the wasted run seen on Closure_73. Skip them up front.
+    if not is_crashing_bug(failure_tests):
+        print(f"\n{selection.project_name} {selection.bug_id} "
+              f"({selection.apr_tool}) is not a crashing bug "
+              "(trigger test fails on an assertion, or its failure type "
+              "could not be determined) — out of scope for the crash "
+              "pipeline. Skipping.")
+        sys.exit(3)
 
     # 3b) Extract the patch + every project function it touches +
     #     cross-references for each of those functions.
@@ -191,7 +209,8 @@ def _print_failure_tests(failure_tests) -> None:
     print(f"Found {len(failure_tests)} bug-triggering test(s):")
     for ft in failure_tests:
         marker = '✓' if ft.has_source else '?'
-        print(f"  {marker} {ft.test_class}::{ft.test_method}")
+        exc = f"  [{ft.exception_type}]" if ft.exception_type else ""
+        print(f"  {marker} {ft.test_class}::{ft.test_method}{exc}")
 
 
 def _print_summary(selection, result: CampaignResult) -> None:
