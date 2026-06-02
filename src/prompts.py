@@ -42,7 +42,13 @@ class PromptBuilder:
         same fault."""
         codebase = os.path.basename(buggy_dir.rstrip('/'))
 
+        # Hard constraints lead: the entrypoint signature, class name and
+        # no-fences rule are what actually gate compilation, and a 20B
+        # model weights the head of the prompt most. Context (patch,
+        # sources, worked example) follows; the reasoning directive comes
+        # last so it's the final thing before the model writes.
         sections: List[str] = [
+            self._hard_constraints(context.package),
             self._intro(codebase),
             self._patch_block(context.patch_text),
         ]
@@ -56,8 +62,8 @@ class PromptBuilder:
                 covered_functions or [],
                 found_signatures or [],
             ))
+        sections.append(self._fdp_reference())
         sections.append(self._chain_of_thought())
-        sections.append(self._guidelines(context.package))
 
         prompt = '\n\n'.join(sections)
 
@@ -81,9 +87,6 @@ class PromptBuilder:
 
     def _intro(self, codebase: str) -> str:
         return '\n'.join([
-            f"You are a {self.language} security engineer writing a "
-            "fuzzing harness for a codebase you are analysing.",
-            "",
             f"The codebase is `{codebase}`. A patch has been applied "
             "that touches the functions listed below. Your harness "
             "must exercise those functions so the behaviour changed "
@@ -247,54 +250,46 @@ class PromptBuilder:
 
     def _chain_of_thought(self) -> str:
         return '\n'.join([
-            "Before writing the harness, in 2–3 sentences identify:",
-            "(a) the bug class — what category of fault the patch "
-            "addresses;",
-            "(b) the minimal input shape that would drive the "
-            "touched functions into the buggy behaviour.",
-            "Put this reasoning inside a `/* ... */` block at the "
-            "very top of the .java file (above the package "
-            "statement) so the output remains a single compilable "
-            "file. Then write the harness.",
+            "Before writing the harness, concisely identify "
+            "(a) the bug class and (b) the minimal input shape that "
+            "drives the touched functions into the buggy behaviour. "
+            "Put this in a `/* ... */` block at the very top of the "
+            "file (above the package statement), then write the "
+            "harness.",
         ])
 
-    def _guidelines(self, package: Optional[str]) -> str:
+    def _hard_constraints(self, package: Optional[str]) -> str:
         if package:
             package_line = (
-                f"- Declare the harness in package `{package}` "
-                f"(`package {package};` at the top of the file). "
-                "Putting it in the same package as the touched code "
-                "lets it access package-private types, fields, and "
-                "methods directly — do NOT use reflection to reach "
-                "private state."
+                f"- Declare it in package `{package}` "
+                f"(`package {package};` at the top)."
             )
         else:
             package_line = (
-                "- Declare the harness in the same package as the "
-                "touched code (read the `package X.Y.Z;` line at "
-                "the top of the modified file shown in the patch "
-                "above and copy it). Same-package access lets you "
-                "call package-private methods and constructors "
-                "directly — do NOT use reflection to reach private "
-                "state."
+                "- Declare it in the same package as the touched code "
+                "(copy the `package X.Y.Z;` line from the modified file "
+                "shown in the patch below)."
             )
-
         return '\n'.join([
-            "Use the experience you have writing Jazzer harnesses "
-            "to compose this one. Hard constraints:",
+            "Write a Jazzer (JVM libFuzzer port) harness. Non-negotiable:",
             "",
-            "- The harness must be a Jazzer (JVM libFuzzer port) "
-            "harness. The entrypoint must be exactly:",
-            "",
+            "- Public class named exactly `FuzzHarness`.",
+            "- Entrypoint exactly:",
             "    public static void fuzzerTestOneInput"
             "(com.code_intelligence.jazzer.api.FuzzedDataProvider data)",
-            "",
-            "- Name the public class `FuzzHarness`.",
-            "",
             package_line,
-            "",
-            "- FuzzedDataProvider has the following method "
-            "signatures. Use ONLY these — do not invent overloads:",
+            "  Same-package placement reaches package-private members "
+            "directly — do NOT use reflection.",
+            "- Return ONLY raw Java source for FuzzHarness.java: no "
+            "markdown fences, no prose outside the file (a leading "
+            "`/* ... */` comment is allowed). It must compile with "
+            "`javac` against the project classpath plus jazzer-api.jar.",
+        ])
+
+    def _fdp_reference(self) -> str:
+        return '\n'.join([
+            "Derive all inputs from FuzzedDataProvider. Use ONLY these "
+            "methods — do not invent overloads:",
             "",
             "    int     consumeInt()                       // any int",
             "    int     consumeInt(int min, int max)       // inclusive bounds",
@@ -306,21 +301,7 @@ class PromptBuilder:
             "    byte[]  consumeRemainingAsBytes()",
             "    int     remainingBytes()                   // bytes left in the buffer",
             "",
-            "- Use those to derive the inputs the target functions "
-            "need. Catch checked exceptions the target declares and "
-            "either rethrow them as RuntimeException or simply "
-            "return, so only unexpected exceptions surface as "
-            "findings.",
-            "",
-            "- Make sure the harness explores the code path changed "
-            "by the patch so the root cause of the bug is reachable "
-            "from the fuzz entrypoint.",
-            "",
-            "- Return ONLY the raw Java source for FuzzHarness.java. "
-            "A leading `/* ... */` comment block containing your "
-            "reasoning is allowed (and expected, per the previous "
-            "section); no markdown code fences, no prose outside "
-            "the .java file. The file must compile as-is with "
-            "`javac` against the project's classpath plus "
-            "jazzer-api.jar.",
+            "Catch the checked exceptions the target declares (rethrow "
+            "as RuntimeException or return) so only unexpected "
+            "exceptions surface as findings.",
         ])
