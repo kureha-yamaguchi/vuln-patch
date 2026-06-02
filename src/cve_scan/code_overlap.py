@@ -367,6 +367,40 @@ def _is_denylisted_repo_url(commit_url: str) -> bool:
     return any(p.search(slug) for p in PATCH_REPO_DENY_PATTERNS)
 
 
+# When the GitHub commit-search fallback fires, results from random
+# users / personal forks dominate (a tracker repo will mention any
+# CVE ID in its commit messages and out-rank actual fix commits). To
+# keep the resolver honest, we only trust search-origin results whose
+# repo owner is one of these — i.e. the upstream code lives at that
+# owner's GitHub. Other origins (RCA-extracted URLs, derived from a
+# `github:owner/repo@sha` identifier, Gerrit/Bugzilla) are trusted
+# regardless and bypass this allowlist.
+TRUSTED_GITHUB_OWNERS = frozenset({
+    # Browsers and JS engines
+    'chromium', 'v8', 'mozilla', 'webkit',
+    # Project Zero tooling + reports
+    'googleprojectzero',
+    # Linux + Android mirrors
+    'torvalds', 'gregkh', 'aosp-mirror',
+    # Vendor orgs that publish their own fixes
+    'apple', 'apple-oss-distributions', 'microsoft', 'google',
+    # Major OSS projects whose CVE fix commits we'd want
+    'systemd', 'curl', 'openssl', 'php', 'php-src',
+    'libreoffice', 'wireshark', 'qemu', 'redis',
+    'ffmpeg', 'libvpx', 'libpng', 'freetype',
+    'sqlite', 'libxml2', 'libxslt',
+})
+
+
+def _is_trusted_github_owner_url(commit_url: str) -> bool:
+    """True iff `commit_url` is a github.com URL whose owner is in
+    :data:`TRUSTED_GITHUB_OWNERS`."""
+    m = GITHUB_COMMIT_RE.search(commit_url)
+    if not m:
+        return False
+    return m.group(1).lower() in TRUSTED_GITHUB_OWNERS
+
+
 # Code-file suffixes we expect a real fix-of-vuln commit to touch. A
 # patch that only modifies metadata (changelogs, JSON/YAML advisory
 # entries, lockfiles) is almost certainly NOT the upstream fix commit
@@ -1079,6 +1113,14 @@ class CodeOverlapChecker:
             (host, url, origin)
             for host, url, origin in self._commit_urls_for(bug_id)
             if not _is_denylisted_repo_url(url)
+            # Search-origin github URLs are dominated by random forks /
+            # personal trackers that just mention the CVE ID. Demand
+            # that those results live under a trusted upstream owner.
+            # RCA-extracted / derived / Gerrit / Bugzilla URLs are
+            # trusted regardless of host.
+            and not (origin == 'search'
+                     and host == 'github'
+                     and not _is_trusted_github_owner_url(url))
         ][: self.max_commits_per_side]
         patches: List[Patch] = []
         for host, url, origin in urls:
