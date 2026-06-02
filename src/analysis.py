@@ -29,6 +29,12 @@ class TouchedFunction:
     func_signature: str
     func_source: str
     xrefs: List[str] = field(default_factory=list)
+    # Statically reachable functions from this touched function, per
+    # fuzz-introspector's call graph. This is the slice of the codebase
+    # downstream of the root cause — the region where *sibling* bugs of
+    # the same fault would live — so it is the coverage map the campaign
+    # steers the harness set across.
+    reachable: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -43,6 +49,11 @@ class PatchContext:
     # this package so it can reach package-private members without
     # reflection.
     package: Optional[str] = None
+    # Deduplicated union of every touched function's statically
+    # reachable set: the full root-cause neighbourhood the harness set
+    # should collectively cover. Drives the variant-analysis prompt
+    # block. Empty if fuzz-introspector produced no reachability data.
+    root_cause_reachable: List[str] = field(default_factory=list)
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -77,11 +88,27 @@ class TargetAnalyzer:
         project = self._light_project_safe(buggy_dir)
         functions = self._enrich_with_xrefs(enclosing, project)
 
+        # Aggregate the reachable neighbourhood of the root cause across
+        # all touched functions, preserving first-seen order and
+        # dropping the touched functions themselves (the prompt already
+        # shows those in full).
+        touched_names = {fn.func_name for fn in functions}
+        root_cause_reachable: List[str] = []
+        seen_reach: set = set()
+        for fn in functions:
+            for name in fn.reachable:
+                short = self._short_name(name)
+                if short in touched_names or short in seen_reach:
+                    continue
+                seen_reach.add(short)
+                root_cause_reachable.append(short)
+
         return PatchContext(
             modified_files=modified_files,
             patch_text=patch_text,
             functions=functions,
             package=package,
+            root_cause_reachable=root_cause_reachable,
         )
 
     # --- patch parsing ---------------------------------------------------
@@ -366,8 +393,9 @@ class TargetAnalyzer:
         project,
     ) -> List[TouchedFunction]:
         """Look up each AST-resolved enclosing method by name in the
-        fuzz-introspector project, and attach its call sites if any.
-        Failures here are non-fatal."""
+        fuzz-introspector project, attach its call sites (xrefs) and its
+        statically reachable set. Failures here are non-fatal — the
+        harness body alone is still useful."""
         if project is None:
             return functions
         for fn in functions:
@@ -379,10 +407,71 @@ class TargetAnalyzer:
                 continue
             try:
                 xrefs = project.get_cross_references_by_name(resolved.name)
+                fn.xrefs = [x.function_source_code_as_text() for x in xrefs]
             except Exception:
-                continue
-            fn.xrefs = [x.function_source_code_as_text() for x in xrefs]
+                pass
+            fn.reachable = self._reachable_of(resolved, project)
         return functions
+
+    @staticmethod
+    def _reachable_of(resolved, project) -> List[str]:
+        """Pull the statically reachable function set for `resolved`.
+
+        fuzz-introspector has exposed this under a few names across
+        versions (a `functions_reached` attribute on the function
+        profile, a `reached_by_functions`/`all_class_functions` shaped
+        structure, or a project-level helper). We probe the common ones
+        and degrade to [] rather than letting an API drift break the
+        whole analysis — consistent with how the rest of this module
+        treats fuzz-introspector as best-effort enrichment."""
+        # 1) Most common: attribute directly on the function profile.
+        for attr in ('functions_reached', 'reached_functions',
+                     'functions_reached_by_function'):
+            val = getattr(resolved, attr, None)
+            if val:
+                return TargetAnalyzer._as_name_list(val)
+        # 2) Project-level helper keyed by function name.
+        for meth in ('get_reached_functions_by_name',
+                     'get_functions_reached_by_name'):
+            fn = getattr(project, meth, None)
+            if callable(fn):
+                try:
+                    val = fn(resolved.name)
+                    if val:
+                        return TargetAnalyzer._as_name_list(val)
+                except Exception:
+                    continue
+        return []
+
+    @staticmethod
+    def _as_name_list(val) -> List[str]:
+        """Normalise whatever the reachable-set accessor returned (list
+        of str, list of function objects, or dict) into a list of
+        names."""
+        if isinstance(val, dict):
+            val = list(val.keys())
+        out: List[str] = []
+        for item in val:
+            if isinstance(item, str):
+                out.append(item)
+            else:
+                name = getattr(item, 'name', None)
+                if name:
+                    out.append(name)
+        return out
+
+    @staticmethod
+    def _short_name(name: str) -> str:
+        """Reduce a fully-qualified / mangled fuzz-introspector function
+        name to something readable for the prompt. JVM names often look
+        like `[pkg.Class].method(args)` or `pkg.Class.method`; we keep
+        the `Class.method` tail."""
+        # Strip any bracketed receiver prefix d4j/JVM mangling adds.
+        name = re.sub(r'^\[[^\]]*\]\.?', '', name).strip()
+        # Drop argument lists.
+        name = name.split('(')[0]
+        parts = name.split('.')
+        return '.'.join(parts[-2:]) if len(parts) >= 2 else name
 
     # --- package resolution ----------------------------------------------
 

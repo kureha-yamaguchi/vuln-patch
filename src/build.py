@@ -111,6 +111,12 @@ class HarnessBuilder:
             attempt_label=output_subdir,
         )
 
+    def test_classpath(self, buggy_dir: str) -> str:
+        """Public accessor for the project's (cached) test classpath.
+        The in-campaign verifier needs this to run the harness against
+        the buggy checkout it was compiled against."""
+        return self._test_classpath(buggy_dir)
+
     def _test_classpath(self, buggy_dir: str) -> str:
         """Compile the Defects4J project once and return its test
         classpath. cp.test is preferable to cp.compile here because it

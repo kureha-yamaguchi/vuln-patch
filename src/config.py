@@ -45,8 +45,23 @@ JAZZER_STANDALONE_URL = (
 # Jazzer exits with this code when it finds a finding (crash/exception).
 JAZZER_CRASH_EXIT_CODE = 77
 
-# Per-harness fuzzing time limit in seconds.
+# Per-harness fuzzing time limit in seconds (used for the final
+# run against the *patched* code).
 FUZZ_TIMEOUT_SECONDS = int(os.getenv('FUZZ_TIMEOUT_SECONDS', '30'))
+
+# Short per-harness time limit (seconds) for the in-campaign verification
+# run against the *buggy* checkout. This gates acceptance: a freshly
+# compiled harness is only counted as a success if it crashes the known-
+# buggy code within this budget. Kept small so the campaign stays cheap
+# in wall-clock — a harness that genuinely reaches the root cause almost
+# always crashes the buggy version near-immediately.
+VERIFY_TIMEOUT_SECONDS = int(os.getenv('VERIFY_TIMEOUT_SECONDS', '20'))
+
+# Upper bound on how many root-cause-reachable function names we splice
+# into the prompt as the "coverage map". Prevents a pathologically large
+# reachable set (e.g. a touched function that transitively reaches half
+# the project) from dominating the context window.
+MAX_REACHABLE_IN_PROMPT = int(os.getenv('MAX_REACHABLE_IN_PROMPT', '60'))
 
 # --- drr patch dataset -----------------------------------------------------
 DRR_CORRECT_DIR     = '../drr/Patches/Dcorrect'

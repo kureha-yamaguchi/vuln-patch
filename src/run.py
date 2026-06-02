@@ -23,11 +23,12 @@ import argparse
 import json
 import sys
 
+import config
 from analysis import TargetAnalyzer
 from build import HarnessBuilder
 from campaign import HarnessCampaign, CampaignResult
-from failure_test import FailureTestExtractor
-from fuzz_runner import FuzzRunner
+from failure_test import FailureTestExtractor, is_crashing_bug
+from fuzz_runner import FuzzRunner, HarnessVerifier
 from jazzer import JazzerEnvironment
 from llm import HarnessGenerator
 from patches import PatchSelector
@@ -47,18 +48,30 @@ def parse_args():
                         help="Choose from Chart/Closure/Lang/Math/Time")
     parser.add_argument("--language", type=str, nargs='?', default='Java',
                         help='Programming language of project')
-    parser.add_argument("-n", "--target_successes", type=int, default=5,
+    parser.add_argument("-n", "--target_successes", type=int, default=3,
                         help="Stop once this many harnesses compile "
                              "(default: 5)")
     parser.add_argument("-m", "--max_attempts", type=int, default=50,
                         help="Hard cap on total generation attempts "
                              "(default: 50)")
-    parser.add_argument("--max_repair_failures", type=int, default=2,
+    parser.add_argument("--max_repair_failures", type=int, default=5,
                         help="maximum number of failures in a row before resetting the prompt context")
     parser.add_argument("--fuzz_timeout", type=int, default=60,
                         metavar="SECONDS",
                         help="seconds Jazzer runs per harness against the "
                              "patched code (default: 30; 0 to skip fuzzing)")
+    parser.add_argument("--verify_timeout", type=int,
+                        default=None, metavar="SECONDS",
+                        help="seconds Jazzer runs per harness against the "
+                             "BUGGY code to verify it triggers before "
+                             "accepting it (default: config."
+                             "VERIFY_TIMEOUT_SECONDS)")
+    parser.add_argument("--no-require-trigger", dest="require_trigger",
+                        action="store_false",
+                        help="accept harnesses on compile alone (old "
+                             "behaviour); skip the buggy-version trigger "
+                             "gate. Default is to require a trigger.")
+    parser.set_defaults(require_trigger=True)
     return parser.parse_args()
 
 
@@ -70,11 +83,14 @@ def main():
         sys.exit(1)
 
     # 1) Resolve Jazzer jars up front so failures surface before the slow
-    #    checkout + LLM campaign.
+    #    checkout + LLM campaign. The standalone (driver) jar is needed
+    #    both for the final patched-code run AND for the in-campaign
+    #    trigger gate, so fetch it if either is active.
     jazzer_env = JazzerEnvironment()
     jazzer_api_jar = jazzer_env.ensure()
+    needs_driver = args.fuzz_timeout > 0 or args.require_trigger
     jazzer_standalone_jar = (jazzer_env.ensure_driver()
-                             if args.fuzz_timeout > 0 else None)
+                             if needs_driver else None)
 
     # 2) Pick a random patch and check out the corresponding buggy d4j
     #    version.
@@ -88,8 +104,26 @@ def main():
     #     They seed the prompt with a worked example of a crashing
     #     input — the LLM sees what values already drive the buggy code
     #     path and shapes its FuzzedDataProvider calls accordingly.
-    failure_tests = FailureTestExtractor().extract(selection.buggy_dir)
+    failure_tests = FailureTestExtractor().extract(
+        selection.buggy_dir,
+        project_name=selection.project_name,
+        bug_id=selection.bug_id,
+    )
     _print_failure_tests(failure_tests)
+
+    # 3a-bis) Scope gate: this pipeline currently handles only *crashing*
+    #     bugs, whose trigger test fails with a thrown application
+    #     exception. Semantic bugs (trigger test fails a JUnit assertion)
+    #     need the differential oracle that isn't built yet, and the crash
+    #     gate would just burn the whole attempt budget failing on them —
+    #     exactly the wasted run seen on Closure_73. Skip them up front.
+    if not is_crashing_bug(failure_tests):
+        print(f"\n{selection.project_name} {selection.bug_id} "
+              f"({selection.apr_tool}) is not a crashing bug "
+              "(trigger test fails on an assertion, or its failure type "
+              "could not be determined) — out of scope for the crash "
+              "pipeline. Skipping.")
+        sys.exit(3)
 
     # 3b) Extract the patch + every project function it touches +
     #     cross-references for each of those functions.
@@ -99,24 +133,55 @@ def main():
     )
     print(json.dumps(context.as_dict(), indent=2))
 
-    # 4) Build the chat-completion prompt (once — same prompt for every
-    #    attempt in the campaign).
-    messages = PromptBuilder(language=args.language).build(
-        buggy_dir=selection.buggy_dir,
-        context=context,
-        failure_tests=failure_tests,
-    )
+    # 4) Build the chat-completion prompt. Rather than a single fixed
+    #    prompt, we wrap PromptBuilder in a factory the campaign calls
+    #    before each fresh attempt: it injects which reachable functions
+    #    and crashes the set already covers, so each new harness is a
+    #    *variant* steered at the uncovered part of the root-cause region.
+    prompt_builder = PromptBuilder(language=args.language)
 
-    # 5) Run the campaign: regenerate + recompile until we have
-    #    target_successes wins or hit max_attempts.
+    def prompt_factory(covered_functions, found_signatures):
+        return prompt_builder.build(
+            buggy_dir=selection.buggy_dir,
+            context=context,
+            failure_tests=failure_tests,
+            covered_functions=covered_functions,
+            found_signatures=found_signatures,
+        )
+
+    # The set-empty prompt used for attempt 1.
+    messages = prompt_factory([], [])
+
+    # 5) Run the campaign: regenerate, recompile, and (by default) verify
+    #    each compiled harness crashes the BUGGY version before accepting
+    #    it. Acceptance = "compiles AND triggers".
+    builder = HarnessBuilder(jazzer_api_jar=jazzer_api_jar)
+    verifier = None
+    if args.require_trigger:
+        # Resolve the buggy classpath once (compiles the project), then
+        # hand it to the verifier so each gate run is just a Jazzer
+        # invocation.
+        buggy_cp = builder.test_classpath(selection.buggy_dir)
+        verify_timeout = (args.verify_timeout
+                          if args.verify_timeout is not None
+                          else config.VERIFY_TIMEOUT_SECONDS)
+        verifier = HarnessVerifier(
+            jazzer_standalone_jar=jazzer_standalone_jar,
+            buggy_classpath=buggy_cp,
+            timeout_seconds=verify_timeout,
+        )
+
     campaign = HarnessCampaign(
         generator=HarnessGenerator(temperature=0.6, top_p=1.0),
-        builder=HarnessBuilder(jazzer_api_jar=jazzer_api_jar),
+        builder=builder,
         target_successes=args.target_successes,
         max_attempts=args.max_attempts,
-        max_repair_failures=args.max_repair_failures
+        max_repair_failures=args.max_repair_failures,
+        verifier=verifier,
+        require_trigger=args.require_trigger,
     )
-    result = campaign.run(messages, selection.buggy_dir)
+    result = campaign.run(messages, selection.buggy_dir,
+                          prompt_factory=prompt_factory)
 
     _print_summary(selection, result)
 
@@ -144,7 +209,8 @@ def _print_failure_tests(failure_tests) -> None:
     print(f"Found {len(failure_tests)} bug-triggering test(s):")
     for ft in failure_tests:
         marker = '✓' if ft.has_source else '?'
-        print(f"  {marker} {ft.test_class}::{ft.test_method}")
+        exc = f"  [{ft.exception_type}]" if ft.exception_type else ""
+        print(f"  {marker} {ft.test_class}::{ft.test_method}{exc}")
 
 
 def _print_summary(selection, result: CampaignResult) -> None:
@@ -156,10 +222,13 @@ def _print_summary(selection, result: CampaignResult) -> None:
     print(f"attempts used : {result.attempts}")
     print(f"wins          : {result.achieved_successes}")
     print(f"success rate  : {result.success_rate:.1%}")
+    print(f"distinct crashes (buggy ver): {result.distinct_signatures}")
     if result.successful_results:
         print("successful harnesses:")
-        for br in result.successful_results:
-            print(f"  - {br.harness_path}")
+        for br, sig in zip(result.successful_results,
+                           result.accepted_signatures):
+            tag = f"  [crash: {sig}]" if sig else ""
+            print(f"  - {br.harness_path}{tag}")
     print("#" * 50)
 
 
