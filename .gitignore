@@ -233,3 +233,6 @@ src/cve_scan_out/candidates.json
 src/cve_scan_out/seeds.json
 src/cve_scan_out/deep_relate.json
 src/cve_scan_out/codebase_audit.json
+# Debug artifact from the URL-resolver script; the human-readable
+# summary lives in verified/findings_urls.md.
+src/cve_scan_out/verified/resolved_cls.json
