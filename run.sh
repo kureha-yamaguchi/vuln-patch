@@ -17,4 +17,4 @@ echo "Started at: $(date)"
 echo "Log file: $LOG_FILE"
 echo ""
 
-cd src && uv run -m run $PATCH_FLAG --project_name $PROJECT_NAME
+cd src && uv run java/run.py $PATCH_FLAG --project_name $PROJECT_NAME

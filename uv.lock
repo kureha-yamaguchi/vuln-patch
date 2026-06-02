@@ -1988,17 +1988,22 @@ name = "vuln-patch"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "fuzz-introspector" },
     { name = "javalang" },
     { name = "openai" },
 ]
 
+[package.optional-dependencies]
+introspector = [
+    { name = "fuzz-introspector" },
+]
+
 [package.metadata]
 requires-dist = [
-    { name = "fuzz-introspector", specifier = ">=0.1.10" },
+    { name = "fuzz-introspector", marker = "extra == 'introspector'", specifier = ">=0.1.10" },
     { name = "javalang" },
     { name = "openai", specifier = ">=1.0.0" },
 ]
+provides-extras = ["introspector"]
 
 [[package]]
 name = "yapf"

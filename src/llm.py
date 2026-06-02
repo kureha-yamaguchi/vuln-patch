@@ -1,6 +1,10 @@
-"""Call a local OpenAI-compatible LLM (Ollama or LM Studio) to produce a
-Jazzer harness from a chat-completion prompt."""
-from typing import List, Dict
+"""Call an LLM to produce a fuzzing harness from a chat-completion prompt.
+
+Supports two backends, selected automatically from the environment:
+  - OpenAI API    — set OPENAI_API_KEY; model defaults to gpt-4o
+  - Local server  — Ollama or LM Studio; set LOCAL_LLM_BASE_URL + LOCAL_LLM_MODEL
+"""
+from typing import List, Dict, Optional
 
 import openai
 
@@ -8,23 +12,24 @@ import config
 
 
 class HarnessGenerator:
-    """Thin wrapper around the OpenAI SDK pointed at a local server.
+    """Thin wrapper around the OpenAI SDK.
 
-    Both Ollama (port 11434) and LM Studio (port 1234) speak the
-    /v1/chat/completions protocol, so swapping between them is just a
-    matter of changing the base URL — no code changes required.
+    When base_url is None the SDK targets api.openai.com (real OpenAI).
+    When base_url is set it targets that server — Ollama, LM Studio, etc.
+    Both modes use the same /v1/chat/completions protocol.
     """
 
     def __init__(self,
-                 base_url: str = config.LOCAL_LLM_BASE_URL,
+                 base_url: Optional[str] = config.LOCAL_LLM_BASE_URL,
                  api_key: str = config.LOCAL_LLM_API_KEY,
                  model: str = config.LOCAL_LLM_MODEL,
                  temperature: float = 0.6,
                  top_p: float = 1.0):
-        self._client = openai.OpenAI(base_url=base_url, api_key=api_key)
+        kwargs: dict = {'api_key': api_key}
+        if base_url is not None:
+            kwargs['base_url'] = base_url
+        self._client = openai.OpenAI(**kwargs)
         self.model = model
-        # gpt-oss-20b recommended sampling: temperature=1.0, top_p=1.0.
-        # Lower temperature if you want more deterministic harnesses.
         self.temperature = temperature
         self.top_p = top_p
 

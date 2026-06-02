@@ -5,7 +5,14 @@ description = "Pipeline for automatically generating fuzzing harnesses for sibli
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "fuzz-introspector>=0.1.10",
     "openai>=1.0.0",
-    "javalang"
+    "javalang",
+]
+
+[project.optional-dependencies]
+# fuzz-introspector pulls in atheris which requires a non-Apple Clang with
+# libFuzzer. Install this group only on Linux or with a custom Clang build:
+#   uv sync --extra introspector
+introspector = [
+    "fuzz-introspector>=0.1.10",
 ]

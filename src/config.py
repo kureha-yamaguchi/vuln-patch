@@ -1,21 +1,35 @@
 """Environment-driven configuration for the harness pipeline.
 
-Override any of these with env vars before launching the script — for
-example to point at LM Studio instead of Ollama:
+LLM backend (pick one):
 
-    export LOCAL_LLM_BASE_URL=http://localhost:1234/v1
-    export LOCAL_LLM_MODEL=openai/gpt-oss-20b
+  Option A — OpenAI API (same as cve_scan):
+      export OPENAI_API_KEY=sk-...
+      # optionally override the model:
+      export LOCAL_LLM_MODEL=gpt-4o
+
+  Option B — Local server (Ollama or LM Studio):
+      export LOCAL_LLM_BASE_URL=http://localhost:11434/v1
+      export LOCAL_LLM_MODEL=gpt-oss:20b
+      # LOCAL_LLM_API_KEY is ignored for local servers
 """
 import os
 
 
-# --- LLM (local OpenAI-compatible server) ---------------------------------
-# By default we target a local Ollama server on port 11434. Both Ollama
-# and LM Studio speak the /v1/chat/completions protocol, so only the URL
-# and model name need to change between them.
-LOCAL_LLM_BASE_URL = os.getenv('LOCAL_LLM_BASE_URL', 'http://localhost:11434/v1')
-LOCAL_LLM_API_KEY  = os.getenv('LOCAL_LLM_API_KEY', 'not-needed')  # dummy
-LOCAL_LLM_MODEL    = os.getenv('LOCAL_LLM_MODEL', 'gpt-oss:20b')
+# --- LLM ------------------------------------------------------------------
+# If OPENAI_API_KEY is set the pipeline targets api.openai.com directly
+# (same pattern as cve_scan). Otherwise it falls back to a local
+# Ollama/LM-Studio server. LOCAL_LLM_MODEL can override the model in both
+# modes; --model on the CLI overrides it further at runtime.
+_OPENAI_KEY = os.getenv('OPENAI_API_KEY')
+
+if _OPENAI_KEY:
+    LOCAL_LLM_BASE_URL = None                                    # SDK default → api.openai.com
+    LOCAL_LLM_API_KEY  = _OPENAI_KEY
+    LOCAL_LLM_MODEL    = os.getenv('LOCAL_LLM_MODEL', 'gpt-4o')
+else:
+    LOCAL_LLM_BASE_URL = os.getenv('LOCAL_LLM_BASE_URL', 'http://localhost:11434/v1')
+    LOCAL_LLM_API_KEY  = os.getenv('LOCAL_LLM_API_KEY', 'not-needed')
+    LOCAL_LLM_MODEL    = os.getenv('LOCAL_LLM_MODEL', 'gpt-oss:20b')
 
 # --- Jazzer (JVM libFuzzer port) ------------------------------------------
 # We compile the generated harness against jazzer-api.jar so symbols
@@ -78,3 +92,23 @@ APR_TOOLS = [
 
 # Where buggy checkouts get materialised.
 D4J_CHECKOUT_ROOT = '/tmp/d4j'
+
+# --- Linux kernel CVE sibling database ------------------------------------
+# Root directory for kernel worktrees created by checkout_pair.py.
+LINUX_CHECKOUT_ROOT = os.getenv('LINUX_CHECKOUT_ROOT', '/tmp/cve_sibling_checkouts')
+
+# Shared bare kernel repo used by checkout_pair.py (blobless clone, ~400 MB).
+LINUX_KERNEL_REPO = os.getenv('LINUX_KERNEL_REPO', '/tmp/linux-kernel-shared.git')
+
+# Path to the cve_sibling_db_linux directory.
+LINUX_DB_DIR = os.getenv(
+    'LINUX_DB_DIR',
+    os.path.join(os.path.dirname(__file__), '..', 'src', 'cve_sibling_db_linux'),
+)
+
+# Per-harness verification timeout in seconds (run against each of the 3 states).
+VERIFY_TIMEOUT_SECONDS = int(os.getenv('VERIFY_TIMEOUT_SECONDS', '30'))
+
+# Default harness style: 'syscall' (main()-based) or 'libfuzzer' (LLVMFuzzerTestOneInput).
+# 'syscall' is correct for most Linux kernel subsystems (SCTP, block, inotify, etc.).
+LINUX_HARNESS_STYLE = os.getenv('LINUX_HARNESS_STYLE', 'syscall')

@@ -18,7 +18,12 @@ from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional, Tuple
 
 import javalang
-from fuzz_introspector import commands as fi_commands
+try:
+    from fuzz_introspector import commands as fi_commands
+    _FI_AVAILABLE = True
+except ImportError:
+    fi_commands = None  # type: ignore[assignment]
+    _FI_AVAILABLE = False
 
 
 @dataclass
@@ -374,6 +379,10 @@ class TargetAnalyzer:
         """Wrap fuzz-introspector so a failure there doesn't take down
         the whole analysis — the enclosing-method body is still
         usable without xrefs."""
+        if not _FI_AVAILABLE:
+            print("fuzz-introspector not installed; continuing without xrefs "
+                  "(install with: uv sync --extra introspector)")
+            return None
         try:
             _, report = fi_commands.analyse_end_to_end(
                 arg_language=self.language,

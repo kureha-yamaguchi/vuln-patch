@@ -28,10 +28,13 @@ a "compiled but did not trigger" note for a verify failure. Chains of
 consecutive failed repair turns are capped at `max_repair_failures` so
 the campaign can recover from a bad lead by starting over.
 """
+import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Dict, Optional, Callable
 
 from build import HarnessBuilder, BuildResult
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from llm import HarnessGenerator
 from fuzz_runner import HarnessVerifier, VerificationResult
 

@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 """
-Check out the Linux kernel at fix0 and fix1 states for one or all CVE pairs,
+Check out the Linux kernel at three states for one or all CVE pairs,
 producing independent working trees for building and fuzzing.
 
-Why two independent trees (not a diff between them):
-  fix0 and fix1 may be months or years apart — other unrelated commits exist
-  between them. Each tree is used on its own: build, run harness, compare results.
+Three states per pair (all use fix0_parent_commit / fix0_commit / fix1_commit
+from metadata.json):
 
-  fix0/ tree  →  build + fuzz  →  harness SHOULD still trigger  (incomplete fix)
-  fix1/ tree  →  build + fuzz  →  harness should NOT trigger    (complete fix)
+  fix0_parent/ → unpatched baseline  → harness MUST crash   (harness is valid)
+  fix0/        → incomplete fix      → harness MUST crash   (patch incomplete)
+  fix1/        → corrective fix      → harness must NOT crash (patch correct)
 
 Storage strategy — shared repo + git worktrees:
-  Cloning the kernel 52 times (26 pairs × 2 states) separately would use ~50GB.
+  Cloning the kernel 78 times (26 pairs × 3 states) separately would be huge.
   Instead, one blobless bare clone (~400MB) is shared, and each checkout is a
-  lightweight worktree (~1GB source files) on top of it. Total: ~400MB + N×1GB.
+  lightweight worktree (~1GB source files) on top of it.
 
   Set LINUX_KERNEL_REPO to reuse an existing kernel bare repo across runs.
 
 Usage:
     python checkout_pair.py --pair CVE-2011-1017__CVE-2011-2182
     python checkout_pair.py --all
-    python checkout_pair.py --pair CVE-2016-9576__CVE-2016-10088 --only fix0
+    python checkout_pair.py --pair CVE-2016-9576__CVE-2016-10088 --only fix0_parent
     python checkout_pair.py --all --dest /data/checkouts --kernel-repo /data/linux.git
 
 Environment:
@@ -93,7 +93,12 @@ def checkout_pair(entry: dict, kernel_repo: Path, dest_base: Path, only: str | N
     dest = dest_base / pair_name
     ok = True
 
-    for label, commit_key in [("fix0", "fix0_commit"), ("fix1", "fix1_commit")]:
+    states = [
+        ("fix0_parent", "fix0_parent_commit"),
+        ("fix0",        "fix0_commit"),
+        ("fix1",        "fix1_commit"),
+    ]
+    for label, commit_key in states:
         if only is not None and only != label:
             continue
 
@@ -144,7 +149,8 @@ def main():
         "--dest", type=Path, default=DEFAULT_DEST_BASE,
         help=f"Parent directory for worktrees (default: {DEFAULT_DEST_BASE})",
     )
-    parser.add_argument("--only", choices=["fix0", "fix1"], help="Check out only one state")
+    parser.add_argument("--only", choices=["fix0_parent", "fix0", "fix1"],
+                        help="Check out only one state")
     args = parser.parse_args()
 
     script_dir = Path(__file__).parent
