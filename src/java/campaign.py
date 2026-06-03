@@ -91,6 +91,8 @@ class HarnessCampaign:
                  max_attempts: int = 50,
                  max_repair_failures: int = 2,
                  stderr_truncate: int = 4000,
+                 min_source_chars: int = 20,
+                 max_invalid_responses: int = 100,
                  verifier: Optional[HarnessVerifier] = None,
                  require_trigger: bool = True):
         if target_successes < 1:
@@ -112,6 +114,18 @@ class HarnessCampaign:
         self.max_attempts = max_attempts
         self.max_repair_failures = max_repair_failures
         self.stderr_truncate = stderr_truncate
+        # Below this many non-whitespace chars, treat the extracted source
+        # as an empty response rather than sending it to javac.
+        self.min_source_chars = min_source_chars
+        # A structurally-invalid response (prose, markdown, JUnit test,
+        # main() demo — anything that isn't a FuzzHarness) means the model
+        # didn't really answer, so it does NOT consume a `max_attempts`
+        # slot: spending the generation budget on non-answers is exactly
+        # the waste this gate exists to remove. But an unbounded free
+        # retry would let a model that only ever emits prose loop forever,
+        # so the total count of such rejects across the campaign is capped
+        # here; hitting the cap ends the campaign like exhausting attempts.
+        self.max_invalid_responses = max_invalid_responses
         self.verifier = verifier
         # When True, a harness must crash the buggy version to be
         # accepted (the new "compiles AND triggers" criterion). When
@@ -121,7 +135,8 @@ class HarnessCampaign:
 
     def run(self, messages: List[Dict[str, str]],
             buggy_dir: str,
-            prompt_factory: Optional[PromptFactory] = None) -> CampaignResult:
+            prompt_factory: Optional[PromptFactory] = None,
+            patch_text: str = '') -> CampaignResult:
         """Run the generate → build → verify loop until `target_successes`
         harnesses are accepted or `max_attempts` is exhausted.
 
@@ -129,7 +144,12 @@ class HarnessCampaign:
         is given, every *fresh* attempt rebuilds the prompt from it using
         the current set-coverage state, so later harnesses are told what
         the set already covers. Without a factory the original prompt is
-        reused unchanged (back-compatible behaviour)."""
+        reused unchanged (back-compatible behaviour).
+
+        `patch_text` is included verbatim in the no-trigger repair message
+        so the model can re-read exactly what changed when its harness
+        compiles but doesn't crash the buggy version."""
+        self._patch_text = patch_text
         result = CampaignResult(
             target_successes=self.target_successes,
             achieved_successes=0,
@@ -157,24 +177,65 @@ class HarnessCampaign:
         # fresh-prompt attempt itself isn't counted — only attempts that
         # already carried repair context.
         repair_failures = 0
+        # Total structurally-invalid responses seen this campaign. Bounds
+        # the "free retry" so a prose-only model can't loop forever.
+        invalid_responses = 0
 
         while (result.achieved_successes < self.target_successes
-               and result.attempts < self.max_attempts):
-            result.attempts += 1
-            attempt_label = f'attempt_{result.attempts:03d}'
+               and result.attempts < self.max_attempts
+               and invalid_responses < self.max_invalid_responses):
             is_repair_attempt = len(current_messages) > len(original_messages)
-            self._print_attempt_header(result.attempts, is_repair_attempt)
 
             raw = self.generator.generate(current_messages)
+
+            # --- gate -1: structurally a harness at all? ----------------
+            # Reject prose / markdown / JUnit-test / main()-demo responses
+            # BEFORE counting an attempt or invoking javac. This is the
+            # dominant 20B failure mode (a third of attempts 1-44), and
+            # each one previously burned an attempt slot AND a javac run.
+            # We still feed it back as a repair turn so the model is told
+            # to return just the file, and after a cold chain we reset.
+            invalid_reason = self.builder.looks_like_harness(raw)
+            if invalid_reason is not None:
+                invalid_responses += 1
+                self._print_invalid_response(invalid_reason,
+                                             invalid_responses)
+                result.raw_responses.append(raw)
+                repair_failures, current_messages, original_messages = (
+                    self._handle_failure(
+                        diagnostic=self._build_empty_response_message(),
+                        raw=raw,
+                        is_repair_attempt=is_repair_attempt,
+                        repair_failures=repair_failures,
+                        current_messages=current_messages,
+                        original_messages=original_messages,
+                        fresh_prompt=fresh_prompt,
+                    )
+                )
+                continue
+
+            result.attempts += 1
+            attempt_label = f'attempt_{result.attempts:03d}'
+            self._print_attempt_header(result.attempts, is_repair_attempt)
             self._print_raw(raw)
 
             source = self.builder.extract_source(raw)
+
+            result.raw_responses.append(raw)
+
+            # NB: the empty/near-empty-response case is now caught by the
+            # structural gate (-1) above, before the attempt is counted,
+            # via looks_like_harness() returning "empty response". The old
+            # min_source_chars gate that used to live here is therefore
+            # unreachable and has been removed; min_source_chars is kept on
+            # the instance only for backward compatibility with callers
+            # that read it.
+
             build = self.builder.build(
                 source, buggy_dir,
                 output_subdir=attempt_label,
             )
 
-            result.raw_responses.append(raw)
             result.results.append(build)
 
             # --- gate 1: must compile ---------------------------------
@@ -201,7 +262,8 @@ class HarnessCampaign:
                     repair_failures, current_messages, original_messages = (
                         self._handle_failure(
                             diagnostic=self._build_no_trigger_message(
-                                verification),
+                                verification,
+                                patch_text=getattr(self, '_patch_text', '')),
                             raw=raw,
                             is_repair_attempt=is_repair_attempt,
                             repair_failures=repair_failures,
@@ -270,6 +332,19 @@ class HarnessCampaign:
 
     # --- repair turn -----------------------------------------------------
 
+    def _build_empty_response_message(self) -> str:
+        """The user message that follows an empty/near-empty completion.
+        Asks for just the file, in case the previous turn ran out of
+        output budget on reasoning."""
+        return (
+            "Your previous response contained no usable Java source. "
+            "Return the complete FuzzHarness.java now and nothing else: "
+            "raw Java only, no markdown fences, no commentary, public "
+            "class named FuzzHarness, entrypoint exactly\n"
+            "    public static void fuzzerTestOneInput("
+            "com.code_intelligence.jazzer.api.FuzzedDataProvider data)"
+        )
+
     def _build_repair_message(self, stderr: str) -> str:
         """The user message that follows a failed compile. We restate
         the hard constraints because the LLM has been known to drop
@@ -281,40 +356,66 @@ class HarnessCampaign:
         return (
             "That did not compile. javac reported:\n"
             f"{truncated}\n\n"
-            "Return the full corrected FuzzHarness.java. Same rules as "
-            "before: raw Java source only, no markdown fences, no "
-            "commentary, public class named FuzzHarness, entrypoint "
-            "exactly\n"
+            "Return the full corrected FuzzHarness.java. Rules:\n"
+            "- Raw Java source only. No markdown fences. No prose. "
+            "No explanations. The file starts with a comment or "
+            "package statement and ends with a closing brace.\n"
+            "- Public class named exactly `FuzzHarness`.\n"
+            "- Entrypoint exactly:\n"
             "    public static void fuzzerTestOneInput("
             "com.code_intelligence.jazzer.api.FuzzedDataProvider data)\n"
-            "and only the FuzzedDataProvider methods listed in the "
-            "original instructions."
+            "- Use only the FuzzedDataProvider methods listed in the "
+            "original instructions. Do NOT invent methods like "
+            "getInt(), consumeDouble(), getRemainingSize(), or "
+            "consumeIntInRange() — they do not exist.\n"
+            "- Do NOT use classes or methods that are not on the "
+            "project classpath. If javac says 'cannot find symbol', "
+            "remove that import and use only classes visible in the "
+            "source_imports block or java.* / java.awt.*."
         )
 
     def _build_no_trigger_message(self,
-                                  verification: VerificationResult) -> str:
+                                  verification: VerificationResult,
+                                  patch_text: str = '') -> str:
         """The user message that follows a harness that compiled but did
-        NOT crash the buggy version. The harness is syntactically fine
-        but isn't reaching the root cause, so we tell the model exactly
-        that and point it back at the patch + failing-test inputs."""
+        NOT crash the buggy version. Tells the model what the patched
+        condition is and how to satisfy it, using the actual patch text
+        as ground truth rather than generic advice."""
         if verification.timed_out:
             why = ("It ran for the full time budget on the buggy code "
                    "without finding any crash.")
         else:
             why = ("Jazzer exited cleanly (no finding) on the buggy "
                    "code.")
+
+        patch_reminder = (
+            f"\n\nThe patch under analysis is:\n{patch_text}\n\n"
+            if patch_text else "\n\n"
+        )
+
         return (
             "That compiled, but it did NOT trigger the bug on the known-"
-            f"buggy version. {why}\n\n"
-            "A harness is only useful here if it actually drives the "
-            "patched code path into the faulty behaviour — otherwise it "
-            "cannot test whether a patch fixes the root cause. Revise "
-            "the harness so the values from FuzzedDataProvider reach the "
-            "touched function(s) along the buggy path. Re-read the patch "
-            "and the failing-test inputs shown earlier: feed shapes of "
-            "input equivalent to what that test constructs. Return the "
-            "full corrected FuzzHarness.java — raw Java only, no fences, "
-            "public class FuzzHarness, entrypoint exactly\n"
+            f"buggy version. {why}"
+            f"{patch_reminder}"
+            "Study the patch carefully. The bug is that the patched code "
+            "SUPPRESSES a check that the original code had — meaning the "
+            "buggy version silently does the wrong thing instead of "
+            "throwing, OR the patched condition lets execution reach code "
+            "it should not. To trigger a crash on the BUGGY version:\n\n"
+            "  1. Identify exactly what the patched condition allows "
+            "through that the original would have caught.\n"
+            "  2. Construct input that satisfies the patched condition "
+            "(bypasses the guard on buggy code) AND reaches code that "
+            "will crash — e.g., an array access with an invalid index.\n"
+            "  3. Do NOT rely on the exception that the ORIGINAL code "
+            "throws (that fires on both buggy and fixed, so it does not "
+            "distinguish them).\n"
+            "  4. CRITICAL: Do NOT catch and swallow the exception you "
+            "want Jazzer to report. Catch only CloneNotSupportedException "
+            "(rethrow as RuntimeException) and let everything else "
+            "propagate naturally out of fuzzerTestOneInput.\n\n"
+            "Return the full corrected FuzzHarness.java — raw Java only, "
+            "no fences, public class FuzzHarness, entrypoint exactly\n"
             "    public static void fuzzerTestOneInput("
             "com.code_intelligence.jazzer.api.FuzzedDataProvider data)"
         )
@@ -345,6 +446,17 @@ class HarnessCampaign:
         if build.stderr:
             print("--- javac stderr ---")
             print(build.stderr)
+
+    def _print_empty_response(self, source: str) -> None:
+        n = len(source.strip())
+        print(f"✗ empty LLM response ({n} non-whitespace chars) — "
+              "no usable source, rejecting")
+
+    def _print_invalid_response(self, reason: str, total: int) -> None:
+        print(f"\n{'=' * 20} invalid response "
+              f"({total}/{self.max_invalid_responses}) {'=' * 20}")
+        print(f"✗ not a harness ({reason}) — regenerating "
+              "without spending an attempt")
 
     def _print_no_trigger(self, verification: VerificationResult) -> None:
         if verification.timed_out:

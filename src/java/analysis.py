@@ -60,6 +60,11 @@ class PatchContext:
     # block. Empty if fuzz-introspector produced no reachability data.
     root_cause_reachable: List[str] = field(default_factory=list)
 
+    # Import statements from the modified source files, read verbatim.
+    # Gives the LLM the correct package paths for types like Range and
+    # RectangleEdge that it otherwise consistently guesses wrong.
+    source_imports: List[str] = field(default_factory=list)
+
     def as_dict(self) -> dict:
         return asdict(self)
 
@@ -114,6 +119,7 @@ class TargetAnalyzer:
             functions=functions,
             package=package,
             root_cause_reachable=root_cause_reachable,
+            source_imports=self._resolve_imports(modified_files, buggy_dir),
         )
 
     # --- patch parsing ---------------------------------------------------
@@ -483,6 +489,35 @@ class TargetAnalyzer:
         return '.'.join(parts[-2:]) if len(parts) >= 2 else name
 
     # --- package resolution ----------------------------------------------
+
+    def _resolve_imports(self, modified_files: List[str],
+                         buggy_dir: str) -> List[str]:
+        """Read the import statements from every modified Java source
+        file and return them deduplicated. These are injected into the
+        prompt so the LLM uses the correct package paths for types like
+        Range and RectangleEdge, which it otherwise guesses wrong
+        every time (10/11 failures in Chart-13 came from this alone)."""
+        _IMPORT_RE = re.compile(r'^\s*(import\s+[\w.]+\s*;)')
+        seen: set = set()
+        out: List[str] = []
+        for rel_path in modified_files:
+            if not rel_path.endswith('.java'):
+                continue
+            full_path = os.path.join(buggy_dir, rel_path)
+            if not os.path.isfile(full_path):
+                continue
+            try:
+                with open(full_path) as fh:
+                    for line in fh:
+                        m = _IMPORT_RE.match(line)
+                        if m:
+                            stmt = m.group(1).strip()
+                            if stmt not in seen:
+                                seen.add(stmt)
+                                out.append(stmt)
+            except OSError:
+                continue
+        return out
 
     def _resolve_package(self, modified_files: List[str],
                          buggy_dir: str) -> Optional[str]:

@@ -57,7 +57,7 @@ def parse_args():
     parser.add_argument("-m", "--max_attempts", type=int, default=50,
                         help="Hard cap on total generation attempts "
                              "(default: 50)")
-    parser.add_argument("--max_repair_failures", type=int, default=5,
+    parser.add_argument("--max_repair_failures", type=int, default=3,
                         help="maximum number of failures in a row before resetting the prompt context")
     parser.add_argument("--fuzz_timeout", type=int, default=60,
                         metavar="SECONDS",
@@ -184,7 +184,8 @@ def main():
         require_trigger=args.require_trigger,
     )
     result = campaign.run(messages, selection.buggy_dir,
-                          prompt_factory=prompt_factory)
+                          prompt_factory=prompt_factory,
+                          patch_text=context.patch_text)
 
     _print_summary(selection, result)
 

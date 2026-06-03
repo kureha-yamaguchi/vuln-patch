@@ -5,7 +5,7 @@ import os
 import re
 import subprocess
 from dataclasses import dataclass, asdict
-from typing import Dict
+from typing import Dict, Optional
 
 
 @dataclass
@@ -69,6 +69,44 @@ class HarnessBuilder:
         or None. javac requires the file name to match this."""
         m = cls._CLASS_RE.search(java_source)
         return m.group(1) if m else None
+
+    # The exact entrypoint Jazzer calls. The FQ prefix on FuzzedDataProvider
+    # is optional because same-package harnesses often import it instead.
+    _ENTRYPOINT_RE = re.compile(
+        r'void\s+fuzzerTestOneInput\s*\(\s*'
+        r'(?:com\.code_intelligence\.jazzer\.api\.)?FuzzedDataProvider\s+\w+\s*\)'
+    )
+
+    @classmethod
+    def looks_like_harness(cls, llm_response: str) -> Optional[str]:
+        """Return None if the response is structurally a usable harness, or
+        a short human-readable reason string if it is not.
+
+        This is a fast, javac-free reject for the dominant gpt-oss-20b
+        failure mode: returning prose, a markdown-wrapped explanation, a
+        `main()` demo, or a JUnit test instead of a FuzzHarness. It is NOT
+        a compilation check — it only filters responses that *cannot* be
+        the artifact we want, so the caller can regenerate without spending
+        a javac run (and, if it chooses, without spending an attempt slot).
+
+        Deliberately strict on two things the extractor can't salvage:
+          * an empty body, and
+          * a surviving '```' fence — `extract_source` only unwraps a
+            *well-formed* ```...``` block; a leading `/* */` comment
+            followed by an unterminated fence (attempts 26/27/39) slips
+            through as a stray backtick that javac chokes on. Rejecting and
+            regenerating is cheaper than parsing every malformed variant.
+        """
+        src = cls.extract_source(llm_response)
+        if not src.strip():
+            return "empty response"
+        if '```' in src:
+            return "contains markdown fence"
+        if 'class FuzzHarness' not in src:
+            return "no `class FuzzHarness` declaration"
+        if not cls._ENTRYPOINT_RE.search(src):
+            return "no fuzzerTestOneInput(FuzzedDataProvider) entrypoint"
+        return None
 
     # --- compilation -----------------------------------------------------
 

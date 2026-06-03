@@ -10,6 +10,7 @@ break when the substituted text has its own indentation, and no
 `str.format`, which would choke on the literal `{` / `}` in Java code.
 """
 import os
+import re
 from typing import List, Dict, Optional
 
 import config
@@ -52,10 +53,15 @@ class PromptBuilder:
             self._intro(codebase),
             self._patch_block(context.patch_text),
         ]
+        if context.source_imports:
+            sections.append(self._imports_block(context.source_imports))
         for fn in context.functions:
             sections.append(self._function_block(fn))
         if failure_tests:
-            sections.append(self._failure_test_block(failure_tests))
+            sections.append(self._failure_test_block(
+                failure_tests,
+                signatures=[fn.func_signature for fn in context.functions],
+            ))
         if context.root_cause_reachable:
             sections.append(self._variant_analysis_block(
                 context.root_cause_reachable,
@@ -63,6 +69,7 @@ class PromptBuilder:
                 found_signatures or [],
             ))
         sections.append(self._fdp_reference())
+        sections.append(self._skeleton_block(context.package))
         sections.append(self._chain_of_thought())
 
         prompt = '\n\n'.join(sections)
@@ -84,6 +91,18 @@ class PromptBuilder:
         ]
 
     # --- sections --------------------------------------------------------
+
+    def _imports_block(self, imports: List[str]) -> str:
+        """Verbatim import statements from the modified source file(s).
+        Gives the model the correct package paths for types it otherwise
+        guesses wrong (Range, RectangleEdge, Size2D, etc.)."""
+        return '\n'.join([
+            "The modified source file uses these imports — copy them "
+            "exactly when you need these types:",
+            "<source_imports>",
+            *imports,
+            "</source_imports>",
+        ])
 
     def _intro(self, codebase: str) -> str:
         return '\n'.join([
@@ -127,24 +146,38 @@ class PromptBuilder:
                 parts.extend(["<xref>", xref, "</xref>"])
         return '\n'.join(parts)
 
-    def _failure_test_block(self, failure_tests: List[FailureTest]) -> str:
+    def _failure_test_block(self, failure_tests: List[FailureTest],
+                            signatures: Optional[List[str]] = None,
+                            max_test_chars: int = 1500) -> str:
         """Seed the prompt with the bug-triggering test(s) shipped by
         Defects4J. The LLM should treat the inputs they construct as a
         worked example of values that already reach the root cause. When
         we know the throwable the test fails with, we name it so the
-        harness aims to reproduce that specific crash."""
-        parts: List[str] = [
-            "A known failing test in the project already triggers "
-            "this bug. Treat the inputs it constructs as a worked "
-            "example of values that drive the touched functions "
-            "through the buggy code path. The harness must take its "
-            "inputs from FuzzedDataProvider rather than hard-coding "
-            "them — but the FuzzedDataProvider calls should be able "
-            "to produce values similar in shape and content to "
-            "the ones the test uses.",
-        ]
+        harness aims to reproduce that specific crash.
+
+        `signatures` are the touched-function signatures, used to pick
+        which seed lines to highlight (array-null lines for an NPE on an
+        array target; out-of-bounds integer-argument lines for an
+        index/bounds exception). Without them we fall back to the full
+        body only.
+
+        Long test bodies are truncated to `max_test_chars`: a handful of
+        cases shows the construction pattern, and dumping a large
+        combinatorial test (e.g. Chart-13's 31-case arrangement test)
+        starves gpt-oss-20b of output budget and produces empty
+        completions."""
+        sigs = signatures or []
         crash_types = sorted({ft.exception_type for ft in failure_tests
                               if ft.exception_type})
+        parts: List[str] = [
+            "A known failing test in the project already triggers this "
+            "bug. Reconstruct the object setup it builds — the harness "
+            "does not have to take everything from FuzzedDataProvider. "
+            "Use FuzzedDataProvider to vary the parameters the test "
+            "hard-codes (dimensions, which edges/branches are taken, "
+            "constraint values), reconstructing the surrounding objects "
+            "the way the test does so the touched code path is reached.",
+        ]
         if crash_types:
             joined = ', '.join(crash_types)
             parts.append(
@@ -159,10 +192,25 @@ class PromptBuilder:
             )
         for ft in failure_tests:
             if ft.method_source:
+                hint, lines = self._highlight_trigger_calls(
+                    ft.method_source, crash_types, sigs)
+                if lines:
+                    parts.extend([
+                        hint,
+                        f'<key_calls class="{ft.test_class}" '
+                        f'method="{ft.test_method}">',
+                        lines,
+                        "</key_calls>",
+                    ])
+                body = ft.method_source
+                if len(body) > max_test_chars:
+                    body = (body[:max_test_chars]
+                            + "\n        // ... (test truncated; the cases "
+                              "above show the construction pattern)")
                 parts.extend([
                     f'<failing_test class="{ft.test_class}" '
                     f'method="{ft.test_method}">',
-                    ft.method_source,
+                    body,
                     "</failing_test>",
                 ])
             else:
@@ -171,6 +219,123 @@ class PromptBuilder:
                     f'method="{ft.test_method}" />'
                 )
         return '\n'.join(parts)
+
+    # Crash classes that come from indexing past the end of a string or
+    # array — the seed lines worth surfacing are the ones whose numeric
+    # arguments are large relative to the accompanying string/collection.
+    _BOUNDS_EXCEPTIONS = frozenset({
+        'java.lang.StringIndexOutOfBoundsException',
+        'java.lang.ArrayIndexOutOfBoundsException',
+        'java.lang.IndexOutOfBoundsException',
+    })
+
+    @classmethod
+    def _highlight_trigger_calls(cls, method_source: str,
+                                 crash_types: List[str],
+                                 signatures: List[str],
+                                 max_lines: int = 8):
+        """Pick the seed lines most likely to BE the trigger, given the
+        crash class and the target signature, and return (hint, lines).
+
+        Two dispatch arms, because 'which assertion is load-bearing'
+        depends entirely on the bug class — keying on the token `null`
+        alone (the previous behaviour) mislabels an integer-bounds bug
+        whose only `null` is an incidental argument, which is exactly how
+        Lang-45 got steered wrong. Returns ('', '') when no arm applies,
+        so the full body is the only seed."""
+        has_array_param = any('[]' in s for s in signatures)
+        is_bounds = any(c in cls._BOUNDS_EXCEPTIONS for c in crash_types)
+
+        # Arm 1: index/bounds crash. Surface calls whose integer literals
+        # exceed the length of the string literal in the same call — those
+        # are the out-of-bounds drivers (e.g. abbreviate("0123456789",15,20)
+        # where 15/20 > 10). This is the Lang-45 case.
+        if is_bounds:
+            lines = cls._lines_with_oversized_ints(method_source, max_lines)
+            if lines:
+                hint = (
+                    "This is an index/bounds crash. The trigger lines are "
+                    "the ones where a numeric argument is LARGER than the "
+                    "length of the string passed in the same call — that "
+                    "out-of-range index is what overruns the buffer. The "
+                    "other lines keep the indices in range and only show "
+                    "the happy path. Mirror these specific calls, and use "
+                    "FuzzedDataProvider to push the numeric arguments at "
+                    "or beyond the string length:"
+                )
+                return hint, lines
+
+        # Arm 2: NPE against an array-taking target. Surface the calls
+        # that put a null *inside* an otherwise-populated array. This is
+        # the Lang-39 case.
+        if has_array_param:
+            lines = cls._lines_with_null(method_source, max_lines)
+            if lines:
+                hint = (
+                    "The trigger lines are the ones that pass a `null` "
+                    "array element (or a null array) while the companion "
+                    "array is non-null — for this NPE that null is almost "
+                    "always the cause, and the rest is the happy path. "
+                    "Mirror these specific calls:"
+                )
+                return hint, lines
+
+        return '', ''
+
+    @staticmethod
+    def _lines_with_null(method_source: str, max_lines: int):
+        hits = [ln.strip() for ln in method_source.splitlines()
+                if 'null' in ln and '(' in ln]
+        if not hits:
+            return ''
+        if len(hits) > max_lines:
+            hits = hits[:max_lines] + ["// ... (further null-bearing "
+                                       "calls omitted)"]
+        return '\n'.join(hits)
+
+    @staticmethod
+    def _lines_with_oversized_ints(method_source: str, max_lines: int):
+        """Lines containing a call where an integer ARGUMENT exceeds the
+        length of a double-quoted string literal on the same line. Best-
+        effort and string-literal-based on purpose: it needs no Java
+        parse, and the trigger seeds in these tests are hard-coded
+        literals (the whole reason they're a usable worked example).
+
+        Critically, string literals are removed from the line BEFORE the
+        integer scan — otherwise the digits inside a test string like
+        "0123456789" get read as the integer 123456789 and every line
+        looks oversized. We compare real numeric arguments against the
+        longest removed string's length."""
+        str_lit = re.compile(r'"((?:[^"\\]|\\.)*)"')
+        int_lit = re.compile(r'(?<![\w.])(-?\d+)(?![\w.])')
+        hits = []
+        for ln in method_source.splitlines():
+            if '(' not in ln:
+                continue
+            strings = str_lit.findall(ln)
+            if not strings:
+                continue
+            longest = max((len(s) for s in strings), default=0)
+            # A line whose only strings are empty (e.g. abbreviate(null,
+            # 1, -1, "")) has nothing to index into — skip it; the int
+            # being "larger" than length 0 is meaningless there.
+            if longest == 0:
+                continue
+            # Blank out the string literals so their digits aren't scanned
+            # as integer arguments.
+            without_strings = str_lit.sub('""', ln)
+            ints = [int(m) for m in int_lit.findall(without_strings)]
+            # An argument past the string's end is the overrun driver; -1
+            # is the method's documented "no limit" sentinel, so exclude
+            # it to avoid flagging happy-path lines.
+            if any(n > longest for n in ints if n != -1):
+                hits.append(ln.strip())
+        if not hits:
+            return ''
+        if len(hits) > max_lines:
+            hits = hits[:max_lines] + ["// ... (further out-of-range "
+                                       "calls omitted)"]
+        return '\n'.join(hits)
 
     def _variant_analysis_block(self,
                                 reachable: List[str],
@@ -250,12 +415,55 @@ class PromptBuilder:
 
     def _chain_of_thought(self) -> str:
         return '\n'.join([
-            "Before writing the harness, concisely identify "
-            "(a) the bug class and (b) the minimal input shape that "
-            "drives the touched functions into the buggy behaviour. "
-            "Put this in a `/* ... */` block at the very top of the "
-            "file (above the package statement), then write the "
-            "harness.",
+            "Before writing the input-construction code, concisely "
+            "identify (a) the bug class and (b) the minimal input shape "
+            "that drives the touched functions into the buggy behaviour. "
+            "Put this as a `/* ... */` comment on the first line INSIDE "
+            "the entrypoint body, where the skeleton marks "
+            "`// >>> YOUR CODE HERE <<<`, then write the construction "
+            "code below it. Do not put anything above the package line.",
+        ])
+
+    def _skeleton_block(self, package: Optional[str]) -> str:
+        """Hand the model a complete, compilable file and ask it to fill
+        in ONLY the body. The scaffolding the 20B model repeatedly gets
+        wrong (package line, the jazzer import, the class name, the
+        entrypoint signature, stray `main` methods, invented FDP-provider
+        classes) is given to it, so the only thing left to reason about is
+        input construction — which is the thing that actually determines
+        whether the bug is reached. This collapses the prose-not-code,
+        wrong-package, and hallucinated-import failure classes seen across
+        attempts 1-44 into a single fill-in-the-blank task."""
+        pkg_line = (f"package {package};" if package
+                    else "package <copy the package line from the patch>;")
+        return '\n'.join([
+            "Produce your harness by completing the skeleton below. "
+            "Reproduce it EXACTLY, character for character, except for "
+            "the single region marked `// >>> YOUR CODE HERE <<<`, which "
+            "you replace with your input-construction code. Do NOT change "
+            "the package line, the import, the class name, or the "
+            "entrypoint signature. Do NOT add a `main` method. Do NOT add "
+            "other imports unless javac would need them, and if so add "
+            "them only in the import region directly below the existing "
+            "import. Output the completed file as raw Java — no fences.",
+            "<skeleton>",
+            pkg_line,
+            "",
+            "import com.code_intelligence.jazzer.api.FuzzedDataProvider;",
+            "",
+            "public class FuzzHarness {",
+            "    public static void fuzzerTestOneInput("
+            "com.code_intelligence.jazzer.api.FuzzedDataProvider data) {",
+            "        // >>> YOUR CODE HERE <<<",
+            "        // Construct the inputs that drive the touched code",
+            "        // into the documented crash, then call the target",
+            "        // method directly (same package — no reflection).",
+            "        // Let the genuine fault propagate out of this method;",
+            "        // catch only the checked exceptions the target",
+            "        // declares (rethrow as RuntimeException).",
+            "    }",
+            "}",
+            "</skeleton>",
         ])
 
     def _hard_constraints(self, package: Optional[str]) -> str:
@@ -284,6 +492,10 @@ class PromptBuilder:
             "markdown fences, no prose outside the file (a leading "
             "`/* ... */` comment is allowed). It must compile with "
             "`javac` against the project classpath plus jazzer-api.jar.",
+            "- CRITICAL: If your response contains ANY text that is not "
+            "valid Java source — prose, markdown, backticks, numbered "
+            "steps, explanations — the entire response is rejected. "
+            "Output the .java file and nothing else.",
         ])
 
     def _fdp_reference(self) -> str:
@@ -293,6 +505,7 @@ class PromptBuilder:
             "",
             "    int     consumeInt()                       // any int",
             "    int     consumeInt(int min, int max)       // inclusive bounds",
+            "    byte    consumeByte()                       // any byte",
             "    boolean consumeBoolean()",
             "    String  consumeString(int maxLength)       // ONE arg, not (min, max)",
             "    String  consumeAsciiString(int maxLength)",
