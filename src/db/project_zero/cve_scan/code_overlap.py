@@ -56,6 +56,12 @@ GITLAB_COMMIT_RE = re.compile(
     r'https?://([a-zA-Z0-9.-]+)/(?:[^\s)"\'<>]*?)/\-/commit/([0-9a-f]{6,40})',
     re.IGNORECASE,
 )
+# Mercurial (hg.mozilla.org) changeset URLs. Both `/rev/HASH` and
+# `/raw-rev/HASH` forms; the raw-rev endpoint returns the unified diff.
+HG_MOZILLA_RE = re.compile(
+    r'https?://hg\.mozilla\.org/([^\s)"\'<>?#]+?)/(?:raw-)?rev/([0-9a-f]{6,40})',
+    re.IGNORECASE,
+)
 # Gitiles-style hosts (chromium.googlesource.com, android.googlesource.com).
 # Commit URLs look like `.../+/SHA[/path][?...]` or `.../+/refs/heads/...`.
 # We only want commit-SHA forms here.
@@ -477,7 +483,30 @@ class PatchFetcher:
             return self._fetch_gitiles(commit_url, bug_id)
         if host == 'gitlab':
             return self._fetch_gitlab(commit_url, bug_id)
+        if host == 'hg-mozilla':
+            return self._fetch_hg_mozilla(commit_url, bug_id)
         return None
+
+    # ----- hg.mozilla.org ----------------------------------------------
+
+    def _fetch_hg_mozilla(self, commit_url: str,
+                          bug_id: str) -> Optional[Patch]:
+        m = HG_MOZILLA_RE.search(commit_url)
+        if not m:
+            return None
+        repo, sha = m.group(1), m.group(2)
+        # The raw-rev endpoint returns the changeset as a `# HG changeset
+        # patch` (which embeds standard `diff --git` / `+++ b/` hunks).
+        raw_url = f'https://hg.mozilla.org/{repo}/raw-rev/{sha}'
+        local = os.path.join(self.cache_dir, f'hg_{sha}.patch')
+        text = self._read_or_fetch(raw_url, local, want_token=False)
+        if text is None or 'diff --git' not in text:
+            return None
+        return Patch(
+            bug_id=bug_id, host='hg-mozilla',
+            commit_url=commit_url, raw_url=raw_url, sha=sha,
+            files=parse_patch_files(text), local_path=local,
+        )
 
     # ----- GitHub ------------------------------------------------------
 
@@ -1168,6 +1197,8 @@ class CodeOverlapChecker:
             return 'kernelorg'
         if GITLAB_COMMIT_RE.search(url) or 'codelinaro.org' in url:
             return 'gitlab'
+        if HG_MOZILLA_RE.search(url):
+            return 'hg-mozilla'
         if BUGZILLA_MOZILLA_BUG_RE.search(url):
             return 'bugzilla-mozilla'
         return None
