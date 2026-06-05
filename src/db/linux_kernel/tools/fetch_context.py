@@ -32,7 +32,10 @@ KERNEL_PLAIN_URL = (
     "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
     "/plain/{filepath}?id={commit}"
 )
-DEFAULT_OUT = Path(__file__).parent
+# See linux_kernel/README.md for the directory layout: this file lives
+# in linux_kernel/tools/ and writes per-pair context into the sibling
+# linux_kernel/pairs/ directory.
+DEFAULT_OUT = Path(__file__).parent.parent / "pairs"
 REQUEST_DELAY = 0.4
 
 
@@ -119,7 +122,7 @@ def main():
     )
     parser.add_argument(
         "--out", type=Path, default=DEFAULT_OUT,
-        help="cve_sibling_db_linux directory (default: this script's directory)",
+        help="linux_kernel/pairs directory (default: the sibling pairs/ dir)",
     )
     parser.add_argument("--force", action="store_true", help="Re-fetch even if files exist")
     parser.add_argument("--pair", help="Process only this pair, e.g. CVE-2011-1017__CVE-2011-2182")

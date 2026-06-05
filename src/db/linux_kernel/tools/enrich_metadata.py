@@ -30,7 +30,7 @@ import urllib.request
 from pathlib import Path
 
 GITHUB_API = "https://api.github.com/repos/torvalds/linux/commits/{sha}"
-DEFAULT_DIR = Path(__file__).parent
+DEFAULT_DIR = Path(__file__).parent.parent / "pairs"  # see linux_kernel/README.md
 REQUEST_DELAY = 1.2  # stay well under 60 req/hour unauthenticated
 
 

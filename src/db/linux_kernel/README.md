@@ -13,15 +13,26 @@ Ground-truth dataset of Linux kernel CVE pairs where an incomplete or incorrect 
 
 ## Directory structure
 
-Each pair lives in a subdirectory named `<prior_cve>__<later_cve>`:
-
 ```
-CVE-2011-1017__CVE-2011-2182/
-  metadata.json       structured entry: CVEs, commit hashes, CWE codes, dates, fix type
-  fix0.patch          diff of the incomplete fix (Fix-0)
-  fix1.patch          diff of the corrective fix (Fix-1)
-  fix0_context/       source files changed by Fix-0, at the Fix-0 commit state
-  fix1_context/       source files changed by Fix-1, at the Fix-1 commit state
+linux_kernel/
+├── README.md
+├── liu_seeds.json        source-of-truth pair list (CVEs, commits, CWEs,
+│                         dates, fix type) from arXiv:2511.17799
+├── tools/                scripts that materialise the per-pair artifacts
+│   ├── fetch_patches.py
+│   ├── fetch_context.py
+│   ├── enrich_metadata.py
+│   └── checkout_pair.py
+└── pairs/                one subdir per CVE pair (26 total)
+    └── CVE-2011-1017__CVE-2011-2182/
+        ├── metadata.json       CVEs, commit hashes, CWE codes, dates,
+        │                       fix type, affected files, etc.
+        ├── fix0.patch          diff of the incomplete fix (Fix-0)
+        ├── fix1.patch          diff of the corrective fix (Fix-1)
+        ├── fix0_context/       source files changed by Fix-0, at the
+        │                       Fix-0 commit state
+        └── fix1_context/       source files changed by Fix-1, at the
+                                Fix-1 commit state
 ```
 
 `fix0_context/` and `fix1_context/` contain only the directly modified `.c`/`.h` files — useful for browsing and lightweight LLM prompting. For harness generation and fuzzing you need the full kernel checkout (see below).
@@ -50,28 +61,31 @@ CVE-2011-1017__CVE-2011-2182/
 
 ## Scripts
 
-### `fetch_patches.py` — download patch diffs
+All scripts live under [`tools/`](tools/) and read/write to `pairs/`
+relative to the project root.
+
+### `tools/fetch_patches.py` — download patch diffs
 
 Fetches `fix0.patch`, `fix1.patch`, and `metadata.json` for all pairs from kernel.org. Idempotent.
 
 ```bash
-python3 fetch_patches.py              # all pairs
-python3 fetch_patches.py --force      # re-download everything
-python3 fetch_patches.py --pair CVE-2011-1017__CVE-2011-2182
+python3 tools/fetch_patches.py              # all pairs
+python3 tools/fetch_patches.py --force      # re-download everything
+python3 tools/fetch_patches.py --pair CVE-2011-1017__CVE-2011-2182
 ```
 
-### `fetch_context.py` — download changed source files
+### `tools/fetch_context.py` — download changed source files
 
 Parses each patch to find modified files and fetches them individually from kernel.org at the corresponding commit. Produces `fix0_context/` and `fix1_context/`. Idempotent.
 
 ```bash
-python3 fetch_context.py
-python3 fetch_context.py --pair CVE-2011-1017__CVE-2011-2182
+python3 tools/fetch_context.py
+python3 tools/fetch_context.py --pair CVE-2011-1017__CVE-2011-2182
 ```
 
-> **Scope:** only directly modified files. Not sufficient for harness generation or building — use `checkout_pair.py` for that.
+> **Scope:** only directly modified files. Not sufficient for harness generation or building — use `tools/checkout_pair.py` for that.
 
-### `checkout_pair.py` — full kernel working trees
+### `tools/checkout_pair.py` — full kernel working trees
 
 Checks out the full Linux kernel source at Fix-0 and Fix-1 commits as independent working trees, ready for building and fuzzing.
 
@@ -79,16 +93,16 @@ Uses a **shared bare blobless clone** (~400 MB, fetched once) with git worktrees
 
 ```bash
 # single pair
-python3 checkout_pair.py --pair CVE-2011-1017__CVE-2011-2182
+python3 tools/checkout_pair.py --pair CVE-2011-1017__CVE-2011-2182
 
 # all pairs
-python3 checkout_pair.py --all
+python3 tools/checkout_pair.py --all
 
 # reuse an existing kernel repo
-LINUX_KERNEL_REPO=/path/to/linux.git python3 checkout_pair.py --all
+LINUX_KERNEL_REPO=/path/to/linux.git python3 tools/checkout_pair.py --all
 
 # one state only
-python3 checkout_pair.py --pair CVE-2016-9576__CVE-2016-10088 --only fix0
+python3 tools/checkout_pair.py --pair CVE-2016-9576__CVE-2016-10088 --only fix0
 ```
 
 Worktrees are created under `/tmp/cve_sibling_checkouts/<pair>/fix0` and `.../fix1` by default. Override with `--dest`.

@@ -53,9 +53,9 @@ The script that produces the iteration-2 entries in `findings_urls.md`.
 Re-run when new pairs join the pipeline:
 
 ```bash
-cd src/
+cd src/db/project_zero
 uv run --no-project --with requests --python 3.12 \
-    python3 cve_scan_out/verified/resolve_remaining_cls.py
+    python3 findings/verified/resolve_remaining_cls.py
 ```
 
 Writes `resolved_cls.json` next to itself (gitignored — the
@@ -81,7 +81,7 @@ or CVEs whose NVD entries don't have `Patch`-tagged references.
 
 ## Workflow
 
-1. Run the pipeline to produce `cve_scan_out/*.json|csv|md`.
+1. Run the pipeline to produce `findings/*.{json,csv,md}`.
 2. Manually verify each pair in `findings_table_claude.md` against the
    PZ RCAs.
 3. Run `resolve_remaining_cls.py` to fill in missing patch URLs.

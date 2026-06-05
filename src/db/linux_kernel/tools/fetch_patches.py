@@ -10,7 +10,7 @@ unless --force is given.
 
 Usage:
     python fetch_patches.py
-    python fetch_patches.py --seeds ../cve_scan_out/liu_seeds.json
+    python fetch_patches.py --seeds ../liu_seeds.json
     python fetch_patches.py --force        # re-download everything
     python fetch_patches.py --pair CVE-2011-1017__CVE-2011-2182  # one pair only
 """
@@ -26,8 +26,12 @@ KERNEL_PATCH_URL = (
     "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
     "/patch/?id={commit}"
 )
-DEFAULT_SEEDS = Path(__file__).parent.parent / "cve_scan_out" / "liu_seeds_linux.json"
-DEFAULT_OUT = Path(__file__).parent
+# After the db/ restructure (June 2026):
+#   liu_seeds.json lives at linux_kernel/liu_seeds.json
+#   pair dirs live under linux_kernel/pairs/
+# This file is at linux_kernel/tools/, so parent.parent == linux_kernel/.
+DEFAULT_SEEDS = Path(__file__).parent.parent / "liu_seeds.json"
+DEFAULT_OUT   = Path(__file__).parent.parent / "pairs"
 REQUEST_DELAY = 0.4  # seconds between kernel.org requests
 
 

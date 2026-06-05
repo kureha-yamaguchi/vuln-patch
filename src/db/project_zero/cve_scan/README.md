@@ -74,25 +74,27 @@ prefixes to verify the LLM's `same_codebase` claim heuristically.
 ## Run order
 
 ```bash
-cd src
+cd src/db/project_zero
 source ~/.zshrc                                  # for OPENAI_API_KEY
 export GITHUB_TOKEN="$(gh auth token)"            # for GitHub API rate limits
 
-# Phase 1 — harvest + rough verify (~10 min with cold cache, < 1 min after)
+# Phase 1 — harvest + rough verify (~10 min cold cache, < 1 min after)
 uv run --no-project --with openai --python 3.12 \
   -m cve_scan.run_p0_harvest --budget-usd 1
 
-# Phase 2 — deep diff-relatability (~2 min on the small subset with both patches)
+# Phase 2 — deep diff-relatability
 uv run --no-project --with openai --python 3.12 \
   -m cve_scan.run_diff_relate --budget-usd 1
 
-# Phase 3 — codebase audit (instant, no LLM)
+# Phase 3 — codebase audit + Markdown report (no LLM)
 uv run --no-project --with openai --python 3.12 \
   -m cve_scan.run_inspect_unsure
+uv run --no-project --with openai --python 3.12 \
+  -m cve_scan.make_seeds_table
 ```
 
-Outputs land in `./cve_scan_out/`; see `cve_scan_out/README.md` for the
-per-file schema.
+Outputs land in `./findings/` (configurable via `CVE_SCAN_OUTPUT_DIR`);
+see `findings/README.md` for the per-file schema.
 
 ## Why `uv --no-project`
 

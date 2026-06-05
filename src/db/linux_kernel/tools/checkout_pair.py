@@ -153,8 +153,10 @@ def main():
                         help="Check out only one state")
     args = parser.parse_args()
 
-    script_dir = Path(__file__).parent
-    entries = load_entries(script_dir, args.pair if not args.all else None)
+    # See linux_kernel/README.md: pair dirs live in linux_kernel/pairs/,
+    # alongside this script's tools/ directory.
+    pairs_dir = Path(__file__).parent.parent / "pairs"
+    entries = load_entries(pairs_dir, args.pair if not args.all else None)
 
     ensure_shared_repo(args.kernel_repo)
 

@@ -228,11 +228,12 @@ legacy/*
 
 # cve_scan pipeline outputs — regenerate via run_p0_harvest + run_diff_relate.
 # Large machine-readable artifacts are gitignored; the human-readable
-# README + CSVs + Markdown table are committed under src/cve_scan_out/.
-src/cve_scan_out/pipeline/candidates.json
-src/cve_scan_out/pipeline/seeds.json
-src/cve_scan_out/pipeline/deep_relate.json
-src/cve_scan_out/pipeline/codebase_audit.json
+# README + CSVs + Markdown table are committed under
+# src/db/project_zero/findings/.
+src/db/project_zero/findings/pipeline/candidates.json
+src/db/project_zero/findings/pipeline/seeds.json
+src/db/project_zero/findings/pipeline/deep_relate.json
+src/db/project_zero/findings/pipeline/codebase_audit.json
 # Debug artifact from the URL-resolver script; the human-readable
 # summary lives in verified/findings_urls.md.
-src/cve_scan_out/verified/resolved_cls.json
+src/db/project_zero/findings/verified/resolved_cls.json

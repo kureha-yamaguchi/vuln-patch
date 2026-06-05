@@ -11,8 +11,8 @@ Example usage (from src/):
     uv run -m cve_scan.run_diff_relate --all           # not just confirmed
     uv run -m cve_scan.run_diff_relate --budget-usd 5
     uv run -m cve_scan.run_diff_relate \\
-        --seeds ./cve_scan_out/p0_seeds.json \\
-        --out   ./cve_scan_out
+        --seeds ./findings/pipeline/seeds.json \\
+        --out   ./findings/pipeline
 
 Set GITHUB_TOKEN in the environment to lift GitHub API rate limits.
 """

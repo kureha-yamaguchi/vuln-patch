@@ -17,8 +17,13 @@ CVE_SCAN_CACHE_DIR = os.path.expanduser(
 # Root of the output tree.  Pipeline JSON/CSV artifacts land in
 # `<output>/pipeline/`; the human-readable seeds_table.md and the
 # subdir READMEs sit at the top level.  Manual-research files go in
-# `<output>/verified/`; third-party datasets in `<output>/external/`.
-CVE_SCAN_OUTPUT_DIR   = os.getenv('CVE_SCAN_OUTPUT_DIR', './cve_scan_out')
+# `<output>/verified/`.
+#
+# Default assumes the CLI is invoked from `src/db/project_zero/` (the
+# layout documented in cve_scan/README.md), so the relative path lands
+# the outputs at `src/db/project_zero/findings/...`.  Override via the
+# `CVE_SCAN_OUTPUT_DIR` env var if invoking from elsewhere.
+CVE_SCAN_OUTPUT_DIR   = os.getenv('CVE_SCAN_OUTPUT_DIR', './findings')
 CVE_SCAN_PIPELINE_DIR = os.path.join(CVE_SCAN_OUTPUT_DIR, 'pipeline')
 
 

@@ -290,54 +290,93 @@ def render_table(title: str, rows: list,
 
 def _categorize(s: dict, d: Optional[dict],
                 a: Optional[dict]) -> Tuple[str, str]:
-    """Bucket a confirmed seed pair. Returns (bucket, why)."""
-    deep_kind = d.get('diff_kind') if d else None
-    skip_reason = (d or {}).get('skip_reason') or ''
+    """Bucket a confirmed seed pair by URL completeness + relatedness.
 
-    # DROPPED: self-pair OR codebase-audit disagrees (cross-vendor).
+    Primary axis is patch-URL availability (do we have the source code
+    on both sides?). Secondary axis is the relatedness verdict (does
+    the deep verifier confirm or reject the sibling claim?).
+
+    Returns ``(bucket, why)``.
+    """
+    later_url = s.get('later_patch_url')
+    prior_url = s.get('prior_patch_url')
+    both_urls = bool(later_url and prior_url)
+    one_url   = bool(later_url) != bool(prior_url)
+    no_urls   = not later_url and not prior_url
+
+    deep_kind   = (d or {}).get('diff_kind')
+    skip_reason = (d or {}).get('skip_reason') or ''
+    prose_kind  = s['llm_relationship_kind']
+    prose_conf  = s['llm_confidence']
+
+    # ---------- TIER 4: DROPPED ----------------------------------------
+    # Explicit exclusions: same fix on both sides, or LATER and PRIOR
+    # come from different vendors / products (typically same-attack
+    # same-actor, not same-code-level).
     if skip_reason.startswith('self-pair'):
         return ('DROPPED', 'self-pair: both sides resolved to the same fix')
     if a and a.get('verdict') == 'disagrees':
         lc = a.get('later_codebase', '?')
         pc = a.get('prior_codebase', '?')
-        return ('DROPPED', f'cross-codebase ({lc} vs {pc}) — likely '
-                          f'same-actor / same-operation, not a code-level sibling')
+        return ('DROPPED', f'cross-vendor ({lc} vs {pc}) — same-actor or '
+                          f'same-operation, not a code-level sibling')
 
-    # INCOMPLETE_FIX: deep verifier confirmed at the diff level, OR
-    # LLM-prose says incomplete_fix/regression with high confidence
-    # and deep skipped (couldn't run).
-    if deep_kind == 'incomplete_fix_confirmed':
-        return ('INCOMPLETE_FIX', 'deep verifier confirmed incomplete-fix at code level')
-    if s['llm_relationship_kind'] in ('incomplete_fix', 'regression') \
-            and s['llm_confidence'] >= 0.85 \
-            and skip_reason.startswith('no patches'):
-        return ('INCOMPLETE_FIX',
-                f"prose-LLM said {s['llm_relationship_kind']} (conf "
-                f"{s['llm_confidence']:.2f}); patches not fetchable")
+    # ---------- TIER 1: READY ------------------------------------------
+    # Both fix patches fetched AND the deep diff verifier confirmed the
+    # sibling claim at the code level.  These are ready to ingest into
+    # the fuzzing pipeline immediately.
+    if both_urls and deep_kind == 'incomplete_fix_confirmed':
+        return ('READY (incomplete_fix)',
+                'both patches fetched; deep verifier confirmed '
+                'incomplete-fix at code level')
+    if both_urls and deep_kind == 'same_root_cause_confirmed':
+        return ('READY (same_root_cause)',
+                'both patches fetched; deep verifier confirmed shared '
+                'root cause at code level')
+    if both_urls and deep_kind == 'one_extends_other':
+        return ('READY (one_extends_other)',
+                'both patches fetched; deep verifier says one extends '
+                'the other (refinement / hardening)')
 
-    # SAME_ROOT_CAUSE: deep verifier ratified same-root-cause OR
-    # one-extends-other, OR LLM-prose says same_root_cause with
-    # same_codebase and deep skipped.
-    if deep_kind in ('same_root_cause_confirmed', 'one_extends_other'):
-        return ('SAME_ROOT_CAUSE',
-                f'deep verifier ratified ({deep_kind})')
-    if s['llm_relationship_kind'] == 'same_root_cause' \
-            and s['llm_same_codebase'] \
-            and s['llm_confidence'] >= 0.80 \
-            and skip_reason.startswith('no patches'):
-        return ('SAME_ROOT_CAUSE',
-                f"prose-LLM said same_root_cause (conf "
-                f"{s['llm_confidence']:.2f}); patches not fetchable")
+    # ---------- TIER 3: REJECTED ---------------------------------------
+    # Both patches fetched, deep verifier read the diffs, said unrelated.
+    # These are the most reliably-rejected pairs.
+    if both_urls and deep_kind in ('unrelated', 'insufficient_data'):
+        return (f'REJECTED ({deep_kind})',
+                f'both patches fetched; deep verifier rejected as '
+                f'{deep_kind} after reading the actual diffs')
 
-    # UNRELATED: deep verifier said unrelated/insufficient_data
-    # — the pair was probably a false positive from the prose pass.
-    if deep_kind in ('unrelated', 'insufficient_data'):
-        return ('UNRELATED',
-                f'deep verifier rejected as {deep_kind} after reading '
-                f'both diffs')
+    # ---------- TIER 2: SUSPECTED — prose verified, URL gap -----------
+    # Prose-LLM verified the sibling claim from the upstream document
+    # (Project Zero RCA, P0 sheet, narrative blog post) but the
+    # resolver couldn't fetch all the patches we'd need to verify at
+    # the code level.  Sub-split by relationship kind + URL status so
+    # the most actionable rows surface first.
 
-    # Anything else: low confidence, no deep info, no fit above.
-    return ('UNSURE', 'low-confidence prose, no deep verification, no clear fit')
+    # 2a: one patch already resolved — closest to actionable
+    if one_url and prose_kind in ('incomplete_fix', 'regression', 'same_root_cause'):
+        side = 'later' if later_url else 'prior'
+        missing = 'prior' if later_url else 'later'
+        return (f'SUSPECTED (1 URL, need {missing})',
+                f'prose-LLM said {prose_kind} (conf {prose_conf:.2f}); '
+                f'{side} patch resolved, {missing} side missing')
+
+    # 2b: no URLs at all — prose evidence only
+    if no_urls and prose_kind in ('incomplete_fix', 'regression') \
+            and prose_conf >= 0.85:
+        return ('SUSPECTED (no URLs)',
+                f'prose-LLM said {prose_kind} (conf {prose_conf:.2f}); '
+                f'no patches fetchable on either side')
+    if no_urls and prose_kind == 'same_root_cause' \
+            and s['llm_same_codebase'] and prose_conf >= 0.80:
+        return ('SUSPECTED (no URLs)',
+                f'prose-LLM said same_root_cause + same_codebase '
+                f'(conf {prose_conf:.2f}); no patches fetchable')
+
+    # ---------- UNSURE -------------------------------------------------
+    return ('UNSURE',
+            f'low-confidence prose ({prose_kind} conf {prose_conf:.2f}) '
+            f'and no deep verification')
 
 
 def main() -> int:
@@ -367,13 +406,13 @@ def main() -> int:
     ax = {(a['later'], a['prior']): a for a in audits}
 
     confirmed = [s for s in seeds if s.get('confirmed')]
-    buckets: Dict[str, list] = {
-        'INCOMPLETE_FIX': [],
-        'SAME_ROOT_CAUSE': [],
-        'UNRELATED': [],
-        'DROPPED': [],
-        'UNSURE': [],
-    }
+
+    # Buckets are produced dynamically by _categorize.  We keep a stable
+    # ordering for the report (TIER 1 → TIER 4) by ordering keys via the
+    # `_BUCKET_ORDER` list below; any bucket not in the list lands at
+    # the end.
+    from collections import defaultdict
+    buckets: Dict[str, list] = defaultdict(list)
     bucket_reasons: Dict[Tuple[str, str], str] = {}
     for s in confirmed:
         d = dx.get((s['later_cve'], s['prior_cve']))
@@ -382,36 +421,80 @@ def main() -> int:
         buckets[bucket].append((s, d, a))
         bucket_reasons[(s['later_cve'], s['prior_cve'])] = why
 
+    # Stable display order (TIER 1 → TIER 4 → UNSURE).
+    _BUCKET_ORDER = [
+        'READY (incomplete_fix)',
+        'READY (same_root_cause)',
+        'READY (one_extends_other)',
+        'SUSPECTED (1 URL, need prior)',
+        'SUSPECTED (1 URL, need later)',
+        'SUSPECTED (no URLs)',
+        'REJECTED (unrelated)',
+        'REJECTED (insufficient_data)',
+        'DROPPED',
+        'UNSURE',
+    ]
+    # Anything dynamically generated (e.g. an extra 1-URL flavour) goes
+    # at the end, sorted, so the report is deterministic.
+    ordered_keys = [k for k in _BUCKET_ORDER if k in buckets]
+    extras = sorted(k for k in buckets if k not in _BUCKET_ORDER)
+    ordered_keys += extras
+
+    def _count(key_prefix: str) -> int:
+        return sum(len(v) for k, v in buckets.items()
+                   if k.startswith(key_prefix))
+
+    n_ready     = _count('READY')
+    n_suspected = _count('SUSPECTED')
+    n_rejected  = _count('REJECTED')
+    n_dropped   = _count('DROPPED')
+    n_unsure    = _count('UNSURE')
+
     out_md = [
         '# Confirmed P0 variant-pair findings',
         '',
-        f'**Total: {len(confirmed)} pairs** — bucketed for the '
-        f'incomplete-fix-database use case:',
+        f'**Total: {len(confirmed)} pairs** — bucketed by '
+        f'**patch-URL completeness × relatedness verdict**.',
         '',
-        f'- **INCOMPLETE_FIX** ({len(buckets["INCOMPLETE_FIX"])}) — '
-        f'the gold target: patches that were incomplete and caused a '
-        f'follow-up CVE. Either the deep diff verifier confirmed this '
-        f'at the code level, or the prose-LLM said incomplete_fix / '
-        f'regression with high confidence and we just couldn\'t fetch '
-        f'patches to verify.',
-        f'- **SAME_ROOT_CAUSE** ({len(buckets["SAME_ROOT_CAUSE"])}) — '
-        f'real sibling pairs (shared root cause / same bug class) but '
-        f'NOT necessarily incomplete-fix relationships. Useful for the '
-        f'broader variant-CVE database, less central to the '
-        f'patches-that-failed thesis.',
-        f'- **UNRELATED** ({len(buckets["UNRELATED"])}) — the prose-LLM '
-        f'flagged these as variants but the deep verifier read the '
-        f'actual diffs and rejected them. After the trusted-owner '
-        f'filter on github-search results, the remaining `unrelated` '
-        f'verdicts are mostly correct rejections; before the filter '
-        f'they were dominated by wrong-repo resolutions.',
-        f'- **DROPPED** ({len(buckets["DROPPED"])}) — pairs we exclude '
-        f'from the dataset: codebase audit says cross-vendor (e.g. '
-        f'Apple iOS bug paired with a Chrome bug because they were '
-        f'used in the same attack), or both sides resolve to the same '
-        f'commit (self-pair).',
-        f'- **UNSURE** ({len(buckets["UNSURE"])}) — low-confidence '
-        f'prose verdicts that didn\'t fit any of the above.',
+        f'### TIER 1 — READY ({n_ready}) ✓ both patches + deep verifier confirmed',
+        '',
+        '> Both fix-commit URLs resolved AND the deep diff verifier read '
+        'both diffs and confirmed the sibling claim at the code level. '
+        'These are ready to ingest into a downstream pipeline '
+        '(e.g. fuzzing harness generator) immediately. Sub-buckets by '
+        'deep verdict — `incomplete_fix` is the gold target, '
+        '`same_root_cause` is broader, `one_extends_other` is the '
+        'weakest (refinement / hardening).',
+        '',
+        f'### TIER 2 — SUSPECTED ({n_suspected}) ⚠ prose verified, URL gap',
+        '',
+        '> Prose-LLM verified the sibling claim from the upstream '
+        'document (Project Zero RCA, sheet, narrative blog post) but '
+        'the resolver couldn\'t fetch all the patches needed for the '
+        'deep code-level check. The relationship is most likely real; '
+        'they just need a human to grab the missing patch URL. '
+        '`SUSPECTED (1 URL, need <side>)` rows are closest to '
+        'actionable; `SUSPECTED (no URLs)` rows need both URLs.',
+        '',
+        f'### TIER 3 — REJECTED ({n_rejected}) × both patches + deep verifier rejected',
+        '',
+        '> Both patches were fetched and the deep verifier judged the '
+        'diffs unrelated or insufficient. After the trusted-owner '
+        'filter on github-search results, these are mostly correct '
+        'rejections; before the filter they were dominated by wrong-repo '
+        'resolutions.',
+        '',
+        f'### TIER 4 — DROPPED ({n_dropped}) ✗ explicit exclusions',
+        '',
+        '> Two reasons: codebase audit says cross-vendor (e.g. Apple iOS '
+        'bug paired with a Chrome bug because they were used in the '
+        'same attack campaign, not because they share code), or both '
+        'sides resolve to the same fix commit (self-pair).',
+        '',
+        f'### UNSURE ({n_unsure}) low-confidence prose, no clear fit',
+        '',
+        '> Edge cases that don\'t fit any tier above. Should be empty in '
+        'practice — review individually if any land here.',
         '',
         '_Column legend:_',
         '',
@@ -461,20 +544,17 @@ def main() -> int:
         'at code level"*, *"prose-LLM said same_root_cause; patches '
         'not fetchable"*).',
         '',
-        render_table('INCOMPLETE_FIX', buckets['INCOMPLETE_FIX'], bucket_reasons),
-        render_table('SAME_ROOT_CAUSE', buckets['SAME_ROOT_CAUSE'], bucket_reasons),
-        render_table('UNRELATED', buckets['UNRELATED'], bucket_reasons),
-        render_table('DROPPED', buckets['DROPPED'], bucket_reasons),
-        render_table('UNSURE', buckets['UNSURE'], bucket_reasons),
     ]
+    for k in ordered_keys:
+        out_md.append(render_table(k, buckets[k], bucket_reasons))
     md = '\n'.join(out_md)
 
     out_path = os.path.join(out_dir, 'seeds_table.md')
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(md)
     print(f"wrote {out_path}")
-    for k, v in buckets.items():
-        print(f"  {k:18s} {len(v)}")
+    for k in ordered_keys:
+        print(f"  {k:34s} {len(buckets[k])}")
     return 0
 
 
