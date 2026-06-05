@@ -288,6 +288,107 @@ def render_table(title: str, rows: list,
     return '\n'.join(out)
 
 
+# Codebases with no public source — a missing fix URL can never be
+# resolved without binary diffing.
+CLOSED_CODEBASES = {
+    'microsoft-windows', 'ie-jscript', 'windows-kernel', 'windows-clfs',
+    'edge', 'microsoft-office', 'apple-ios', 'apple-os', 'apple-macos',
+    'apple-coretext', 'adobe-reader', 'winrar', 'samsung-android',
+    'samsung-npu-driver',
+}
+# Open-source bugs whose fix CL is real but lives on a Chromium bug page
+# that stays security-view-restricted even to signed-in accounts
+# (verified 2026-06). Cannot be fetched without Chromium-security access.
+INACCESSIBLE_BUGS = {
+    'CVE-2020-6406', 'CVE-2019-13732', 'chromium-p0:1963',  # crbug/1023817
+    'CVE-2020-16011',                                       # crbug/1144489
+}
+# Bugs with no public fix commit at all: vendor ships releases not commits
+# (Qualcomm/Mali), upstream marked it wontfix, or the RCA cites it only as
+# historical background (no dedicated fix CL exists).
+NO_FIX_BUGS = {
+    'CVE-2021-1905', 'CVE-2021-44828',                      # release-only
+    'chromium:663476', 'chromium:678706', 'chromium:708887',
+    'chromium:746946',                                     # background refs
+    'mozilla:1368273',                                     # wontfix
+}
+
+
+# Tracker-id ↔ CVE-id aliases: the same underlying bug filed under both a
+# CVE number and a Chromium / Project-Zero / Mozilla tracker id. Each was
+# confirmed by reading the bug page or RCA this session. Used to collapse
+# duplicate pairs (the same relationship harvested once per identifier) and
+# to detect alias self-pairs (later and prior are the same bug).
+BUG_ALIASES = {
+    'chromium-p0:1820': 'CVE-2019-11707',   # bugzilla 1544386
+    'chromium-p0:2280': 'CVE-2022-1232',    # P0 2280 == CVE-2022-1232
+    'chromium-p0:168':  'CVE-2014-9665',    # FreeType sbix PNG overflow
+    'chromium-p0:1963': 'CVE-2020-6406',    # PannerHandler (== CVE-2019-13732/6406)
+    'chromium-p0:2112': 'CVE-2020-16010',   # P0 2112 is CVE-2020-16010's own issue
+    'chromium:1004730': 'CVE-2019-13695',   # MojoAudioDecoder
+    'chromium:999311':  'CVE-2019-5870',    # MojoCdmService
+    'chromium:1144368': 'CVE-2020-16010',   # Android bitmap overflow
+    'chromium:619166':  'CVE-2016-5128',    # V8 interceptor objects.cc
+    # Self-references: the CVE's OWN crbug, where the harvester resolved the
+    # master fix commit on one side and the Gerrit CL that produced it on the
+    # other — different URLs, byte-identical diffs (jaccard 1.00, verified by
+    # comparing the cached patch add/remove lines). Aliasing collapses each
+    # to an alias self-pair → DUPLICATE, instead of inflating READY as a
+    # bogus `one_extends_other` sibling.
+    'chromium:1392715': 'CVE-2022-4135',    # GPU texture_manager (71/71 lines)
+    'chromium:1019226': 'CVE-2019-13720',   # WebAudio convolver_node lock
+    'chromium:1249962': 'CVE-2021-38000',   # Android intent validation (555/555)
+    'chromium:1252918': 'CVE-2021-37975',   # V8 concurrent-marking (75/75)
+    'chromium:1278387': 'CVE-2021-4102',    # V8 simplified-operator-reducer
+    'chromium:1174582': 'CVE-2021-21166',   # WebAudio script_processor_node (18/18)
+    'chromium:1143772': 'CVE-2020-16009',   # V8 map-updater (79/79)
+}
+
+
+def _canon_bug(bug_id: str) -> str:
+    return BUG_ALIASES.get(bug_id, bug_id)
+
+
+def _effective_codebase(a: Optional[dict]) -> str:
+    """The pair's codebase, preferring whichever side the audit could
+    infer (siblings share a codebase, so the known side stands in for an
+    `unknown` missing side)."""
+    if not a:
+        return 'unknown'
+    for cb in (a.get('later_codebase'), a.get('prior_codebase')):
+        if cb and cb != 'unknown':
+            return cb
+    return 'unknown'
+
+
+def _blocked_status(s: dict, a: Optional[dict]) -> Optional[Tuple[str, str]]:
+    """If a SUSPECTED pair's missing fix URL is known-unreachable, return
+    its BLOCKED bucket; otherwise None (genuinely still resolvable)."""
+    missing = []
+    if not s.get('later_patch_url'):
+        missing.append(s['later_cve'])
+    if not s.get('prior_patch_url'):
+        missing.append(s['prior_cve'])
+    if not missing:
+        return None
+
+    eff = _effective_codebase(a)
+    if eff in CLOSED_CODEBASES:
+        return ('BLOCKED (closed source)',
+                f'{eff} has no public source — fix only in shipped '
+                f'binaries; would need binary diffing')
+    if any(b in INACCESSIBLE_BUGS for b in missing):
+        flagged = ', '.join(b for b in missing if b in INACCESSIBLE_BUGS)
+        return ('BLOCKED (page restricted)',
+                f'a real fix exists but the bug page for {flagged} is '
+                f'security-view-restricted (no Chromium-security access)')
+    if all(b in NO_FIX_BUGS for b in missing):
+        return ('BLOCKED (never fixed)',
+                f'no public fix commit exists for {", ".join(missing)} '
+                f'(vendor ships releases / wontfix / historical reference)')
+    return None
+
+
 def _categorize(s: dict, d: Optional[dict],
                 a: Optional[dict]) -> Tuple[str, str]:
     """Bucket a confirmed seed pair by URL completeness + relatedness.
@@ -345,6 +446,16 @@ def _categorize(s: dict, d: Optional[dict],
         return (f'REJECTED ({deep_kind})',
                 f'both patches fetched; deep verifier rejected as '
                 f'{deep_kind} after reading the actual diffs')
+
+    # ---------- BLOCKED: missing URL is known-unreachable --------------
+    # Before calling a pair SUSPECTED (= "go find the URL"), check whether
+    # the missing side is reachable at all. Closed-source vendors, bug
+    # pages that stay security-restricted, and never-fixed/background
+    # references can never be resolved — pull them out of SUSPECTED so it
+    # only holds genuinely-actionable pairs.
+    blocked = _blocked_status(s, a)
+    if blocked is not None:
+        return blocked
 
     # ---------- TIER 2: SUSPECTED — prose verified, URL gap -----------
     # Prose-LLM verified the sibling claim from the upstream document
@@ -411,17 +522,9 @@ def main() -> int:
     # ordering for the report (TIER 1 → TIER 4) by ordering keys via the
     # `_BUCKET_ORDER` list below; any bucket not in the list lands at
     # the end.
-    from collections import defaultdict
-    buckets: Dict[str, list] = defaultdict(list)
-    bucket_reasons: Dict[Tuple[str, str], str] = {}
-    for s in confirmed:
-        d = dx.get((s['later_cve'], s['prior_cve']))
-        a = ax.get((s['later_cve'], s['prior_cve']))
-        bucket, why = _categorize(s, d, a)
-        buckets[bucket].append((s, d, a))
-        bucket_reasons[(s['later_cve'], s['prior_cve'])] = why
-
-    # Stable display order (TIER 1 → TIER 4 → UNSURE).
+    # Stable display order (TIER 1 → TIER 4 → UNSURE). Defined before the
+    # bucket loop because the dedup pass ranks buckets by this order to
+    # pick which of several duplicate pairs to keep.
     _BUCKET_ORDER = [
         'READY (incomplete_fix)',
         'READY (same_root_cause)',
@@ -429,11 +532,71 @@ def main() -> int:
         'SUSPECTED (1 URL, need prior)',
         'SUSPECTED (1 URL, need later)',
         'SUSPECTED (no URLs)',
+        'BLOCKED (page restricted)',
+        'BLOCKED (closed source)',
+        'BLOCKED (never fixed)',
         'REJECTED (unrelated)',
         'REJECTED (insufficient_data)',
+        'DUPLICATE',
         'DROPPED',
         'UNSURE',
     ]
+
+    def _bucket_rank(bucket: str) -> int:
+        try:
+            return _BUCKET_ORDER.index(bucket)
+        except ValueError:
+            return len(_BUCKET_ORDER)
+
+    def _tracker_count(s: dict) -> int:
+        """How many of the pair's two ids are non-CVE tracker ids — used as
+        a dedup tiebreak so the canonical CVE↔CVE row is kept over a
+        tracker-id alias of the same relationship."""
+        return sum(0 if b.startswith('CVE-') else 1
+                   for b in (s['later_cve'], s['prior_cve']))
+
+    from collections import defaultdict
+    # First pass: categorise every confirmed pair into [s, d, a, bucket, why].
+    records: List[list] = []
+    for s in confirmed:
+        d = dx.get((s['later_cve'], s['prior_cve']))
+        a = ax.get((s['later_cve'], s['prior_cve']))
+        bucket, why = _categorize(s, d, a)
+        records.append([s, d, a, bucket, why])
+
+    # Dedup pass: collapse pairs to canonical bug ids (resolving tracker-id
+    # aliases). Pairs whose two sides canonicalise to the SAME bug are alias
+    # self-pairs; pairs sharing a canonical (later, prior) key are the same
+    # relationship harvested under two identifiers. In both cases keep the
+    # single best-bucket representative and route the rest to DUPLICATE so
+    # they stop inflating the READY / REJECTED counts.
+    groups: Dict[Tuple[str, str], list] = defaultdict(list)
+    for rec in records:
+        s = rec[0]
+        groups[(_canon_bug(s['later_cve']), _canon_bug(s['prior_cve']))].append(rec)
+
+    for (cl, cp), recs in groups.items():
+        if cl == cp:
+            for rec in recs:
+                rec[3] = 'DUPLICATE'
+                rec[4] = (f'alias self-pair — {rec[0]["later_cve"]} and '
+                          f'{rec[0]["prior_cve"]} are the same bug ({cl})')
+            continue
+        if len(recs) > 1:
+            recs.sort(key=lambda r: (_bucket_rank(r[3]), _tracker_count(r[0]),
+                                     r[0]['later_cve'], r[0]['prior_cve']))
+            keep = recs[0]
+            for rec in recs[1:]:
+                rec[3] = 'DUPLICATE'
+                rec[4] = (f'duplicate of {keep[0]["later_cve"]} → '
+                          f'{keep[0]["prior_cve"]} (kept in "{keep[3]}"); '
+                          f'same relationship via aliased bug id')
+
+    buckets: Dict[str, list] = defaultdict(list)
+    bucket_reasons: Dict[Tuple[str, str], str] = {}
+    for s, d, a, bucket, why in records:
+        buckets[bucket].append((s, d, a))
+        bucket_reasons[(s['later_cve'], s['prior_cve'])] = why
     # Anything dynamically generated (e.g. an extra 1-URL flavour) goes
     # at the end, sorted, so the report is deterministic.
     ordered_keys = [k for k in _BUCKET_ORDER if k in buckets]
@@ -446,7 +609,9 @@ def main() -> int:
 
     n_ready     = _count('READY')
     n_suspected = _count('SUSPECTED')
+    n_blocked   = _count('BLOCKED')
     n_rejected  = _count('REJECTED')
+    n_duplicate = _count('DUPLICATE')
     n_dropped   = _count('DROPPED')
     n_unsure    = _count('UNSURE')
 
@@ -474,7 +639,28 @@ def main() -> int:
         'deep code-level check. The relationship is most likely real; '
         'they just need a human to grab the missing patch URL. '
         '`SUSPECTED (1 URL, need <side>)` rows are closest to '
-        'actionable; `SUSPECTED (no URLs)` rows need both URLs.',
+        'actionable; `SUSPECTED (no URLs)` rows need both URLs. As of '
+        'the latest pass this tier is **empty** — every readable '
+        'open-source target has been resolved (its URL is now in '
+        'patch_url_overrides.json) and graduated to READY, REJECTED, or '
+        'DROPPED; the unreachable ones are in BLOCKED below.',
+        '',
+        f'### BLOCKED ({n_blocked}) ⛔ missing URL is unreachable',
+        '',
+        '> The sibling claim is plausible but the missing fix URL can '
+        'never be fetched, for one of three reasons:',
+        '> - **page restricted** — a real fix CL exists but its Chromium '
+        'bug page stays security-view-restricted even to signed-in '
+        'accounts (the PannerHandler crbug/1023817 and Windows-bitmap '
+        'crbug/1144489 families).',
+        '> - **closed source** — the product has no public source '
+        '(Microsoft Windows / IE-JScript, Apple CoreText, Adobe Reader, '
+        'WinRAR, Samsung); the fix ships only in binaries and would need '
+        'binary diffing.',
+        '> - **never fixed** — no public fix commit exists at all: the '
+        'vendor ships driver *releases* not commits (Qualcomm/Mali), the '
+        'bug was marked wontfix, or the RCA cites it only as historical '
+        'background.',
         '',
         f'### TIER 3 — REJECTED ({n_rejected}) × both patches + deep verifier rejected',
         '',
@@ -483,6 +669,16 @@ def main() -> int:
         'filter on github-search results, these are mostly correct '
         'rejections; before the filter they were dominated by wrong-repo '
         'resolutions.',
+        '',
+        f'### DUPLICATE ({n_duplicate}) ⧉ same relationship under two bug ids',
+        '',
+        '> The same sibling relationship harvested twice — once via a CVE '
+        'number and once via a Chromium / Project-Zero / Mozilla tracker id '
+        'that names the same bug (alias map in `make_seeds_table.BUG_ALIASES`). '
+        'The best-bucket copy is kept in its tier above; these are the '
+        'redundant copies, removed so they don\'t inflate the READY / '
+        'REJECTED counts. Also includes alias self-pairs — a CVE paired '
+        'with a tracker id that turned out to BE that same CVE.',
         '',
         f'### TIER 4 — DROPPED ({n_dropped}) ✗ explicit exclusions',
         '',

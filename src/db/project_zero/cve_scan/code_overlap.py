@@ -46,7 +46,8 @@ GITHUB_COMMIT_RE = re.compile(
 )
 # cgit-style hosts (kernel.org, freedesktop.org) use `?id=SHA` URLs.
 KERNELORG_COMMIT_RE = re.compile(
-    r'https?://(?:git\.kernel\.org|cgit\.freedesktop\.org|source\.codeaurora\.org)'
+    r'https?://(?:git\.kernel\.org|cgit\.freedesktop\.org|source\.codeaurora\.org'
+    r'|git\.savannah\.gnu\.org)'
     r'/[^\s)"\'<>]*(?:[?&;]id=|commit/[?]id=)([0-9a-f]{6,40})',
     re.IGNORECASE,
 )
@@ -66,7 +67,8 @@ HG_MOZILLA_RE = re.compile(
 # Commit URLs look like `.../+/SHA[/path][?...]` or `.../+/refs/heads/...`.
 # We only want commit-SHA forms here.
 GITILES_COMMIT_RE = re.compile(
-    r'https?://(chromium\.googlesource\.com|android\.googlesource\.com)'
+    r'https?://(chromium\.googlesource\.com|android\.googlesource\.com'
+    r'|skia\.googlesource\.com)'
     r'/([^\s)"\'<>?#]+?)/\+/([0-9a-f]{6,40})\b',
     re.IGNORECASE,
 )
@@ -542,7 +544,7 @@ class PatchFetcher:
         # → root = .../linux.git/, raw = root + patch/?id=...
         root_m = re.match(
             r'(https?://(?:git\.kernel\.org|cgit\.freedesktop\.org|'
-            r'source\.codeaurora\.org)/[^?#]*?/)'
+            r'source\.codeaurora\.org|git\.savannah\.gnu\.org)/[^?#]*?/)'
             r'(?:commit|tree|log|patch)/?',
             commit_url, re.IGNORECASE,
         )
@@ -591,7 +593,7 @@ class PatchFetcher:
         repo_path = m.group(2)
         sha = m.group(3)
         raw_url = (f'https://{host}/{repo_path}/+/{sha}^!?format=text')
-        host_slug = 'chromium' if 'chromium' in host else 'android'
+        host_slug = host.split('.')[0]  # chromium / android / skia
         local = os.path.join(self.cache_dir,
                              f'gitiles_{host_slug}_{sha}.patch')
         text = self._fetch_gitiles_decoded(raw_url, local)
