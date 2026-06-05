@@ -104,10 +104,10 @@ Edit `patch_url_overrides.json`:
 then re-run from `src/db/project_zero`:
 
 ```bash
-uv run --no-project --with openai --python 3.12 -m cve_scan.run_p0_harvest --budget-usd 1
-uv run --no-project --with openai --python 3.12 -m cve_scan.run_diff_relate --budget-usd 2
-uv run --no-project --with openai --python 3.12 -m cve_scan.run_inspect_unsure
-uv run --no-project --with openai --python 3.12 -m cve_scan.make_seeds_table
+uv run --no-project --with openai --python 3.12 -m discover.run_p0_harvest --budget-usd 1
+uv run --no-project --with openai --python 3.12 -m discover.run_diff_relate --budget-usd 2
+uv run --no-project --with openai --python 3.12 -m discover.run_inspect_unsure
+uv run --no-project --with openai --python 3.12 -m discover.make_seeds_table
 ```
 
 The resolver auto-normalises `source.chromium.org/.../+/sha`,

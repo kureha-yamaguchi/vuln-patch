@@ -6,5 +6,5 @@ posts) and verify each candidate with an LLM. See the plan at
 `.claude/plans/how-easy-would-it-logical-snowflake.md`.
 
 Run via:
-    cd src && uv run -m cve_scan.run_p0_harvest [--no-llm] [--refresh]
+    cd src && uv run -m discover.run_p0_harvest [--no-llm] [--refresh]
 """

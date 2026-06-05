@@ -1140,7 +1140,7 @@ class CodeOverlapChecker:
     def _load_overrides(overrides_path: Optional[str]) -> Dict[str, str]:
         if overrides_path is None:
             # Default: findings/verified/patch_url_overrides.json relative
-            # to this package (../findings/verified/ from cve_scan/).
+            # to this package (../findings/verified/ from discover/).
             here = os.path.dirname(os.path.abspath(__file__))
             overrides_path = os.path.join(
                 here, os.pardir, 'findings', 'verified',

@@ -8,7 +8,7 @@ LLM's claim so they can be reviewed manually.
 
 Example usage (from src/):
 
-    uv run -m cve_scan.run_inspect_unsure
+    uv run -m discover.run_inspect_unsure
 """
 import sys
 

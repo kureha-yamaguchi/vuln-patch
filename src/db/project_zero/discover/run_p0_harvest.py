@@ -9,11 +9,11 @@ A pair is `confirmed` if EITHER signal is positive.
 
 Example usage (from the project's src/ directory):
 
-    uv run -m cve_scan.run_p0_harvest                # full harvest + verify
-    uv run -m cve_scan.run_p0_harvest --no-llm       # overlap-only verify
-    uv run -m cve_scan.run_p0_harvest --no-overlap   # LLM-only verify
-    uv run -m cve_scan.run_p0_harvest --refresh      # re-pull all sources
-    uv run -m cve_scan.run_p0_harvest --budget-usd 3 --out ./out
+    uv run -m discover.run_p0_harvest                # full harvest + verify
+    uv run -m discover.run_p0_harvest --no-llm       # overlap-only verify
+    uv run -m discover.run_p0_harvest --no-overlap   # LLM-only verify
+    uv run -m discover.run_p0_harvest --refresh      # re-pull all sources
+    uv run -m discover.run_p0_harvest --budget-usd 3 --out ./out
 
 Set GITHUB_TOKEN in the environment to lift GitHub API + .patch fetch
 rate limits (60 → 5000 per hour).

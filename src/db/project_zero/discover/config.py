@@ -20,7 +20,7 @@ CVE_SCAN_CACHE_DIR = os.path.expanduser(
 # `<output>/verified/`.
 #
 # Default assumes the CLI is invoked from `src/db/project_zero/` (the
-# layout documented in cve_scan/README.md), so the relative path lands
+# layout documented in discover/README.md), so the relative path lands
 # the outputs at `src/db/project_zero/findings/...`.  Override via the
 # `CVE_SCAN_OUTPUT_DIR` env var if invoking from elsewhere.
 CVE_SCAN_OUTPUT_DIR   = os.getenv('CVE_SCAN_OUTPUT_DIR', './findings')

@@ -3,10 +3,10 @@
 Produces a hand-verifiable table of `(later_cve, prior_cve)` pairs extracted
 from the P0 0-day Google Sheet, the `googleprojectzero/0days-in-the-wild`
 repository, and a curated set of narrative blog posts. Each candidate pair
-is then verified by `gpt-5-mini` (via :mod:`cve_scan.classifier`); only the
+is then verified by `gpt-5-mini` (via :mod:`discover.classifier`); only the
 LLM-confirmed pairs land in the final seed table.
 
-Run via the CLI in :mod:`cve_scan.run_p0_harvest`.
+Run via the CLI in :mod:`discover.run_p0_harvest`.
 """
 from __future__ import annotations
 

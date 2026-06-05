@@ -2,7 +2,7 @@
 
 LLM backend (pick one):
 
-  Option A — OpenAI API (same as cve_scan):
+  Option A — OpenAI API (same as the project_zero discover pipeline):
       export OPENAI_API_KEY=sk-...
       # optionally override the model:
       export LOCAL_LLM_MODEL=gpt-4o
@@ -17,7 +17,7 @@ import os
 
 # --- LLM ------------------------------------------------------------------
 # If OPENAI_API_KEY is set the pipeline targets api.openai.com directly
-# (same pattern as cve_scan). Otherwise it falls back to a local
+# (same pattern as project_zero/discover). Otherwise it falls back to a local
 # Ollama/LM-Studio server. LOCAL_LLM_MODEL can override the model in both
 # modes; --model on the CLI overrides it further at runtime.
 _OPENAI_KEY = os.getenv('OPENAI_API_KEY')

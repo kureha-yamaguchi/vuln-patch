@@ -1,7 +1,7 @@
 # `verified/` — human-curated verification + patch-URL resolution
 
 The pipeline outputs (one directory up) are everything the
-`cve_scan/*.py` modules can produce automatically. This directory holds
+`discover/*.py` modules can produce automatically. This directory holds
 the **human-curated layer on top**: per-pair verification, patch-URL
 resolution that the pipeline couldn't fully automate, and the helper
 script behind the URL table.
@@ -11,7 +11,7 @@ script behind the URL table.
 ### `patch_url_overrides.json`
 
 Hand-curated map of `bug-id → fix-commit URL`, consulted **first** by
-`CodeOverlapChecker` (in `cve_scan/code_overlap.py`) before any
+`CodeOverlapChecker` (in `discover/code_overlap.py`) before any
 scraping or searching. This is how verified URLs from `findings_urls.md`
 flow back into the pipeline so SUSPECTED pairs graduate to READY.
 

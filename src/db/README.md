@@ -17,7 +17,7 @@ db/
 │
 ├── project_zero/                ← Harvested from Project Zero
 │   ├── README.md                  (input sources, pipeline phases)
-│   ├── cve_scan/                  the Python harvester package
+│   ├── discover/                  the Python harvester package
 │   └── findings/                  the dataset it produces
 │       ├── README.md
 │       ├── seeds_table.md         primary human-readable report
@@ -59,17 +59,17 @@ export GITHUB_TOKEN="$(gh auth token)"            # for GitHub API rate limits
 
 # Phase 1 — harvest + rough verify
 uv run --no-project --with openai --python 3.12 \
-    -m cve_scan.run_p0_harvest --budget-usd 1
+    -m discover.run_p0_harvest --budget-usd 1
 
 # Phase 2 — deep diff-relatability
 uv run --no-project --with openai --python 3.12 \
-    -m cve_scan.run_diff_relate --budget-usd 1
+    -m discover.run_diff_relate --budget-usd 1
 
 # Phase 3 — codebase audit + Markdown table
 uv run --no-project --with openai --python 3.12 \
-    -m cve_scan.run_inspect_unsure
+    -m discover.run_inspect_unsure
 uv run --no-project --with openai --python 3.12 \
-    -m cve_scan.make_seeds_table
+    -m discover.make_seeds_table
 ```
 
 Outputs land in `db/project_zero/findings/` relative to the CWD.

@@ -1,4 +1,4 @@
-# `cve_scan` — variant-CVE harvester
+# `discover` — variant-CVE harvester
 
 Mines Project Zero's public surfaces for **CVEs that are variants of
 previously-patched vulnerabilities** — same-root-cause bugs, regressions,
@@ -18,7 +18,7 @@ The package is three sequential phases, each runnable as its own CLI:
  seeds.csv
 ```
 
-### 1. Harvest + rough verify — `cve_scan.run_p0_harvest`
+### 1. Harvest + rough verify — `discover.run_p0_harvest`
 
 Pulls every input source:
 
@@ -43,7 +43,7 @@ A pair is `confirmed=True` if EITHER signal is positive (LLM = strict
 incomplete_fix / regression / same_root_cause-with-same_codebase, OR
 file-level overlap on non-boilerplate paths).
 
-### 2. Deep diff-relate — `cve_scan.run_diff_relate`
+### 2. Deep diff-relate — `discover.run_diff_relate`
 
 For each confirmed seed where both sides' patches were fetched, sends
 the actual unified diffs (truncated to ~3k tokens each) to `gpt-5-mini`
@@ -51,7 +51,7 @@ with the LLM-prose context. Classifies code-level relatedness:
 `incomplete_fix_confirmed | same_root_cause_confirmed | one_extends_other
 | unrelated | insufficient_data`.
 
-### 3. Codebase audit — `cve_scan.run_inspect_unsure`
+### 3. Codebase audit — `discover.run_inspect_unsure`
 
 Cross-references each pair's LATER CVE against the P0 sheet's
 Vendor/Product columns and each PRIOR identifier against bug-tracker
@@ -80,17 +80,17 @@ export GITHUB_TOKEN="$(gh auth token)"            # for GitHub API rate limits
 
 # Phase 1 — harvest + rough verify (~10 min cold cache, < 1 min after)
 uv run --no-project --with openai --python 3.12 \
-  -m cve_scan.run_p0_harvest --budget-usd 1
+  -m discover.run_p0_harvest --budget-usd 1
 
 # Phase 2 — deep diff-relatability
 uv run --no-project --with openai --python 3.12 \
-  -m cve_scan.run_diff_relate --budget-usd 1
+  -m discover.run_diff_relate --budget-usd 1
 
 # Phase 3 — codebase audit + Markdown report (no LLM)
 uv run --no-project --with openai --python 3.12 \
-  -m cve_scan.run_inspect_unsure
+  -m discover.run_inspect_unsure
 uv run --no-project --with openai --python 3.12 \
-  -m cve_scan.make_seeds_table
+  -m discover.make_seeds_table
 ```
 
 Outputs land in `./findings/` (configurable via `CVE_SCAN_OUTPUT_DIR`);

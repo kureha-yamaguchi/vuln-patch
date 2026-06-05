@@ -1,16 +1,16 @@
 """Deep diff-relatability CLI — second-pass verification of the seed pairs.
 
-Reads a `p0_seeds.json` file produced by `cve_scan.run_p0_harvest`, fetches
+Reads a `p0_seeds.json` file produced by `discover.run_p0_harvest`, fetches
 both sides' fix patches (reusing the rough overlap module's patch
 fetcher), and asks gpt-5-mini to judge whether the two diffs are
 code-level related.
 
 Example usage (from src/):
 
-    uv run -m cve_scan.run_diff_relate                 # use defaults
-    uv run -m cve_scan.run_diff_relate --all           # not just confirmed
-    uv run -m cve_scan.run_diff_relate --budget-usd 5
-    uv run -m cve_scan.run_diff_relate \\
+    uv run -m discover.run_diff_relate                 # use defaults
+    uv run -m discover.run_diff_relate --all           # not just confirmed
+    uv run -m discover.run_diff_relate --budget-usd 5
+    uv run -m discover.run_diff_relate \\
         --seeds ./findings/pipeline/seeds.json \\
         --out   ./findings/pipeline
 

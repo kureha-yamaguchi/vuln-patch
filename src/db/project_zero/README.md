@@ -5,12 +5,25 @@ verifies them through a layered pipeline (prose-LLM verifier +
 URL/file-overlap verifier + deep gpt-5-mini diff-relatability +
 codebase audit).
 
+## Data flow
+
+Two stages. `discover/` **finds and verifies** the pairs (the extra step
+linux_kernel doesn't need, since its seeds came pre-made from Liu et al);
+`tools/` **packages** the verified result into the per-pair dataset. Same
+role `linux_kernel/tools/` plays there.
+
+```
+  discover/  ──►  findings/  ──►  tools/   ──►  pairs/
+  mine P0 +       the verified    materialize    per-pair
+  verify pairs    pair report     the dataset    patches + metadata
+```
+
 ## Layout
 
 ```
 project_zero/
 ├── README.md                  ← this file
-├── cve_scan/                  Python harvester package
+├── discover/                  STAGE 1 — discovery + verification engine
 │   ├── README.md                pipeline phases, module map, run order
 │   ├── config.py                env-driven config (sheet ID,
 │   │                            narrative URLs, model, budget)
@@ -21,17 +34,23 @@ project_zero/
 │   ├── inspect_unsure.py        codebase-claim audit
 │   ├── make_seeds_table.py      Markdown report generator
 │   └── run_*.py                 CLIs
-└── findings/                  Pipeline output (the dataset itself)
-    ├── README.md                output schemas, what each file holds
-    ├── seeds_table.md           primary human-readable report
-    ├── pipeline/                machine-readable JSON/CSV
-    └── verified/                human-curated verification + URLs
+├── findings/                  output of stage 1 (the verified pair list)
+│   ├── README.md                output schemas, what each file holds
+│   ├── seeds_table.md           primary human-readable report
+│   ├── pipeline/                machine-readable JSON/CSV
+│   └── verified/                human-curated verification + URLs
+├── tools/                     STAGE 2 — dataset materialization
+│   └── build_pairs.py           findings/ + patch cache → pairs/
+│                                (future: fetch_context.py, checkout_pair.py)
+└── pairs/                     the dataset — one dir per READY pair
+    ├── README.md                layout + metadata.json schema
+    └── <PRIOR>__<LATER>/        fix0.patch, fix1.patch, metadata.json
 ```
 
 ## Input sources
 
-All three are pulled by `cve_scan/p0_harvest.py`. See
-[cve_scan/README.md](cve_scan/README.md) for the per-source extraction
+All three are pulled by `discover/p0_harvest.py`. See
+[discover/README.md](discover/README.md) for the per-source extraction
 strategy.
 
 | Source | URL | What it contributes |
@@ -53,13 +72,13 @@ source ~/.zshrc
 export GITHUB_TOKEN="$(gh auth token)"
 
 uv run --no-project --with openai --python 3.12 \
-    -m cve_scan.run_p0_harvest --budget-usd 1
+    -m discover.run_p0_harvest --budget-usd 1
 uv run --no-project --with openai --python 3.12 \
-    -m cve_scan.run_diff_relate --budget-usd 1
+    -m discover.run_diff_relate --budget-usd 1
 uv run --no-project --with openai --python 3.12 \
-    -m cve_scan.run_inspect_unsure
+    -m discover.run_inspect_unsure
 uv run --no-project --with openai --python 3.12 \
-    -m cve_scan.make_seeds_table
+    -m discover.make_seeds_table
 ```
 
 The bucketed Markdown report at
