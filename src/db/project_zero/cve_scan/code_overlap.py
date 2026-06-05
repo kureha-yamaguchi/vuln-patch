@@ -46,7 +46,7 @@ GITHUB_COMMIT_RE = re.compile(
 )
 # cgit-style hosts (kernel.org, freedesktop.org) use `?id=SHA` URLs.
 KERNELORG_COMMIT_RE = re.compile(
-    r'https?://(?:git\.kernel\.org|cgit\.freedesktop\.org)'
+    r'https?://(?:git\.kernel\.org|cgit\.freedesktop\.org|source\.codeaurora\.org)'
     r'/[^\s)"\'<>]*(?:[?&;]id=|commit/[?]id=)([0-9a-f]{6,40})',
     re.IGNORECASE,
 )
@@ -512,7 +512,8 @@ class PatchFetcher:
         # https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=...
         # → root = .../linux.git/, raw = root + patch/?id=...
         root_m = re.match(
-            r'(https?://(?:git\.kernel\.org|cgit\.freedesktop\.org)/[^?#]*?/)'
+            r'(https?://(?:git\.kernel\.org|cgit\.freedesktop\.org|'
+            r'source\.codeaurora\.org)/[^?#]*?/)'
             r'(?:commit|tree|log|patch)/?',
             commit_url, re.IGNORECASE,
         )
@@ -1076,7 +1077,8 @@ class CodeOverlapChecker:
                  cache_dir: str = config.CVE_SCAN_CACHE_DIR,
                  github_token: Optional[str] = None,
                  max_commits_per_side: int = 3,
-                 use_github_search: bool = True):
+                 use_github_search: bool = True,
+                 overrides_path: Optional[str] = None):
         self.rca_dir = rca_dir
         self.fetcher = PatchFetcher(
             cache_dir=os.path.join(cache_dir, 'patches'),
@@ -1093,9 +1095,82 @@ class CodeOverlapChecker:
             cache_dir=os.path.join(cache_dir, 'gerrit_search'),
         )
         self.max_commits_per_side = max_commits_per_side
+        # Hand-curated bug-id -> patch-URL overrides. Consulted FIRST in
+        # `_commit_urls_for`, before any scraping / searching. Lets a
+        # human pin the exact fix commit for a bug the automatic
+        # resolver couldn't find (or found wrongly). See
+        # findings/verified/patch_url_overrides.json.
+        self.overrides = self._load_overrides(overrides_path)
         # Cache patch resolution per bug_id within a run — many candidates
         # share the same later bug.
         self._patches_per_bug: Dict[str, List[Patch]] = {}
+
+    @staticmethod
+    def _load_overrides(overrides_path: Optional[str]) -> Dict[str, str]:
+        if overrides_path is None:
+            # Default: findings/verified/patch_url_overrides.json relative
+            # to this package (../findings/verified/ from cve_scan/).
+            here = os.path.dirname(os.path.abspath(__file__))
+            overrides_path = os.path.join(
+                here, os.pardir, 'findings', 'verified',
+                'patch_url_overrides.json',
+            )
+        if not os.path.isfile(overrides_path):
+            return {}
+        try:
+            with open(overrides_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return data.get('overrides', {})
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+    @staticmethod
+    def _normalize_override_url(url: str) -> str:
+        """Rewrite code-browser mirror URLs to their fetchable canonical
+        form. `source.chromium.org/chromium/_/chromium/<repo>.git/+/<sha>`
+        is a JS browser frontend; the equivalent Gitiles URL on
+        `*.googlesource.com` is directly fetchable as a patch."""
+        m = re.match(
+            r'https?://source\.chromium\.org/chromium/_/chromium/'
+            r'(.+?)\.git/\+/([0-9a-f]{6,40})', url, re.IGNORECASE)
+        if m:
+            repo, sha = m.group(1), m.group(2)
+            return f'https://chromium.googlesource.com/{repo}/+/{sha}'
+        # git.kernel.org/linus/<sha> is a shortcut for the torvalds tree;
+        # rewrite to the fetchable cgit patch URL.
+        m = re.match(r'https?://git\.kernel\.org/linus/([0-9a-f]{6,40})',
+                     url, re.IGNORECASE)
+        if m:
+            return ('https://git.kernel.org/pub/scm/linux/kernel/git/'
+                    f'torvalds/linux.git/patch/?id={m.group(1)}')
+        # source.codeaurora.org cgit /commit/?id= → /patch/?id=
+        m = re.match(
+            r'(https?://source\.codeaurora\.org/[^?]+?)/commit/\?id=([0-9a-f]{6,40})',
+            url, re.IGNORECASE)
+        if m:
+            return f'{m.group(1)}/patch/?id={m.group(2)}'
+        return url
+
+    @staticmethod
+    def _host_for_url(url: str) -> Optional[str]:
+        """Map a bare patch URL to the PatchFetcher host key, so an
+        override URL is fetched through the right handler."""
+        if GITHUB_COMMIT_RE.search(url):
+            return 'github'
+        if GITILES_COMMIT_RE.search(url) or 'googlesource.com' in url and '/+/' in url:
+            # source.chromium.org mirrors and *.googlesource.com Gitiles
+            if 'chromium-review.googlesource.com' in url:
+                return 'chromium-review'
+            return 'gitiles'
+        if 'chromium-review.googlesource.com' in url:
+            return 'chromium-review'
+        if KERNELORG_COMMIT_RE.search(url):
+            return 'kernelorg'
+        if GITLAB_COMMIT_RE.search(url) or 'codelinaro.org' in url:
+            return 'gitlab'
+        if BUGZILLA_MOZILLA_BUG_RE.search(url):
+            return 'bugzilla-mozilla'
+        return None
 
     # ----- public ------------------------------------------------------
 
@@ -1145,6 +1220,15 @@ class CodeOverlapChecker:
         decisions (e.g. only require source-code-file content for
         search-derived URLs, since RCA/canonical URLs are reliable)."""
         urls: List[Tuple[str, str, str]] = []
+
+        # 0) Hand-curated override — highest priority, fully trusted.
+        override_url = self.overrides.get(bug_id)
+        if override_url:
+            override_url = self._normalize_override_url(override_url)
+            host = self._host_for_url(override_url)
+            if host is not None:
+                urls.append((host, override_url, 'override'))
+
         if bug_id.startswith('CVE-'):
             urls.extend(self._urls_from_rca(bug_id))
         elif bug_id.startswith('github:'):

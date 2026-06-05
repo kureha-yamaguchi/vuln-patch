@@ -8,6 +8,33 @@ script behind the URL table.
 
 ## Files
 
+### `patch_url_overrides.json`
+
+Hand-curated map of `bug-id → fix-commit URL`, consulted **first** by
+`CodeOverlapChecker` (in `cve_scan/code_overlap.py`) before any
+scraping or searching. This is how verified URLs from `findings_urls.md`
+flow back into the pipeline so SUSPECTED pairs graduate to READY.
+
+```json
+{
+  "_comment": "...",
+  "overrides": {
+    "CVE-2022-1096":    "https://chromium.googlesource.com/v8/v8/+/0981e91a...",
+    "chromium:1315901": "https://chromium-review.googlesource.com/c/v8/v8/+/3755102",
+    "CVE-2020-11261":   "https://git.codelinaro.org/clo/la/kernel/msm-4.9/-/commit/d236d315...",
+    ...
+  }
+}
+```
+
+To add a pair: verify the fix commit by hand (browse the bug tracker /
+RCA), then add `"<bug-id>": "<url>"` and re-run the harvester. Override
+URLs are fully trusted (no source-files filter, no trusted-owner
+check) since a human vetted them. The resolver normalises a few
+browser-frontend / shortcut URL forms automatically
+(`source.chromium.org/.../+/sha`, `git.kernel.org/linus/sha`,
+`source.codeaurora.org/.../commit/?id=`).
+
 ### `findings_table_claude.md`
 
 Per-row verification of every pair in the pipeline's `confirmed` set
