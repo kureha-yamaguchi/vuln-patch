@@ -30,6 +30,7 @@ import config
 from analysis import TargetAnalyzer
 from build import HarnessBuilder
 from campaign import HarnessCampaign, CampaignResult
+from crash_input import CrashInputExtractor
 from failure_test import FailureTestExtractor, is_crashing_bug
 from fuzz_runner import FuzzRunner, HarnessVerifier
 from jazzer import JazzerEnvironment
@@ -51,7 +52,7 @@ def parse_args():
                         help="Choose from Chart/Closure/Lang/Math/Time")
     parser.add_argument("--language", type=str, nargs='?', default='Java',
                         help='Programming language of project')
-    parser.add_argument("-n", "--target_successes", type=int, default=3,
+    parser.add_argument("-n", "--target_successes", type=int, default=5,
                         help="Stop once this many harnesses compile "
                              "(default: 5)")
     parser.add_argument("-m", "--max_attempts", type=int, default=50,
@@ -136,6 +137,34 @@ def main():
     )
     print(json.dumps(context.as_dict(), indent=2))
 
+    # 3c) Capture the GROUND-TRUTH crashing input by running the trigger
+    #     test against the buggy checkout and reading the value back out
+    #     of the failure output. This removes the model's need to guess
+    #     which of (possibly many) test inputs actually crashes — the
+    #     single biggest cause of wasted attempts. Bug-type-agnostic and
+    #     purely additive: on any capture failure this is None and the
+    #     prompt falls back to test-source-only behaviour.
+    crash_input = None
+    primary_test = next((ft for ft in failure_tests if ft.has_source),
+                        failure_tests[0] if failure_tests else None)
+    if primary_test is not None:
+        # Fallback anchors mined from the test source, scoped to the
+        # patched (target) methods — used only when the runtime message
+        # does not itself echo the crashing value.
+        candidate_literals = []
+        if primary_test.method_source:
+            candidate_literals = PromptBuilder.candidate_anchor_literals(
+                primary_test.method_source,
+                [fn.func_name for fn in context.functions],
+            )
+        crash_input = CrashInputExtractor().extract(
+            buggy_dir=selection.buggy_dir,
+            test_class=primary_test.test_class,
+            test_method=primary_test.test_method,
+            candidate_literals=candidate_literals,
+        )
+    _print_crash_input(crash_input)
+
     # 4) Build the chat-completion prompt. Rather than a single fixed
     #    prompt, we wrap PromptBuilder in a factory the campaign calls
     #    before each fresh attempt: it injects which reachable functions
@@ -150,6 +179,7 @@ def main():
             failure_tests=failure_tests,
             covered_functions=covered_functions,
             found_signatures=found_signatures,
+            crash_input=crash_input,
         )
 
     # The set-empty prompt used for attempt 1.
@@ -159,6 +189,27 @@ def main():
     #    each compiled harness crashes the BUGGY version before accepting
     #    it. Acceptance = "compiles AND triggers".
     builder = HarnessBuilder(jazzer_api_jar=jazzer_api_jar)
+
+    # Throwable names this bug raises, gathered from D4J root-cause metadata
+    # and the captured runtime crash. Both fully-qualified and simple names
+    # are included so detection matches whichever form Jazzer prints. Used by
+    # both the in-campaign verifier (buggy code) and the post-campaign
+    # FuzzRunner (patched code) so crash detection is symmetric — otherwise a
+    # harness accepted as crashing could be wrongly reported clean on the
+    # patched code, masking an overfitting patch.
+    expected_exceptions = []
+    for ft in failure_tests:
+        if ft.exception_type:
+            expected_exceptions.append(ft.exception_type)
+            expected_exceptions.append(ft.exception_type.rsplit('.', 1)[-1])
+    if crash_input is not None and crash_input.exception_type:
+        expected_exceptions.append(crash_input.exception_type)
+        expected_exceptions.append(
+            crash_input.exception_type.rsplit('.', 1)[-1])
+    seen = set()
+    expected_exceptions = [e for e in expected_exceptions
+                           if e and not (e in seen or seen.add(e))]
+
     verifier = None
     if args.require_trigger:
         # Resolve the buggy classpath once (compiles the project), then
@@ -172,6 +223,8 @@ def main():
             jazzer_standalone_jar=jazzer_standalone_jar,
             buggy_classpath=buggy_cp,
             timeout_seconds=verify_timeout,
+            expected_exceptions=expected_exceptions,
+            jazzer_api_jar=jazzer_api_jar,
         )
 
     campaign = HarnessCampaign(
@@ -196,6 +249,8 @@ def main():
         fuzz_results = FuzzRunner(
             jazzer_standalone_jar=jazzer_standalone_jar,
             timeout_seconds=args.fuzz_timeout,
+            expected_exceptions=expected_exceptions,
+            jazzer_api_jar=jazzer_api_jar,
         ).run_all(
             successful_results=result.successful_results,
             patch_path=selection.patch_path,
@@ -215,6 +270,22 @@ def _print_failure_tests(failure_tests) -> None:
         marker = '✓' if ft.has_source else '?'
         exc = f"  [{ft.exception_type}]" if ft.exception_type else ""
         print(f"  {marker} {ft.test_class}::{ft.test_method}{exc}")
+
+
+def _print_crash_input(crash_input) -> None:
+    if crash_input is None or not crash_input.has_evidence:
+        print("No ground-truth crash input captured — prompt will fall "
+              "back to test-source anchoring.")
+        return
+    print("Captured ground-truth crash input:")
+    if crash_input.exception_type:
+        print(f"  throwable : {crash_input.exception_type}")
+    if crash_input.message:
+        print(f"  message   : {crash_input.message}")
+    if crash_input.throw_site:
+        print(f"  thrown_at : {crash_input.throw_site}")
+    if crash_input.literals:
+        print(f"  literals  : {crash_input.literals}")
 
 
 def _print_summary(selection, result: CampaignResult) -> None:

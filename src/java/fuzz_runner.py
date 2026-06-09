@@ -43,23 +43,101 @@ class JazzerOutcome:
     returncode: int
     stdout: str
     stderr: str
+    crash_reason: Optional[str] = None  # why we classified this as a crash
 
     @property
     def combined_output(self) -> str:
         return f"{self.stdout}\n{self.stderr}"
 
 
+# Output markers that mean "Jazzer caught an uncaught throwable from the
+# harness". The original detector only looked for the first of these, but a
+# harness that throws deterministically on the *first* input often aborts
+# during libFuzzer's warmup and surfaces one of the later forms instead of
+# the clean `== Java Exception` finding banner.
+_CRASH_MARKERS = (
+    '== Java Exception',
+    '== libFuzzer crashing input',
+    'ERROR: libFuzzer: deadly signal',
+    'ERROR: libFuzzer: fuzz target exited',
+    'Uncaught exception',
+    'Test unit written to',        # crash artifact persisted
+    'artifact_prefix',             # crash artifact path echoed on a finding
+)
+
+
+def _looks_like_crash(returncode: int,
+                      combined: str,
+                      expected_exceptions: Optional[List[str]]) -> Optional[str]:
+    """Return a short human-readable reason if `combined` (stdout+stderr)
+    shows a genuine crash, else None.
+
+    Detection is layered from most to least certain:
+
+      1. Jazzer's dedicated finding exit code.
+      2. Any known crash/finding marker in the output.
+      3. The *expected* throwable type appears in the output together with
+         a project stack frame. This is the key fix for the `rc=1` case: a
+         deterministic first-input crash can exit nonzero without printing
+         the finding banner, but if we see the exception we were told to
+         expect being thrown from project code, it is unambiguously the
+         crash we are gating on — not a Jazzer startup error.
+    """
+    if returncode == config.JAZZER_CRASH_EXIT_CODE:
+        return f"exit code {returncode} (Jazzer finding)"
+
+    for marker in _CRASH_MARKERS:
+        if marker in combined:
+            return f"output marker: {marker!r}"
+
+    # Expected-exception evidence. Requires BOTH the throwable type and a
+    # stack frame so we don't fire on the type merely being named in a log
+    # line. _FRAME_RE is defined below this function but resolved at call
+    # time, so the forward reference is fine.
+    if expected_exceptions:
+        has_frame = bool(_FRAME_RE.search(combined))
+        for exc in expected_exceptions:
+            if exc and exc in combined and has_frame:
+                return f"expected throwable {exc!r} with stack frame"
+
+    return None
+
+
 def run_jazzer(jazzer_standalone_jar: str,
                target_class: str,
                harness_dir: str,
                project_cp: str,
-               timeout_seconds: int) -> JazzerOutcome:
+               timeout_seconds: int,
+               expected_exceptions: Optional[List[str]] = None,
+               jazzer_api_jar: Optional[str] = None
+               ) -> JazzerOutcome:
     """Run one Jazzer harness against `project_cp` and report whether it
     crashed within `timeout_seconds`. Shared by the buggy-version gate
     and the patched-version overfitting check so crash detection is
-    defined in exactly one place."""
+    defined in exactly one place.
+
+    `expected_exceptions` is an optional list of throwable names (e.g.
+    ['java.lang.NullPointerException', 'NullPointerException']) used to
+    recognise a deterministic first-input crash even when Jazzer exits
+    without its usual finding banner.
+
+    `jazzer_api_jar` is the jazzer-api jar containing FuzzedDataProvider.
+    The standalone driver jar does NOT bundle the API classes in every
+    release (0.22.1 does not), so the API jar must be on the *runtime*
+    classpath too — not just the compile classpath — or Jazzer fails to
+    reflect on the harness entrypoint with ClassNotFoundException on
+    com.code_intelligence.jazzer.api.FuzzedDataProvider. Defaults to
+    config.JAZZER_API_JAR.
+    """
+    if jazzer_api_jar is None:
+        jazzer_api_jar = config.JAZZER_API_JAR
+
+    artifact_dir = os.path.join(harness_dir, 'crashes')
+    os.makedirs(artifact_dir, exist_ok=True)
+
     classpath = os.pathsep.join([
         jazzer_standalone_jar,
+        jazzer_api_jar,
         project_cp,
         harness_dir,
     ])
@@ -69,6 +147,11 @@ def run_jazzer(jazzer_standalone_jar: str,
         f'--target_class={target_class}',
         '--',
         f'-max_total_time={timeout_seconds}',
+        # Ensure the harness body is actually entered (so a deterministic
+        # first-input throw is reported as a finding, not a warmup abort)
+        # and that any crashing input is persisted where we can see it.
+        '-runs=100000',
+        f'-artifact_prefix={artifact_dir}{os.sep}',
     ]
 
     timed_out = False
@@ -90,19 +173,17 @@ def run_jazzer(jazzer_standalone_jar: str,
         if isinstance(stderr, bytes):
             stderr = stderr.decode('utf-8', 'replace')
 
-    triggered = (
-        not timed_out and (
-            returncode == config.JAZZER_CRASH_EXIT_CODE or
-            '== Java Exception' in stderr or
-            '== Java Exception' in stdout
-        )
-    )
+    combined = f"{stdout}\n{stderr}"
+    crash_reason = (None if timed_out
+                    else _looks_like_crash(returncode, combined,
+                                           expected_exceptions))
     return JazzerOutcome(
-        triggered=triggered,
+        triggered=crash_reason is not None,
         timed_out=timed_out,
         returncode=returncode,
         stdout=stdout,
         stderr=stderr,
+        crash_reason=crash_reason,
     )
 
 
@@ -236,9 +317,15 @@ class FuzzRunner:
 
     def __init__(self,
                  jazzer_standalone_jar: str,
-                 timeout_seconds: int = config.FUZZ_TIMEOUT_SECONDS):
+                 timeout_seconds: int = config.FUZZ_TIMEOUT_SECONDS,
+                 expected_exceptions: Optional[List[str]] = None,
+                 jazzer_api_jar: Optional[str] = None):
         self.jazzer_standalone_jar = jazzer_standalone_jar
         self.timeout_seconds = timeout_seconds
+        self.expected_exceptions = expected_exceptions or []
+        # API jar (FuzzedDataProvider) for the runtime classpath; see
+        # run_jazzer. Defaults there to config.JAZZER_API_JAR if None.
+        self.jazzer_api_jar = jazzer_api_jar
 
     def run_all(self,
                 successful_results: List[BuildResult],
@@ -267,6 +354,8 @@ class FuzzRunner:
             harness_dir=harness_dir,
             project_cp=patched_cp,
             timeout_seconds=self.timeout_seconds,
+            expected_exceptions=self.expected_exceptions,
+            jazzer_api_jar=self.jazzer_api_jar,
         )
         return FuzzRunResult(
             harness_path=build_result.harness_path,
@@ -325,10 +414,19 @@ class HarnessVerifier:
     def __init__(self,
                  jazzer_standalone_jar: str,
                  buggy_classpath: str,
-                 timeout_seconds: int = config.VERIFY_TIMEOUT_SECONDS):
+                 timeout_seconds: int = config.VERIFY_TIMEOUT_SECONDS,
+                 expected_exceptions: Optional[List[str]] = None,
+                 jazzer_api_jar: Optional[str] = None):
         self.jazzer_standalone_jar = jazzer_standalone_jar
         self.buggy_classpath = buggy_classpath
         self.timeout_seconds = timeout_seconds
+        # Throwable names this bug is expected to raise (FQ and/or simple
+        # name). Lets run_jazzer recognise a deterministic first-input
+        # crash even when Jazzer exits without its finding banner.
+        self.expected_exceptions = expected_exceptions or []
+        # API jar (FuzzedDataProvider) for the runtime classpath; see
+        # run_jazzer. Defaults there to config.JAZZER_API_JAR if None.
+        self.jazzer_api_jar = jazzer_api_jar
 
     def verify(self, build_result: BuildResult) -> VerificationResult:
         harness_dir = os.path.dirname(build_result.harness_path)
@@ -338,8 +436,21 @@ class HarnessVerifier:
             harness_dir=harness_dir,
             project_cp=self.buggy_classpath,
             timeout_seconds=self.timeout_seconds,
+            expected_exceptions=self.expected_exceptions,
+            jazzer_api_jar=self.jazzer_api_jar,
         )
         combined = outcome.combined_output
+        if outcome.triggered:
+            print(f"  ↳ crash detected ({outcome.crash_reason})")
+        elif not outcome.timed_out:
+            # Non-crash: dump the tail of Jazzer's output so a misclassified
+            # or genuinely-non-triggering harness can be diagnosed instead
+            # of silently burning an attempt.
+            print(f"  ↳ no crash (rc={outcome.returncode}). "
+                  "Jazzer output tail:")
+            tail = combined.strip().splitlines()[-15:]
+            for line in tail:
+                print(f"      {line}")
         return VerificationResult(
             crashed=outcome.triggered,
             timed_out=outcome.timed_out,

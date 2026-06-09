@@ -27,6 +27,38 @@ except ImportError:
 
 
 @dataclass
+class RelatedCallee:
+    """A method that a touched function *calls on or near the changed
+    lines*, whose behaviour the patched code depends on.
+
+    The motivating case: a patched method consumes the return value of a
+    call it makes (e.g. `consumed = translate(input, pos, out)`), and the
+    fault lives in how that returned value is used. The enclosing body
+    alone never shows the callee's contract, so the model cannot reason
+    about it. Surfacing the callee's declaration — and, when it is
+    abstract/overridden, the concrete implementations visible in the same
+    package — closes that gap. This is bug-type-agnostic: it is the same
+    'give the model the context it provably needs' move as `xrefs` and
+    `source_imports`, not logic specific to any one fault.
+    """
+    name: str
+    # Where the declaration was found, for prompt attribution / debugging
+    # (e.g. 'CharSequenceTranslator.java' or 'LookupTranslator.java').
+    source_file: Optional[str] = None
+    signature: Optional[str] = None
+    # The declaration body if one was resolvable. For an abstract callee
+    # this is the abstract declaration; concrete overrides go in `impls`.
+    source: Optional[str] = None
+    # True when the resolved declaration has no body (abstract/interface),
+    # signalling that `impls` carries the behaviour that actually runs.
+    is_abstract: bool = False
+    # Concrete implementations of this callee found in the same package —
+    # the bodies that actually execute at runtime. Each entry is
+    # (source_file, body). Only populated for abstract/overridden callees.
+    impls: List[Tuple[str, str]] = field(default_factory=list)
+
+
+@dataclass
 class TouchedFunction:
     """One project function that the patch touches, with its source and
     every call site fuzz-introspector found."""
@@ -40,6 +72,11 @@ class TouchedFunction:
     # the same fault would live — so it is the coverage map the campaign
     # steers the harness set across.
     reachable: List[str] = field(default_factory=list)
+    # Methods called on/near the changed lines whose behaviour the patch
+    # depends on, with their declarations and concrete implementations
+    # resolved from the same package. See RelatedCallee. Best-effort and
+    # purely additive: empty when nothing resolves.
+    related_callees: List[RelatedCallee] = field(default_factory=list)
 
 
 @dataclass
@@ -196,12 +233,223 @@ class TargetAnalyzer:
                     continue
                 seen.add(key)
                 body = "\n".join(lines[m['start'] - 1:m['end']])
-                out.append(TouchedFunction(
+                tf = TouchedFunction(
                     func_name=m['name'],
                     func_signature=m['signature'],
                     func_source=body,
-                ))
+                )
+                # Additive enrichment: surface the methods this function
+                # calls within its body whose contract the patch depends
+                # on. Best-effort — any failure leaves related_callees [].
+                try:
+                    tf.related_callees = self._resolve_related_callees(
+                        node=m.get('node'),
+                        own_method_name=m['name'],
+                        cu_tree=tree,
+                        cu_source=source,
+                        cu_rel_path=rel_path,
+                        buggy_dir=buggy_dir,
+                    )
+                except Exception as e:  # never let enrichment break analysis
+                    print(f"related-callee resolution failed for "
+                          f"{rel_path}:{m['name']} ({e})")
+                out.append(tf)
         return out
+
+    # --- related callees (caller -> callee context) ----------------------
+
+    # Cap how many distinct called methods we resolve per touched
+    # function. A method that calls dozens of helpers should not flood
+    # the prompt; the ones whose contract the patch depends on are few.
+    _MAX_RELATED_CALLEES = 6
+    # Cap concrete implementations surfaced per abstract callee, so a
+    # widely-overridden interface method doesn't dump the whole hierarchy.
+    _MAX_IMPLS_PER_CALLEE = 4
+
+    def _resolve_related_callees(
+        self,
+        node,
+        own_method_name: str,
+        cu_tree,
+        cu_source: str,
+        cu_rel_path: str,
+        buggy_dir: str,
+    ) -> List[RelatedCallee]:
+        """Find the methods called inside `node`'s body whose declaration
+        exists in the same package, and return their signatures, bodies,
+        and (for abstract/overridden ones) concrete implementations.
+
+        Universal rationale: a patch's fault frequently depends on the
+        contract of something the method *calls* — most sharply when the
+        return value flows into the changed expression (the Lang_6 loop
+        trusts the codepoint count returned by `translate(...)`). The
+        enclosing body never shows that contract. We resolve only names
+        that actually have a declaration in the project package, which
+        naturally filters out java.lang/library calls without hard-coding
+        any allowlist, keeping this agnostic to bug type and project.
+        """
+        if node is None:
+            return []
+
+        # 1) Distinct method names invoked inside this method's subtree,
+        #    in first-seen order. Skip self-recursion — the body is
+        #    already shown in full.
+        called: List[str] = []
+        seen: set = set()
+        try:
+            for _, inv in node.filter(javalang.tree.MethodInvocation):
+                name = getattr(inv, 'member', None)
+                if not name:
+                    continue
+                # NOTE: do NOT skip names equal to the enclosing method.
+                # A method calling a *different overload* of itself is a
+                # central case here (the final translate(CharSequence,
+                # Writer) calls the abstract translate(CharSequence, int,
+                # Writer)). We instead drop the enclosing method's own
+                # declaration from the resolved set below, by signature.
+                if name not in seen:
+                    seen.add(name)
+                    called.append(name)
+        except Exception:
+            return []
+
+        # 2) Index every method declaration in the package directory on
+        #    disk (plus the current compilation unit), by name. Built once
+        #    per touched function; cheap relative to the rest of analysis.
+        decl_index = self._package_method_index(
+            cu_tree, cu_source, cu_rel_path, buggy_dir,
+        )
+
+        out: List[RelatedCallee] = []
+        own_sig = self._enclosing_signature(node)
+        for name in called:
+            decls = decl_index.get(name)
+            if not decls:
+                # No declaration in the package → library/JDK call, not
+                # useful root-cause context. Skip without an allowlist.
+                continue
+            # Drop the enclosing method's own declaration: it is already
+            # shown in full as func_source. A same-name call then keeps
+            # only the *other* overloads (e.g. the abstract translate),
+            # which is exactly the context the body lacks.
+            if own_sig is not None:
+                decls = [d for d in decls
+                         if self._sig_key(d['signature']) != own_sig]
+            if not decls:
+                continue
+            # Prefer the abstract declaration as the 'primary' (its
+            # Javadoc carries the contract); fall back to a concrete one.
+            # Concrete impls — including overrides of the abstract — are
+            # surfaced separately as the bodies that actually run.
+            concrete = [d for d in decls if not d['is_abstract']]
+            abstract = [d for d in decls if d['is_abstract']]
+            primary = (abstract[0] if abstract else concrete[0])
+
+            impls: List[Tuple[str, str]] = []
+            if primary['is_abstract'] or len(concrete) > 1:
+                for d in concrete[:self._MAX_IMPLS_PER_CALLEE]:
+                    impls.append((d['source_file'], d['source']))
+
+            out.append(RelatedCallee(
+                name=name,
+                source_file=primary['source_file'],
+                signature=primary['signature'],
+                source=primary['source'],
+                is_abstract=primary['is_abstract'],
+                impls=impls,
+            ))
+            if len(out) >= self._MAX_RELATED_CALLEES:
+                break
+        return out
+
+    @staticmethod
+    def _sig_key(signature: str) -> str:
+        """Normalise a signature to name+param-arity-ish key for matching
+        the enclosing method against the package index. We compare the
+        method name and parenthesised parameter list textually, which is
+        enough to distinguish overloads without resolving types."""
+        if signature is None:
+            return ""
+        # Keep from the method name's '(' onward, plus the bare name.
+        m = re.search(r'(\w+)\s*\(([^)]*)\)', signature)
+        if not m:
+            return signature.strip()
+        name = m.group(1)
+        # Param arity by counting top-level commas (0 params => arity 0).
+        params = m.group(2).strip()
+        arity = 0 if not params else params.count(',') + 1
+        return f"{name}/{arity}"
+
+    def _enclosing_signature(self, node) -> Optional[str]:
+        """Signature key for the touched method itself, used to exclude
+        its own declaration from its resolved callees."""
+        try:
+            return self._sig_key(self._format_method_sig(node))
+        except Exception:
+            return None
+
+    def _package_method_index(
+        self,
+        cu_tree,
+        cu_source: str,
+        cu_rel_path: str,
+        buggy_dir: str,
+    ) -> Dict[str, List[dict]]:
+        """Map method-name -> list of declarations found in the modified
+        file's package directory (non-recursive: same-package siblings).
+
+        Each declaration dict has source_file, signature, source (body),
+        and is_abstract. Same-package scope is the right granularity: it
+        is where overrides of an abstract callee live (LookupTranslator,
+        CsvEscaper, AggregateTranslator all sit beside
+        CharSequenceTranslator), and it bounds the work without a
+        whole-project parse.
+        """
+        index: Dict[str, List[dict]] = {}
+
+        pkg_dir = os.path.dirname(os.path.join(buggy_dir, cu_rel_path))
+        if not os.path.isdir(pkg_dir):
+            # Still index the current compilation unit so intra-file
+            # callees resolve even when the dir walk is unavailable.
+            self._index_unit(index, cu_tree, cu_source,
+                             os.path.basename(cu_rel_path))
+            return index
+
+        for fname in sorted(os.listdir(pkg_dir)):
+            if not fname.endswith('.java'):
+                continue
+            fpath = os.path.join(pkg_dir, fname)
+            try:
+                with open(fpath) as fh:
+                    fsrc = fh.read()
+                ftree = javalang.parse.parse(fsrc)
+            except (OSError, javalang.parser.JavaSyntaxError,
+                    javalang.tokenizer.LexerError):
+                continue
+            self._index_unit(index, ftree, fsrc, fname)
+        return index
+
+    def _index_unit(self, index: Dict[str, List[dict]],
+                    tree, source: str, source_file: str) -> None:
+        """Add every method declaration in one compilation unit to
+        `index`, recording whether it is abstract (no body)."""
+        lines = source.splitlines()
+        for _, n in tree:
+            if not isinstance(n, javalang.tree.MethodDeclaration):
+                continue
+            if not n.position:
+                continue
+            start = n.position.line
+            end = self._method_end_line(lines, start)
+            body = "\n".join(lines[start - 1:end])
+            is_abstract = (getattr(n, 'body', None) is None) or \
+                          ('abstract' in (n.modifiers or set()))
+            index.setdefault(n.name, []).append({
+                'source_file': source_file,
+                'signature': self._format_method_sig(n),
+                'source': body,
+                'is_abstract': is_abstract,
+            })
 
     def _collect_methods(self, tree, lines: List[str]) -> List[dict]:
         """Every MethodDeclaration / ConstructorDeclaration in the
@@ -232,6 +480,7 @@ class TargetAnalyzer:
                 'signature': self._format_method_sig(node),
                 'start': start,
                 'end': end,
+                'node': node,
             })
         return methods
 

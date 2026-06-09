@@ -1,13 +1,8 @@
-"""Build the chat-completion prompt that asks the LLM to write a Jazzer
-harness for the patched code.
+"""Build chat-completion prompts for Jazzer harness generation.
 
-Sections are constructed as lists of clean lines and joined with '\\n'
-rather than as triple-quoted strings, so the indentation of the Python
-source never leaks into the prompt. Multi-line substitutions
-(patch_text, function source, failing-test bodies) are spliced in
-verbatim — no `textwrap.dedent` on substituted content, which would
-break when the substituted text has its own indentation, and no
-`str.format`, which would choke on the literal `{` / `}` in Java code.
+Sections are assembled as lists of lines joined with '\n' so Python
+indentation never leaks into the prompt and Java literals with '{' / '}'
+are spliced verbatim without str.format choking on them.
 """
 import os
 import re
@@ -15,13 +10,12 @@ from typing import List, Dict, Optional
 
 import config
 from analysis import PatchContext, TouchedFunction
+from crash_input import CrashInput
 from failure_test import FailureTest
 
 
 class PromptBuilder:
-    """Builds the chat-completion messages from the extracted patch
-    context. Targets Jazzer (JVM libFuzzer port) so the result can be
-    compiled against the Java project."""
+    """Builds chat-completion messages from a PatchContext."""
 
     def __init__(self, language: str = 'Java'):
         self.language = language
@@ -31,23 +25,15 @@ class PromptBuilder:
               failure_tests: Optional[List[FailureTest]] = None,
               covered_functions: Optional[List[str]] = None,
               found_signatures: Optional[List[str]] = None,
+              crash_input: Optional["CrashInput"] = None,
               ) -> List[Dict[str, str]]:
         """Assemble the chat-completion messages.
 
-        `covered_functions` and `found_signatures` describe the harnesses
-        already accepted into the set this campaign. When present, a
-        variant-analysis block asks the model to drive a *different*
-        slice of the root-cause neighbourhood and find a *different*
-        crash — the mechanism by which the set interrogates the root
-        cause broadly and exposes sibling bugs rather than re-finding the
-        same fault."""
+        covered_functions / found_signatures describe harnesses already
+        accepted this campaign; when present, the variant-analysis block
+        steers the new harness toward uncovered code and a different crash."""
         codebase = os.path.basename(buggy_dir.rstrip('/'))
 
-        # Hard constraints lead: the entrypoint signature, class name and
-        # no-fences rule are what actually gate compilation, and a 20B
-        # model weights the head of the prompt most. Context (patch,
-        # sources, worked example) follows; the reasoning directive comes
-        # last so it's the final thing before the model writes.
         sections: List[str] = [
             self._hard_constraints(context.package),
             self._intro(codebase),
@@ -61,6 +47,8 @@ class PromptBuilder:
             sections.append(self._failure_test_block(
                 failure_tests,
                 signatures=[fn.func_signature for fn in context.functions],
+                method_names=[fn.func_name for fn in context.functions],
+                crash_input=crash_input,
             ))
         if context.root_cause_reachable:
             sections.append(self._variant_analysis_block(
@@ -70,7 +58,6 @@ class PromptBuilder:
             ))
         sections.append(self._fdp_reference())
         sections.append(self._skeleton_block(context.package))
-        sections.append(self._chain_of_thought())
 
         prompt = '\n\n'.join(sections)
 
@@ -78,9 +65,6 @@ class PromptBuilder:
         print(prompt)
         print("#" * 48)
 
-        # The bulk of the instructions live in the user message; the
-        # system message stays short and policy-shaped, which is what
-        # gpt-oss-20b's harmony format prefers.
         return [
             {'role': 'system', 'content':
                 f'You are an expert {self.language} security engineer '
@@ -92,195 +76,360 @@ class PromptBuilder:
 
     # --- sections --------------------------------------------------------
 
-    def _imports_block(self, imports: List[str]) -> str:
-        """Verbatim import statements from the modified source file(s).
-        Gives the model the correct package paths for types it otherwise
-        guesses wrong (Range, RectangleEdge, Size2D, etc.)."""
+    def _hard_constraints(self, package: Optional[str]) -> str:
+        if package:
+            package_line = (
+                f"- Package: `{package}` "
+                f"(`package {package};` at the top)."
+            )
+        else:
+            package_line = (
+                "- Package: same as the touched code "
+                "(copy the `package X.Y.Z;` line from the patch)."
+            )
         return '\n'.join([
-            "The modified source file uses these imports — copy them "
-            "exactly when you need these types:",
-            "<source_imports>",
-            *imports,
-            "</source_imports>",
+            "Write a Jazzer harness. Rules:",
+            "",
+            "- Class named exactly `FuzzHarness`.",
+            "- Entrypoint exactly:",
+            "    public static void fuzzerTestOneInput"
+            "(com.code_intelligence.jazzer.api.FuzzedDataProvider data)",
+            package_line,
+            "  Same-package placement gives direct access to package-private"
+            " members — no reflection.",
+            "- Output raw Java only: no markdown fences, no prose. A leading"
+            " `/* ... */` comment is allowed. Must compile with `javac`"
+            " against the project classpath plus jazzer-api.jar.",
+            "- Reach the fault through the library's REAL code, not a"
+            " hand-built stand-in. You may construct and use classes that"
+            " already exist in the library, but do NOT write your own"
+            " subclass, anonymous class, mock, or stub of the patched class"
+            " or any of its callees to force the crash. A harness that"
+            " manufactures the crash with a custom implementation proves"
+            " nothing about real usage and is rejected.",
         ])
 
     def _intro(self, codebase: str) -> str:
-        return '\n'.join([
-            f"The codebase is `{codebase}`. A patch has been applied "
-            "that touches the functions listed below. Your harness "
-            "must exercise those functions so the behaviour changed "
-            "by the patch is reachable from the fuzz entrypoint.",
-        ])
+        return (
+            f"Codebase: `{codebase}`. The patch below touches the functions"
+            " listed. Your harness must call those functions so the patched"
+            " behaviour is reachable from the fuzz entrypoint."
+        )
 
     def _patch_block(self, patch_text: str) -> str:
         return '\n'.join([
-            "The patch under analysis is:",
+            "Patch under analysis:",
             "<patch>",
             patch_text,
             "</patch>",
         ])
 
+    def _imports_block(self, imports: List[str]) -> str:
+        return '\n'.join([
+            "Available imports from the modified file (copy exactly"
+            " when you need these types):",
+            "<source_imports>",
+            *imports,
+            "</source_imports>",
+        ])
+
     def _function_block(self, fn: TouchedFunction) -> str:
         parts: List[str] = [
-            f"Function: `{fn.func_name}` has the following function "
-            "signature:",
+            f"Function `{fn.func_name}`:",
             "<signature>",
             fn.func_signature,
             "</signature>",
-            "",
-            "and the following source code:",
-            "",
             "<code>",
             fn.func_source,
             "</code>",
         ]
         if fn.xrefs:
-            parts.extend([
-                "",
-                "The function is used in other places of the code. "
-                "Use these cross-references as examples of how to "
-                "call the target function in the fuzzing harness you "
-                "write:",
-            ])
+            parts.append(
+                "Call-site examples (use these as a guide for constructing"
+                " the target call):"
+            )
             for xref in fn.xrefs:
                 parts.extend(["<xref>", xref, "</xref>"])
+        callee_block = self._related_callees_block(fn)
+        if callee_block:
+            parts.append(callee_block)
+        return '\n'.join(parts)
+    
+    def _related_callees_block(self, fn: TouchedFunction) -> str:
+        """Render the methods this function calls whose behaviour the
+        patched code depends on. The body shows how their results are
+        USED; the declarations below show what they return and how real
+        implementations behave — the context needed to reason about a
+        fault that spans a caller and a callee."""
+        callees = getattr(fn, 'related_callees', None)
+        if not callees:
+            return ''
+
+        parts: List[str] = [
+            f"Methods called by `{fn.func_name}` whose behaviour the patched"
+            " code depends on. The body above shows how their results are"
+            " USED; the declarations below show what they return and how"
+            " real implementations behave. To reach the fault you usually"
+            " need to drive the target through one of these implementations"
+            " with an input that makes its return value exercise the"
+            " patched path.",
+        ]
+        for rc in callees:
+            attrs = f' name="{rc.name}"'
+            if rc.source_file:
+                attrs += f' from="{rc.source_file}"'
+            if rc.is_abstract:
+                attrs += ' abstract="true"'
+            parts.append(f"<callee{attrs}>")
+            if rc.signature:
+                parts.extend(["<signature>", rc.signature, "</signature>"])
+            if rc.source:
+                tag = "contract" if rc.is_abstract else "code"
+                parts.extend([f"<{tag}>", rc.source, f"</{tag}>"])
+            for impl_file, impl_src in rc.impls:
+                parts.append(f'<implementation in="{impl_file}">')
+                parts.append(impl_src)
+                parts.append("</implementation>")
+            parts.append("</callee>")
         return '\n'.join(parts)
 
     def _failure_test_block(self, failure_tests: List[FailureTest],
                             signatures: Optional[List[str]] = None,
+                            method_names: Optional[List[str]] = None,
+                            crash_input: Optional[CrashInput] = None,
                             max_test_chars: int = 1500) -> str:
-        """Seed the prompt with the bug-triggering test(s) shipped by
-        Defects4J. The LLM should treat the inputs they construct as a
-        worked example of values that already reach the root cause. When
-        we know the throwable the test fails with, we name it so the
-        harness aims to reproduce that specific crash.
+        """Seed the prompt with the D4J trigger test(s).
 
-        `signatures` are the touched-function signatures, used to pick
-        which seed lines to highlight (array-null lines for an NPE on an
-        array target; out-of-bounds integer-argument lines for an
-        index/bounds exception). Without them we fall back to the full
-        body only.
+        Two-step strategy: anchor on the known-crashing input first
+        (guarantees the trigger gate passes), then fuzz the neighbourhood
+        (catches overfitting patches that only special-cased the seed).
 
-        Long test bodies are truncated to `max_test_chars`: a handful of
-        cases shows the construction pattern, and dumping a large
-        combinatorial test (e.g. Chart-13's 31-case arrangement test)
-        starves gpt-oss-20b of output budget and produces empty
-        completions."""
+        When ``crash_input`` is supplied it carries the *runtime* crash
+        evidence captured from the buggy checkout — the exception type,
+        detail message, throw site, and anchor literal observed at the
+        actual failure. That is strictly more reliable than re-inferring
+        the crashing value from the test source, so it is surfaced as the
+        primary anchor and its observed exception type takes precedence
+        over the statically-declared one."""
         sigs = signatures or []
         crash_types = sorted({ft.exception_type for ft in failure_tests
                               if ft.exception_type})
+        # Prefer the runtime-observed throwable when we captured one.
+        if crash_input and crash_input.exception_type:
+            crash_types = [crash_input.exception_type] + [
+                t for t in crash_types if t != crash_input.exception_type]
         parts: List[str] = [
-            "A known failing test in the project already triggers this "
-            "bug. Reconstruct the object setup it builds — the harness "
-            "does not have to take everything from FuzzedDataProvider. "
-            "Use FuzzedDataProvider to vary the parameters the test "
-            "hard-codes (dimensions, which edges/branches are taken, "
-            "constraint values), reconstructing the surrounding objects "
-            "the way the test does so the touched code path is reached.",
+            "The failing test below shows how to reach the bug."
+            " Use it with TWO strategies:",
+            "",
+            "1. ANCHOR: call the target with the exact input(s) from the"
+            " test first. This is your guaranteed crash on the buggy version.",
+            "",
+            "2. EXPLORE: identify the input PROPERTY that triggers the"
+            " patched line (the root cause), then use FuzzedDataProvider to"
+            " generate many varied REAL inputs that satisfy that property —"
+            " different lengths, positions, and surrounding content — and"
+            " drive them all through the real entry point. You are testing"
+            " whether the patch fixes the root cause for ALL such inputs,"
+            " not just the seed; overfitting patches special-case the seed.",
         ]
+        entry_point = self._entry_point_hint(failure_tests)
+        if entry_point:
+            parts.append(entry_point)
         if crash_types:
             joined = ', '.join(crash_types)
             parts.append(
-                "On the buggy version this fault surfaces as an uncaught "
-                f"{joined}. Your harness should drive the touched code "
-                "into that same failure so Jazzer reports it as a "
-                "finding. Do NOT catch and swallow that throwable — let "
-                "it propagate out of fuzzerTestOneInput. Only catch the "
-                "checked exceptions the target method declares (returning "
-                "or rethrowing as RuntimeException), so the genuine fault "
-                "is the only thing that surfaces."
+                f"Expected throwable: {joined}. "
+                "Let it propagate uncaught from fuzzerTestOneInput. "
+                "Catch only checked exceptions declared by the target"
+                " (rethrow as RuntimeException)."
             )
+        ground_truth = self._crash_input_block(crash_input)
+        if ground_truth:
+            parts.append(ground_truth)
         for ft in failure_tests:
             if ft.method_source:
                 hint, lines = self._highlight_trigger_calls(
-                    ft.method_source, crash_types, sigs)
+                    ft.method_source, crash_types, sigs,
+                    method_names=method_names or [])
                 if lines:
                     parts.extend([
                         hint,
-                        f'<key_calls class="{ft.test_class}" '
-                        f'method="{ft.test_method}">',
+                        f'<key_calls class="{ft.test_class}"'
+                        f' method="{ft.test_method}">',
                         lines,
                         "</key_calls>",
                     ])
                 body = ft.method_source
                 if len(body) > max_test_chars:
                     body = (body[:max_test_chars]
-                            + "\n        // ... (test truncated; the cases "
-                              "above show the construction pattern)")
+                            + "\n        // ... (truncated)")
                 parts.extend([
-                    f'<failing_test class="{ft.test_class}" '
-                    f'method="{ft.test_method}">',
+                    f'<failing_test class="{ft.test_class}"'
+                    f' method="{ft.test_method}">',
                     body,
                     "</failing_test>",
                 ])
             else:
                 parts.append(
-                    f'<failing_test class="{ft.test_class}" '
-                    f'method="{ft.test_method}" />'
+                    f'<failing_test class="{ft.test_class}"'
+                    f' method="{ft.test_method}" />'
                 )
         return '\n'.join(parts)
 
-    # Crash classes that come from indexing past the end of a string or
-    # array — the seed lines worth surfacing are the ones whose numeric
-    # arguments are large relative to the accompanying string/collection.
+    @staticmethod
+    def _entry_point_hint(failure_tests: List[FailureTest]) -> str:
+        """Name the public API the trigger test drives, so the harness
+        reaches the fault through the real call chain rather than poking
+        the patched method directly with a hand-built helper.
+
+        The trigger test's enclosing class (minus a trailing 'Test') is
+        the production entry point that exercised the bug — e.g. a test in
+        StringUtilsTest means the real path is StringUtils. Surfacing it
+        steers the model to call that, not to construct the internal type
+        itself."""
+        classes = []
+        seen = set()
+        for ft in failure_tests:
+            cls = ft.test_class
+            # Strip package and a trailing 'Test' to recover the API class.
+            simple = cls.rsplit('.', 1)[-1]
+            if simple.endswith('Test') and len(simple) > 4:
+                simple = simple[:-4]
+            if simple and simple not in seen:
+                seen.add(simple)
+                classes.append(simple)
+        if not classes:
+            return ''
+        named = ', '.join(f'`{c}`' for c in classes)
+        return (
+            "REAL ENTRY POINT: in production the bug is reached through the"
+            f" public API the failing test drives (here: {named}). Drive your"
+            " fuzzed input through that public API so it flows along the real"
+            " call chain to the patched line. Prefer this over calling the"
+            " patched method directly, and never reach it via a custom"
+            " implementation of a library type."
+        )
+
+
+    def _crash_input_block(self, crash_input: Optional[CrashInput]) -> str:
+        """Render the ground-truth crash evidence as a prompt section.
+
+        Returns '' when no evidence was captured, so the caller falls
+        back to test-source anchoring exactly as before."""
+        if crash_input is None or not crash_input.has_evidence:
+            return ''
+        parts: List[str] = [
+            "GROUND-TRUTH CRASH (captured by running the trigger test on"
+            " the buggy version — this is the verified failure, trust it"
+            " over anything inferred from the test body):",
+            "<ground_truth_crash>",
+        ]
+        if crash_input.exception_type:
+            parts.append(f"throwable: {crash_input.exception_type}")
+        if crash_input.message:
+            parts.append(f"message: {crash_input.message}")
+        if crash_input.throw_site:
+            parts.append(f"thrown_at: {crash_input.throw_site}")
+        anchor = crash_input.best_anchor
+        if anchor is not None:
+            parts.append(
+                f'anchor_input: "{anchor}"  '
+                "// hard-code this verbatim as your first call, then fuzz"
+                " inputs of the same shape"
+            )
+        if crash_input.literals and len(crash_input.literals) > 1:
+            others = ', '.join(f'"{lit}"'
+                               for lit in crash_input.literals[1:])
+            parts.append(f"other_observed_literals: {others}")
+        parts.append("</ground_truth_crash>")
+        return '\n'.join(parts)
+
     _BOUNDS_EXCEPTIONS = frozenset({
         'java.lang.StringIndexOutOfBoundsException',
         'java.lang.ArrayIndexOutOfBoundsException',
         'java.lang.IndexOutOfBoundsException',
     })
+    _INT_PARAM_RE = re.compile(r'\b(?:int|long)\b')
 
     @classmethod
     def _highlight_trigger_calls(cls, method_source: str,
                                  crash_types: List[str],
                                  signatures: List[str],
+                                 method_names: Optional[List[str]] = None,
                                  max_lines: int = 8):
-        """Pick the seed lines most likely to BE the trigger, given the
-        crash class and the target signature, and return (hint, lines).
+        """Return (hint, lines) for the most likely trigger lines.
 
-        Two dispatch arms, because 'which assertion is load-bearing'
-        depends entirely on the bug class — keying on the token `null`
-        alone (the previous behaviour) mislabels an integer-bounds bug
-        whose only `null` is an incidental argument, which is exactly how
-        Lang-45 got steered wrong. Returns ('', '') when no arm applies,
-        so the full body is the only seed."""
-        has_array_param = any('[]' in s for s in signatures)
+        Arm 0 (ground truth): single distinct string-literal call to a
+          target method — use verbatim as anchor, fuzz the shape.
+        Arm 1 (bounds): integer argument exceeds string-literal length.
+        Arm 2 (NPE): null passed where an array is expected.
+        Returns ('', '') when no arm fires; caller falls back to full body."""
+        names = method_names or []
+
+        literal_calls = cls._literal_arg_calls(method_source, names)
+        distinct = sorted(set(literal_calls))
+        if len(distinct) == 1:
+            hint = (
+                "Anchor call — hard-code this literal verbatim as the first"
+                " call in your harness, then use FuzzedDataProvider to"
+                " generate additional inputs of the same shape:"
+            )
+            return hint, '\n'.join(distinct)
+
+        has_int_param = any(cls._INT_PARAM_RE.search(s) for s in signatures)
         is_bounds = any(c in cls._BOUNDS_EXCEPTIONS for c in crash_types)
 
-        # Arm 1: index/bounds crash. Surface calls whose integer literals
-        # exceed the length of the string literal in the same call — those
-        # are the out-of-bounds drivers (e.g. abbreviate("0123456789",15,20)
-        # where 15/20 > 10). This is the Lang-45 case.
-        if is_bounds:
+        if is_bounds and has_int_param:
             lines = cls._lines_with_oversized_ints(method_source, max_lines)
             if lines:
                 hint = (
-                    "This is an index/bounds crash. The trigger lines are "
-                    "the ones where a numeric argument is LARGER than the "
-                    "length of the string passed in the same call — that "
-                    "out-of-range index is what overruns the buffer. The "
-                    "other lines keep the indices in range and only show "
-                    "the happy path. Mirror these specific calls, and use "
-                    "FuzzedDataProvider to push the numeric arguments at "
-                    "or beyond the string length:"
+                    "Trigger lines: numeric argument exceeds the string"
+                    " length in the same call. Mirror these calls and use"
+                    " FuzzedDataProvider to vary the numeric arguments"
+                    " at or beyond the string length:"
                 )
                 return hint, lines
 
-        # Arm 2: NPE against an array-taking target. Surface the calls
-        # that put a null *inside* an otherwise-populated array. This is
-        # the Lang-39 case.
+        has_array_param = any('[]' in s for s in signatures)
         if has_array_param:
             lines = cls._lines_with_null(method_source, max_lines)
             if lines:
                 hint = (
-                    "The trigger lines are the ones that pass a `null` "
-                    "array element (or a null array) while the companion "
-                    "array is non-null — for this NPE that null is almost "
-                    "always the cause, and the rest is the happy path. "
-                    "Mirror these specific calls:"
+                    "Trigger lines: null passed as an array element."
+                    " Mirror these calls:"
                 )
                 return hint, lines
 
         return '', ''
+
+    @classmethod
+    def candidate_anchor_literals(cls, method_source: str,
+                                  method_names: List[str]) -> List[str]:
+        """Unquoted string literals passed to target methods in the test source.
+
+        Used as fallback anchor candidates for CrashInputExtractor when the
+        runtime trace yields no quotable value from the exception message."""
+        quoted = cls._literal_arg_calls(method_source, method_names)
+        return [q[1:-1] for q in quoted if len(q) >= 2]
+
+    @staticmethod
+    def _literal_arg_calls(method_source: str,
+                           method_names: List[str]) -> List[str]:
+        """Find `targetMethod("literal")` calls and return the literals.
+
+        Conservative: matches only a single string-literal argument with
+        no concatenation or extra args, so it stays silent on ambiguous
+        inputs rather than guessing wrong."""
+        if not method_names:
+            return []
+        name_alt = '|'.join(re.escape(n) for n in method_names)
+        call_re = re.compile(
+            r'\b(?:' + name_alt + r')\s*\(\s*'
+            r'("(?:[^"\\]|\\.)*")'
+            r'\s*\)'
+        )
+        return call_re.findall(method_source)
 
     @staticmethod
     def _lines_with_null(method_source: str, max_lines: int):
@@ -289,23 +438,15 @@ class PromptBuilder:
         if not hits:
             return ''
         if len(hits) > max_lines:
-            hits = hits[:max_lines] + ["// ... (further null-bearing "
-                                       "calls omitted)"]
+            hits = hits[:max_lines] + ["// ... (further null-bearing calls omitted)"]
         return '\n'.join(hits)
 
     @staticmethod
     def _lines_with_oversized_ints(method_source: str, max_lines: int):
-        """Lines containing a call where an integer ARGUMENT exceeds the
-        length of a double-quoted string literal on the same line. Best-
-        effort and string-literal-based on purpose: it needs no Java
-        parse, and the trigger seeds in these tests are hard-coded
-        literals (the whole reason they're a usable worked example).
-
-        Critically, string literals are removed from the line BEFORE the
-        integer scan — otherwise the digits inside a test string like
-        "0123456789" get read as the integer 123456789 and every line
-        looks oversized. We compare real numeric arguments against the
-        longest removed string's length."""
+        """Lines where an integer argument exceeds the longest string
+        literal on the same line (proxy for an out-of-range index).
+        String literals are stripped before the int scan so their digits
+        are not mistaken for numeric arguments."""
         str_lit = re.compile(r'"((?:[^"\\]|\\.)*)"')
         int_lit = re.compile(r'(?<![\w.])(-?\d+)(?![\w.])')
         hits = []
@@ -316,136 +457,89 @@ class PromptBuilder:
             if not strings:
                 continue
             longest = max((len(s) for s in strings), default=0)
-            # A line whose only strings are empty (e.g. abbreviate(null,
-            # 1, -1, "")) has nothing to index into — skip it; the int
-            # being "larger" than length 0 is meaningless there.
             if longest == 0:
                 continue
-            # Blank out the string literals so their digits aren't scanned
-            # as integer arguments.
             without_strings = str_lit.sub('""', ln)
             ints = [int(m) for m in int_lit.findall(without_strings)]
-            # An argument past the string's end is the overrun driver; -1
-            # is the method's documented "no limit" sentinel, so exclude
-            # it to avoid flagging happy-path lines.
             if any(n > longest for n in ints if n != -1):
                 hits.append(ln.strip())
         if not hits:
             return ''
         if len(hits) > max_lines:
-            hits = hits[:max_lines] + ["// ... (further out-of-range "
-                                       "calls omitted)"]
+            hits = hits[:max_lines] + ["// ... (further out-of-range calls omitted)"]
         return '\n'.join(hits)
 
     def _variant_analysis_block(self,
                                 reachable: List[str],
                                 covered: List[str],
                                 signatures: List[str]) -> str:
-        """Steer the harness set across the root-cause neighbourhood.
-
-        We are building a *set* of harnesses, not one. To detect
-        overfitting we want them to collectively interrogate the whole
-        region of code downstream of the patched lines — that is where
-        sibling bugs of the same fault hide. So we show the model:
-
-          * the statically reachable region from the root cause
-            (fuzz-introspector's call graph), capped for context budget;
-          * which of those functions harnesses already in the set have
-            exercised, and which crashes they already found;
-
-        and ask it to push into the *uncovered* part / a *different*
-        crash. This is what turns N independent samples into a
-        coverage-spreading variant-analysis suite."""
+        """Steer successive harnesses across the root-cause neighbourhood."""
         cap = config.MAX_REACHABLE_IN_PROMPT
         shown = reachable[:cap]
         covered_set = set(covered)
         remaining = [r for r in shown if r not in covered_set]
 
         parts: List[str] = [
-            "Variant analysis — you are contributing ONE harness to a "
-            "SET of harnesses that together must interrogate the root "
-            "cause from as many angles as possible. The patched lines "
-            "sit at the head of the following region of statically "
-            "reachable functions (from the project call graph). Sibling "
-            "bugs of this fault are most likely to live inside this "
-            "region:",
+            "This harness is ONE of a set. The patched lines sit at the"
+            " head of the following reachable region — sibling bugs live"
+            " here:",
             "<root_cause_reachable>",
             *(f"- {name}" for name in shown),
             "</root_cause_reachable>",
         ]
         if len(reachable) > cap:
             parts.append(
-                f"(+{len(reachable) - cap} more reachable functions "
-                "omitted for brevity.)"
+                f"(+{len(reachable) - cap} more reachable functions omitted.)"
             )
 
         if covered or signatures:
-            parts.append("")
             parts.append(
-                "Harnesses already accepted into the set have exercised "
-                "the functions and produced the crashes below. Do NOT "
-                "simply reproduce these — your harness is most valuable "
-                "if it drives a DIFFERENT reachable function and/or "
-                "surfaces a DIFFERENT crash, while still funnelling "
-                "through the patched code so it remains a test of THIS "
-                "root cause:"
+                "Already covered by earlier harnesses — target something"
+                " different:"
             )
             if covered:
-                parts.append("Already-covered functions:")
+                parts.append("Functions covered:")
                 parts.extend(f"- {c}" for c in sorted(covered_set))
             if signatures:
-                parts.append("Crash signatures already found:")
+                parts.append("Crashes already found:")
                 parts.extend(f"- {s}" for s in signatures)
             if remaining:
-                parts.append("")
-                parts.append(
-                    "Still-uncovered reachable functions worth steering "
-                    "toward (pick one or more as your target downstream "
-                    "of the patched code):"
-                )
+                parts.append("Uncovered functions to steer toward:")
                 parts.extend(f"- {r}" for r in remaining)
         else:
-            parts.append("")
             parts.append(
-                "This is the first harness in the set: establish the "
-                "most direct path from the fuzz entrypoint through the "
-                "patched code into this reachable region."
+                "First harness: establish the most direct path from the"
+                " fuzz entrypoint through the patched code."
             )
         return '\n'.join(parts)
 
-    def _chain_of_thought(self) -> str:
+    def _fdp_reference(self) -> str:
         return '\n'.join([
-            "Before writing the input-construction code, concisely "
-            "identify (a) the bug class and (b) the minimal input shape "
-            "that drives the touched functions into the buggy behaviour. "
-            "Put this as a `/* ... */` comment on the first line INSIDE "
-            "the entrypoint body, where the skeleton marks "
-            "`// >>> YOUR CODE HERE <<<`, then write the construction "
-            "code below it. Do not put anything above the package line.",
+            "Use ONLY these FuzzedDataProvider methods (no invented"
+            " overloads):",
+            "",
+            "    int     consumeInt()                    // any int",
+            "    int     consumeInt(int min, int max)    // inclusive",
+            "    byte    consumeByte()",
+            "    boolean consumeBoolean()",
+            "    String  consumeString(int maxLength)    // ONE arg",
+            "    String  consumeAsciiString(int maxLength)",
+            "    String  consumeRemainingAsString()",
+            "    byte[]  consumeBytes(int maxLength)",
+            "    byte[]  consumeRemainingAsBytes()",
+            "    int     remainingBytes()",
+            "",
         ])
 
     def _skeleton_block(self, package: Optional[str]) -> str:
-        """Hand the model a complete, compilable file and ask it to fill
-        in ONLY the body. The scaffolding the 20B model repeatedly gets
-        wrong (package line, the jazzer import, the class name, the
-        entrypoint signature, stray `main` methods, invented FDP-provider
-        classes) is given to it, so the only thing left to reason about is
-        input construction — which is the thing that actually determines
-        whether the bug is reached. This collapses the prose-not-code,
-        wrong-package, and hallucinated-import failure classes seen across
-        attempts 1-44 into a single fill-in-the-blank task."""
         pkg_line = (f"package {package};" if package
-                    else "package <copy the package line from the patch>;")
+                    else "package <copy from patch>;")
         return '\n'.join([
-            "Produce your harness by completing the skeleton below. "
-            "Reproduce it EXACTLY, character for character, except for "
-            "the single region marked `// >>> YOUR CODE HERE <<<`, which "
-            "you replace with your input-construction code. Do NOT change "
-            "the package line, the import, the class name, or the "
-            "entrypoint signature. Do NOT add a `main` method. Do NOT add "
-            "other imports unless javac would need them, and if so add "
-            "them only in the import region directly below the existing "
-            "import. Output the completed file as raw Java — no fences.",
+            "Complete the skeleton below. Fill in ONLY the"
+            " `// >>> YOUR CODE HERE <<<` region. Do NOT change the"
+            " package, import, class name, or entrypoint. Do NOT add a"
+            " `main` method. Add extra imports only if javac requires them,"
+            " directly below the existing import.",
             "<skeleton>",
             pkg_line,
             "",
@@ -455,66 +549,7 @@ class PromptBuilder:
             "    public static void fuzzerTestOneInput("
             "com.code_intelligence.jazzer.api.FuzzedDataProvider data) {",
             "        // >>> YOUR CODE HERE <<<",
-            "        // Construct the inputs that drive the touched code",
-            "        // into the documented crash, then call the target",
-            "        // method directly (same package — no reflection).",
-            "        // Let the genuine fault propagate out of this method;",
-            "        // catch only the checked exceptions the target",
-            "        // declares (rethrow as RuntimeException).",
             "    }",
             "}",
             "</skeleton>",
-        ])
-
-    def _hard_constraints(self, package: Optional[str]) -> str:
-        if package:
-            package_line = (
-                f"- Declare it in package `{package}` "
-                f"(`package {package};` at the top)."
-            )
-        else:
-            package_line = (
-                "- Declare it in the same package as the touched code "
-                "(copy the `package X.Y.Z;` line from the modified file "
-                "shown in the patch below)."
-            )
-        return '\n'.join([
-            "Write a Jazzer (JVM libFuzzer port) harness. Non-negotiable:",
-            "",
-            "- Public class named exactly `FuzzHarness`.",
-            "- Entrypoint exactly:",
-            "    public static void fuzzerTestOneInput"
-            "(com.code_intelligence.jazzer.api.FuzzedDataProvider data)",
-            package_line,
-            "  Same-package placement reaches package-private members "
-            "directly — do NOT use reflection.",
-            "- Return ONLY raw Java source for FuzzHarness.java: no "
-            "markdown fences, no prose outside the file (a leading "
-            "`/* ... */` comment is allowed). It must compile with "
-            "`javac` against the project classpath plus jazzer-api.jar.",
-            "- CRITICAL: If your response contains ANY text that is not "
-            "valid Java source — prose, markdown, backticks, numbered "
-            "steps, explanations — the entire response is rejected. "
-            "Output the .java file and nothing else.",
-        ])
-
-    def _fdp_reference(self) -> str:
-        return '\n'.join([
-            "Derive all inputs from FuzzedDataProvider. Use ONLY these "
-            "methods — do not invent overloads:",
-            "",
-            "    int     consumeInt()                       // any int",
-            "    int     consumeInt(int min, int max)       // inclusive bounds",
-            "    byte    consumeByte()                       // any byte",
-            "    boolean consumeBoolean()",
-            "    String  consumeString(int maxLength)       // ONE arg, not (min, max)",
-            "    String  consumeAsciiString(int maxLength)",
-            "    String  consumeRemainingAsString()",
-            "    byte[]  consumeBytes(int maxLength)",
-            "    byte[]  consumeRemainingAsBytes()",
-            "    int     remainingBytes()                   // bytes left in the buffer",
-            "",
-            "Catch the checked exceptions the target declares (rethrow "
-            "as RuntimeException or return) so only unexpected "
-            "exceptions surface as findings.",
         ])

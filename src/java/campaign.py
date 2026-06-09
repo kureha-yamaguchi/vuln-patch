@@ -378,42 +378,104 @@ class HarnessCampaign:
                                   verification: VerificationResult,
                                   patch_text: str = '') -> str:
         """The user message that follows a harness that compiled but did
-        NOT crash the buggy version. Tells the model what the patched
-        condition is and how to satisfy it, using the actual patch text
-        as ground truth rather than generic advice."""
+        NOT crash the buggy version.
+
+        The goal of this turn is narrow: get the *next* harness to crash
+        the known-buggy checkout. We give the model three things, in
+        decreasing order of reliability:
+
+          1. The patch diff, as ground truth for what behaviour differs
+             between buggy and fixed code (no editorial claim about what
+             *kind* of bug it is — that varies per bug and a wrong guess
+             here actively misleads the model).
+          2. What its last harness actually reached on the buggy code
+             (from the verifier), so it knows whether it was close to the
+             fault or in the wrong region entirely.
+          3. A short, bug-agnostic checklist for turning "reached the
+             code" into "crashed the code".
+
+        Signature is unchanged so the call site needs no edits."""
+        # Why no crash: a timeout means the harness ran the full budget
+        # without Jazzer finding anything (often: it never drove input
+        # into the changed code, or always took a safe branch); a clean
+        # exit means Jazzer returned with no finding (often: every input
+        # was handled normally, or an exception was caught and swallowed
+        # inside the harness).
         if verification.timed_out:
-            why = ("It ran for the full time budget on the buggy code "
-                   "without finding any crash.")
+            why = ("It ran for the entire time budget on the buggy code "
+                   "and Jazzer reported no crash. Most often this means "
+                   "the inputs you generated never drove execution into "
+                   "the changed code, or always took a path that does not "
+                   "fault.")
         else:
-            why = ("Jazzer exited cleanly (no finding) on the buggy "
-                   "code.")
+            why = ("Jazzer exited cleanly with no finding on the buggy "
+                   "code. Most often this means every input was handled "
+                   "normally, or the harness itself caught and swallowed "
+                   "the exception that should have propagated.")
+
+        # The single most actionable signal we have: which project
+        # functions the last harness demonstrably entered on the buggy
+        # code. Empty => it never reached the changed region, so the fix
+        # is to construct inputs that get there at all. Non-empty => it is
+        # in the right area and needs an input that pushes the fault.
+        reached = getattr(verification, 'reached_functions', None) or []
+        if reached:
+            shown = ', '.join(reached[:8])
+            coverage_note = (
+                "Your last harness DID reach project code on the buggy "
+                f"version — it entered: {shown}. So you are close: the "
+                "fault is near here. Adjust the input so it pushes one of "
+                "these calls past the boundary the patch changed, rather "
+                "than relocating to a different API.\n\n"
+            )
+        else:
+            coverage_note = (
+                "Your last harness did NOT reach any project code on the "
+                "buggy version that we could observe — it likely threw or "
+                "returned before getting into the changed method. First "
+                "priority: construct an input that actually calls the "
+                "patched method with arguments that get past its initial "
+                "validation, so execution reaches the changed lines at "
+                "all.\n\n"
+            )
 
         patch_reminder = (
-            f"\n\nThe patch under analysis is:\n{patch_text}\n\n"
-            if patch_text else "\n\n"
+            f"The patch under analysis is below. The buggy version is the "
+            f"code BEFORE this patch is applied (the '+' lines are the "
+            f"FIXED code; the buggy code has the '-' lines instead):\n"
+            f"{patch_text}\n\n"
+            if patch_text else ""
         )
 
         return (
             "That compiled, but it did NOT trigger the bug on the known-"
-            f"buggy version. {why}"
+            f"buggy version. {why}\n\n"
             f"{patch_reminder}"
-            "Study the patch carefully. The bug is that the patched code "
-            "SUPPRESSES a check that the original code had — meaning the "
-            "buggy version silently does the wrong thing instead of "
-            "throwing, OR the patched condition lets execution reach code "
-            "it should not. To trigger a crash on the BUGGY version:\n\n"
-            "  1. Identify exactly what the patched condition allows "
-            "through that the original would have caught.\n"
-            "  2. Construct input that satisfies the patched condition "
-            "(bypasses the guard on buggy code) AND reaches code that "
-            "will crash — e.g., an array access with an invalid index.\n"
-            "  3. Do NOT rely on the exception that the ORIGINAL code "
-            "throws (that fires on both buggy and fixed, so it does not "
-            "distinguish them).\n"
-            "  4. CRITICAL: Do NOT catch and swallow the exception you "
-            "want Jazzer to report. Catch only CloneNotSupportedException "
-            "(rethrow as RuntimeException) and let everything else "
-            "propagate naturally out of fuzzerTestOneInput.\n\n"
+            f"{coverage_note}"
+            "To make the next harness crash the BUGGY version, work "
+            "through this:\n\n"
+            "  1. From the diff, identify the exact behavioural difference "
+            "between buggy and fixed code — which inputs are handled "
+            "differently. The crash you want exists only on the buggy "
+            "side, so target inputs that hit that difference. Do not "
+            "assume the bug is any particular shape (missing bounds check, "
+            "wrong branch, off-by-one, null handling, etc.) — read the "
+            "diff and let it tell you.\n"
+            "  2. Choose input that reaches the changed code AND drives it "
+            "into the faulting state. Use the FuzzedDataProvider to "
+            "produce values in the range that exercises the difference, "
+            "not arbitrary values that are likely rejected early.\n"
+            "  3. Do NOT rely on an exception that BOTH versions throw "
+            "(e.g. validation that exists in buggy and fixed alike). That "
+            "fires on the patched code too and so cannot distinguish them. "
+            "You want a fault that the buggy code reaches and the fixed "
+            "code prevents.\n"
+            "  4. CRITICAL — let the crash escape. Do NOT wrap the call in "
+            "a try/catch that swallows the throwable you want Jazzer to "
+            "report. Catch ONLY checked exceptions the signature forces "
+            "you to handle, and rethrow them as RuntimeException; let every "
+            "unchecked exception propagate out of fuzzerTestOneInput so "
+            "Jazzer can see it.\n\n"
             "Return the full corrected FuzzHarness.java — raw Java only, "
             "no fences, public class FuzzHarness, entrypoint exactly\n"
             "    public static void fuzzerTestOneInput("

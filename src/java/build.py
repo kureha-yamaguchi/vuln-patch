@@ -44,6 +44,8 @@ class HarnessBuilder:
     _CLASS_RE  = re.compile(
         r'public\s+(?:final\s+|abstract\s+)?class\s+(\w+)'
     )
+    # `package org.apache.commons.lang;` → captures the dotted package name.
+    _PACKAGE_RE = re.compile(r'(?m)^\s*package\s+([\w.]+)\s*;')
 
     def __init__(self, jazzer_api_jar: str):
         self.jazzer_api_jar = jazzer_api_jar
@@ -69,6 +71,25 @@ class HarnessBuilder:
         or None. javac requires the file name to match this."""
         m = cls._CLASS_RE.search(java_source)
         return m.group(1) if m else None
+
+    @classmethod
+    def package_name(cls, java_source: str):
+        """Return the declared package (e.g. 'org.apache.commons.lang'),
+        or None if the harness is in the default package."""
+        m = cls._PACKAGE_RE.search(java_source)
+        return m.group(1) if m else None
+
+    @classmethod
+    def fully_qualified_class_name(cls, java_source: str) -> str:
+        """Return the FQ class name Jazzer needs for `--target_class`.
+
+        javac writes the .class into a package-structured subtree under
+        the output dir, so Jazzer must be told the *fully-qualified* name
+        (e.g. 'org.apache.commons.lang.FuzzHarness'), not the simple name,
+        or it reports the class as not found on the classpath."""
+        simple = cls.primary_class_name(java_source) or 'FuzzHarness'
+        pkg = cls.package_name(java_source)
+        return f'{pkg}.{simple}' if pkg else simple
 
     # The exact entrypoint Jazzer calls. The FQ prefix on FuzzedDataProvider
     # is optional because same-package harnesses often import it instead.
@@ -119,13 +140,18 @@ class HarnessBuilder:
         `<buggy_dir>/fuzz/` — useful when running many attempts so the
         successful ones survive past the next overwrite.
         """
-        cls_name = self.primary_class_name(harness_source) or 'FuzzHarness'
+        simple_name = self.primary_class_name(harness_source) or 'FuzzHarness'
+        # Jazzer's --target_class needs the fully-qualified name; javac
+        # places the .class under a package subtree, so the simple name
+        # alone won't resolve on the classpath.
+        fq_name = self.fully_qualified_class_name(harness_source)
 
         fuzz_dir = (os.path.join(buggy_dir, 'fuzz', output_subdir)
                     if output_subdir
                     else os.path.join(buggy_dir, 'fuzz'))
         os.makedirs(fuzz_dir, exist_ok=True)
-        harness_path = os.path.join(fuzz_dir, f'{cls_name}.java')
+        # The source file name must match the public class's simple name.
+        harness_path = os.path.join(fuzz_dir, f'{simple_name}.java')
         with open(harness_path, 'w') as fh:
             fh.write(harness_source)
 
@@ -140,7 +166,7 @@ class HarnessBuilder:
         )
         return BuildResult(
             harness_path=harness_path,
-            class_name=cls_name,
+            class_name=fq_name,
             classpath=classpath,
             compiled=result.returncode == 0,
             returncode=result.returncode,
