@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PATCH_FLAG="--correct"
-PROJECT_NAME="Closure"
+PATCH_FLAG="--overfitting"
+PROJECT_NAME="Lang"
 
 # Create log file with timestamp
 LOG_DIR="logs"
