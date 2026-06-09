@@ -25,11 +25,22 @@ _OPENAI_KEY = os.getenv('OPENAI_API_KEY')
 if _OPENAI_KEY:
     LOCAL_LLM_BASE_URL = None                                    # SDK default → api.openai.com
     LOCAL_LLM_API_KEY  = _OPENAI_KEY
-    LOCAL_LLM_MODEL    = os.getenv('LOCAL_LLM_MODEL', 'gpt-4o')
+    # Default to a current OpenAI coding/reasoning model. Override with
+    # LOCAL_LLM_MODEL or --model. Pin a dated snapshot in production for
+    # reproducibility (model prompting behaviour can change between
+    # snapshots).
+    LOCAL_LLM_MODEL    = os.getenv('LOCAL_LLM_MODEL', 'gpt-5')
 else:
     LOCAL_LLM_BASE_URL = os.getenv('LOCAL_LLM_BASE_URL', 'http://localhost:11434/v1')
     LOCAL_LLM_API_KEY  = os.getenv('LOCAL_LLM_API_KEY', 'not-needed')
     LOCAL_LLM_MODEL    = os.getenv('LOCAL_LLM_MODEL', 'gpt-oss:20b')
+
+# Reasoning effort for OpenAI reasoning models (GPT-5.x, o-series):
+# 'minimal' | 'low' | 'medium' | 'high'. Ignored for standard sampling
+# models (gpt-4o etc.) and for local servers. Higher effort tends to
+# help on the harness-reachability inference at the cost of latency and
+# tokens — 'high' is a reasonable default for this pipeline.
+OPENAI_REASONING_EFFORT = os.getenv('OPENAI_REASONING_EFFORT', 'high')
 
 # --- Jazzer (JVM libFuzzer port) ------------------------------------------
 # We compile the generated harness against jazzer-api.jar so symbols
@@ -61,7 +72,7 @@ JAZZER_CRASH_EXIT_CODE = 77
 
 # Per-harness fuzzing time limit in seconds (used for the final
 # run against the *patched* code).
-FUZZ_TIMEOUT_SECONDS = int(os.getenv('FUZZ_TIMEOUT_SECONDS', '30'))
+FUZZ_TIMEOUT_SECONDS = int(os.getenv('FUZZ_TIMEOUT_SECONDS', '60'))
 
 # Short per-harness time limit (seconds) for the in-campaign verification
 # run against the *buggy* checkout. This gates acceptance: a freshly
@@ -69,7 +80,7 @@ FUZZ_TIMEOUT_SECONDS = int(os.getenv('FUZZ_TIMEOUT_SECONDS', '30'))
 # buggy code within this budget. Kept small so the campaign stays cheap
 # in wall-clock — a harness that genuinely reaches the root cause almost
 # always crashes the buggy version near-immediately.
-VERIFY_TIMEOUT_SECONDS = int(os.getenv('VERIFY_TIMEOUT_SECONDS', '20'))
+VERIFY_TIMEOUT_SECONDS = int(os.getenv('VERIFY_TIMEOUT_SECONDS', '60'))
 
 # Upper bound on how many root-cause-reachable function names we splice
 # into the prompt as the "coverage map". Prevents a pathologically large
