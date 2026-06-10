@@ -75,8 +75,45 @@ def parse_args():
                         help="accept harnesses on compile alone (old "
                              "behaviour); skip the buggy-version trigger "
                              "gate. Default is to require a trigger.")
+    parser.add_argument("--results_json", type=str, default=None,
+                        metavar="PATH",
+                        help="append a one-line JSON record describing this "
+                             "run's outcome to PATH (machine-readable; used "
+                             "by the batch evaluation harness)")
     parser.set_defaults(require_trigger=True)
     return parser.parse_args()
+
+
+def _emit_record(path, *, label, status, selection=None,
+                 result=None, fuzz_results=None):
+    """Append one JSON line summarising this run. `label` is the
+    ground-truth class ('correct' or 'overfitting'); `status` is one of
+    'evaluated', 'non_crashing', 'no_harnesses', 'error'. A run is only
+    scoreable when status == 'evaluated'."""
+    if not path:
+        return
+    import json as _json
+    rec = {
+        "label": label,
+        "status": status,
+        "project": getattr(selection, "project_name", None),
+        "bug_id": getattr(selection, "bug_id", None),
+        "apr_tool": getattr(selection, "apr_tool", None),
+        "converged": bool(getattr(result, "converged", False)),
+        "harnesses_built": len(getattr(result, "successful_results", []) or []),
+        "harnesses_run": 0,
+        "harnesses_crashed": 0,
+        # crashed_on_patch: did ANY harness still crash the patched code?
+        # This is the classifier's positive signal ("flagged overfitting").
+        "crashed_on_patch": False,
+    }
+    if fuzz_results is not None:
+        triggered = [r for r in fuzz_results if r.triggered]
+        rec["harnesses_run"] = len(fuzz_results)
+        rec["harnesses_crashed"] = len(triggered)
+        rec["crashed_on_patch"] = len(triggered) > 0
+    with open(path, "a") as fh:
+        fh.write(_json.dumps(rec) + "\n")
 
 
 def main():
@@ -127,6 +164,9 @@ def main():
               "(trigger test fails on an assertion, or its failure type "
               "could not be determined) — out of scope for the crash "
               "pipeline. Skipping.")
+        _emit_record(args.results_json,
+                     label='correct' if args.correct else 'overfitting',
+                     status='non_crashing', selection=selection)
         sys.exit(3)
 
     # 3b) Extract the patch + every project function it touches +
@@ -244,6 +284,7 @@ def main():
 
     # 6) Fuzz every successful harness against the patched code to check
     #    whether the vulnerability is still reachable (overfitting signal).
+    fuzz_results = None
     if args.fuzz_timeout > 0 and result.successful_results:
         print("\n" + "#" * 20 + " fuzzing patched code " + "#" * 20)
         fuzz_results = FuzzRunner(
@@ -257,6 +298,17 @@ def main():
             buggy_dir=selection.buggy_dir,
         )
         _print_fuzz_summary(fuzz_results)
+
+    # A run is scoreable only if we actually fuzzed at least one harness
+    # against the patched code; otherwise we have no overfitting verdict.
+    if fuzz_results:
+        status = 'evaluated'
+    else:
+        status = 'no_harnesses'
+    _emit_record(args.results_json,
+                 label='correct' if args.correct else 'overfitting',
+                 status=status, selection=selection,
+                 result=result, fuzz_results=fuzz_results)
 
     sys.exit(0 if result.converged else 2)
 
