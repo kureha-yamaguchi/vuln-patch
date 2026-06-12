@@ -239,10 +239,26 @@ class PromptBuilder:
         if crash_types:
             joined = ', '.join(crash_types)
             parts.append(
-                f"Expected throwable: {joined}. "
-                "Let it propagate uncaught from fuzzerTestOneInput. "
-                "Catch only checked exceptions declared by the target"
-                " (rethrow as RuntimeException)."
+                "On the buggy version the root cause surfaces as: "
+                f"{joined} (or a sibling failure with a different signature). "
+                "Your harness must distinguish a genuine defect from the patch "
+                "doing its job:\n"
+                "  - The fixed code is SUPPOSED to reject invalid input cleanly. "
+                "Any throwable that is a deliberate, documented rejection of bad "
+                "input (a validation exception the API declares or is expected to "
+                "raise for that input) is CORRECT post-fix behaviour — CATCH it "
+                "inside fuzzerTestOneInput and return normally. Do not let it "
+                "escape.\n"
+                "  - Only let a throwable propagate uncaught when it signals the "
+                "ROOT CAUSE itself: the code failing internally instead of "
+                "guarding the input — e.g. an out-of-bounds access, NPE, "
+                "arithmetic error, infinite loop, or a corrupted result deep "
+                "inside the library, rather than a clean rejection at the "
+                "boundary.\n"
+                "Rule of thumb: if a careful, correct version of this method "
+                "would still throw that exception for that input, it is NOT a "
+                "bug — swallow it. If the throw means the method lost control of "
+                "its own invariants, let it propagate."
             )
         ground_truth = self._crash_input_block(crash_input)
         if ground_truth:
@@ -478,11 +494,13 @@ class PromptBuilder:
         shown = reachable[:cap]
         covered_set = set(covered)
         remaining = [r for r in shown if r not in covered_set]
-
         parts: List[str] = [
-            "This harness is ONE of a set. The patched lines sit at the"
-            " head of the following reachable region — sibling bugs live"
-            " here:",
+            "This harness is ONE of a set probing the root cause of"
+            " the vulnerability the patch under analysis is meant to fix."
+            " The patched lines sit at the head of the reachable region"
+            " below. A valid sibling bug is one that:\n"
+            "  (a) lives in this region (same method or call graph), AND\n"
+            "  (b) stems from the SAME root cause\n"
             "<root_cause_reachable>",
             *(f"- {name}" for name in shown),
             "</root_cause_reachable>",
