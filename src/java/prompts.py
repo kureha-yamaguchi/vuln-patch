@@ -56,6 +56,7 @@ class PromptBuilder:
                 covered_functions or [],
                 found_signatures or [],
             ))
+        sections.append(self._metamorphic_block())
         sections.append(self._fdp_reference())
         sections.append(self._skeleton_block(context.package))
 
@@ -530,6 +531,61 @@ class PromptBuilder:
                 " fuzz entrypoint through the patched code."
             )
         return '\n'.join(parts)
+
+    def _metamorphic_block(self) -> str:
+        """Ask the harness to add a metamorphic check.
+
+        Crash-only harnesses miss overfitting patches that return a WRONG
+        value without throwing (e.g. an off-by-one, a flipped condition, a
+        loop that always reads index 0). We can't check 'the right answer'
+        without a reference implementation — but we don't need one. A
+        *metamorphic relation* is an equation between two related calls of
+        the SAME (patched) code that must hold whatever the correct answer
+        is. The buggy/overfitting logic breaks the relation; correct code
+        preserves it. Violating it throws, which Jazzer reports exactly
+        like any other crash, so no pipeline change is needed.
+
+        Deliberately a short menu + 'throw on violation'. The model picks
+        whichever relation fits the patched function; nothing here is
+        bug-specific."""
+        return '\n'.join([
+            "METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):",
+            "Some overfitting patches don't crash — they return a wrong"
+            " value. You cannot ask 'is this the right answer' (no reference"
+            " is available), but you CAN assert a relation between two"
+            " related calls of the target that must hold for ANY correct"
+            " implementation. Add ONE such check after your normal calls:"
+            " compute both sides from REAL library calls on the fuzzed"
+            " input, and if they disagree, `throw new RuntimeException("
+            '"metamorphic violation: <which relation>")`. Jazzer reports'
+            " that as a finding, the same as a crash.",
+            "",
+            "Pick whichever ONE relation fits the patched function (skip"
+            " this check only if none can possibly apply):",
+            "- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)),"
+            " parse(format(v)), unescape(escape(s))).",
+            "- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip,"
+            " canonicalise).",
+            "- Equivalent inputs: two inputs that must map to the same"
+            " result do  (e.g. case-insensitive parse: f(s) == f("
+            "s.toUpperCase()); leading-zero / whitespace variants of the"
+            " same number).",
+            "- Composition / split: f(a + b) relates to f(a) and f(b)"
+            " consistently  (e.g. a translator/encoder applied to a"
+            " concatenation equals the concatenation of the parts).",
+            "- Oracle from the input itself: when the fuzzed input is"
+            " CONSTRUCTED from a known value, the result must recover it"
+            " (e.g. build the canonical string for a random int n, parse"
+            " it, and assert it equals n).",
+            "",
+            "Rules: use only real library calls for BOTH sides (no"
+            " hand-rolled reference). Only assert a relation that is TRUE"
+            " for correct code — if a correct implementation could legally"
+            " break it, do not use it (that would cause false positives)."
+            " Guard the check so inputs where the relation does not apply"
+            " (e.g. the input was itself rejected) are skipped, not"
+            " reported.",
+        ])
 
     def _fdp_reference(self) -> str:
         return '\n'.join([
