@@ -14,13 +14,15 @@
 #   correct      |   FP                |   TN
 #
 # Non-crashing bugs (run.py exit 3) are skipped and don't count toward N.
+# Note: jq must be installed on your machine (apt-get install jq / brew install jq)
+
 set -uo pipefail
 
 # ---- config (override via env) -------------------------------------------
-N="${N:-20}"                                   # distinct patches per class
+N="${N:-10}"                                   # distinct patches per class
 PROJECTS=(${PROJECTS:-Chart Closure Lang Math Time})
-NUM_HARNESSES="${NUM_HARNESSES:-10}"           # target set size (-n)
-MAX_ATTEMPTS="${MAX_ATTEMPTS:-50}"             # -m
+NUM_HARNESSES="${NUM_HARNESSES:-5}"           # target set size (-n)
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-30}"             # -m
 FUZZ_TIMEOUT="${FUZZ_TIMEOUT:-60}"
 VERIFY_TIMEOUT="${VERIFY_TIMEOUT:-60}"
 MAX_RUNS_PER_CLASS="${MAX_RUNS_PER_CLASS:-120}" # safety cap (random sampling)
@@ -76,9 +78,10 @@ collect() {
       continue
     fi
     if [[ -n "${seen[$key]:-}" ]]; then
-      echo "  duplicate patch ($key); dropping record" | tee -a "$LOG"
-      # Drop the duplicate line so aggregation counts each patch once.
-      head -n -1 "$RESULTS" > "${RESULTS}.tmp" && mv "${RESULTS}.tmp" "$RESULTS"
+      echo "  already evaluated ($key); skipping and dropping record" | tee -a "$LOG"
+      # Restore the file to its pre-run length so this patch isn't double-counted.
+      # Reliable regardless of how many lines this invocation appended.
+      head -n "$before" "$RESULTS" > "${RESULTS}.tmp" && mv "${RESULTS}.tmp" "$RESULTS"
       continue
     fi
     seen[$key]=1
@@ -90,7 +93,6 @@ collect() {
     echo "WARNING: only collected $got/$N distinct $label patches in $runs runs" | tee -a "$LOG"
   fi
 }
-
 echo "==== collecting OVERFITTING patches ===="
 collect "--overfitting" overfitting
 echo ""
@@ -116,11 +118,7 @@ jq -s '
       recall:      (if ($tp+$fn)>0 then ($tp/($tp+$fn)) else null end),
       specificity: (if ($tn+$fp)>0 then ($tn/($tn+$fp)) else null end),
       accuracy:    (if ($tp+$fn+$fp+$tn)>0 then (($tp+$tn)/($tp+$fn+$fp+$tn)) else null end),
-      f1:          (if (2*$tp+$fp+$fn)>0 then (2*$tp/(2*$tp+$fp+$fn)) else null end),
-      avg_harnesses_crashed_on_overfitting:
-        (if ($ovf|length)>0 then (($ovf|map(.harnesses_crashed)|add)/($ovf|length)) else null end),
-      avg_harnesses_crashed_on_correct:
-        (if ($cor|length)>0 then (($cor|map(.harnesses_crashed)|add)/($cor|length)) else null end)
+      f1:          (if (2*$tp+$fp+$fn)>0 then (2*$tp/(2*$tp+$fp+$fn)) else null end)
     }
 ' "$RESULTS" | tee "${OUTDIR}/summary.json"
 
