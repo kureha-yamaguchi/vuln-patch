@@ -221,6 +221,10 @@ __marimo__/
 .python-version
 
 
+# Jazzer crash reproducers (Crash_*.java written to CWD; now redirected to crash_reproducers/)
+src/crash_reproducers/
+src/Crash_*.java
+
 # Git cloned repos
 drr/*
 defects4j/*

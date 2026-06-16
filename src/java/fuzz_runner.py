@@ -145,6 +145,7 @@ def run_jazzer(jazzer_standalone_jar: str,
         'java', '-cp', classpath,
         'com.code_intelligence.jazzer.Jazzer',
         f'--target_class={target_class}',
+        f'--reproducer_path={artifact_dir}',
         '--',
         f'-max_total_time={timeout_seconds}',
         # Ensure the harness body is actually entered (so a deterministic
