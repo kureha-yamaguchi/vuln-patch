@@ -31,9 +31,9 @@ if _OPENAI_KEY:
     # snapshots).
     LOCAL_LLM_MODEL    = os.getenv('LOCAL_LLM_MODEL', 'gpt-5')
 else:
-    LOCAL_LLM_BASE_URL = os.getenv('LOCAL_LLM_BASE_URL', 'http://localhost:11434/v1')
+    LOCAL_LLM_BASE_URL = os.getenv('LOCAL_LLM_BASE_URL', 'http://20.90.184.143:8000/v1')
     LOCAL_LLM_API_KEY  = os.getenv('LOCAL_LLM_API_KEY', 'not-needed')
-    LOCAL_LLM_MODEL    = os.getenv('LOCAL_LLM_MODEL', 'gpt-oss:20b')
+    LOCAL_LLM_MODEL    = os.getenv('LOCAL_LLM_MODEL', 'gpt-oss-20b')
 
 # Reasoning effort for OpenAI reasoning models (GPT-5.x, o-series):
 # 'minimal' | 'low' | 'medium' | 'high'. Ignored for standard sampling
@@ -116,9 +116,6 @@ LINUX_DB_DIR = os.getenv(
     'LINUX_DB_DIR',
     os.path.join(os.path.dirname(__file__), '..', 'src', 'cve_sibling_db_linux'),
 )
-
-# Per-harness verification timeout in seconds (run against each of the 3 states).
-VERIFY_TIMEOUT_SECONDS = int(os.getenv('VERIFY_TIMEOUT_SECONDS', '30'))
 
 # Default harness style: 'syscall' (main()-based) or 'libfuzzer' (LLVMFuzzerTestOneInput).
 # 'syscall' is correct for most Linux kernel subsystems (SCTP, block, inotify, etc.).

@@ -23,7 +23,7 @@ import config
 # name prefix so the same code path serves gpt-4o and gpt-5 alike. The
 # check is intentionally permissive — an unknown model is treated as a
 # standard sampling model, matching prior behaviour.
-_REASONING_PREFIXES = ('gpt-5', 'o1', 'o3', 'o4')
+_REASONING_PREFIXES = ('gpt-5', 'o1', 'o3', 'o4', 'gpt-oss')
 
 
 def _is_reasoning_model(model: str) -> bool:
