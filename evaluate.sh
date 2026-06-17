@@ -22,7 +22,7 @@ set -uo pipefail
 N="${N:-10}"                                   # distinct patches per class
 PROJECTS=(${PROJECTS:-Chart Closure Lang Math Time})
 NUM_HARNESSES="${NUM_HARNESSES:-5}"           # target set size (-n)
-MAX_ATTEMPTS="${MAX_ATTEMPTS:-30}"             # -m
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-70}"             # -m
 FUZZ_TIMEOUT="${FUZZ_TIMEOUT:-60}"
 VERIFY_TIMEOUT="${VERIFY_TIMEOUT:-60}"
 MAX_RUNS_PER_CLASS="${MAX_RUNS_PER_CLASS:-120}" # safety cap (random sampling)

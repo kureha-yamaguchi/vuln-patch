@@ -241,3 +241,5 @@ src/db/project_zero/findings/pipeline/codebase_audit.json
 # Debug artifact from the URL-resolver script; the human-readable
 # summary lives in verified/findings_urls.md.
 src/db/project_zero/findings/verified/resolved_cls.json
+
+tunnel.sh

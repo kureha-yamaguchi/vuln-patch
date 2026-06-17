@@ -35,7 +35,7 @@ from failure_test import FailureTestExtractor, is_crashing_bug
 from fuzz_runner import FuzzRunner, HarnessVerifier
 from jazzer import JazzerEnvironment
 from llm import HarnessGenerator
-from patches import PatchSelector
+from patches import DeprecatedBugError, PatchSelector
 from prompts import PromptBuilder
 
 
@@ -134,12 +134,19 @@ def main():
                              if needs_driver else None)
 
     # 2) Pick a random patch and check out the corresponding buggy d4j
-    #    version.
-    selection = PatchSelector(
+    #    version.  Retry sampling if we land on a deprecated bug (defects4j
+    #    refuses to check it out) so we don't propagate an unhandled error.
+    selector = PatchSelector(
         project_name=args.project_name,
         correct=args.correct,
         overfitting=args.overfitting,
-    ).select()
+    )
+    while True:
+        try:
+            selection = selector.select()
+            break
+        except DeprecatedBugError as exc:
+            print(f"  skipping deprecated bug: {exc}")
 
     # 3a) Extract the bug-triggering test(s) shipped with this d4j bug.
     #     They seed the prompt with a worked example of a crashing
@@ -287,17 +294,20 @@ def main():
     fuzz_results = None
     if args.fuzz_timeout > 0 and result.successful_results:
         print("\n" + "#" * 20 + " fuzzing patched code " + "#" * 20)
-        fuzz_results = FuzzRunner(
-            jazzer_standalone_jar=jazzer_standalone_jar,
-            timeout_seconds=args.fuzz_timeout,
-            expected_exceptions=expected_exceptions,
-            jazzer_api_jar=jazzer_api_jar,
-        ).run_all(
-            successful_results=result.successful_results,
-            patch_path=selection.patch_path,
-            buggy_dir=selection.buggy_dir,
-        )
-        _print_fuzz_summary(fuzz_results)
+        try:
+            fuzz_results = FuzzRunner(
+                jazzer_standalone_jar=jazzer_standalone_jar,
+                timeout_seconds=args.fuzz_timeout,
+                expected_exceptions=expected_exceptions,
+                jazzer_api_jar=jazzer_api_jar,
+            ).run_all(
+                successful_results=result.successful_results,
+                patch_path=selection.patch_path,
+                buggy_dir=selection.buggy_dir,
+            )
+            _print_fuzz_summary(fuzz_results)
+        except Exception as exc:
+            print(f"  patched-code fuzzing failed: {exc}")
 
     # A run is scoreable only if we actually fuzzed at least one harness
     # against the patched code; otherwise we have no overfitting verdict.

@@ -31,7 +31,7 @@ if _OPENAI_KEY:
     # snapshots).
     LOCAL_LLM_MODEL    = os.getenv('LOCAL_LLM_MODEL', 'gpt-5')
 else:
-    LOCAL_LLM_BASE_URL = os.getenv('LOCAL_LLM_BASE_URL', 'http://20.90.184.143:8000/v1')
+    LOCAL_LLM_BASE_URL = os.getenv('LOCAL_LLM_BASE_URL', 'http://localhost:8000/v1')
     LOCAL_LLM_API_KEY  = os.getenv('LOCAL_LLM_API_KEY', 'not-needed')
     LOCAL_LLM_MODEL    = os.getenv('LOCAL_LLM_MODEL', 'gpt-oss-20b')
 

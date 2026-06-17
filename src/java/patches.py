@@ -12,6 +12,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import config
 
 
+class DeprecatedBugError(RuntimeError):
+    """Raised when defects4j refuses to check out a deprecated bug."""
+
+
 @dataclass
 class PatchSelection:
     """A patch chosen from the drr dataset alongside the checkout it
@@ -76,10 +80,16 @@ class PatchSelector:
         if not os.path.isfile(config_file):
             if os.path.isdir(buggy_dir):
                 shutil.rmtree(buggy_dir)
-            subprocess.run(
+            result = subprocess.run(
                 ['defects4j', 'checkout',
                  '-p', self.project_name, '-v', f'{bug_id}b',
                  '-w', buggy_dir],
-                check=True,
+                capture_output=True,
             )
+            if result.returncode != 0:
+                raise DeprecatedBugError(
+                    f'{self.project_name}-{bug_id} checkout failed '
+                    f'(exit {result.returncode}): '
+                    f'{result.stderr.decode(errors="replace").strip()}'
+                )
         return buggy_dir
