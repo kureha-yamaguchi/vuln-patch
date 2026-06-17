@@ -14,9 +14,18 @@ All four speak the same /v1/chat/completions protocol, so the only
 real difference is which client to construct and which request
 parameters are legal for the chosen model. `HarnessGenerator` resolves
 that once at construction time.
+
+The response can be streamed (controlled by `config.LLM_STREAM`). For
+slow reasoning models a synchronous call can sit silent for minutes
+during the hidden thinking phase, and an intermediary often kills that
+"idle" connection before any bytes return — surfacing as
+RemoteProtocolError -> APIConnectionError even though the model was
+still producing tokens. Streaming keeps the socket active and avoids
+that drop; by default we stream only for reasoning models.
 """
 from typing import List, Dict, Optional
 
+import httpx
 import openai
 from openai import AzureOpenAI
 
@@ -63,7 +72,8 @@ class HarnessGenerator:
                  azure_endpoint: Optional[str] = config.AZURE_OPENAI_ENDPOINT,
                  azure_api_version: str = config.AZURE_OPENAI_API_VERSION,
                  timeout: float = config.LLM_TIMEOUT_SECONDS,
-                 max_retries: int = config.LLM_MAX_RETRIES):
+                 max_retries: int = config.LLM_MAX_RETRIES,
+                 stream: str = config.LLM_STREAM):
         # Generous timeout + retries: reasoning models can be slow to
         # respond, and proxies may drop idle connections mid-call. Both
         # the OpenAI and AzureOpenAI clients accept these and the SDK
@@ -77,6 +87,9 @@ class HarnessGenerator:
                 api_version=azure_api_version,
                 timeout=timeout,
                 max_retries=max_retries,
+                http_client=httpx.Client(
+                    limits=httpx.Limits(keepalive_expiry=30),
+                ),
             )
         else:
             kwargs: dict = {
@@ -96,10 +109,21 @@ class HarnessGenerator:
         self.timeout = timeout
         self.max_retries = max_retries
         self._reasoning = _is_reasoning_model(model)
+        # Resolve the streaming policy once. 'auto' streams reasoning
+        # models only (that is where the long silent thinking phase
+        # provokes the idle-connection drop); 'always'/'never' force it.
+        _s = (stream or 'auto').strip().lower()
+        if _s in ('always', '1', 'true', 'yes', 'on'):
+            self._stream = True
+        elif _s in ('never', '0', 'false', 'no', 'off'):
+            self._stream = False
+        else:  # 'auto' or anything unrecognised
+            self._stream = self._reasoning
 
     def generate(self, messages: List[Dict[str, str]]) -> str:
         """Send the chat-completion request and return the assistant's
-        textual response."""
+        textual response. Streams the response when self._stream is set
+        (see config.LLM_STREAM)."""
         params: dict = {
             'messages': messages,
             'model': self.model,
@@ -116,5 +140,28 @@ class HarnessGenerator:
             params['temperature'] = self.temperature
             params['top_p'] = self.top_p
 
-        result = self._client.chat.completions.create(**params)
-        return result.choices[0].message.content
+        if not self._stream:
+            result = self._client.chat.completions.create(**params)
+            return result.choices[0].message.content
+
+        # Streaming path: accumulate content deltas as they arrive. The
+        # constant traffic keeps proxies/gateways from treating the
+        # connection as idle and dropping it mid-generation.
+        params['stream'] = True
+        chunks: List[str] = []
+        stream = self._client.chat.completions.create(**params)
+        try:
+            for event in stream:
+                # Usage-only or keep-alive events can carry no choices.
+                if not event.choices:
+                    continue
+                delta = event.choices[0].delta
+                if delta is not None and delta.content:
+                    chunks.append(delta.content)
+        finally:
+            # Ensure the underlying HTTP response is released even if the
+            # caller stops consuming or an error interrupts the loop.
+            close = getattr(stream, 'close', None)
+            if close is not None:
+                close()
+        return ''.join(chunks)

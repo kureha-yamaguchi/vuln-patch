@@ -36,7 +36,7 @@ _OPENAI_KEY = os.getenv('OPENAI_API_KEY')
 # frequently (but not always) matches the underlying model name.
 USE_AZURE              = bool(_AZURE_KEY)
 AZURE_OPENAI_API_KEY     = _AZURE_KEY
-AZURE_OPENAI_ENDPOINT    = os.getenv('AZURE_OPENAI_ENDPOINT')
+AZURE_OPENAI_ENDPOINT    = os.getenv('AZURE_OPENAI_ENDPOINT', 'https://vuln-patch-resource.cognitiveservices.azure.com/')
 AZURE_OPENAI_API_VERSION = os.getenv('AZURE_OPENAI_API_VERSION', '2024-12-01-preview')
 AZURE_OPENAI_DEPLOYMENT  = os.getenv('AZURE_OPENAI_DEPLOYMENT', 'gpt-5.4')
 
@@ -67,7 +67,7 @@ else:
 # models (gpt-4o etc.) and for local servers. Higher effort tends to
 # help on the harness-reachability inference at the cost of latency and
 # tokens — 'high' is a reasonable default for this pipeline.
-OPENAI_REASONING_EFFORT = os.getenv('OPENAI_REASONING_EFFORT', 'high')
+OPENAI_REASONING_EFFORT = os.getenv('OPENAI_REASONING_EFFORT', 'medium')
 
 # Output token cap for reasoning models (GPT-5.x, o-series). Reasoning
 # models spend tokens on hidden reasoning before emitting the answer, so
@@ -83,8 +83,23 @@ OPENAI_MAX_COMPLETION_TOKENS = int(
 # the first byte on a synchronous call; a generous read timeout plus a
 # couple of retries absorbs slow responses and transient connection
 # drops (e.g. a proxy closing an idle connection -> APIConnectionError).
-LLM_TIMEOUT_SECONDS = float(os.getenv('LLM_TIMEOUT_SECONDS', '600'))
-LLM_MAX_RETRIES     = int(os.getenv('LLM_MAX_RETRIES', '3'))
+LLM_TIMEOUT_SECONDS = float(os.getenv('LLM_TIMEOUT_SECONDS', '6000'))
+LLM_MAX_RETRIES     = int(os.getenv('LLM_MAX_RETRIES', '0'))
+
+# Stream the chat-completion response instead of waiting for the whole
+# body at once. Streaming keeps bytes flowing during generation, which
+# stops an intermediary (proxy / Azure gateway / load balancer) from
+# killing the connection as "idle" while a slow reasoning model is still
+# thinking — the failure mode behind RemoteProtocolError ("Server
+# disconnected without sending a response") -> APIConnectionError.
+#   'auto'  (default) -> stream only for reasoning models, where the
+#                        long pre-output thinking phase triggers the drop.
+#   'always' / '1' / 'true'  -> stream for every model.
+#   'never' / '0' / 'false'  -> never stream (old synchronous behaviour).
+# Note: with streaming the SDK does NOT transparently retry a mid-stream
+# disconnect the way it retries a non-streamed call, so keep your own
+# retry/try-except around generate() (the campaign loop already does).
+LLM_STREAM = os.getenv('LLM_STREAM', 'auto').strip().lower()
 
 # --- Jazzer (JVM libFuzzer port) ------------------------------------------
 # We compile the generated harness against jazzer-api.jar so symbols
