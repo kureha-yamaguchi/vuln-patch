@@ -36,7 +36,7 @@ _OPENAI_KEY = os.getenv('OPENAI_API_KEY')
 # frequently (but not always) matches the underlying model name.
 USE_AZURE              = bool(_AZURE_KEY)
 AZURE_OPENAI_API_KEY     = _AZURE_KEY
-AZURE_OPENAI_ENDPOINT    = os.getenv('AZURE_OPENAI_ENDPOINT', 'https://vuln-patch-resource.cognitiveservices.azure.com/')
+AZURE_OPENAI_ENDPOINT    = os.getenv('AZURE_OPENAI_ENDPOINT')
 AZURE_OPENAI_API_VERSION = os.getenv('AZURE_OPENAI_API_VERSION', '2024-12-01-preview')
 AZURE_OPENAI_DEPLOYMENT  = os.getenv('AZURE_OPENAI_DEPLOYMENT', 'gpt-5.4')
 
@@ -77,6 +77,14 @@ OPENAI_REASONING_EFFORT = os.getenv('OPENAI_REASONING_EFFORT', 'high')
 # and local servers.
 OPENAI_MAX_COMPLETION_TOKENS = int(
     os.getenv('OPENAI_MAX_COMPLETION_TOKENS', '16384'))
+
+# Per-request timeout (seconds) and automatic retry count for the LLM
+# client. Reasoning models with high effort can take minutes to return
+# the first byte on a synchronous call; a generous read timeout plus a
+# couple of retries absorbs slow responses and transient connection
+# drops (e.g. a proxy closing an idle connection -> APIConnectionError).
+LLM_TIMEOUT_SECONDS = float(os.getenv('LLM_TIMEOUT_SECONDS', '600'))
+LLM_MAX_RETRIES     = int(os.getenv('LLM_MAX_RETRIES', '3'))
 
 # --- Jazzer (JVM libFuzzer port) ------------------------------------------
 # We compile the generated harness against jazzer-api.jar so symbols

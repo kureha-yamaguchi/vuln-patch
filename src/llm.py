@@ -61,7 +61,13 @@ class HarnessGenerator:
                  max_completion_tokens: int = config.OPENAI_MAX_COMPLETION_TOKENS,
                  use_azure: bool = config.USE_AZURE,
                  azure_endpoint: Optional[str] = config.AZURE_OPENAI_ENDPOINT,
-                 azure_api_version: str = config.AZURE_OPENAI_API_VERSION):
+                 azure_api_version: str = config.AZURE_OPENAI_API_VERSION,
+                 timeout: float = config.LLM_TIMEOUT_SECONDS,
+                 max_retries: int = config.LLM_MAX_RETRIES):
+        # Generous timeout + retries: reasoning models can be slow to
+        # respond, and proxies may drop idle connections mid-call. Both
+        # the OpenAI and AzureOpenAI clients accept these and the SDK
+        # retries connection errors and 5xx/429 automatically.
         if use_azure:
             # Azure OpenAI: the SDK needs azure_endpoint + api_version, and
             # the request's `model` field is the *deployment* name.
@@ -69,9 +75,15 @@ class HarnessGenerator:
                 api_key=api_key,
                 azure_endpoint=azure_endpoint,
                 api_version=azure_api_version,
+                timeout=timeout,
+                max_retries=max_retries,
             )
         else:
-            kwargs: dict = {'api_key': api_key}
+            kwargs: dict = {
+                'api_key': api_key,
+                'timeout': timeout,
+                'max_retries': max_retries,
+            }
             if base_url is not None:
                 kwargs['base_url'] = base_url
             self._client = openai.OpenAI(**kwargs)
@@ -81,6 +93,8 @@ class HarnessGenerator:
         self.top_p = top_p
         self.reasoning_effort = reasoning_effort
         self.max_completion_tokens = max_completion_tokens
+        self.timeout = timeout
+        self.max_retries = max_retries
         self._reasoning = _is_reasoning_model(model)
 
     def generate(self, messages: List[Dict[str, str]]) -> str:
