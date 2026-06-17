@@ -281,13 +281,39 @@ class PatchedProjectBuilder:
             )
         return patched_dir
 
-    def classpath(self, patched_dir: str) -> str:
+    def classpath(self, patched_dir: str,
+                  fallback_buggy_dir: str | None = None) -> str:
         if patched_dir not in self._classpath_cache:
-            cp = subprocess.run(
+            result = subprocess.run(
                 ['defects4j', 'export', '-p', 'cp.test'],
-                cwd=patched_dir, check=True,
+                cwd=patched_dir,
                 capture_output=True, text=True,
-            ).stdout.strip()
+            )
+            if result.returncode == 0:
+                cp = result.stdout.strip()
+            elif fallback_buggy_dir is not None:
+                # export can fail on a copytree'd dir for some projects.
+                # cp.test is structurally identical between buggy and patched
+                # versions (same JARs, same compiled-class subdirs), so we
+                # derive it by substituting paths from the buggy dir's export.
+                print(f"  classpath export failed in patched dir "
+                      f"({result.stderr.strip()}); deriving from buggy dir")
+                fallback = subprocess.run(
+                    ['defects4j', 'export', '-p', 'cp.test'],
+                    cwd=fallback_buggy_dir, check=True,
+                    capture_output=True, text=True,
+                ).stdout.strip()
+                cp = os.pathsep.join(
+                    e.replace(fallback_buggy_dir, patched_dir)
+                    for e in fallback.split(os.pathsep)
+                )
+            else:
+                raise subprocess.CalledProcessError(
+                    result.returncode,
+                    result.args,
+                    result.stdout,
+                    result.stderr,
+                )
             self._classpath_cache[patched_dir] = cp
         return self._classpath_cache[patched_dir]
 
@@ -335,7 +361,7 @@ class FuzzRunner:
         """Apply patch, compile patched project, then fuzz every harness."""
         builder = PatchedProjectBuilder()
         patched_dir = builder.build_patched_dir(buggy_dir, patch_path)
-        patched_cp = builder.classpath(patched_dir)
+        patched_cp = builder.classpath(patched_dir, fallback_buggy_dir=buggy_dir)
 
         results = []
         for br in successful_results:
