@@ -11,18 +11,45 @@ LLM backend (pick one):
       export LOCAL_LLM_BASE_URL=http://localhost:11434/v1
       export LOCAL_LLM_MODEL=gpt-oss:20b
       # LOCAL_LLM_API_KEY is ignored for local servers
+
+  Option C — Azure OpenAI (takes precedence over A and B):
+      export AZURE_OPENAI_API_KEY=...
+      export AZURE_OPENAI_ENDPOINT=https://vuln-patch-resource.cognitiveservices.azure.com/
+      # the *deployment* name (often equals the model name):
+      export AZURE_OPENAI_DEPLOYMENT=gpt-5.4
+      # optionally override the api version:
+      export AZURE_OPENAI_API_VERSION=2024-12-01-preview
 """
 import os
 
 
 # --- LLM ------------------------------------------------------------------
-# If OPENAI_API_KEY is set the pipeline targets api.openai.com directly
-# (same pattern as project_zero/discover). Otherwise it falls back to a local
-# Ollama/LM-Studio server. LOCAL_LLM_MODEL can override the model in both
-# modes; --model on the CLI overrides it further at runtime.
+# Backend precedence: Azure OpenAI (if AZURE_OPENAI_API_KEY is set) >
+# OpenAI direct (if OPENAI_API_KEY is set) > local Ollama/LM-Studio server.
+# LOCAL_LLM_MODEL can override the model in all modes; --model on the CLI
+# overrides it further at runtime.
+_AZURE_KEY  = os.getenv('AZURE_OPENAI_API_KEY')
 _OPENAI_KEY = os.getenv('OPENAI_API_KEY')
 
-if _OPENAI_KEY:
+# Azure-specific settings. Only meaningful when AZURE_OPENAI_API_KEY is set.
+# On Azure the request's `model` field carries the *deployment* name, which
+# frequently (but not always) matches the underlying model name.
+USE_AZURE              = bool(_AZURE_KEY)
+AZURE_OPENAI_API_KEY     = _AZURE_KEY
+AZURE_OPENAI_ENDPOINT    = os.getenv('AZURE_OPENAI_ENDPOINT', 'https://vuln-patch-resource.cognitiveservices.azure.com/')
+AZURE_OPENAI_API_VERSION = os.getenv('AZURE_OPENAI_API_VERSION', '2024-12-01-preview')
+AZURE_OPENAI_DEPLOYMENT  = os.getenv('AZURE_OPENAI_DEPLOYMENT', 'gpt-5.4')
+
+if USE_AZURE:
+    # base_url/api_key are unused for Azure (the AzureOpenAI client takes
+    # azure_endpoint + api_version instead) but we populate the shared names
+    # so the rest of the pipeline keeps working unchanged.
+    LOCAL_LLM_BASE_URL = None
+    LOCAL_LLM_API_KEY  = _AZURE_KEY
+    # The "model" here is the Azure deployment name. LOCAL_LLM_MODEL still
+    # wins if explicitly set, so --model continues to work.
+    LOCAL_LLM_MODEL    = os.getenv('LOCAL_LLM_MODEL', AZURE_OPENAI_DEPLOYMENT)
+elif _OPENAI_KEY:
     LOCAL_LLM_BASE_URL = None                                    # SDK default → api.openai.com
     LOCAL_LLM_API_KEY  = _OPENAI_KEY
     # Default to a current OpenAI coding/reasoning model. Override with
@@ -41,6 +68,15 @@ else:
 # help on the harness-reachability inference at the cost of latency and
 # tokens — 'high' is a reasonable default for this pipeline.
 OPENAI_REASONING_EFFORT = os.getenv('OPENAI_REASONING_EFFORT', 'high')
+
+# Output token cap for reasoning models (GPT-5.x, o-series). Reasoning
+# models spend tokens on hidden reasoning before emitting the answer, so
+# without a generous cap the visible harness can come back truncated or
+# empty. Sent as `max_completion_tokens` (the parameter reasoning models
+# use; `max_tokens` is rejected). Ignored for standard sampling models
+# and local servers.
+OPENAI_MAX_COMPLETION_TOKENS = int(
+    os.getenv('OPENAI_MAX_COMPLETION_TOKENS', '16384'))
 
 # --- Jazzer (JVM libFuzzer port) ------------------------------------------
 # We compile the generated harness against jazzer-api.jar so symbols
