@@ -26,12 +26,36 @@ class PromptBuilder:
               covered_functions: Optional[List[str]] = None,
               found_signatures: Optional[List[str]] = None,
               crash_input: Optional["CrashInput"] = None,
+              bug_kind: str = "crashing",
+              semantic_test: Optional[FailureTest] = None,
               ) -> List[Dict[str, str]]:
         """Assemble the chat-completion messages.
 
         covered_functions / found_signatures describe harnesses already
         accepted this campaign; when present, the variant-analysis block
-        steers the new harness toward uncovered code and a different crash."""
+        steers the new harness toward uncovered code and a different crash.
+
+        ``bug_kind`` selects the oracle the harness is built around:
+
+          * ``"crashing"`` (default) — the bug's trigger test fails with a
+            thrown application exception. The harness reaches the fault and
+            lets that throwable escape; nothing about this path changes.
+          * ``"semantic"`` — the trigger test fails a JUnit assertion, so
+            the code returns a WRONG value without throwing. There is no
+            crash to catch, so instead we lift the expected value out of one
+            trigger test's ``assertEquals`` and have the harness throw when
+            the patched code disagrees. ``semantic_test`` is the single
+            trigger test to lift from this attempt (the caller round-robins
+            across the bug's trigger tests so each harness checks a
+            different one)."""
+        if bug_kind == "semantic":
+            return self._build_semantic(
+                buggy_dir, context,
+                semantic_test=semantic_test,
+                all_failure_tests=failure_tests or [],
+                covered_functions=covered_functions,
+                found_signatures=found_signatures,
+            )
         codebase = os.path.basename(buggy_dir.rstrip('/'))
 
         sections: List[str] = [
@@ -74,6 +98,160 @@ class PromptBuilder:
                 'outside the file.'},
             {'role': 'user', 'content': prompt},
         ]
+
+    # --- semantic (non-crashing) path ------------------------------------
+
+    def _build_semantic(self, buggy_dir: str,
+                        context: PatchContext,
+                        semantic_test: Optional[FailureTest],
+                        all_failure_tests: List[FailureTest],
+                        covered_functions: Optional[List[str]] = None,
+                        found_signatures: Optional[List[str]] = None,
+                        ) -> List[Dict[str, str]]:
+        """Build the prompt for a semantic (assertion-failing) bug.
+
+        The harness reaches the patched code through the real API exactly
+        as in the crashing path, but its oracle is an assertion lifted from
+        ``semantic_test`` rather than an escaping throwable: it reconstructs
+        the call the test makes, compares the result against the expected
+        value baked into the test's ``assertEquals``, and throws when they
+        differ. On the buggy/overfitting code the value is wrong and the
+        harness throws (Jazzer reports a finding); on a correctly patched
+        version it matches and the harness returns cleanly."""
+        codebase = os.path.basename(buggy_dir.rstrip('/'))
+        chosen = semantic_test or (all_failure_tests[0]
+                                   if all_failure_tests else None)
+
+        sections: List[str] = [
+            self._hard_constraints(context.package),
+            self._intro(codebase),
+            self._patch_block(context.patch_text),
+        ]
+        if context.source_imports:
+            sections.append(self._imports_block(context.source_imports))
+        for fn in context.functions:
+            sections.append(self._function_block(fn))
+        sections.append(self._lifted_assertion_block(
+            chosen, all_failure_tests))
+        if context.root_cause_reachable:
+            sections.append(self._variant_analysis_block(
+                context.root_cause_reachable,
+                covered_functions or [],
+                found_signatures or [],
+            ))
+        sections.append(self._fdp_reference())
+        sections.append(self._skeleton_block(context.package))
+
+        prompt = '\n\n'.join(sections)
+
+        print("#" * 20 + " prompt (semantic) " + "#" * 20)
+        print(prompt)
+        print("#" * 48)
+
+        return [
+            {'role': 'system', 'content':
+                f'You are an expert {self.language} security engineer '
+                'who writes Jazzer fuzzing harnesses. Return a single '
+                'compilable .java file — no markdown fences, no prose '
+                'outside the file.'},
+            {'role': 'user', 'content': prompt},
+        ]
+
+    def _lifted_assertion_block(self, chosen: Optional[FailureTest],
+                                all_failure_tests: List[FailureTest]) -> str:
+        """Instruct the model to lift the expected value from the trigger
+        test's assertion and throw on mismatch.
+
+        This is the semantic-bug oracle. Unlike the crashing path — where
+        the harness lets a real throwable escape — here the *harness itself*
+        is the thing that throws, by comparing the patched code's actual
+        output against the expected value the failing test hard-codes in its
+        assertEquals. We surface that test's full source so the model can
+        copy both the call and the expected literal verbatim; copying beats
+        inferring, exactly as with crash anchors."""
+        parts: List[str] = [
+            "THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does"
+            " not throw — it fails a JUnit assertion because the code returns"
+            " a WRONG value. There is therefore no exception to catch. Your"
+            " harness must SUPPLY the oracle:",
+            "",
+            "1. LIFT: read the failing test below and find its assertion"
+            " (assertEquals / assertTrue / assertSame ...). Identify (a) the"
+            " call(s) it makes on the real API and (b) the EXPECTED value it"
+            " checks against. Copy both VERBATIM — do not infer or recompute"
+            " the expected value; use the literal the test hard-codes.",
+            "",
+            "2. RECONSTRUCT: in fuzzerTestOneInput, make that same call"
+            " through the real public API, exactly as the test does, to get"
+            " the ACTUAL value.",
+            "",
+            "3. ASSERT: if the actual value does not equal the expected"
+            " value, `throw new com.code_intelligence.jazzer.api."
+            "FuzzerSecurityIssueLow(\"semantic mismatch: <what differed>\")`."
+            " Jazzer reports that throw as a finding, exactly like a crash,"
+            " so the rest of the pipeline scores it unchanged. If they match,"
+            " return normally.",
+            "",
+            "4. THEN GENERALISE — but keep every assertion TRUSTED. The"
+            " lifted pair tells you the answer for ONE input only. Do not"
+            " invent an expected value for an arbitrary fuzzed input: an"
+            " assertion you cannot justify will fire on CORRECT patches too"
+            " (a false positive, the worst outcome). Extend coverage only in"
+            " ways where the correct answer is independently known:",
+            "",
+            "  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with"
+            " FuzzedDataProvider, build the canonical input that must map to"
+            " it, and assert you recover it — the answer is trusted because"
+            " you chose it first. E.g. fuzz an int n, format it, parse it"
+            " back, assert == n.",
+            "",
+            "  (b) EQUIVALENCE TO THE SEED. The seed input has properties"
+            " that fix its answer. Generate other inputs that SHARE those"
+            " properties and must therefore share the seed's expected value,"
+            " and assert they equal it. E.g. if the contract is"
+            " case-insensitive and foo(\"abc\")==X, then foo(\"ABC\") and"
+            " foo(\"Abc\") must also ==X. This turns the one lifted value into"
+            " an oracle for a whole family of inputs.",
+            "",
+            "  (c) METAMORPHIC RELATION between two real calls (see below) —"
+            " trusted because it holds for ANY correct implementation.",
+            "",
+            "  GUARDRAIL: for any fuzzed input where you cannot justify the"
+            " expected value by (a), (b), or (c), still CALL the API on it"
+            " (this exercises the patched path), but do NOT assert on its"
+            " result — just return. Assert only trusted answers; explore"
+            " everything else without asserting.",
+        ]
+        if chosen is not None:
+            entry = self._entry_point_hint([chosen])
+            if entry:
+                parts.append(entry)
+            if chosen.method_source:
+                parts.extend([
+                    "Lift the call and the expected value from THIS test"
+                    " (this attempt's target):",
+                    f'<failing_test class="{chosen.test_class}"'
+                    f' method="{chosen.test_method}">',
+                    chosen.method_source,
+                    "</failing_test>",
+                ])
+            else:
+                parts.append(
+                    "Target trigger test (source unavailable — reconstruct"
+                    f" from its name): {chosen.test_class}::"
+                    f"{chosen.test_method}"
+                )
+        if len(all_failure_tests) > 1:
+            others = ', '.join(
+                f'{ft.test_class}::{ft.test_method}'
+                for ft in all_failure_tests if ft is not chosen)
+            parts.append(
+                "Other trigger tests for this same bug (siblings probing the"
+                f" same root cause; other harnesses target these): {others}.")
+        # Reuse the existing metamorphic guidance as the principled way to
+        # extend coverage beyond the single lifted input.
+        parts.append(self._metamorphic_block())
+        return '\n'.join(parts)
 
     # --- sections --------------------------------------------------------
 

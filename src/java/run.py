@@ -85,17 +85,21 @@ def parse_args():
 
 
 def _emit_record(path, *, label, status, selection=None,
-                 result=None, fuzz_results=None):
+                 result=None, fuzz_results=None, bug_kind=None):
     """Append one JSON line summarising this run. `label` is the
     ground-truth class ('correct' or 'overfitting'); `status` is one of
     'evaluated', 'non_crashing', 'no_harnesses', 'error'. A run is only
-    scoreable when status == 'evaluated'."""
+    scoreable when status == 'evaluated'. `bug_kind` ('crashing' /
+    'semantic' / None) lets the aggregator score the two oracle types
+    separately — their recall ceilings differ, so blending them hides
+    which oracle is working."""
     if not path:
         return
     import json as _json
     rec = {
         "label": label,
         "status": status,
+        "bug_kind": bug_kind,
         "project": getattr(selection, "project_name", None),
         "bug_id": getattr(selection, "bug_id", None),
         "apr_tool": getattr(selection, "apr_tool", None),
@@ -159,22 +163,25 @@ def main():
     )
     _print_failure_tests(failure_tests)
 
-    # 3a-bis) Scope gate: this pipeline currently handles only *crashing*
-    #     bugs, whose trigger test fails with a thrown application
-    #     exception. Semantic bugs (trigger test fails a JUnit assertion)
-    #     need the differential oracle that isn't built yet, and the crash
-    #     gate would just burn the whole attempt budget failing on them —
-    #     exactly the wasted run seen on Closure_73. Skip them up front.
-    if not is_crashing_bug(failure_tests):
+    # 3a-bis) Classify the bug. Crashing bugs fail their trigger test with a
+    #     thrown application exception; semantic bugs fail a JUnit assertion
+    #     (wrong value, no throw). Both are now in scope — they differ only in
+    #     the oracle the harness is built around (see prompt_factory below and
+    #     the semantic path in PromptBuilder). If we couldn't determine any
+    #     exception type, is_crashing_bug is conservatively False, so such
+    #     bugs take the semantic (assertion-lifting) path.
+    bug_kind = "crashing" if is_crashing_bug(failure_tests) else "semantic"
+    if not failure_tests:
+        # With no trigger test at all there is nothing to lift or anchor on;
+        # neither oracle can be built. Keep skipping these.
         print(f"\n{selection.project_name} {selection.bug_id} "
-              f"({selection.apr_tool}) is not a crashing bug "
-              "(trigger test fails on an assertion, or its failure type "
-              "could not be determined) — out of scope for the crash "
-              "pipeline. Skipping.")
+              f"({selection.apr_tool}) has no bug-triggering tests — "
+              "no oracle can be built. Skipping.")
         _emit_record(args.results_json,
                      label='correct' if args.correct else 'overfitting',
                      status='non_crashing', selection=selection)
         sys.exit(3)
+    print(f"\nbug kind: {bug_kind}")
 
     # 3b) Extract the patch + every project function it touches +
     #     cross-references for each of those functions.
@@ -191,10 +198,14 @@ def main():
     #     single biggest cause of wasted attempts. Bug-type-agnostic and
     #     purely additive: on any capture failure this is None and the
     #     prompt falls back to test-source-only behaviour.
+    #
+    #     Crashing bugs only: a semantic bug throws nothing, so there is no
+    #     crashing value to read back. The semantic path lifts its anchor
+    #     (the expected value) straight from the trigger test source instead.
     crash_input = None
     primary_test = next((ft for ft in failure_tests if ft.has_source),
                         failure_tests[0] if failure_tests else None)
-    if primary_test is not None:
+    if bug_kind == "crashing" and primary_test is not None:
         # Fallback anchors mined from the test source, scoped to the
         # patched (target) methods — used only when the runtime message
         # does not itself echo the crashing value.
@@ -217,9 +228,22 @@ def main():
     #    before each fresh attempt: it injects which reachable functions
     #    and crashes the set already covers, so each new harness is a
     #    *variant* steered at the uncovered part of the root-cause region.
+    #
+    #    For semantic bugs with several trigger tests, we additionally
+    #    round-robin which test each attempt lifts its assertion from, so the
+    #    harness set spreads across all of the bug's failing behaviours rather
+    #    than piling onto the first. The campaign passes no attempt index, so
+    #    the closure keeps its own counter (one tick per fresh prompt build).
     prompt_builder = PromptBuilder(language=args.language)
+    _rr_state = {"i": 0}
 
     def prompt_factory(covered_functions, found_signatures):
+        semantic_test = None
+        if bug_kind == "semantic" and failure_tests:
+            semantic_test = failure_tests[_rr_state["i"] % len(failure_tests)]
+            _rr_state["i"] += 1
+            print(f"  [semantic] lifting assertion from "
+                  f"{semantic_test.test_class}::{semantic_test.test_method}")
         return prompt_builder.build(
             buggy_dir=selection.buggy_dir,
             context=context,
@@ -227,6 +251,8 @@ def main():
             covered_functions=covered_functions,
             found_signatures=found_signatures,
             crash_input=crash_input,
+            bug_kind=bug_kind,
+            semantic_test=semantic_test,
         )
 
     # The set-empty prompt used for attempt 1.
@@ -244,15 +270,44 @@ def main():
     # FuzzRunner (patched code) so crash detection is symmetric — otherwise a
     # harness accepted as crashing could be wrongly reported clean on the
     # patched code, masking an overfitting patch.
+    # Throwable names that count as "the harness fired", used by both the
+    # in-campaign verifier (buggy code) and the post-campaign FuzzRunner
+    # (patched code) so detection is symmetric — otherwise a harness accepted
+    # as triggering could be wrongly reported clean on the patched code,
+    # masking an overfitting patch.
+    #
+    # The two bug kinds fire differently:
+    #   * crashing — the bug's OWN throwable escapes the library. Expect the
+    #     root-cause exception type (from D4J metadata + captured runtime
+    #     crash), both fully-qualified and simple.
+    #   * semantic — the library throws nothing; the HARNESS throws when the
+    #     lifted assertion fails. Expect the throwable the harness raises
+    #     (Jazzer's FuzzerSecurityIssue*, or a bare AssertionError if the
+    #     model used assert/JUnit instead). Note Jazzer also flags an
+    #     uncaught throwable via its finding exit code and crash markers, so
+    #     this list mainly hardens the deterministic-first-input (rc=1) path.
     expected_exceptions = []
-    for ft in failure_tests:
-        if ft.exception_type:
-            expected_exceptions.append(ft.exception_type)
-            expected_exceptions.append(ft.exception_type.rsplit('.', 1)[-1])
-    if crash_input is not None and crash_input.exception_type:
-        expected_exceptions.append(crash_input.exception_type)
-        expected_exceptions.append(
-            crash_input.exception_type.rsplit('.', 1)[-1])
+    if bug_kind == "crashing":
+        for ft in failure_tests:
+            if ft.exception_type:
+                expected_exceptions.append(ft.exception_type)
+                expected_exceptions.append(
+                    ft.exception_type.rsplit('.', 1)[-1])
+        if crash_input is not None and crash_input.exception_type:
+            expected_exceptions.append(crash_input.exception_type)
+            expected_exceptions.append(
+                crash_input.exception_type.rsplit('.', 1)[-1])
+    else:  # semantic
+        expected_exceptions = [
+            'com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow',
+            'com.code_intelligence.jazzer.api.FuzzerSecurityIssueMedium',
+            'com.code_intelligence.jazzer.api.FuzzerSecurityIssueHigh',
+            'FuzzerSecurityIssueLow',
+            'FuzzerSecurityIssueMedium',
+            'FuzzerSecurityIssueHigh',
+            'java.lang.AssertionError',
+            'AssertionError',
+        ]
     seen = set()
     expected_exceptions = [e for e in expected_exceptions
                            if e and not (e in seen or seen.add(e))]
@@ -318,7 +373,8 @@ def main():
     _emit_record(args.results_json,
                  label='correct' if args.correct else 'overfitting',
                  status=status, selection=selection,
-                 result=result, fuzz_results=fuzz_results)
+                 result=result, fuzz_results=fuzz_results,
+                 bug_kind=bug_kind)
 
     sys.exit(0 if result.converged else 2)
 
