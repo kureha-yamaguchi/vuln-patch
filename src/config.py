@@ -23,6 +23,39 @@ LLM backend (pick one):
 import os
 
 
+def _load_dotenv() -> None:
+    """Load KEY=VALUE pairs from a repo-root .env into os.environ.
+
+    Zero-dependency (no python-dotenv): so every entry point that imports
+    config — run.sh, evaluate.sh, or a manual `uv run` — picks up the same
+    settings without a --env-file flag. Real exported environment variables
+    always win (we use setdefault), matching python-dotenv's default and
+    keeping CI/shell overrides authoritative. The .env file itself is
+    gitignored; commit .env.example as the template instead."""
+    env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+    try:
+        with open(env_path, 'r') as fh:
+            lines = fh.readlines()
+    except FileNotFoundError:
+        return
+    for raw in lines:
+        line = raw.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        if line.startswith('export '):
+            line = line[len('export '):]
+        key, _, value = line.partition('=')
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+            value = value[1:-1]
+        if key:
+            os.environ.setdefault(key, value)
+
+
+_load_dotenv()
+
+
 # --- LLM ------------------------------------------------------------------
 # Backend precedence: Azure OpenAI (if AZURE_OPENAI_API_KEY is set) >
 # OpenAI direct (if OPENAI_API_KEY is set) > local Ollama/LM-Studio server.
