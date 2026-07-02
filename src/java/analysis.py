@@ -140,10 +140,16 @@ class TargetAnalyzer:
         # dropping the touched functions themselves (the prompt already
         # shows those in full).
         touched_names = {fn.func_name for fn in functions}
+        proj_prefix = self._project_prefix(package)
         root_cause_reachable: List[str] = []
         seen_reach: set = set()
         for fn in functions:
             for name in fn.reachable:
+                # Keep project functions; drop JDK noise (Double.isNaN,
+                # Math.exp, Object.<init>, ...) that the call graph pulls
+                # in but that isn't part of the root-cause neighbourhood.
+                if proj_prefix and not self._is_project_fn(name, proj_prefix):
+                    continue
                 short = self._short_name(name)
                 if short in touched_names or short in seen_reach:
                     continue
@@ -656,55 +662,123 @@ class TargetAnalyzer:
         functions: List[TouchedFunction],
         project,
     ) -> List[TouchedFunction]:
-        """Look up each AST-resolved enclosing method by name in the
-        fuzz-introspector project, attach its call sites (xrefs) and its
-        statically reachable set. Failures here are non-fatal — the
-        harness body alone is still useful."""
+        """Look up each AST-resolved enclosing method in the
+        fuzz-introspector project and attach its statically reachable
+        set (the root-cause neighbourhood the variant block steers
+        across). Failures here are non-fatal — the harness body alone is
+        still useful.
+
+        Resolution is done ourselves against ``project.all_functions``
+        rather than via ``find_function_by_name``: in the current JVM
+        frontend that helper returns None (it expects a mangled name, not
+        a bare method name), which previously left every reachable set
+        empty. We map our AST method name to introspector's mangled name
+        ``[pkg.Class].method(argtypes)`` — disambiguating overloads by
+        argument count — and call the real reachability API."""
         if project is None:
             return functions
+        index = self._build_fi_index(project)
         for fn in functions:
-            try:
-                resolved = project.find_function_by_name(fn.func_name, True)
-            except Exception:
+            mangled = self._match_fi_name(fn, index)
+            if mangled is None:
+                # Legacy fallback for older introspector versions whose
+                # find_function_by_name accepted a bare name.
+                try:
+                    resolved = project.find_function_by_name(
+                        fn.func_name, True)
+                    mangled = getattr(resolved, 'name', None)
+                except Exception:
+                    mangled = None
+            if not mangled:
                 continue
-            if not resolved:
-                continue
             try:
-                xrefs = project.get_cross_references_by_name(resolved.name)
+                xrefs = project.get_cross_references_by_name(mangled)
                 fn.xrefs = [x.function_source_code_as_text() for x in xrefs]
             except Exception:
                 pass
-            fn.reachable = self._reachable_of(resolved, project)
+            fn.reachable = self._reachable_of(project, mangled)
         return functions
 
-    @staticmethod
-    def _reachable_of(resolved, project) -> List[str]:
-        """Pull the statically reachable function set for `resolved`.
+    def _build_fi_index(self, project) -> Dict[str, List[str]]:
+        """Map bare method name -> [introspector mangled names].
 
-        fuzz-introspector has exposed this under a few names across
-        versions (a `functions_reached` attribute on the function
-        profile, a `reached_by_functions`/`all_class_functions` shaped
-        structure, or a project-level helper). We probe the common ones
-        and degrade to [] rather than letting an API drift break the
-        whole analysis — consistent with how the rest of this module
-        treats fuzz-introspector as best-effort enrichment."""
-        # 1) Most common: attribute directly on the function profile.
-        for attr in ('functions_reached', 'reached_functions',
-                     'functions_reached_by_function'):
-            val = getattr(resolved, attr, None)
-            if val:
-                return TargetAnalyzer._as_name_list(val)
-        # 2) Project-level helper keyed by function name.
-        for meth in ('get_reached_functions_by_name',
-                     'get_functions_reached_by_name'):
-            fn = getattr(project, meth, None)
-            if callable(fn):
-                try:
-                    val = fn(resolved.name)
-                    if val:
-                        return TargetAnalyzer._as_name_list(val)
-                except Exception:
-                    continue
+        introspector keys functions by mangled name
+        (``[pkg.Class].method(argtypes)``); we index by the trailing
+        method name so an AST-resolved ``func_name`` can find its
+        overload(s)."""
+        funcs = getattr(project, 'all_functions', None)
+        if not funcs:
+            return {}
+        keys = (funcs.keys() if isinstance(funcs, dict)
+                else [getattr(f, 'name', '') for f in funcs])
+        index: Dict[str, List[str]] = {}
+        for k in keys:
+            if not k:
+                continue
+            index.setdefault(self._fi_method_name(k), []).append(k)
+        return index
+
+    def _match_fi_name(self, fn: TouchedFunction,
+                       index: Dict[str, List[str]]) -> Optional[str]:
+        """Resolve a touched function to its introspector mangled name,
+        picking the overload whose argument count matches the AST
+        signature when there is more than one."""
+        cands = index.get(fn.func_name)
+        if not cands:
+            return None
+        if len(cands) == 1:
+            return cands[0]
+        want = self._arg_count(fn.func_signature or '')
+        for c in cands:
+            if self._arg_count(c) == want:
+                return c
+        return cands[0]
+
+    @staticmethod
+    def _fi_method_name(mangled: str) -> str:
+        """Bare method name from an introspector JVM name
+        (``[pkg.Class].method(args)`` / ``Class.method(args)``)."""
+        name = re.sub(r'^\[[^\]]*\]\.?', '', mangled).strip()
+        name = name.split('(')[0]
+        return name.split('.')[-1] if '.' in name else name
+
+    @staticmethod
+    def _arg_count(paren: str) -> int:
+        """Number of comma-separated args inside the first (...) group,
+        or -1 if there is none. Good enough to disambiguate overloads
+        (generics with top-level commas are rare in these signatures)."""
+        m = re.search(r'\(([^)]*)\)', paren)
+        if not m:
+            return -1
+        inner = m.group(1).strip()
+        return 0 if not inner else len([a for a in inner.split(',')
+                                        if a.strip()])
+
+    def _reachable_of(self, project, mangled: str) -> List[str]:
+        """Transitive reachable-function set for a mangled name.
+
+        Primary path is the current JVM API
+        ``project.get_reachable_functions(function=<mangled>)``. We keep
+        the legacy per-profile attribute probe as a fallback so an API
+        drift degrades to [] rather than breaking the analysis."""
+        getter = getattr(project, 'get_reachable_functions', None)
+        if callable(getter):
+            try:
+                val = getter(function=mangled)
+                if val:
+                    return TargetAnalyzer._as_name_list(val)
+            except Exception:
+                pass
+        try:
+            resolved = project.find_function_by_name(mangled, True)
+        except Exception:
+            resolved = None
+        if resolved is not None:
+            for attr in ('functions_reached', 'reached_functions',
+                         'functions_reached_by_function'):
+                val = getattr(resolved, attr, None)
+                if val:
+                    return TargetAnalyzer._as_name_list(val)
         return []
 
     @staticmethod
@@ -723,6 +797,32 @@ class TargetAnalyzer:
                 if name:
                     out.append(name)
         return out
+
+    @staticmethod
+    def _is_project_fn(mangled: str, proj_prefix: str) -> bool:
+        """True if a reachable function belongs to the project, judged by
+        its RECEIVER class (the ``[pkg.Class]`` bracket) rather than the
+        whole mangled name. The JVM frontend sometimes mis-types call
+        arguments with the project package, so a substring check over the
+        full name lets JDK statics (``Math.abs(...)``) leak through; the
+        receiver bracket is the reliable signal — JDK/static calls have
+        none."""
+        m = re.match(r'^\[([^\]]*)\]', mangled)
+        receiver = m.group(1) if m else ''
+        return proj_prefix in receiver
+
+    @staticmethod
+    def _project_prefix(package: Optional[str]) -> str:
+        """Reverse-domain prefix used to keep reachable functions that
+        belong to the project and drop JDK/library noise. Derived from
+        the touched file's package: first three components (e.g.
+        ``org.apache.commons`` from ``org.apache.commons.math.special``),
+        which is specific enough to exclude java.* / third-party calls
+        without dropping the project's own neighbouring code."""
+        if not package:
+            return ''
+        parts = package.split('.')
+        return '.'.join(parts[:3]) if len(parts) >= 3 else package
 
     @staticmethod
     def _short_name(name: str) -> str:

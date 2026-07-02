@@ -74,18 +74,27 @@ implemented** — there is no differential code in the tree.
 
 Installed on a Python **3.11** venv (lxml 4.9.1 pin won't build on 3.12+;
 no new VM needed — `uv venv --clear --python 3.11` + `uv sync --extra
-introspector`, plus apt `clang libxml2-dev libxslt1-dev`). Result on Java
-Defects4J bugs:
-- `analyse_end_to_end(module_only=True)` runs WITHOUT error and DOES enrich
-  callee context (related_callees with real impls), BUT
-- `reachable` / `root_cause_reachable` come back **EMPTY** — the Java
-  call-graph/reachability isn't computed in module_only mode. So the
-  variant-analysis *coverage-map steering* is effectively OFF even with
-  introspector installed.
-- It also adds ~2x per-run latency (tree-sitter parse of the project).
-Net: buys callee context, NOT coverage spread. Open Q: does full-analysis
-mode (module_only=False) populate Java reachability? Until then, introspector
-is optional for throughput batches.
+introspector`, plus apt `clang libxml2-dev libxslt1-dev`). Initial symptom: `reachable` / `root_cause_reachable` came back EMPTY, so the
+variant-analysis coverage-map steering was silently OFF.
+
+ROOT CAUSE (fixed 2026-07-02): NOT a fuzz-introspector limitation — two
+API-drift bugs in analysis.py:
+  1. `project.find_function_by_name(name, True)` returns None in the current
+     JVM frontend (it wants a mangled name, not a bare method name), so the
+     whole enrichment loop `continue`d — losing xrefs AND reachable. (The
+     callee context in prompts came from our AST resolver, not introspector.)
+  2. `_reachable_of` probed `get_reached_functions_by_name`; the real API is
+     `project.get_reachable_functions(function=<mangled>)`.
+FIX: resolve touched functions to introspector's mangled name
+(`[pkg.Class].method(argtypes)`) ourselves via `all_functions`, disambiguate
+overloads by arg count, call `get_reachable_functions`, and filter to project
+functions by RECEIVER bracket (not whole-name substring — the frontend
+mis-types some args with the project package, which leaks JDK statics).
+VERIFIED: Math-104 now yields root_cause_reachable = {regularizedGammaQ,
+logGamma, evaluate, getA, getB, <init>} (was []).
+Caveats: introspector adds ~30s/run (tree-sitter parse); the sembatch
+semantic numbers below were collected BEFORE this fix (steering off), so a
+re-run should be done to measure the fix's effect on recall.
 
 ## Deep-dive method + worked example (Math-104, semantic TP)
 
