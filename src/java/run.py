@@ -60,6 +60,17 @@ def parse_args():
                              "(default: 50)")
     parser.add_argument("--max_repair_failures", type=int, default=3,
                         help="maximum number of failures in a row before resetting the prompt context")
+    parser.add_argument("--reachable_node_cap", type=int, default=None,
+                        metavar="N",
+                        help="budget for the root-cause reachable-set BFS: "
+                             "max functions to visit (default: config."
+                             "REACHABLE_NODE_CAP). Higher = wider neighbourhood "
+                             "but slower analysis.")
+    parser.add_argument("--reachable_max_depth", type=int, default=None,
+                        metavar="D",
+                        help="max call-graph depth for the reachable-set BFS "
+                             "(default: config.REACHABLE_MAX_DEPTH). Direct "
+                             "callees are depth 1.")
     parser.add_argument("--fuzz_timeout", type=int, default=60,
                         metavar="SECONDS",
                         help="seconds Jazzer runs per harness against the "
@@ -185,7 +196,10 @@ def main():
 
     # 3b) Extract the patch + every project function it touches +
     #     cross-references for each of those functions.
-    context = TargetAnalyzer().analyze(
+    context = TargetAnalyzer(
+        reachable_node_cap=args.reachable_node_cap,
+        reachable_max_depth=args.reachable_max_depth,
+    ).analyze(
         patch_path=selection.patch_path,
         buggy_dir=selection.buggy_dir,
     )

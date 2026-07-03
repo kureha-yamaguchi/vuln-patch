@@ -18,6 +18,8 @@ from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional, Tuple
 
 import javalang
+
+import config
 try:
     from fuzz_introspector import commands as fi_commands
     _FI_AVAILABLE = True
@@ -115,8 +117,18 @@ class TargetAnalyzer:
     _HUNK_RE = re.compile(r'^@@\s+-(\d+)(?:,(\d+))?\s+\+\d+')
     _PACKAGE_RE = re.compile(r'^\s*package\s+([\w.]+)\s*;')
 
-    def __init__(self, language: str = 'jvm'):
+    def __init__(self, language: str = 'jvm',
+                 reachable_node_cap: Optional[int] = None,
+                 reachable_max_depth: Optional[int] = None):
         self.language = language
+        # Reachable-set BFS budget. CLI-overridable (run.py flags); falls
+        # back to config (env) defaults when not supplied.
+        self.reachable_node_cap = (reachable_node_cap
+                                   if reachable_node_cap is not None
+                                   else config.REACHABLE_NODE_CAP)
+        self.reachable_max_depth = (reachable_max_depth
+                                    if reachable_max_depth is not None
+                                    else config.REACHABLE_MAX_DEPTH)
 
     def analyze(self, patch_path: str, buggy_dir: str) -> PatchContext:
         modified_files, hunks_by_file, patch_text = self._parse_patch(
@@ -755,31 +767,101 @@ class TargetAnalyzer:
                                         if a.strip()])
 
     def _reachable_of(self, project, mangled: str) -> List[str]:
-        """Transitive reachable-function set for a mangled name.
+        """Bounded reachable-function set for a mangled name.
 
-        Primary path is the current JVM API
-        ``project.get_reachable_functions(function=<mangled>)``. We keep
-        the legacy per-profile attribute probe as a fallback so an API
-        drift degrades to [] rather than breaking the analysis."""
+        Budget-bounded BFS over immediate call-sites (``base_callsites``),
+        NOT introspector's ``get_reachable_functions`` — that does an
+        unbounded transitive walk that blows up to minutes of CPU on hub
+        functions (e.g. ``inverseCumulativeProbability``). Direct callees
+        are always included (BFS visits them first), then we expand
+        breadth-first until a node cap, so cost is O(cap) irrespective of
+        call-graph size and depth floats up to REACHABLE_MAX_DEPTH within
+        that budget. Evidence from the Defects4J bugs: every downstream
+        manifest-site / sibling sits at depth 1 (e.g. Math-2's
+        ``getNumericalMean``), so a shallow capped walk suffices while the
+        cap guarantees it can never hang.
+
+        Falls back to the project-level getter (under a hard timeout) only
+        for introspector versions that don't expose ``base_callsites``."""
+        fmap = self._function_map(project)
+        if fmap and mangled in fmap:
+            names = self._bfs_callees(fmap, mangled,
+                                      self.reachable_node_cap,
+                                      self.reachable_max_depth)
+            if names:
+                return names
         getter = getattr(project, 'get_reachable_functions', None)
         if callable(getter):
             try:
-                val = getter(function=mangled)
+                val = self._with_timeout(
+                    lambda: getter(function=mangled),
+                    config.REACHABLE_TIMEOUT_SECONDS)
                 if val:
                     return TargetAnalyzer._as_name_list(val)
             except Exception:
                 pass
-        try:
-            resolved = project.find_function_by_name(mangled, True)
-        except Exception:
-            resolved = None
-        if resolved is not None:
-            for attr in ('functions_reached', 'reached_functions',
-                         'functions_reached_by_function'):
-                val = getattr(resolved, attr, None)
-                if val:
-                    return TargetAnalyzer._as_name_list(val)
         return []
+
+    @staticmethod
+    def _function_map(project) -> Dict[str, object]:
+        """`project.all_functions` normalised to a name -> profile dict."""
+        funcs = getattr(project, 'all_functions', None)
+        if not funcs:
+            return {}
+        if isinstance(funcs, dict):
+            return funcs
+        return {getattr(f, 'name', ''): f
+                for f in funcs if getattr(f, 'name', '')}
+
+    @staticmethod
+    def _bfs_callees(fmap: Dict[str, object], start: str,
+                     cap: int, max_depth: int) -> List[str]:
+        """BFS the call graph from `start` via each profile's
+        `base_callsites` (immediate callees), bounded by `cap` nodes and
+        `max_depth` levels."""
+        seen = {start}
+        out: List[str] = []
+        queue: List[Tuple[str, int]] = [(start, 0)]
+        while queue and len(out) < cap:
+            name, depth = queue.pop(0)
+            prof = fmap.get(name)
+            if prof is None:
+                continue
+            for cs in (getattr(prof, 'base_callsites', None) or []):
+                if isinstance(cs, (list, tuple)) and cs:
+                    dst = cs[0]
+                elif isinstance(cs, str):
+                    dst = cs
+                else:
+                    dst = getattr(cs, 'dst_function_name', None)
+                if not dst or dst in seen:
+                    continue
+                seen.add(dst)
+                out.append(dst)
+                if len(out) >= cap:
+                    break
+                if depth + 1 < max_depth:
+                    queue.append((dst, depth + 1))
+        return out
+
+    @staticmethod
+    def _with_timeout(fn, seconds):
+        """Run fn() but abort after `seconds` via SIGALRM (main thread
+        only; degrades gracefully off-main-thread since signal.signal
+        raises, caught by the caller)."""
+        if not seconds or seconds <= 0:
+            return fn()
+        import signal
+
+        def _handler(signum, frame):
+            raise TimeoutError("reachable fallback exceeded budget")
+        old = signal.signal(signal.SIGALRM, _handler)
+        signal.alarm(int(seconds))
+        try:
+            return fn()
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old)
 
     @staticmethod
     def _as_name_list(val) -> List[str]:

@@ -52,6 +52,20 @@ The pipeline targets any OpenAI-compatible local server (Ollama or LM Studio). S
 uv sync
 ```
 
+**Optional — fuzz-introspector (root-cause reachable region).** The reachable-set
+steering uses `fuzz-introspector`, an optional extra. Its `lxml 4.9.1` pin only
+builds on **Python ≤ 3.11**, so create the venv on 3.11 and install the extra:
+
+```bash
+# system deps for lxml/atheris (Debian/Ubuntu)
+sudo apt-get install -y clang libxml2-dev libxslt1-dev zlib1g-dev python3-dev
+uv venv --clear --python 3.11
+uv sync --extra introspector
+```
+
+Without it the pipeline still runs — it degrades gracefully, skipping only the
+variant-analysis steering block (see [analysis.py](src/java/analysis.py)).
+
 ## Configuration
 
 All settings are env-driven via [src/config.py](src/config.py):
@@ -66,6 +80,8 @@ All settings are env-driven via [src/config.py](src/config.py):
 | `VERIFY_TIMEOUT_SECONDS` | `20` | Per-harness Jazzer budget for the buggy-version trigger gate |
 | `FUZZ_TIMEOUT_SECONDS` | `30` | Per-harness Jazzer budget for the patched-version overfitting check |
 | `MAX_REACHABLE_IN_PROMPT` | `60` | Cap on root-cause-reachable function names spliced into the prompt |
+| `REACHABLE_NODE_CAP` | `200` | Budget for the reachable-set BFS: max functions visited (also `--reachable_node_cap`) |
+| `REACHABLE_MAX_DEPTH` | `3` | Max call-graph depth for the reachable-set BFS; direct callees are depth 1 (also `--reachable_max_depth`) |
 
 Example — use LM Studio instead of Ollama:
 
@@ -96,6 +112,8 @@ cd src && uv run -m run --overfitting --project_name Lang -n 5 -m 50
 | `-n` / `--target_successes` | Stop after this many **accepted** harnesses (compile + trigger) (default: 5) |
 | `-m` / `--max_attempts` | Hard cap on LLM calls (default: 50) |
 | `--max_repair_failures` | Consecutive failures before resetting context (default: 2) |
+| `--reachable_node_cap` | Budget for the root-cause reachable-set BFS: max functions visited (default: `REACHABLE_NODE_CAP`). Higher = wider neighbourhood, slower analysis |
+| `--reachable_max_depth` | Max call-graph depth for the reachable-set BFS (default: `REACHABLE_MAX_DEPTH`); direct callees are depth 1 |
 | `--fuzz_timeout` | Seconds Jazzer runs per harness against the *patched* code (default: 60; 0 to skip) |
 | `--verify_timeout` | Seconds Jazzer runs per harness against the *buggy* code to verify it triggers before acceptance (default: `VERIFY_TIMEOUT_SECONDS`, 20) |
 | `--no-require-trigger` | Accept harnesses on compile alone (old behaviour); skips the buggy-version trigger gate. For ablation experiments |

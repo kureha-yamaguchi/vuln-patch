@@ -180,6 +180,19 @@ VERIFY_TIMEOUT_SECONDS = int(os.getenv('VERIFY_TIMEOUT_SECONDS', '60'))
 # the project) from dominating the context window.
 MAX_REACHABLE_IN_PROMPT = int(os.getenv('MAX_REACHABLE_IN_PROMPT', '60'))
 
+# Reachable-set computation is a budget-bounded BFS over immediate call-sites
+# (see analysis.TargetAnalyzer._reachable_of), NOT introspector's unbounded
+# transitive walk (which explodes to minutes of CPU on hub functions). The
+# node cap makes it O(cap) regardless of call-graph size; depth floats up to
+# REACHABLE_MAX_DEPTH within that budget. Evidence from the Defects4J bugs:
+# every downstream manifest-site / sibling sits at depth 1, so a shallow,
+# capped walk is both faster and more focused than going deep.
+REACHABLE_NODE_CAP = int(os.getenv('REACHABLE_NODE_CAP', '200'))
+REACHABLE_MAX_DEPTH = int(os.getenv('REACHABLE_MAX_DEPTH', '3'))
+# Hard timeout (s) for the legacy get_reachable_functions fallback only, so an
+# older introspector without base_callsites degrades to [] instead of hanging.
+REACHABLE_TIMEOUT_SECONDS = int(os.getenv('REACHABLE_TIMEOUT_SECONDS', '30'))
+
 # --- drr patch dataset -----------------------------------------------------
 DRR_CORRECT_DIR     = '../drr/Patches/Dcorrect'
 DRR_OVERFITTING_DIR = '../drr/Patches/Doverfitting'

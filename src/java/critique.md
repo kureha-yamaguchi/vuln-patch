@@ -96,6 +96,39 @@ Caveats: introspector adds ~30s/run (tree-sitter parse); the sembatch
 semantic numbers below were collected BEFORE this fix (steering off), so a
 re-run should be done to measure the fix's effect on recall.
 
+## Reachable-set: perf regression + bounded-BFS fix (2026-07-03)
+
+The first cut of the fix called `get_reachable_functions(function=...)`, which
+does an UNBOUNDED transitive call-graph walk. Fine for a leaf like Math-104's
+`regularizedGammaP` (~20 reachable, instant), but on a HUB like Math-2's
+`inverseCumulativeProbability` it ran for 10+ min at 99% CPU. Replaced with a
+budget-bounded BFS over immediate call-sites (`base_callsites`):
+- Direct callees always included (BFS visits them first), then expand
+  breadth-first until REACHABLE_NODE_CAP nodes / REACHABLE_MAX_DEPTH levels.
+- O(cap) regardless of call-graph size -> cannot hang.
+- CLI-overridable: `--reachable_node_cap`, `--reachable_max_depth`.
+Validated Math-104: depth 1 -> {regularizedGammaQ, logGamma, <init>};
+depth 3 -> + {evaluate, getA, getB}. ~35s (all parse).
+
+**Why shallow is enough (evidence, not a guess).** Measured where the bug is
+observable relative to the patched function across tasks:
+- DOWNSTREAM manifest-sites / siblings all sit at **depth 1**: Math-2's
+  `getNumericalMean` (direct callee, line 125 of icp), Math-104's
+  `regularizedGammaQ`. No downstream case at depth >=3 in the batch.
+- Most bugs are actually observed **UPSTREAM** at the public entry point
+  (Math-30: `mannWhitneyUTest` is 1 level up from the patched helper; Time-19:
+  `DateTime.toString` is ~3-4 levels above `getOffsetFromLocal`) — a DIFFERENT
+  axis the callee-BFS doesn't cover, handled separately by the entry-point hint.
+So downstream depth 1-2 suffices; direction (upstream vs downstream) matters
+more than depth. The node cap is what guarantees no hang.
+
+**Still open — introspector PARSE cost.** Separate from the (now-fixed) walk:
+`analyse_end_to_end` re-parses the WHOLE library every run (~35s for math3),
+with no caching, and the batch re-samples the same bug repeatedly. Memoize the
+analysis per bug id. Also: a Math_2_buggy checkout that had been compiled/edited
+by hand stalled the parse (0% CPU, blocked) — suspect a polluted checkout;
+prefer fresh checkouts for the parse.
+
 ## Deep-dive method + worked example (Math-104, semantic TP)
 
 To analyse any case pull: the drr patch, the trigger test (expected value),
