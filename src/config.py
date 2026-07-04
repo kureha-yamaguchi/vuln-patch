@@ -199,6 +199,14 @@ REACHABLE_TIMEOUT_SECONDS = int(os.getenv('REACHABLE_TIMEOUT_SECONDS', '30'))
 INTROSPECTOR_TIMEOUT_SECONDS = int(
     os.getenv('INTROSPECTOR_TIMEOUT_SECONDS', '120'))
 
+# Depth cap for fuzz-introspector's method-depth metric. Its stock
+# calculate_method_depth is an unbounded O(N^2+) DFS that stalls on large
+# libraries (Math-2's commons-math3). We patch it to a depth-bounded recursion
+# (returns min(true_depth, cap)) — fast, and still a meaningful metric rather
+# than a 0 stub. Also settable via --introspector_depth_cap.
+INTROSPECTOR_METHOD_DEPTH_CAP = int(
+    os.getenv('INTROSPECTOR_METHOD_DEPTH_CAP', '3'))
+
 # --- drr patch dataset -----------------------------------------------------
 DRR_CORRECT_DIR     = '../drr/Patches/Dcorrect'
 DRR_OVERFITTING_DIR = '../drr/Patches/Doverfitting'

@@ -28,6 +28,78 @@ except ImportError:
     _FI_AVAILABLE = False
 
 
+# CLI/config-overridable cap for introspector's method-depth metric (below).
+_METHOD_DEPTH_CAP = config.INTROSPECTOR_METHOD_DEPTH_CAP
+
+
+def _fi_method_depth_bounded(self, target_method, all_methods):
+    """Depth-bounded replacement for JvmProject.calculate_method_depth.
+
+    The stock version is an unbounded DFS whose `visited` is a LIST with
+    O(n) membership checks, invoked once per method -> O(N^2+); it stalls
+    for minutes on large libraries (Math-2's commons-math3) while
+    Math-104's smaller snapshot is fine. We bound the recursion to
+    `_METHOD_DEPTH_CAP` levels (returns min(true_depth, cap)) with a
+    set-based on-path guard and a cached name->method map, so it is fast
+    and still yields a meaningful (capped) depth rather than a 0 stub."""
+    cap = _METHOD_DEPTH_CAP
+    if cap <= 0:
+        return 0
+    md = getattr(self, '_vp_method_map', None)
+    if md is None:
+        md = {m.name: m for m in all_methods}
+        self._vp_method_map = md
+
+    def _rec(method, d, on_path):
+        if d >= cap:
+            return 0
+        best = 0
+        on_path.add(method.name)
+        for cs in method.base_callsites:
+            dst = cs[0]
+            if dst in on_path:
+                best = max(best, 1)
+            else:
+                t = md.get(dst)
+                if t is not None:
+                    best = max(best, _rec(t, d + 1, on_path) + 1)
+        on_path.discard(method.name)
+        return best
+
+    return _rec(target_method, 0, set())
+
+
+def _fi_method_uses_cached(self, target_name, all_methods):
+    """O(1) replacement for JvmProject.calculate_method_uses (stock is O(N)
+    per call -> O(N^2)). Builds the reverse use-count map once, caches it on
+    the project, and returns the EXACT count (a count has no natural depth
+    to cap, so we make it fast rather than approximate)."""
+    uses = getattr(self, '_vp_use_counts', None)
+    if uses is None:
+        uses = {}
+        for m in all_methods:
+            seen = set()
+            for cs in m.base_callsites:
+                dst = cs[0]
+                if dst not in seen:
+                    seen.add(dst)
+                    uses[dst] = uses.get(dst, 0) + 1
+        self._vp_use_counts = uses
+    return uses.get(target_name, 0)
+
+
+if _FI_AVAILABLE:
+    # Patch the two O(N^2) per-method metrics in the JVM frontend that make
+    # generate_report stall on large libraries. Guarded so a frontend
+    # refactor can't break the import.
+    try:
+        from fuzz_introspector.frontends import frontend_jvm as _fj
+        _fj.JvmProject.calculate_method_depth = _fi_method_depth_bounded
+        _fj.JvmProject.calculate_method_uses = _fi_method_uses_cached
+    except Exception:
+        pass
+
+
 @dataclass
 class RelatedCallee:
     """A method that a touched function *calls on or near the changed
@@ -119,7 +191,8 @@ class TargetAnalyzer:
 
     def __init__(self, language: str = 'jvm',
                  reachable_node_cap: Optional[int] = None,
-                 reachable_max_depth: Optional[int] = None):
+                 reachable_max_depth: Optional[int] = None,
+                 introspector_depth_cap: Optional[int] = None):
         self.language = language
         # Reachable-set BFS budget. CLI-overridable (run.py flags); falls
         # back to config (env) defaults when not supplied.
@@ -129,6 +202,11 @@ class TargetAnalyzer:
         self.reachable_max_depth = (reachable_max_depth
                                     if reachable_max_depth is not None
                                     else config.REACHABLE_MAX_DEPTH)
+        # Cap for introspector's patched method-depth metric — set the
+        # module global the monkeypatch reads at call time.
+        if introspector_depth_cap is not None:
+            global _METHOD_DEPTH_CAP
+            _METHOD_DEPTH_CAP = introspector_depth_cap
 
     def analyze(self, patch_path: str, buggy_dir: str) -> PatchContext:
         modified_files, hunks_by_file, patch_text = self._parse_patch(

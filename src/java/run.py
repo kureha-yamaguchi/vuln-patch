@@ -71,6 +71,12 @@ def parse_args():
                         help="max call-graph depth for the reachable-set BFS "
                              "(default: config.REACHABLE_MAX_DEPTH). Direct "
                              "callees are depth 1.")
+    parser.add_argument("--introspector_depth_cap", type=int, default=None,
+                        metavar="D",
+                        help="cap for fuzz-introspector's method-depth metric "
+                             "(default: config.INTROSPECTOR_METHOD_DEPTH_CAP). "
+                             "Bounds the otherwise-O(N^2) DFS that stalls on "
+                             "large libraries; lower = faster parse.")
     parser.add_argument("--fuzz_timeout", type=int, default=60,
                         metavar="SECONDS",
                         help="seconds Jazzer runs per harness against the "
@@ -199,6 +205,7 @@ def main():
     context = TargetAnalyzer(
         reachable_node_cap=args.reachable_node_cap,
         reachable_max_depth=args.reachable_max_depth,
+        introspector_depth_cap=args.introspector_depth_cap,
     ).analyze(
         patch_path=selection.patch_path,
         buggy_dir=selection.buggy_dir,

@@ -138,14 +138,22 @@ unchanged. NOTE still not SUFFICIENT for Math-2 FN->TP: the model doesn't probe
 a sibling unprompted (needs a "call each reachable sibling, assert a sound
 invariant" prompt), and Math-2's parse itself stalls (see below).
 
-**Introspector PARSE cost + stall.** `analyse_end_to_end` re-parses the WHOLE
-library every run (~15-35s for math3), no caching, and the batch re-samples the
-same bug. Memoize per bug id. Worse, Math-2's parse STALLS (0% CPU, blocked)
-even on a FRESH checkout — a genuine frontend issue, not pollution. Mitigation
-shipped: wrap the parse in a SIGALRM wall-clock cap
-(INTROSPECTOR_TIMEOUT_SECONDS, default 120) so it degrades to no-steering
-instead of hanging. Root-causing the stall (which source file trips the JVM
-frontend) is still open.
+**Introspector PARSE stall — ROOT-CAUSED + FIXED (2026-07-04).** Not I/O; a
+faulthandler stack dump showed the parse stuck in the JVM frontend's
+`generate_report`, in two O(N^2) per-method metrics: `calculate_method_depth`
+(an unbounded DFS whose `visited` is a LIST with O(n) membership checks) and
+`calculate_method_uses` (an O(N) per-call scan). Called once per method over
+~4500 methods on Math-2's commons-math3 snapshot -> minutes; Math-104's smaller
+snapshot was fine (15s). We consume neither metric (only base_callsites /
+all_functions / reachability, which `all_functions` sets independently). FIX
+(monkeypatch on JvmProject, guarded): `calculate_method_depth` -> a
+depth-BOUNDED recursion returning min(true_depth, cap) with a set-based on-path
+guard + cached method map (cap = INTROSPECTOR_METHOD_DEPTH_CAP, default 3, also
+`--introspector_depth_cap`); `calculate_method_uses` -> an O(1) cached
+reverse-index (exact count). RESULT: Math-2 parses in **45s** (was hanging), and
+its reachable set now includes `getNumericalMean` + the other virtual siblings.
+The SIGALRM parse cap (INTROSPECTOR_TIMEOUT_SECONDS) stays as a backstop. Still
+open: memoize the parse per bug id (it re-parses every run).
 
 ## Deep-dive method + worked example (Math-104, semantic TP)
 
