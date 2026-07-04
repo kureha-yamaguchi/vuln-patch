@@ -122,12 +122,30 @@ observable relative to the patched function across tasks:
 So downstream depth 1-2 suffices; direction (upstream vs downstream) matters
 more than depth. The node cap is what guarantees no hang.
 
-**Still open — introspector PARSE cost.** Separate from the (now-fixed) walk:
-`analyse_end_to_end` re-parses the WHOLE library every run (~35s for math3),
-with no caching, and the batch re-samples the same bug repeatedly. Memoize the
-analysis per bug id. Also: a Math_2_buggy checkout that had been compiled/edited
-by hand stalled the parse (0% CPU, blocked) — suspect a polluted checkout;
-prefer fresh checkouts for the parse.
+**Virtual-call gap + fix (2026-07-04).** Diagnosed why Math-2's reachable set
+was `{<init>, log}` (missing `getNumericalMean`, the masked-symptom sibling):
+introspector's JVM `base_callsites` records only STATICALLY-resolvable calls
+(constructors, static methods). Virtual/abstract dispatch is invisible — and
+`getNumericalMean` is abstract in `AbstractIntegerDistribution`, resolved to
+`HypergeometricDistribution` at runtime, so it's dropped. FIX: union the static
+BFS with SOURCE-extracted callees — parse the touched function's body with
+javalang, keep UNQUALIFIED invocations (calls on `this`, i.e. the
+inherited/abstract virtual calls), and resolve them to project methods via the
+fi index (drops JDK; qualifier filter avoids name-collisions like
+`Math.log`->`FastMath.log`). Validated: recovers `getNumericalMean`,
+`getNumericalVariance`, `getSupport{Lower,Upper}Bound` for Math-2; Math-104
+unchanged. NOTE still not SUFFICIENT for Math-2 FN->TP: the model doesn't probe
+a sibling unprompted (needs a "call each reachable sibling, assert a sound
+invariant" prompt), and Math-2's parse itself stalls (see below).
+
+**Introspector PARSE cost + stall.** `analyse_end_to_end` re-parses the WHOLE
+library every run (~15-35s for math3), no caching, and the batch re-samples the
+same bug. Memoize per bug id. Worse, Math-2's parse STALLS (0% CPU, blocked)
+even on a FRESH checkout — a genuine frontend issue, not pollution. Mitigation
+shipped: wrap the parse in a SIGALRM wall-clock cap
+(INTROSPECTOR_TIMEOUT_SECONDS, default 120) so it degrades to no-steering
+instead of hanging. Root-causing the stall (which source file trips the JVM
+frontend) is still open.
 
 ## Deep-dive method + worked example (Math-104, semantic TP)
 

@@ -657,15 +657,22 @@ class TargetAnalyzer:
                   "(install with: uv sync --extra introspector)")
             return None
         try:
-            _, report = fi_commands.analyse_end_to_end(
-                arg_language=self.language,
-                target_dir=buggy_dir,
-                module_only=True,
-                dump_files=False,
+            # Bounded: analyse_end_to_end parses the whole library and has
+            # been seen to stall (0% CPU, blocked) on some checkouts (e.g.
+            # Math-2). A wall-clock cap degrades to no-steering instead of
+            # hanging the run; SIGALRM interrupts the blocked syscall.
+            _, report = self._with_timeout(
+                lambda: fi_commands.analyse_end_to_end(
+                    arg_language=self.language,
+                    target_dir=buggy_dir,
+                    module_only=True,
+                    dump_files=False,
+                ),
+                config.INTROSPECTOR_TIMEOUT_SECONDS,
             )
             return report['light-project']
         except Exception as e:
-            print(f"fuzz-introspector failed ({e}); "
+            print(f"fuzz-introspector failed/timed out ({e}); "
                   "continuing without xrefs")
             return None
 
@@ -708,8 +715,57 @@ class TargetAnalyzer:
                 fn.xrefs = [x.function_source_code_as_text() for x in xrefs]
             except Exception:
                 pass
-            fn.reachable = self._reachable_of(project, mangled)
+            # Union two views of the callees: (1) introspector's static
+            # call graph, and (2) methods the source actually invokes. The
+            # static graph MISSES virtual/abstract dispatch (e.g. Math-2's
+            # getNumericalMean is abstract, resolved to a subclass at
+            # runtime, so base_callsites drops it) — exactly the sibling a
+            # masked-symptom overfit hides in. Source extraction recovers
+            # those, resolved to project methods via the fi index.
+            bfs = self._reachable_of(project, mangled)
+            src = self._source_callees(fn.func_source, index)
+            seen, merged = set(), []
+            for name in bfs + src:
+                if name and name not in seen:
+                    seen.add(name)
+                    merged.append(name)
+            fn.reachable = merged
         return functions
+
+    def _source_callees(self, func_source: Optional[str],
+                        index: Dict[str, List[str]]) -> List[str]:
+        """Method names the function's SOURCE invokes, resolved to
+        introspector mangled names for project methods only.
+
+        Recovers virtual/abstract calls the static call graph misses.
+        JDK/static calls (ceil, sqrt, isNaN) are dropped because they are
+        not keys in the project fi index. Returns [] without an index
+        (introspector unavailable) — source names alone can't be
+        distinguished from JDK ones reliably."""
+        if not func_source or not index:
+            return []
+        names = set()
+        try:
+            tree = javalang.parse.parse(
+                "class _Wrap { " + func_source + " }")
+            for _, node in tree.filter(javalang.tree.MethodInvocation):
+                # Only UNQUALIFIED calls (`getNumericalMean()`, on `this`):
+                # these are the inherited/abstract virtual-dispatch calls the
+                # static graph misses. A qualifier (`Math.log`, `d.foo()`)
+                # means either JDK — which we must NOT name-collision-resolve
+                # to a same-named project method (FastMath.log) — or a call
+                # the static graph already resolves.
+                if node.member and node.qualifier in (None, '', 'this'):
+                    names.add(node.member)
+        except Exception:
+            names.update(re.findall(r'(?:^|[=;{(\s])([a-zA-Z_]\w*)\s*\(',
+                                    func_source))
+        out: List[str] = []
+        for n in names:
+            cands = index.get(n)
+            if cands:
+                out.append(cands[0])
+        return out
 
     def _build_fi_index(self, project) -> Dict[str, List[str]]:
         """Map bare method name -> [introspector mangled names].

@@ -50,6 +50,56 @@ Batch-2 semantic totals: **TP=4 FN=2 FP=1 TN=8** → precision 0.80, recall
 
 ---
 
+# Post-fix batch (sem3, 2026-07-03) — steering ON, deduped
+
+First batch after the reachable-set + bounded-BFS fixes. Deduped to 16 DISTINCT
+bugs (vs the old batch's 4× repeats). NOTE: different bugs were sampled than
+batch 2, so this is NOT a clean A/B — mechanism confirmation, not a controlled
+delta.
+
+| Kind | Post-fix (sem3) | Pre-fix (sem) |
+|---|---|---|
+| crashing | TP=4 FN=1 FP=0 TN=3 → **P=1.0 R=0.8 F1=0.89** | — |
+| semantic | TP=2 FN=0 FP=**2** TN=4 → **P=0.5 R=1.0 F1=0.67** | F1≈0.73 |
+
+**Two semantic FPs — both invented, unsound metamorphic relations (recurring):**
+- **Math-5** (`Complex.reciprocal`, correct patch `NaN→INF` for `reciprocal(0)`):
+  the lifted assertion passes; the invented `z * z.reciprocal() == 1` FIRES —
+  false at `z=0` (`0·INF=NaN`) and under overflow.
+- **Math-50** (`BaseSecantSolver`/Regula Falsi, correct): invented `more evals
+  must not change the root` / `scaling must not change whether
+  TooManyEvaluationsException is thrown` — both false for an iterative solver.
+
+Crashing is clean (FP=0). Semantic precision is the binding constraint, entirely
+the unsound-invented-relation pattern — orthogonal to steering (steering helps
+recall, not precision). Also **Time-4** (overfit) → FN with `bug_kind=None`: the
+classifier had no exception metadata and fell through (a classification gap).
+
+**Math-2 steering prediction — TESTED (pinned run), FAILED.** Prediction was that
+steering would surface `getNumericalMean` and flip Math-2 FN→TP. It stayed FN,
+and NONE of the harnesses called `getNumericalMean`. Two causes: (i) the reachable
+set came back sparse (`{<init>, log}`) — `getNumericalMean` was NOT captured,
+even though it's a direct callee of the touched `inverseCumulativeProbability`
+(a `base_callsites` gap to investigate); (ii) even seeing `getNumericalMean` in
+the function source, the model does not spontaneously probe a sibling with a
+sound invariant — it stays on the trigger method. So the reachable-set fix is
+NECESSARY BUT NOT SUFFICIENT for masked-symptom FNs; needs (a) the sibling
+actually in the reachable set and (b) explicit "probe each reachable sibling
+with a sound invariant" prompting.
+
+**FP fix — the legitimate (non-cheating) path.** A dev-fix soundness gate was
+prototyped and then REMOVED: validating an invented relation by running the
+harness against the Defects4J developer fix hinges on info unavailable in
+deployment (cheating). The deployable version validates the relation against
+**known-correct behaviour we legitimately have**: the project's PASSING test
+suite (those tests pass on the buggy checkout → known-correct inputs), and/or
+NON-triggering fuzz inputs on the buggy checkout (buggy is correct everywhere
+except the root-cause path). Discard any relation that fires there before it can
+flag a patch. That would kill both sem3 FPs (`z·1/z==1` breaks on passing-test
+inputs too) without ever touching the developer fix.
+
+---
+
 # Correctly caught overfits (TP)
 
 ## Math-104 (Elixir) — series-convergence bug

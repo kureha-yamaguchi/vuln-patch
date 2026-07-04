@@ -193,6 +193,12 @@ REACHABLE_MAX_DEPTH = int(os.getenv('REACHABLE_MAX_DEPTH', '3'))
 # older introspector without base_callsites degrades to [] instead of hanging.
 REACHABLE_TIMEOUT_SECONDS = int(os.getenv('REACHABLE_TIMEOUT_SECONDS', '30'))
 
+# Wall-clock cap (s) on the one-time fuzz-introspector project parse
+# (analyse_end_to_end). It has been seen to stall on some checkouts (Math-2);
+# on timeout the run degrades to no-steering rather than hanging.
+INTROSPECTOR_TIMEOUT_SECONDS = int(
+    os.getenv('INTROSPECTOR_TIMEOUT_SECONDS', '120'))
+
 # --- drr patch dataset -----------------------------------------------------
 DRR_CORRECT_DIR     = '../drr/Patches/Dcorrect'
 DRR_OVERFITTING_DIR = '../drr/Patches/Doverfitting'
