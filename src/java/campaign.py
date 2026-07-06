@@ -191,7 +191,7 @@ class HarnessCampaign:
             # --- gate -1: structurally a harness at all? ----------------
             # Reject prose / markdown / JUnit-test / main()-demo responses
             # BEFORE counting an attempt or invoking javac. This is the
-            # dominant 20B failure mode (a third of attempts 1-44), and
+            # dominant failure mode (a third of attempts 1-44), and
             # each one previously burned an attempt slot AND a javac run.
             # We still feed it back as a repair turn so the model is told
             # to return just the file, and after a cold chain we reset.

@@ -327,6 +327,7 @@ def main():
             timeout_seconds=verify_timeout,
             expected_exceptions=expected_exceptions,
             jazzer_api_jar=jazzer_api_jar,
+            strict_exceptions=(bug_kind == "semantic"),
         )
 
     campaign = HarnessCampaign(
@@ -355,6 +356,7 @@ def main():
                 timeout_seconds=args.fuzz_timeout,
                 expected_exceptions=expected_exceptions,
                 jazzer_api_jar=jazzer_api_jar,
+                strict_exceptions=(bug_kind == "semantic"),
             ).run_all(
                 successful_results=result.successful_results,
                 patch_path=selection.patch_path,

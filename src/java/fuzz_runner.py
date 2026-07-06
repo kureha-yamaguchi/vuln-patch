@@ -68,7 +68,8 @@ _CRASH_MARKERS = (
 
 def _looks_like_crash(returncode: int,
                       combined: str,
-                      expected_exceptions: Optional[List[str]]) -> Optional[str]:
+                      expected_exceptions: Optional[List[str]],
+                      strict_exceptions: bool = False) -> Optional[str]:
     """Return a short human-readable reason if `combined` (stdout+stderr)
     shows a genuine crash, else None.
 
@@ -82,7 +83,30 @@ def _looks_like_crash(returncode: int,
          the finding banner, but if we see the exception we were told to
          expect being thrown from project code, it is unambiguously the
          crash we are gating on — not a Jazzer startup error.
+
+    ``strict_exceptions`` is for the SEMANTIC path. There, the only
+    throwable that means "the patched code is wrong" is the one the
+    HARNESS deliberately raises on an oracle mismatch (a
+    FuzzerSecurityIssue* / AssertionError listed in expected_exceptions).
+    Any OTHER uncaught throwable — an NPE while the harness builds its
+    input, a NumberFormatException from a bad fuzzed value, a library
+    exception that both buggy and fixed code throw — is NOT a semantic
+    finding; it is harness noise that would otherwise be a false positive.
+    So in strict mode we require an expected throwable to be present and
+    do NOT accept the generic markers or a bare finding exit code on their
+    own.
     """
+    if strict_exceptions:
+        # Semantic mode: only the harness's own oracle throwable counts.
+        # Still require a stack frame so a mere mention in a log line does
+        # not fire.
+        if expected_exceptions:
+            has_frame = bool(_FRAME_RE.search(combined))
+            for exc in expected_exceptions:
+                if exc and exc in combined and has_frame:
+                    return f"oracle throwable {exc!r} with stack frame"
+        return None
+
     if returncode == config.JAZZER_CRASH_EXIT_CODE:
         return f"exit code {returncode} (Jazzer finding)"
 
@@ -109,7 +133,8 @@ def run_jazzer(jazzer_standalone_jar: str,
                project_cp: str,
                timeout_seconds: int,
                expected_exceptions: Optional[List[str]] = None,
-               jazzer_api_jar: Optional[str] = None
+               jazzer_api_jar: Optional[str] = None,
+               strict_exceptions: bool = False
                ) -> JazzerOutcome:
     """Run one Jazzer harness against `project_cp` and report whether it
     crashed within `timeout_seconds`. Shared by the buggy-version gate
@@ -177,7 +202,8 @@ def run_jazzer(jazzer_standalone_jar: str,
     combined = f"{stdout}\n{stderr}"
     crash_reason = (None if timed_out
                     else _looks_like_crash(returncode, combined,
-                                           expected_exceptions))
+                                           expected_exceptions,
+                                           strict_exceptions=strict_exceptions))
     return JazzerOutcome(
         triggered=crash_reason is not None,
         timed_out=timed_out,
@@ -346,13 +372,18 @@ class FuzzRunner:
                  jazzer_standalone_jar: str,
                  timeout_seconds: int = config.FUZZ_TIMEOUT_SECONDS,
                  expected_exceptions: Optional[List[str]] = None,
-                 jazzer_api_jar: Optional[str] = None):
+                 jazzer_api_jar: Optional[str] = None,
+                 strict_exceptions: bool = False):
         self.jazzer_standalone_jar = jazzer_standalone_jar
         self.timeout_seconds = timeout_seconds
         self.expected_exceptions = expected_exceptions or []
         # API jar (FuzzedDataProvider) for the runtime classpath; see
         # run_jazzer. Defaults there to config.JAZZER_API_JAR if None.
         self.jazzer_api_jar = jazzer_api_jar
+        # Semantic bugs: only the harness's own oracle throwable counts as
+        # a finding (see _looks_like_crash). Keeps harness-internal
+        # exceptions from being misread as overfitting on the patched code.
+        self.strict_exceptions = strict_exceptions
 
     def run_all(self,
                 successful_results: List[BuildResult],
@@ -383,6 +414,7 @@ class FuzzRunner:
             timeout_seconds=self.timeout_seconds,
             expected_exceptions=self.expected_exceptions,
             jazzer_api_jar=self.jazzer_api_jar,
+            strict_exceptions=self.strict_exceptions,
         )
         return FuzzRunResult(
             harness_path=build_result.harness_path,
@@ -443,7 +475,8 @@ class HarnessVerifier:
                  buggy_classpath: str,
                  timeout_seconds: int = config.VERIFY_TIMEOUT_SECONDS,
                  expected_exceptions: Optional[List[str]] = None,
-                 jazzer_api_jar: Optional[str] = None):
+                 jazzer_api_jar: Optional[str] = None,
+                 strict_exceptions: bool = False):
         self.jazzer_standalone_jar = jazzer_standalone_jar
         self.buggy_classpath = buggy_classpath
         self.timeout_seconds = timeout_seconds
@@ -454,6 +487,11 @@ class HarnessVerifier:
         # API jar (FuzzedDataProvider) for the runtime classpath; see
         # run_jazzer. Defaults there to config.JAZZER_API_JAR if None.
         self.jazzer_api_jar = jazzer_api_jar
+        # Semantic bugs: require the harness's own oracle throwable, so the
+        # buggy-version gate accepts a harness only when ITS assertion
+        # fired — not when some unrelated exception escaped. This keeps the
+        # buggy and patched runs symmetric.
+        self.strict_exceptions = strict_exceptions
 
     def verify(self, build_result: BuildResult) -> VerificationResult:
         harness_dir = os.path.dirname(build_result.harness_path)
@@ -465,6 +503,7 @@ class HarnessVerifier:
             timeout_seconds=self.timeout_seconds,
             expected_exceptions=self.expected_exceptions,
             jazzer_api_jar=self.jazzer_api_jar,
+            strict_exceptions=self.strict_exceptions,
         )
         combined = outcome.combined_output
         if outcome.triggered:

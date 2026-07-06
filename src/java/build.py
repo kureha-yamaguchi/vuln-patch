@@ -10,9 +10,7 @@ from typing import Dict, Optional
 
 @dataclass
 class BuildResult:
-    """Outcome of compiling a single generated harness. Suitable for
-    serialising and aggregating across many runs when evaluating how
-    well the LLM's harnesses build."""
+    """Outcome of compiling a single generated harness."""
     harness_path: str
     class_name: str
     classpath: str
@@ -59,7 +57,7 @@ class HarnessBuilder:
     def extract_source(cls, llm_response: str) -> str:
         """Strip optional markdown fences from an LLM response and return
         the Java code as a single string. The prompt forbids fences, but
-        gpt-oss-20b sometimes adds them anyway."""
+        model sometimes adds them anyway."""
         fenced = cls._FENCED_RE.search(llm_response)
         if fenced:
             return fenced.group(1).strip()
@@ -103,7 +101,7 @@ class HarnessBuilder:
         """Return None if the response is structurally a usable harness, or
         a short human-readable reason string if it is not.
 
-        This is a fast, javac-free reject for the dominant gpt-oss-20b
+        This is a fast, javac-free reject for the dominant
         failure mode: returning prose, a markdown-wrapped explanation, a
         `main()` demo, or a JUnit test instead of a FuzzHarness. It is NOT
         a compilation check — it only filters responses that *cannot* be

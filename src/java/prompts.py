@@ -192,35 +192,48 @@ class PromptBuilder:
             " so the rest of the pipeline scores it unchanged. If they match,"
             " return normally.",
             "",
-            "4. THEN GENERALISE — but keep every assertion TRUSTED. The"
-            " lifted pair tells you the answer for ONE input only. Do not"
-            " invent an expected value for an arbitrary fuzzed input: an"
-            " assertion you cannot justify will fire on CORRECT patches too"
-            " (a false positive, the worst outcome). Extend coverage only in"
-            " ways where the correct answer is independently known:",
+            "4. THEN FUZZ A FAMILY — soundly. The lifted pair tells you the"
+            " correct answer for ONE input. To check more than one input"
+            " without inventing answers, identify the TRIGGERING PROPERTY:"
+            " the single feature of the seed input that makes the patched"
+            " line matter (e.g. 'contains a NaN component', 'index equals"
+            " the string length', 'list is empty', 'value is negative zero')."
+            " Read the patch diff to find it — the property is whatever the"
+            " '-'/'+' lines branch on.",
             "",
-            "  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with"
-            " FuzzedDataProvider, build the canonical input that must map to"
-            " it, and assert you recover it — the answer is trusted because"
-            " you chose it first. E.g. fuzz an int n, format it, parse it"
-            " back, assert == n.",
+            "  Then build a FAMILY of fuzzed inputs that ALL share that"
+            " property but vary everything else (different magnitudes,"
+            " lengths, positions, surrounding content), using"
+            " FuzzedDataProvider. Every input in this family must, on CORRECT"
+            " code, produce the SAME observable outcome the seed does —"
+            " because the property is exactly what fixes the outcome. So you"
+            " may assert that SHARED outcome on every family member.",
             "",
-            "  (b) EQUIVALENCE TO THE SEED. The seed input has properties"
-            " that fix its answer. Generate other inputs that SHARE those"
-            " properties and must therefore share the seed's expected value,"
-            " and assert they equal it. E.g. if the contract is"
-            " case-insensitive and foo(\"abc\")==X, then foo(\"ABC\") and"
-            " foo(\"Abc\") must also ==X. This turns the one lifted value into"
-            " an oracle for a whole family of inputs.",
+            "  This is the whole point: an overfitting patch special-cases"
+            " the seed's literal value but FAILS on a sibling that shares the"
+            " property (e.g. it hard-codes the seed's NaN-in-real-part case"
+            " but mishandles NaN-in-imaginary-part). Your family catches that;"
+            " a single lifted assertion would miss it.",
             "",
-            "  (c) METAMORPHIC RELATION between two real calls (see below) —"
-            " trusted because it holds for ANY correct implementation.",
+            "  TRUST RULE — the family's shared outcome must be a STABLE,"
+            " QUALITATIVE fact that the seed demonstrates and the contract"
+            " ties to the property, NOT a numeric value you computed. Good"
+            " shared outcomes: 'the result is NaN', 'the call returns null',"
+            " 'isEmpty() is true', 'the two sides are equal', 'no exception"
+            " is thrown'. Assert those with predicates"
+            " (Double.isNaN(...), ==, .isEmpty(), .equals(...)). NEVER assert"
+            " a floating-point value with == / != (rounding breaks it on"
+            " correct code); NEVER assert a number you derived yourself."
+            " If the seed's outcome is a specific computed value you cannot"
+            " restate as a property-level fact, fall back to asserting only"
+            " the seed pair from step 3 and just CALL the API on the rest.",
             "",
-            "  GUARDRAIL: for any fuzzed input where you cannot justify the"
-            " expected value by (a), (b), or (c), still CALL the API on it"
-            " (this exercises the patched path), but do NOT assert on its"
-            " result — just return. Assert only trusted answers; explore"
-            " everything else without asserting.",
+            "  GUARDRAIL: for any fuzzed input that does NOT share the"
+            " triggering property, still CALL the API on it (this exercises"
+            " the patched path) but do NOT assert on its result — just"
+            " return. Assert only on the seed pair and on family members"
+            " that share the seed's property; explore everything else"
+            " without asserting.",
         ]
         if chosen is not None:
             entry = self._entry_point_hint([chosen])
@@ -248,9 +261,12 @@ class PromptBuilder:
             parts.append(
                 "Other trigger tests for this same bug (siblings probing the"
                 f" same root cause; other harnesses target these): {others}.")
-        # Reuse the existing metamorphic guidance as the principled way to
-        # extend coverage beyond the single lifted input.
-        parts.append(self._metamorphic_block())
+        # NOTE: the semantic path deliberately does NOT append the
+        # metamorphic block. Model-invented relations (e.g. (a+b)-b==a)
+        # are unsound on real code — they fire on CORRECT patches too and
+        # were the dominant source of false positives. The only sound
+        # generalisation here is the property-transfer family described in
+        # step 4, whose shared outcome is anchored in the lifted seed.
         return '\n'.join(parts)
 
     # --- sections --------------------------------------------------------
