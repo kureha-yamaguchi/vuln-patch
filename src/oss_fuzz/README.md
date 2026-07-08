@@ -17,7 +17,7 @@ out-of-date `src/linux`.
 |-------|--------|-----|
 | CVE selection | `osv.py` | newest public, CVE-bearing OSV entry → fix commit, repo, PoC ref |
 | Substrate | `ossfuzz.py` | clone repo, worktree `vuln`(=fix~1) & `head`, `helper.py` build/run/reproduce |
-| Analysis | `analysis.py` | fix diff → touched functions + reachable names (libclang-free) |
+| Analysis | `analysis.py` | fix diff → touched functions; fuzz-introspector call graph → bounded reachable set (heuristic fallback) |
 | Prompt | `prompts.py` | libFuzzer prompt + shared steering (`variant.py`) |
 | LLM | `../llm.py` | shared `HarnessGenerator` |
 | Campaign | `campaign.py` | generate → build → trigger-gate on the vuln build |
@@ -79,9 +79,15 @@ steering parity.
   *optional*: the pipeline re-derives triggering harnesses from the fix diff
   and gates on its own crash check. Pass `--reproducer <path>` if you have the
   testcase and want the pre-flight sanity reproduce.
-- **Analysis is heuristic.** Function extraction is brace-matching, not a full
-  parse; the trigger gate — not the analysis — decides harness validity. A
-  fuzz-introspector-backed reachable set is a natural later upgrade.
+- **Reachable set.** The call graph comes from fuzz-introspector's light
+  (tree-sitter, no-build) frontend — a bounded BFS over `base_callsites`
+  scoped to project functions, unioned with project-resolved source callees,
+  exactly as in `src/java`. It needs the introspector extra
+  (`uv sync --extra introspector`); without it, or on timeout, the analyzer
+  falls back to the brace-match heuristic and reports which was used
+  (`reachable_source` in the printed context). Function *extraction* itself is
+  still brace-matching, not a full parse; the trigger gate — not the analysis
+  — decides harness validity.
 - **HEAD build drift.** If the library's public API changed between the vuln
   commit and HEAD, a harness may not compile against HEAD; those are skipped
   and reported, not counted as clean.

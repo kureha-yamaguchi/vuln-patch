@@ -1,22 +1,42 @@
 """Turn a fix diff into the root-cause context the prompt needs.
 
-The Java pipeline runs fuzz-introspector for a real call graph. For a first
-libFuzzer version we stay dependency-light: parse the unified diff for the
-files and line ranges the fix touched, then pull the *enclosing* C/C++
-function bodies out of the vulnerable checkout by brace-matching. The names
-of those functions plus the callees mentioned in their bodies form a
-best-effort "reachable set" that feeds the shared variant-analysis steering.
+Two complementary signals, mirroring ``src/java/analysis.py``:
 
-This is intentionally a heuristic (no full parse). It is good enough to point
-the model at the right functions; the trigger gate — not the analysis — is
-what actually decides whether a generated harness is valid.
+  1. A unified-diff parse + brace-match finds the C/C++ function that
+     physically contains each changed line (the inverse of a call graph:
+     "which function is line N in").
+
+  2. fuzz-introspector's *light* static analysis (tree-sitter, no build)
+     supplies the call graph. For each touched function we do a bounded BFS
+     over its immediate callees (``base_callsites``), capped by node count and
+     depth, unioned with the callees its source actually names — resolved to
+     project functions only, so libc/stdlib noise is dropped. This is the
+     root-cause neighbourhood the shared variant block steers across.
+
+If fuzz-introspector is unavailable or fails/times out, we fall back to the
+original brace-match heuristic (touched names + every ``ident(`` in their
+bodies). Either way the trigger gate — not the analysis — is what ultimately
+decides whether a generated harness is valid, so a degraded reachable set
+costs steering quality, not correctness.
+
+Install the introspector extra the same way the Java path does:
+``uv sync --extra introspector``.
 """
 from __future__ import annotations
 
 import os
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
+
+import config
+
+try:
+    from fuzz_introspector.frontends import oss_fuzz as _fi_oss_fuzz
+    _FI_AVAILABLE = True
+except ImportError:
+    _fi_oss_fuzz = None  # type: ignore[assignment]
+    _FI_AVAILABLE = False
 
 # Lines that end in ')' or '){' at column 0-ish and are NOT control flow are
 # treated as function headers. Crude but effective for typical C/C++ style.
@@ -41,6 +61,7 @@ class PatchContext:
     root_cause_reachable: List[str] = field(default_factory=list)
     language: str = "c++"
     headers: List[str] = field(default_factory=list)
+    reachable_source: str = "heuristic"   # 'fuzz-introspector' | 'heuristic'
 
     def as_dict(self) -> dict:
         return {
@@ -49,12 +70,21 @@ class PatchContext:
             "files": sorted({f.file for f in self.functions}),
             "headers": self.headers,
             "reachable": self.root_cause_reachable,
+            "reachable_source": self.reachable_source,
         }
 
 
 class DiffAnalyzer:
-    def __init__(self, language: str = "c++"):
+    def __init__(self, language: str = "c++",
+                 reachable_node_cap: Optional[int] = None,
+                 reachable_max_depth: Optional[int] = None):
         self.language = language
+        self.reachable_node_cap = (reachable_node_cap
+                                   if reachable_node_cap is not None
+                                   else config.REACHABLE_NODE_CAP)
+        self.reachable_max_depth = (reachable_max_depth
+                                    if reachable_max_depth is not None
+                                    else config.REACHABLE_MAX_DEPTH)
 
     def analyze(self, patch_text: str, vuln_dir: str) -> PatchContext:
         touched: List[TouchedFunction] = []
@@ -77,11 +107,11 @@ class DiffAnalyzer:
                         file=path, name=fn.name,
                         source=fn.source, start_line=fn.start_line))
 
-        reachable = self._reachable(touched)
+        reachable, source = self._reachable_set(touched, vuln_dir)
         return PatchContext(
             patch_text=patch_text, functions=touched,
             root_cause_reachable=reachable, language=self.language,
-            headers=sorted(headers),
+            headers=sorted(headers), reachable_source=source,
         )
 
     # -- diff parsing ------------------------------------------------------
@@ -172,7 +202,54 @@ class DiffAnalyzer:
         toks = re.findall(r"[A-Za-z_][A-Za-z0-9_:]*", before_paren)
         return toks[-1] if toks else None
 
-    def _reachable(self, touched: List[TouchedFunction]) -> List[str]:
+    # -- reachable set (fuzz-introspector, with heuristic fallback) --------
+    def _reachable_set(self, touched: List[TouchedFunction],
+                       vuln_dir: str) -> Tuple[List[str], str]:
+        """Root-cause neighbourhood + which analysis produced it.
+
+        Seed with the touched functions, then expand via fuzz-introspector's
+        static call graph (bounded BFS over ``base_callsites``) unioned with
+        project-resolved source callees. Fall back to the brace-match
+        heuristic when introspector is unavailable or adds nothing.
+        """
+        seeds: List[str] = []
+        seen = set()
+        for fn in touched:
+            if fn.name and fn.name not in seen:
+                seen.add(fn.name)
+                seeds.append(fn.name)
+
+        project = self._light_project_safe(vuln_dir)
+        if project is None:
+            return self._reachable_heuristic(touched), "heuristic"
+
+        fmap = self._function_map(project)
+        proj_names = set(fmap)
+        names = list(seeds)
+        for fn in touched:
+            mangled = self._match_fi(fn.name, fmap)
+            if mangled is None:
+                continue
+            bfs = self._bfs_callees(fmap, mangled,
+                                    self.reachable_node_cap,
+                                    self.reachable_max_depth)
+            src = self._source_callees(fn.source, proj_names)
+            for name in bfs + src:
+                if name and name not in seen:
+                    seen.add(name)
+                    names.append(name)
+
+        # If introspector resolved nothing beyond the seeds (e.g. name-match
+        # miss on a heavily-namespaced C++ target), the heuristic is strictly
+        # more informative — use it rather than ship a bare seed list.
+        if len(names) <= len(seeds):
+            return self._reachable_heuristic(touched), "heuristic"
+        return names, "fuzz-introspector"
+
+    def _reachable_heuristic(self, touched: List[TouchedFunction]) -> List[str]:
+        """Original brace-match heuristic: touched names + every ``ident(``
+        in their bodies. No project/libc distinction (that needs the call
+        graph), so it is noisier than the introspector path but never fails."""
         names: List[str] = []
         seen = set()
         for fn in touched:
@@ -187,6 +264,125 @@ class DiffAnalyzer:
                 seen.add(callee)
                 names.append(callee)
         return names
+
+    # -- fuzz-introspector plumbing (mirrors src/java/analysis.py) ----------
+    def _light_project_safe(self, vuln_dir: str):
+        """Run introspector's light (tree-sitter, no-build) frontend on the
+        vulnerable checkout, wrapped so a failure/timeout degrades to the
+        heuristic rather than taking down the run."""
+        if not _FI_AVAILABLE:
+            print("fuzz-introspector not installed; using heuristic reachable "
+                  "set (install with: uv sync --extra introspector)")
+            return None
+        lang = "c" if self.language.lower() == "c" else "c++"
+        try:
+            project, _ = self._with_timeout(
+                lambda: _fi_oss_fuzz.analyse_folder(
+                    language=lang, directory=vuln_dir,
+                    module_only=True, dump_output=False),
+                config.INTROSPECTOR_TIMEOUT_SECONDS,
+            )
+            return project
+        except Exception as e:
+            print(f"fuzz-introspector failed/timed out ({e}); "
+                  "using heuristic reachable set")
+            return None
+
+    @staticmethod
+    def _function_map(project) -> Dict[str, object]:
+        """``project.all_functions`` normalised to name -> function object."""
+        funcs = getattr(project, "all_functions", None) or []
+        return {getattr(f, "name", ""): f
+                for f in funcs if getattr(f, "name", "")}
+
+    def _match_fi(self, name: str, fmap: Dict[str, object]) -> Optional[str]:
+        """Resolve a touched function name to an introspector key. C keys are
+        the bare name (exact hit); C++ keys may be ``ns::Class::method`` so we
+        also accept a trailing-segment match."""
+        if not name:
+            return None
+        if name in fmap:
+            return name
+        for k in fmap:
+            if k.split("::")[-1] == name or k.endswith("::" + name):
+                return k
+        return None
+
+    def _bfs_callees(self, fmap: Dict[str, object], start: str,
+                     cap: int, max_depth: int) -> List[str]:
+        """BFS the call graph from ``start`` via each function's
+        ``base_callsites`` (immediate callees), bounded by ``cap`` nodes and
+        ``max_depth`` levels — O(cap) regardless of graph size, so it cannot
+        hang on hub functions. ``base_callsites`` entries are ``(name, line)``
+        tuples in the C/C++ frontend; other shapes are handled defensively."""
+        seen = {start}
+        out: List[str] = []
+        queue: List[Tuple[str, int]] = [(start, 0)]
+        while queue and len(out) < cap:
+            node, depth = queue.pop(0)
+            prof = fmap.get(node)
+            if prof is None:
+                continue
+            for cs in (getattr(prof, "base_callsites", None) or []):
+                if isinstance(cs, (list, tuple)) and cs:
+                    dst = cs[0]
+                elif isinstance(cs, str):
+                    dst = cs
+                else:
+                    dst = getattr(cs, "dst_function_name", None)
+                # Keep project functions only: callees introspector knows as
+                # defined functions (in fmap). libc/externals have no profile
+                # and are not useful steering targets — drop them, matching
+                # how the Java path drops JDK calls.
+                if not dst or dst in seen or dst not in fmap:
+                    continue
+                seen.add(dst)
+                out.append(dst)
+                if len(out) >= cap:
+                    break
+                if depth + 1 < max_depth:
+                    queue.append((dst, depth + 1))
+        return out
+
+    def _source_callees(self, source: Optional[str],
+                        proj_names: set) -> List[str]:
+        """Callees the function's source names, kept only if they are project
+        functions (present in the introspector index). Recovers calls the
+        static graph can miss (e.g. through function pointers/macros) while
+        dropping libc/stdlib noise the way the Java path drops JDK calls."""
+        if not source or not proj_names:
+            return []
+        suffix = {n.split("::")[-1]: n for n in proj_names}
+        out: List[str] = []
+        seen = set()
+        for m in _CALL_RE.finditer(source):
+            ident = m.group(1)
+            if ident in _CONTROL:
+                continue
+            resolved = ident if ident in proj_names else suffix.get(ident)
+            if resolved and resolved not in seen:
+                seen.add(resolved)
+                out.append(resolved)
+        return out
+
+    @staticmethod
+    def _with_timeout(fn, seconds):
+        """Run ``fn()`` but abort after ``seconds`` via SIGALRM (main thread
+        only; off the main thread signal.signal raises and the caller's
+        try/except degrades to the heuristic)."""
+        if not seconds or seconds <= 0:
+            return fn()
+        import signal
+
+        def _handler(signum, frame):
+            raise TimeoutError("fuzz-introspector exceeded budget")
+        old = signal.signal(signal.SIGALRM, _handler)
+        signal.alarm(int(seconds))
+        try:
+            return fn()
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old)
 
     # -- io ----------------------------------------------------------------
     def _is_source(self, path: str) -> bool:

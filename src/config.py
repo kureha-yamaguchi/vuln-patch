@@ -100,7 +100,7 @@ else:
 # models (gpt-4o etc.) and for local servers. Higher effort tends to
 # help on the harness-reachability inference at the cost of latency and
 # tokens — 'high' is a reasonable default for this pipeline.
-OPENAI_REASONING_EFFORT = os.getenv('OPENAI_REASONING_EFFORT', 'medium')
+OPENAI_REASONING_EFFORT = os.getenv('OPENAI_REASONING_EFFORT', 'low')
 
 # Output token cap for reasoning models (GPT-5.x, o-series). Reasoning
 # models spend tokens on hidden reasoning before emitting the answer, so

@@ -52,6 +52,12 @@ def parse_args():
                         "else config.OSS_FUZZ_SANITIZER)")
     p.add_argument("-n", "--target-successes", type=int, default=5)
     p.add_argument("-m", "--max-attempts", type=int, default=30)
+    p.add_argument("--reachable-node-cap", type=int, default=None,
+                   help="max functions in the introspector reachable-set BFS "
+                        "(default: config.REACHABLE_NODE_CAP)")
+    p.add_argument("--reachable-max-depth", type=int, default=None,
+                   help="max call-graph depth for the reachable-set BFS "
+                        "(default: config.REACHABLE_MAX_DEPTH)")
     p.add_argument("--verify-timeout", type=int,
                    default=config.OSS_FUZZ_VERIFY_TIMEOUT,
                    help="seconds to run each harness on the VULN build (gate)")
@@ -143,7 +149,11 @@ def main():
 
     # 4) Analyse the fix diff on the vulnerable sources.
     diff = of.diff(repo, vuln_commit, target.fixed_commit)
-    context = DiffAnalyzer(language=target.language).analyze(diff, vuln.path)
+    context = DiffAnalyzer(
+        language=target.language,
+        reachable_node_cap=args.reachable_node_cap,
+        reachable_max_depth=args.reachable_max_depth,
+    ).analyze(diff, vuln.path)
     print("\n-- root-cause context --")
     print(json.dumps(context.as_dict(), indent=2))
     if not context.functions and not args.dry_run:
