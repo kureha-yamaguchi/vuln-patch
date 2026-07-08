@@ -17,6 +17,18 @@ class DeprecatedBugError(RuntimeError):
 
 
 @dataclass
+class PatchIdentity:
+    """Project/bug/patch identity derived purely from a patch's path —
+    no checkout performed. Lets callers classify the bug (crashing vs.
+    semantic, see `classify_bug_kind` in failure_test.py) before paying
+    for the checkout a semantic-skip run would just discard."""
+    project_name: str
+    apr_tool: str
+    bug_id: str
+    patch_path: str
+
+
+@dataclass
 class PatchSelection:
     """A patch chosen from the drr dataset alongside the checkout it
     applies to."""
@@ -32,7 +44,8 @@ class PatchSelector:
     ensures the buggy version of the project is checked out via the
     defects4j CLI."""
 
-    def __init__(self, project_name: str, correct: bool, overfitting: bool):
+    def __init__(self, project_name: str = None, correct: bool = False,
+                 overfitting: bool = False, patch_file: str = None):
         if correct and overfitting:
             raise ValueError("pass only one of correct/overfitting, not both")
         if correct:
@@ -42,19 +55,59 @@ class PatchSelector:
         else:
             raise ValueError("must pass one of correct/overfitting")
         self.project_name = project_name
+        self.patch_file = patch_file
 
     def select(self) -> PatchSelection:
+        if self.patch_file:
+            return self._select_explicit(self.patch_file)
+
         apr_tool, target_dir = self._sample_apr_tool()
         chosen_file = random.choice(os.listdir(target_dir))
         bug_id = chosen_file.split('-')[2]
         patch_path = os.path.join(target_dir, chosen_file)
-        buggy_dir = self._ensure_checkout(bug_id)
+        buggy_dir = self._ensure_checkout(self.project_name, bug_id)
 
         return PatchSelection(
             project_name=self.project_name,
             apr_tool=apr_tool,
             bug_id=bug_id,
             patch_path=patch_path,
+            buggy_dir=buggy_dir,
+        )
+
+    @staticmethod
+    def peek_patch_file(patch_file: str) -> PatchIdentity:
+        """Parse project/apr_tool/bug_id out of an explicit patch path
+        without checking anything out — the identity half of
+        `_select_explicit` below, split out so callers can classify the
+        bug before committing to a checkout."""
+        patch_path = os.path.abspath(patch_file)
+        if not os.path.isfile(patch_path):
+            raise ValueError(f"patch file not found: {patch_path}")
+        filename = os.path.basename(patch_path)
+        project_name = os.path.basename(os.path.dirname(patch_path))
+        apr_tool = os.path.basename(os.path.dirname(os.path.dirname(patch_path)))
+        bug_id = filename.rsplit('.', 1)[0].split('-')[2]
+        return PatchIdentity(
+            project_name=project_name,
+            apr_tool=apr_tool,
+            bug_id=bug_id,
+            patch_path=patch_path,
+        )
+
+    def _select_explicit(self, patch_file: str) -> PatchSelection:
+        """Bypass random sampling and use exactly the given patch, e.g.
+        .../Patches/Dcorrect/SimFix/Math/patch1-Math-5-SimFix.patch. project,
+        apr_tool, and bug_id are all derived from its path/filename so
+        callers only need to point at the file."""
+        identity = self.peek_patch_file(patch_file)
+        buggy_dir = self._ensure_checkout(identity.project_name, identity.bug_id)
+
+        return PatchSelection(
+            project_name=identity.project_name,
+            apr_tool=identity.apr_tool,
+            bug_id=identity.bug_id,
+            patch_path=identity.patch_path,
             buggy_dir=buggy_dir,
         )
 
@@ -69,12 +122,12 @@ class PatchSelector:
             if os.path.isdir(target_dir) and os.listdir(target_dir):
                 return apr_tool, target_dir
 
-    def _ensure_checkout(self, bug_id: str) -> str:
+    def _ensure_checkout(self, project_name: str, bug_id: str) -> str:
         """Generates buggy directory from defects4j that corresponds with the patch
         """
         buggy_dir = os.path.join(
             config.D4J_CHECKOUT_ROOT,
-            f'{self.project_name}_{bug_id}_buggy',
+            f'{project_name}_{bug_id}_buggy',
         )
         config_file = os.path.join(buggy_dir, '.defects4j.config')
         if not os.path.isfile(config_file):
@@ -82,13 +135,13 @@ class PatchSelector:
                 shutil.rmtree(buggy_dir)
             result = subprocess.run(
                 ['defects4j', 'checkout',
-                 '-p', self.project_name, '-v', f'{bug_id}b',
+                 '-p', project_name, '-v', f'{bug_id}b',
                  '-w', buggy_dir],
                 capture_output=True,
             )
             if result.returncode != 0:
                 raise DeprecatedBugError(
-                    f'{self.project_name}-{bug_id} checkout failed '
+                    f'{project_name}-{bug_id} checkout failed '
                     f'(exit {result.returncode}): '
                     f'{result.stderr.decode(errors="replace").strip()}'
                 )

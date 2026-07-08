@@ -31,7 +31,7 @@ from analysis import TargetAnalyzer
 from build import HarnessBuilder
 from campaign import HarnessCampaign, CampaignResult
 from crash_input import CrashInputExtractor
-from failure_test import FailureTestExtractor, is_crashing_bug
+from failure_test import FailureTestExtractor, classify_bug_kind, is_crashing_bug
 from fuzz_runner import FuzzRunner, HarnessVerifier
 from jazzer import JazzerEnvironment
 from llm import HarnessGenerator
@@ -50,6 +50,17 @@ def parse_args():
                         help="Flag for semantically incorrect patch")
     parser.add_argument("--project_name", type=str,
                         help="Choose from Chart/Closure/Lang/Math/Time")
+    parser.add_argument("--patch_file", type=str, default=None,
+                        metavar="PATH",
+                        help="evaluate exactly this .patch file instead of "
+                             "randomly sampling one (project/apr_tool/"
+                             "bug_id are all derived from its path); "
+                             "--project_name is not needed when this is set")
+    parser.add_argument("--skip_semantic", action="store_true",
+                        help="bail out right after bug-kind classification "
+                             "if the bug is semantic (no crash signature), "
+                             "before the costly TargetAnalyzer/LLM campaign. "
+                             "Default is to run semantic bugs too.")
     parser.add_argument("--language", type=str, nargs='?', default='Java',
                         help='Programming language of project')
     parser.add_argument("-n", "--target_successes", type=int, default=5,
@@ -144,7 +155,32 @@ def main():
         print("Please select either --correct flag or --overfitting flag")
         sys.exit(1)
 
-    # 1) Resolve Jazzer jars up front so failures surface before the slow
+    # 1) When evaluating an explicit patch file, project_name/bug_id are
+    #    fully determined by its path — no checkout needed to know them.
+    #    Semantic bugs can be classified from defects4j's static root-cause
+    #    metadata alone (`defects4j info -b`), so when we're going to
+    #    discard semantic bugs anyway (--skip_semantic), check that here
+    #    and bail before paying for the checkout, jazzer setup, or test
+    #    source extraction below — a ~7s checkout for a bug we'd throw
+    #    away regardless. (Random-sampling mode re-samples a fresh patch
+    #    on checkout failure, so this shortcut is scoped to the
+    #    deterministic --patch_file path. The full classification further
+    #    down remains the source of truth and still runs for bugs that
+    #    pass this gate — it also covers the "no trigger test at all"
+    #    case this metadata-only check can't see.)
+    if args.skip_semantic and args.patch_file:
+        peek = PatchSelector.peek_patch_file(args.patch_file)
+        if classify_bug_kind(peek.project_name, peek.bug_id) == "semantic":
+            print(f"\n{peek.project_name} {peek.bug_id} "
+                  f"({peek.apr_tool}) is a semantic bug (no crash "
+                  "signature) — skipping before checkout.")
+            _emit_record(args.results_json,
+                         label='correct' if args.correct else 'overfitting',
+                         status='semantic_skip', selection=peek,
+                         bug_kind='semantic')
+            sys.exit(4)
+
+    # 2) Resolve Jazzer jars up front so failures surface before the slow
     #    checkout + LLM campaign. The standalone (driver) jar is needed
     #    both for the final patched-code run AND for the in-campaign
     #    trigger gate, so fetch it if either is active.
@@ -154,13 +190,14 @@ def main():
     jazzer_standalone_jar = (jazzer_env.ensure_driver()
                              if needs_driver else None)
 
-    # 2) Pick a random patch and check out the corresponding buggy d4j
+    # 3) Pick a random patch and check out the corresponding buggy d4j
     #    version.  Retry sampling if we land on a deprecated bug (defects4j
     #    refuses to check it out) so we don't propagate an unhandled error.
     selector = PatchSelector(
         project_name=args.project_name,
         correct=args.correct,
         overfitting=args.overfitting,
+        patch_file=args.patch_file,
     )
     while True:
         try:
@@ -169,7 +206,7 @@ def main():
         except DeprecatedBugError as exc:
             print(f"  skipping deprecated bug: {exc}")
 
-    # 3a) Extract the bug-triggering test(s) shipped with this d4j bug.
+    # 4a) Extract the bug-triggering test(s) shipped with this d4j bug.
     #     They seed the prompt with a worked example of a crashing
     #     input — the LLM sees what values already drive the buggy code
     #     path and shapes its FuzzedDataProvider calls accordingly.
@@ -180,7 +217,7 @@ def main():
     )
     _print_failure_tests(failure_tests)
 
-    # 3a-bis) Classify the bug. Crashing bugs fail their trigger test with a
+    # 4a-bis) Classify the bug. Crashing bugs fail their trigger test with a
     #     thrown application exception; semantic bugs fail a JUnit assertion
     #     (wrong value, no throw). Both are now in scope — they differ only in
     #     the oracle the harness is built around (see prompt_factory below and
@@ -200,7 +237,20 @@ def main():
         sys.exit(3)
     print(f"\nbug kind: {bug_kind}")
 
-    # 3b) Extract the patch + every project function it touches +
+    # This pipeline only evaluates crashing bugs. Bail here, before the
+    # costly TargetAnalyzer/LLM campaign, rather than after spending time
+    # and API calls on a bug we're going to discard anyway.
+    if args.skip_semantic and bug_kind != "crashing":
+        print(f"\n{selection.project_name} {selection.bug_id} "
+              f"({selection.apr_tool}) is a semantic bug (no crash "
+              "signature) — skipping.")
+        _emit_record(args.results_json,
+                     label='correct' if args.correct else 'overfitting',
+                     status='semantic_skip', selection=selection,
+                     bug_kind=bug_kind)
+        sys.exit(4)
+
+    # 4b) Extract the patch + every project function it touches +
     #     cross-references for each of those functions.
     context = TargetAnalyzer(
         reachable_node_cap=args.reachable_node_cap,
@@ -212,7 +262,7 @@ def main():
     )
     print(json.dumps(context.as_dict(), indent=2))
 
-    # 3c) Capture the GROUND-TRUTH crashing input by running the trigger
+    # 4c) Capture the GROUND-TRUTH crashing input by running the trigger
     #     test against the buggy checkout and reading the value back out
     #     of the failure output. This removes the model's need to guess
     #     which of (possibly many) test inputs actually crashes — the
@@ -244,7 +294,7 @@ def main():
         )
     _print_crash_input(crash_input)
 
-    # 4) Build the chat-completion prompt. Rather than a single fixed
+    # 5) Build the chat-completion prompt. Rather than a single fixed
     #    prompt, we wrap PromptBuilder in a factory the campaign calls
     #    before each fresh attempt: it injects which reachable functions
     #    and crashes the set already covers, so each new harness is a
@@ -279,7 +329,7 @@ def main():
     # The set-empty prompt used for attempt 1.
     messages = prompt_factory([], [])
 
-    # 5) Run the campaign: regenerate, recompile, and (by default) verify
+    # 6) Run the campaign: regenerate, recompile, and (by default) verify
     #    each compiled harness crashes the BUGGY version before accepting
     #    it. Acceptance = "compiles AND triggers".
     builder = HarnessBuilder(jazzer_api_jar=jazzer_api_jar)
@@ -365,7 +415,7 @@ def main():
 
     _print_summary(selection, result)
 
-    # 6) Fuzz every successful harness against the patched code to check
+    # 7) Fuzz every successful harness against the patched code to check
     #    whether the vulnerability is still reachable (overfitting signal).
     fuzz_results = None
     if args.fuzz_timeout > 0 and result.successful_results:

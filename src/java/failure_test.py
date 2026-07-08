@@ -17,7 +17,7 @@ import os
 import re
 import subprocess
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 
 @dataclass
@@ -41,13 +41,34 @@ class FailureTest:
 # JUnit assertion failures mean the trigger test failed on a *comparison*,
 # not on an uncaught application exception — i.e. the bug is semantic
 # (non-crashing) rather than a crash Jazzer can catch directly.
-_ASSERTION_THROWABLES = frozenset({
+#
+# Public (no leading underscore): this is the single source of truth for
+# the crashing/semantic distinction, shared with classify_bugs.py, which
+# classifies bugs straight from defects4j's static trigger_tests files
+# instead of through `defects4j info` — keeping one throwable set here
+# means the two can't quietly drift out of agreement with each other.
+ASSERTION_THROWABLES = frozenset({
     'junit.framework.AssertionFailedError',
     'junit.framework.ComparisonFailure',
     'org.junit.ComparisonFailure',
     'org.junit.internal.ArrayComparisonFailure',
     'java.lang.AssertionError',
 })
+
+
+def classify_exceptions(exception_types: Iterable[Optional[str]]) -> str:
+    """Classify a bug from the throwable name(s) its trigger test(s)
+    fail with: 'crashing' if any is a thrown application exception,
+    'semantic' if every throwable seen is a JUnit assertion type, or
+    'unknown' if no throwable could be determined for any test at all.
+    A crash on any trigger test counts as evidence of a crashing defect,
+    even if others are assertion failures."""
+    seen = [e for e in exception_types if e]
+    if not seen:
+        return "unknown"
+    if any(e not in ASSERTION_THROWABLES for e in seen):
+        return "crashing"
+    return "semantic"
 
 
 def is_crashing_bug(failure_tests: List['FailureTest']) -> bool:
@@ -60,10 +81,79 @@ def is_crashing_bug(failure_tests: List['FailureTest']) -> bool:
     differential oracle lands. If no exception type could be determined
     for any test we conservatively treat the bug as non-crashing, since
     the crash gate would just burn the whole attempt budget on it."""
-    for ft in failure_tests:
-        if ft.exception_type and ft.exception_type not in _ASSERTION_THROWABLES:
-            return True
-    return False
+    return classify_exceptions(
+        ft.exception_type for ft in failure_tests) == "crashing"
+
+
+# The `defects4j info` block we parse looks like:
+#     Root cause in triggering tests:
+#      - org.apache.commons.lang.math.NumberUtilsTest::testLang300
+#        --> java.lang.NumberFormatException: 1l is not a valid number
+# i.e. a `- class::method` line followed by a `--> throwable[: msg]`
+# line, one pair per triggering test.
+_ROOT_CAUSE_HEADER = 'Root cause in triggering tests:'
+_TRIGGER_NAME_RE = re.compile(r'^-\s+([\w.$]+::[\w$]+)\s*$')
+_ROOT_CAUSE_RE = re.compile(r'^-->\s*([\w.$]+)')
+
+
+def _trigger_exceptions_from_info(project_name: str, bug_id: str) -> dict:
+    """Map each `class::method` to the throwable its root cause names,
+    read from `defects4j info -p <project> -b <bug_id>`. This is static
+    metadata, so it needs neither a checkout nor a test run.
+    Best-effort: any failure returns {} and the bug is then treated as
+    non-crashing by `is_crashing_bug` / `classify_bug_kind`."""
+    try:
+        result = subprocess.run(
+            ['defects4j', 'info', '-p', project_name, '-b', bug_id],
+            capture_output=True, text=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    if result.returncode != 0:
+        return {}
+
+    out: dict = {}
+    in_section = False
+    current: Optional[str] = None
+    for line in result.stdout.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(_ROOT_CAUSE_HEADER):
+            in_section = True
+            continue
+        if not in_section:
+            continue
+        name_m = _TRIGGER_NAME_RE.match(stripped)
+        if name_m:
+            current = name_m.group(1)
+            continue
+        cause_m = _ROOT_CAUSE_RE.match(stripped)
+        if cause_m and current:
+            out[current] = cause_m.group(1)
+            current = None
+            continue
+        # A divider line (`----...`) or any non-blank line that is
+        # neither a trigger name nor a `-->` cause marks the end of the
+        # root-cause block. Dividers start with `-`, so test for them
+        # explicitly rather than relying on the leading char.
+        if set(stripped) == {'-'} and len(stripped) > 2:
+            break
+        if stripped and not stripped.startswith('-'):
+            break
+    return out
+
+
+def classify_bug_kind(project_name: str, bug_id: str) -> str:
+    """Classify a bug as 'crashing' or 'semantic' from defects4j's static
+    root-cause metadata alone — no checkout or test run needed. This is
+    the same signal `is_crashing_bug` uses, just read straight from
+    `defects4j info` instead of from `FailureTest` objects assembled
+    after a checkout: the "Root cause in triggering tests" section
+    already enumerates every trigger test defects4j has a throwable for.
+    Lets callers reject semantic bugs (--skip_semantic) before paying
+    for the checkout they'd otherwise discard the result of."""
+    exc_by_test = _trigger_exceptions_from_info(project_name, bug_id)
+    verdict = classify_exceptions(exc_by_test.values())
+    return "crashing" if verdict == "crashing" else "semantic"
 
 
 class FailureTestExtractor:
@@ -126,60 +216,8 @@ class FailureTestExtractor:
 
     # --- defects4j queries -----------------------------------------------
 
-    # The `defects4j info` block we parse looks like:
-    #     Root cause in triggering tests:
-    #      - org.apache.commons.lang.math.NumberUtilsTest::testLang300
-    #        --> java.lang.NumberFormatException: 1l is not a valid number
-    # i.e. a `- class::method` line followed by a `--> throwable[: msg]`
-    # line, one pair per triggering test.
-    _ROOT_CAUSE_HEADER = 'Root cause in triggering tests:'
-    _TRIGGER_NAME_RE = re.compile(r'^-\s+([\w.$]+::[\w$]+)\s*$')
-    _ROOT_CAUSE_RE = re.compile(r'^-->\s*([\w.$]+)')
-
     def _trigger_exceptions(self, project_name: str, bug_id: str) -> dict:
-        """Map each `class::method` to the throwable its root cause names,
-        read from `defects4j info -p <project> -b <bug_id>`. This is
-        static metadata, so it needs neither a checkout nor a test run.
-        Best-effort: any failure returns {} and the bug is then treated
-        as non-crashing by `is_crashing_bug`."""
-        try:
-            result = subprocess.run(
-                ['defects4j', 'info', '-p', project_name, '-b', bug_id],
-                capture_output=True, text=True,
-            )
-        except (OSError, subprocess.SubprocessError):
-            return {}
-        if result.returncode != 0:
-            return {}
-
-        out: dict = {}
-        in_section = False
-        current: Optional[str] = None
-        for line in result.stdout.splitlines():
-            stripped = line.strip()
-            if stripped.startswith(self._ROOT_CAUSE_HEADER):
-                in_section = True
-                continue
-            if not in_section:
-                continue
-            name_m = self._TRIGGER_NAME_RE.match(stripped)
-            if name_m:
-                current = name_m.group(1)
-                continue
-            cause_m = self._ROOT_CAUSE_RE.match(stripped)
-            if cause_m and current:
-                out[current] = cause_m.group(1)
-                current = None
-                continue
-            # A divider line (`----...`) or any non-blank line that is
-            # neither a trigger name nor a `-->` cause marks the end of
-            # the root-cause block. Dividers start with `-`, so test for
-            # them explicitly rather than relying on the leading char.
-            if set(stripped) == {'-'} and len(stripped) > 2:
-                break
-            if stripped and not stripped.startswith('-'):
-                break
-        return out
+        return _trigger_exceptions_from_info(project_name, bug_id)
 
     def _list_triggers(self, buggy_dir: str) -> List[Tuple[str, str]]:
         """Return `[(class, method), ...]` from `tests.trigger`. The
