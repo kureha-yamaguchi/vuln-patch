@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Like evaluate.sh, but broader: runs the pipeline over a random sample of
 # patch files from the drr dataset (Dcorrect + Doverfitting), then scores
-# the same confusion matrix. Set SAMPLE_SIZE=0 to run every patch instead
+# the same confusion matrix. The sample is balanced: SAMPLE_SIZE/2 patches
+# are drawn from Dcorrect and SAMPLE_SIZE/2 from Doverfitting (each shuffled
+# and capped independently). Set SAMPLE_SIZE=0 to run every patch instead
 # of sampling.
 #
 # This pipeline only evaluates crashing bugs, so semantic bugs are filtered
@@ -34,7 +36,7 @@ MAX_ATTEMPTS="${MAX_ATTEMPTS:-70}"        # -m
 FUZZ_TIMEOUT="${FUZZ_TIMEOUT:-60}"
 VERIFY_TIMEOUT="${VERIFY_TIMEOUT:-60}"
 DRY_RUN="${DRY_RUN:-0}"                   # 1 = build the queue and stop
-SAMPLE_SIZE="${SAMPLE_SIZE:-50}"          # 0 = run every queued patch
+SAMPLE_SIZE="${SAMPLE_SIZE:-30}"          # 0 = run every queued patch; else split 50/50 correct/overfitting
 SEED="${SEED:-42}"                        # for reproducible sampling
 
 DRR_PATCHES="drr/Patches"
@@ -88,13 +90,34 @@ AVAILABLE=$(wc -l < "$QUEUE")
 echo "Patches available (crashing only) : $AVAILABLE"
 awk '{print $1}' "$QUEUE" | sort | uniq -c | sed 's/^/  /'
 
-# ---- random-sample the queue (SAMPLE_SIZE=0 disables sampling) ------------
-if [[ "$SAMPLE_SIZE" != "0" && "$SAMPLE_SIZE" -lt "$AVAILABLE" ]]; then
-  SHUFFLED="${OUTDIR}/queue.shuffled.txt"
-  awk -v seed="$SEED" 'BEGIN{srand(seed)} {print rand() "\t" $0}' "$QUEUE" \
-    | sort -k1,1n | cut -f2- > "$SHUFFLED"
-  head -n "$SAMPLE_SIZE" "$SHUFFLED" > "${QUEUE}.tmp" && mv "${QUEUE}.tmp" "$QUEUE"
-  echo "Sampled ${SAMPLE_SIZE} patch(es) (seed=${SEED})"
+# ---- balanced random-sample: SAMPLE_SIZE split 50/50 between correct (-c)
+#      and overfitting (-o) patches, each shuffled and capped independently
+#      (SAMPLE_SIZE=0 disables sampling) ------------------------------------
+if [[ "$SAMPLE_SIZE" != "0" ]]; then
+  CORRECT_Q="${OUTDIR}/queue.correct.txt"
+  OVERFIT_Q="${OUTDIR}/queue.overfitting.txt"
+  grep '^-c ' "$QUEUE" > "$CORRECT_Q"
+  grep '^-o ' "$QUEUE" > "$OVERFIT_Q"
+  N_CORRECT=$(wc -l < "$CORRECT_Q")
+  N_OVERFIT=$(wc -l < "$OVERFIT_Q")
+
+  HALF_C=$(( SAMPLE_SIZE / 2 ))
+  HALF_O=$(( SAMPLE_SIZE - HALF_C ))   # odd SAMPLE_SIZE gives the extra slot to overfitting
+  [[ "$HALF_C" -gt "$N_CORRECT" ]] && HALF_C="$N_CORRECT"
+  [[ "$HALF_O" -gt "$N_OVERFIT" ]] && HALF_O="$N_OVERFIT"
+
+  SHUFFLED_C="${OUTDIR}/queue.correct.shuffled.txt"
+  SHUFFLED_O="${OUTDIR}/queue.overfitting.shuffled.txt"
+  awk -v seed="$SEED" 'BEGIN{srand(seed)} {print rand() "\t" $0}' "$CORRECT_Q" \
+    | sort -k1,1n | cut -f2- > "$SHUFFLED_C"
+  awk -v seed="$SEED" 'BEGIN{srand(seed+1)} {print rand() "\t" $0}' "$OVERFIT_Q" \
+    | sort -k1,1n | cut -f2- > "$SHUFFLED_O"
+
+  { head -n "$HALF_C" "$SHUFFLED_C"; head -n "$HALF_O" "$SHUFFLED_O"; } \
+    | awk -v seed="$SEED" 'BEGIN{srand(seed+2)} {print rand() "\t" $0}' \
+    | sort -k1,1n | cut -f2- > "${QUEUE}.tmp"
+  mv "${QUEUE}.tmp" "$QUEUE"
+  echo "Sampled ${HALF_C} correct + ${HALF_O} overfitting patch(es) (seed=${SEED})"
 fi
 
 TOTAL=$(wc -l < "$QUEUE")
