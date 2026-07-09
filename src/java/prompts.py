@@ -417,27 +417,69 @@ class PromptBuilder:
             parts.append(entry_point)
         if crash_types:
             joined = ', '.join(crash_types)
+            target_methods = ', '.join(
+                f'`{m}`' for m in (method_names or [])
+            ) or 'the patched method(s)'
             parts.append(
                 "On the buggy version the root cause surfaces as: "
-                f"{joined} (or a sibling failure with a different signature). "
-                "Your harness must distinguish a genuine defect from the patch "
-                "doing its job:\n"
+                f"{joined} (or a sibling failure with a different signature "
+                "stemming from the same root cause). Your harness must "
+                "distinguish a genuine defect from the patch doing its job:\n"
                 "  - The fixed code is SUPPOSED to reject invalid input cleanly. "
-                "Any throwable that is a deliberate, documented rejection of bad "
-                "input (a validation exception the API declares or is expected to "
-                "raise for that input) is CORRECT post-fix behaviour — CATCH it "
-                "inside fuzzerTestOneInput and return normally. Do not let it "
-                "escape.\n"
-                "  - Only let a throwable propagate uncaught when it signals the "
-                "ROOT CAUSE itself: the code failing internally instead of "
-                "guarding the input — e.g. an out-of-bounds access, NPE, "
-                "arithmetic error, infinite loop, or a corrupted result deep "
-                "inside the library, rather than a clean rejection at the "
-                "boundary.\n"
+                "Any throwable that is a deliberate rejection of bad input is "
+                "CORRECT post-fix behaviour — CATCH it inside fuzzerTestOneInput "
+                "and return normally. Recognize clean rejection by exception "
+                "FAMILY and context, NEVER by exact class identity or message "
+                "text: a correct patch may reject the same invalid input with a "
+                "DIFFERENT exception class or message than the buggy version "
+                "(e.g. a specific IllegalArgumentException subclass instead of "
+                "a generic one, or a null/reworded message). Any throwable in "
+                "the IllegalArgumentException / NumberFormatException family — "
+                "or any library-specific validation exception — raised while "
+                "the code is checking its arguments counts as clean rejection.\n"
+                "  - PROPAGATE a throwable only when BOTH hold: (1) it signals "
+                "the root cause — its class matches the ground-truth throwable "
+                "below, or it is your own assertion/metamorphic "
+                "RuntimeException — AND (2) its stack trace passes through "
+                f"{target_methods} or a function listed in "
+                "<root_cause_reachable>. Any other throwable — INCLUDING the "
+                "same exception class thrown from a different location — must "
+                "be swallowed: it is a pre-existing defect outside this "
+                "patch's scope, it will crash every version including "
+                "correctly patched ones, and it produces a false positive. "
+                "Enforce this in code, e.g.:\n"
+                "    try { /* library call */ }\n"
+                "    catch (RuntimeException t) {\n"
+                "        if (isRootCause(t)) throw t;  // else swallow\n"
+                "    }\n"
+                "  where isRootCause checks instanceof against the "
+                "ground-truth throwable class AND loops over t.getStackTrace() "
+                "requiring a frame whose class/method matches the patched or "
+                "reachable region."
+            )
+            parts.append(
+                "VALID-BY-CONSTRUCTION INPUTS: if the ground-truth throwable "
+                "is itself a validation/rejection exception "
+                "(IllegalArgumentException or a subclass, "
+                "NumberFormatException, a library 'invalid input' exception, "
+                "...), then its signature CANNOT distinguish the bug from "
+                "correct rejection — a correctly fixed version legitimately "
+                "throws the same exception, possibly at the same line, when "
+                "the input really is invalid. In that case, let it propagate "
+                "ONLY for inputs that are VALID BY CONSTRUCTION: inputs a "
+                "correct implementation is obligated to accept because you "
+                "built them to satisfy the documented preconditions yourself "
+                "(e.g. if the API requires start <= end, generate two values "
+                "and order them BEFORE the call; if a parameter must be "
+                "positive, force it positive; if elements must be non-null, "
+                "supply non-null elements). For any input whose validity you "
+                "cannot guarantee, catch the rejection and return normally — "
+                "a rejection of a possibly-invalid input proves nothing.\n"
                 "Rule of thumb: if a careful, correct version of this method "
                 "would still throw that exception for that input, it is NOT a "
-                "bug — swallow it. If the throw means the method lost control of "
-                "its own invariants, let it propagate."
+                "bug — swallow it. Only when the method throws on an input it "
+                "was obliged to handle has it lost control of its own "
+                "invariants — let that propagate."
             )
         ground_truth = self._crash_input_block(crash_input)
         if ground_truth:
@@ -700,6 +742,16 @@ class PromptBuilder:
             if signatures:
                 parts.append("Crashes already found:")
                 parts.extend(f"- {s}" for s in signatures)
+                parts.append(
+                    "If the crash you plan to reproduce has the SAME"
+                    " signature as one already listed above, this harness"
+                    " must instead win through a post-condition /"
+                    " metamorphic assertion (see the MANDATORY check"
+                    " below) — re-triggering an already-found signature"
+                    " adds no new evidence, and a campaign of identical"
+                    " crash reproducers is blind to patches that merely"
+                    " delete the throw."
+                )
             if remaining:
                 parts.append("Uncovered functions to steer toward:")
                 parts.extend(f"- {r}" for r in remaining)
@@ -711,35 +763,54 @@ class PromptBuilder:
         return '\n'.join(parts)
 
     def _metamorphic_block(self) -> str:
-        """Ask the harness to add a metamorphic check.
+        """Require a post-condition / metamorphic oracle alongside the crash.
 
-        Crash-only harnesses miss overfitting patches that return a WRONG
-        value without throwing (e.g. an off-by-one, a flipped condition, a
-        loop that always reads index 0). We can't check 'the right answer'
-        without a reference implementation — but we don't need one. A
-        *metamorphic relation* is an equation between two related calls of
-        the SAME (patched) code that must hold whatever the correct answer
-        is. The buggy/overfitting logic breaks the relation; correct code
-        preserves it. Violating it throws, which Jazzer reports exactly
-        like any other crash, so no pipeline change is needed.
+        Crash-only harnesses miss overfitting patches that SUPPRESS the
+        crash without restoring correct behaviour: delete the throw, guard
+        the crashing branch into unreachability, or swap the failing
+        operation for one that silently does the wrong thing. In all three
+        cases no exception ever fires, so every crash-keyed harness passes
+        the patch (the dominant false-negative mode observed in evaluation).
+        The check is therefore MANDATORY, framed as a thought experiment
+        against those adversarial patches.
 
-        Deliberately a short menu + 'throw on violation'. The model picks
-        whichever relation fits the patched function; nothing here is
-        bug-specific."""
+        The block also carries hygiene rules learned from the false-positive
+        side: a relation a correct implementation can legally break, or a
+        caught exception converted into a 'violation', fires on correct
+        patches too. Requiring the model to cite the documented guarantee
+        behind each assertion — and to skip, never report, inputs where
+        either side throws — keeps the added oracle from buying recall with
+        precision."""
         return '\n'.join([
-            "METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):",
-            "Some overfitting patches don't crash — they return a wrong"
-            " value. You cannot ask 'is this the right answer' (no reference"
-            " is available), but you CAN assert a relation between two"
-            " related calls of the target that must hold for ANY correct"
-            " implementation. Add ONE such check after your normal calls:"
-            " compute both sides from REAL library calls on the fuzzed"
-            " input, and if they disagree, `throw new RuntimeException("
-            '"metamorphic violation: <which relation>")`. Jazzer reports'
-            " that as a finding, the same as a crash.",
+            "POST-CONDITION / METAMORPHIC CHECK (MANDATORY — catches"
+            " wrong-output bugs that never throw):",
+            "ASSUME THE ADVERSARY. The patch under analysis may 'fix' the"
+            " bug by simply (a) deleting the throw / bookkeeping statement,"
+            " (b) adding a guard that makes the crashing branch unreachable"
+            " (and with it the branch's intended behaviour), or (c)"
+            " replacing the failing operation with one that silently does"
+            " the wrong thing (e.g. appending instead of sorted-inserting,"
+            " skipping a modification-counter update). In all three worlds"
+            " NO exception ever fires and a crash-only harness passes the"
+            " patch. Therefore, in addition to reproducing the ground-truth"
+            " failure, your harness MUST assert at least ONE observable"
+            " post-condition"
+            " from the documented contract of the patched method that such"
+            " a patch would violate — e.g. after inserting into an"
+            " auto-sorted collection, the collection is still sorted; after"
+            " a removal, an iterator over the container either throws or"
+            " reflects the removal (never silently yields stale state); a"
+            " branch that is supposed to set a size/flag/result observably"
+            " set it. State in a comment WHICH contract guarantee you"
+            " assert and WHY a throw-deleting patch would break it. A"
+            " harness that only reproduces the crash is incomplete.",
             "",
-            "Pick whichever ONE relation fits the patched function (skip"
-            " this check only if none can possibly apply):",
+            "Prefer a post-condition you can read directly off the API"
+            " after the call. Where none is observable, use ONE metamorphic"
+            " relation — a relation between two related calls of the target"
+            " that must hold for ANY correct implementation: compute both"
+            " sides from REAL library calls on the fuzzed input, and throw"
+            " if they disagree.",
             "- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)),"
             " parse(format(v)), unescape(escape(s))).",
             "- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip,"
@@ -756,13 +827,26 @@ class PromptBuilder:
             " (e.g. build the canonical string for a random int n, parse"
             " it, and assert it equals n).",
             "",
-            "Rules: use only real library calls for BOTH sides (no"
-            " hand-rolled reference). Only assert a relation that is TRUE"
-            " for correct code — if a correct implementation could legally"
-            " break it, do not use it (that would cause false positives)."
-            " Guard the check so inputs where the relation does not apply"
-            " (e.g. the input was itself rejected) are skipped, not"
-            " reported.",
+            "HYGIENE RULES — violating these fires on CORRECT patches (a"
+            " false positive, the worst outcome):",
+            "- If EITHER side of a relation, or the call preceding a"
+            " post-condition read, throws anything at all, the check does"
+            " not apply to that input: catch it, skip the check, return"
+            " normally. NEVER convert a caught exception into a violation —"
+            " an exception is a rejection, not a wrong answer.",
+            "- Before asserting a relation or post-condition, cite in a"
+            " comment the documented guarantee (javadoc sentence, class"
+            " contract, or invariant visible in the code shown above) that"
+            " makes it hold for EVERY correct implementation, including"
+            " edge cases: null elements, empty inputs, duplicates,"
+            " no-solution inputs. If you cannot cite one, do not assert it.",
+            "- Use only real library calls for BOTH sides (no hand-rolled"
+            " reference implementation).",
+            "- On violation, `throw new RuntimeException(\"metamorphic"
+            " violation: <which relation> input=<...> lhs=<...>"
+            " rhs=<...>\")` with the concrete values, so a reviewer can"
+            " replay the disagreement. Jazzer reports that as a finding,"
+            " the same as a crash.",
         ])
 
     def _fdp_reference(self) -> str:
