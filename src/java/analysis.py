@@ -790,7 +790,24 @@ class TargetAnalyzer:
                 continue
             try:
                 xrefs = project.get_cross_references_by_name(mangled)
-                fn.xrefs = [x.function_source_code_as_text() for x in xrefs]
+                # get_cross_references_by_name returns one entry per CALL
+                # SITE, and function_source_code_as_text() returns the whole
+                # enclosing method — so a caller that invokes the target N
+                # times contributes N identical copies of its source (e.g.
+                # NumberUtils.testCreateNumber, which calls createNumber ~18
+                # times, appeared ~18x, ~120KB of duplicate prompt text).
+                # Dedupe (order-preserving) and cap: only DISTINCT callers
+                # add information; the copies just bloat the prompt.
+                seen: set = set()
+                distinct = []
+                for x in xrefs:
+                    src = x.function_source_code_as_text()
+                    if src and src not in seen:
+                        seen.add(src)
+                        distinct.append(src)
+                    if len(distinct) >= config.MAX_XREFS_PER_FUNCTION:
+                        break
+                fn.xrefs = distinct
             except Exception:
                 pass
             # Union two views of the callees: (1) introspector's static

@@ -180,6 +180,13 @@ VERIFY_TIMEOUT_SECONDS = int(os.getenv('VERIFY_TIMEOUT_SECONDS', '60'))
 # the project) from dominating the context window.
 MAX_REACHABLE_IN_PROMPT = int(os.getenv('MAX_REACHABLE_IN_PROMPT', '60'))
 
+# Max DISTINCT call-site examples (xrefs) per touched function spliced into
+# the prompt. fuzz-introspector returns one xref per call site and the whole
+# enclosing method for each, so a method called many times duplicates its
+# caller's source (e.g. NumberUtils.createNumber -> ~120KB of repeats). We
+# dedupe and cap to keep the prompt lean without losing distinct callers.
+MAX_XREFS_PER_FUNCTION = int(os.getenv('MAX_XREFS_PER_FUNCTION', '5'))
+
 # Reachable-set computation is a budget-bounded BFS over immediate call-sites
 # (see analysis.TargetAnalyzer._reachable_of), NOT introspector's unbounded
 # transitive walk (which explodes to minutes of CPU on hub functions). The
