@@ -1,9 +1,10 @@
 # 8-bug semantic set (distinct bugs of mined54_A/B) — one overfitting + one
-# correct patch per bug. This is the CHEAP ITERATION set: relation
-# verification on, but NO --synthesize_relations.
+# correct patch per bug. Synthesis is ON since the B2 post-overhaul gate
+# (2026-07-15): this suite now measures the FULL stack. For cheaper
+# iteration without synthesis, drop --synthesize_relations locally.
 #   ./run_suite.sh <name> suites/semantic8.cases
 MODEL="gpt-5.4"
-COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
 CASES=(
   "-o Lang 7 Arja"
   "-c Lang 7 ACS"
