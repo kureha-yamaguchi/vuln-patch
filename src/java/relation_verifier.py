@@ -29,6 +29,12 @@ wrong assertions free"):
     implementation could never have caused the firing. The firing came from
     the code COMPLETING with an impossible value. The exception-path
     guidance below exists to close exactly that reasoning hole.
+  * OVER-KILL (skeleton absence): with class context attached, dropped a
+    genuine Chart-19 detection by reading the PARTIAL skeleton as complete
+    — "nothing in the provided contracts guarantees getDomainAxisIndex(null)
+    must throw" — when the null-check lived in an ELIDED method body. The
+    absence-is-not-unsoundness guidance below exists to close that hole:
+    the skeleton may only CONFIRM facts, never prove a guarantee absent.
 """
 from typing import List, Optional, Tuple
 
@@ -81,6 +87,13 @@ _GUIDANCE = (
     " from the SAME implementation (an aggregate recomputed from the"
     " object's own output vs the aggregate it reports; a manual count vs a"
     " reported count) is normally SOUND.\n"
+    "ABSENCE OF EVIDENCE IS NOT UNSOUNDNESS: any code/context you are shown"
+    " is a PARTIAL view. 'Nothing provided guarantees X' is never by itself"
+    " grounds for UNSOUND — the guarantee may live in an elided body,"
+    " undocumented behaviour, or a class you were not shown. To answer"
+    " UNSOUND you must point at something POSITIVE: a shown contract the"
+    " assertion contradicts, or a concrete correct implementation that"
+    " would fire it AND survive the harness's catch/skip structure.\n"
     "OBSERVED EVIDENCE BEATS HYPOTHETICALS: when the fired message or the"
     " evidence section shows the CONCRETE values/object state the run"
     " produced, judge that observation. If the observed output state is one"
@@ -221,7 +234,19 @@ class RelationVerifier:
                 " random/stochastic can never soundly be compared to a"
                 " fixed expected literal; a documented guarantee (never"
                 " null, always reduced, canonical order) makes an assertion"
-                " of that guarantee sound.\n<codebase_context>\n"
+                " of that guarantee sound.\n"
+                "THIS SKELETON IS PARTIAL: method bodies not touched by the"
+                " patch are elided to `{ ... }` and javadoc may simply be"
+                " absent. Use the skeleton only to CONFIRM a fact it"
+                " actually shows (a documented throw, a stated range, a"
+                " stochastic method). NEVER treat the ABSENCE of a"
+                " guarantee from this partial view as evidence the"
+                " guarantee does not exist — the behaviour may live in an"
+                " elided body or undocumented code. When the skeleton is"
+                " silent on the fired check, fall back to the harness's own"
+                " catch/skip structure and the concrete evidence, and keep"
+                " the finding unless something SHOWN here refutes it."
+                "\n<codebase_context>\n"
                 + code_context.strip() + "\n</codebase_context>\n")
         base_user = (
             "Review this Jazzer harness's assertions.\n\n"
