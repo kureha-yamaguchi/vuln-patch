@@ -219,6 +219,21 @@ class TargetAnalyzer:
         # picked up java.lang String/Object calls rather than project
         # methods.
         enclosing = self._enclosing_methods(hunks_by_file, buggy_dir)
+        if not enclosing:
+            # Empty `functions` silently disables everything downstream
+            # that keys on the patched method (mining tokens, relation
+            # synthesis, function blocks in the prompt) — a whole leg once
+            # "tested" synthesis that never ran because of this. Recover
+            # with a regex+brace-matching pass before giving up; run.py
+            # additionally warns and marks the record degraded if even this
+            # comes back empty.
+            enclosing = self._enclosing_methods_fallback(
+                hunks_by_file, buggy_dir)
+            if enclosing:
+                print("  [analysis] AST enclosing-method extraction was "
+                      f"empty; recovered {len(enclosing)} touched "
+                      "function(s) via regex fallback: "
+                      + ", ".join(fn.func_name for fn in enclosing))
 
         # fuzz-introspector still earns its keep for xrefs by name —
         # we run it once and look up each enclosing method.
@@ -260,14 +275,28 @@ class TargetAnalyzer:
     def _parse_patch(
         self, patch_path: str,
     ) -> Tuple[List[str], Dict[str, List[int]], str]:
-        """Collect modified file paths and the buggy-side start line of
-        every hunk in each. We key off the `-` start because
-        `buggy_dir` is the buggy version — that's the file the AST
-        will be parsed from, so its line numbers are the ones we need
-        to map back to methods."""
+        """Collect modified file paths and the buggy-side line numbers of
+        the ACTUALLY CHANGED lines in each. Buggy-side, because
+        `buggy_dir` is the buggy version — that's the file the AST will
+        be parsed from, so its line numbers are the ones that map back
+        to methods.
+
+        Changed lines, NOT hunk-start lines: a hunk header's start line
+        is `context_lines` above the first real change, and diff context
+        routinely begins in the javadoc ABOVE the patched method — the
+        Time-4 Arja patch starts its hunk at the doc comment three lines
+        over the method, so keying on hunk starts made every
+        enclosing-method lookup miss and `functions` came back empty
+        (which silently disabled mining and synthesis for the run). We
+        walk each hunk body tracking the old-file line counter: `-`
+        lines are recorded at their old-file position; a pure-insertion
+        hunk records the old-file line at the insertion point (the
+        surrounding method still encloses it)."""
         modified_files: List[str] = []
         hunks_by_file: Dict[str, List[int]] = {}
         current_file: Optional[str] = None
+        old_ln: Optional[int] = None
+        hunk_recorded = False  # this hunk contributed at least one line
 
         with open(patch_path) as fh:
             for line in fh:
@@ -276,10 +305,36 @@ class TargetAnalyzer:
                     current_file = m.group(1).lstrip('/')
                     modified_files.append(current_file)
                     hunks_by_file.setdefault(current_file, [])
+                    old_ln = None
+                    continue
+                if line.startswith('+++'):
                     continue
                 m = self._HUNK_RE.match(line)
                 if m and current_file is not None:
-                    hunks_by_file[current_file].append(int(m.group(1)))
+                    old_ln = int(m.group(1))
+                    hunk_recorded = False
+                    continue
+                if current_file is None or old_ln is None:
+                    continue
+                if line.startswith('-'):
+                    hunks_by_file[current_file].append(old_ln)
+                    hunk_recorded = True
+                    old_ln += 1
+                elif line.startswith('+'):
+                    # Insertion: no old-file line consumed. Record the
+                    # insertion point once so a pure-addition hunk still
+                    # maps to its enclosing method.
+                    if not hunk_recorded:
+                        hunks_by_file[current_file].append(max(old_ln - 1, 1))
+                        hunk_recorded = True
+                elif line.startswith(' ') or line.strip() == '':
+                    old_ln += 1
+                # anything else (diff/index/"\ No newline") is metadata
+
+        # Dedupe while preserving order (several - lines in one method
+        # would otherwise trigger several identical lookups).
+        for f, lns in hunks_by_file.items():
+            hunks_by_file[f] = list(dict.fromkeys(lns))
 
         with open(patch_path) as fh:
             patch_text = fh.read()
@@ -351,6 +406,96 @@ class TargetAnalyzer:
                           f"{rel_path}:{m['name']} ({e})")
                 out.append(tf)
         return out
+
+    # Regex fallback for enclosing-method extraction: a plausible method or
+    # constructor declaration whose body brace we can match. Deliberately
+    # loose — it only runs when javalang failed or the AST pass found
+    # nothing, and a slightly-wrong method boundary still beats an empty
+    # function list.
+    _FALLBACK_DECL_RE = re.compile(
+        r'^[ \t]*(?:(?:public|protected|private|static|final|abstract|'
+        r'synchronized|native|strictfp)\s+)+[\w$<>,.\[\]\s]*?'
+        r'\b([A-Za-z_]\w*)\s*\([^;{)]*\)\s*(?:throws\s[\w\s,.]+)?\{',
+        re.MULTILINE)
+
+    def _enclosing_methods_fallback(
+        self,
+        hunks_by_file: Dict[str, List[int]],
+        buggy_dir: str,
+    ) -> List[TouchedFunction]:
+        """Text-based recovery of the enclosing method(s) when the AST pass
+        yields nothing (javalang parse failure, or hunk lines the AST walk
+        could not place). Scans each modified file for method declarations,
+        brace-matches their bodies, and picks the smallest span containing
+        each hunk start line. No xrefs/callees — those are enrichment; the
+        body is what the prompt, mining, and synthesis cannot work
+        without."""
+        out: List[TouchedFunction] = []
+        seen: set = set()
+        for rel_path, starts in hunks_by_file.items():
+            if not rel_path.endswith('.java') or not starts:
+                continue
+            full = os.path.join(buggy_dir, rel_path)
+            try:
+                with open(full, encoding='utf-8', errors='replace') as fh:
+                    source = fh.read()
+            except OSError:
+                continue
+            # (start_line, end_line, name, header) per declaration.
+            spans = []
+            for m in self._FALLBACK_DECL_RE.finditer(source):
+                open_idx = source.find('{', m.start())
+                end_idx = self._match_brace_text(source, open_idx)
+                if end_idx < 0:
+                    continue
+                start_line = source.count('\n', 0, m.start()) + 1
+                end_line = source.count('\n', 0, end_idx) + 1
+                header = m.group(0)[:m.group(0).rfind('{')].strip()
+                spans.append((start_line, end_line, m.group(1), header))
+            for hunk_line in starts:
+                containing = [s for s in spans
+                              if s[0] <= hunk_line <= s[1]]
+                if not containing:
+                    continue
+                s = min(containing, key=lambda x: x[1] - x[0])
+                key = (rel_path, s[2], s[0])
+                if key in seen:
+                    continue
+                seen.add(key)
+                body_lines = source.splitlines()[s[0] - 1:s[1]]
+                out.append(TouchedFunction(
+                    func_name=s[2],
+                    func_signature=s[3],
+                    func_source='\n'.join(body_lines),
+                ))
+        return out
+
+    @staticmethod
+    def _match_brace_text(src: str, open_idx: int) -> int:
+        """Index of the brace closing src[open_idx] ('{'), skipping string
+        and char literals; -1 if unbalanced or open_idx invalid."""
+        if open_idx < 0 or open_idx >= len(src) or src[open_idx] != '{':
+            return -1
+        depth, i, n = 0, open_idx, len(src)
+        while i < n:
+            c = src[i]
+            if c in '"\'':
+                quote = c
+                i += 1
+                while i < n:
+                    if src[i] == '\\':
+                        i += 1
+                    elif src[i] == quote:
+                        break
+                    i += 1
+            elif c == '{':
+                depth += 1
+            elif c == '}':
+                depth -= 1
+                if depth == 0:
+                    return i
+            i += 1
+        return -1
 
     # --- related callees (caller -> callee context) ----------------------
 

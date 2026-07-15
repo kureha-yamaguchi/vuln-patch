@@ -109,7 +109,10 @@ def run_jazzer(jazzer_standalone_jar: str,
                project_cp: str,
                timeout_seconds: int,
                expected_exceptions: Optional[List[str]] = None,
-               jazzer_api_jar: Optional[str] = None
+               jazzer_api_jar: Optional[str] = None,
+               keep_going: int = 0,
+               extra_libfuzzer_args: Optional[List[str]] = None,
+               corpus_dir: Optional[str] = None,
                ) -> JazzerOutcome:
     """Run one Jazzer harness against `project_cp` and report whether it
     crashed within `timeout_seconds`. Shared by the buggy-version gate
@@ -146,6 +149,16 @@ def run_jazzer(jazzer_standalone_jar: str,
         'com.code_intelligence.jazzer.Jazzer',
         f'--target_class={target_class}',
         f'--reproducer_path={artifact_dir}',
+    ]
+    if keep_going > 0:
+        # Continue past the first finding and collect up to `keep_going`
+        # DISTINCT crashes (deduped by Jazzer on stack signature). This is
+        # how we discover EVERY oracle a multi-oracle harness fires on the
+        # patched code — not just the first the fuzzer happens to surface —
+        # so a sound oracle isn't hidden behind an unsound sibling that
+        # fired on some other input.
+        cmd.append(f'--keep_going={keep_going}')
+    cmd += [
         '--',
         f'-max_total_time={timeout_seconds}',
         # Ensure the harness body is actually entered (so a deterministic
@@ -154,6 +167,17 @@ def run_jazzer(jazzer_standalone_jar: str,
         '-runs=100000',
         f'-artifact_prefix={artifact_dir}{os.sep}',
     ]
+    # Caller-supplied libFuzzer flags come AFTER the defaults so they win
+    # (libFuzzer takes the last occurrence of a flag) — the relation screen
+    # uses this to run a fixed `-runs=N` budget instead of a time budget.
+    if extra_libfuzzer_args:
+        cmd += list(extra_libfuzzer_args)
+    if corpus_dir and os.path.isdir(corpus_dir):
+        # A positional corpus directory: libFuzzer starts from these seeds
+        # (literals mined from the project's own tests) instead of from
+        # nothing, concentrating the early search near known-valid inputs
+        # — the neighbourhood an overfit special-cased.
+        cmd.append(corpus_dir)
 
     timed_out = False
     try:
@@ -372,6 +396,44 @@ class FuzzRunner:
             _print_fuzz_result(r)
         return results
 
+    def collect_fired_oracles(self,
+                              harness_path: str,
+                              class_name: str,
+                              patch_path: str,
+                              buggy_dir: str,
+                              keep_going: int = 8,
+                              timeout_seconds: Optional[int] = None
+                              ) -> List[str]:
+        """Re-fuzz ONE already-triggering harness against the patched code
+        with `--keep_going`, and return the list of DISTINCT throwable
+        headlines it fires (e.g. the exact `semantic mismatch: …` /
+        `metamorphic violation: …` messages). Used by relation verification
+        to judge EVERY oracle that fires on the patched code, not just the
+        first one Jazzer surfaced. Returns [] on any error (caller then
+        falls back to the single already-captured headline)."""
+        from oracle_strength import exception_headlines
+        try:
+            builder = PatchedProjectBuilder()
+            patched_dir = builder.build_patched_dir(buggy_dir, patch_path)
+            patched_cp = builder.classpath(patched_dir,
+                                           fallback_buggy_dir=buggy_dir)
+            outcome = run_jazzer(
+                jazzer_standalone_jar=self.jazzer_standalone_jar,
+                target_class=class_name,
+                harness_dir=os.path.dirname(harness_path),
+                project_cp=patched_cp,
+                timeout_seconds=(timeout_seconds
+                                 if timeout_seconds is not None
+                                 else self.timeout_seconds),
+                expected_exceptions=self.expected_exceptions,
+                jazzer_api_jar=self.jazzer_api_jar,
+                keep_going=keep_going,
+            )
+        except Exception as exc:
+            print(f"  (keep-going re-fuzz failed: {exc})")
+            return []
+        return exception_headlines(outcome.stdout + '\n' + outcome.stderr)
+
     def _run_one(self, build_result: BuildResult,
                  patched_cp: str) -> FuzzRunResult:
         harness_dir = os.path.dirname(build_result.harness_path)
@@ -443,7 +505,8 @@ class HarnessVerifier:
                  buggy_classpath: str,
                  timeout_seconds: int = config.VERIFY_TIMEOUT_SECONDS,
                  expected_exceptions: Optional[List[str]] = None,
-                 jazzer_api_jar: Optional[str] = None):
+                 jazzer_api_jar: Optional[str] = None,
+                 corpus_dir: Optional[str] = None):
         self.jazzer_standalone_jar = jazzer_standalone_jar
         self.buggy_classpath = buggy_classpath
         self.timeout_seconds = timeout_seconds
@@ -454,6 +517,11 @@ class HarnessVerifier:
         # API jar (FuzzedDataProvider) for the runtime classpath; see
         # run_jazzer. Defaults there to config.JAZZER_API_JAR if None.
         self.jazzer_api_jar = jazzer_api_jar
+        # Optional seed-corpus directory (literals mined from the project's
+        # own tests). Only the buggy-version gate uses it: the gate's job is
+        # to reach the trigger quickly, and known-valid inputs start the
+        # search in the right neighbourhood.
+        self.corpus_dir = corpus_dir
 
     def verify(self, build_result: BuildResult) -> VerificationResult:
         harness_dir = os.path.dirname(build_result.harness_path)
@@ -465,6 +533,7 @@ class HarnessVerifier:
             timeout_seconds=self.timeout_seconds,
             expected_exceptions=self.expected_exceptions,
             jazzer_api_jar=self.jazzer_api_jar,
+            corpus_dir=self.corpus_dir,
         )
         combined = outcome.combined_output
         if outcome.triggered:

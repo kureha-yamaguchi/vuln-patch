@@ -45,7 +45,13 @@ class PatchSelector:
     defects4j CLI."""
 
     def __init__(self, project_name: str = None, correct: bool = False,
-                 overfitting: bool = False, patch_file: str = None):
+                 overfitting: bool = False, patch_file: str = None,
+                 bug_id=None, apr_tool: str = None):
+        """``bug_id``/``apr_tool`` pin the sampling: only patches for that
+        bug (and, when given, from that tool) are considered. select() has
+        always read these attributes for pinning, but nothing ever SET
+        them — the sampling path AttributeError'd unless patch_file made
+        them moot. None = unpinned (the original random behaviour)."""
         if correct and overfitting:
             raise ValueError("pass only one of correct/overfitting, not both")
         if correct:
@@ -56,13 +62,23 @@ class PatchSelector:
             raise ValueError("must pass one of correct/overfitting")
         self.project_name = project_name
         self.patch_file = patch_file
+        self.bug_id = bug_id
+        self.apr_tool = apr_tool
 
     def select(self) -> PatchSelection:
         if self.patch_file:
             return self._select_explicit(self.patch_file)
 
         apr_tool, target_dir = self._sample_apr_tool()
-        chosen_file = random.choice(os.listdir(target_dir))
+        candidates = os.listdir(target_dir)
+        if self.bug_id is not None:
+            candidates = [f for f in candidates
+                          if f.split('-')[2] == str(self.bug_id)]
+            if not candidates:
+                raise ValueError(
+                    f'no {self.project_name}-{self.bug_id} patch under '
+                    f'{target_dir}')
+        chosen_file = random.choice(candidates)
         bug_id = chosen_file.split('-')[2]
         patch_path = os.path.join(target_dir, chosen_file)
         buggy_dir = self._ensure_checkout(self.project_name, bug_id)
@@ -113,14 +129,37 @@ class PatchSelector:
 
     def _sample_apr_tool(self):
         """Keep sampling APR tools until we find one that has at least
-        one patch for the requested project. Most tools only fix a
-        subset of the d4j projects."""
-        while True:
-            apr_tool = random.choice(config.APR_TOOLS)
-            target_dir = os.path.join(self.patch_dir, apr_tool,
+        one patch for the requested project (and, when pinned, for the
+        requested bug id). Most tools only fix a subset of the d4j
+        projects. A pinned apr_tool is validated once and returned."""
+        def has_match(target_dir):
+            if not (os.path.isdir(target_dir) and os.listdir(target_dir)):
+                return False
+            if self.bug_id is None:
+                return True
+            return any(f.split('-')[2] == str(self.bug_id)
+                       for f in os.listdir(target_dir))
+
+        if self.apr_tool is not None:
+            target_dir = os.path.join(self.patch_dir, self.apr_tool,
                                       self.project_name)
-            if os.path.isdir(target_dir) and os.listdir(target_dir):
-                return apr_tool, target_dir
+            if not has_match(target_dir):
+                raise ValueError(
+                    f'no matching patch for tool={self.apr_tool} '
+                    f'project={self.project_name} bug_id={self.bug_id} '
+                    f'under {target_dir}')
+            return self.apr_tool, target_dir
+
+        eligible = [t for t in config.APR_TOOLS
+                    if has_match(os.path.join(self.patch_dir, t,
+                                              self.project_name))]
+        if not eligible:
+            raise ValueError(
+                f'no APR tool has a matching patch for '
+                f'project={self.project_name} bug_id={self.bug_id}')
+        apr_tool = random.choice(eligible)
+        return apr_tool, os.path.join(self.patch_dir, apr_tool,
+                                      self.project_name)
 
     def _ensure_checkout(self, project_name: str, bug_id: str) -> str:
         """Generates buggy directory from defects4j that corresponds with the patch
@@ -130,7 +169,20 @@ class PatchSelector:
             f'{project_name}_{bug_id}_buggy',
         )
         config_file = os.path.join(buggy_dir, '.defects4j.config')
-        if not os.path.isfile(config_file):
+        # Reuse a cached checkout ONLY if it is the right version. A stale
+        # dir — e.g. a fixed-version (`vid=<id>f`) checkout left in the
+        # buggy path — otherwise gets trusted, and `defects4j export` then
+        # fails with "not a Defects4J working directory", silently dropping
+        # the bug. Verify the config's vid matches `<bug_id>b` before trusting.
+        want_vid = f'{bug_id}b'
+        cached_ok = False
+        if os.path.isfile(config_file):
+            try:
+                with open(config_file) as fh:
+                    cached_ok = f'vid={want_vid}' in fh.read()
+            except OSError:
+                cached_ok = False
+        if not cached_ok:
             if os.path.isdir(buggy_dir):
                 shutil.rmtree(buggy_dir)
             result = subprocess.run(

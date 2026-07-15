@@ -189,7 +189,7 @@ class FailureTestExtractor:
         try:
             triggers = self._list_triggers(buggy_dir)
         except subprocess.CalledProcessError:
-            return []
+            triggers = []
 
         # Map `class::method` -> thrown throwable, used to classify the
         # bug as crashing vs semantic. Read from `defects4j info`, which
@@ -199,6 +199,15 @@ class FailureTestExtractor:
         # non-crashing.
         exc_by_test = (self._trigger_exceptions(project_name, bug_id)
                        if project_name and bug_id else {})
+
+        # Fallback: `defects4j export -p tests.trigger` needs a valid,
+        # correctly-versioned checkout and fails on some (e.g. a stale dir),
+        # which would silently drop the bug. `defects4j info` is static and
+        # lists the SAME trigger tests, so recover them from there rather
+        # than treating the bug as having no trigger test at all.
+        if not triggers and exc_by_test:
+            triggers = [(k.split('::', 1)[0], k.split('::', 1)[1])
+                        for k in exc_by_test if '::' in k]
 
         test_src_dir = self._test_source_dir(buggy_dir)
         out: List[FailureTest] = []
