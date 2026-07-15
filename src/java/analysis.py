@@ -133,6 +133,36 @@ class RelatedCallee:
 
 
 @dataclass
+class FieldSibling:
+    """A method or constructor coupled to a touched function through a
+    SHARED INSTANCE FIELD, with no call edge between them.
+
+    The call-graph passes (related_callees, xrefs, reachable) only see
+    CALL edges, but state bugs propagate through fields: a constructor
+    writes a total that a getter later reports; a mutator freezes a
+    timestamp a reader returns; a patch clobbers a collection whose every
+    reader is its divergence surface. None of those pairs call each
+    other, so no call-based context ever surfaces the coupling — yet the
+    sibling is exactly where a masked-symptom defect stays observable.
+
+    Honest limits (still NOT captured): semantic siblings with neither a
+    call nor a field edge (pure complementary functions — the skeleton
+    text covers those, not structure); cross-object state behind a
+    collaborator; temporal/protocol ordering contracts.
+    """
+    name: str
+    signature: str
+    # The instance fields this sibling shares with the touched function.
+    shared_fields: List[str] = field(default_factory=list)
+    # Constructors carry their body (they ESTABLISH the invariant the
+    # sibling readers must agree with); plain methods carry javadoc only,
+    # to bound the prompt cost.
+    is_constructor: bool = False
+    source: Optional[str] = None
+    javadoc: Optional[str] = None
+
+
+@dataclass
 class TouchedFunction:
     """One project function that the patch touches, with its source and
     every call site fuzz-introspector found."""
@@ -151,6 +181,11 @@ class TouchedFunction:
     # resolved from the same package. See RelatedCallee. Best-effort and
     # purely additive: empty when nothing resolves.
     related_callees: List[RelatedCallee] = field(default_factory=list)
+    # Methods/constructors coupled through a shared instance field with
+    # NO call edge (see FieldSibling). Best-effort and purely additive:
+    # empty on stateless/static utilities (the correct no-op), on javalang
+    # parse failure, or when the regex fallback extracted this function.
+    field_siblings: List[FieldSibling] = field(default_factory=list)
 
 
 @dataclass
@@ -404,7 +439,198 @@ class TargetAnalyzer:
                 except Exception as e:  # never let enrichment break analysis
                     print(f"related-callee resolution failed for "
                           f"{rel_path}:{m['name']} ({e})")
+                # Additive enrichment: members coupled to this function
+                # through a shared instance field with no call edge — the
+                # state-propagation surface no call-graph pass can see.
+                # Best-effort — any failure leaves field_siblings [].
+                try:
+                    tf.field_siblings = self._resolve_field_siblings(
+                        own=m, methods=methods, tree=tree, lines=lines,
+                        buggy_dir=buggy_dir)
+                except Exception as e:
+                    print(f"field-sibling resolution failed for "
+                          f"{rel_path}:{m['name']} ({e})")
                 out.append(tf)
+        return out
+
+    # --- field-coupling (shared-state siblings) ---------------------------
+
+    @staticmethod
+    def _declared_field_names(tree) -> set:
+        """Names of every field declared in the compilation unit (instance
+        and static — a static cache couples methods the same way)."""
+        names = set()
+        for _, node in tree.filter(javalang.tree.FieldDeclaration):
+            for decl in (node.declarators or []):
+                names.add(decl.name)
+        return names
+
+    @staticmethod
+    def _fields_touched_by(node, declared: set) -> set:
+        """The declared fields a method/constructor body reads or writes.
+
+        `this.f` accesses (a This node with a MemberReference selector)
+        count unconditionally. BARE `f` references count only when `f` is
+        a declared field NOT shadowed by a parameter or local of the same
+        name — without the shadow set, a local named like a field would
+        over-connect half the class. Qualified `obj.f` references are
+        cross-object state and deliberately excluded."""
+        if node is None:
+            return set()
+        shadowed = set()
+        for _, p in node.filter(javalang.tree.FormalParameter):
+            shadowed.add(p.name)
+        for _, d in node.filter(javalang.tree.LocalVariableDeclaration):
+            for decl in (d.declarators or []):
+                shadowed.add(decl.name)
+        for _, d in node.filter(javalang.tree.VariableDeclaration):
+            for decl in (d.declarators or []):
+                shadowed.add(decl.name)
+        for _, c in node.filter(javalang.tree.CatchClauseParameter):
+            shadowed.add(c.name)
+        touched = set()
+        for _, ref in node.filter(javalang.tree.MemberReference):
+            qual = getattr(ref, 'qualifier', None)
+            if qual in (None, '') and ref.member in declared \
+                    and ref.member not in shadowed:
+                touched.add(ref.member)
+        for _, th in node.filter(javalang.tree.This):
+            for sel in (th.selectors or []):
+                member = getattr(sel, 'member', None)
+                if member and member in declared:
+                    touched.add(member)
+        return touched
+
+    @staticmethod
+    def _javadoc_above(lines: List[str], start_line: int,
+                       max_chars: int = 320) -> Optional[str]:
+        """Compact one-line rendering of the /** ... */ block immediately
+        above a declaration at 1-indexed `start_line`, or None."""
+        i = start_line - 2
+        while i >= 0 and (not lines[i].strip()
+                          or lines[i].strip().startswith('@')):
+            i -= 1
+        if i < 0 or not lines[i].strip().endswith('*/'):
+            return None
+        end = i
+        while i >= 0 and '/**' not in lines[i]:
+            i -= 1
+        if i < 0:
+            return None
+        words = []
+        for ln in lines[i:end + 1]:
+            s = ln.strip()
+            s = s.replace('/**', '').replace('*/', '').lstrip('*').strip()
+            if s:
+                words.append(s)
+        text = ' '.join(words)
+        return (text[:max_chars] + ('…' if len(text) > max_chars else '')
+                if text else None)
+
+    def _resolve_field_siblings(self, own: dict, methods: List[dict],
+                                tree, lines: List[str], buggy_dir: str,
+                                cap: int = 5) -> List[FieldSibling]:
+        """Members of the same class (walking one level up to the
+        superclass) that share an instance field with the touched
+        function but have NO call edge to it. Ranked by shared-field
+        count (some classes share fields widely — the cap keeps the
+        block a few hundred chars), constructors first among ties since
+        they establish the invariant. Empty on stateless/static
+        utilities — the correct no-op."""
+        declared = self._declared_field_names(tree)
+        own_node = own.get('node')
+        own_fields = self._fields_touched_by(own_node, declared)
+        # Call edges are the other passes' job; a member this function
+        # calls (or that appears as a call in its body) adds nothing new.
+        own_body = '\n'.join(lines[own['start'] - 1:own['end']])
+        called = set(re.findall(r'\b(\w+)\s*\(', own_body))
+        scored: List[Tuple[int, int, FieldSibling]] = []
+        if own_fields:
+            for m in methods:
+                if m['start'] == own['start'] and m['name'] == own['name']:
+                    continue
+                if m['name'] in called:
+                    continue
+                shared = (self._fields_touched_by(m.get('node'), declared)
+                          & own_fields)
+                if not shared:
+                    continue
+                node = m.get('node')
+                is_ctor = isinstance(
+                    node, javalang.tree.ConstructorDeclaration)
+                body = None
+                if is_ctor:
+                    body = '\n'.join(lines[m['start'] - 1:m['end']])[:1200]
+                scored.append((len(shared), 1 if is_ctor else 0,
+                               FieldSibling(
+                                   name=m['name'],
+                                   signature=m['signature'],
+                                   shared_fields=sorted(shared),
+                                   is_constructor=is_ctor,
+                                   source=body,
+                                   javadoc=self._javadoc_above(
+                                       lines, m['start']))))
+        # One level up: fields INHERITED from the superclass couple the
+        # touched method to superclass members the same way.
+        try:
+            scored.extend(self._superclass_field_siblings(
+                own_node, tree, buggy_dir, called))
+        except Exception:
+            pass  # enrichment of an enrichment — never let it break
+        scored.sort(key=lambda t: (-t[0], -t[1]))
+        return [fs for _, _, fs in scored[:cap]]
+
+    def _superclass_field_siblings(self, own_node, tree, buggy_dir: str,
+                                   called: set
+                                   ) -> List[Tuple[int, int, FieldSibling]]:
+        """Field siblings via INHERITED fields: recompute the touched
+        method's field set against the superclass's declarations, then
+        scan the superclass's members. One level only."""
+        super_name = None
+        for _, cls in tree.filter(javalang.tree.ClassDeclaration):
+            ext = getattr(cls, 'extends', None)
+            if ext is not None and getattr(ext, 'name', None):
+                super_name = ext.name
+                break
+        if not super_name or own_node is None:
+            return []
+        from code_context import _find_class_file
+        super_path = _find_class_file(buggy_dir, super_name)
+        if not super_path:
+            return []
+        try:
+            with open(super_path, encoding='utf-8',
+                      errors='replace') as fh:
+                super_src = fh.read()
+            super_tree = javalang.parse.parse(super_src)
+        except Exception:
+            return []
+        super_declared = self._declared_field_names(super_tree)
+        own_inherited = self._fields_touched_by(own_node, super_declared)
+        if not own_inherited:
+            return []
+        super_lines = super_src.splitlines()
+        out: List[Tuple[int, int, FieldSibling]] = []
+        for m in self._collect_methods(super_tree, super_lines):
+            if m['name'] in called:
+                continue
+            shared = (self._fields_touched_by(m.get('node'), super_declared)
+                      & own_inherited)
+            if not shared:
+                continue
+            is_ctor = isinstance(
+                m.get('node'), javalang.tree.ConstructorDeclaration)
+            body = None
+            if is_ctor:
+                body = '\n'.join(
+                    super_lines[m['start'] - 1:m['end']])[:1200]
+            out.append((len(shared), 1 if is_ctor else 0, FieldSibling(
+                name=f"{super_name}.{m['name']}",
+                signature=m['signature'],
+                shared_fields=sorted(shared),
+                is_constructor=is_ctor,
+                source=body,
+                javadoc=self._javadoc_above(super_lines, m['start']))))
         return out
 
     # Regex fallback for enclosing-method extraction: a plausible method or

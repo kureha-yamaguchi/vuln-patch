@@ -446,6 +446,41 @@ class PromptBuilder:
         callee_block = self._related_callees_block(fn)
         if callee_block:
             parts.append(callee_block)
+        sibling_block = self._field_siblings_block(fn)
+        if sibling_block:
+            parts.append(sibling_block)
+        return '\n'.join(parts)
+
+    @staticmethod
+    def _field_siblings_block(fn: TouchedFunction) -> str:
+        """Render the members coupled to this function through a SHARED
+        INSTANCE FIELD with no call edge (analysis.FieldSibling). The
+        call-graph context above shows what the function calls; this shows
+        where the STATE it reads/writes is established and reported —
+        the divergence surface a masked-symptom defect stays visible on."""
+        siblings = getattr(fn, 'field_siblings', None)
+        if not siblings:
+            return ''
+        parts: List[str] = [
+            f"STATE COUPLING: these members of the same class share the"
+            f" listed instance field(s) with `{fn.func_name}` but neither"
+            " calls the other — state one of them writes is what the other"
+            " reports. A defect the patch leaves (or introduces) in that"
+            " shared state stays observable through these members even when"
+            f" `{fn.func_name}`'s own output looks right, so a strong"
+            " harness CHECKS THEY AGREE: compare what a reader reports"
+            " against what the writer/constructor established.",
+        ]
+        for s in siblings:
+            parts.append(f"  - `{s.signature}` "
+                         f"(shared field(s): {', '.join(s.shared_fields)})")
+            if s.javadoc:
+                parts.append(f"      doc: {s.javadoc}")
+            if s.is_constructor and s.source:
+                parts.extend([
+                    "    <constructor_body>", s.source,
+                    "    </constructor_body>",
+                ])
         return '\n'.join(parts)
     
     def _related_callees_block(self, fn: TouchedFunction) -> str:
