@@ -130,7 +130,8 @@ class RelationSynthesizer:
                    trigger_summary: str = '',
                    patch_text: str = '',
                    javadocs: Optional[List[str]] = None,
-                   class_context: Optional[List[str]] = None
+                   class_context: Optional[List[str]] = None,
+                   source_imports: Optional[List[str]] = None
                    ) -> List[Relation]:
         """Propose candidate relations for the patched method(s).
 
@@ -182,6 +183,21 @@ class RelationSynthesizer:
                 ctx += ["Documented contract of a touched method (relations"
                         " must follow from contracts like this):",
                         "<javadoc>", jd, "</javadoc>"]
+        if source_imports:
+            # The class's own import list pins every referenced type to its
+            # TRUE package IN THIS CODEBASE VERSION. Package layouts move
+            # between library versions (measured: a whole candidate set died
+            # at the screen's compile because the model placed a type in the
+            # package it occupies in a more famous version of the library).
+            ctx.append(
+                "IMPORTS OF THE PATCHED CLASS — the authoritative package"
+                " for every non-JDK type in this codebase VERSION. When a"
+                " check references a type, use the package EXACTLY as"
+                " imported here (or as shown in the skeletons); NEVER guess"
+                " a package name from library conventions — this version's"
+                " layout may differ, and a wrong package means the relation"
+                " cannot compile and is discarded unread:\n"
+                + "\n".join(source_imports[:60]))
         if reachable:
             ctx.append("Reachable API (call these, do not reimplement): "
                        + ", ".join(reachable[:30]))

@@ -535,7 +535,8 @@ def main():
                 context.root_cause_reachable or [], mined_oracles, '',
                 patch_text=context.patch_text or '',
                 javadocs=touched_javadocs,
-                class_context=class_ctx)
+                class_context=class_ctx,
+                source_imports=context.source_imports)
             if candidates:
                 print(f"  [synth] {len(candidates)} candidate relation(s) "
                       f"({synth_model}): "
