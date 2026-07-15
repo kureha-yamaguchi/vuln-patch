@@ -1,0 +1,14 @@
+# Lang-27 correct leg — A2 attribution end-to-end check (T5 in the review
+# response plan). SimFix's correct patch is the one diag-24 FP class: the
+# harness leaked the pre-existing StringIndexOutOfBounds crash surface,
+# which no verifier config caught (plausible-but-wrong soundness reasoning).
+# With A2, the [attribution] step must drop that firing MECHANICALLY — the
+# exact firing input reproduces the same signature on the buggy build —
+# and the leg must score TN without the LLM verifier's help.
+# Accept: run.log contains "[attribution] dropped"; record is TN.
+#   ./run_suite.sh <name> suites/lang27.cases
+MODEL="gpt-5.4"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
+CASES=(
+  "-c Lang 27 SimFix"
+)
