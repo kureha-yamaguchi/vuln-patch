@@ -246,3 +246,5 @@ src/db/project_zero/findings/pipeline/codebase_audit.json
 src/db/project_zero/findings/verified/resolved_cls.json
 
 tunnel.sh
+# macOS
+.DS_Store
