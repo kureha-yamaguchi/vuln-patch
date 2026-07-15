@@ -26,6 +26,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
@@ -113,6 +114,7 @@ def run_jazzer(jazzer_standalone_jar: str,
                keep_going: int = 0,
                extra_libfuzzer_args: Optional[List[str]] = None,
                corpus_dir: Optional[str] = None,
+               input_file: Optional[str] = None,
                ) -> JazzerOutcome:
     """Run one Jazzer harness against `project_cp` and report whether it
     crashed within `timeout_seconds`. Shared by the buggy-version gate
@@ -158,26 +160,40 @@ def run_jazzer(jazzer_standalone_jar: str,
         # so a sound oracle isn't hidden behind an unsound sibling that
         # fired on some other input.
         cmd.append(f'--keep_going={keep_going}')
-    cmd += [
-        '--',
-        f'-max_total_time={timeout_seconds}',
-        # Ensure the harness body is actually entered (so a deterministic
-        # first-input throw is reported as a finding, not a warmup abort)
-        # and that any crashing input is persisted where we can see it.
-        '-runs=100000',
-        f'-artifact_prefix={artifact_dir}{os.sep}',
-    ]
-    # Caller-supplied libFuzzer flags come AFTER the defaults so they win
-    # (libFuzzer takes the last occurrence of a flag) — the relation screen
-    # uses this to run a fixed `-runs=N` budget instead of a time budget.
-    if extra_libfuzzer_args:
-        cmd += list(extra_libfuzzer_args)
-    if corpus_dir and os.path.isdir(corpus_dir):
-        # A positional corpus directory: libFuzzer starts from these seeds
-        # (literals mined from the project's own tests) instead of from
-        # nothing, concentrating the early search near known-valid inputs
-        # — the neighbourhood an overfit special-cased.
-        cmd.append(corpus_dir)
+    if input_file:
+        # Single-input REPLAY: a regular file passed positionally is
+        # executed once, not fuzzed (mirrors the corpus_dir positional
+        # below, but for one input). Used by the attribution check to ask
+        # "does the EXACT input that fired on the patched build reproduce
+        # on the buggy build?". No -max_total_time — the run is one
+        # input; the subprocess timeout below still bounds a hung target.
+        cmd += [
+            '--',
+            '-runs=1',
+            f'-artifact_prefix={artifact_dir}{os.sep}',
+            input_file,
+        ]
+    else:
+        cmd += [
+            '--',
+            f'-max_total_time={timeout_seconds}',
+            # Ensure the harness body is actually entered (so a deterministic
+            # first-input throw is reported as a finding, not a warmup abort)
+            # and that any crashing input is persisted where we can see it.
+            '-runs=100000',
+            f'-artifact_prefix={artifact_dir}{os.sep}',
+        ]
+        # Caller-supplied libFuzzer flags come AFTER the defaults so they win
+        # (libFuzzer takes the last occurrence of a flag) — the relation screen
+        # uses this to run a fixed `-runs=N` budget instead of a time budget.
+        if extra_libfuzzer_args:
+            cmd += list(extra_libfuzzer_args)
+        if corpus_dir and os.path.isdir(corpus_dir):
+            # A positional corpus directory: libFuzzer starts from these seeds
+            # (literals mined from the project's own tests) instead of from
+            # nothing, concentrating the early search near known-valid inputs
+            # — the neighbourhood an overfit special-cased.
+            cmd.append(corpus_dir)
 
     timed_out = False
     try:
@@ -217,6 +233,38 @@ def run_jazzer(jazzer_standalone_jar: str,
 _EXC_RE = re.compile(r'==\s*Java Exception:\s*([\w.$]+)')
 # Stack frames look like `\tat pkg.Class.method(File.java:NN)`.
 _FRAME_RE = re.compile(r'\bat\s+([\w.$]+)\.([\w$<>]+)\(')
+# libFuzzer persists the crashing input and prints its path:
+#   Test unit written to /path/to/crashes/crash-<sha1>
+_ARTIFACT_RE = re.compile(r'Test unit written to\s+(\S+)')
+
+
+def extract_artifact_path(output: str,
+                          harness_dir: str,
+                          not_before: float = 0.0) -> Optional[str]:
+    """Path of the crashing input Jazzer persisted for a run, so the exact
+    input can be REPLAYED (the attribution check replays it on the buggy
+    build). Primary: the first 'Test unit written to <path>' line in the
+    output. Fallback: the newest crash-* file under the harness's crashes/
+    dir (the -artifact_prefix target) — but only one modified at/after
+    `not_before`: the SAME harness dir was already fuzzed against the buggy
+    build by the acceptance gate, and silently returning that stale
+    artifact would make the differential replay compare an input from the
+    wrong run. Returns None when nothing trustworthy exists (no crash, or
+    only stale artifacts)."""
+    m = _ARTIFACT_RE.search(output or '')
+    if m and os.path.isfile(m.group(1)):
+        return m.group(1)
+    crashes_dir = os.path.join(harness_dir, 'crashes')
+    try:
+        candidates = [
+            os.path.join(crashes_dir, f) for f in os.listdir(crashes_dir)
+            if f.startswith('crash-')
+        ]
+        candidates = [p for p in candidates
+                      if os.path.getmtime(p) >= not_before]
+    except OSError:
+        return None
+    return max(candidates, key=os.path.getmtime) if candidates else None
 
 
 def crash_signature(output: str) -> Optional[str]:
@@ -244,6 +292,38 @@ def crash_signature(output: str) -> Optional[str]:
         break
 
     return f"{exc_type}@{top_frame}" if top_frame else exc_type
+
+
+# Generic JDK runtime exceptions that commonly ESCAPE library code on
+# malformed / out-of-domain input (mirrors the valid-by-construction rule in
+# prompts.py). For a SEMANTIC bug the defect is a wrong value, so a firing of
+# this kind that also reproduces on the buggy build is pre-existing crash
+# surface, not evidence about the patch. Deliberately EXCLUDES everything a
+# harness uses for its own oracles (FuzzerSecurityIssue*, RuntimeException
+# with a relation/consistency message): those firing on buggy is the TP
+# signal — the patch failed to fix that family member — and must never be
+# auto-dropped.
+GENERIC_ESCAPE_EXCEPTIONS = frozenset({
+    'java.lang.StringIndexOutOfBoundsException',
+    'java.lang.ArrayIndexOutOfBoundsException',
+    'java.lang.IndexOutOfBoundsException',
+    'java.lang.NullPointerException',
+    'java.lang.ClassCastException',
+    'java.lang.ArithmeticException',
+    'java.lang.NegativeArraySizeException',
+})
+
+
+def is_generic_escape(headline: Optional[str]) -> bool:
+    """True iff a fired headline ('<class>: <message>') is a bare generic
+    JDK runtime exception escaping the code under test — i.e. eligible for
+    the differential-firing attribution check. Membership is decided by the
+    exception CLASS alone, so the harness's own throws (FuzzerSecurityIssue*,
+    RuntimeException oracle messages) can never classify as generic."""
+    if not headline:
+        return False
+    cls = headline.split(':', 1)[0].strip()
+    return cls in GENERIC_ESCAPE_EXCEPTIONS
 
 
 def covered_functions(output: str) -> List[str]:
@@ -276,6 +356,11 @@ class FuzzRunResult:
     returncode: int
     stdout: str
     stderr: str
+    # Persisted crashing input (crashes/crash-<sha1>) for THIS run's
+    # firing, when it could be located — the attribution check replays it
+    # on the buggy build. None when the run didn't crash or the artifact
+    # couldn't be attributed to this run.
+    artifact_path: Optional[str] = None
 
 
 class PatchedProjectBuilder:
@@ -437,6 +522,7 @@ class FuzzRunner:
     def _run_one(self, build_result: BuildResult,
                  patched_cp: str) -> FuzzRunResult:
         harness_dir = os.path.dirname(build_result.harness_path)
+        started_at = time.time()
         outcome = run_jazzer(
             jazzer_standalone_jar=self.jazzer_standalone_jar,
             target_class=build_result.class_name,
@@ -446,6 +532,13 @@ class FuzzRunner:
             expected_exceptions=self.expected_exceptions,
             jazzer_api_jar=self.jazzer_api_jar,
         )
+        artifact = None
+        if outcome.triggered:
+            # not_before guards against picking up a stale artifact the
+            # buggy-gate fuzz of this same harness dir left behind.
+            artifact = extract_artifact_path(
+                outcome.combined_output, harness_dir,
+                not_before=started_at - 1.0)
         return FuzzRunResult(
             harness_path=build_result.harness_path,
             class_name=build_result.class_name,
@@ -455,7 +548,37 @@ class FuzzRunner:
             returncode=outcome.returncode,
             stdout=outcome.stdout,
             stderr=outcome.stderr,
+            artifact_path=artifact,
         )
+
+    def replay_input(self,
+                     harness_path: str,
+                     class_name: str,
+                     project_cp: str,
+                     input_file: str,
+                     timeout_seconds: int = 30) -> Optional[str]:
+        """Execute ONE persisted crashing input against `project_cp` and
+        return the resulting crash_signature, or None if it does not crash
+        (or the replay itself errors — the attribution check must ABSTAIN
+        on doubt, never block). The caller passes the BUGGY classpath to
+        ask whether a firing is pre-existing rather than patch-caused."""
+        try:
+            outcome = run_jazzer(
+                jazzer_standalone_jar=self.jazzer_standalone_jar,
+                target_class=class_name,
+                harness_dir=os.path.dirname(harness_path),
+                project_cp=project_cp,
+                timeout_seconds=timeout_seconds,
+                expected_exceptions=self.expected_exceptions,
+                jazzer_api_jar=self.jazzer_api_jar,
+                input_file=input_file,
+            )
+        except Exception as exc:
+            print(f"  (single-input replay failed: {exc})")
+            return None
+        if not outcome.triggered:
+            return None
+        return crash_signature(outcome.combined_output)
 
 
 def _print_fuzz_result(r: FuzzRunResult) -> None:

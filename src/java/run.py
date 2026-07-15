@@ -722,6 +722,7 @@ def main():
             print(f"  [corpus] seeding failed ({exc}); continuing without")
 
     verifier = None
+    buggy_cp = None  # resolved lazily; also reused by the attribution check
     if args.require_trigger:
         # Resolve the buggy classpath once (compiles the project), then
         # hand it to the verifier so each gate run is just a Jazzer
@@ -801,6 +802,96 @@ def main():
         except Exception as exc:
             print(f"  patched-code fuzzing failed: {exc}")
 
+    # 7b) Differential-firing ATTRIBUTION check — mechanical, label-free,
+    #     and independent of the LLM verifier (which judges oracle
+    #     SOUNDNESS; it cannot judge whether the patch CAUSED the firing —
+    #     every verifier config kept the Lang-27-shaped FP because "a
+    #     correct parser shouldn't expose internal crashes" is plausible
+    #     and wrong about that codebase). Scoped by firing KIND:
+    #     * Our own oracle throws (FuzzerSecurityIssue*, RuntimeException
+    #       relation/consistency messages) firing on buggy are the TP
+    #       signal — the patch failed to fix that family member. Never
+    #       touched here; is_generic_escape() excludes them by class.
+    #     * An escaped GENERIC JDK exception whose EXACT firing input
+    #       reproduces the SAME crash signature on the buggy build is
+    #       pre-existing crash surface, not patch-caused. Dropped, loudly
+    #       — unless a keep_going re-fuzz shows a non-generic oracle also
+    #       fires, in which case the finding stands on that oracle.
+    #     Abstains (falls through to the verifier with a note) whenever
+    #     the artifact is missing, the replay doesn't crash, or either
+    #     signature lacks a stack-frame anchor ('Exc@Class.method') —
+    #     a frame-less type-only match could equate two different crashes.
+    attribution_notes: dict = {}
+    if fuzz_results and any(r.triggered for r in fuzz_results):
+        from fuzz_runner import crash_signature, is_generic_escape
+        from oracle_strength import exception_headline as _headline
+        generic_hits = [
+            r for r in fuzz_results if r.triggered
+            and is_generic_escape(_headline((r.stdout or '') + '\n'
+                                            + (r.stderr or '')))
+        ]
+        if generic_hits:
+            print("\n" + "#" * 20 + " attribution check " + "#" * 20)
+            if buggy_cp is None:
+                buggy_cp = builder.test_classpath(selection.buggy_dir)
+            _fr = FuzzRunner(
+                jazzer_standalone_jar=jazzer_standalone_jar,
+                timeout_seconds=args.fuzz_timeout,
+                expected_exceptions=expected_exceptions,
+                jazzer_api_jar=jazzer_api_jar,
+            )
+            for r in generic_hits:
+                out = (r.stdout or '') + '\n' + (r.stderr or '')
+                patched_sig = crash_signature(out)
+                if not r.artifact_path:
+                    attribution_notes[id(r)] = (
+                        "differential replay ABSTAINED: crashing input "
+                        "artifact not captured")
+                    print(f"  ? abstain (no artifact): {r.harness_path}")
+                    continue
+                if not patched_sig or '@' not in patched_sig:
+                    attribution_notes[id(r)] = (
+                        "differential replay ABSTAINED: patched-build crash "
+                        "signature has no stack-frame anchor")
+                    print(f"  ? abstain (frame-less signature): "
+                          f"{r.harness_path}")
+                    continue
+                buggy_sig = _fr.replay_input(
+                    r.harness_path, r.class_name, buggy_cp, r.artifact_path)
+                if buggy_sig != patched_sig or '@' not in (buggy_sig or ''):
+                    attribution_notes[id(r)] = (
+                        f"differential replay: the exact firing input does "
+                        f"NOT reproduce this crash on the buggy build "
+                        f"(patched={patched_sig}, buggy="
+                        f"{buggy_sig or 'no crash'}) — the crash is "
+                        f"introduced by the patch")
+                    print(f"  ✓ patch-caused ({patched_sig}): "
+                          f"{r.harness_path}")
+                    continue
+                # Same generic crash on both builds. Before dropping, check
+                # whether any NON-generic oracle in this harness also fires
+                # on the patched code — a pre-existing crash must not bury
+                # a genuine sibling detection.
+                fired_all = _fr.collect_fired_oracles(
+                    r.harness_path, r.class_name,
+                    selection.patch_path, selection.buggy_dir)
+                non_generic = [f for f in fired_all
+                               if f and not is_generic_escape(f)]
+                if non_generic:
+                    attribution_notes[id(r)] = (
+                        f"differential replay: generic firing {patched_sig} "
+                        f"reproduces identically on the buggy build "
+                        f"(pre-existing surface, ignore it), but non-generic "
+                        f"oracle(s) also fire: {'; '.join(non_generic[:3])}")
+                    print(f"  ✓ kept: {patched_sig} is pre-existing, but "
+                          f"non-generic oracles also fire: "
+                          f"{non_generic[0][:80]}")
+                    continue
+                r.triggered = False
+                print(f"  [attribution] dropped: {patched_sig} reproduces "
+                      f"on buggy build (pre-existing, not patch-caused): "
+                      f"{r.harness_path}")
+
     # 6b) [optional] Relation verification — a non-cheating FP filter. A
     #     harness that crashed the patched code is only evidence of
     #     overfitting if its ORACLE is sound (true for any correct impl).
@@ -879,6 +970,14 @@ def main():
                 # of oracle B.
                 excerpt = crash_excerpt(
                     (r.stdout or '') + '\n' + (r.stderr or ''))
+                # The attribution check's differential outcome is hard
+                # evidence about the original firing (does the exact input
+                # reproduce on buggy?) — ride it along with the excerpt so
+                # it reaches the critic under the same per-oracle gating.
+                _attr_note = attribution_notes.get(id(r))
+                if _attr_note:
+                    excerpt = (excerpt + "\n[differential replay] "
+                               + _attr_note).strip()
                 # KEEP the finding if ANY fired oracle is sound or trusted —
                 # one sound firing is sufficient proof the patch is wrong.
                 # DROP only if every fired oracle is judged unsound.
