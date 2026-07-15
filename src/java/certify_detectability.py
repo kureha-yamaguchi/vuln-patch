@@ -25,7 +25,20 @@ build; the line-diff count is the divergence count.
                       bug belongs OUT of the recall denominator)
 
 Known-answer validation cases: Time-4/Arja must certify (>0); Lang-22/Arja
-must not (0 across probes); Chart-1/Arja expected 0.
+must not (0 across probes); Chart-1/Arja patch1 certifies (472 — the
+earlier "likely undetectable" triage examined a different patch file).
+
+--label correct (the B1 mislabel probe) runs the same differential on a
+"Dcorrect" patch vs the developer fix: >0 STRONG divergences means the
+patch is behaviorally distinct from the fix — mislabeled, or at least
+behaviorally wrong — and the leak metric computed against that label is
+partly the verifier being right. Divergences are therefore CLASSIFIED by
+kind: a value difference or a different exception class is STRONG; the
+same exception class with different message text is WEAK (both builds
+rejected the input; wording legitimately varies between a correct patch
+and the dev fix) and never certifies on its own. Stochastic APIs must be
+seeded through their public API or probed only for deterministic
+properties (see the probe instructions).
 
 Usage (on the VM, from src/):
   uv run python java/certify_detectability.py \
@@ -74,6 +87,12 @@ Write a single Java file:
   print the individual accessor values you care about).
 - Wrap each input's calls in try/catch(Throwable t) and on a throw print:
     IN=<input> OUT=EXC:<t.getClass().getSimpleName()>:<t.getMessage()>
+- If any probed method is STOCHASTIC (a sampler, anything backed by a
+  random generator), SEED it through its public API (a reseed method or a
+  seeded constructor) with a fixed constant BEFORE each input's calls so
+  every run is byte-identical. If it cannot be seeded, do not print raw
+  draws — print only deterministic properties of them (e.g. whether each
+  draw lies within the documented support/bounds).
 - Reach the behaviour through the REAL public API exactly as the test
   below does. Do not subclass/mock library types.
 - Print nothing else (no headers, no timing).
@@ -85,9 +104,17 @@ def parse_args():
         description="Certify overfit patches as behaviorally detectable "
                     "(dataset construction only — reads the developer fix).")
     p.add_argument("--candidates", help="JSONL from eval_candidates.py "
-                                        "(overfitting rows are certified; "
-                                        "others pass through)")
+                                        "(rows matching --label are "
+                                        "certified; others pass through)")
     p.add_argument("--patch_file", help="certify exactly one patch file")
+    p.add_argument("--label", choices=["overfitting", "correct"],
+                   default="overfitting",
+                   help="which patch label to certify. 'overfitting' "
+                        "(default) asks the detectability question. "
+                        "'correct' is the mislabel probe: >0 STRONG "
+                        "divergences vs the developer fix means the "
+                        "'correct' label is suspect (behaviorally distinct "
+                        "from the fix).")
     p.add_argument("--out", required=True, help="output JSONL (appended)")
     p.add_argument("--limit", type=int, default=0,
                    help="max candidates to certify this run (0 = all)")
@@ -174,18 +201,68 @@ def _run_probe(fq_name, workdir, cp, timeout):
     return r.returncode, r.stdout
 
 
+def _keyed_outputs(lines):
+    """Map IN=<desc> -> OUT=<repr> for probe output lines (first
+    occurrence wins on a duplicated input description)."""
+    m = {}
+    for ln in lines:
+        if " OUT=" in ln:
+            k, v = ln.split(" OUT=", 1)
+            m.setdefault(k, v)
+    return m
+
+
+def _classify_divergences(lines_f, lines_o):
+    """Classify per-input divergences by KIND, keyed on the IN= label.
+
+    value                  -> both builds returned, values differ  (STRONG)
+    exception_class        -> different exception class, or one throws
+                              where the other returns              (STRONG)
+    exception_message_only -> same exception class, different message
+                              text — both builds rejected the input and
+                              only the wording differs, which legitimately
+                              varies between a correct patch and the dev
+                              fix                                  (WEAK)
+
+    The raw line-diff count stays the overfit-side certification signal
+    (validated on the known answers); this classification exists so the
+    correct-side mislabel probe (--label correct) cannot indict a label
+    on message wording."""
+    kinds = {"value": 0, "exception_class": 0, "exception_message_only": 0}
+    f, o = _keyed_outputs(lines_f), _keyed_outputs(lines_o)
+    for k in f.keys() & o.keys():
+        vf, vo = f[k], o[k]
+        if vf == vo:
+            continue
+        exc_f, exc_o = vf.startswith("EXC:"), vo.startswith("EXC:")
+        if exc_f and exc_o:
+            cls_f = vf.split(":", 2)[1] if vf.count(":") >= 2 else vf
+            cls_o = vo.split(":", 2)[1] if vo.count(":") >= 2 else vo
+            kinds["exception_class" if cls_f != cls_o
+                  else "exception_message_only"] += 1
+        elif exc_f or exc_o:
+            kinds["exception_class"] += 1
+        else:
+            kinds["value"] += 1
+    return kinds
+
+
 def certify_one(cand, gen, probes, timeout):
     project, bug_id = cand["project"], cand["bug_id"]
     patch_path = cand["patch_path"]
+    is_correct = cand.get("label") == "correct"
 
     # Buggy checkout via the pipeline's own selector logic (validated,
-    # cached), then overfit build on top of it.
-    selector = PatchSelector(project_name=project, correct=False,
-                             overfitting=True, patch_file=patch_path)
+    # cached), then the candidate patch (overfit OR nominally-correct)
+    # built on top of it. The differential below is always candidate-build
+    # vs developer-fixed build; only the interpretation depends on label.
+    selector = PatchSelector(project_name=project, correct=is_correct,
+                             overfitting=not is_correct,
+                             patch_file=patch_path)
     selection = selector.select()
     builder = PatchedProjectBuilder()
-    overfit_dir = builder.build_patched_dir(selection.buggy_dir, patch_path)
-    overfit_cp = builder.classpath(overfit_dir,
+    patched_dir = builder.build_patched_dir(selection.buggy_dir, patch_path)
+    patched_cp = builder.classpath(patched_dir,
                                    fallback_buggy_dir=selection.buggy_dir)
     fixed_dir, fixed_cp = _checkout_fixed(project, bug_id)
 
@@ -195,6 +272,8 @@ def certify_one(cand, gen, probes, timeout):
         selection.buggy_dir, project_name=project, bug_id=bug_id)
 
     total_div, examples, probe_status = 0, [], []
+    kinds_total = {"value": 0, "exception_class": 0,
+                   "exception_message_only": 0}
     base_prompt = _probe_prompt(context, failure_tests)
     for p in range(probes):
         messages = [{"role": "system", "content": _PROBE_SYSTEM},
@@ -208,8 +287,8 @@ def certify_one(cand, gen, probes, timeout):
             source = out.strip()
             if source.startswith("```"):
                 source = source.strip("`").lstrip("java").strip()
-            workdir = os.path.join(overfit_dir, "fuzz", f"probe_{p}")
-            compiled, err = _compile_probe(source, workdir, overfit_cp)
+            workdir = os.path.join(patched_dir, "fuzz", f"probe_{p}")
+            compiled, err = _compile_probe(source, workdir, patched_cp)
             if compiled:
                 break
             messages += [{"role": "assistant", "content": out[:4000]},
@@ -221,7 +300,7 @@ def certify_one(cand, gen, probes, timeout):
             continue
         fq = _fq_probe_name(source)
         try:
-            rc_o, out_o = _run_probe(fq, workdir, overfit_cp, timeout)
+            rc_o, out_o = _run_probe(fq, workdir, patched_cp, timeout)
             rc_f, out_f = _run_probe(fq, workdir, fixed_cp, timeout)
         except subprocess.TimeoutExpired:
             probe_status.append("timeout")
@@ -233,12 +312,24 @@ def certify_one(cand, gen, probes, timeout):
                 if ln.startswith(("+IN=", "-IN="))]
         div = len(diff) // 2 if diff else 0
         total_div += div
+        for k, v in _classify_divergences(lines_f, lines_o).items():
+            kinds_total[k] += v
         examples += diff[:10]
         probe_status.append(f"ok:{div}div/{len(lines_o)}lines")
+    strong = kinds_total["value"] + kinds_total["exception_class"]
+    if total_div and not strong:
+        print("  NOTE: every divergence is exception-MESSAGE-only — weak "
+              "evidence (both builds reject; wording differs). Do not "
+              "read this as behavioral distinctness.")
     return {
         **cand,
         "divergences": total_div,
+        "divergence_kinds": kinds_total,
+        "strong_divergences": strong,
         "certified_detectable": total_div > 0,
+        # The mislabel-probe verdict (label=correct rows): behaviorally
+        # distinct from the developer fix on STRONG evidence only.
+        "behaviorally_distinct": strong > 0,
         "probe_status": probe_status,
         "diff_examples": examples[:10],
     }
@@ -253,14 +344,14 @@ def main():
     if args.patch_file:
         peek = PatchSelector.peek_patch_file(args.patch_file)
         cands.append({"project": peek.project_name, "bug_id": peek.bug_id,
-                      "apr_tool": peek.apr_tool, "label": "overfitting",
+                      "apr_tool": peek.apr_tool, "label": args.label,
                       "patch_path": args.patch_file})
     else:
         with open(args.candidates) as fh:
             for line in fh:
                 if line.strip():
                     c = json.loads(line)
-                    if c.get("label") == "overfitting":
+                    if c.get("label") == args.label:
                         cands.append(c)
     if args.limit:
         cands = cands[:args.limit]
