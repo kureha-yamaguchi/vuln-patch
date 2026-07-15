@@ -35,7 +35,8 @@ from crash_input import CrashInputExtractor
 from failure_test import FailureTestExtractor, classify_bug_kind, is_crashing_bug
 from fuzz_runner import FuzzRunner, HarnessVerifier
 from jazzer import JazzerEnvironment
-from llm import HarnessGenerator, token_usage, usage_totals
+from llm import (HarnessGenerator, reset_token_usage, token_usage,
+                 usage_totals)
 from patches import DeprecatedBugError, PatchSelector
 from prompts import PromptBuilder
 
@@ -226,6 +227,9 @@ def _print_token_usage():
 
 def main():
     args = parse_args()
+    # Token totals are process-global; start this patch's accounting from
+    # zero so a future multi-patch-per-process driver can't accumulate.
+    reset_token_usage()
 
     if not (args.correct or args.overfitting):
         print("Please select either --correct flag or --overfitting flag")
@@ -709,17 +713,24 @@ def main():
     # begins in the neighbourhood of known-valid inputs — the region an
     # overfit special-cased — rather than spending it discovering input
     # shape. Best-effort: no literals, no corpus, no behaviour change.
+    # SEMANTIC BUGS ONLY: only the acceptance gate is seeded, never the
+    # patched-build fuzz run, so for a crashing bug a harness accepted
+    # only because a seed reached the trigger may fail to re-find it on
+    # the patched build within budget — a TP lost at the second stage.
+    # Semantic harnesses construct their inputs in code and are far less
+    # corpus-dependent; the asymmetry is harmless there.
     corpus_dir = None
     seed_literals = []
-    for ft in failure_tests:
-        if getattr(ft, 'method_source', None):
+    if bug_kind == "semantic":
+        for ft in failure_tests:
+            if getattr(ft, 'method_source', None):
+                seed_literals += re.findall(
+                    r'"((?:[^"\\]|\\.){1,120})"', ft.method_source)
+        for t in mined_oracles:
             seed_literals += re.findall(
-                r'"((?:[^"\\]|\\.){1,120})"', ft.method_source)
-    for t in mined_oracles:
-        seed_literals += re.findall(
-            r'"((?:[^"\\]|\\.){1,120})"', getattr(t, 'source', ''))
-    seed_literals = [s for s in dict.fromkeys(seed_literals)
-                     if s.strip()][:64]
+                r'"((?:[^"\\]|\\.){1,120})"', getattr(t, 'source', ''))
+        seed_literals = [s for s in dict.fromkeys(seed_literals)
+                         if s.strip()][:64]
     if seed_literals:
         corpus_path = Path(selection.buggy_dir) / 'fuzz' / 'corpus'
         try:
@@ -833,8 +844,16 @@ def main():
     #     the artifact is missing, the replay doesn't crash, or either
     #     signature lacks a stack-frame anchor ('Exc@Class.method') —
     #     a frame-less type-only match could equate two different crashes.
+    #     SEMANTIC BUGS ONLY. For a crashing bug, "the same crash
+    #     reproduces on the buggy build" is the TP condition itself —
+    #     every accepted harness reproduces on buggy by construction
+    #     (that's the acceptance gate), and an overfitting patch that
+    #     fails to fix the crash fires with the identical signature on
+    #     the patched build. Running this check there would read exactly
+    #     that TP pattern as "pre-existing surface" and flip it to an FN.
     attribution_notes: dict = {}
-    if fuzz_results and any(r.triggered for r in fuzz_results):
+    if (bug_kind == "semantic"
+            and fuzz_results and any(r.triggered for r in fuzz_results)):
         from fuzz_runner import crash_signature, is_generic_escape
         from oracle_strength import exception_headline as _headline
         generic_hits = [
