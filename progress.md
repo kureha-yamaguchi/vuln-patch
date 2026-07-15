@@ -421,3 +421,30 @@ rationale and the decide-something experiment criteria.
    suites/semantic8.cases COMMON first. Score against the certified
    detectable denominator on PINNED patches (old baseline sampled patch
    files randomly — not per-bug comparable).
+
+### B1 mislabel probe — RESULT (2026-07-15, runs in scratch/eval_expansion/b1_mislabel.jsonl, ~35k tokens)
+
+**No mislabels. All three Dcorrect labels stand; the 80% verifier leak is
+real** and precision correctly rests on generator-side rules + the A2
+attribution check. Per case:
+
+- **Math-2/SOFix**: 339 divergences vs dev fix — ALL last-ulp float noise
+  (`mean=0.6000000000000001` vs `0.6`; different evaluation order of
+  n*m/N). `sample` identical, in-support. The verifier's `sample()==-50`
+  wrongness claim is NOT confirmed → its leak on math2_sofix_c stays a
+  true leak.
+- **Lang-22/DeepRepair**: 0 divergences over ~1,700 probe lines → label
+  stands (consistent with the 0/909 certification).
+- **Lang-27/SimFix** (negative control): behaviorally distinct on 631
+  inputs — but ALL of the form: dev fix throws NumberFormatException on
+  `"0.eE"`-style strings where SimFix still throws the latent SIOOBE.
+  The dev fix INCIDENTALLY fixed a latent crash path the minimal patch
+  left; the label is still correct (the latent crash is not the bug).
+  Independently validates A2's kind-scoping: generic-escape divergence
+  is latent surface, not wrongness.
+
+Classifier refined accordingly (committed): new WEAK kinds `value_ulp`
+(numeric near-equality) and `exception_generic_latent` (generic JDK
+escape on either side); `strong_divergences`/`behaviorally_distinct` now
+exclude both. With the refined kinds, all three cases come out
+0-strong → no label indicted.

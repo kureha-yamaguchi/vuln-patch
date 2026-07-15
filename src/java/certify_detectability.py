@@ -51,6 +51,7 @@ import argparse
 import difflib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -212,23 +213,69 @@ def _keyed_outputs(lines):
     return m
 
 
+# Generic JDK exceptions that ESCAPE library code on malformed input
+# (simple names — the probe prints getSimpleName). Mirrors
+# fuzz_runner.GENERIC_ESCAPE_EXCEPTIONS; see _classify_divergences.
+_GENERIC_ESCAPE_SIMPLE = frozenset({
+    "StringIndexOutOfBoundsException", "ArrayIndexOutOfBoundsException",
+    "IndexOutOfBoundsException", "NullPointerException",
+    "ClassCastException", "ArithmeticException",
+    "NegativeArraySizeException",
+})
+
+_NUM_RE = re.compile(r'-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?')
+
+
+def _near_equal_numeric(a: str, b: str, rel: float = 1e-9) -> bool:
+    """True when two OUT= payloads differ only in the last ulps of their
+    embedded numbers: same non-numeric skeleton, same number count, every
+    pair within `rel` relative tolerance. A correct patch may evaluate
+    n*m/N in a different order than the dev fix and print
+    0.6000000000000001 vs 0.6 — a formatting-visible, semantically
+    irrelevant difference (measured: 338 such lines on Math-2/SOFix)."""
+    na, nb = _NUM_RE.findall(a), _NUM_RE.findall(b)
+    if not na or len(na) != len(nb):
+        return False
+    if _NUM_RE.sub('#', a) != _NUM_RE.sub('#', b):
+        return False
+    for x, y in zip(na, nb):
+        try:
+            fx, fy = float(x), float(y)
+        except ValueError:
+            return False
+        if fx != fy and abs(fx - fy) > rel * max(abs(fx), abs(fy), 1e-300):
+            return False
+    return True
+
+
 def _classify_divergences(lines_f, lines_o):
     """Classify per-input divergences by KIND, keyed on the IN= label.
 
-    value                  -> both builds returned, values differ  (STRONG)
+    value                  -> both builds returned, values differ
+                              beyond numeric tolerance             (STRONG)
     exception_class        -> different exception class, or one throws
-                              where the other returns              (STRONG)
-    exception_message_only -> same exception class, different message
-                              text — both builds rejected the input and
-                              only the wording differs, which legitimately
-                              varies between a correct patch and the dev
-                              fix                                  (WEAK)
+                              where the other returns — and NEITHER side
+                              is a generic JDK escape              (STRONG)
+    value_ulp              -> values differ only in the last ulps of
+                              embedded floats (evaluation-order noise a
+                              tolerance-based oracle can never see) (WEAK)
+    exception_generic_latent -> the classes differ but one side is a
+                              generic JDK escape (SIOOBE/NPE/...) —
+                              pre-existing LATENT crash surface that the
+                              dev fix may have incidentally fixed and a
+                              minimal correct patch legitimately leaves
+                              (measured: dev fix throws NumberFormat-
+                              Exception on "0.eE" where Lang-27/SimFix
+                              still SIOOBEs; the label is still correct —
+                              the latent crash is not the bug)      (WEAK)
+    exception_message_only -> same class, different message text   (WEAK)
 
     The raw line-diff count stays the overfit-side certification signal
     (validated on the known answers); this classification exists so the
     correct-side mislabel probe (--label correct) cannot indict a label
-    on message wording."""
-    kinds = {"value": 0, "exception_class": 0, "exception_message_only": 0}
+    on wording, float formatting, or latent crash surface."""
+    kinds = {"value": 0, "exception_class": 0, "value_ulp": 0,
+             "exception_generic_latent": 0, "exception_message_only": 0}
     f, o = _keyed_outputs(lines_f), _keyed_outputs(lines_o)
     for k in f.keys() & o.keys():
         vf, vo = f[k], o[k]
@@ -238,10 +285,23 @@ def _classify_divergences(lines_f, lines_o):
         if exc_f and exc_o:
             cls_f = vf.split(":", 2)[1] if vf.count(":") >= 2 else vf
             cls_o = vo.split(":", 2)[1] if vo.count(":") >= 2 else vo
-            kinds["exception_class" if cls_f != cls_o
-                  else "exception_message_only"] += 1
+            if cls_f == cls_o:
+                kinds["exception_message_only"] += 1
+            elif (cls_f in _GENERIC_ESCAPE_SIMPLE
+                  or cls_o in _GENERIC_ESCAPE_SIMPLE):
+                kinds["exception_generic_latent"] += 1
+            else:
+                kinds["exception_class"] += 1
         elif exc_f or exc_o:
-            kinds["exception_class"] += 1
+            exc_side = vf if exc_f else vo
+            cls = (exc_side.split(":", 2)[1]
+                   if exc_side.count(":") >= 2 else exc_side)
+            if cls in _GENERIC_ESCAPE_SIMPLE:
+                kinds["exception_generic_latent"] += 1
+            else:
+                kinds["exception_class"] += 1
+        elif _near_equal_numeric(vf, vo):
+            kinds["value_ulp"] += 1
         else:
             kinds["value"] += 1
     return kinds
@@ -272,7 +332,8 @@ def certify_one(cand, gen, probes, timeout):
         selection.buggy_dir, project_name=project, bug_id=bug_id)
 
     total_div, examples, probe_status = 0, [], []
-    kinds_total = {"value": 0, "exception_class": 0,
+    kinds_total = {"value": 0, "exception_class": 0, "value_ulp": 0,
+                   "exception_generic_latent": 0,
                    "exception_message_only": 0}
     base_prompt = _probe_prompt(context, failure_tests)
     for p in range(probes):
@@ -318,9 +379,9 @@ def certify_one(cand, gen, probes, timeout):
         probe_status.append(f"ok:{div}div/{len(lines_o)}lines")
     strong = kinds_total["value"] + kinds_total["exception_class"]
     if total_div and not strong:
-        print("  NOTE: every divergence is exception-MESSAGE-only — weak "
-              "evidence (both builds reject; wording differs). Do not "
-              "read this as behavioral distinctness.")
+        print("  NOTE: every divergence is WEAK (message wording, float "
+              "ulps, or latent generic-crash surface). Do not read this "
+              "as behavioral distinctness.")
     return {
         **cand,
         "divergences": total_div,
