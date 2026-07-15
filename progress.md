@@ -1,11 +1,12 @@
 # Progress — semantic-bug findability
 
 Living record of what's been added, what was tried, what worked/didn't, and
-where the runs + results live on the Hetzner VM. Nothing here is committed yet
-(all work is uncommitted on `main`).
+where the runs + results live on the Hetzner VM.
 
-Last updated: 2026-07-15 (afternoon — t4syn analysed, tier-1/2 overhaul
-implemented; see §8).
+Last updated: 2026-07-15 (evening — everything through §8 is now COMMITTED
+on `main` (9 themed checkpoint commits + one commit per plan item);
+worklog.md deleted as superseded. Plan items A1–A7 + B1 tooling
+implemented; see §9).
 
 ---
 
@@ -42,9 +43,9 @@ correct patch is the worst outcome); the open gap is **recall**.
   fenced *and* unfenced. Removed.
 
 ### Still to retire
-- **`_STAT_PATTERNS`** whitelist (`prompts.py`) — Math-shaped; synthesis
-  subsumes it (verified: synthesis reproduces mean/variance/bounds/monotonicity
-  + the CDF contract). Delete once synthesis is wired-in-by-default and screened.
+- ~~**`_STAT_PATTERNS`** whitelist (`prompts.py`)~~ — RETIRED 2026-07-15
+  (§9, A7): name-matched hints deleted; the dataset-neutral parts
+  (weak-oracle rule + check schema) now render unconditionally.
 
 ---
 
@@ -364,3 +365,59 @@ when resumed: certification first.
 Cost of the whole 2026-07-15 pm effort: ~330k tokens gpt-5.4 (replay,
 4 suite runs — one invalidated by the path bug — certifier validation,
 ensemble A/B), all itemised in the suite summary.md files.
+
+---
+
+## 9. 2026-07-15 (evening): plan A1–A7 + B1 tooling implemented
+
+All items from the improvement plan (context/attribution overhaul) are
+implemented, unit-checked, and committed one-per-item. Details in the
+commit messages; the plan file (with review addendum) has the full
+rationale and the decide-something experiment criteria.
+
+- **A1** verifier skeleton-absence fix — `_GUIDANCE` gains
+  absence-is-not-unsoundness; the code_context block says the skeleton is
+  PARTIAL, confirm-only. Check via replay: chart19_o must flip to KEPT,
+  time4_elixir_c must stay dropped.
+- **A2** differential-firing attribution (NEW step 7b, mechanical,
+  independent of --verify_relations): a generic JDK exception
+  (SIOOBE/NPE/... — never our FuzzerSecurityIssue*/relation throws) whose
+  exact firing input reproduces the same anchored crash signature on the
+  buggy build is dropped loudly as pre-existing; keep_going re-fuzz first
+  checks no non-generic oracle also fires; abstains to the verifier with
+  a differential note otherwise. Check: Lang-27_c drops mechanically;
+  t4syn_o/math2_arja_o/chart19_o untouched.
+- **A3** synthesis boundary-probing instruction (probe at/just past the
+  code's own documented boundaries; assert only what the contract
+  guarantees there).
+- **A4** field-coupling context: `FieldSibling`/`field_siblings` —
+  same-class members sharing an instance field with the touched method,
+  no call edge (shadowing-aware; superclass one level up; ctors carry
+  bodies) + STATE COUPLING prompt block. Unit-checked on Math-56- and
+  Lang-55-shaped synthetic classes.
+- **A5** documented preconditions (@param/@throws of touched methods)
+  injected next to the valid-by-construction rule, both bug kinds;
+  javadoc extraction hoisted and shared with synthesis.
+- **A6** class skeleton into the 'consistency' mechanism slot only; and
+  class_ctx now assembled for EVERY semantic bug (was flag-gated, which
+  would have starved the slot).
+- **A7** `_STAT_PATTERNS` retired (see §2). Do this BEFORE semantic8 so
+  the batch measures synthesis, not the whitelist.
+- **B1 tooling** certify_detectability: `--label correct` (mislabel
+  probe), divergence-kind classification (value/exception-class = STRONG;
+  same-class message-only = WEAK, never certifies), stochastic-seeding
+  probe rule. New fields: divergence_kinds, strong_divergences,
+  behaviorally_distinct.
+
+### Run queue (unchanged from the plan, order matters)
+1. t4.cases smoke (~40k) — wiring check of the new stack.
+2. B1 mislabel probe (~30k): Math-2/SOFix + Lang-22/DeepRepair with
+   `--label correct`; Lang-27/SimFix as negative control (must be
+   0 strong).
+3. B5 verifier replay (~60k) — A1 check; EXCLUDE generic-exception cases
+   from the leak denominator (A2 handles them mechanically now; replay
+   has no builds and cannot see it).
+4. B2 semantic8 gate (~350k): add --synthesize_relations to
+   suites/semantic8.cases COMMON first. Score against the certified
+   detectable denominator on PINNED patches (old baseline sampled patch
+   files randomly — not per-bug comparable).
