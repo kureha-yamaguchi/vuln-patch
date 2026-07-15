@@ -37,6 +37,7 @@ from build import HarnessBuilder, BuildResult
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from llm import HarnessGenerator
 from fuzz_runner import HarnessVerifier, VerificationResult
+from oracle_strength import exception_headline
 
 
 # A prompt factory takes the current set-coverage state (the functions
@@ -59,6 +60,14 @@ class CampaignResult:
     # aligned with successful_results. Lets downstream reporting show the
     # diversity of faults the set covers.
     accepted_signatures: List[str] = field(default_factory=list)
+    # Exception headline of the throwable that fired on the buggy version
+    # for each accepted harness, aligned with successful_results ('' when
+    # unavailable). Finer-grained than the signature: the message text
+    # says WHICH oracle fired (e.g. 'RuntimeException: consistency
+    # violation: reported mean != empirical' vs the lifted symptom
+    # assertion), which is what post-run analysis needs to judge whether
+    # the set carries symptom-independent oracles.
+    accepted_trigger_details: List[str] = field(default_factory=list)
 
     @property
     def converged(self) -> bool:
@@ -94,7 +103,9 @@ class HarnessCampaign:
                  min_source_chars: int = 20,
                  max_invalid_responses: int = 100,
                  verifier: Optional[HarnessVerifier] = None,
-                 require_trigger: bool = True):
+                 require_trigger: bool = True,
+                 escalation_generator: Optional[HarnessGenerator] = None,
+                 escalate_after: int = 0):
         if target_successes < 1:
             raise ValueError("target_successes must be at least 1")
         if max_attempts < target_successes:
@@ -132,6 +143,11 @@ class HarnessCampaign:
         # False, the campaign falls back to the old compile-only gate —
         # useful for ablation experiments.
         self.require_trigger = require_trigger
+        # Two-tier generation: if `escalation_generator` is set and the
+        # primary produces no ACCEPTED harness after `escalate_after`
+        # attempts, we swap to it for the rest of this bug (see run()).
+        self.escalation_generator = escalation_generator
+        self.escalate_after = escalate_after
 
     def run(self, messages: List[Dict[str, str]],
             buggy_dir: str,
@@ -181,9 +197,37 @@ class HarnessCampaign:
         # the "free retry" so a prose-only model can't loop forever.
         invalid_responses = 0
 
+        # Two-tier escalation: once the primary model has burned
+        # `escalate_after` consecutive real attempts without a NEW accepted
+        # harness, switch to the stronger model for the rest of this bug.
+        # nano matches the flagship's judgment when it converges but fails
+        # to BUILD on hard bugs, so this recovers those cases at nano prices
+        # for everything else. STALL-based, not zero-accepted-based: the
+        # earlier "escalate only while 0 accepted" rule meant a single early
+        # weak nano accept blocked escalation for the rest of the bug, and
+        # the set's quality stayed capped by nano even as it stopped
+        # producing. Already-escalated when there is no escalation model
+        # configured.
+        escalated = self.escalation_generator is None or self.escalate_after <= 0
+        attempts_at_last_accept = 0
+
         while (result.achieved_successes < self.target_successes
                and result.attempts < self.max_attempts
                and invalid_responses < self.max_invalid_responses):
+            if (not escalated
+                    and result.attempts - attempts_at_last_accept
+                        >= self.escalate_after):
+                print(f"\n  [escalate] {result.attempts} attempts, "
+                      f"{result.achieved_successes} accepted, none in the "
+                      f"last {self.escalate_after} — switching to the "
+                      "stronger model for the rest of this bug.")
+                self.generator = self.escalation_generator
+                escalated = True
+                # Fresh start on the stronger model: don't make it inherit the
+                # primary's failed repair chain.
+                original_messages = fresh_prompt()
+                current_messages = list(original_messages)
+                repair_failures = 0
             is_repair_attempt = len(current_messages) > len(original_messages)
 
             raw = self.generator.generate(current_messages)
@@ -279,8 +323,20 @@ class HarnessCampaign:
             # --- accepted ---------------------------------------------
             result.successful_results.append(build)
             result.achieved_successes += 1
+            attempts_at_last_accept = result.attempts
             signature = verification.signature if verification else None
             result.accepted_signatures.append(signature or '')
+            # Attribute the trigger: WHICH throwable fired on the buggy
+            # version. Downstream analysis reads this to tell "accepted
+            # via the reported symptom" (a band-aid patch will silence
+            # it) from "accepted via an independent consistency check"
+            # (survives one) — the distinction that decides whether the
+            # set can catch masked-symptom overfits.
+            detail = ''
+            if verification is not None:
+                detail = exception_headline(
+                    verification.stdout + '\n' + verification.stderr) or ''
+            result.accepted_trigger_details.append(detail)
 
             # Fold this harness's coverage into the set state so the next
             # fresh prompt steers elsewhere.
@@ -292,7 +348,7 @@ class HarnessCampaign:
                 if signature and signature not in found_signatures:
                     found_signatures.append(signature)
 
-            self._print_success(result, build, signature)
+            self._print_success(result, build, signature, detail)
 
             # Reset to a fresh prompt that now reflects the updated set
             # coverage — this is what makes attempt N+1 a *variant* of
@@ -495,13 +551,16 @@ class HarnessCampaign:
 
     def _print_success(self, result: CampaignResult,
                        build: BuildResult,
-                       signature: Optional[str] = None) -> None:
+                       signature: Optional[str] = None,
+                       detail: str = '') -> None:
         gate = "compiled + triggered" if self.require_trigger else "compiled"
         sig = f"  [crash: {signature}]" if signature else ""
         print(f"✓ {gate} at {build.harness_path}  "
               f"({result.achieved_successes}/"
               f"{self.target_successes} successes, "
               f"{result.attempts} attempts so far){sig}")
+        if detail:
+            print(f"  [trigger: {detail}]")
 
     def _print_failure(self, build: BuildResult) -> None:
         print(f"✗ javac failed (rc={build.returncode})")

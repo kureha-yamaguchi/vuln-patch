@@ -28,8 +28,36 @@ class PromptBuilder:
               crash_input: Optional["CrashInput"] = None,
               bug_kind: str = "crashing",
               semantic_test: Optional[FailureTest] = None,
+              variant_strategy: Optional[str] = None,
+              verifier_enabled: bool = False,
+              mined_oracles: Optional[List] = None,
+              synthesized_relations: Optional[List] = None,
+              oracle_mechanism: Optional[str] = None,
               ) -> List[Dict[str, str]]:
         """Assemble the chat-completion messages.
+
+        ``oracle_mechanism`` (semantic bugs) assigns THIS harness one extra
+        oracle mechanism instead of stacking all of them into every prompt:
+        'pairs' injects the mined sibling-test pairs, 'relations' injects the
+        screened synthesized relations, 'consistency' injects neither (the
+        variant-strategy consistency guidance carries the load). The lifted
+        trigger-test block — the foundation every semantic TP so far came
+        through — is always present. Rationale: stacking every block dilutes
+        attention (a TP regressed to an FN under 36 injected mined
+        assertions) and blocks contradicted each other; the campaign already
+        rotates strategies across the harness SET, so rotating mechanisms
+        the same way keeps every mechanism tried without any single prompt
+        carrying all of them. None (the default) preserves the old
+        stack-everything behaviour for A/B comparison.
+
+        ``verifier_enabled`` says a post-hoc soundness reviewer (the
+        relation verifier) will screen every fired oracle before it can
+        count as a finding. When True, the guardrail wording shifts from
+        "when in doubt, don't assert" to "prefer the strongest assertion
+        you can justify" — the FP risk the cautious wording defends
+        against is now handled downstream, and the cautious wording
+        demonstrably causes vacuous assertions (e.g. asserting only that
+        a mean is finite, which a wrong-but-finite value passes).
 
         covered_functions / found_signatures describe harnesses already
         accepted this campaign; when present, the variant-analysis block
@@ -55,6 +83,11 @@ class PromptBuilder:
                 all_failure_tests=failure_tests or [],
                 covered_functions=covered_functions,
                 found_signatures=found_signatures,
+                variant_strategy=variant_strategy,
+                verifier_enabled=verifier_enabled,
+                mined_oracles=mined_oracles or [],
+                synthesized_relations=synthesized_relations or [],
+                oracle_mechanism=oracle_mechanism,
             )
         codebase = os.path.basename(buggy_dir.rstrip('/'))
 
@@ -79,6 +112,8 @@ class PromptBuilder:
                 context.root_cause_reachable,
                 covered_functions or [],
                 found_signatures or [],
+                strategy=variant_strategy,
+                verifier_enabled=verifier_enabled,
             ))
         sections.append(self._metamorphic_block())
         sections.append(self._fdp_reference())
@@ -107,6 +142,11 @@ class PromptBuilder:
                         all_failure_tests: List[FailureTest],
                         covered_functions: Optional[List[str]] = None,
                         found_signatures: Optional[List[str]] = None,
+                        variant_strategy: Optional[str] = None,
+                        verifier_enabled: bool = False,
+                        mined_oracles: Optional[List] = None,
+                        synthesized_relations: Optional[List] = None,
+                        oracle_mechanism: Optional[str] = None,
                         ) -> List[Dict[str, str]]:
         """Build the prompt for a semantic (assertion-failing) bug.
 
@@ -132,12 +172,28 @@ class PromptBuilder:
         for fn in context.functions:
             sections.append(self._function_block(fn))
         sections.append(self._lifted_assertion_block(
-            chosen, all_failure_tests))
+            chosen, all_failure_tests,
+            verifier_enabled=verifier_enabled))
+        # Mechanism gating: only the assigned extra-oracle block is
+        # injected (None = stack everything, the pre-rotation behaviour).
+        # The lifted block above is unconditional — it is the foundation.
+        if oracle_mechanism in (None, 'pairs'):
+            mined_block = self._mined_oracle_block(mined_oracles or [],
+                                                   chosen)
+            if mined_block:
+                sections.append(mined_block)
+        if oracle_mechanism in (None, 'relations'):
+            rel_block = self._synthesized_relations_block(
+                synthesized_relations or [])
+            if rel_block:
+                sections.append(rel_block)
         if context.root_cause_reachable:
             sections.append(self._variant_analysis_block(
                 context.root_cause_reachable,
                 covered_functions or [],
                 found_signatures or [],
+                strategy=variant_strategy,
+                verifier_enabled=verifier_enabled,
             ))
         sections.append(self._fdp_reference())
         sections.append(self._skeleton_block(context.package))
@@ -158,7 +214,8 @@ class PromptBuilder:
         ]
 
     def _lifted_assertion_block(self, chosen: Optional[FailureTest],
-                                all_failure_tests: List[FailureTest]) -> str:
+                                all_failure_tests: List[FailureTest],
+                                verifier_enabled: bool = False) -> str:
         """Instruct the model to lift the expected value from the trigger
         test's assertion and throw on mismatch.
 
@@ -175,22 +232,28 @@ class PromptBuilder:
             " a WRONG value. There is therefore no exception to catch. Your"
             " harness must SUPPLY the oracle:",
             "",
-            "1. LIFT: read the failing test below and find its assertion"
-            " (assertEquals / assertTrue / assertSame ...). Identify (a) the"
-            " call(s) it makes on the real API and (b) the EXPECTED value it"
-            " checks against. Copy both VERBATIM — do not infer or recompute"
-            " the expected value; use the literal the test hard-codes.",
+            "1. LIFT EVERY ASSERTION (not just one): the failing test almost"
+            " always checks SEVERAL input/output pairs (e.g. many assertEquals"
+            " lines). Each pair is a SEPARATE trusted oracle — the correct"
+            " code is known to produce that exact expected value for that"
+            " exact input. Find ALL of them (assertEquals / assertTrue /"
+            " assertSame / assertNull ...), and for each identify (a) the call"
+            " it makes on the real API and (b) the EXPECTED value it checks"
+            " against. Copy both VERBATIM — do not infer or recompute; use the"
+            " literals the test hard-codes.",
             "",
-            "2. RECONSTRUCT: in fuzzerTestOneInput, make that same call"
+            "2. RECONSTRUCT: in fuzzerTestOneInput, make EACH of those calls"
             " through the real public API, exactly as the test does, to get"
-            " the ACTUAL value.",
+            " each ACTUAL value.",
             "",
-            "3. ASSERT: if the actual value does not equal the expected"
-            " value, `throw new com.code_intelligence.jazzer.api."
+            "3. ASSERT ALL OF THEM: if ANY actual value does not equal its"
+            " expected value, `throw new com.code_intelligence.jazzer.api."
             "FuzzerSecurityIssueLow(\"semantic mismatch: <what differed>\")`."
-            " Jazzer reports that throw as a finding, exactly like a crash,"
-            " so the rest of the pipeline scores it unchanged. If they match,"
-            " return normally.",
+            " Check every lifted pair — an overfitting patch that fixed only"
+            " the one reported input still fails the others, so the more pairs"
+            " you assert the more likely it is caught. Jazzer reports the throw"
+            " as a finding, exactly like a crash, so scoring is unchanged. If"
+            " all match, continue.",
             "",
             "4. THEN GENERALISE — but keep every assertion TRUSTED. The"
             " lifted pair tells you the answer for ONE input only. Do not"
@@ -222,6 +285,30 @@ class PromptBuilder:
             " result — just return. Assert only trusted answers; explore"
             " everything else without asserting.",
         ]
+        if verifier_enabled:
+            # The relation verifier screens every fired oracle post hoc,
+            # which shifts (but does not remove) the cost of an unsound
+            # assertion: the reviewer is itself imperfect — it has both
+            # passed unsound oracles and killed a sound one — so the prompt
+            # must NOT promise that wrong assertions are free. What the
+            # reviewer does buy is licence to stop hedging: without this
+            # paragraph the guardrail above makes the model so FP-averse it
+            # asserts only trivia — observed concretely on a distribution
+            # bug where it checked a mean was *finite* (−49.76 passes)
+            # instead of cross-checking it against the sampled average.
+            parts.append(
+                "  CALIBRATION: your assertions will be screened by an"
+                " automated soundness reviewer before any firing counts, so"
+                " do NOT hedge to trivially-weak checks to be safe. Write"
+                " the strongest check you can JUSTIFY from the documented"
+                " contract, and state that justification in a comment next"
+                " to the check (the reviewer reads it). The reviewer is a"
+                " safety net, not a licence to guess — it is imperfect, so"
+                " an assertion still needs a real justification — but a"
+                " vacuous assertion (isFinite / not-null / no-throw) can"
+                " never catch a wrong value and guarantees a miss, which"
+                " nothing downstream can recover."
+            )
         if chosen is not None:
             entry = self._entry_point_hint([chosen])
             if entry:
@@ -459,13 +546,24 @@ class PromptBuilder:
             )
             parts.append(
                 "VALID-BY-CONSTRUCTION INPUTS: if the ground-truth throwable "
-                "is itself a validation/rejection exception "
+                "is either (i) a validation/rejection exception "
                 "(IllegalArgumentException or a subclass, "
                 "NumberFormatException, a library 'invalid input' exception, "
-                "...), then its signature CANNOT distinguish the bug from "
+                "...) OR (ii) a GENERIC JDK runtime exception that a method "
+                "commonly leaks on malformed / out-of-domain input "
+                "(StringIndexOutOfBoundsException, IndexOutOfBoundsException, "
+                "ArrayIndexOutOfBoundsException, NullPointerException, "
+                "ClassCastException, ArithmeticException), then its signature "
+                "CANNOT distinguish the bug from "
                 "correct rejection — a correctly fixed version legitimately "
                 "throws the same exception, possibly at the same line, when "
-                "the input really is invalid. In that case, let it propagate "
+                "the input really is invalid. This is the #1 false-positive "
+                "source: the SAME exception class leaks from the SAME method "
+                "on OTHER malformed inputs that even the correct fix does not "
+                "handle (e.g. a lone type-suffix like \"L\" makes "
+                "createNumber throw StringIndexOutOfBounds on buggy AND fixed "
+                "alike) — so matching the ground-truth class and location is "
+                "NOT enough. In that case, let it propagate "
                 "ONLY for inputs that are VALID BY CONSTRUCTION: inputs a "
                 "correct implementation is obligated to accept because you "
                 "built them to satisfy the documented preconditions yourself "
@@ -650,6 +748,103 @@ class PromptBuilder:
         quoted = cls._literal_arg_calls(method_source, method_names)
         return [q[1:-1] for q in quoted if len(q) >= 2]
 
+    # assertEquals / assertSame / assertArrayEquals call with its raw
+    # argument list captured up to the closing paren of the call (greedy
+    # enough for literal args; nested calls make the split heuristic bail
+    # for that call rather than mis-split).
+    _ASSERT_EQ_RE = re.compile(
+        r'\bassert(?:Equals|Same|ArrayEquals)\s*\(([^;]*?)\)\s*;')
+    # A literal argument: quoted string, char, number (int/float/exp,
+    # optional f/d/L suffix), or boolean.
+    _LITERAL_ARG_RE = re.compile(
+        r'^(?:"(?:[^"\\]|\\.)*"'
+        r"|'(?:[^'\\]|\\.)'"
+        r'|[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?[fFdDlL]?'
+        r'|true|false)$')
+
+    @classmethod
+    def expected_assert_literals(cls, method_source: str) -> List[str]:
+        """EXPECTED-value literals from the test's equality assertions.
+
+        These are the values the correct implementation is KNOWN to produce
+        (JUnit convention puts the expected value first), which is what the
+        relation verifier's trusted-values channel is for: a fired assertion
+        that quotes one of them is checking developer-written ground truth,
+        not a speculative relation. This is deliberately distinct from
+        `candidate_anchor_literals`, which extracts the INPUT literals passed
+        to target methods — feeding inputs into the trusted-values channel
+        made the verifier's short-circuit protect the wrong thing.
+
+        Heuristics per assert call (JUnit3/4 overloads):
+          * assertEquals(expected, actual)          -> arg 0 if literal
+          * assertEquals("msg", expected, actual)   -> arg 1 (string arg 0
+            followed by 2 more args reads as the message-first overload)
+          * assertEquals(expected, actual, delta)   -> arg 0 (numeric first)
+        Non-literal expected args (locals, computed) are skipped — only a
+        hard-coded literal is trustworthy provenance. Trivial literals
+        (shorter than 3 characters, e.g. 0 / 1 / -1) are dropped: as
+        substrings of a fired message they match spuriously."""
+        out: List[str] = []
+        for m in cls._ASSERT_EQ_RE.finditer(method_source or ''):
+            args = cls._split_top_level_args(m.group(1))
+            if len(args) < 2:
+                continue
+            cand = args[0]
+            if (len(args) >= 3 and args[0].startswith('"')
+                    and not args[1].startswith('"')):
+                # message-first overload: assertEquals("msg", expected, actual)
+                cand = args[1]
+            if not cls._LITERAL_ARG_RE.match(cand):
+                continue
+            literal = cand[1:-1] if cand.startswith(('"', "'")) else cand
+            # Strip a numeric suffix so the literal matches the value as a
+            # fired message would print it (2.5f -> 2.5).
+            if literal and literal[-1] in 'fFdDlL' and any(
+                    ch.isdigit() for ch in literal):
+                literal = literal[:-1]
+            if len(literal) >= 3 and literal not in out:
+                out.append(literal)
+        return out
+
+    @staticmethod
+    def _split_top_level_args(arglist: str) -> List[str]:
+        """Split an argument list on top-level commas (ignoring commas inside
+        parens/quotes). Returns [] when the list contains a nested unbalanced
+        construct we can't split safely."""
+        args, depth, cur, i, n = [], 0, [], 0, len(arglist)
+        while i < n:
+            c = arglist[i]
+            if c in '"\'':
+                quote = c
+                cur.append(c)
+                i += 1
+                while i < n:
+                    cur.append(arglist[i])
+                    if arglist[i] == '\\':
+                        i += 1
+                        if i < n:
+                            cur.append(arglist[i])
+                    elif arglist[i] == quote:
+                        break
+                    i += 1
+            elif c in '([':
+                depth += 1
+                cur.append(c)
+            elif c in ')]':
+                depth -= 1
+                cur.append(c)
+            elif c == ',' and depth == 0:
+                args.append(''.join(cur).strip())
+                cur = []
+            else:
+                cur.append(c)
+            i += 1
+        if depth != 0:
+            return []
+        if cur:
+            args.append(''.join(cur).strip())
+        return args
+
     @staticmethod
     def _literal_arg_calls(method_source: str,
                            method_names: List[str]) -> List[str]:
@@ -706,10 +901,118 @@ class PromptBuilder:
             hits = hits[:max_lines] + ["// ... (further out-of-range calls omitted)"]
         return '\n'.join(hits)
 
+    def _mined_oracle_block(self, mined: List, chosen) -> str:
+        """Inject SIBLING test methods from the bug's own test class as extra
+        trusted oracles to lift input->expected pairs from.
+
+        `_lifted_assertion_block` already lifts the chosen trigger test. This
+        widens the net to OTHER test methods that exercise the same patched
+        class/method with DIFFERENT inputs. Except for the reported failure,
+        the buggy code already passes these, so a correct patch must too —
+        and an overfit patch that special-cases only the reported input
+        fails one of these siblings. Sound by construction: same provenance
+        as the lifted seed, no invention. We hand over whole method bodies
+        (not individual assert lines) because a test commonly stores the call
+        result in a local and asserts on it across several lines — the model
+        lifts the pairs, exactly as it does for the trigger test."""
+        if not mined:
+            return ''
+        lines = [
+            "ADDITIONAL TRUSTED ORACLES — sibling tests from THIS bug's own"
+            " test class that exercise the patched code with DIFFERENT inputs"
+            " than the reported one. Except for the single reported failure,"
+            " the buggy code already passes these, so a CORRECT patch must"
+            " too; an overfitting patch that special-cases only the reported"
+            " input still returns the wrong value for one of them.",
+            "From each method below, LIFT the input->expected pairs (the call"
+            " it makes on the real API and the value it asserts), reconstruct"
+            " the call in your harness, and throw"
+            " FuzzerSecurityIssueLow(\"semantic mismatch: <which>\") when the"
+            " patched code disagrees. For lifted pairs, both the input AND"
+            " its expected value must be copied VERBATIM from the test"
+            " source. Do NOT invent a NEW input->expected-value pair (e.g."
+            " Integer.MIN_VALUE, empty, huge values) and guess its answer —"
+            " an expected value you compute yourself fires on CORRECT"
+            " patches too and is the top false-positive source. (This"
+            " restriction is about value-equality pairs only: the"
+            " consistency, metamorphic, and screened-relation checks that"
+            " other sections of this prompt ask for are DIFFERENT oracle"
+            " kinds — they need no guessed expected value — and remain"
+            " required alongside these pairs.) If a pair needs a helper/type"
+            " you cannot reconstruct, skip just that pair.",
+            "<mined_sibling_tests>",
+        ]
+        for t in mined:
+            lines.append(f"// {t.name} ({t.num_asserts} assertions)")
+            lines.append(t.source)
+        lines.append("</mined_sibling_tests>")
+        return '\n'.join(lines)
+
+    def _synthesized_relations_block(self, relations: List) -> str:
+        """Inject mechanically screened synthesized relations as candidate
+        oracles to implement.
+
+        Mined oracles cover only inputs the developers tested; an overfit can
+        pass every existing test yet stay wrong on an untested input whose
+        oracle exists in no test. These relations generalise to a whole input
+        family. The caller passes only relations that SURVIVED the buggy-build
+        screen (relation_screen): each was compiled and exercised over many
+        fuzzed inputs on the buggy checkout, and candidates that fired
+        indiscriminately (out-of-domain — they would flag almost any
+        implementation) were dropped. That screen establishes consistency
+        with the buggy build's mostly-correct behaviour — NOT soundness
+        against a known-good reference (no such reference exists without
+        cheating) — so the wording below presents them as strong candidates
+        with a stated justification, never as validated ground truth. The
+        model implements each check against the real API, fencing to
+        valid-by-construction inputs."""
+        if not relations:
+            return ''
+        lines = [
+            "SYNTHESIZED RELATION CANDIDATES (mechanically pre-screened) —"
+            " invariants/metamorphic relations derived from the documented"
+            " contract of the patched code. Each was compiled and exercised"
+            " over many fuzzed inputs on the current build; candidates that"
+            " fired indiscriminately were dropped as out-of-domain. They are"
+            " STRONG CANDIDATES, not verified ground truth: implement each"
+            " one, keep its justification comment next to the check, and"
+            " fence its inputs exactly as instructed below. These generalise"
+            " BEYOND the tested inputs, so they can catch an overfit that"
+            " only special-cased the reported input. IMPLEMENT each one in"
+            " your harness in addition to the lifted/mined oracles:",
+        ]
+        for i, r in enumerate(relations, 1):
+            name = getattr(r, 'name', f'relation{i}')
+            kind = getattr(r, 'kind', '')
+            contract = getattr(r, 'contract', '')
+            check = getattr(r, 'check', '')
+            input_spec = getattr(r, 'input_spec', '')
+            screen_note = getattr(r, 'screen_note', '')
+            lines.append(f"<relation name=\"{name}\" kind=\"{kind}\">")
+            if contract:
+                lines.append(f"  // holds because: {contract}")
+            if input_spec:
+                lines.append(f"  // valid input: {input_spec}")
+            if screen_note:
+                lines.append(f"  // screen: {screen_note}")
+            lines.append(check)
+            lines.append("</relation>")
+        lines.append(
+            "Build each relation's input with the FuzzedDataProvider so it is"
+            " VALID BY CONSTRUCTION, wrap the API calls in try/catch and SKIP"
+            " (return) on any caught exception — an exception is a rejection,"
+            " never a violation. Throw"
+            " com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("
+            "\"relation <name> violated: ...\") only on a genuine"
+            " disagreement, and include the observed values in the message.")
+        return '\n'.join(lines)
+
     def _variant_analysis_block(self,
                                 reachable: List[str],
                                 covered: List[str],
-                                signatures: List[str]) -> str:
+                                signatures: List[str],
+                                strategy: Optional[str] = None,
+                                verifier_enabled: bool = False) -> str:
         """Steer successive harnesses across the root-cause neighbourhood."""
         cap = config.MAX_REACHABLE_IN_PROMPT
         shown = reachable[:cap]
@@ -760,7 +1063,230 @@ class PromptBuilder:
                 "First harness: establish the most direct path from the"
                 " fuzz entrypoint through the patched code."
             )
+        if signatures:
+            # Masked-symptom pressure. Every signature the set has found so
+            # far fired via SOME check — and a band-aid patch, by
+            # definition, silences exactly the checks that fired on the
+            # reported symptom. A harness whose ONLY oracle is one of those
+            # already-found triggers goes silent on such a patch and the
+            # overfit is missed. So once the set has any trigger, every new
+            # harness must carry at least one oracle that does not depend
+            # on the known symptom re-appearing.
+            parts.append(
+                "INDEPENDENT ORACLE REQUIRED: the set has already found"
+                " trigger(s): " + '; '.join(signatures[:5]) + ". A band-aid"
+                " patch silences exactly these known symptoms, so a harness"
+                " that only re-checks them cannot tell a real fix from a"
+                " cover-up. Include at least ONE additional check that"
+                " would still fire if the known symptom disappeared but a"
+                " related quantity stayed wrong (see the consistency checks"
+                " below)."
+            )
+        parts.append(self._variant_strategy_menu(
+            assigned=strategy, verifier_enabled=verifier_enabled))
+        hints = self._summary_stat_hints(shown)
+        if hints:
+            parts.append(self._consistency_hint_block(hints))
         return '\n'.join(parts)
+
+    # Reachable siblings whose NAME implies a summary quantity that can be
+    # cross-checked against an independent computation (strategy (b)).
+    # Pattern -> concrete check phrased generically (no test-specific answer).
+    _STAT_PATTERNS = [
+        (re.compile(r'.*[Mm]ean$|.*[Aa]verage$'),
+         "a MEAN — a mean ALWAYS lies within the min/max of the data it"
+         " averages, so if the object exposes its own extremes, assert"
+         " lower <= mean <= upper; additionally compare it to the"
+         " EMPIRICAL average of many values the object produces (iterate"
+         " or generate many, average them, assert agreement within a"
+         " tolerance)"),
+        (re.compile(r'.*[Vv]ariance$'),
+         "a VARIANCE — must be >= 0, and match the empirical variance of many"
+         " produced values"),
+        (re.compile(r'.*(Std|Standard)?Deviation$'),
+         "a STANDARD DEVIATION — must be >= 0 and match the empirical spread"),
+        (re.compile(r'^(?!inverse).*[Pp]robability$'),
+         "a PROBABILITY — must lie in [0, 1], and a cumulative probability"
+         " must be NON-DECREASING (evaluate it at two ordered points and"
+         " assert the ordering)"),
+        (re.compile(r'^(size|count|length|getCount|getSize|getLength)$'),
+         "a COUNT/SIZE — compare it to a manual count of the elements"),
+        (re.compile(r'^hashCode$'),
+         "a HASH — two objects that are equal must return equal hashCodes"),
+    ]
+
+    @classmethod
+    def _summary_stat_hints(cls, reachable: List[str]):
+        """Reachable siblings whose name implies a checkable summary quantity,
+        with the concrete cross-check for each. Makes strategy (b) specific:
+        the model is told WHICH sibling to cross-check and HOW, instead of
+        guessing that a consistency check applies at all."""
+        out = []
+        seen = set()
+        for name in reachable:
+            short = name.split('.')[-1]
+            if short in seen:
+                continue
+            for pat, hint in cls._STAT_PATTERNS:
+                if pat.match(short):
+                    seen.add(short)
+                    out.append((short, hint))
+                    break
+        return out
+
+    @staticmethod
+    def _consistency_hint_block(hints) -> str:
+        parts = [
+            "CONCRETE CONSISTENCY CHECKS available in this region (these"
+            " directly support strategy (b) — a summary a defect can leave"
+            " wrong while the top-level output is masked). For at least one,"
+            " cross-check the REPORTED value against an INDEPENDENT computation"
+            " and throw on a mismatch beyond tolerance:",
+        ]
+        for name, hint in hints:
+            parts.append(f"  - `{name}()` is {hint}.")
+        parts.append(
+            "These are SOUND (a summary must match the data it summarises), so"
+            " they will not fire on a correct implementation.")
+        # The observed hedge: pointed at the right sibling, the model wrote
+        # `if (!Double.isFinite(mean)) throw` — satisfied the letter of the
+        # hint with the weakest member of the sound set, and a wrong-but-
+        # finite value sailed through. Close that loophole explicitly, and
+        # name the two comparisons that are always available so "strong"
+        # is not left to the model's imagination.
+        parts.append(
+            "WHAT DOES NOT COUNT: asserting the reported value is finite,"
+            " non-NaN, non-null, or that no exception was thrown is NOT a"
+            " consistency check — every wrong-but-finite value passes those,"
+            " so they can never catch this class of bug. A valid check"
+            " COMPARES the reported value against a second, independently"
+            " obtained quantity: the object's own stated bounds, or a"
+            " recomputation from the object's own output.")
+        # A SCHEMA, deliberately not a worked instance: a concrete example
+        # (say, a mean cross-checked against samples) would hand the model
+        # the answer whenever the bug under evaluation happens to match it
+        # — overfitting to this dataset and proving nothing about the
+        # method. Placeholders force the model to instantiate the pattern
+        # from the API actually in front of it, which is the capability we
+        # are trying to elicit and measure.
+        parts.append('\n'.join([
+            "SHAPE OF A VALID CHECK (a schema — instantiate every"
+            " <placeholder> with real calls from the API above):",
+            "",
+            "    var reported = <the value the object claims>;",
+            "    var independent = <the SAME quantity obtained a second,"
+            " independent way>;",
+            "    if (<reported disagrees with independent beyond a generous"
+            " tolerance>)",
+            "        throw new com.code_intelligence.jazzer.api."
+            "FuzzerSecurityIssueLow(\"consistency violation:"
+            " \" + <both values>);",
+            "",
+            "Ways to obtain the independent value — each sound for ANY"
+            " correct implementation of ANY library:",
+            "  1. LIMITS THE OBJECT ITSELF STATES: a summary of data must"
+            " lie within that data's own reported extremes (lower/upper,"
+            " min/max, first/last, 0..capacity).",
+            "  2. RECOMPUTATION FROM THE OBJECT'S OWN OUTPUT: aggregate"
+            " many values/elements the same object produces and compare"
+            " the aggregate to the reported summary.",
+            "  3. A SECOND, IDENTICALLY-CONSTRUCTED OBJECT (or a fresh"
+            " recomputation of a cached value): both must report the same"
+            " thing.",
+            "",
+            "Use enough items and a generous tolerance (a few percent, or"
+            " several standard errors) so noise on a CORRECT implementation"
+            " never fires; a genuinely wrong value is typically off by far"
+            " more than any sane tolerance.",
+        ]))
+        return '\n'.join(parts)
+
+    def _variant_strategy_menu(self, assigned: Optional[str] = None,
+                               verifier_enabled: bool = False) -> str:
+        """A menu of variant strategies for the next harness.
+
+        Reaching a different function is only ONE way the SAME root cause,
+        left unfixed by a narrow (band-aid) patch, still manifests. This
+        lists the situations we can justify — a neighbouring reachable
+        function, a callee masked by a self-correcting downstream step, or
+        inputs just past the seed the overfit special-cased — each of which
+        stays WITHIN the root-cause region and stems from the SAME root
+        cause, matching this block's definition of a valid sibling bug.
+        (Deliberately omitted: parallel sister methods not in the call
+        graph — they violate the in-region definition — and stateful call
+        sequences, for which we have no evidence in this setting.) Examples
+        are generic (not from any evaluated project) so the model learns
+        the pattern, not a specific answer. Every option keeps the same
+        guardrail: only assert what holds for ANY correct implementation,
+        else a correct patch false-positives."""
+        header = (
+            "VARIANT STRATEGY — the patch may be a band-aid that fixed the"
+            " reported instance while the SAME root cause still bites"
+            " elsewhere in this region. Pick the ONE probe that best fits:")
+        if assigned in ('a', 'b', 'c'):
+            # The campaign rotates strategies across the harness SET so each
+            # is tried by at least one harness (rather than the model always
+            # picking the same one). This harness is ASSIGNED one.
+            header = (
+                "VARIANT STRATEGY — this harness is one of a set that divides"
+                " the strategies below so each is tried. USE STRATEGY"
+                f" ({assigned}) for THIS harness (fall back to another ONLY if"
+                " it is clearly inapplicable to this patch). The patch may be"
+                " a band-aid that fixed the reported instance while the SAME"
+                " root cause still bites elsewhere in this region:")
+        # With the post-hoc soundness reviewer active the model may stop
+        # hedging to vacuous finiteness checks (observed failure mode) —
+        # but the reviewer is imperfect (it has both passed unsound
+        # oracles and killed a sound one), so the prompt must not promise
+        # that a wrong assertion is free.
+        guardrail = (
+            "GUARDRAIL (all options): only assert a property that holds for"
+            " EVERY correct implementation. If you cannot state one, exercise"
+            " the path WITHOUT asserting — an assertion you can't justify"
+            " false-positives on a correct patch."
+            if not verifier_enabled else
+            "GUARDRAIL (all options): prefer a property that holds for EVERY"
+            " correct implementation, and state the documented guarantee"
+            " behind each check in a comment (an automated soundness"
+            " reviewer screens every fired assertion and reads it). Do NOT"
+            " retreat to vacuous checks (finiteness, non-null, no-throw) to"
+            " stay safe — a vacuous check guarantees a missed bug, which"
+            " nothing downstream can recover; the reviewer backstops a"
+            " justified-but-borderline check, though it is not infallible.")
+        return '\n'.join([
+            header,
+            "",
+            "  (a) DIFFERENT REACHABLE FUNCTION (coverage spread). Shape the"
+            " input so a different function in the region above runs / a"
+            " different failure signature appears. Good when the same"
+            " root-cause pattern recurs across several functions and the patch"
+            " only fixed one.",
+            "",
+            "  (b) CONSISTENCY CROSS-CHECK on a masked helper. A defect can"
+            " leave the patched function's top-level output CORRECT because a"
+            " downstream step (an iterative solve, a convergence loop, a clamp,"
+            " a re-normalisation) absorbs the error — while a reachable HELPER"
+            " that produces a RELATED quantity stays wrong (the unfixed root"
+            " cause). Rather than guess that helper's exact value, compute the"
+            " SAME quantity TWO independent ways and assert they AGREE — a"
+            " check that is sound without knowing the answer. Generic"
+            " patterns: a stated summary/aggregate must match the EMPIRICAL"
+            " value recomputed over many items the same object produces; a"
+            " reported size/count must match a manual count of the elements;"
+            " a cached/precomputed value must equal a fresh recomputation;"
+            " equal objects must have equal hashCodes. Use a tolerance for"
+            " floating-point/statistical estimates and require enough items,"
+            " so a CORRECT implementation never fires.",
+            "",
+            "  (c) FLIP THE PATCHED CONDITION (overfit on the seed). The patch"
+            " changed a specific line/condition. An overfitting fix often"
+            " special-cases the seed input and breaks just past it. Construct"
+            " inputs that make the OLD and NEW behaviour DIFFER — values at and"
+            " around the boundary the changed condition tests — and check the"
+            " result is still correct there.",
+            "",
+            guardrail,
+        ])
 
     def _metamorphic_block(self) -> str:
         """Require a post-condition / metamorphic oracle alongside the crash.
@@ -840,6 +1366,17 @@ class PromptBuilder:
             " makes it hold for EVERY correct implementation, including"
             " edge cases: null elements, empty inputs, duplicates,"
             " no-solution inputs. If you cannot cite one, do not assert it.",
+            "- FENCE DEGENERATE INPUTS: construct the inputs you assert on"
+            " to be non-degenerate BY CONSTRUCTION — non-empty strings and"
+            " collections, visible (non-blank) labels/names, at least one"
+            " element where elements are iterated. Contracts are routinely"
+            " silent about the empty/blank case (a correct implementation"
+            " may legitimately do nothing for an empty label, return"
+            " nothing for an empty collection), so a relation whose ONLY"
+            " violations occur on degenerate inputs is testing unspecified"
+            " behaviour and will be rejected in review. Assert on the"
+            " degenerate case ONLY when the documented contract explicitly"
+            " covers it — and cite that sentence.",
             "- Use only real library calls for BOTH sides (no hand-rolled"
             " reference implementation).",
             "- On violation, `throw new RuntimeException(\"metamorphic"

@@ -21,6 +21,7 @@ Example usage (choose project_name from Chart/Closure/Lang/Math/Time):
 """
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -34,7 +35,7 @@ from crash_input import CrashInputExtractor
 from failure_test import FailureTestExtractor, classify_bug_kind, is_crashing_bug
 from fuzz_runner import FuzzRunner, HarnessVerifier
 from jazzer import JazzerEnvironment
-from llm import HarnessGenerator
+from llm import HarnessGenerator, token_usage, usage_totals
 from patches import DeprecatedBugError, PatchSelector
 from prompts import PromptBuilder
 
@@ -63,6 +64,14 @@ def parse_args():
                              "Default is to run semantic bugs too.")
     parser.add_argument("--language", type=str, nargs='?', default='Java',
                         help='Programming language of project')
+    parser.add_argument("--model", type=str, default=None, metavar="DEPLOYMENT",
+                        help="force a SINGLE model/deployment for harness "
+                             "generation (disables two-tier escalation). "
+                             "Without it, uses config.HARNESS_MODEL_PRIMARY and "
+                             "escalates to HARNESS_MODEL_ESCALATION after "
+                             "HARNESS_ESCALATE_AFTER attempts with no accepted "
+                             "harness. E.g. --model gpt-5.4 to always use the "
+                             "flagship.")
     parser.add_argument("-n", "--target_successes", type=int, default=5,
                         help="Stop once this many harnesses compile "
                              "(default: 5)")
@@ -88,6 +97,14 @@ def parse_args():
                              "(default: config.INTROSPECTOR_METHOD_DEPTH_CAP). "
                              "Bounds the otherwise-O(N^2) DFS that stalls on "
                              "large libraries; lower = faster parse.")
+    parser.add_argument("--verify_relations", action="store_true",
+                        help="before counting a harness that crashed the "
+                             "patched code as overfitting evidence, ask an "
+                             "LLM critic whether its oracle is SOUND (true for "
+                             "any correct implementation). Drops unsound "
+                             "findings (invented relations that fire on correct "
+                             "code) — a non-cheating false-positive filter. "
+                             "Off by default.")
     parser.add_argument("--fuzz_timeout", type=int, default=60,
                         metavar="SECONDS",
                         help="seconds Jazzer runs per harness against the "
@@ -103,17 +120,47 @@ def parse_args():
                         help="accept harnesses on compile alone (old "
                              "behaviour); skip the buggy-version trigger "
                              "gate. Default is to require a trigger.")
+    parser.add_argument("--mined_oracles", dest="mined_oracles",
+                        action="store_true",
+                        help="mine sibling test methods from the bug's own "
+                             "test class as extra trusted oracles (semantic "
+                             "bugs only). OFF by default: the gpt-5.4 A/B "
+                             "measured mining neutral-to-negative (it cracked "
+                             "no hard miss and a flood of mined assertions "
+                             "regressed a previously-caught bug), so it is "
+                             "opt-in, and capped at 10 total assertions when "
+                             "on.")
+    parser.add_argument("--no-mined-oracles", dest="mined_oracles",
+                        action="store_false",
+                        help="(kept for old batch scripts) explicitly disable "
+                             "mining — already the default.")
+    parser.add_argument("--synthesize_relations", action="store_true",
+                        help="synthesize codebase-specific invariants/"
+                             "metamorphic relations for the patched method "
+                             "(semantic bugs), mechanically screen them on "
+                             "the BUGGY build (relation_screen: drop "
+                             "candidates that fire indiscriminately on "
+                             "known-mostly-correct behaviour), and inject "
+                             "only the survivors as screened candidates. "
+                             "Targets overfits whose discriminating input is "
+                             "in no test. Off by default (adds an LLM call + "
+                             "screening builds). Synthesis always uses the "
+                             "escalation/flagship model — proposing sound "
+                             "relations is the hardest reasoning step in the "
+                             "pipeline and the cheap model demonstrably "
+                             "invents unsound ones.")
     parser.add_argument("--results_json", type=str, default=None,
                         metavar="PATH",
                         help="append a one-line JSON record describing this "
                              "run's outcome to PATH (machine-readable; used "
                              "by the batch evaluation harness)")
-    parser.set_defaults(require_trigger=True)
+    parser.set_defaults(require_trigger=True, mined_oracles=False)
     return parser.parse_args()
 
 
 def _emit_record(path, *, label, status, selection=None,
-                 result=None, fuzz_results=None, bug_kind=None):
+                 result=None, fuzz_results=None, bug_kind=None,
+                 extras=None):
     """Append one JSON line summarising this run. `label` is the
     ground-truth class ('correct' or 'overfitting'); `status` is one of
     'evaluated', 'non_crashing', 'no_harnesses', 'error'. A run is only
@@ -133,6 +180,12 @@ def _emit_record(path, *, label, status, selection=None,
         "apr_tool": getattr(selection, "apr_tool", None),
         "converged": bool(getattr(result, "converged", False)),
         "harnesses_built": len(getattr(result, "successful_results", []) or []),
+        # What fired on the buggy version per accepted harness (exception
+        # headline). Lets the aggregator ask, per FN, "did the set only
+        # ever trigger via the reported symptom?" — the masked-symptom
+        # failure mode — without rerunning anything.
+        "accepted_trigger_details": list(
+            getattr(result, "accepted_trigger_details", []) or []),
         "harnesses_run": 0,
         "harnesses_crashed": 0,
         # crashed_on_patch: did ANY harness still crash the patched code?
@@ -144,8 +197,31 @@ def _emit_record(path, *, label, status, selection=None,
         rec["harnesses_run"] = len(fuzz_results)
         rec["harnesses_crashed"] = len(triggered)
         rec["crashed_on_patch"] = len(triggered) > 0
+    # Exact token spend for this run (all models: harness gen, escalation,
+    # verifier, synthesis). Lets the aggregator sum real cost per batch.
+    rec["tokens_total"] = usage_totals()
+    rec["tokens_by_model"] = token_usage()
+    # Free-form flags the caller wants queryable per run (e.g.
+    # context_degraded when the touched-function extraction came up empty,
+    # so an aggregator can tell "feature tested and failed" from "feature
+    # never ran" without grepping logs).
+    rec.update(extras or {})
     with open(path, "a") as fh:
         fh.write(_json.dumps(rec) + "\n")
+
+
+def _print_token_usage():
+    by_model = token_usage()
+    if not by_model:
+        return
+    tot = usage_totals()
+    print("\n" + "=" * 20 + " token usage " + "=" * 20)
+    for model, u in by_model.items():
+        print(f"  {model}: {u['calls']} calls, "
+              f"{u['prompt_tokens']:,} in + {u['completion_tokens']:,} out "
+              f"= {u['total_tokens']:,} tokens")
+    print(f"  TOTAL: {tot['calls']} calls, {tot['total_tokens']:,} tokens "
+          f"({tot['prompt_tokens']:,} in + {tot['completion_tokens']:,} out)")
 
 
 def main():
@@ -262,6 +338,42 @@ def main():
     )
     print(json.dumps(context.as_dict(), indent=2))
 
+    # Empty touched-function extraction silently disables everything that
+    # keys on the patched method — the function blocks in the prompt,
+    # mining tokens, and relation synthesis (which returns [] without a
+    # word when patched_sources is empty). A whole diagnostic leg once
+    # "tested" synthesis that never ran because of this. Say it loudly and
+    # stamp the record so the aggregator can exclude/flag the run instead
+    # of misreading it as "feature ran and found nothing".
+    context_degraded = not context.functions
+    if context_degraded:
+        print("\n" + "!" * 60)
+        print("!! DEGRADED CONTEXT: no touched function could be extracted")
+        print("!! from the patch (AST pass AND regex fallback both empty).")
+        print("!! Prompt will lack function bodies; mining and relation")
+        print("!! synthesis are disabled for this run.")
+        print("!" * 60)
+    record_extras = {"context_degraded": context_degraded}
+
+    # Class-level codebase context for the two LLM judgment stages
+    # (synthesis + relation verification). Task inspection showed the
+    # discriminating invariant routinely lives OUTSIDE the patched method
+    # (constructor invariants, complementary sibling functions, class
+    # javadoc contracts), and the verifier's measured leaks were
+    # domain-knowledge failures. Built once from the buggy checkout —
+    # label-free.
+    class_ctx = []
+    if (bug_kind == "semantic" and not context_degraded
+            and (args.synthesize_relations or args.verify_relations)):
+        from code_context import assemble_class_context
+        class_ctx = assemble_class_context(
+            selection.buggy_dir,
+            context.modified_files or [],
+            [fn.func_name for fn in context.functions])
+        if class_ctx:
+            print(f"  [class-ctx] {len(class_ctx)} class skeleton(s), "
+                  f"{sum(len(b) for b in class_ctx):,} chars")
+
     # 4c) Capture the GROUND-TRUTH crashing input by running the trigger
     #     test against the buggy checkout and reading the value back out
     #     of the failure output. This removes the model's need to guess
@@ -294,6 +406,134 @@ def main():
         )
     _print_crash_input(crash_input)
 
+    # 4.5) Mine trusted sibling oracles (semantic bugs). The lifted-assertion
+    #      oracle covers ONE trigger test; the same test class holds many more
+    #      assertions on the patched method — sibling tests and the trigger
+    #      test's other lines. Each is a developer-written literal the buggy
+    #      code already passes, so a correct patch must too, while an overfit
+    #      patch that special-cases the reported input fails a different one.
+    #      Pure text mining (no compile, no model); injected into the prompt
+    #      as extra trusted pairs. Same provenance as the lifted seed — uses
+    #      the project's own tests, never the developer fix or the label.
+    mined_oracles = []
+    if bug_kind == "semantic" and args.mined_oracles:
+        from test_oracle_miner import mine_sibling_tests
+        # Read every trigger test's class source once.
+        class_srcs, seen_src = [], set()
+        for ft in failure_tests:
+            path = getattr(ft, 'source_path', None)
+            if not path or path in seen_src:
+                continue
+            seen_src.add(path)
+            try:
+                class_srcs.append(
+                    open(path, encoding='utf-8', errors='replace').read())
+            except OSError:
+                continue
+        # Prefer the patched METHOD names — precise when the method is public.
+        # When the patch touches a PRIVATE helper (e.g. greatestCommonDivisor)
+        # the tests exercise it only through the public API, so method-name
+        # mining is empty; fall back to the patched CLASS name, which catches
+        # the public-API tests that reach the helper. Over-inclusion is safe:
+        # every mined test is still trusted (the buggy code passes it).
+        method_tokens = [fn.func_name for fn in context.functions]
+        class_tokens = sorted(set(re.findall(
+            r'^\+\+\+\s+.*?/([A-Za-z_]\w*)\.java',
+            context.patch_text or '', re.MULTILINE)))
+        # The trigger tests are already lifted verbatim — don't re-mine them.
+        exclude = [ft.test_method for ft in failure_tests if ft.test_method]
+        used_tokens = method_tokens
+        for tokens in (method_tokens, class_tokens):
+            if not tokens:
+                continue
+            seen_names, batch, asserts_total = set(), [], 0
+            for text in class_srcs:
+                for t in mine_sibling_tests(text, tokens,
+                                            exclude_methods=exclude):
+                    # The per-call cap bounds each source file; re-apply
+                    # the TOTAL cap across files so multi-file trigger
+                    # classes can't reassemble the assertion flood the
+                    # miner just prevented (36 injected assertions once
+                    # regressed a caught bug to a miss).
+                    if t.name in seen_names:
+                        continue
+                    if asserts_total + t.num_asserts > 10:
+                        continue
+                    seen_names.add(t.name)
+                    asserts_total += t.num_asserts
+                    batch.append(t)
+            if batch:
+                mined_oracles = batch
+                used_tokens = tokens
+                break
+        if mined_oracles:
+            names = ', '.join(f"{t.name}({t.num_asserts})"
+                              for t in mined_oracles)
+            print(f"  [mined-oracles] {len(mined_oracles)} sibling test "
+                  f"method(s) on {', '.join(used_tokens) or 'target'}: {names}")
+
+    # 4.6) Synthesize codebase-specific relation CANDIDATES (semantic bugs).
+    #      Mining only covers TESTED inputs; an overfit can pass every test
+    #      yet stay wrong on an untested input whose oracle exists in no
+    #      test. Here we ask an LLM to propose invariants/metamorphic
+    #      relations over the patched API, grounded in the diff and the
+    #      touched methods' javadoc. Candidates are HYPOTHESES: they are
+    #      mechanically screened on the buggy build (relation_screen, run
+    #      after the builder exists — see step 6) and ONLY survivors ever
+    #      reach a prompt. If screening cannot run, nothing is injected.
+    synthesized_relations = []
+    if bug_kind == "semantic" and args.synthesize_relations:
+        if context_degraded:
+            print("  [synth] skipped: no touched function extracted "
+                  "(context degraded — see warning above)")
+        else:
+            from relation_synth import RelationSynthesizer, javadoc_for
+            # Always the escalation/flagship model, regardless of the
+            # harness-generation tier: proposing relations that must hold
+            # for EVERY correct implementation is the hardest reasoning
+            # step in the pipeline, and the nano batch showed the cheap
+            # model invents unsound out-of-domain oracles. `--model X`
+            # still wins so a forced single-model run stays single-model.
+            synth_model = args.model or config.HARNESS_MODEL_ESCALATION
+            patched_sources = [fn.func_source for fn in context.functions]
+            _syn_cls = sorted(set(re.findall(
+                r'^\+\+\+\s+.*?/([A-Za-z_]\w*)\.java',
+                context.patch_text or '', re.MULTILINE)))
+            class_name = _syn_cls[0] if _syn_cls else ''
+            # Documented contracts of the touched methods — the only honest
+            # ground truth for untested inputs. Best-effort: '' entries are
+            # dropped by the synthesizer.
+            javadocs = []
+            for rel in (context.modified_files or []):
+                full = Path(selection.buggy_dir) / rel
+                try:
+                    src_text = full.read_text(encoding='utf-8',
+                                              errors='replace')
+                except OSError:
+                    continue
+                for fn in context.functions:
+                    jd = javadoc_for(src_text, fn.func_name)
+                    if jd and jd not in javadocs:
+                        javadocs.append(jd)
+            synthesizer = RelationSynthesizer(
+                HarnessGenerator(model=synth_model,
+                                 temperature=0.3, top_p=1.0))
+            candidates = synthesizer.synthesize(
+                patched_sources, class_name,
+                context.root_cause_reachable or [], mined_oracles, '',
+                patch_text=context.patch_text or '',
+                javadocs=javadocs,
+                class_context=class_ctx)
+            if candidates:
+                print(f"  [synth] {len(candidates)} candidate relation(s) "
+                      f"({synth_model}): "
+                      f"{', '.join(r.name for r in candidates)}")
+            else:
+                print("  [synth] WARNING: synthesis returned no candidates "
+                      "(after one retry) — nothing to screen or inject")
+            synthesized_relations = candidates
+            record_extras["synth_candidates"] = len(candidates)
+
     # 5) Build the chat-completion prompt. Rather than a single fixed
     #    prompt, we wrap PromptBuilder in a factory the campaign calls
     #    before each fresh attempt: it injects which reachable functions
@@ -306,7 +546,12 @@ def main():
     #    than piling onto the first. The campaign passes no attempt index, so
     #    the closure keeps its own counter (one tick per fresh prompt build).
     prompt_builder = PromptBuilder(language=args.language)
-    _rr_state = {"i": 0}
+    _rr_state = {"i": 0, "s": 0, "m": 0}
+    # Rotate the variant strategy across the harness SET so each is tried by
+    # at least one harness — otherwise the model picks one stochastically and
+    # may never write, e.g., the consistency cross-check that catches a
+    # masked-symptom bug. One tick per fresh prompt build.
+    _STRATEGIES = ['a', 'b', 'c']
 
     def prompt_factory(covered_functions, found_signatures):
         semantic_test = None
@@ -315,6 +560,29 @@ def main():
             _rr_state["i"] += 1
             print(f"  [semantic] lifting assertion from "
                   f"{semantic_test.test_class}::{semantic_test.test_method}")
+        strategy = _STRATEGIES[_rr_state["s"] % len(_STRATEGIES)]
+        _rr_state["s"] += 1
+        if context.root_cause_reachable:
+            print(f"  [variant] assigned strategy ({strategy})")
+        # Mechanism rotation (semantic): each harness carries the lifted
+        # trigger block plus ONE extra oracle mechanism, instead of every
+        # prompt stacking all of them — stacked blocks contradicted each
+        # other and a flood of mined pairs once distracted the generator
+        # off a bug it had been catching. Only mechanisms that actually
+        # have content this run enter the rotation. NOTE: reads the
+        # closure variables at call time, so it automatically sees the
+        # post-screen `synthesized_relations`.
+        mechanism = None
+        if bug_kind == "semantic":
+            mechs = ['consistency']
+            if mined_oracles:
+                mechs.insert(0, 'pairs')
+            if synthesized_relations:
+                mechs.append('relations')
+            if len(mechs) > 1:
+                mechanism = mechs[_rr_state["m"] % len(mechs)]
+                _rr_state["m"] += 1
+                print(f"  [mechanism] assigned ({mechanism})")
         return prompt_builder.build(
             buggy_dir=selection.buggy_dir,
             context=context,
@@ -324,15 +592,55 @@ def main():
             crash_input=crash_input,
             bug_kind=bug_kind,
             semantic_test=semantic_test,
+            variant_strategy=strategy,
+            # When the relation verifier will screen fired oracles (6b),
+            # the prompt may push for strong, JUSTIFIED assertions instead
+            # of hedging to vacuous ones (the verifier is a backstop, and
+            # the prompt says so without overpromising).
+            verifier_enabled=args.verify_relations,
+            mined_oracles=mined_oracles,
+            synthesized_relations=synthesized_relations,
+            oracle_mechanism=mechanism,
         )
-
-    # The set-empty prompt used for attempt 1.
-    messages = prompt_factory([], [])
 
     # 6) Run the campaign: regenerate, recompile, and (by default) verify
     #    each compiled harness crashes the BUGGY version before accepting
     #    it. Acceptance = "compiles AND triggers".
     builder = HarnessBuilder(jazzer_api_jar=jazzer_api_jar)
+
+    # 6a-pre) Mechanically screen the synthesized relation candidates on
+    #    the BUGGY build (needs the builder + jazzer driver, hence here).
+    #    Candidates that fire indiscriminately on known-mostly-correct
+    #    behaviour are out-of-domain and dropped; only survivors reach the
+    #    prompt factory (which reads this variable at call time — the
+    #    initial prompt is deliberately built AFTER this point). No driver
+    #    jar / screen failure => nothing is injected: unscreened candidates
+    #    never reach a prompt under any circumstances.
+    if synthesized_relations:
+        if jazzer_standalone_jar:
+            print("\n" + "#" * 20 + " relation screening " + "#" * 20)
+            from relation_screen import screen_relations
+            try:
+                synthesized_relations = screen_relations(
+                    synthesized_relations,
+                    builder=builder,
+                    buggy_dir=selection.buggy_dir,
+                    jazzer_standalone_jar=jazzer_standalone_jar,
+                    package=context.package,
+                    imports=context.source_imports,
+                    jazzer_api_jar=jazzer_api_jar,
+                )
+            except Exception as exc:
+                print(f"  [screen] screening failed ({exc}) — dropping all "
+                      "candidates rather than injecting unscreened")
+                synthesized_relations = []
+            print(f"  [screen] {len(synthesized_relations)} relation(s) "
+                  "survived screening")
+        else:
+            print("  [screen] no jazzer driver available — dropping all "
+                  "candidates rather than injecting unscreened")
+            synthesized_relations = []
+        record_extras["synth_survivors"] = len(synthesized_relations)
 
     # Throwable names this bug raises, gathered from D4J root-cause metadata
     # and the captured runtime crash. Both fully-qualified and simple names
@@ -383,6 +691,36 @@ def main():
     expected_exceptions = [e for e in expected_exceptions
                            if e and not (e in seen or seen.add(e))]
 
+    # Seed corpus for the buggy-version trigger gate: string literals from
+    # the trigger tests and mined siblings, written one per file. libFuzzer
+    # starts from these instead of from nothing, so the gate's short budget
+    # begins in the neighbourhood of known-valid inputs — the region an
+    # overfit special-cased — rather than spending it discovering input
+    # shape. Best-effort: no literals, no corpus, no behaviour change.
+    corpus_dir = None
+    seed_literals = []
+    for ft in failure_tests:
+        if getattr(ft, 'method_source', None):
+            seed_literals += re.findall(
+                r'"((?:[^"\\]|\\.){1,120})"', ft.method_source)
+    for t in mined_oracles:
+        seed_literals += re.findall(
+            r'"((?:[^"\\]|\\.){1,120})"', getattr(t, 'source', ''))
+    seed_literals = [s for s in dict.fromkeys(seed_literals)
+                     if s.strip()][:64]
+    if seed_literals:
+        corpus_path = Path(selection.buggy_dir) / 'fuzz' / 'corpus'
+        try:
+            corpus_path.mkdir(parents=True, exist_ok=True)
+            for i, lit in enumerate(seed_literals):
+                (corpus_path / f'seed_{i:03d}').write_text(
+                    lit, encoding='utf-8', errors='replace')
+            corpus_dir = str(corpus_path)
+            print(f"  [corpus] seeded {len(seed_literals)} test literals "
+                  f"into {corpus_dir}")
+        except OSError as exc:
+            print(f"  [corpus] seeding failed ({exc}); continuing without")
+
     verifier = None
     if args.require_trigger:
         # Resolve the buggy classpath once (compiles the project), then
@@ -398,16 +736,44 @@ def main():
             timeout_seconds=verify_timeout,
             expected_exceptions=expected_exceptions,
             jazzer_api_jar=jazzer_api_jar,
+            corpus_dir=corpus_dir,
         )
 
+    # Two-tier generation: a cheap PRIMARY model, escalating to a stronger
+    # ESCALATION model if the primary can't produce an accepted harness.
+    # `--model X` forces a single model (primary == escalation == X).
+    if args.model:
+        primary_model = escalation_model = args.model
+    else:
+        primary_model = config.HARNESS_MODEL_PRIMARY
+        escalation_model = config.HARNESS_MODEL_ESCALATION
+    primary_gen = HarnessGenerator(model=primary_model,
+                                   temperature=0.6, top_p=1.0)
+    escalation_gen = None
+    if escalation_model != primary_model and config.HARNESS_ESCALATE_AFTER > 0:
+        escalation_gen = HarnessGenerator(model=escalation_model,
+                                          temperature=0.6, top_p=1.0)
+        print(f"  [model] primary={primary_model}, escalate to "
+              f"{escalation_model} after {config.HARNESS_ESCALATE_AFTER} "
+              "attempts with no accepted harness")
+    else:
+        print(f"  [model] {primary_model} (no escalation)")
+
+    # The set-empty prompt used for attempt 1 — built HERE, after relation
+    # screening, so the very first prompt already reflects the screened
+    # (not raw) candidate set.
+    messages = prompt_factory([], [])
+
     campaign = HarnessCampaign(
-        generator=HarnessGenerator(temperature=0.6, top_p=1.0),
+        generator=primary_gen,
         builder=builder,
         target_successes=args.target_successes,
         max_attempts=args.max_attempts,
         max_repair_failures=args.max_repair_failures,
         verifier=verifier,
         require_trigger=args.require_trigger,
+        escalation_generator=escalation_gen,
+        escalate_after=config.HARNESS_ESCALATE_AFTER,
     )
     result = campaign.run(messages, selection.buggy_dir,
                           prompt_factory=prompt_factory,
@@ -435,6 +801,113 @@ def main():
         except Exception as exc:
             print(f"  patched-code fuzzing failed: {exc}")
 
+    # 6b) [optional] Relation verification — a non-cheating FP filter. A
+    #     harness that crashed the patched code is only evidence of
+    #     overfitting if its ORACLE is sound (true for any correct impl).
+    #     Ask an LLM critic; drop findings whose oracle is judged unsound
+    #     (invented relations that also fire on correct code). Uses only the
+    #     harness source, never the developer fix.
+    if args.verify_relations and fuzz_results:
+        triggered = [r for r in fuzz_results if r.triggered]
+        if triggered:
+            print("\n" + "#" * 20 + " relation verification " + "#" * 20)
+            from relation_verifier import RelationVerifier
+            from oracle_strength import exception_headline, crash_excerpt
+            # Thread the run's model explicitly: the default
+            # HarnessGenerator resolves from .env, and a stale deployment
+            # there once 404'd EVERY verify call — the verifier then
+            # fail-opened on all of them and the whole stage silently
+            # became a no-op that "kept" everything. Same tier logic as
+            # synthesis: judging soundness is flagship work.
+            verifier_model = args.model or config.HARNESS_MODEL_ESCALATION
+            print(f"  [verifier] model={verifier_model}, "
+                  f"votes={config.RELATION_VERIFIER_VOTES}")
+            rv = RelationVerifier(
+                HarnessGenerator(model=verifier_model,
+                                 temperature=0.0, top_p=1.0),
+                votes=config.RELATION_VERIFIER_VOTES)
+            fr = FuzzRunner(
+                jazzer_standalone_jar=jazzer_standalone_jar,
+                timeout_seconds=args.fuzz_timeout,
+                expected_exceptions=expected_exceptions,
+                jazzer_api_jar=jazzer_api_jar,
+            )
+            # EXPECTED values lifted from the trigger tests' own equality
+            # assertions (assertEquals first-arg literals). An assertion
+            # that fires by disagreeing with one of these is checking
+            # GROUND TRUTH (the correct code is known to produce these
+            # values), so the verifier must not reject it as an over-tight
+            # speculative relation. NOT the input literals — feeding inputs
+            # into this channel made the short-circuit protect the wrong
+            # thing. Bug-agnostic: empty on any extraction miss, which just
+            # falls back to plain per-oracle review.
+            trusted_values = []
+            for ft in failure_tests:
+                if getattr(ft, 'method_source', None):
+                    trusted_values.extend(
+                        PromptBuilder.expected_assert_literals(
+                            ft.method_source))
+            trusted_values = list(dict.fromkeys(trusted_values))
+            for r in triggered:
+                try:
+                    with open(r.harness_path) as fh:
+                        src = fh.read()
+                except OSError:
+                    continue
+                # Collect EVERY oracle that fires on the patched code, not
+                # just the first Jazzer surfaced — a multi-oracle harness
+                # can fire via a sound oracle on one input and an unsound
+                # one on another, and judging only the surfaced firing would
+                # let the unsound sibling sink the finding. Re-fuzz with
+                # --keep_going, and ALWAYS union in the originally captured
+                # headline: the re-fuzz is nondeterministic and may surface
+                # a different oracle set, and the original firing must never
+                # drop out of the judged list just because it didn't
+                # re-fire.
+                single = exception_headline(
+                    (r.stdout or '') + '\n' + (r.stderr or ''))
+                fired_all = fr.collect_fired_oracles(
+                    r.harness_path, r.class_name,
+                    selection.patch_path, selection.buggy_dir)
+                if single and single not in fired_all:
+                    fired_all.append(single)
+                if not fired_all:
+                    fired_all = [None]
+                # Concrete evidence of the ORIGINAL firing (exception line
+                # + stack). Passed only when judging the oracle it belongs
+                # to — evidence from firing A must not colour the judgment
+                # of oracle B.
+                excerpt = crash_excerpt(
+                    (r.stdout or '') + '\n' + (r.stderr or ''))
+                # KEEP the finding if ANY fired oracle is sound or trusted —
+                # one sound firing is sufficient proof the patch is wrong.
+                # DROP only if every fired oracle is judged unsound.
+                kept_reason = None
+                drop_reasons = []
+                for fired in fired_all:
+                    evid = (excerpt if excerpt and fired
+                            and fired[:40] in excerpt else None)
+                    ok, why = rv.verify(src, fired_assertion=fired,
+                                        trusted_values=trusted_values,
+                                        concrete_evidence=evid,
+                                        code_context=('\n\n'.join(class_ctx)
+                                                      if class_ctx else None))
+                    if ok:
+                        kept_reason = (fired, why)
+                        break
+                    drop_reasons.append((fired, why))
+                if kept_reason is not None:
+                    print(f"  ✓ sound: {r.harness_path}")
+                    print(f"      kept via: {kept_reason[0]}")
+                    print(f"      {kept_reason[1]}")
+                else:
+                    print(f"  ✗ dropped (all {len(drop_reasons)} fired "
+                          f"oracles unsound): {r.harness_path}")
+                    for fired, why in drop_reasons:
+                        print(f"      fired: {fired}")
+                        print(f"        {why}")
+                    r.triggered = False  # no longer counts as a finding
+
     # A run is scoreable only if we actually fuzzed at least one harness
     # against the patched code; otherwise we have no overfitting verdict.
     if fuzz_results:
@@ -445,7 +918,8 @@ def main():
                  label='correct' if args.correct else 'overfitting',
                  status=status, selection=selection,
                  result=result, fuzz_results=fuzz_results,
-                 bug_kind=bug_kind)
+                 bug_kind=bug_kind, extras=record_extras)
+    _print_token_usage()
 
     sys.exit(0 if result.converged else 2)
 

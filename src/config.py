@@ -102,6 +102,29 @@ else:
 # tokens — 'high' is a reasonable default for this pipeline.
 OPENAI_REASONING_EFFORT = os.getenv('OPENAI_REASONING_EFFORT', 'low')
 
+# --- Two-tier harness generation --------------------------------------------
+# Try a cheap PRIMARY model; if it goes HARNESS_ESCALATE_AFTER consecutive
+# attempts without a NEW accepted harness (compiles AND triggers), switch to
+# the stronger ESCALATION model for the rest of that bug. Rationale
+# (measured): a nano model matches the flagship's *judgment* when it
+# converges, but fails to *build* harnesses on hard bugs — so escalate
+# exactly when building stalls, paying nano prices for everything else.
+# Defaults are a NO-OP (primary == escalation == LOCAL_LLM_MODEL); set
+# HARNESS_MODEL_PRIMARY to a nano deployment in .env to enable. `run.py
+# --model X` forces a single model (no escalation). The ESCALATION model is
+# also what relation synthesis always uses, tier or no tier.
+HARNESS_MODEL_PRIMARY = os.getenv('HARNESS_MODEL_PRIMARY', LOCAL_LLM_MODEL)
+HARNESS_MODEL_ESCALATION = os.getenv('HARNESS_MODEL_ESCALATION', LOCAL_LLM_MODEL)
+HARNESS_ESCALATE_AFTER = int(os.getenv('HARNESS_ESCALATE_AFTER', '3'))
+
+# Votes for the relation verifier's soundness review (run.py 6b). 1 = a
+# single review (default). >1 = diverse-lens ensemble: the finding is
+# dropped only when a strict majority of lenses judge the fired oracle
+# unsound. Turn up only after the offline replay harness (verifier_replay)
+# shows the single review leaks or over-kills on the logged cases — each
+# extra vote is an extra LLM call per fired oracle.
+RELATION_VERIFIER_VOTES = int(os.getenv('RELATION_VERIFIER_VOTES', '1'))
+
 # Output token cap for reasoning models (GPT-5.x, o-series). Reasoning
 # models spend tokens on hidden reasoning before emitting the answer, so
 # without a generous cap the visible harness can come back truncated or
@@ -227,8 +250,10 @@ APR_TOOLS = [
     'SimFix', 'SketchFix', 'ssFix',
 ]
 
-# Where buggy checkouts get materialised.
-D4J_CHECKOUT_ROOT = '/tmp/d4j'
+# Where buggy checkouts get materialised. Overridable via env so concurrent
+# or replay runs can isolate their checkouts (and preserve them for post-hoc
+# inspection) instead of sharing /tmp/d4j and wiping each other's evidence.
+D4J_CHECKOUT_ROOT = os.getenv('D4J_CHECKOUT_ROOT', '/tmp/d4j')
 
 # --- Linux kernel CVE sibling database ------------------------------------
 # Root directory for kernel worktrees created by checkout_pair.py.
