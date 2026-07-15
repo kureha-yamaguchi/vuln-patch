@@ -1,0 +1,119 @@
+{
+  "_comment": "Context study: per bug, the GOLD relations were hand-derived by reading the patch, the touched class, and its documented contracts BEFORE running the synthesizer. The study measures whether the synthesizer proposes (an equivalent of) each gold relation without vs with class-level context, and whether the verifier's judgments use such knowledge. Categories: numeric-stochastic (Math), string-parsing (Lang), calendar (Time), object-graph (Chart).",
+  "bugs": [
+    {
+      "project": "Math", "bug_id": "2", "apr_tool": "Arja",
+      "category": "numeric-stochastic",
+      "gold": [
+        {"name": "mean-formula", "needs": "method javadoc", "text": "getNumericalMean() == sampleSize * numberOfSuccesses / populationSize (the javadoc states the formula outright)"},
+        {"name": "mean-within-support", "needs": "sibling methods", "text": "getSupportLowerBound() <= getNumericalMean() <= getSupportUpperBound() (sibling accessors in the same class)"},
+        {"name": "sample-mean-agrees", "needs": "sibling method + stochastic awareness", "text": "the average of many sample() draws approximates getNumericalMean() within a statistical tolerance"}
+      ]
+    },
+    {
+      "project": "Math", "bug_id": "56", "apr_tool": "Arja",
+      "category": "numeric-stochastic",
+      "gold": [
+        {"name": "size-product", "needs": "constructor invariant", "text": "getSize() == the product of the entries of getSizes() (totalSize is computed as that product in the constructor)"},
+        {"name": "count-roundtrip", "needs": "sibling methods", "text": "getCount(getCounts(i)) == i for every 0 <= i < getSize() (the two conversion methods are documented inverses)"},
+        {"name": "iterator-count", "needs": "class-level iterator contract", "text": "the class's iterator yields exactly getSize() elements"}
+      ]
+    },
+    {
+      "project": "Math", "bug_id": "104", "apr_tool": "Elixir",
+      "category": "numeric-stochastic",
+      "gold": [
+        {"name": "p-plus-q-one", "needs": "sibling function", "text": "regularizedGammaP(a,x) + regularizedGammaQ(a,x) == 1 (the complementary sibling is documented in the same class)"},
+        {"name": "p-range-monotone", "needs": "method javadoc", "text": "regularizedGammaP is in [0,1] and non-decreasing in x for fixed a"}
+      ]
+    },
+    {
+      "project": "Lang", "bug_id": "7", "apr_tool": "Arja",
+      "category": "string-parsing",
+      "gold": [
+        {"name": "construct-roundtrip", "needs": "method contract", "text": "createNumber(String.valueOf(n)) value-equals n for a fuzzed int/long n (input constructed from a known answer)"},
+        {"name": "tostring-roundtrip", "needs": "method contract", "text": "for a Number x returned by createNumber, createNumber(x.toString()) value-equals x"}
+      ]
+    },
+    {
+      "project": "Lang", "bug_id": "22", "apr_tool": "Arja",
+      "category": "string-parsing",
+      "gold": [
+        {"name": "reduced-gcd-one", "needs": "class javadoc (lowest terms)", "text": "after reduce()/getReducedFraction, gcd(|numerator|, denominator) == 1"},
+        {"name": "value-preserved", "needs": "method contract", "text": "reduction preserves the value: reduced.numerator * original.denominator == original.numerator * reduced.denominator"},
+        {"name": "denominator-positive", "needs": "class invariant", "text": "the denominator is always positive after construction/reduction (sign carried by the numerator)"}
+      ]
+    },
+    {
+      "project": "Lang", "bug_id": "55", "apr_tool": "Arja",
+      "category": "string-parsing",
+      "gold": [
+        {"name": "stopped-time-frozen", "needs": "method javadoc", "text": "after stop(), repeated getTime() calls return the same value"},
+        {"name": "suspend-freezes", "needs": "method javadoc", "text": "getTime() read after suspend() equals a later read while still suspended (suspension excludes elapsed wall time)"}
+      ]
+    },
+    {
+      "project": "Time", "bug_id": "4", "apr_tool": "Arja",
+      "category": "calendar",
+      "gold": [
+        {"name": "with-preserves-fields", "needs": "method contract", "text": "with(type, value) preserves every pre-existing field's value in the result"},
+        {"name": "with-size-plus-one", "needs": "method contract", "text": "when type was absent, result.size() == original.size() + 1"},
+        {"name": "canonical-order", "needs": "class javadoc (field ordering)", "text": "the result's field types are in the documented largest-to-smallest canonical order"},
+        {"name": "duplicate-semantics-throws", "needs": "field-type domain knowledge", "text": "adding a field whose semantics duplicate an existing one (clockhourOfDay onto a Partial with hourOfDay) throws IllegalArgumentException"}
+      ]
+    },
+    {
+      "project": "Time", "bug_id": "11", "apr_tool": "Arja",
+      "category": "calendar",
+      "gold": [
+        {"name": "tozone-nonnull", "needs": "method javadoc", "text": "toDateTimeZone(id, ...) returns a non-null zone whose getID() equals the id argument"},
+        {"name": "transitions-ordered", "needs": "class contract", "text": "successive nextTransition(t) results from the built zone are strictly increasing while transitions exist"}
+      ]
+    },
+    {
+      "project": "Time", "bug_id": "14", "apr_tool": "Arja",
+      "category": "calendar",
+      "gold": [
+        {"name": "plus-minus-roundtrip", "needs": "sibling methods", "text": "partial.plus(period).minus(period) equals the original when both operations are valid for the fields present"},
+        {"name": "field-ranges-valid", "needs": "chronology contract", "text": "after any field arithmetic, monthOfYear stays in [1,12] and dayOfMonth stays valid for that month"}
+      ]
+    },
+    {
+      "project": "Chart", "bug_id": "1", "apr_tool": "Arja",
+      "category": "object-graph",
+      "gold": [
+        {"name": "legend-count-series", "needs": "collaborator (dataset) contract", "text": "for a renderer attached to a plot with a dataset and series visible in the legend, getLegendItems().getItemCount() == dataset.getRowCount()"},
+        {"name": "no-dataset-empty", "needs": "method javadoc", "text": "with no dataset attached, getLegendItems() is empty (documented degenerate case)"}
+      ]
+    },
+    {
+      "project": "Chart", "bug_id": "19", "apr_tool": "Arja",
+      "category": "object-graph",
+      "gold": [
+        {"name": "axis-index-roundtrip", "needs": "sibling methods", "text": "getDomainAxisIndex(getDomainAxis(i)) == i for every configured axis index"},
+        {"name": "null-arg-throws", "needs": "method javadoc", "text": "getDomainAxisIndex(null) throws IllegalArgumentException (documented null check)"}
+      ]
+    },
+    {
+      "project": "Chart", "bug_id": "26", "apr_tool": "Jaid",
+      "category": "object-graph",
+      "gold": [
+        {"name": "one-entity-per-label", "needs": "collaborator (entity collection) contract", "text": "drawing an axis with a NON-BLANK label into an entity-collecting context adds exactly one AxisLabelEntity"},
+        {"name": "entity-area-nonempty", "needs": "collaborator contract", "text": "the added label entity's hotspot area is a non-empty rectangle"}
+      ]
+    }
+  ],
+  "replay_map": {
+    "t4syn_overfit_a1": {"project": "Time", "bug_id": "4", "apr_tool": "Arja", "label": "overfitting"},
+    "lang27_simfix_diag_c": {"project": "Lang", "bug_id": "27", "apr_tool": "SimFix", "label": "correct"},
+    "math2_sofix_mined54_c": {"project": "Math", "bug_id": "2", "apr_tool": "SOFix", "label": "correct"},
+    "lang22_deeprepair_diagf_c": {"project": "Lang", "bug_id": "22", "apr_tool": "DeepRepair", "label": "correct"},
+    "chart26_jaid_diagf_c": {"project": "Chart", "bug_id": "26", "apr_tool": "Jaid", "label": "correct"},
+    "time4_elixir_mined_c": {"project": "Time", "bug_id": "4", "apr_tool": "Elixir", "label": "correct"},
+    "lang7_arja_diag_o": {"project": "Lang", "bug_id": "7", "apr_tool": "Arja", "label": "overfitting"},
+    "lang55_arja_diag_o": {"project": "Lang", "bug_id": "55", "apr_tool": "Arja", "label": "overfitting"},
+    "chart19_arja_diag_o": {"project": "Chart", "bug_id": "19", "apr_tool": "Arja", "label": "overfitting"},
+    "chart26_jaid_diag_o": {"project": "Chart", "bug_id": "26", "apr_tool": "Jaid", "label": "overfitting"},
+    "math2_arja_mined54_o": {"project": "Math", "bug_id": "2", "apr_tool": "Arja", "label": "overfitting"}
+  }
+}
