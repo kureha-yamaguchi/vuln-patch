@@ -232,7 +232,8 @@ def _near_equal_numeric(a: str, b: str, rel: float = 1e-9) -> bool:
     pair within `rel` relative tolerance. A correct patch may evaluate
     n*m/N in a different order than the dev fix and print
     0.6000000000000001 vs 0.6 — a formatting-visible, semantically
-    irrelevant difference (measured: 338 such lines on Math-2/SOFix)."""
+    irrelevant difference (measured: all 339 Math-2/SOFix divergences
+    were of this kind; see progress.md §9 B1 result)."""
     na, nb = _NUM_RE.findall(a), _NUM_RE.findall(b)
     if not na or len(na) != len(nb):
         return False
@@ -368,9 +369,27 @@ def certify_one(cand, gen, probes, timeout):
             continue
         lines_o = [ln for ln in out_o.splitlines() if ln.startswith("IN=")]
         lines_f = [ln for ln in out_f.splitlines() if ln.startswith("IN=")]
+        # A probe that failed to LAUNCH (nonzero exit) or printed no IN=
+        # lines on either build yields a one-sided diff in which every
+        # line reads as a divergence. Abstain — count NOTHING from this
+        # probe. A fixed-build classpath error (the probe is compiled
+        # against the candidate cp and only RUN on the fixed cp) must
+        # never certify a patch as detectable.
+        bad_sides = []
+        if rc_o != 0 or not lines_o:
+            bad_sides.append(f"candidate(rc={rc_o},lines={len(lines_o)})")
+        if rc_f != 0 or not lines_f:
+            bad_sides.append(f"fixed(rc={rc_f},lines={len(lines_f)})")
+        if bad_sides:
+            probe_status.append("run-failed:" + "+".join(bad_sides))
+            continue
         diff = [ln for ln in difflib.unified_diff(lines_f, lines_o,
                                                   lineterm="", n=0)
                 if ln.startswith(("+IN=", "-IN="))]
+        # //2 pairs up the +/- sides of a changed line; when add/delete
+        # counts are unequal it undercounts. Fine as the boolean
+        # certification gate (any diff > 0), NOT an exact divergence count
+        # — the per-kind tallies below are the countable signal.
         div = len(diff) // 2 if diff else 0
         total_div += div
         for k, v in _classify_divergences(lines_f, lines_o).items():
