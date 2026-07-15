@@ -1084,70 +1084,31 @@ class PromptBuilder:
             )
         parts.append(self._variant_strategy_menu(
             assigned=strategy, verifier_enabled=verifier_enabled))
-        hints = self._summary_stat_hints(shown)
-        if hints:
-            parts.append(self._consistency_hint_block(hints))
+        parts.append(self._consistency_hint_block())
         return '\n'.join(parts)
 
-    # Reachable siblings whose NAME implies a summary quantity that can be
-    # cross-checked against an independent computation (strategy (b)).
-    # Pattern -> concrete check phrased generically (no test-specific answer).
-    _STAT_PATTERNS = [
-        (re.compile(r'.*[Mm]ean$|.*[Aa]verage$'),
-         "a MEAN — a mean ALWAYS lies within the min/max of the data it"
-         " averages, so if the object exposes its own extremes, assert"
-         " lower <= mean <= upper; additionally compare it to the"
-         " EMPIRICAL average of many values the object produces (iterate"
-         " or generate many, average them, assert agreement within a"
-         " tolerance)"),
-        (re.compile(r'.*[Vv]ariance$'),
-         "a VARIANCE — must be >= 0, and match the empirical variance of many"
-         " produced values"),
-        (re.compile(r'.*(Std|Standard)?Deviation$'),
-         "a STANDARD DEVIATION — must be >= 0 and match the empirical spread"),
-        (re.compile(r'^(?!inverse).*[Pp]robability$'),
-         "a PROBABILITY — must lie in [0, 1], and a cumulative probability"
-         " must be NON-DECREASING (evaluate it at two ordered points and"
-         " assert the ordering)"),
-        (re.compile(r'^(size|count|length|getCount|getSize|getLength)$'),
-         "a COUNT/SIZE — compare it to a manual count of the elements"),
-        (re.compile(r'^hashCode$'),
-         "a HASH — two objects that are equal must return equal hashCodes"),
-    ]
-
-    @classmethod
-    def _summary_stat_hints(cls, reachable: List[str]):
-        """Reachable siblings whose name implies a checkable summary quantity,
-        with the concrete cross-check for each. Makes strategy (b) specific:
-        the model is told WHICH sibling to cross-check and HOW, instead of
-        guessing that a consistency check applies at all."""
-        out = []
-        seen = set()
-        for name in reachable:
-            short = name.split('.')[-1]
-            if short in seen:
-                continue
-            for pat, hint in cls._STAT_PATTERNS:
-                if pat.match(short):
-                    seen.add(short)
-                    out.append((short, hint))
-                    break
-        return out
-
+    # NOTE: an earlier version prefixed this block with a name-matched
+    # whitelist (_STAT_PATTERNS: get*Mean, size, hashCode, ...) that told
+    # the model WHICH reachable sibling to cross-check and HOW. Retired:
+    # the patterns were shaped by one dataset's vocabulary (the exact
+    # overfitting this pipeline hunts), and relation synthesis subsumes
+    # them — it reproduces the mean/variance/bounds/monotonicity contracts
+    # from the class's own javadoc, per codebase, with a mechanical screen
+    # behind it. What remains below is the dataset-neutral schema.
     @staticmethod
-    def _consistency_hint_block(hints) -> str:
+    def _consistency_hint_block() -> str:
         parts = [
-            "CONCRETE CONSISTENCY CHECKS available in this region (these"
-            " directly support strategy (b) — a summary a defect can leave"
-            " wrong while the top-level output is masked). For at least one,"
-            " cross-check the REPORTED value against an INDEPENDENT computation"
-            " and throw on a mismatch beyond tolerance:",
+            "CONSISTENCY CHECKS (these directly support strategy (b) — a"
+            " summary a defect can leave wrong while the top-level output is"
+            " masked). Identify from the API IN FRONT OF YOU which exposed"
+            " values can be cross-checked against an independent"
+            " computation — a reported aggregate vs a recomputation from"
+            " the object's own output, a value vs the object's own stated"
+            " bounds — and for at least one, throw on a mismatch beyond"
+            " tolerance. These are SOUND (a summary must match the data it"
+            " summarises), so they will not fire on a correct"
+            " implementation.",
         ]
-        for name, hint in hints:
-            parts.append(f"  - `{name}()` is {hint}.")
-        parts.append(
-            "These are SOUND (a summary must match the data it summarises), so"
-            " they will not fire on a correct implementation.")
         # The observed hedge: pointed at the right sibling, the model wrote
         # `if (!Double.isFinite(mean)) throw` — satisfied the letter of the
         # hint with the weakest member of the sound set, and a wrong-but-
