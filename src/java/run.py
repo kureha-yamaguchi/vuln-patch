@@ -355,16 +355,18 @@ def main():
         print("!" * 60)
     record_extras = {"context_degraded": context_degraded}
 
-    # Class-level codebase context for the two LLM judgment stages
-    # (synthesis + relation verification). Task inspection showed the
+    # Class-level codebase context for the LLM judgment stages: relation
+    # synthesis, relation verification, and the 'consistency' harness slot
+    # (one skeleton-aware harness per set). Task inspection showed the
     # discriminating invariant routinely lives OUTSIDE the patched method
     # (constructor invariants, complementary sibling functions, class
     # javadoc contracts), and the verifier's measured leaks were
     # domain-knowledge failures. Built once from the buggy checkout —
-    # label-free.
+    # label-free. Assembled for every semantic bug (it is a cheap local
+    # parse): gating it on the synthesis/verifier flags silently starved
+    # the consistency slot in flag-off configs.
     class_ctx = []
-    if (bug_kind == "semantic" and not context_degraded
-            and (args.synthesize_relations or args.verify_relations)):
+    if bug_kind == "semantic" and not context_degraded:
         from code_context import assemble_class_context
         class_ctx = assemble_class_context(
             selection.buggy_dir,
@@ -608,6 +610,9 @@ def main():
             synthesized_relations=synthesized_relations,
             oracle_mechanism=mechanism,
             touched_javadocs=touched_javadocs,
+            # Only the 'consistency' slot renders this (one
+            # skeleton-aware harness per set); other slots stay lean.
+            class_context=class_ctx,
         )
 
     # 6) Run the campaign: regenerate, recompile, and (by default) verify

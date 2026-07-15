@@ -34,6 +34,7 @@ class PromptBuilder:
               synthesized_relations: Optional[List] = None,
               oracle_mechanism: Optional[str] = None,
               touched_javadocs: Optional[List[str]] = None,
+              class_context: Optional[List[str]] = None,
               ) -> List[Dict[str, str]]:
         """Assemble the chat-completion messages.
 
@@ -96,6 +97,7 @@ class PromptBuilder:
                 synthesized_relations=synthesized_relations or [],
                 oracle_mechanism=oracle_mechanism,
                 touched_javadocs=touched_javadocs,
+                class_context=class_context,
             )
         codebase = os.path.basename(buggy_dir.rstrip('/'))
 
@@ -159,6 +161,7 @@ class PromptBuilder:
                         synthesized_relations: Optional[List] = None,
                         oracle_mechanism: Optional[str] = None,
                         touched_javadocs: Optional[List[str]] = None,
+                        class_context: Optional[List[str]] = None,
                         ) -> List[Dict[str, str]]:
         """Build the prompt for a semantic (assertion-failing) bug.
 
@@ -183,6 +186,15 @@ class PromptBuilder:
             sections.append(self._imports_block(context.source_imports))
         for fn in context.functions:
             sections.append(self._function_block(fn))
+        # The 'consistency' mechanism slot is the one harness per set that
+        # gets the class skeleton: its oracle is a cross-member agreement
+        # check, and the ctxstudy showed exactly that relation class
+        # (sibling agreement, overload equivalence, round-trip) only
+        # appears when the model can see the class-level contracts. The
+        # other mechanism slots stay lean — every prompt paying the
+        # skeleton cost is the bloat that once distracted the generator.
+        if oracle_mechanism == 'consistency' and class_context:
+            sections.append(self._class_context_block(class_context))
         precond = self._preconditions_block(touched_javadocs)
         if precond:
             sections.append(precond)
@@ -473,6 +485,24 @@ class PromptBuilder:
                 parts.append("</implementation>")
             parts.append("</callee>")
         return '\n'.join(parts)
+
+    @staticmethod
+    def _class_context_block(class_context: List[str]) -> str:
+        """Class-level skeletons for the consistency-mechanism harness —
+        the contracts a cross-member agreement oracle needs (sibling
+        accessors, constructor invariants, class javadoc). Same view the
+        synthesizer and verifier get; label-free (buggy checkout only)."""
+        return (
+            "CLASS-LEVEL CONTEXT — partial skeletons of the touched"
+            " class(es): signatures, fields, javadoc; non-touched method"
+            " bodies elided. Use them to find CROSS-MEMBER consistency"
+            " oracles: sibling accessors that must agree with each other or"
+            " with constructor arguments, overloads that must be"
+            " equivalent, round-trips that must restore state. Assert only"
+            " what a shown contract or invariant guarantees.\n"
+            "<class_skeletons>\n"
+            + '\n\n'.join(class_context)
+            + "\n</class_skeletons>")
 
     @staticmethod
     def _preconditions_block(javadocs: Optional[List[str]],
