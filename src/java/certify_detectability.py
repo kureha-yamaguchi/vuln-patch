@@ -184,7 +184,9 @@ def _compile_probe(source, workdir, cp):
     path = os.path.join(workdir, "DivergenceProbe.java")
     with open(path, "w") as fh:
         fh.write(source)
-    r = _run(["javac", "-cp", cp, "-d", workdir, path])
+    # -encoding UTF-8: probes may embed non-ASCII string inputs; don't let
+    # the platform charset decide whether they compile.
+    r = _run(["javac", "-encoding", "UTF-8", "-cp", cp, "-d", workdir, path])
     return r.returncode == 0, r.stderr
 
 

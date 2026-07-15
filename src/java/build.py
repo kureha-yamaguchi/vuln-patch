@@ -161,7 +161,12 @@ class HarnessBuilder:
         ])
 
         result = subprocess.run(
-            ['javac', '-cp', classpath, '-d', fuzz_dir, harness_path],
+            # -encoding UTF-8: harness/relation sources can carry non-ASCII
+            # (string literals lifted from tests, unicode probe inputs);
+            # without it javac falls back to the platform charset and a
+            # US-ASCII locale rejects the file outright.
+            ['javac', '-encoding', 'UTF-8', '-cp', classpath,
+             '-d', fuzz_dir, harness_path],
             capture_output=True, text=True,
         )
         return BuildResult(
