@@ -426,7 +426,19 @@ rationale and the decide-something experiment criteria.
 
 **No mislabels. All three Dcorrect labels stand; the 80% verifier leak is
 real** and precision correctly rests on generator-side rules + the A2
-attribution check. Per case:
+attribution check.
+
+**Epistemics: this conclusion is SOFT.** The two WEAK kinds that make all
+three cases come out 0-strong (`value_ulp`, `exception_generic_latent`)
+were introduced AFTER seeing these results and are validated on the SAME
+three cases they were fitted to — the boundary was adjusted until it
+agreed the labels are trustworthy, with no held-out check yet. Both kinds
+have general rationales (ulp formatting noise is invisible to any
+tolerance oracle; an incidentally-fixed latent generic crash is not the
+semantic bug), but treat "no mislabels" as provisional until the kinds
+hold on correct-side cases they were never fitted to (out-of-sample
+check rides with the B3 certification sweep — T6 in the review response
+plan). Per case:
 
 - **Math-2/SOFix**: 339 divergences vs dev fix — ALL last-ulp float noise
   (`mean=0.6000000000000001` vs `0.6`; different evaluation order of
