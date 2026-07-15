@@ -128,6 +128,16 @@ def screen_relations(candidates: List,
     selective, silent = [], []
     for i, rel in enumerate(candidates):
         name = getattr(rel, 'name', f'relation{i}')
+        # Format gate: the counting harness recognises a violation ONLY by
+        # the mandated `throw new RuntimeException("... violated ...")`
+        # (synthesis instructions require that literal). A check that
+        # throws in any other shape would fuzz as "silent" and evade the
+        # fire-ratio rule entirely — reject it here, before spending a
+        # compile, instead of counting what it can't see.
+        if 'violated' not in getattr(rel, 'check', ''):
+            print(f"  [screen] {name}: check never throws the mandated "
+                  f"'violated' message — format-rejected, dropped")
+            continue
         cls = f'RelScreen{i}'
         src = _screen_harness_source(package, imports or [], cls,
                                      getattr(rel, 'check', ''))
