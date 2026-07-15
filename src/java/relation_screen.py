@@ -193,12 +193,21 @@ def screen_relations(candidates: List,
             pass
         print(f"  [screen] {name}: KEPT — {note}")
         (selective if violated else silent).append(rel)
-    survivors = (selective + silent)[:max_keep]
-    dropped_by_cap = (selective + silent)[max_keep:]
+    # Silent relations (fired on nothing the buggy build does) are
+    # regression TRIPWIRES, not detectors — past the first, each adds
+    # prompt mass without new evidence. And injected oracle mass measurably
+    # distracts the generator from the seed-anchored oracle (mined54:
+    # Lang-7 TP->FN under 36 mined assertions; sem8_v2: Lang-7 and Math-2
+    # overfits, both caught by earlier configs, went FN with exactly 3
+    # silent generic contracts injected). Selective firers keep the full
+    # cap; silent survivors are capped at ONE.
+    kept = (selective + silent[:1])[:max_keep]
+    dropped_by_cap = [r for r in selective + silent if r not in kept]
     if dropped_by_cap:
-        # Not a screening failure — just the prompt-size cap. Say so, or
-        # "4 KEPT" followed by "3 survived" reads as an off-by-one.
-        print(f"  [screen] cap: injecting the top {max_keep}; "
+        # Not a screening failure — the prompt-size/distraction cap. Say
+        # so, or "4 KEPT" followed by "3 survived" reads as an off-by-one.
+        print(f"  [screen] cap: injecting {len(kept)} "
+              f"(selective first, at most 1 silent); "
               + ", ".join(getattr(r, 'name', '?') for r in dropped_by_cap)
-              + " kept-but-cut (selective firers rank first)")
-    return survivors
+              + " kept-but-cut")
+    return kept
