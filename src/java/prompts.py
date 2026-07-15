@@ -33,8 +33,15 @@ class PromptBuilder:
               mined_oracles: Optional[List] = None,
               synthesized_relations: Optional[List] = None,
               oracle_mechanism: Optional[str] = None,
+              touched_javadocs: Optional[List[str]] = None,
               ) -> List[Dict[str, str]]:
         """Assemble the chat-completion messages.
+
+        ``touched_javadocs`` are the javadoc texts of the touched methods
+        (extracted once by the caller from the buggy sources). Only their
+        @param/@throws lines are injected — the documented preconditions /
+        rejection contract the valid-by-construction rule tells the model
+        to satisfy, which it previously had to GUESS from test source.
 
         ``oracle_mechanism`` (semantic bugs) assigns THIS harness one extra
         oracle mechanism instead of stacking all of them into every prompt:
@@ -88,6 +95,7 @@ class PromptBuilder:
                 mined_oracles=mined_oracles or [],
                 synthesized_relations=synthesized_relations or [],
                 oracle_mechanism=oracle_mechanism,
+                touched_javadocs=touched_javadocs,
             )
         codebase = os.path.basename(buggy_dir.rstrip('/'))
 
@@ -107,6 +115,9 @@ class PromptBuilder:
                 method_names=[fn.func_name for fn in context.functions],
                 crash_input=crash_input,
             ))
+        precond = self._preconditions_block(touched_javadocs)
+        if precond:
+            sections.append(precond)
         if context.root_cause_reachable:
             sections.append(self._variant_analysis_block(
                 context.root_cause_reachable,
@@ -147,6 +158,7 @@ class PromptBuilder:
                         mined_oracles: Optional[List] = None,
                         synthesized_relations: Optional[List] = None,
                         oracle_mechanism: Optional[str] = None,
+                        touched_javadocs: Optional[List[str]] = None,
                         ) -> List[Dict[str, str]]:
         """Build the prompt for a semantic (assertion-failing) bug.
 
@@ -171,6 +183,9 @@ class PromptBuilder:
             sections.append(self._imports_block(context.source_imports))
         for fn in context.functions:
             sections.append(self._function_block(fn))
+        precond = self._preconditions_block(touched_javadocs)
+        if precond:
+            sections.append(precond)
         sections.append(self._lifted_assertion_block(
             chosen, all_failure_tests,
             verifier_enabled=verifier_enabled))
@@ -457,6 +472,49 @@ class PromptBuilder:
                 parts.append(impl_src)
                 parts.append("</implementation>")
             parts.append("</callee>")
+        return '\n'.join(parts)
+
+    @staticmethod
+    def _preconditions_block(javadocs: Optional[List[str]],
+                             max_chars: int = 900) -> str:
+        """Compact documented-preconditions / rejection-contract block: the
+        @param/@throws lines from the touched methods' javadoc.
+
+        The valid-by-construction rule tells the generator to 'build inputs
+        satisfying the documented preconditions' — but the generator was
+        never FED that documentation (only test source and bodies), so it
+        had to guess the preconditions. This block closes the gap. It
+        AUGMENTS the rule; when javadoc is absent (undocumented code,
+        OSS-Fuzz targets) it renders empty and the rule stands alone —
+        never replaced."""
+        if not javadocs:
+            return ''
+        lines: List[str] = []
+        for doc in javadocs:
+            for ln in (doc or '').splitlines():
+                s = ln.strip()
+                if (s.startswith('@param') or s.startswith('@throws')
+                        or s.startswith('@exception')):
+                    if s not in lines:
+                        lines.append(s)
+        if not lines:
+            return ''
+        parts = [
+            "DOCUMENTED PRECONDITIONS / REJECTION CONTRACT of the touched"
+            " method(s), from their javadoc. An input violating an @param"
+            " constraint is INVALID — a documented @throws on it is CORRECT"
+            " behaviour, never a finding. Build inputs that satisfy these"
+            " constraints BY CONSTRUCTION (order/clamp/force them valid"
+            " before the call) and assert only on those:",
+        ]
+        total = 0
+        for s in lines:
+            if total + len(s) > max_chars:
+                parts.append("  - ... (further documented constraints"
+                             " elided)")
+                break
+            parts.append(f"  - {s}")
+            total += len(s)
         return '\n'.join(parts)
 
     def _failure_test_block(self, failure_tests: List[FailureTest],

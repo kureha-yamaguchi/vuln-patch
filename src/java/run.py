@@ -481,13 +481,34 @@ def main():
     #      mechanically screened on the buggy build (relation_screen, run
     #      after the builder exists — see step 6) and ONLY survivors ever
     #      reach a prompt. If screening cannot run, nothing is injected.
+    # Documented contracts (javadoc) of the touched methods, extracted once
+    # from the buggy sources. Consumed twice: relation synthesis grounds its
+    # candidates in them, and the harness prompt's documented-preconditions
+    # block feeds the valid-by-construction rule the actual @param/@throws
+    # contract instead of making the generator guess it from test source.
+    # Best-effort — empty on any miss (undocumented code), and every
+    # consumer falls back cleanly.
+    touched_javadocs = []
+    if context.functions:
+        from relation_synth import javadoc_for
+        for rel in (context.modified_files or []):
+            full = Path(selection.buggy_dir) / rel
+            try:
+                src_text = full.read_text(encoding='utf-8', errors='replace')
+            except OSError:
+                continue
+            for fn in context.functions:
+                jd = javadoc_for(src_text, fn.func_name)
+                if jd and jd not in touched_javadocs:
+                    touched_javadocs.append(jd)
+
     synthesized_relations = []
     if bug_kind == "semantic" and args.synthesize_relations:
         if context_degraded:
             print("  [synth] skipped: no touched function extracted "
                   "(context degraded — see warning above)")
         else:
-            from relation_synth import RelationSynthesizer, javadoc_for
+            from relation_synth import RelationSynthesizer
             # Always the escalation/flagship model, regardless of the
             # harness-generation tier: proposing relations that must hold
             # for EVERY correct implementation is the hardest reasoning
@@ -500,21 +521,6 @@ def main():
                 r'^\+\+\+\s+.*?/([A-Za-z_]\w*)\.java',
                 context.patch_text or '', re.MULTILINE)))
             class_name = _syn_cls[0] if _syn_cls else ''
-            # Documented contracts of the touched methods — the only honest
-            # ground truth for untested inputs. Best-effort: '' entries are
-            # dropped by the synthesizer.
-            javadocs = []
-            for rel in (context.modified_files or []):
-                full = Path(selection.buggy_dir) / rel
-                try:
-                    src_text = full.read_text(encoding='utf-8',
-                                              errors='replace')
-                except OSError:
-                    continue
-                for fn in context.functions:
-                    jd = javadoc_for(src_text, fn.func_name)
-                    if jd and jd not in javadocs:
-                        javadocs.append(jd)
             synthesizer = RelationSynthesizer(
                 HarnessGenerator(model=synth_model,
                                  temperature=0.3, top_p=1.0))
@@ -522,7 +528,7 @@ def main():
                 patched_sources, class_name,
                 context.root_cause_reachable or [], mined_oracles, '',
                 patch_text=context.patch_text or '',
-                javadocs=javadocs,
+                javadocs=touched_javadocs,
                 class_context=class_ctx)
             if candidates:
                 print(f"  [synth] {len(candidates)} candidate relation(s) "
@@ -601,6 +607,7 @@ def main():
             mined_oracles=mined_oracles,
             synthesized_relations=synthesized_relations,
             oracle_mechanism=mechanism,
+            touched_javadocs=touched_javadocs,
         )
 
     # 6) Run the campaign: regenerate, recompile, and (by default) verify
