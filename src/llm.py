@@ -45,6 +45,48 @@ def _is_reasoning_model(model: str) -> bool:
     return any(name.startswith(p) for p in _REASONING_PREFIXES)
 
 
+# --- token accounting --------------------------------------------------------
+# Every generate() call (harness generation, relation verifier, relation
+# synthesis) records its usage here, keyed by model, so a run can report the
+# exact prompt/completion tokens it spent — the input to any cost estimate.
+# Process-global so the several HarnessGenerator instances a run creates
+# (primary + escalation + verifier + synth) all accumulate into one place.
+_USAGE_BY_MODEL: Dict[str, Dict[str, int]] = {}
+
+
+def _record_usage(model: str, usage) -> None:
+    if usage is None:
+        return
+    slot = _USAGE_BY_MODEL.setdefault(
+        model or 'unknown',
+        {'prompt_tokens': 0, 'completion_tokens': 0,
+         'total_tokens': 0, 'calls': 0})
+    slot['prompt_tokens'] += int(getattr(usage, 'prompt_tokens', 0) or 0)
+    slot['completion_tokens'] += int(
+        getattr(usage, 'completion_tokens', 0) or 0)
+    slot['total_tokens'] += int(getattr(usage, 'total_tokens', 0) or 0)
+    slot['calls'] += 1
+
+
+def token_usage() -> Dict[str, Dict[str, int]]:
+    """Per-model cumulative token usage since the last reset (a deep copy)."""
+    return {m: dict(v) for m, v in _USAGE_BY_MODEL.items()}
+
+
+def reset_token_usage() -> None:
+    _USAGE_BY_MODEL.clear()
+
+
+def usage_totals() -> Dict[str, int]:
+    """Summed prompt/completion/total tokens and call count across models."""
+    out = {'prompt_tokens': 0, 'completion_tokens': 0,
+           'total_tokens': 0, 'calls': 0}
+    for v in _USAGE_BY_MODEL.values():
+        for k in out:
+            out[k] += v.get(k, 0)
+    return out
+
+
 class HarnessGenerator:
     """Thin wrapper around the OpenAI / AzureOpenAI SDK.
 
@@ -142,18 +184,23 @@ class HarnessGenerator:
 
         if not self._stream:
             result = self._client.chat.completions.create(**params)
+            _record_usage(self.model, getattr(result, 'usage', None))
             return result.choices[0].message.content
 
         # Streaming path: accumulate content deltas as they arrive. The
         # constant traffic keeps proxies/gateways from treating the
         # connection as idle and dropping it mid-generation.
         params['stream'] = True
+        # Ask the API to emit a final usage-only chunk so streamed calls are
+        # accounted for too (it arrives as an event with empty choices).
+        params['stream_options'] = {'include_usage': True}
         chunks: List[str] = []
         stream = self._client.chat.completions.create(**params)
         try:
             for event in stream:
                 # Usage-only or keep-alive events can carry no choices.
                 if not event.choices:
+                    _record_usage(self.model, getattr(event, 'usage', None))
                     continue
                 delta = event.choices[0].delta
                 if delta is not None and delta.content:
