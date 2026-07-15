@@ -36,6 +36,7 @@ wrong assertions free"):
     absence-is-not-unsoundness guidance below exists to close that hole:
     the skeleton may only CONFIRM facts, never prove a guarantee absent.
 """
+import re
 from typing import List, Optional, Tuple
 
 from llm import HarnessGenerator
@@ -191,12 +192,16 @@ class RelationVerifier:
         if fired_assertion and trusted_values:
             # Cheap, deterministic short-circuit before spending an LLM call:
             # if the fired assertion quotes a trusted expected value, it is
-            # the lifted-seed oracle. Keep it without review. Trivial
-            # literals are excluded upstream (len >= 3), so a spurious
-            # substring hit ("1" in "input=21") can't trigger this.
+            # the lifted-seed oracle. Keep it without review. Match as a
+            # standalone token (no word/digit char on either side), not a
+            # raw substring — "100" must not match inside "1000" and keep
+            # an unrelated oracle unreviewed. len >= 3 additionally fences
+            # trivial literals.
             for v in trusted_values:
                 sv = str(v)
-                if sv and len(sv) >= 3 and sv in fired_assertion:
+                if (sv and len(sv) >= 3
+                        and re.search(r'(?<![\w.])' + re.escape(sv)
+                                      + r'(?![\w.])', fired_assertion)):
                     return True, (f"fired assertion checks a trusted "
                                   f"test-lifted value ({v}); kept")
         focus = ""
