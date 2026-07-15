@@ -135,7 +135,9 @@ class RelatedCallee:
 @dataclass
 class FieldSibling:
     """A method or constructor coupled to a touched function through a
-    SHARED INSTANCE FIELD, with no call edge between them.
+    SHARED FIELD, with no call edge between them. Static fields count
+    too — a static cache couples methods the same way instance state
+    does — so "field" here is deliberately broader than instance-only.
 
     The call-graph passes (related_callees, xrefs, reachable) only see
     CALL edges, but state bugs propagate through fields: a constructor
@@ -152,7 +154,8 @@ class FieldSibling:
     """
     name: str
     signature: str
-    # The instance fields this sibling shares with the touched function.
+    # The fields (instance or static) this sibling shares with the
+    # touched function.
     shared_fields: List[str] = field(default_factory=list)
     # Constructors carry their body (they ESTABLISH the invariant the
     # sibling readers must agree with); plain methods carry javadoc only,

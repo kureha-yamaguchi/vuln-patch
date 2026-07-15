@@ -131,8 +131,6 @@ def class_skeleton(source: str,
         if close_idx < 0:
             pos = mm.end()
             continue
-        name_m = re.search(r'(\w+)\s*\($', decl.split(')')[0] + ')'
-                           if '(' in decl else decl)
         name = None
         if '(' in decl:
             head = decl[:decl.index('(')].strip()

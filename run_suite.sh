@@ -98,6 +98,12 @@ for spec in "${CASES[@]}"; do
     cls=Doverfitting; [ "$flag" = "-c" ] && cls=Dcorrect
     pf=$(ls /home/code/drr/Patches/$cls/$tool/$proj/*-$proj-$bug-* 2>/dev/null | head -1)
     [ -z "$pf" ] && pf=$(ls /home/code/drr/Patches/$cls/*/$proj/*-$proj-$bug-* 2>/dev/null | head -1)
+    if [ -z "$pf" ]; then
+      # Loud skip — an empty --patch_file would just error inside the run
+      # log where nobody looks, and the suite totals would silently shrink.
+      echo "@@@@ [$idx/${#CASES[@]}] $tag SKIPPED: no patch matches $cls/$tool/$proj/*-$proj-$bug-* @@@@"
+      continue
+    fi
     PATCHARG=(--patch_file "$pf")
   fi
   rundir="$ROOT/$tag"; mkdir -p "$rundir"
@@ -115,7 +121,7 @@ done
 
 # summary.md — confusion matrix + P/R/F1 straight from the manifest.
 uv run python - "$MANIFEST" "$ROOT/summary.md" "$SUITE" "$STAMP" <<'PY'
-import json, sys, collections
+import json, math, sys, collections
 manifest, out, suite, stamp = sys.argv[1:5]
 rows = [json.loads(l) for l in open(manifest)] if __import__('os').path.exists(manifest) else []
 cm = collections.Counter(); tok = 0
@@ -123,14 +129,26 @@ lines = [f"# {suite} ({stamp})\n", f"{len(rows)} runs\n", "| bug | label | kind 
 for r in rows:
     lab = 'overfit' if 'over' in str(r.get('label','')).lower() else 'correct'
     crashed = bool(r.get('crashed_on_patch'))
+    tok += (r.get('tokens_total') or {}).get('total_tokens', 0)
+    # Only runs that actually fuzzed the patched build carry a verdict. A
+    # status like no_harnesses (e.g. the patch failed to apply, so the
+    # patched fuzz never ran) must show as NOT-EVALUATED, not sneak into
+    # the matrix as a TN/FN via crashed_on_patch defaulting to False.
+    if r.get('status') != 'evaluated':
+        lines.append(f"| {r.get('project')}-{r.get('bug_id')} | {lab} | {r.get('bug_kind')} | - | NOT-EVALUATED ({r.get('status')}) |")
+        continue
     out_ = ('TP' if crashed else 'FN') if lab=='overfit' else ('FP' if crashed else 'TN')
     cm[out_] += 1
-    tok += (r.get('tokens_total') or {}).get('total_tokens', 0)
     lines.append(f"| {r.get('project')}-{r.get('bug_id')} | {lab} | {r.get('bug_kind')} | {crashed} | {out_} |")
 tp,fn,fp,tn = cm['TP'],cm['FN'],cm['FP'],cm['TN']
 p = tp/(tp+fp) if tp+fp else float('nan'); rc = tp/(tp+fn) if tp+fn else float('nan')
-f1 = 2*p*rc/(p+rc) if p and rc and (p+rc) else float('nan')
-lines += ["", f"**TP={tp} FN={fn} FP={fp} TN={tn}**  P={p:.2f} R={rc:.2f} F1={f1:.2f}",
+# F1 is 0.0 (not nan) when P and R are defined but zero (tp==0 with
+# nonempty denominators); nan only when a denominator is empty.
+f1 = (float('nan') if math.isnan(p) or math.isnan(rc)
+      else (2*p*rc/(p+rc) if (p+rc) else 0.0))
+nev = len(rows) - (tp+fn+fp+tn)
+lines += ["", f"**TP={tp} FN={fn} FP={fp} TN={tn}**  P={p:.2f} R={rc:.2f} F1={f1:.2f}"
+          + (f"  ({nev} not evaluated)" if nev else ""),
           f"\nTotal tokens: {tok:,}"]
 open(out,'w').write("\n".join(lines)+"\n")
 print("summary:", out)

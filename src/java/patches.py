@@ -48,10 +48,10 @@ class PatchSelector:
                  overfitting: bool = False, patch_file: str = None,
                  bug_id=None, apr_tool: str = None):
         """``bug_id``/``apr_tool`` pin the sampling: only patches for that
-        bug (and, when given, from that tool) are considered. select() has
-        always read these attributes for pinning, but nothing ever SET
-        them — the sampling path AttributeError'd unless patch_file made
-        them moot. None = unpinned (the original random behaviour)."""
+        bug (and, when given, from that tool) are considered. New
+        functionality — the pre-pinning selector sampled uniformly from
+        the project directory and had no way to target one bug's patches.
+        None = unpinned (the original random behaviour)."""
         if correct and overfitting:
             raise ValueError("pass only one of correct/overfitting, not both")
         if correct:

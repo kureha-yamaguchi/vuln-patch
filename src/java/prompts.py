@@ -454,7 +454,8 @@ class PromptBuilder:
     @staticmethod
     def _field_siblings_block(fn: TouchedFunction) -> str:
         """Render the members coupled to this function through a SHARED
-        INSTANCE FIELD with no call edge (analysis.FieldSibling). The
+        FIELD (instance or static) with no call edge
+        (analysis.FieldSibling). The
         call-graph context above shows what the function calls; this shows
         where the STATE it reads/writes is established and reported —
         the divergence surface a masked-symptom defect stays visible on."""
@@ -463,7 +464,7 @@ class PromptBuilder:
             return ''
         parts: List[str] = [
             f"STATE COUPLING: these members of the same class share the"
-            f" listed instance field(s) with `{fn.func_name}` but neither"
+            f" listed field(s) with `{fn.func_name}` but neither"
             " calls the other — state one of them writes is what the other"
             " reports. A defect the patch leaves (or introduces) in that"
             " shared state stays observable through these members even when"
