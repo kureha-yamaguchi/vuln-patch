@@ -1,0 +1,19 @@
+# Semantic fix-confirm — do today's three fixes (imports into synthesis,
+# javac UTF-8, silent-survivor cap) recover the sem8_v2 regressions?
+#   - Lang-7, Math-2 overfits: were TP in earlier batches (diag_A, mined54_B),
+#     went FN in sem8_v2 under 3 injected silent contracts. silent-cap should
+#     recover them to TP.
+#   - Chart-26: the imports fix should end the org.jfree.ui compile waste; the
+#     correct leg was a FP (invented metamorphic oracle) — watch if it recurs.
+# Both legs (o + c) per bug so precision and recall both register.
+#   ./run_suite.sh fixconfirm suites/fixconfirm.cases
+MODEL="gpt-5.4"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
+CASES=(
+  "-o Lang 7 Arja"
+  "-c Lang 7 ACS"
+  "-o Math 2 Arja"
+  "-c Math 2 SOFix"
+  "-o Chart 26 Jaid"
+  "-c Chart 26 Jaid"
+)
