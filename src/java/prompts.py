@@ -1462,6 +1462,18 @@ class PromptBuilder:
             " behaviour and will be rejected in review. Assert on the"
             " degenerate case ONLY when the documented contract explicitly"
             " covers it — and cite that sentence.",
+            "- CONDITIONAL SIDE EFFECTS ARE NOT UNCONDITIONAL. If the"
+            " method performs an observable side effect (adds to a"
+            " collection, increments a counter, populates a cache, sets a"
+            " field) only INSIDE guards — nested `if`s on collaborator or"
+            " field state, not just on the input — you may assert that side"
+            " effect happened ONLY after your harness has established EVERY"
+            " one of those guard conditions. A correct implementation"
+            " legitimately does nothing when any guard is unmet (a null"
+            " owner/collector/context, a disabled flag), so 'the effect"
+            " always happens after the call' is unsound and fires on correct"
+            " patches. Read the shown method body: satisfy each guard on the"
+            " path to the effect, or do not assert the effect.",
             "- Use only real library calls for BOTH sides (no hand-rolled"
             " reference implementation).",
             "- On violation, `throw new RuntimeException(\"metamorphic"
