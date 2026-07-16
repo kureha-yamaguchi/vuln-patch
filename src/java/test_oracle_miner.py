@@ -24,6 +24,7 @@ is simply not mined.
 from dataclasses import dataclass, field
 from typing import List, Set
 import re
+from java_source import match_brace
 
 _LINE_COMMENT = re.compile(r'//[^\n]*')
 _BLOCK_COMMENT = re.compile(r'/\*.*?\*/', re.DOTALL)
@@ -43,6 +44,7 @@ _METHOD_DECL = re.compile(
 
 
 @dataclass
+
 class MinedTest:
     """One sibling test method that exercises the patched code."""
     name: str
@@ -65,39 +67,6 @@ def _strip_comments(src: str) -> str:
     src = _BLOCK_COMMENT.sub(blank, src)
     src = _LINE_COMMENT.sub(lambda m: ' ' * len(m.group(0)), src)
     return src
-
-
-def _skip_literal(src: str, i: int) -> int:
-    quote = src[i]
-    i += 1
-    n = len(src)
-    while i < n:
-        if src[i] == '\\':
-            i += 2
-            continue
-        if src[i] == quote:
-            return i + 1
-        i += 1
-    return i
-
-
-def _match_brace(src: str, open_idx: int) -> int:
-    depth = 0
-    i = open_idx
-    n = len(src)
-    while i < n:
-        c = src[i]
-        if c in '"\'':
-            i = _skip_literal(src, i)
-            continue
-        if c == '{':
-            depth += 1
-        elif c == '}':
-            depth -= 1
-            if depth == 0:
-                return i
-        i += 1
-    return -1
 
 
 def mine_sibling_tests(class_source: str,
@@ -136,7 +105,7 @@ def mine_sibling_tests(class_source: str,
         brace = stripped.find('{', m.end() - 1)
         if brace < 0:
             continue
-        end = _match_brace(stripped, brace)
+        end = match_brace(stripped, brace)
         if end < 0:
             continue
         body_code = _blank_strings(stripped[brace:end + 1])

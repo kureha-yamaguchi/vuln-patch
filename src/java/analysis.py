@@ -20,6 +20,7 @@ from typing import Dict, List, Optional, Tuple
 import javalang
 
 import config
+from java_source import match_brace
 try:
     from fuzz_introspector import commands as fi_commands
     _FI_AVAILABLE = True
@@ -30,6 +31,7 @@ except ImportError:
 
 # CLI/config-overridable cap for introspector's method-depth metric (below).
 _METHOD_DEPTH_CAP = config.INTROSPECTOR_METHOD_DEPTH_CAP
+
 
 
 def _fi_method_depth_bounded(self, target_method, all_methods):
@@ -674,7 +676,7 @@ class TargetAnalyzer:
             spans = []
             for m in self._FALLBACK_DECL_RE.finditer(source):
                 open_idx = source.find('{', m.start())
-                end_idx = self._match_brace_text(source, open_idx)
+                end_idx = match_brace(source, open_idx)
                 if end_idx < 0:
                     continue
                 start_line = source.count('\n', 0, m.start()) + 1
@@ -699,12 +701,6 @@ class TargetAnalyzer:
                 ))
         return out
 
-    @staticmethod
-    def _match_brace_text(src: str, open_idx: int) -> int:
-        """Index of the brace closing src[open_idx] ('{'), skipping string
-        and char literals; -1 if unbalanced or open_idx invalid."""
-        if open_idx < 0 or open_idx >= len(src) or src[open_idx] != '{':
-            return -1
         depth, i, n = 0, open_idx, len(src)
         while i < n:
             c = src[i]

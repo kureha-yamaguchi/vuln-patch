@@ -2,6 +2,7 @@
 
 Both LLM stages currently see only the PATCHED METHOD, but on inspection of
 real tasks the discriminating invariant routinely lives elsewhere in the
+
 class or type hierarchy:
   * a CONSTRUCTOR-established invariant (a size field computed as a product
     of dimension sizes — the touched accessor merely returns it);
@@ -26,6 +27,7 @@ developer fix, no labels.
 import os
 import re
 from typing import Dict, List, Optional, Set
+from java_source import match_brace
 
 _CLASS_DECL_RE = re.compile(
     r'(?:public\s+|abstract\s+|final\s+|strictfp\s+)*'
@@ -41,29 +43,6 @@ _MEMBER_RE = re.compile(
     r'(?:public|protected|private)\s'
     r'[^;{}]*?)'
     r'(?P<end>[;{])', re.DOTALL)
-
-
-def _match_brace(src: str, open_idx: int) -> int:
-    depth, i, n = 0, open_idx, len(src)
-    while i < n:
-        c = src[i]
-        if c in '"\'':
-            quote = c
-            i += 1
-            while i < n:
-                if src[i] == '\\':
-                    i += 1
-                elif src[i] == quote:
-                    break
-                i += 1
-        elif c == '{':
-            depth += 1
-        elif c == '}':
-            depth -= 1
-            if depth == 0:
-                return i
-        i += 1
-    return -1
 
 
 def _compact_doc(doc: str, max_lines: int = 12) -> str:
@@ -108,7 +87,7 @@ def class_skeleton(source: str,
     out.append(decl_line + ' {')
 
     body_open = source.find('{', m.start())
-    body_close = _match_brace(source, body_open)
+    body_close = match_brace(source, body_open)
     body = source[body_open + 1:body_close if body_close > 0 else len(source)]
 
     pos = 0
@@ -127,7 +106,7 @@ def class_skeleton(source: str,
             continue
         # Method/constructor with a body.
         open_idx = mm.end() - 1
-        close_idx = _match_brace(body, open_idx)
+        close_idx = match_brace(body, open_idx)
         if close_idx < 0:
             pos = mm.end()
             continue

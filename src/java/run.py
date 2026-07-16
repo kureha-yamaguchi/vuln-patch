@@ -39,6 +39,8 @@ from llm import (HarnessGenerator, reset_token_usage, token_usage,
                  usage_totals)
 from patches import DeprecatedBugError, PatchSelector
 from prompts import PromptBuilder
+from java_source import candidate_anchor_literals, expected_assert_literals
+
 
 
 def parse_args():
@@ -400,7 +402,7 @@ def main():
         # does not itself echo the crashing value.
         candidate_literals = []
         if primary_test.method_source:
-            candidate_literals = PromptBuilder.candidate_anchor_literals(
+            candidate_literals = candidate_anchor_literals(
                 primary_test.method_source,
                 [fn.func_name for fn in context.functions],
             )
@@ -968,7 +970,7 @@ def main():
             for ft in failure_tests:
                 if getattr(ft, 'method_source', None):
                     trusted_values.extend(
-                        PromptBuilder.expected_assert_literals(
+                        expected_assert_literals(
                             ft.method_source))
             trusted_values = list(dict.fromkeys(trusted_values))
             for r in triggered:
