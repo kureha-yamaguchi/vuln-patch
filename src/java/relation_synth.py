@@ -46,6 +46,19 @@ _SYSTEM = (
 )
 
 _INSTRUCTIONS = (
+    "ANCHOR REQUIREMENT — READ FIRST. The patch changed a SPECIFIC"
+    " expression in a SPECIFIC method. An overfit can only differ from a"
+    " correct implementation WHERE the code was changed, so a relation about"
+    " a method the patch did NOT touch is worthless here. Your FIRST relation"
+    " MUST directly constrain the OUTPUT of a changed method, exercising the"
+    " exact input the change is about — the prefix / sign / boundary value /"
+    " edge case named in the changed condition — and asserting only what that"
+    " method's OWN documented contract guarantees there. (E.g. if the change"
+    " adds a guard on inputs starting with a token, your relation must feed"
+    " such inputs and assert the documented result; if the change rewrites a"
+    " formula the javadoc states, assert the method's output equals that"
+    " formula recomputed independently.) Do NOT fill the slots with generic"
+    " round-trip or bound properties of untouched sibling methods.\n"
     "Propose up to 4 relations for the patched method. For each, give:\n"
     "  - name: a short slug\n"
     "  - kind: metamorphic | invariant\n"
@@ -178,6 +191,24 @@ class RelationSynthesizer:
                 " overfit breaks):",
                 "<patch>", patch_text, "</patch>",
             ]
+            # Distil the added/removed code lines so the model can't miss what
+            # actually changed. The discriminating oracle always lives at one
+            # of these expressions; surfacing them defeats the observed drift
+            # to generic properties of untouched methods.
+            changed = []
+            for ln in patch_text.splitlines():
+                if ln[:1] in '+-' and not ln.startswith(('+++', '---')):
+                    body = ln[1:].strip()
+                    if body and not body.startswith(('*', '//', '/*')):
+                        changed.append(body)
+            changed = list(dict.fromkeys(changed))[:20]
+            if changed:
+                ctx.append(
+                    "THE EXACT LINES THE PATCH ADDED/REMOVED (your first"
+                    " relation must target the behaviour THESE govern — the"
+                    " condition, boundary token, or formula here is where an"
+                    " overfit and a correct fix diverge):\n"
+                    + "\n".join("    " + c for c in changed))
         for jd in (javadocs or []):
             if jd:
                 ctx += ["Documented contract of a touched method (relations"
