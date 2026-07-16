@@ -83,6 +83,34 @@ GITSHA="$(git -C /home/code/experiments-vuln-patch rev-parse --short HEAD 2>/dev
 } > "$ROOT/config.json"
 echo "suite root: $ROOT  (model=$MODEL git=$GITSHA)"
 
+# --- concurrency -----------------------------------------------------------
+# PARALLEL=N runs up to N cases at once (default 1 = serial, unchanged). Each
+# case is fully isolated (own rundir, run.log, D4J_CHECKOUT_ROOT), so the only
+# shared state is the manifest — assembled in index order AFTER all runs
+# finish (phase 3), never by concurrent append. Budget ~2 GB RAM + ~1 core
+# per concurrent case (a Jazzer JVM + a checkout); on the current small box
+# keep PARALLEL=1. The gpt-* API is shared across all cases, so past ~4–6
+# concurrent the model's rate limit, not this knob, caps throughput.
+PARALLEL="${PARALLEL:-1}"
+
+run_one() {
+  local idx="$1" total="$2" tag="$3" flag="$4" pf="$5"
+  local rundir="$ROOT/$tag"; mkdir -p "$rundir"
+  local ckout="/home/code/scratch/co/${SUITE}_${STAMP}/${tag}"
+  rm -rf "$ckout"; mkdir -p "$(dirname "$ckout")"
+  echo "@@@@ [$idx/$total] $tag start $(date +%H:%M:%S) @@@@"
+  D4J_CHECKOUT_ROOT="$ckout" PYTHONUNBUFFERED=1 \
+    uv run python -u java/run.py $flag --patch_file "$pf" --model "$MODEL" $COMMON \
+      --results_json "$rundir/result.jsonl" \
+      > "$rundir/run.log" 2>&1
+  local ec=$?
+  echo "  [$idx/$total] $tag exit=$ec  rec: $(tail -1 "$rundir/result.jsonl" 2>/dev/null)"
+}
+
+# Phase 1 — resolve every case to a work item (serial, cheap). A case with no
+# patch file is skipped HERE so it never enters the worklist (can't dangle a
+# job or a rundir). Worklist is TAB-separated: idx, tag, flag, patchfile.
+WORKLIST="$ROOT/.worklist.tsv"; : > "$WORKLIST"
 idx=0
 for spec in "${CASES[@]}"; do
   set -- $spec; flag=$1
@@ -90,7 +118,6 @@ for spec in "${CASES[@]}"; do
   if [[ "$2" == patchfile:* ]]; then
     pf="${2#patchfile:}"
     base=$(basename "$pf" .patch); tag=$(printf "%02d_%s_%s" "$idx" "$base" "${flag#-}")
-    PATCHARG=(--patch_file "$pf")
   else
     proj=$2; bug=$3; tool=${4:-}
     tag=$(printf "%02d_%s-%s_%s_%s" "$idx" "$proj" "$bug" "$tool" "${flag#-}")
@@ -104,20 +131,32 @@ for spec in "${CASES[@]}"; do
       echo "@@@@ [$idx/${#CASES[@]}] $tag SKIPPED: no patch matches $cls/$tool/$proj/*-$proj-$bug-* @@@@"
       continue
     fi
-    PATCHARG=(--patch_file "$pf")
   fi
-  rundir="$ROOT/$tag"; mkdir -p "$rundir"
-  ckout="/home/code/scratch/co/${SUITE}_${STAMP}/${tag}"
-  rm -rf "$ckout"; mkdir -p "$(dirname "$ckout")"
-  echo "@@@@ [$idx/${#CASES[@]}] $tag start $(date +%H:%M:%S) @@@@"
-  D4J_CHECKOUT_ROOT="$ckout" PYTHONUNBUFFERED=1 \
-    uv run python -u java/run.py $flag "${PATCHARG[@]}" --model "$MODEL" $COMMON \
-      --results_json "$rundir/result.jsonl" \
-      > "$rundir/run.log" 2>&1
-  ec=$?
-  [ -f "$rundir/result.jsonl" ] && cat "$rundir/result.jsonl" >> "$MANIFEST"
-  echo "  exit=$ec  rec: $(tail -1 "$rundir/result.jsonl" 2>/dev/null)"
+  printf '%d\t%s\t%s\t%s\n' "$idx" "$tag" "$flag" "$pf" >> "$WORKLIST"
 done
+TOTAL=${#CASES[@]}
+
+# Phase 2 — run the worklist, up to PARALLEL at a time. Throttle by polling
+# the live background-job count, so the cap holds even where `wait -n` is
+# unavailable (older bash) — there we just poll a touch slower. With
+# PARALLEL=1 each launch blocks until its job finishes: identical to the old
+# serial loop. (Validated: peak concurrency == PARALLEL exactly, manifest
+# stays in index order regardless of finish order.)
+echo "running ${PARALLEL}-way parallel over $(wc -l < "$WORKLIST" | tr -d ' ') case(s)"
+while IFS=$'\t' read -r idx tag flag pf; do
+  run_one "$idx" "$TOTAL" "$tag" "$flag" "$pf" &
+  while [ "$(jobs -rp | wc -l | tr -d ' ')" -ge "$PARALLEL" ]; do
+    wait -n 2>/dev/null || sleep 0.3
+  done
+done < "$WORKLIST"
+wait
+
+# Phase 3 — assemble the manifest in index order (race-free: nothing appended
+# to it during the parallel runs).
+: > "$MANIFEST"
+while IFS=$'\t' read -r idx tag flag pf; do
+  [ -f "$ROOT/$tag/result.jsonl" ] && cat "$ROOT/$tag/result.jsonl" >> "$MANIFEST"
+done < "$WORKLIST"
 
 # summary.md — confusion matrix + P/R/F1 straight from the manifest.
 uv run python - "$MANIFEST" "$ROOT/summary.md" "$SUITE" "$STAMP" <<'PY'
