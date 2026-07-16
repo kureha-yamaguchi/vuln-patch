@@ -21,6 +21,9 @@ import javalang
 
 import config
 from java_source import match_brace
+from call_graph import (fi_method_name, arg_count, reachable_of,
+                        with_timeout, is_project_fn, project_prefix,
+                        short_name)
 try:
     from fuzz_introspector import commands as fi_commands
     _FI_AVAILABLE = True
@@ -285,7 +288,7 @@ class TargetAnalyzer:
         # dropping the touched functions themselves (the prompt already
         # shows those in full).
         touched_names = {fn.func_name for fn in functions}
-        proj_prefix = self._project_prefix(package)
+        proj_prefix = project_prefix(package)
         root_cause_reachable: List[str] = []
         seen_reach: set = set()
         for fn in functions:
@@ -293,9 +296,9 @@ class TargetAnalyzer:
                 # Keep project functions; drop JDK noise (Double.isNaN,
                 # Math.exp, Object.<init>, ...) that the call graph pulls
                 # in but that isn't part of the root-cause neighbourhood.
-                if proj_prefix and not self._is_project_fn(name, proj_prefix):
+                if proj_prefix and not is_project_fn(name, proj_prefix):
                     continue
-                short = self._short_name(name)
+                short = short_name(name)
                 if short in touched_names or short in seen_reach:
                     continue
                 seen_reach.add(short)
@@ -1109,7 +1112,7 @@ class TargetAnalyzer:
             # been seen to stall (0% CPU, blocked) on some checkouts (e.g.
             # Math-2). A wall-clock cap degrades to no-steering instead of
             # hanging the run; SIGALRM interrupts the blocked syscall.
-            _, report = self._with_timeout(
+            _, report = with_timeout(
                 lambda: fi_commands.analyse_end_to_end(
                     arg_language=self.language,
                     target_dir=buggy_dir,
@@ -1187,7 +1190,9 @@ class TargetAnalyzer:
             # runtime, so base_callsites drops it) — exactly the sibling a
             # masked-symptom overfit hides in. Source extraction recovers
             # those, resolved to project methods via the fi index.
-            bfs = self._reachable_of(project, mangled)
+            bfs = reachable_of(project, mangled,
+                               self.reachable_node_cap,
+                               self.reachable_max_depth)
             src = self._source_callees(fn.func_source, index)
             seen, merged = set(), []
             for name in bfs + src:
@@ -1248,7 +1253,7 @@ class TargetAnalyzer:
         for k in keys:
             if not k:
                 continue
-            index.setdefault(self._fi_method_name(k), []).append(k)
+            index.setdefault(fi_method_name(k), []).append(k)
         return index
 
     def _match_fi_name(self, fn: TouchedFunction,
@@ -1261,184 +1266,11 @@ class TargetAnalyzer:
             return None
         if len(cands) == 1:
             return cands[0]
-        want = self._arg_count(fn.func_signature or '')
+        want = arg_count(fn.func_signature or '')
         for c in cands:
-            if self._arg_count(c) == want:
+            if arg_count(c) == want:
                 return c
         return cands[0]
-
-    @staticmethod
-    def _fi_method_name(mangled: str) -> str:
-        """Bare method name from an introspector JVM name
-        (``[pkg.Class].method(args)`` / ``Class.method(args)``)."""
-        name = re.sub(r'^\[[^\]]*\]\.?', '', mangled).strip()
-        name = name.split('(')[0]
-        return name.split('.')[-1] if '.' in name else name
-
-    @staticmethod
-    def _arg_count(paren: str) -> int:
-        """Number of comma-separated args inside the first (...) group,
-        or -1 if there is none. Good enough to disambiguate overloads
-        (generics with top-level commas are rare in these signatures)."""
-        m = re.search(r'\(([^)]*)\)', paren)
-        if not m:
-            return -1
-        inner = m.group(1).strip()
-        return 0 if not inner else len([a for a in inner.split(',')
-                                        if a.strip()])
-
-    def _reachable_of(self, project, mangled: str) -> List[str]:
-        """Bounded reachable-function set for a mangled name.
-
-        Budget-bounded BFS over immediate call-sites (``base_callsites``),
-        NOT introspector's ``get_reachable_functions`` — that does an
-        unbounded transitive walk that blows up to minutes of CPU on hub
-        functions (e.g. ``inverseCumulativeProbability``). Direct callees
-        are always included (BFS visits them first), then we expand
-        breadth-first until a node cap, so cost is O(cap) irrespective of
-        call-graph size and depth floats up to REACHABLE_MAX_DEPTH within
-        that budget. Evidence from the Defects4J bugs: every downstream
-        manifest-site / sibling sits at depth 1 (e.g. Math-2's
-        ``getNumericalMean``), so a shallow capped walk suffices while the
-        cap guarantees it can never hang.
-
-        Falls back to the project-level getter (under a hard timeout) only
-        for introspector versions that don't expose ``base_callsites``."""
-        fmap = self._function_map(project)
-        if fmap and mangled in fmap:
-            names = self._bfs_callees(fmap, mangled,
-                                      self.reachable_node_cap,
-                                      self.reachable_max_depth)
-            if names:
-                return names
-        getter = getattr(project, 'get_reachable_functions', None)
-        if callable(getter):
-            try:
-                val = self._with_timeout(
-                    lambda: getter(function=mangled),
-                    config.REACHABLE_TIMEOUT_SECONDS)
-                if val:
-                    return TargetAnalyzer._as_name_list(val)
-            except Exception:
-                pass
-        return []
-
-    @staticmethod
-    def _function_map(project) -> Dict[str, object]:
-        """`project.all_functions` normalised to a name -> profile dict."""
-        funcs = getattr(project, 'all_functions', None)
-        if not funcs:
-            return {}
-        if isinstance(funcs, dict):
-            return funcs
-        return {getattr(f, 'name', ''): f
-                for f in funcs if getattr(f, 'name', '')}
-
-    @staticmethod
-    def _bfs_callees(fmap: Dict[str, object], start: str,
-                     cap: int, max_depth: int) -> List[str]:
-        """BFS the call graph from `start` via each profile's
-        `base_callsites` (immediate callees), bounded by `cap` nodes and
-        `max_depth` levels."""
-        seen = {start}
-        out: List[str] = []
-        queue: List[Tuple[str, int]] = [(start, 0)]
-        while queue and len(out) < cap:
-            name, depth = queue.pop(0)
-            prof = fmap.get(name)
-            if prof is None:
-                continue
-            for cs in (getattr(prof, 'base_callsites', None) or []):
-                if isinstance(cs, (list, tuple)) and cs:
-                    dst = cs[0]
-                elif isinstance(cs, str):
-                    dst = cs
-                else:
-                    dst = getattr(cs, 'dst_function_name', None)
-                if not dst or dst in seen:
-                    continue
-                seen.add(dst)
-                out.append(dst)
-                if len(out) >= cap:
-                    break
-                if depth + 1 < max_depth:
-                    queue.append((dst, depth + 1))
-        return out
-
-    @staticmethod
-    def _with_timeout(fn, seconds):
-        """Run fn() but abort after `seconds` via SIGALRM (main thread
-        only; degrades gracefully off-main-thread since signal.signal
-        raises, caught by the caller)."""
-        if not seconds or seconds <= 0:
-            return fn()
-        import signal
-
-        def _handler(signum, frame):
-            raise TimeoutError("reachable fallback exceeded budget")
-        old = signal.signal(signal.SIGALRM, _handler)
-        signal.alarm(int(seconds))
-        try:
-            return fn()
-        finally:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old)
-
-    @staticmethod
-    def _as_name_list(val) -> List[str]:
-        """Normalise whatever the reachable-set accessor returned (list
-        of str, list of function objects, or dict) into a list of
-        names."""
-        if isinstance(val, dict):
-            val = list(val.keys())
-        out: List[str] = []
-        for item in val:
-            if isinstance(item, str):
-                out.append(item)
-            else:
-                name = getattr(item, 'name', None)
-                if name:
-                    out.append(name)
-        return out
-
-    @staticmethod
-    def _is_project_fn(mangled: str, proj_prefix: str) -> bool:
-        """True if a reachable function belongs to the project, judged by
-        its RECEIVER class (the ``[pkg.Class]`` bracket) rather than the
-        whole mangled name. The JVM frontend sometimes mis-types call
-        arguments with the project package, so a substring check over the
-        full name lets JDK statics (``Math.abs(...)``) leak through; the
-        receiver bracket is the reliable signal — JDK/static calls have
-        none."""
-        m = re.match(r'^\[([^\]]*)\]', mangled)
-        receiver = m.group(1) if m else ''
-        return proj_prefix in receiver
-
-    @staticmethod
-    def _project_prefix(package: Optional[str]) -> str:
-        """Reverse-domain prefix used to keep reachable functions that
-        belong to the project and drop JDK/library noise. Derived from
-        the touched file's package: first three components (e.g.
-        ``org.apache.commons`` from ``org.apache.commons.math.special``),
-        which is specific enough to exclude java.* / third-party calls
-        without dropping the project's own neighbouring code."""
-        if not package:
-            return ''
-        parts = package.split('.')
-        return '.'.join(parts[:3]) if len(parts) >= 3 else package
-
-    @staticmethod
-    def _short_name(name: str) -> str:
-        """Reduce a fully-qualified / mangled fuzz-introspector function
-        name to something readable for the prompt. JVM names often look
-        like `[pkg.Class].method(args)` or `pkg.Class.method`; we keep
-        the `Class.method` tail."""
-        # Strip any bracketed receiver prefix d4j/JVM mangling adds.
-        name = re.sub(r'^\[[^\]]*\]\.?', '', name).strip()
-        # Drop argument lists.
-        name = name.split('(')[0]
-        parts = name.split('.')
-        return '.'.join(parts[-2:]) if len(parts) >= 2 else name
 
     # --- package resolution ----------------------------------------------
 
