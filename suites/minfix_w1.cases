@@ -1,0 +1,34 @@
+# minfix_w1 — Wave-1 regression-repair check (post-p23gate forensics).
+# Minimal leg set: every leg maps to a specific fix, so a wrong outcome
+# is attributable. Correct legs FIRST (Lang-60-c seeds the pool for
+# Lang-60-o; pooled relations are now screening/replay-only, never in
+# the prompt).
+#
+# Expectations vs p23gate:
+#   Lang-60-c   clean      (was clean; pool-seeder + smoke)
+#   Closure-62-c clean     (was FP — lifted-test verifier context fix)
+#   Closure-73-c clean     (was FP — same fix)
+#   Lang-7-c    clean      (was FP — latent auto-dismiss)
+#   Lang-50-c   clean      (was NO RESULT — infra death, plain rerun)
+#   Math-57-c   harnesses built, clean (was no_harnesses)
+#   Chart-3-o   CATCH      (was no_harnesses — dynamic-ID gate fix)
+#   Closure-33-o CATCH     (was miss — anchoring demotion)
+#   Lang-41-o   CATCH hoped (was miss — negmod lint removes junk firing;
+#                            partially luck-based, accept miss if firing clean)
+#   Lang-60-o   CATCH      (was miss — prompt-thinning restores free-form checks)
+#   Math-57-o   harnesses built (was no_harnesses; catch not expected pre-P3.1)
+MODEL="gpt-5.4"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Lang/patch1-Lang-60-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-73-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/ACS/Lang/patch1-Lang-7-ACS.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Lang/patch1-Lang-50-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-57-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Elixir/Chart/patch1-Chart-3-Elixir-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Jaid/Closure/patch1-Closure-33-Jaid-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-60-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/ssFix/Math/patch1-Math-57-ssFix-plausible.patch"
+)

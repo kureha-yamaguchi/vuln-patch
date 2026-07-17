@@ -1,0 +1,10 @@
+# c62confirm — verifier trust-hierarchy fix confirm (serial for pooling).
+# Target: Closure-62-o (true caret-boundary firing was dropped because the
+# verifier cited the buggy guard as the contract). Guard: Closure-62-c
+# must stay clean (its setup-divergent lifts must still be dropped).
+MODEL="gpt-5.4"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Jaid/Closure/patch1-Closure-62-Jaid-plausible.patch"
+)
