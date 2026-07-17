@@ -102,6 +102,16 @@ _INSTRUCTIONS = (
     " data.consumeRemainingAsString() — there is NO drawInt/nextInt. The"
     " check body runs INSIDE fuzzerTestOneInput, so use the real library"
     " types directly (no wrapper class, no imports block).\n"
+    "IMPLEMENTABILITY (checked mechanically; violations are dropped): the"
+    " check may NOT define an anonymous or local SUBCLASS of a library"
+    " class to reach a code path (e.g. `new AbstractIntegerDistribution("
+    "...){...}`) — a hand-built stand-in is forbidden and the relation"
+    " will be discarded. If the behaviour you want lives on an abstract"
+    " base, reach it through a REAL concrete library subclass that already"
+    " exists (e.g. use `new UniformIntegerDistribution(min, max)` to get an"
+    " integer distribution over a chosen support, rather than subclassing"
+    " the abstract base yourself). If no real subclass can construct the"
+    " input you need, choose a different relation.\n"
     "Return ONLY a JSON array of objects with keys name, kind, contract,"
     " input, check. No prose outside the JSON."
 )
@@ -159,7 +169,8 @@ class RelationSynthesizer:
                    patch_text: str = '',
                    javadocs: Optional[List[str]] = None,
                    class_context: Optional[List[str]] = None,
-                   source_imports: Optional[List[str]] = None
+                   source_imports: Optional[List[str]] = None,
+                   trigger_test_block: str = ''
                    ) -> List[Relation]:
         """Propose candidate relations for the patched method(s).
 
@@ -180,7 +191,32 @@ class RelationSynthesizer:
         the method body alone."""
         if not patched_sources:
             return []
-        ctx = ["Patched method(s):"]
+        ctx = []
+        # P2.1: the bug's own failing test is the ONE trusted source of the
+        # correct DIRECTION (does createNumber("--1") return null or throw?).
+        # It goes FIRST and is framed as authoritative — the patch may be
+        # the overfit, so where the test pins a behaviour the test wins.
+        # Withholding it (trigger_test_block was empty for the whole
+        # project's history) is what let synthesis read the buggy body and
+        # write relations backwards (Lang-7).
+        if trigger_test_block:
+            ctx += [
+                "THE BUG'S OWN FAILING TEST (most trusted — this is ground"
+                " truth for the correct behaviour on its inputs). The patch"
+                " under analysis MAY be an overfit; where this test pins a"
+                " direction, the TEST is right and the patched code is not"
+                " evidence. Read the exact call it makes and the value it"
+                " expects, and make your relations agree with it:",
+                "<failing_test>", trigger_test_block, "</failing_test>",
+            ]
+        # NB: this is the BUGGY (pre-patch) source — extracted from the
+        # buggy checkout. It is NOT the fixed behaviour; do not read a
+        # correct direction off it (that inverted Lang-7's relation).
+        ctx.append(
+            "BUGGY method(s) (PRE-PATCH source — this is the code WITH the"
+            " bug; the failing test above shows where it is wrong). Use it"
+            " to see the code shape and API, NEVER as a model of correct"
+            " behaviour:")
         for s in patched_sources:
             ctx += ["<code>", s, "</code>"]
         if class_context:
@@ -210,19 +246,26 @@ class RelationSynthesizer:
             # actually changed. The discriminating oracle always lives at one
             # of these expressions; surfacing them defeats the observed drift
             # to generic properties of untouched methods.
+            # Keep the +/- markers: which lines the patch ADDED vs REMOVED
+            # is exactly the direction signal. Stripping them (the old
+            # behaviour) made added and deleted code indistinguishable, so
+            # the model could not tell what the patch was trying to do.
             changed = []
             for ln in patch_text.splitlines():
                 if ln[:1] in '+-' and not ln.startswith(('+++', '---')):
                     body = ln[1:].strip()
                     if body and not body.startswith(('*', '//', '/*')):
-                        changed.append(body)
+                        tag = 'ADDED  ' if ln[0] == '+' else 'REMOVED'
+                        changed.append(f"{tag}: {body}")
             changed = list(dict.fromkeys(changed))[:20]
             if changed:
                 ctx.append(
                     "THE EXACT LINES THE PATCH ADDED/REMOVED (your first"
                     " relation must target the behaviour THESE govern — the"
                     " condition, boundary token, or formula here is where an"
-                    " overfit and a correct fix diverge):\n"
+                    " overfit and a correct fix diverge; ADDED lines are what"
+                    " the patch introduced, REMOVED what it deleted — the"
+                    " overfit may have changed these WRONGLY):\n"
                     + "\n".join("    " + c for c in changed))
         for jd in (javadocs or []):
             if jd:

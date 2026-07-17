@@ -528,3 +528,44 @@ def alarm_ids_missing(source: str) -> Optional[str]:
                     f'"[oracle:<short-id>]" so acceptance can tell '
                     f'which check earned its place')
     return None
+
+
+# ---------------------------------------------------------------------------
+# P2.3: constraint parity — no anonymous/local subclass of a library type.
+#
+# The harness rules forbid subclassing the patched class or its callees (a
+# hand-built stand-in proves nothing about real usage). Screening compiles
+# the check under NO such rule, so a relation that needs an anonymous
+# subclass (Math-2's `new AbstractIntegerDistribution(min,hi){...}`) passes
+# the screen and is then silently dropped when the harness can't implement
+# it. This lint gives the screen the same constraint, so such a relation is
+# caught early — and synthesis is told to use a real library subclass
+# (UniformIntegerDistribution) that reaches the same code legally.
+
+# Common JDK/functional-interface anonymous classes are legitimate and must
+# NOT be flagged — only project/library CLASS types are the concern.
+_JDK_ANON_OK = frozenset({
+    'Runnable', 'Callable', 'Comparator', 'Comparable', 'Iterator',
+    'Iterable', 'Thread', 'Object', 'Function', 'Supplier', 'Consumer',
+    'BiFunction', 'Predicate', 'BiConsumer', 'Runnable', 'ActionListener',
+    'Enumeration', 'ThreadLocal', 'TypeReference', 'InputStream',
+    'OutputStream', 'Reader', 'Writer', 'TimerTask', 'AbstractList',
+    'AbstractMap', 'AbstractSet', 'ArrayList', 'HashMap', 'HashSet',
+})
+_ANON_SUBCLASS_RE = re.compile(r'\bnew\s+([A-Z]\w*)\s*\([^;{}]*\)\s*\{')
+_LOCAL_SUBCLASS_RE = re.compile(r'\bclass\s+\w+\s+extends\s+([A-Z]\w*)')
+
+
+def library_subclass(check: str) -> Optional[str]:
+    """Return the offending type name if `check` declares an anonymous or
+    local subclass of a non-JDK (project/library) class; None otherwise.
+    Comments/strings are stripped first so a type named in a message can't
+    trip it."""
+    src = strip_comments(check or '')
+    src = re.sub(r'"(?:[^"\\]|\\.)*"', '""', src)
+    for rx in (_ANON_SUBCLASS_RE, _LOCAL_SUBCLASS_RE):
+        for m in rx.finditer(src):
+            t = m.group(1)
+            if t not in _JDK_ANON_OK:
+                return t
+    return None

@@ -46,12 +46,18 @@ _MEMBER_RE = re.compile(
 
 
 def _compact_doc(doc: str, max_lines: int = 12) -> str:
-    lines = [ln.strip().lstrip('*').strip()
-             for ln in (doc or '').strip().splitlines()]
-    lines = [ln for ln in lines if ln not in ('/**', '*/', '')
-             and not ln.startswith('/**')]
-    # strip the closing marker remnants
-    lines = [ln.rstrip('*/').rstrip() for ln in lines]
+    # Strip the enclosing /** … */ from the WHOLE comment first, so a
+    # single-line javadoc (`/** text */`) keeps its text instead of being
+    # discarded for starting with '/**' (the old bug dropped every
+    # one-line contract — e.g. Lang-7's createNumber doc).
+    body = (doc or '').strip()
+    if body.startswith('/**'):
+        body = body[3:]
+    elif body.startswith('/*'):
+        body = body[2:]
+    if body.endswith('*/'):
+        body = body[:-2]
+    lines = [ln.strip().lstrip('*').strip() for ln in body.splitlines()]
     lines = [ln for ln in lines if ln]
     if len(lines) > max_lines:
         lines = lines[:max_lines] + ['…']
@@ -90,6 +96,12 @@ def class_skeleton(source: str,
     body_close = match_brace(source, body_open)
     body = source[body_open + 1:body_close if body_close > 0 else len(source)]
 
+    # Emit members as (is_touched, piece) so truncation can PROTECT the
+    # touched methods' javadoc+body. A big class whose patched method sits
+    # near the bottom used to lose exactly that method to the raw
+    # character cut — and its javadoc states the contract the relations
+    # need most (Lang-7's createNumber doc was truncated away). P2.1.
+    members: List[tuple] = []
     pos = 0
     while pos < len(body):
         mm = _MEMBER_RE.search(body, pos)
@@ -98,13 +110,11 @@ def class_skeleton(source: str,
         decl = ' '.join(mm.group('decl').split())
         doc = mm.group('doc') or ''
         if mm.group('end') == ';':
-            # Field or abstract/interface method — keep whole line.
             piece = (_compact_doc(doc) + '\n' if doc.strip() else '')
             piece += f'    {decl};'
-            out.append(piece)
+            members.append((False, piece))
             pos = mm.end()
             continue
-        # Method/constructor with a body.
         open_idx = mm.end() - 1
         close_idx = match_brace(body, open_idx)
         if close_idx < 0:
@@ -116,18 +126,40 @@ def class_skeleton(source: str,
             name = head.split()[-1] if head.split() else None
         piece = (_compact_doc(doc) + '\n' if doc.strip() else '')
         is_ctor = name == class_name
-        if name and (name in full_body_methods
-                     or (is_ctor and close_idx - open_idx
-                         <= max_ctor_body_chars)):
+        is_touched = bool(name and name in full_body_methods)
+        if is_touched or (is_ctor and close_idx - open_idx
+                          <= max_ctor_body_chars):
             piece += '    ' + decl + ' ' + body[open_idx:close_idx + 1]
         else:
             piece += f'    {decl} {{ … }}'
-        out.append(piece)
+        members.append((is_touched, piece))
         pos = close_idx + 1
-    out.append('}')
-    text = '\n'.join(out)
-    if len(text) > max_chars:
-        text = text[:max_chars] + '\n// … (skeleton truncated)'
+
+    header = '\n'.join(out)
+    footer = '\n}'
+    budget = max_chars - len(header) - len(footer)
+    kept, running = [], 0
+    # First pass: reserve budget for every touched-method piece (their
+    # javadoc + body), in source order.
+    for is_touched, piece in members:
+        if is_touched:
+            kept.append(piece)
+            running += len(piece) + 1
+    truncated = False
+    # Second pass: fill the remainder with non-touched skeleton pieces,
+    # keeping source order by re-walking and inserting where they fit.
+    result_pieces = []
+    for is_touched, piece in members:
+        if is_touched:
+            result_pieces.append(piece)
+        elif running + len(piece) + 1 <= budget:
+            result_pieces.append(piece)
+            running += len(piece) + 1
+        else:
+            truncated = True
+    text = header + '\n' + '\n'.join(result_pieces) + footer
+    if truncated:
+        text += '\n// … (non-patched members truncated; patched methods kept)'
     return text
 
 

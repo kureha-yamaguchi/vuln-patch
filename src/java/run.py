@@ -551,13 +551,32 @@ def main():
             synthesizer = RelationSynthesizer(
                 HarnessGenerator(model=synth_model,
                                  temperature=0.3, top_p=1.0))
+            # P2.1: hand synthesis the bug's own failing test — the one
+            # trusted source of the correct DIRECTION. Was '' for the whole
+            # project history, so synthesis read only the buggy body and
+            # inverted relations (Lang-7). Build from the primary test's
+            # source plus the exact values it asserts.
+            trigger_test_block = ''
+            if primary_test is not None and primary_test.has_source:
+                exp = expected_assert_literals(
+                    primary_test.method_source or '')
+                block = [f"// {primary_test.test_class}::"
+                         f"{primary_test.test_method}",
+                         primary_test.method_source or '']
+                if exp:
+                    block.append(
+                        "// values this test asserts as CORRECT "
+                        "(the patched code must reproduce these): "
+                        + ", ".join(exp[:12]))
+                trigger_test_block = "\n".join(block)
             candidates = synthesizer.synthesize(
                 patched_sources, class_name,
                 context.root_cause_reachable or [], mined_oracles, '',
                 patch_text=context.patch_text or '',
                 javadocs=touched_javadocs,
                 class_context=class_ctx,
-                source_imports=context.source_imports)
+                source_imports=context.source_imports,
+                trigger_test_block=trigger_test_block)
             if candidates:
                 print(f"  [synth] {len(candidates)} candidate relation(s) "
                       f"({synth_model}): "
@@ -658,6 +677,16 @@ def main():
         if jazzer_standalone_jar:
             print("\n" + "#" * 20 + " relation screening " + "#" * 20)
             from relation_screen import screen_relations
+            # P2.2 direction/determinism check needs the failing test's own
+            # input literals (the values the bug is about). Same extraction
+            # as the acceptance-gate seed corpus below.
+            _trig_lits = []
+            for ft in failure_tests:
+                if getattr(ft, 'method_source', None):
+                    _trig_lits += re.findall(
+                        r'"((?:[^"\\]|\\.){1,120})"', ft.method_source)
+            _trig_lits = [s for s in dict.fromkeys(_trig_lits)
+                          if s.strip()][:32]
             try:
                 synthesized_relations = screen_relations(
                     synthesized_relations,
@@ -667,6 +696,7 @@ def main():
                     package=context.package,
                     imports=context.source_imports,
                     jazzer_api_jar=jazzer_api_jar,
+                    trigger_literals=_trig_lits,
                 )
             except Exception as exc:
                 print(f"  [screen] screening failed ({exc}) — dropping all "
@@ -826,6 +856,31 @@ def main():
                           patch_text=context.patch_text)
 
     _print_summary(selection, result)
+
+    # 6-0) P2.3: injected-but-not-implemented check. A screened relation
+    #    handed to harness generation is worthless if no accepted harness
+    #    actually contains it — the model can silently drop a relation it
+    #    cannot implement (Math-2's convicting mean-relation needed a
+    #    forbidden subclass). Diff the injected relation names against the
+    #    accepted harness sources and log any that never made it in.
+    if synthesized_relations and result.successful_results:
+        accepted_src = ''
+        for br in result.successful_results:
+            try:
+                with open(br.harness_path, encoding='utf-8',
+                          errors='replace') as fh:
+                    accepted_src += fh.read() + '\n'
+            except OSError:
+                pass
+        missing = [getattr(r, 'name', '?') for r in synthesized_relations
+                   if getattr(r, 'name', '') and
+                   getattr(r, 'name') not in accepted_src]
+        if missing:
+            print(f"  [synth] INJECTED-BUT-NOT-IMPLEMENTED: {missing} — "
+                  f"screened relation(s) that no accepted harness contains "
+                  f"(the model dropped them; may be unimplementable under "
+                  f"the harness rules)")
+            record_extras['relations_not_implemented'] = missing
 
     # 6-bis) P0.4 latent-oracle scan: acceptance is whole-harness ("did
     #    ANYTHING fire on buggy?"), so a check listed after an

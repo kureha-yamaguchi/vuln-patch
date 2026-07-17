@@ -35,11 +35,12 @@ cannot screen, and unscreened means uninjected.
 """
 import os
 import re
+import tempfile
 from typing import List, Optional
 
 from build import HarnessBuilder
 from fuzz_runner import run_jazzer
-from java_source import violation_swallowed
+from java_source import library_subclass, violation_swallowed
 
 _STATS_RE = re.compile(
     r'\[relscreen\]\s+checked=(\d+)\s+violated=(\d+)')
@@ -110,6 +111,46 @@ def _screen_harness_source(package: Optional[str],
     return '\n'.join(lines)
 
 
+def _measure_on_corpus(build, builder, buggy_dir, jazzer_standalone_jar,
+                       jazzer_api_jar, literals, timeout_seconds=25):
+    """Run one already-compiled counting harness over EXACTLY the given
+    input literals (libFuzzer `-runs=0` replays the corpus and exits —
+    no mutation), and return (checked, violated) or None on failure.
+
+    P2.2: seeding with the failing test's own trigger literals asks the
+    direction question — does the relation FIRE on the very inputs the
+    bug is about? A relation that fires there disagrees with the buggy
+    behaviour where the test pins the truth (direction-confirmed); one
+    that stays silent there while the general run fires is suspect."""
+    if not literals:
+        return None
+    corpus = tempfile.mkdtemp(prefix='reldir_')
+    try:
+        for i, lit in enumerate(literals):
+            with open(os.path.join(corpus, f'seed_{i:03d}'), 'w',
+                      encoding='utf-8', errors='replace') as fh:
+                fh.write(lit)
+        outcome = run_jazzer(
+            jazzer_standalone_jar=jazzer_standalone_jar,
+            target_class=build.class_name,
+            harness_dir=os.path.dirname(build.harness_path),
+            project_cp=builder.test_classpath(buggy_dir),
+            timeout_seconds=timeout_seconds,
+            jazzer_api_jar=jazzer_api_jar,
+            corpus_dir=corpus,
+            extra_libfuzzer_args=['-runs=0'],
+        )
+    except Exception:
+        return None
+    finally:
+        import shutil
+        shutil.rmtree(corpus, ignore_errors=True)
+    m = _STATS_RE.search(outcome.stdout + '\n' + outcome.stderr)
+    if not m:
+        return None
+    return int(m.group(1)), int(m.group(2))
+
+
 def screen_relations(candidates: List,
                      builder: HarnessBuilder,
                      buggy_dir: str,
@@ -117,6 +158,7 @@ def screen_relations(candidates: List,
                      package: Optional[str] = None,
                      imports: Optional[List[str]] = None,
                      jazzer_api_jar: Optional[str] = None,
+                     trigger_literals: Optional[List[str]] = None,
                      runs: int = 20000,
                      timeout_seconds: int = 45,
                      max_keep: int = 3) -> List:
@@ -126,7 +168,8 @@ def screen_relations(candidates: List,
     what the screen observed. Fails soft per candidate — a candidate that
     cannot be compiled/run is dropped with a printed reason, never injected
     unscreened."""
-    selective, silent, high_ratio = [], [], []
+    confirmed, confirmed_flaky, selective, silent, high_ratio = (
+        [], [], [], [], [])
     for i, rel in enumerate(candidates):
         name = getattr(rel, 'name', f'relation{i}')
         # Format gate: the counting harness recognises a violation ONLY by
@@ -148,6 +191,17 @@ def screen_relations(candidates: List,
         if swallow_reason is not None:
             print(f"  [screen] {name}: SELF-SWALLOWED ALARM — "
                   f"{swallow_reason} — dropped")
+            continue
+        # P2.3 constraint parity: the harness may not subclass a library
+        # class to force behaviour. A relation that needs one compiles
+        # here but the harness can't implement it — the model then
+        # silently drops it (Math-2's MIN_VALUE-support relation). Reject
+        # at the screen so the miss is visible, not silent.
+        subclassed = library_subclass(getattr(rel, 'check', ''))
+        if subclassed is not None:
+            print(f"  [screen] {name}: needs an anonymous/local subclass of "
+                  f"`{subclassed}` — forbidden in harnesses (use a real "
+                  f"library subclass instead) — dropped")
             continue
         cls = f'RelScreen{i}'
         src = _screen_harness_source(package, imports or [], cls,
@@ -225,17 +279,70 @@ def screen_relations(candidates: List,
                   f"dropped (cannot screen)")
             continue
         ratio = violated / checked
+
+        # --- P2.2: direction + determinism on the trigger inputs --------
+        # Two focused replays over EXACTLY the failing test's literals.
+        # (a) does the relation fire there? Firing = it disagrees with the
+        #     buggy behaviour where the test pins the truth =
+        #     DIRECTION-CONFIRMED. (b) do the two replays AGREE? A relation
+        #     built on a nondeterministic call (Math-2's sample()) fires a
+        #     different number of times each run — FLAKY, deprioritise it
+        #     in favour of a deterministic discriminator.
+        direction = 'uncovered'   # uncovered | confirmed | inverted
+        deterministic = True
+        if trigger_literals:
+            r1 = _measure_on_corpus(build, builder, buggy_dir,
+                                    jazzer_standalone_jar, jazzer_api_jar,
+                                    trigger_literals)
+            r2 = _measure_on_corpus(build, builder, buggy_dir,
+                                    jazzer_standalone_jar, jazzer_api_jar,
+                                    trigger_literals)
+            if r1 and r2:
+                v1, v2 = r1[1], r2[1]
+                deterministic = (v1 == v2)
+                if v1 > 0 and v2 > 0:
+                    direction = 'confirmed'
+                elif v1 == 0 and v2 == 0 and ratio > MAX_FIRE_RATIO:
+                    # Silent on the trigger inputs yet firing on most
+                    # random inputs → it is asserting the WRONG direction
+                    # exactly where the test pins the right one.
+                    direction = 'inverted'
+
+        if direction == 'inverted':
+            print(f"  [screen] {name}: INVERTED — silent on the failing "
+                  f"test's own inputs but fires on {ratio:.0%} of random "
+                  f"inputs; it asserts the buggy direction where the test "
+                  f"pins the correct one — dropped")
+            continue
+
+        flag = '' if deterministic else ' [FLAKY — nondeterministic check]'
+        if direction == 'confirmed':
+            # The reliable, correctly-aimed case: fires exactly where the
+            # failing test says the buggy code is wrong. Rank first and
+            # EXEMPT from the ratio cap (a correct check aimed at the bug
+            # legitimately fires on almost every input once P0.2 stopped
+            # swallowing its alarm).
+            note = (f"DIRECTION-CONFIRMED: fires on the failing test's own "
+                    f"inputs (buggy violates the pinned behaviour there); "
+                    f"{violated}/{checked} on random inputs{flag}")
+            try:
+                rel.screen_note = note
+            except Exception:
+                pass
+            print(f"  [screen] {name}: KEPT (direction-confirmed){flag} — "
+                  f"{note}")
+            (confirmed_flaky if not deterministic
+             else confirmed).append(rel)
+            continue
+
         if ratio > MAX_FIRE_RATIO:
-            # P0.2 interim semantics (until P2.2 lands): a correctly-aimed
-            # check fires on nearly EVERY buggy input once its alarm stops
-            # being swallowed — dropping above-cap candidates would delete
-            # exactly the best ones. Keep, rank behind selective firers,
-            # and say so loudly; P2.2's direction check (does it fire on
-            # the failing test's own inputs?) will replace this heuristic.
+            # Above the cap but direction NOT confirmed on the trigger
+            # inputs — keep provisionally, ranked behind confirmed and
+            # selective, and say so loudly.
             note = (f"fired on {violated}/{checked} ({ratio:.0%}) buggy "
-                    f"inputs — ABOVE the {MAX_FIRE_RATIO:.0%} cap; kept "
-                    f"provisionally pending direction confirmation (P2.2); "
-                    f"treat with suspicion")
+                    f"inputs — ABOVE the {MAX_FIRE_RATIO:.0%} cap and NOT "
+                    f"direction-confirmed on the trigger inputs; kept "
+                    f"provisionally, treat with suspicion{flag}")
             try:
                 rel.screen_note = note
             except Exception:
@@ -246,29 +353,29 @@ def screen_relations(candidates: List,
         note = (f"fired on {violated}/{checked} fuzzed inputs on the "
                 f"buggy build" + (" (selective — consistent with the "
                                   "defect region)" if violated else
-                                  " (silent on the buggy build)"))
+                                  " (silent on the buggy build)") + flag)
         try:
             rel.screen_note = note
         except Exception:
             pass
         print(f"  [screen] {name}: KEPT — {note}")
         (selective if violated else silent).append(rel)
-    # Silent relations (fired on nothing the buggy build does) are
-    # regression TRIPWIRES, not detectors — past the first, each adds
-    # prompt mass without new evidence. And injected oracle mass measurably
-    # distracts the generator from the seed-anchored oracle (mined54:
-    # Lang-7 TP->FN under 36 mined assertions; sem8_v2: Lang-7 and Math-2
-    # overfits, both caught by earlier configs, went FN with exactly 3
-    # silent generic contracts injected). Selective firers keep the full
-    # cap; silent survivors are capped at ONE.
-    kept = (selective + high_ratio + silent[:1])[:max_keep]
-    dropped_by_cap = [r for r in selective + high_ratio + silent
-                      if r not in kept]
+    # Ranking (best first): direction-confirmed & deterministic, then
+    # direction-confirmed but flaky (a lucky discriminator beats none),
+    # then selective firers, then above-cap provisional, then ONE silent
+    # tripwire. Silent relations fired on nothing the buggy build does —
+    # past the first, each adds prompt mass without new evidence and
+    # measurably distracts the generator (mined54: Lang-7 TP->FN under 36
+    # mined assertions).
+    kept = (confirmed + confirmed_flaky + selective
+            + high_ratio + silent[:1])[:max_keep]
+    dropped_by_cap = [r for r in confirmed + confirmed_flaky + selective
+                      + high_ratio + silent if r not in kept]
     if dropped_by_cap:
         # Not a screening failure — the prompt-size/distraction cap. Say
         # so, or "4 KEPT" followed by "3 survived" reads as an off-by-one.
         print(f"  [screen] cap: injecting {len(kept)} "
-              f"(selective first, at most 1 silent); "
+              f"(direction-confirmed first, at most 1 silent); "
               + ", ".join(getattr(r, 'name', '?') for r in dropped_by_cap)
               + " kept-but-cut")
     return kept
