@@ -335,6 +335,72 @@ def cause_signature(output: str) -> Optional[str]:
     return f"{cls}@{top_frame}" if top_frame else cls
 
 
+# P3.3 crash-site pinning — per-oracle underlying-crash identity.
+#
+# A "must not crash" check fires because SOME exception happened underneath;
+# its alarm looks identical whether that exception is the bug's own crash or
+# an unrelated pre-existing one (Chart-26: the axis-label NPE the bug is
+# about vs the text-measuring crash that exists on every build). The alarm
+# message can't tell them apart; the underlying exception's TYPE can. We
+# record, per oracle ID, which exception types stood behind its firings on
+# the BUGGY build; on the patched build, a firing of the same oracle whose
+# underlying types share nothing with the buggy-side set is a DIFFERENT
+# crash wearing the same alarm — dismissed mechanically. Type-level (not
+# type@frame) comparison on purpose: a half-fix that moves the same
+# exception a frame deeper must stay a catch.
+
+# Exception-ish names embedded in an alarm's own MESSAGE text (the
+# flag-pattern variant P0.3's cause chain can't see).
+_MSG_EXC_RE = re.compile(r'\b((?:[a-z][\w.]*\.)?[A-Z]\w*(?:Exception|Error))\b')
+# Alarm/wrapper types that say nothing about the underlying crash.
+_ALARM_TYPES = ('FuzzerSecurityIssue', 'RuntimeException', 'AssertionError',
+                'Throwable', 'Exception', 'Error')
+
+
+def _underlying_crash_types(chunk: str) -> set:
+    """Exception types plausibly UNDERLYING one firing: the cause chain
+    (P0.3), any non-alarm headline type, and exception names embedded in
+    the alarm message text — minus the generic alarm wrappers."""
+    types = set(_CAUSE_RE.findall(chunk or ''))
+    m = _EXC_RE.search(chunk or '')
+    if m:
+        types.add(m.group(1))
+    types.update(_MSG_EXC_RE.findall(chunk or ''))
+    out = set()
+    for t in types:
+        simple = t.rsplit('.', 1)[-1]
+        if any(simple == a or simple.startswith('FuzzerSecurityIssue')
+               for a in _ALARM_TYPES):
+            continue
+        out.add(simple)
+    return out
+
+
+def per_oracle_crash_types(output: str) -> dict:
+    """Map oracle ID -> set of underlying exception type names, from a
+    fuzzing output that may contain several firings (keep_going or plain).
+    Chunks are split on Jazzer's exception banner; a chunk with no oracle
+    ID contributes nothing."""
+    from java_source import oracle_ids_in_text
+    result: dict = {}
+    text = output or ''
+    starts = [m.start() for m in _EXC_RE.finditer(text)]
+    if not starts:
+        return result
+    starts.append(len(text))
+    for a, b in zip(starts, starts[1:]):
+        chunk = text[a:b]
+        ids = oracle_ids_in_text(chunk)
+        if not ids:
+            continue
+        types = _underlying_crash_types(chunk)
+        if not types:
+            continue
+        for oid in ids:
+            result.setdefault(oid, set()).update(types)
+    return result
+
+
 # Generic JDK runtime exceptions that commonly ESCAPE library code on
 # malformed / out-of-domain input (mirrors the valid-by-construction rule in
 # prompts.py). For a SEMANTIC bug the defect is a wrong value, so a firing of
@@ -964,6 +1030,40 @@ class FuzzRunner:
         if not outcome.triggered:
             return None
         return crash_signature(outcome.combined_output)
+
+    def replay_input_oracles(self,
+                             harness_path: str,
+                             class_name: str,
+                             project_cp: str,
+                             input_file: str,
+                             timeout_seconds: int = 30) -> Optional[set]:
+        """Replay ONE persisted crashing input and return the set of
+        oracle IDs that fire (empty set = ran clean), or None when the
+        replay itself errors (caller must treat None as ABSTAIN).
+
+        P0.4 latent firings need this: the buggy-side acceptance scan
+        stops at the first firing oracle per input, so a sound check
+        sitting behind an always-firing seed oracle looks latent
+        (Lang-60's capacity check). Whether ITS exact input fires it on
+        the buggy build is the evidence latency alone cannot give."""
+        try:
+            outcome = run_jazzer(
+                jazzer_standalone_jar=self.jazzer_standalone_jar,
+                target_class=class_name,
+                harness_dir=os.path.dirname(harness_path),
+                project_cp=project_cp,
+                timeout_seconds=timeout_seconds,
+                expected_exceptions=self.expected_exceptions,
+                jazzer_api_jar=self.jazzer_api_jar,
+                input_file=input_file,
+            )
+        except Exception as exc:
+            print(f"  (single-input replay failed: {exc})")
+            return None
+        if not outcome.triggered:
+            return set()
+        from java_source import oracle_ids_in_text
+        return oracle_ids_in_text(outcome.combined_output)
 
     def replay_input_signatures(self,
                                 harness_path: str,

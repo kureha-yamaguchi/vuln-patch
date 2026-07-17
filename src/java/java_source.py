@@ -490,9 +490,16 @@ def rethrow_without_cause(source: str) -> Optional[str]:
 # lets us ask WHICH check fired where. Two accepted shapes:
 #   [oracle:<id>] ...            (mandated prefix for harness alarms)
 #   relation <name> violated ...  (the synthesis format, already named)
+#   "[oracle:" + id + "] ..."     (ID built at runtime; resolved in output)
 
 _ORACLE_ID_RE = re.compile(r'\[oracle:([-\w]+)\]')
 _RELATION_ID_RE = re.compile(r'relation\s+([-\w]+)\s+violated')
+# A dynamically-built ID: a string literal ending in `[oracle:` followed by
+# concatenation, e.g. `"[oracle:" + oracleId + "] ..."`. Perfectly valid at
+# runtime (the fuzzer output carries the resolved ID, which is what the
+# latent scan and acceptance parse) — rejecting it cost Chart-3-o every
+# harness attempt in the p23gate run.
+_DYNAMIC_ORACLE_ID_RE = re.compile(r'\[oracle:"\s*\+')
 _ALARM_STMT_RE = re.compile(
     r'throw\s+new\s+[\w.]*(?:FuzzerSecurityIssue\w*|RuntimeException)'
     r'\s*\(', re.S)
@@ -517,9 +524,12 @@ def alarm_ids_missing(source: str) -> Optional[str]:
         # the throw's argument region: up to the statement's semicolon
         end = src.find(';', m.end())
         stmt = src[m.start():end if end > 0 else m.end() + 400]
-        if ('violated' not in stmt and 'semantic mismatch' not in stmt
+        if ('violated' not in stmt and 'violation' not in stmt
+                and 'semantic mismatch' not in stmt
                 and 'FuzzerSecurityIssue' not in stmt):
             continue                       # not an alarm (plain rethrow)
+        if _DYNAMIC_ORACLE_ID_RE.search(stmt):
+            continue                       # ID built at runtime — named
         if not oracle_ids_in_text(stmt):
             line = src[:m.start()].count('\n') + 1
             snippet = ' '.join(stmt.split())[:120]
@@ -528,6 +538,35 @@ def alarm_ids_missing(source: str) -> Optional[str]:
                     f'"[oracle:<short-id>]" so acceptance can tell '
                     f'which check earned its place')
     return None
+
+
+# ---------------------------------------------------------------------------
+# Harness-bug lint: Math.abs(consume…()) used before % is NOT a safe index.
+# Math.abs(Integer.MIN_VALUE) is negative (two's complement has no positive
+# counterpart), so `Math.abs(data.consumeInt()) % n` eventually produces a
+# negative index and the harness itself crashes with an
+# ArrayIndexOutOfBoundsException that has nothing to do with the patch —
+# the sole patched-side firing of Lang-41-o in the p23gate run was exactly
+# this, and it cost the leg its verdict.
+
+_NEG_MOD_RE = re.compile(
+    r'Math\s*\.\s*abs\s*\(\s*\w+\s*\.\s*consume\w*\s*\([^()]*\)\s*\)\s*%')
+
+
+def negative_modulo_index(source: str) -> Optional[str]:
+    """Return a reason string when the harness computes an index as
+    `Math.abs(<fuzzed int>) % n` (negative for Integer.MIN_VALUE); None
+    when the pattern is absent."""
+    src = strip_comments(source or '')
+    m = _NEG_MOD_RE.search(src)
+    if not m:
+        return None
+    line = src[:m.start()].count('\n') + 1
+    snippet = ' '.join(m.group(0).split())
+    return (f'near line {line}: `{snippet}` — Math.abs(Integer.MIN_VALUE) '
+            f'is NEGATIVE, so this index eventually goes out of bounds and '
+            f'crashes the harness itself. Use Math.floorMod(value, n) or a '
+            f'bounded consume (e.g. data.consumeInt(0, n - 1)) instead')
 
 
 # ---------------------------------------------------------------------------

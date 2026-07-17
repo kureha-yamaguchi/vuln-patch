@@ -40,7 +40,8 @@ from typing import List, Optional
 
 from build import HarnessBuilder
 from fuzz_runner import run_jazzer
-from java_source import library_subclass, violation_swallowed
+from java_source import (library_subclass, negative_modulo_index,
+                         violation_swallowed)
 
 _STATS_RE = re.compile(
     r'\[relscreen\]\s+checked=(\d+)\s+violated=(\d+)')
@@ -203,6 +204,14 @@ def screen_relations(candidates: List,
                   f"`{subclassed}` — forbidden in harnesses (use a real "
                   f"library subclass instead) — dropped")
             continue
+        # Harness-bug lint (same as campaign gate 0d): an index computed as
+        # Math.abs(consume…()) % n goes negative on Integer.MIN_VALUE and
+        # the check crashes on its own input handling.
+        negmod = negative_modulo_index(getattr(rel, 'check', ''))
+        if negmod is not None:
+            print(f"  [screen] {name}: NEGATIVE-MODULO INDEX — {negmod} — "
+                  f"dropped")
+            continue
         cls = f'RelScreen{i}'
         src = _screen_harness_source(package, imports or [], cls,
                                      getattr(rel, 'check', ''))
@@ -309,10 +318,30 @@ def screen_relations(candidates: List,
                     direction = 'inverted'
 
         if direction == 'inverted':
-            print(f"  [screen] {name}: INVERTED — silent on the failing "
-                  f"test's own inputs but fires on {ratio:.0%} of random "
-                  f"inputs; it asserts the buggy direction where the test "
-                  f"pins the correct one — dropped")
+            # DEMOTED, not dropped (changed after minfix_w2c): "silent on
+            # the trigger corpus, loud on random inputs" has two readings —
+            # a backwards rule (Lang-7) OR a sound rule whose violation
+            # domain the tiny byte-corpus simply never reaches (Math-2's
+            # mean-formula fires only at overflow-scale parameters; the
+            # hard drop deleted the single best discriminator we have).
+            # The two are mechanically indistinguishable here, so: keep it
+            # OUT of the harness prompt (run.py filters on this marker)
+            # but keep it for pool/replay, where the patched-side replay
+            # plus the verifier — who is told about the inversion suspicion
+            # via this note — decide.
+            note = (f"INVERTED-SUSPECT: silent on the failing test's own "
+                    f"input corpus while firing on {ratio:.0%} of random "
+                    f"inputs on buggy. EITHER a backwards rule (asserting "
+                    f"the buggy direction) OR a sound rule whose violation "
+                    f"domain the trigger corpus never reaches — replay-only,"
+                    f" never prompt-injected; treat a patched-build firing "
+                    f"with scepticism about direction")
+            try:
+                rel.screen_note = note
+            except Exception:
+                pass
+            print(f"  [screen] {name}: {note}")
+            high_ratio.append(rel)
             continue
 
         flag = '' if deterministic else ' [FLAKY — nondeterministic check]'
@@ -379,3 +408,111 @@ def screen_relations(candidates: List,
               + ", ".join(getattr(r, 'name', '?') for r in dropped_by_cap)
               + " kept-but-cut")
     return kept
+
+
+def replay_on_patched(relations: List,
+                      builder: HarnessBuilder,
+                      patched_dir: str,
+                      jazzer_standalone_jar: str,
+                      package: Optional[str] = None,
+                      imports: Optional[List[str]] = None,
+                      jazzer_api_jar: Optional[str] = None,
+                      trigger_literals: Optional[List[str]] = None,
+                      runs: int = 20000,
+                      timeout_seconds: int = 45) -> List[dict]:
+    """P3.2 replay: execute already-screened relations DIRECTLY against the
+    patched build — no harness generation, no fuzzing luck in between.
+
+    Why: a screened relation used to matter only if the harness writer
+    chose to implement it AND the patched-build fuzz found the right
+    inputs. Math-2's probe-validated mean-formula discriminator was lost
+    to exactly those two coin flips. Here each relation gets the same
+    counting wrapper the screen used, compiled against the PATCHED
+    checkout, and measured two ways:
+
+    - trigger tier: replay EXACTLY the failing test's own input literals
+      (-runs=0, twice — determinism check). The failing test is the most
+      trusted evidence source; an overfit only guarantees the test's own
+      ASSERTIONS pass, not that other contract relations hold at those
+      inputs (Math-2/Arja: getNumericalMean is still -49.76 at the
+      trigger params although sample() passes).
+    - fuzzed tier: the same `runs` budget the buggy-side screen used.
+
+    Returns finding dicts (relation, tier, counts, note) for every
+    relation that fires; the CALLER must pass each through the LLM
+    verifier before it may influence any verdict — replay never convicts
+    on its own."""
+    findings = []
+    for i, rel in enumerate(relations):
+        name = getattr(rel, 'name', f'relation{i}')
+        check = getattr(rel, 'check', '')
+        if not check:
+            continue
+        cls = f'RelReplay{i}'
+        src = _screen_harness_source(package, imports or [], cls, check)
+        try:
+            build = builder.build(src, patched_dir,
+                                  output_subdir=f'relreplay_{i}')
+        except Exception as exc:
+            print(f"  [replay] {name}: build error ({exc}) — skipped")
+            continue
+        if not build.compiled:
+            print(f"  [replay] {name}: does not compile against the "
+                  f"patched build — skipped")
+            continue
+
+        trig_v = None                     # violated count on trigger inputs
+        trig_deterministic = False
+        if trigger_literals:
+            r1 = _measure_on_corpus(build, builder, patched_dir,
+                                    jazzer_standalone_jar, jazzer_api_jar,
+                                    trigger_literals)
+            r2 = _measure_on_corpus(build, builder, patched_dir,
+                                    jazzer_standalone_jar, jazzer_api_jar,
+                                    trigger_literals)
+            if r1 and r2:
+                trig_v = max(r1[1], r2[1])
+                trig_deterministic = (r1[1] == r2[1])
+
+        checked = violated = None
+        try:
+            outcome = run_jazzer(
+                jazzer_standalone_jar=jazzer_standalone_jar,
+                target_class=build.class_name,
+                harness_dir=os.path.dirname(build.harness_path),
+                project_cp=builder.test_classpath(patched_dir),
+                timeout_seconds=timeout_seconds,
+                jazzer_api_jar=jazzer_api_jar,
+                extra_libfuzzer_args=[f'-runs={runs}'],
+            )
+            m = _STATS_RE.search(outcome.stdout + '\n' + outcome.stderr)
+            if m:
+                checked, violated = int(m.group(1)), int(m.group(2))
+        except Exception as exc:
+            print(f"  [replay] {name}: fuzzed replay failed ({exc})")
+
+        if trig_v:
+            tier = 'trigger'
+            note = (f"fires on the failing test's OWN input literals on "
+                    f"the patched build"
+                    + (" (deterministic, 2/2 replays)" if trig_deterministic
+                       else " (NONDETERMINISTIC across replays — flaky)")
+                    + (f"; fuzzed: {violated}/{checked}"
+                       if checked is not None else ""))
+        elif violated:
+            tier = 'fuzzed'
+            note = (f"fires on {violated}/{checked} fuzzed inputs on the "
+                    f"patched build (silent on the trigger literals)")
+        else:
+            if checked is not None or trig_v is not None:
+                print(f"  [replay] {name}: quiet on the patched build"
+                      + (f" ({checked} fuzzed inputs)" if checked else ""))
+            continue
+        print(f"  [replay] {name}: FIRED [{tier}] — {note}")
+        findings.append({
+            'relation': rel, 'name': name, 'tier': tier, 'note': note,
+            'trigger_violations': trig_v,
+            'trigger_deterministic': trig_deterministic,
+            'fuzz_checked': checked, 'fuzz_violated': violated,
+        })
+    return findings

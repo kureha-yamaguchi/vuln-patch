@@ -35,8 +35,8 @@ from typing import List, Dict, Optional, Callable
 
 from build import HarnessBuilder, BuildResult
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from java_source import (alarm_ids_missing, rethrow_without_cause,
-                         violation_swallowed)
+from java_source import (alarm_ids_missing, negative_modulo_index,
+                         rethrow_without_cause, violation_swallowed)
 from llm import HarnessGenerator
 from fuzz_runner import HarnessVerifier, VerificationResult
 from oracle_strength import exception_headline
@@ -345,6 +345,30 @@ class HarnessCampaign:
                             "DIFFERENT id per check. Return the full "
                             "corrected FuzzHarness.java. Raw Java source "
                             "only. No markdown fences."),
+                        raw=raw,
+                        is_repair_attempt=is_repair_attempt,
+                        repair_failures=repair_failures,
+                        current_messages=current_messages,
+                        original_messages=original_messages,
+                        fresh_prompt=fresh_prompt,
+                    )
+                )
+                continue
+
+            # --- gate 0d: no negative-modulo index (harness bug) --------
+            # Math.abs(Integer.MIN_VALUE) is negative; a harness that
+            # indexes with Math.abs(consume…()) % n eventually crashes on
+            # its own and the junk firing costs the leg its verdict.
+            negmod_reason = negative_modulo_index(source)
+            if negmod_reason is not None:
+                print(f"✗ negative-modulo index: {negmod_reason}")
+                repair_failures, current_messages, original_messages = (
+                    self._handle_failure(
+                        diagnostic=(
+                            "Your harness computes an array/list index "
+                            "that can go NEGATIVE: " + negmod_reason + "\n"
+                            "Return the full corrected FuzzHarness.java. "
+                            "Raw Java source only. No markdown fences."),
                         raw=raw,
                         is_repair_attempt=is_repair_attempt,
                         repair_failures=repair_failures,

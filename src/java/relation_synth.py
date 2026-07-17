@@ -47,9 +47,10 @@ _SYSTEM = (
 
 _INSTRUCTIONS = (
     "ANCHOR REQUIREMENT — READ FIRST. The patch changed a SPECIFIC"
-    " expression in a SPECIFIC method. An overfit can only differ from a"
-    " correct implementation WHERE the code was changed, so a relation about"
-    " a method the patch did NOT touch is worthless here. Your FIRST relation"
+    " expression in a SPECIFIC method. An overfit usually differs from a"
+    " correct implementation WHERE the code was changed (the one exception:"
+    " a method the FAILING TEST reads can stay wrong when the patch edited"
+    " elsewhere — that is what the secondary list below is for). Your FIRST relation"
     " MUST directly constrain the OUTPUT of a changed method, exercising the"
     " exact input the change is about — the prefix / sign / boundary value /"
     " edge case named in the changed condition — and asserting only what that"
@@ -72,6 +73,18 @@ _INSTRUCTIONS = (
     " tolerance is as unsound as exact ==; the real bug you are hunting"
     " diverges by a LARGE amount (e.g. a sign flip or a value 100x off),"
     " not by rounding.\n"
+    "STANDING STRATEGY — DOCUMENTED FORMULAS (checked first, before"
+    " anything else): scan the javadoc of the touched class's numeric"
+    " getters (and of classes the failing test reads) for a stated"
+    " closed-form formula ('the mean is n * m / N', 'returns p * (1-p)',"
+    " ...). If ANY such formula exists, your FIRST relation MUST be that"
+    " formula: recompute it independently from the object's own parameters"
+    " and compare with the generous magnitude-scaled tolerance above. A"
+    " documented formula is the strongest relation class there is — it is"
+    " deterministic, it holds for every correct implementation by"
+    " definition, and a patch that leaves the value wrong anywhere in the"
+    " domain cannot pass it. Only when no documented formula exists does"
+    " the anchor requirement below decide your first relation.\n"
     "Propose up to 4 relations for the patched method. For each, give:\n"
     "  - name: a short slug\n"
     "  - kind: metamorphic | invariant\n"
@@ -176,6 +189,12 @@ class Relation:
     # the mechanical screen observed (execs, fire ratio). Rendered into the
     # prompt so the model (and the log reader) can see the evidence level.
     screen_note: str = ''
+    # True when this relation came from the cross-leg pool rather than this
+    # leg's own synthesis. Pooled relations are screening/replay material
+    # only — they are never injected into the harness prompt (injected
+    # sibling-leg relation mass displaced the generator's own checks in the
+    # p23gate run: Lang-60-o lost its convicting capacity oracle).
+    from_pool: bool = False
 
 
 class RelationSynthesizer:
@@ -315,18 +334,20 @@ class RelationSynthesizer:
             ctx.append("Reachable API (call these, do not reimplement): "
                        + ", ".join(reachable[:30]))
         if trigger_methods:
-            # P3.2b: the discriminating relation may constrain a method the
-            # FAILING TEST exercises even when the patch edited elsewhere
-            # (a patched-elsewhere overfit like Math-2: the bug is int
-            # overflow in getNumericalMean, which the failing test reads,
-            # but the overfit edits a coincidentally-passing sibling).
+            # P3.2b, demoted to ADVISORY after p23gate: as a mandate this
+            # block re-aimed synthesis at low-level internals and lost the
+            # winning contract-level relation (Closure-33-o regressed from
+            # catch to miss). The documented contract of the touched code
+            # stays the PRIMARY anchor; these names are secondary targets.
             ctx.append(
-                "METHODS/TYPES THE FAILING TEST EXERCISES — the bug's"
-                " symptom is observed THROUGH these. If the patch changed a"
-                " DIFFERENT method than the one whose output is wrong, the"
-                " discriminating relation lives on one of THESE, not on the"
-                " edited line. Prefer a relation that constrains one of them"
-                " when the failing test's expected value pins it:\n    "
+                "ALSO WORTH CONSTRAINING (secondary): methods/types the"
+                " failing test exercises — the bug's symptom is observed"
+                " through these, so when the patch edited a DIFFERENT"
+                " method than the one whose output is wrong, one relation"
+                " constraining one of these can catch it. This is an"
+                " addition to, never a replacement for, relations grounded"
+                " in the documented contract of the touched code — prefer"
+                " the documented-contract relation when choosing:\n    "
                 + ", ".join(trigger_methods))
         if mined_tests:
             ctx.append("Real API usage from the project's own tests (mirror"

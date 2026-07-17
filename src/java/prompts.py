@@ -273,7 +273,15 @@ class PromptBuilder:
             "",
             "2. RECONSTRUCT: in fuzzerTestOneInput, make EACH of those calls"
             " through the real public API, exactly as the test does, to get"
-            " each ACTUAL value.",
+            " each ACTUAL value. EXACTLY-AS-THE-TEST-DOES includes the"
+            " test's SETUP: if the expected value depends on environment"
+            " the test arranges (a registered source file, a Locale or"
+            " TimeZone, a formatting mode, a fixture object), replicate"
+            " that setup faithfully — and if you cannot replicate it,"
+            " DROP that pair rather than assert it, because a"
+            " half-reconstructed scenario fires on correct code too (that"
+            " exact mistake caused two false accusations of correct"
+            " patches).",
             "",
             "3. ASSERT ALL OF THEM: if ANY actual value does not equal its"
             " expected value, `throw new com.code_intelligence.jazzer.api."
@@ -287,7 +295,17 @@ class PromptBuilder:
             " the one reported input still fails the others, so the more pairs"
             " you assert the more likely it is caught. Jazzer reports the throw"
             " as a finding, exactly like a crash, so scoring is unchanged. If"
-            " all match, continue.",
+            " all match, continue."
+            " WHEN THE EXPECTED VALUE IS A STRING OF CODE OR FORMATTED TEXT"
+            " (compiler/printer output, rendered source, messages with"
+            " layout): never compare raw strings — normalize BOTH sides"
+            " first (collapse all whitespace runs, e.g."
+            " s.replaceAll(\"\\\\s+\", \"\")) so the check fires only on a"
+            " CONTENT difference. A correct implementation may legitimately"
+            " differ in spaces, newlines or statement-separator placement,"
+            " and a raw-string firing over formatting will be dismissed in"
+            " review — burying the real content difference the same"
+            " comparison would have caught.",
             "",
             "4. THEN GENERALISE — but keep every assertion TRUSTED. The"
             " lifted pair tells you the answer for ONE input only. Do not"
@@ -889,8 +907,20 @@ class PromptBuilder:
             " one, keep its justification comment next to the check, and"
             " fence its inputs exactly as instructed below. These generalise"
             " BEYOND the tested inputs, so they can catch an overfit that"
-            " only special-cased the reported input. IMPLEMENT each one in"
-            " your harness in addition to the lifted/mined oracles:",
+            " only special-cased the reported input. Implement each one in"
+            " your harness in addition to the lifted/mined oracles — but"
+            " these are EXTRAS, not your whole job: KEEP INVENTING YOUR OWN"
+            " checks beyond them. Two self-invented shapes have repeatedly"
+            " been the ones that catch what nothing else does:"
+            " (a) HIDDEN-STATE checks — after any call documented as a"
+            " question (get*/is*/contains/indexOf/size, no mention of"
+            " modifying), re-read the object's cheap observable properties"
+            " (capacity, size, length, later lookups) and assert they did"
+            " not change; a 'read-only' call that silently mutates internal"
+            " state is a classic defect no provided relation will mention."
+            " (b) SIBLING-AGREEMENT checks — two methods documented to do"
+            " the same job (overloads taking char vs String, Class vs class"
+            " name, etc.) must agree on the same logical input:",
         ]
         for i, r in enumerate(relations, 1):
             name = getattr(r, 'name', f'relation{i}')
@@ -1256,6 +1286,20 @@ class PromptBuilder:
             " behaviour and will be rejected in review. Assert on the"
             " degenerate case ONLY when the documented contract explicitly"
             " covers it — and cite that sentence.",
+            "- FENCE EXTREME MAGNITUDES the same way: cap fuzzed numeric"
+            " parameters to moderate ranges by construction (as a rule of"
+            " thumb, |value| <= 1_000_000 for integers that get multiplied"
+            " together or fed to combinatorial/statistical formulas) unless"
+            " the documented contract explicitly covers larger values. At"
+            " billion-scale parameters a CORRECT implementation's double"
+            " arithmetic legitimately degrades — internal overflow to NaN,"
+            " rounding beyond any tolerance, log-gamma saturation — so an"
+            " assertion whose only violations occur at such magnitudes"
+            " accuses correct code (this exact pattern produced repeated"
+            " false accusations: a probability check that sees NaN only at"
+            " N near 2^31, a validation exception from a parameter range"
+            " that overflowed). The bug you hunt fires at REASONABLE"
+            " magnitudes too whenever the contract really is broken.",
             "- CONDITIONAL SIDE EFFECTS ARE NOT UNCONDITIONAL. If the"
             " method performs an observable side effect (adds to a"
             " collection, increments a counter, populates a cache, sets a"
@@ -1270,11 +1314,14 @@ class PromptBuilder:
             " path to the effect, or do not assert the effect.",
             "- Use only real library calls for BOTH sides (no hand-rolled"
             " reference implementation).",
-            "- On violation, `throw new RuntimeException(\"metamorphic"
-            " violation: <which relation> input=<...> lhs=<...>"
-            " rhs=<...>\")` with the concrete values, so a reviewer can"
-            " replay the disagreement. Jazzer reports that as a finding,"
-            " the same as a crash.",
+            "- On violation, `throw new RuntimeException(\"[oracle:"
+            "<short-id>] metamorphic violation: <which relation>"
+            " input=<...> lhs=<...> rhs=<...>\")` with the concrete values,"
+            " so a reviewer can replay the disagreement. The"
+            " [oracle:<short-id>] prefix is MANDATORY (checked"
+            " mechanically) — an un-named alarm is invisible to the"
+            " per-check acceptance machinery. Jazzer reports the throw as"
+            " a finding, the same as a crash.",
         ])
 
     def _fdp_reference(self) -> str:

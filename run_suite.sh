@@ -52,6 +52,14 @@ ROOT=/home/code/scratch/runs/${SUITE}_${STAMP}
 mkdir -p "$ROOT"
 MANIFEST="$ROOT/manifest.jsonl"; : > "$MANIFEST"
 
+# Relation pool (P3.2) isolation: the pool persists across runs when left at
+# its default (~/.vuln_patch_relation_pool), so relations screened by an OLD
+# suite would silently feed every later one and the measurement stops being
+# attributable. Each suite gets a fresh pool inside its own run folder;
+# in-run sharing between a bug's legs (the point of pooling) still works.
+export RELATION_POOL_DIR="$ROOT/relation_pool"
+mkdir -p "$RELATION_POOL_DIR"
+
 # ---- defaults (overridden by the sourced cases file) ----
 MODEL="gpt-5.4"                    # or gpt-5.4-nano (with escalation)
 COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations"

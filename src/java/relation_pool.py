@@ -62,7 +62,8 @@ def load_pool(project: str, bug_id: str,
                     contract=d.get('contract', ''),
                     input_spec=d.get('input_spec', ''),
                     check=d.get('check', ''),
-                    screen_note=d.get('screen_note', ''))
+                    screen_note=d.get('screen_note', ''),
+                    from_pool=True)
                 k = _dedup_key(rel)
                 if k and k not in seen:
                     seen.add(k)
@@ -86,6 +87,8 @@ def save_relations(project: str, bug_id: str, relations: List[Relation],
         added = 0
         with open(path, 'a', encoding='utf-8') as fh:
             for rel in relations:
+                if getattr(rel, 'from_pool', False):
+                    continue  # came FROM the pool; nothing new to record
                 k = _dedup_key(rel)
                 if not k or k in existing:
                     continue

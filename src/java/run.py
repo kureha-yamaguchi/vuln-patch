@@ -154,6 +154,18 @@ def parse_args():
                              "relations is the hardest reasoning step in the "
                              "pipeline and the cheap model demonstrably "
                              "invents unsound ones.")
+    parser.add_argument("--replay_relations_on_patched", action="store_true",
+                        help="P3.2 replay: execute every screened relation "
+                             "(own + pooled) directly against the PATCHED "
+                             "build — trigger-literal replay (deterministic) "
+                             "plus a fuzzed pass — and hand firings to the "
+                             "relation verifier as candidate findings. "
+                             "Removes the two coin flips (harness must "
+                             "implement the relation AND fuzzing must find "
+                             "the inputs) that cost Math-2-o its verdict. "
+                             "Requires --synthesize_relations and "
+                             "--verify_relations (replay never convicts "
+                             "without the verifier).")
     parser.add_argument("--results_json", type=str, default=None,
                         metavar="PATH",
                         help="append a one-line JSON record describing this "
@@ -636,6 +648,12 @@ def main():
     #    than piling onto the first. The campaign passes no attempt index, so
     #    the closure keeps its own counter (one tick per fresh prompt build).
     prompt_builder = PromptBuilder(language=args.language)
+    # Relations actually shown to the harness generator. Filled after
+    # screening (6a-pre): at most 2 of this leg's OWN relations, best-first.
+    # Pooled sibling-leg relations never enter the prompt — injected pool
+    # mass displaced the generator's own free-form checks in p23gate
+    # (Lang-60-o lost the capacity oracle that convicted at baseline).
+    prompt_relations = []
     _rr_state = {"i": 0, "s": 0, "m": 0}
     # Rotate the variant strategy across the harness SET so each is tried by
     # at least one harness — otherwise the model picks one stochastically and
@@ -661,13 +679,13 @@ def main():
         # off a bug it had been catching. Only mechanisms that actually
         # have content this run enter the rotation. NOTE: reads the
         # closure variables at call time, so it automatically sees the
-        # post-screen `synthesized_relations`.
+        # post-screen `prompt_relations`.
         mechanism = None
         if bug_kind == "semantic":
             mechs = ['consistency']
             if mined_oracles:
                 mechs.insert(0, 'pairs')
-            if synthesized_relations:
+            if prompt_relations:
                 mechs.append('relations')
             if len(mechs) > 1:
                 mechanism = mechs[_rr_state["m"] % len(mechs)]
@@ -689,7 +707,7 @@ def main():
             # the prompt says so without overpromising).
             verifier_enabled=args.verify_relations,
             mined_oracles=mined_oracles,
-            synthesized_relations=synthesized_relations,
+            synthesized_relations=prompt_relations,
             oracle_mechanism=mechanism,
             touched_javadocs=touched_javadocs,
             # Only the 'consistency' slot renders this (one
@@ -725,6 +743,9 @@ def main():
             _trig_lits = [s for s in dict.fromkeys(_trig_lits)
                           if s.strip()][:32]
             try:
+                # max_keep=8: the old cap of 3 sized the PROMPT; the prompt
+                # is now sliced separately (prompt_relations, ≤2 own-leg),
+                # so screening may keep more survivors for pool/replay use.
                 synthesized_relations = screen_relations(
                     synthesized_relations,
                     builder=builder,
@@ -734,6 +755,7 @@ def main():
                     imports=context.source_imports,
                     jazzer_api_jar=jazzer_api_jar,
                     trigger_literals=_trig_lits,
+                    max_keep=8,
                 )
             except Exception as exc:
                 print(f"  [screen] screening failed ({exc}) — dropping all "
@@ -741,6 +763,20 @@ def main():
                 synthesized_relations = []
             print(f"  [screen] {len(synthesized_relations)} relation(s) "
                   "survived screening")
+            # W1.1 (p23gate regression fix): the harness prompt sees at most
+            # 2 relations, best-first (screening returns direction-confirmed
+            # first), and ONLY this leg's own — pooled sibling-leg relations
+            # are screening/replay material, never prompt material.
+            prompt_relations = [
+                r for r in synthesized_relations
+                if not getattr(r, 'from_pool', False)
+                and not getattr(r, 'screen_note', '').startswith(
+                    'INVERTED-SUSPECT')][:2]
+            if len(prompt_relations) != len(synthesized_relations):
+                print(f"  [screen] prompt gets {len(prompt_relations)} "
+                      f"relation(s) (own-leg, best-first); the other "
+                      f"{len(synthesized_relations) - len(prompt_relations)} "
+                      "stay screening/replay-only")
             # P3.2 pooling: persist this leg's screened survivors so the
             # bug's OTHER legs can reuse them. Sound-on-buggy is a
             # per-bug property, so this is label-free.
@@ -938,8 +974,14 @@ def main():
     #    and record which named oracles ever fire; the rest are LATENT.
     #    v1: flag loudly + hand to the verifier as context. No cutting.
     latent_map: dict = {}
+    # P3.3: per-harness map {oracle id -> exception types underlying its
+    # BUGGY-side firings}, from the same keep_going scan. On the patched
+    # build, a firing of the same oracle from a disjoint set of underlying
+    # exception types is a DIFFERENT crash wearing the same alarm.
+    buggy_crash_types: dict = {}
     if result.successful_results and jazzer_standalone_jar:
         from java_source import oracle_ids_in_text
+        from fuzz_runner import per_oracle_crash_types
         _fr_lat = FuzzRunner(
             jazzer_standalone_jar=jazzer_standalone_jar,
             timeout_seconds=args.fuzz_timeout,
@@ -969,6 +1011,13 @@ def main():
             fired = oracle_ids_in_text(out)
             latent = declared - fired
             latent_map[br.harness_path] = latent
+            _octypes = per_oracle_crash_types(out)
+            if _octypes:
+                buggy_crash_types[br.harness_path] = _octypes
+                print(f"  {br.attempt_label or br.class_name}: buggy-side "
+                      f"crash identity per oracle: "
+                      + ", ".join(f"{k}={sorted(v)}"
+                                  for k, v in sorted(_octypes.items())))
             if latent:
                 print(f"  {br.attempt_label or br.class_name}: LATENT "
                       f"oracle(s) never fired on buggy: "
@@ -1050,10 +1099,27 @@ def main():
         from fuzz_runner import (cause_signature, crash_signature,
                                  is_generic_cause, is_generic_escape)
         from oracle_strength import exception_headline as _headline
+        from java_source import oracle_ids_in_text as _oids_attr
+
+        def _non_alarm_escape(h):
+            # ANY escaped exception (not our alarm, no oracle ID) on a
+            # SEMANTIC leg is differential-replay eligible, not just the
+            # JDK generics: a semantic oracle is an alarm throw, so an
+            # escaped library exception — including library validation
+            # types like NotPositiveException — can only be an input
+            # rejection or pre-existing surface. If its exact input
+            # reproduces the same crash on buggy, it is not the patch's
+            # fault. (minfix_w2b Math-2-c: a constructor
+            # NotPositiveException on a junk fuzzed input was kept by the
+            # verifier as a conviction of the CORRECT patch.)
+            return bool(h) and 'FuzzerSecurityIssue' not in h \
+                and not _oids_attr(h)
         generic_hits = [
             r for r in fuzz_results if r.triggered
-            and is_generic_escape(_headline((r.stdout or '') + '\n'
-                                            + (r.stderr or '')))
+            and (is_generic_escape(_headline((r.stdout or '') + '\n'
+                                             + (r.stderr or '')))
+                 or _non_alarm_escape(_headline((r.stdout or '') + '\n'
+                                                + (r.stderr or ''))))
         ]
         # P0.3: LAUNDERED firings — the headline is a harness-own alarm
         # (so the loop above skips it by design), but its `Caused by:`
@@ -1215,6 +1281,22 @@ def main():
                         expected_assert_literals(
                             ft.method_source))
             trusted_values = list(dict.fromkeys(trusted_values))
+            # P4.3 reconciliation state: oracle IDs the verifier judged
+            # unsound anywhere this run, and the findings it kept.
+            _unsound_oracle_ids: dict = {}
+            _unsound_scope: dict = {}      # oracle id -> harness paths
+            _kept_findings: list = []
+            # Names of INJECTED relations: the same name in two harnesses
+            # is genuinely the same check (both implement the injected
+            # relation), so a dismissal transfers. A model-invented ID
+            # (e.g. `lifted-test`) can name DIFFERENT checks in different
+            # harnesses — full30 lost the Closure-62-o catch when an
+            # unsound verdict on one harness's `lifted-test` killed the
+            # sound keep of another's — so those reconcile only within
+            # the same harness.
+            _injected_rel_names = {
+                getattr(_rel, 'name', '')
+                for _rel in (synthesized_relations or [])} - {''}
             for r in triggered:
                 try:
                     with open(r.harness_path) as fh:
@@ -1259,17 +1341,173 @@ def main():
                 # DROP only if every fired oracle is judged unsound.
                 kept_reason = None
                 drop_reasons = []
+                _trigger_method_names = {
+                    getattr(ft, 'test_method', '') for ft in failure_tests
+                    if getattr(ft, 'test_method', '')}
+                # P3.3: underlying exception types per oracle for the
+                # ORIGINAL patched-side firing output.
+                from fuzz_runner import per_oracle_crash_types as _poct
+                _patched_types = _poct(
+                    (r.stdout or '') + '\n' + (r.stderr or ''))
+                _buggy_types = buggy_crash_types.get(r.harness_path) or {}
                 for fired in fired_all:
                     evid = (excerpt if excerpt and fired
                             and fired[:40] in excerpt else None)
-                    # P0.4: a firing from an oracle that never fired on
-                    # the buggy build is running for the first time ever
-                    # — the verifier should know it has no buggy-side
-                    # evidence behind it.
                     from java_source import oracle_ids_in_text as _oids
                     _latent_here = (latent_map.get(r.harness_path) or set())
                     _fired_ids = _oids(fired or '')
-                    if _fired_ids & _latent_here:
+                    # P0.4 step 2, REVISED after minfix_w1: never dismiss on
+                    # latency alone. The buggy-side scan stops at the first
+                    # firing oracle per input, so a sound check behind an
+                    # always-firing seed oracle looks latent although its
+                    # first real chance to run comes exactly when the
+                    # overfit silences the seed — a mechanical dismissal
+                    # here killed the true Lang-60-o capacity catch.
+                    # Instead: mechanically replay THIS firing's exact
+                    # input on the BUGGY build and give the verifier the
+                    # one fact latency can't provide.
+                    _latent_note = None
+                    if _fired_ids and _fired_ids <= _latent_here:
+                        if buggy_cp is None:
+                            buggy_cp = builder.test_classpath(
+                                selection.buggy_dir)
+                        _rep = None
+                        if getattr(r, 'artifact_path', None):
+                            _rep = fr.replay_input_oracles(
+                                r.harness_path, r.class_name, buggy_cp,
+                                r.artifact_path)
+                        _base = ("[latent oracle] check(s) "
+                                 + ", ".join(sorted(_fired_ids))
+                                 + " never fired during the buggy-side "
+                                 "acceptance scan (that scan stops at the "
+                                 "first firing oracle per input, so this "
+                                 "alone proves nothing). ")
+                        if _rep is None:
+                            _latent_note = (
+                                _base + "Replay of this firing's input on "
+                                "the buggy build was unavailable — judge "
+                                "on soundness alone, sceptically.")
+                        elif _fired_ids & _rep:
+                            _latent_note = (
+                                _base + "Mechanical replay: this firing's "
+                                "EXACT input fires the SAME check on the "
+                                "BUGGY build — the violated behaviour "
+                                "exists on both builds, i.e. the patch "
+                                "did not change it. If the violated "
+                                "contract is the very behaviour this bug "
+                                "report is about, the patch left the bug "
+                                "unfixed and this finding is SOUND; if it "
+                                "is an out-of-domain artifact unrelated "
+                                "to the reported bug (undocumented edge "
+                                "case, documented @throws territory), it "
+                                "is UNSOUND.")
+                            print(f"      [latent] replay: same check "
+                                  f"fires on buggy for this input — "
+                                  f"verifier decides")
+                        else:
+                            _latent_note = (
+                                _base + "Mechanical replay: this firing's "
+                                "exact input does NOT fire this check on "
+                                "the buggy build — the patch INTRODUCED "
+                                "the violation; strong evidence against "
+                                "the patch unless the check itself is "
+                                "unsound.")
+                            print(f"      [latent] replay: check quiet on "
+                                  f"buggy for this input — "
+                                  f"patch-introduced violation")
+                    # P3.3 crash-site pinning (mechanical): the same alarm
+                    # fired on both builds, but from DISJOINT underlying
+                    # exception types — a different (pre-existing) crash
+                    # wearing the alarm the buggy-side crash earned
+                    # (Chart-26-c: the axis-label NPE on buggy vs the
+                    # unrelated text-measuring crash on patched). Compared
+                    # at TYPE level only, so a half-fix that moves the same
+                    # exception to a nearby frame stays a catch. Applies
+                    # only when BOTH sides carry identity — a value-mismatch
+                    # alarm has no underlying exception and is untouched.
+                    _pin_mismatch = None
+                    for _oid in _fired_ids:
+                        _bt = _buggy_types.get(_oid) or set()
+                        _pt = _patched_types.get(_oid) or set()
+                        if _bt and _pt and not (_bt & _pt):
+                            _pin_mismatch = (_oid, _bt, _pt)
+                            break
+                    if _pin_mismatch:
+                        _oid, _bt, _pt = _pin_mismatch
+                        _why = ("CRASH-PIN-DISMISSED (mechanical): oracle "
+                                f"{_oid} fired on buggy from "
+                                f"{sorted(_bt)} but on patched from "
+                                f"{sorted(_pt)} — disjoint underlying "
+                                "exception types mean this is a different "
+                                "crash than the one the check pinned on "
+                                "buggy, not the bug surviving the patch.")
+                        print(f"      [crash-pin] auto-dismissed firing: "
+                              f"{(fired or '')[:100]}")
+                        print(f"        buggy={sorted(_bt)} "
+                              f"patched={sorted(_pt)}")
+                        drop_reasons.append((fired, _why))
+                        continue
+                    # Escape-shaped firing on a SEMANTIC leg: no oracle ID
+                    # and not our alarm type — this exception ESCAPED the
+                    # library, it is not one of the harness's checks. The
+                    # common case is constructor/argument validation on a
+                    # junk fuzzed input (minfix_w2b/w2c Math-2-c: a
+                    # NotPositiveException from consumeInt junk was kept
+                    # TWICE as a conviction of the correct patch). The
+                    # differential-replay path only sees the run's FIRST
+                    # firing, so escapes surfaced by the keep-going re-fuzz
+                    # need the fact stated here.
+                    if (bug_kind == 'semantic' and fired
+                            and not _fired_ids
+                            and 'FuzzerSecurityIssue' not in fired):
+                        _note = ("[escaped exception] this firing is NOT "
+                                 "one of the harness's own checks — it is "
+                                 "an exception that escaped the library "
+                                 "(no oracle ID). On a semantic bug the "
+                                 "oracle is an alarm throw; an escaped "
+                                 "exception is almost always input "
+                                 "rejection (constructor/argument "
+                                 "validation of a junk fuzzed value — "
+                                 "check the harness's input construction "
+                                 "for ranges that can go negative or "
+                                 "overflow) or pre-existing crash surface. "
+                                 "Judge it UNSOUND unless the patch itself "
+                                 "demonstrably introduces this exception "
+                                 "on a VALID input.")
+                        evid = (evid + "\n" + _note) if evid else _note
+                    if _latent_note:
+                        evid = ((evid + "\n" + _latent_note)
+                                if evid else _latent_note)
+                    elif (_fired_ids and r.harness_path in latent_map
+                          and _fired_ids <= (_oids(src) - _latent_here)):
+                        # SYMMETRIC firing: this check also fired on the
+                        # buggy build during acceptance, so the patch did
+                        # not change the violated behaviour. That is the
+                        # classic overfit-catch pattern ONLY when the
+                        # violated contract belongs to the reported bug's
+                        # own behaviour family (Lang-41: the sibling
+                        # String-variant of the very method the test
+                        # fails); when it concerns an unrelated feature or
+                        # a setup/guard-dependent observable, it is
+                        # pre-existing surface that fires on ANY build
+                        # (Chart-26-c: an axis-entity check with no
+                        # relation to the null-info crash the bug is
+                        # about). The verifier owns that judgment — say so.
+                        _note = ("[symmetric firing] check(s) "
+                                 + ", ".join(sorted(_fired_ids))
+                                 + " ALSO fired on the buggy build during "
+                                 "the acceptance scan — the patch did NOT "
+                                 "change this behaviour. Keep this finding "
+                                 "only if the violated contract belongs to "
+                                 "the reported bug's own behaviour family "
+                                 "(the failing test's methods and "
+                                 "observables); if it concerns an "
+                                 "unrelated feature or a setup-dependent "
+                                 "observable that would fire on any "
+                                 "build, it is pre-existing surface — "
+                                 "dismiss it.")
+                        evid = (evid + "\n" + _note) if evid else _note
+                    elif _fired_ids & _latent_here:
                         _note = ("[latent oracle] check(s) "
                                  + ", ".join(sorted(_fired_ids
                                                     & _latent_here))
@@ -1277,6 +1515,31 @@ def main():
                                  "acceptance — this patched-build firing "
                                  "is their first-ever execution; there is "
                                  "no buggy-side evidence behind them.")
+                        evid = (evid + "\n" + _note) if evid else _note
+                    # W1.5 (p23gate FP fix): when the fired oracle is a lift
+                    # of a trigger test, tell the verifier the decisive fact
+                    # it otherwise never learns — the REAL trigger test was
+                    # rerun on this patched build and PASSES (the pipeline
+                    # exits with bad_patch before fuzzing otherwise). If the
+                    # harness replays the test's own scenario, a firing here
+                    # means the harness's reconstruction diverges from the
+                    # real test's setup (missing source/locale/format
+                    # wiring), not that the patch is wrong. A lift firing on
+                    # OTHER inputs than the test's own remains a legitimate
+                    # generalisation catch.
+                    _lifted_of = {t for t in _trigger_method_names
+                                  if any(t in fid for fid in _fired_ids)
+                                  or (fired and t in fired)}
+                    if _lifted_of:
+                        _note = ("[trigger-test lift] this oracle lifts "
+                                 + ", ".join(sorted(_lifted_of))
+                                 + " — the REAL test was rerun on this "
+                                 "patched build and PASSES. If this firing "
+                                 "replays the test's own scenario/inputs, "
+                                 "it is harness-setup divergence and must "
+                                 "be dismissed; keep it only if the firing "
+                                 "input genuinely differs from the test's "
+                                 "own.")
                         evid = (evid + "\n" + _note) if evid else _note
                     ok, why = rv.verify(src, fired_assertion=fired,
                                         trusted_values=trusted_values,
@@ -1286,11 +1549,21 @@ def main():
                     if ok:
                         kept_reason = (fired, why)
                         break
+                    # P4.3: remember which ORACLE the verifier judged
+                    # unsound (and where), so a keep of the same check from
+                    # another firing (whose message happened to hide the
+                    # exculpating detail) can be reconciled below.
+                    for _uid in _fired_ids:
+                        _unsound_oracle_ids.setdefault(_uid, why)
+                        _unsound_scope.setdefault(_uid, set()).add(
+                            r.harness_path)
                     drop_reasons.append((fired, why))
                 if kept_reason is not None:
                     print(f"  ✓ sound: {r.harness_path}")
                     print(f"      kept via: {kept_reason[0]}")
                     print(f"      {kept_reason[1]}")
+                    _kept_findings.append(
+                        (r, _oids(kept_reason[0] or ''), kept_reason[0]))
                 else:
                     print(f"  ✗ dropped (all {len(drop_reasons)} fired "
                           f"oracles unsound): {r.harness_path}")
@@ -1298,6 +1571,131 @@ def main():
                         print(f"      fired: {fired}")
                         print(f"        {why}")
                     r.triggered = False  # no longer counts as a finding
+            # P4.3 ("one decision per crash, not per firing"): the same
+            # check judged UNSOUND on one firing and kept on another is a
+            # contradiction — the messages differ, the oracle doesn't. On
+            # contradiction the DISMISSAL wins: the unsound verdict was
+            # reached on a firing whose message exposed the exculpating
+            # detail (minfix_w2 Lang-60-c: contains('\0') kept once where
+            # the message hid that the input really contained '\0', and
+            # dropped twice where it showed it).
+            for _r, _kids, _kfired in _kept_findings:
+                _clash = {
+                    k for k in (_kids & set(_unsound_oracle_ids))
+                    if k in _injected_rel_names
+                    or _r.harness_path in _unsound_scope.get(k, ())}
+                if _clash and _r.triggered:
+                    _oid = sorted(_clash)[0]
+                    print(f"  ✗ reconciled (dismissal wins): oracle "
+                          f"{_oid} was judged unsound on another firing "
+                          f"of the same check — dropping the kept "
+                          f"finding {_r.harness_path}")
+                    print(f"      unsound because: "
+                          f"{_unsound_oracle_ids[_oid]}")
+                    _r.triggered = False
+
+    # 7d) P3.2 replay: execute every screened relation (own + pooled)
+    #     DIRECTLY against the patched build. Until now a relation only
+    #     mattered if the harness writer implemented it AND the patched
+    #     fuzz found the right inputs — two coin flips that cost Math-2-o
+    #     its verdict (the probe-validated mean-formula separates the pair
+    #     deterministically, but no harness ever carried it to the right
+    #     inputs). Firings NEVER convict on their own: each goes through
+    #     the same LLM verifier as a harness firing; only a verifier-kept
+    #     finding flips the verdict.
+    if (args.replay_relations_on_patched and args.verify_relations
+            and synthesized_relations and fuzz_results is not None
+            and jazzer_standalone_jar):
+        print("\n" + "#" * 20 + " relation replay on patched " + "#" * 20)
+        try:
+            from relation_screen import replay_on_patched
+            from relation_verifier import RelationVerifier
+            # Idempotent: run_all already built+verified this checkout, so
+            # this returns the cached patched copy.
+            _patched_dir = PatchedProjectBuilder().build_patched_dir(
+                selection.buggy_dir, selection.patch_path)
+            _trig_lits_r = []
+            for ft in failure_tests:
+                if getattr(ft, 'method_source', None):
+                    _trig_lits_r += re.findall(
+                        r'"((?:[^"\\]|\\.){1,120})"', ft.method_source)
+            _trig_lits_r = [s for s in dict.fromkeys(_trig_lits_r)
+                            if s.strip()][:32]
+            _replay_findings = replay_on_patched(
+                synthesized_relations,
+                builder=builder,
+                patched_dir=_patched_dir,
+                jazzer_standalone_jar=jazzer_standalone_jar,
+                package=context.package,
+                imports=context.source_imports,
+                jazzer_api_jar=jazzer_api_jar,
+                trigger_literals=_trig_lits_r,
+            )
+            record_extras['relation_replay_fired'] = [
+                {'name': f['name'], 'tier': f['tier'], 'note': f['note']}
+                for f in _replay_findings]
+            if _replay_findings:
+                _verifier_model = (args.model
+                                   or config.HARNESS_MODEL_ESCALATION)
+                _rv2 = RelationVerifier(
+                    HarnessGenerator(model=_verifier_model,
+                                     temperature=0.0, top_p=1.0),
+                    votes=config.RELATION_VERIFIER_VOTES)
+                _tvals = []
+                for ft in failure_tests:
+                    if getattr(ft, 'method_source', None):
+                        _tvals.extend(
+                            expected_assert_literals(ft.method_source))
+                _tvals = list(dict.fromkeys(_tvals))
+                _kept_replays = []
+                for f in _replay_findings:
+                    rel = f['relation']
+                    _fired = (f"relation {f['name']} violated "
+                              f"[replay-on-patched, {f['tier']} tier]")
+                    _evid = ("[relation replay] the check below was "
+                             "mechanically screened on the buggy build ("
+                             + (getattr(rel, 'screen_note', '') or
+                                'no screen note')
+                             + ") and, compiled UNCHANGED against the "
+                             "patched build, " + f['note'] + ". A correct "
+                             "patch makes a sound contract relation go "
+                             "quiet; judge whether the relation itself is "
+                             "sound for ANY correct implementation "
+                             "(tolerances generous, inputs fenced).")
+                    _src = ("// relation: " + f['name'] + "\n"
+                            + "// holds because: "
+                            + (getattr(rel, 'contract', '') or '?') + "\n"
+                            + "// valid input: "
+                            + (getattr(rel, 'input_spec', '') or '?') + "\n"
+                            + (getattr(rel, 'check', '') or ''))
+                    ok, why = _rv2.verify(
+                        _src, fired_assertion=_fired,
+                        trusted_values=_tvals,
+                        concrete_evidence=_evid,
+                        code_context=('\n\n'.join(class_ctx)
+                                      if class_ctx else None))
+                    if ok:
+                        print(f"  ✓ replay conviction kept: {f['name']} "
+                              f"[{f['tier']}]")
+                        print(f"      {why}")
+                        _kept_replays.append(
+                            {'name': f['name'], 'tier': f['tier'],
+                             'note': f['note'], 'why': why})
+                    else:
+                        print(f"  ✗ replay firing dropped as unsound: "
+                              f"{f['name']} — {why}")
+                if _kept_replays:
+                    record_extras['relation_replay_kept'] = _kept_replays
+                    # extras are applied to the record LAST, so this
+                    # overrides the harness-derived False. Only ever set
+                    # on conviction — never write False here.
+                    record_extras['crashed_on_patch'] = True
+                    print(f"  [replay] verdict: {len(_kept_replays)} "
+                          "verifier-kept relation conviction(s) — patch "
+                          "flagged as overfitting")
+        except Exception as exc:
+            print(f"  [replay] failed ({exc}) — replay contributes nothing "
+                  "this run")
 
     # A run is scoreable only if we actually fuzzed at least one harness
     # against the patched code; otherwise we have no overfitting verdict.
