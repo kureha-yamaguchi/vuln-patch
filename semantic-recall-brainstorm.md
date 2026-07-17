@@ -533,7 +533,20 @@ previously-caught overfit regresses.
    thresholds based on anything seen in held-out output. A held-out bug
    we debug against silently becomes a dev bug, whether we relabel it or
    not.
-5. **Success targets, fixed now so we can't move the goalposts later.**
+5. **Suite-run mechanics (learned the hard way on 2026-07-17).** Run
+   legs as parallel as the model API allows (4-way default, up to 6 for
+   the small projects — beyond that the shared API is the bottleneck,
+   not the machine). Before launching, check free disk: every leg keeps
+   its own working copy of the project (~100 MB for Lang/Math/Time, ~1
+   GB for Closure/Chart) until the suite ends — a Chart/Closure-heavy
+   suite filled the whole disk mid-run and 18 legs died at checkout.
+   After every suite: delete the working copies (pure scratch, always
+   reproducible), archive the results (tiny — all history so far
+   compresses to ~2 MB) to the Mac under `runs-archive/`, verify the
+   archive's checksum (a tar written on a full disk truncates
+   silently), and keep on the VM only the suites still needed for
+   comparison.
+6. **Success targets, fixed now so we can't move the goalposts later.**
    Starting point was 58% of overfits caught. Dev-set goal after Phase 3:
    at least 13 of 16 overfits caught (the ceiling is below 16 — see the
    expected-miss note in Phase 1) with ZERO false alarms on the 14
