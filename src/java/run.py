@@ -21,6 +21,7 @@ Example usage (choose project_name from Chart/Closure/Lang/Math/Time):
 """
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
