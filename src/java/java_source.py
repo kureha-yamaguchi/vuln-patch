@@ -420,3 +420,111 @@ def violation_swallowed(source: str) -> Optional[str]:
 def _catch_types_of(catches) -> str:
     return ', '.join(p.strip().split()[0] if p.strip() else '?'
                      for p, _b in catches)
+
+
+# ---------------------------------------------------------------------------
+# P0.3: caught-crash re-throws must carry the original as their cause.
+#
+# A harness may catch a library crash and re-throw it as its own alarm
+# (FuzzerSecurityIssue*). Without the original attached as the `cause`,
+# the alarm's stack trace has no `Caused by:` chain, the underlying
+# crash's identity is erased, and the attribution check can no longer ask
+# "does this same crash happen on the unpatched build too?" — that is how
+# the pre-existing Chart-26 text-measuring crash was laundered into a
+# false alarm.
+
+_SECISSUE_NEW_RE = re.compile(r'new\s+(FuzzerSecurityIssue\w*)\s*\(')
+
+
+def rethrow_without_cause(source: str) -> Optional[str]:
+    """Return a reason string if any `new FuzzerSecurityIssue*(...)`
+    constructed inside a `catch (X e) { ... }` block does not pass the
+    caught exception as a constructor argument (cause); None otherwise.
+    String-concatenating `e` into the message does NOT count — that
+    copies the text but erases the stack chain."""
+    src = strip_comments(source or '')
+    for _open, _close, catches in _try_blocks(src):
+        for params, body in catches:
+            var = params.strip().split()[-1] if params.strip() else ''
+            if not var:
+                continue
+            for m in _SECISSUE_NEW_RE.finditer(body):
+                # capture the argument list via paren matching
+                k, depth, n = m.end(), 1, len(body)
+                start = k
+                while k < n and depth:
+                    if body[k] in '"\'':
+                        k = skip_literal(body, k) - 1
+                    elif body[k] == '(':
+                        depth += 1
+                    elif body[k] == ')':
+                        depth -= 1
+                    k += 1
+                args = body[start:k - 1]
+                # the caught variable must appear OUTSIDE string literals
+                # as a standalone argument (typically the last one), not
+                # inside a "..."+var message concatenation. Strip strings,
+                # then require `var` after a '(' or ',' boundary.
+                stripped = re.sub(r'"(?:[^"\\]|\\.)*"', '""', args)
+                ok = (re.search(r'(?:^|,)\s*' + re.escape(var)
+                                + r'\s*(?:,|$)', stripped.strip())
+                      or re.search(r'\.initCause\s*\(\s*' + re.escape(var)
+                                   + r'\s*\)', body))
+                if not ok:
+                    return (f'a {m.group(1)} is thrown inside '
+                            f'`catch ({params.strip()})` without passing '
+                            f'`{var}` as its cause argument — the caught '
+                            f'crash\'s identity is erased and attribution '
+                            f'cannot check it against the unpatched build. '
+                            f'Use `new {m.group(1)}("<message>", {var})`.')
+    return None
+
+
+# ---------------------------------------------------------------------------
+# P0.4: per-oracle IDs.
+#
+# A harness usually contains several checks. Acceptance is whole-harness
+# ("did ANYTHING fire on buggy?"), so a check that never ran can ride in on
+# the strength of an earlier one and meet its first-ever execution on the
+# correct patch (the Chart-26 attempt_003 false alarm). Naming every alarm
+# lets us ask WHICH check fired where. Two accepted shapes:
+#   [oracle:<id>] ...            (mandated prefix for harness alarms)
+#   relation <name> violated ...  (the synthesis format, already named)
+
+_ORACLE_ID_RE = re.compile(r'\[oracle:([-\w]+)\]')
+_RELATION_ID_RE = re.compile(r'relation\s+([-\w]+)\s+violated')
+_ALARM_STMT_RE = re.compile(
+    r'throw\s+new\s+[\w.]*(?:FuzzerSecurityIssue\w*|RuntimeException)'
+    r'\s*\(', re.S)
+
+
+def oracle_ids_in_text(text: str) -> set:
+    """Every oracle ID mentioned in `text` (harness source OR fuzzer
+    output), under either accepted shape."""
+    ids = set(_ORACLE_ID_RE.findall(text or ''))
+    ids.update(_RELATION_ID_RE.findall(text or ''))
+    return ids
+
+
+def alarm_ids_missing(source: str) -> Optional[str]:
+    """Return a reason string if any alarm throw in `source` has a message
+    that carries NO oracle ID (neither `[oracle:<id>]` prefix nor
+    `relation <name> violated`); None when every alarm is identifiable.
+    Alarms without an ID cannot be told apart at acceptance, so a
+    never-exercised check cannot be flagged."""
+    src = strip_comments(source or '')
+    for m in _ALARM_STMT_RE.finditer(src):
+        # the throw's argument region: up to the statement's semicolon
+        end = src.find(';', m.end())
+        stmt = src[m.start():end if end > 0 else m.end() + 400]
+        if ('violated' not in stmt and 'semantic mismatch' not in stmt
+                and 'FuzzerSecurityIssue' not in stmt):
+            continue                       # not an alarm (plain rethrow)
+        if not oracle_ids_in_text(stmt):
+            line = src[:m.start()].count('\n') + 1
+            snippet = ' '.join(stmt.split())[:120]
+            return (f'the alarm near line {line} has no oracle ID '
+                    f'(`{snippet}...`) — start its message with '
+                    f'"[oracle:<short-id>]" so acceptance can tell '
+                    f'which check earned its place')
+    return None

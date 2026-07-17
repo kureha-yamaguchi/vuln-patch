@@ -826,6 +826,59 @@ def main():
 
     _print_summary(selection, result)
 
+    # 6-bis) P0.4 latent-oracle scan: acceptance is whole-harness ("did
+    #    ANYTHING fire on buggy?"), so a check listed after an
+    #    always-firing one may never run at all — and then meets its
+    #    first-ever execution on the patched build, where a false alarm
+    #    from it has zero evidence behind it (Chart-26 attempt_003).
+    #    Re-fuzz each accepted harness on the BUGGY build with keep_going
+    #    and record which named oracles ever fire; the rest are LATENT.
+    #    v1: flag loudly + hand to the verifier as context. No cutting.
+    latent_map: dict = {}
+    if result.successful_results and jazzer_standalone_jar:
+        from java_source import oracle_ids_in_text
+        _fr_lat = FuzzRunner(
+            jazzer_standalone_jar=jazzer_standalone_jar,
+            timeout_seconds=args.fuzz_timeout,
+            expected_exceptions=expected_exceptions,
+            jazzer_api_jar=jazzer_api_jar,
+        )
+        if buggy_cp is None:
+            buggy_cp = builder.test_classpath(selection.buggy_dir)
+        print("\n" + "#" * 20 + " latent-oracle scan (buggy) " + "#" * 20)
+        for br in result.successful_results:
+            try:
+                with open(br.harness_path, encoding='utf-8',
+                          errors='replace') as fh:
+                    declared = oracle_ids_in_text(fh.read())
+            except OSError:
+                declared = set()
+            if not declared:
+                print(f"  {br.attempt_label or br.class_name}: no named "
+                      f"oracles found in source — cannot scan")
+                continue
+            out = _fr_lat.keep_going_output(
+                br.harness_path, br.class_name, buggy_cp)
+            if not out:
+                print(f"  {br.attempt_label or br.class_name}: scan run "
+                      f"failed — no latent information")
+                continue
+            fired = oracle_ids_in_text(out)
+            latent = declared - fired
+            latent_map[br.harness_path] = latent
+            if latent:
+                print(f"  {br.attempt_label or br.class_name}: LATENT "
+                      f"oracle(s) never fired on buggy: "
+                      f"{sorted(latent)} (fired: {sorted(fired & declared)})"
+                      f" — a patched-build firing from these has no "
+                      f"buggy-side evidence behind it")
+            else:
+                print(f"  {br.attempt_label or br.class_name}: all "
+                      f"{len(declared)} named oracle(s) exercised on buggy")
+        record_extras['latent_oracles'] = {
+            os.path.basename(k): sorted(v)
+            for k, v in latent_map.items() if v}
+
     # 7) Fuzz every successful harness against the patched code to check
     #    whether the vulnerability is still reachable (overfitting signal).
     fuzz_results = None
@@ -891,14 +944,27 @@ def main():
     attribution_notes: dict = {}
     if (bug_kind == "semantic"
             and fuzz_results and any(r.triggered for r in fuzz_results)):
-        from fuzz_runner import crash_signature, is_generic_escape
+        from fuzz_runner import (cause_signature, crash_signature,
+                                 is_generic_cause, is_generic_escape)
         from oracle_strength import exception_headline as _headline
         generic_hits = [
             r for r in fuzz_results if r.triggered
             and is_generic_escape(_headline((r.stdout or '') + '\n'
                                             + (r.stderr or '')))
         ]
-        if generic_hits:
+        # P0.3: LAUNDERED firings — the headline is a harness-own alarm
+        # (so the loop above skips it by design), but its `Caused by:`
+        # chain bottoms out in a generic JDK escape. The alarm is just a
+        # re-labelled library crash; whether it wraps or not is model
+        # coin-flip, so without this check the same pre-existing crash is
+        # dismissed one day and counted the next (the Chart-26 FP).
+        laundered_hits = [
+            r for r in fuzz_results if r.triggered
+            and r not in generic_hits
+            and is_generic_cause(cause_signature(
+                (r.stdout or '') + '\n' + (r.stderr or '')))
+        ]
+        if generic_hits or laundered_hits:
             print("\n" + "#" * 20 + " attribution check " + "#" * 20)
             if buggy_cp is None:
                 buggy_cp = builder.test_classpath(selection.buggy_dir)
@@ -959,6 +1025,45 @@ def main():
                 print(f"  [attribution] dropped: {patched_sig} reproduces "
                       f"on buggy build (pre-existing, not patch-caused): "
                       f"{r.harness_path}")
+            for r in laundered_hits:
+                out = (r.stdout or '') + '\n' + (r.stderr or '')
+                patched_cause = cause_signature(out)
+                if not r.artifact_path:
+                    attribution_notes[id(r)] = (
+                        "laundering check ABSTAINED: harness-own alarm "
+                        f"wraps generic cause {patched_cause}, but no "
+                        "crashing-input artifact was captured")
+                    print(f"  ? abstain (no artifact): {r.harness_path}")
+                    continue
+                if not patched_cause or '@' not in patched_cause:
+                    attribution_notes[id(r)] = (
+                        "laundering check ABSTAINED: wrapped cause "
+                        f"'{patched_cause}' has no stack-frame anchor")
+                    print(f"  ? abstain (frame-less cause): "
+                          f"{r.harness_path}")
+                    continue
+                buggy_sig, buggy_cause = _fr.replay_input_signatures(
+                    r.harness_path, r.class_name, buggy_cp, r.artifact_path)
+                # Pre-existing iff the same underlying crash appears on the
+                # unpatched build — either escaping directly (headline) or
+                # wrapped by the same alarm (cause). A DIFFERENT crash site
+                # on buggy (e.g. the bug's own NPE) is the TP pattern and
+                # must survive: that is exactly Chart-26's overfit side.
+                if patched_cause in (buggy_sig, buggy_cause):
+                    r.triggered = False
+                    print(f"  [attribution] dropped LAUNDERED firing: "
+                          f"harness alarm wraps {patched_cause}, which "
+                          f"reproduces on the buggy build (pre-existing "
+                          f"library surface): {r.harness_path}")
+                else:
+                    attribution_notes[id(r)] = (
+                        f"laundering check: alarm wraps generic cause "
+                        f"{patched_cause}; buggy-build replay gives "
+                        f"headline={buggy_sig or 'no crash'}, cause="
+                        f"{buggy_cause or 'none'} — NOT the same "
+                        f"pre-existing crash")
+                    print(f"  ✓ kept (cause not pre-existing): "
+                          f"{r.harness_path}")
 
     # 6b) [optional] Relation verification — a non-cheating FP filter. A
     #     harness that crashed the patched code is only evidence of
@@ -1054,6 +1159,22 @@ def main():
                 for fired in fired_all:
                     evid = (excerpt if excerpt and fired
                             and fired[:40] in excerpt else None)
+                    # P0.4: a firing from an oracle that never fired on
+                    # the buggy build is running for the first time ever
+                    # — the verifier should know it has no buggy-side
+                    # evidence behind it.
+                    from java_source import oracle_ids_in_text as _oids
+                    _latent_here = (latent_map.get(r.harness_path) or set())
+                    _fired_ids = _oids(fired or '')
+                    if _fired_ids & _latent_here:
+                        _note = ("[latent oracle] check(s) "
+                                 + ", ".join(sorted(_fired_ids
+                                                    & _latent_here))
+                                 + " NEVER fired on the buggy build at "
+                                 "acceptance — this patched-build firing "
+                                 "is their first-ever execution; there is "
+                                 "no buggy-side evidence behind them.")
+                        evid = (evid + "\n" + _note) if evid else _note
                     ok, why = rv.verify(src, fired_assertion=fired,
                                         trusted_values=trusted_values,
                                         concrete_evidence=evid,

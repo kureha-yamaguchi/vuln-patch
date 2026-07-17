@@ -277,7 +277,12 @@ class PromptBuilder:
             "",
             "3. ASSERT ALL OF THEM: if ANY actual value does not equal its"
             " expected value, `throw new com.code_intelligence.jazzer.api."
-            "FuzzerSecurityIssueLow(\"semantic mismatch: <what differed>\")`."
+            "FuzzerSecurityIssueLow(\"[oracle:<short-id>] semantic mismatch:"
+            " <what differed>\")`. Every DISTINCT check gets its own"
+            " [oracle:<short-id>] prefix (e.g. [oracle:lifted-pairs],"
+            " [oracle:mean-formula]) — alarms without an ID are rejected"
+            " mechanically; the ID is how the pipeline tells which check"
+            " fired."
             " Check every lifted pair — an overfitting patch that fixed only"
             " the one reported input still fails the others, so the more pairs"
             " you assert the more likely it is caught. Jazzer reports the throw"
@@ -832,7 +837,8 @@ class PromptBuilder:
             "From each method below, LIFT the input->expected pairs (the call"
             " it makes on the real API and the value it asserts), reconstruct"
             " the call in your harness, and throw"
-            " FuzzerSecurityIssueLow(\"semantic mismatch: <which>\") when the"
+            " FuzzerSecurityIssueLow(\"[oracle:sibling-pairs] semantic"
+            " mismatch: <which>\") when the"
             " patched code disagrees. For lifted pairs, both the input AND"
             " its expected value must be copied VERBATIM from the test"
             " source. Do NOT invent a NEW input->expected-value pair (e.g."
@@ -909,7 +915,14 @@ class PromptBuilder:
             " never a violation. Throw"
             " com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("
             "\"relation <name> violated: ...\") only on a genuine"
-            " disagreement, and include the observed values in the message.")
+            " disagreement, and include the observed values in the message."
+            " Two structural rules (checked mechanically, violations are"
+            " rejected): (1) the violation throw goes OUTSIDE/AFTER the"
+            " try/catch that wraps the API calls — thrown inside your own"
+            " catch-everything block it is caught and discarded, dead code;"
+            " (2) if you ever convert a CAUGHT exception into your own alarm,"
+            " pass it as the cause: new FuzzerSecurityIssueLow(\"...\", e) —"
+            " never bury it in the message text.")
         return '\n'.join(lines)
 
     def _variant_analysis_block(self,
@@ -1045,8 +1058,8 @@ class PromptBuilder:
             "    if (<reported disagrees with independent beyond a generous"
             " tolerance>)",
             "        throw new com.code_intelligence.jazzer.api."
-            "FuzzerSecurityIssueLow(\"consistency violation:"
-            " \" + <both values>);",
+            "FuzzerSecurityIssueLow(\"[oracle:<short-id>] consistency"
+            " violation: \" + <both values>);",
             "",
             "Ways to obtain the independent value — each sound for ANY"
             " correct implementation of ANY library:",

@@ -35,7 +35,8 @@ from typing import List, Dict, Optional, Callable
 
 from build import HarnessBuilder, BuildResult
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from java_source import violation_swallowed
+from java_source import (alarm_ids_missing, rethrow_without_cause,
+                         violation_swallowed)
 from llm import HarnessGenerator
 from fuzz_runner import HarnessVerifier, VerificationResult
 from oracle_strength import exception_headline
@@ -289,6 +290,61 @@ class HarnessCampaign:
                     self._handle_failure(
                         diagnostic=self._build_swallow_message(
                             swallow_reason),
+                        raw=raw,
+                        is_repair_attempt=is_repair_attempt,
+                        repair_failures=repair_failures,
+                        current_messages=current_messages,
+                        original_messages=original_messages,
+                        fresh_prompt=fresh_prompt,
+                    )
+                )
+                continue
+
+            # --- gate 0b: caught-crash re-throws must carry a cause (P0.3)
+            # An alarm that re-labels a caught crash without attaching it
+            # as the cause erases the crash's identity — attribution can
+            # then no longer check it against the unpatched build (the
+            # Chart-26 launder).
+            cause_reason = rethrow_without_cause(source)
+            if cause_reason is not None:
+                print(f"✗ re-throw without cause: {cause_reason}")
+                repair_failures, current_messages, original_messages = (
+                    self._handle_failure(
+                        diagnostic=(
+                            "Your harness re-throws a caught exception as "
+                            "its own alarm without preserving the "
+                            "original: " + cause_reason + "\n"
+                            "Return the full corrected FuzzHarness.java. "
+                            "Raw Java source only. No markdown fences."),
+                        raw=raw,
+                        is_repair_attempt=is_repair_attempt,
+                        repair_failures=repair_failures,
+                        current_messages=current_messages,
+                        original_messages=original_messages,
+                        fresh_prompt=fresh_prompt,
+                    )
+                )
+                continue
+
+            # --- gate 0c: every alarm must carry an oracle ID (P0.4) ----
+            # Un-named alarms cannot be told apart at acceptance, so a
+            # check that never ran on buggy cannot be flagged before its
+            # first-ever execution lands on the patched build.
+            id_reason = alarm_ids_missing(source)
+            if id_reason is not None:
+                print(f"✗ unnamed oracle: {id_reason}")
+                repair_failures, current_messages, original_messages = (
+                    self._handle_failure(
+                        diagnostic=(
+                            "Every oracle alarm in your harness needs a "
+                            "name: " + id_reason + "\n"
+                            "Start each distinct check's message with "
+                            "[oracle:<short-id>], e.g. `throw new "
+                            "FuzzerSecurityIssueLow(\"[oracle:mean-"
+                            "formula] semantic mismatch: ...\")`. Use a "
+                            "DIFFERENT id per check. Return the full "
+                            "corrected FuzzHarness.java. Raw Java source "
+                            "only. No markdown fences."),
                         raw=raw,
                         is_repair_attempt=is_repair_attempt,
                         repair_failures=repair_failures,

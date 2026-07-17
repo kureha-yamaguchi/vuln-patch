@@ -132,7 +132,7 @@ remain uncovered (§6).
 | Bug | Kind | Pinned file (rank) | Verdict | Source | Strong div | Notes |
 |---|---|---|---|---|---|---|
 | Lang-27 | crash | patch1-Lang-27-SimFix (1) | label_stands | probe | 631 | 631 div all exception_generic_latent (B1 refined classifier) - label stands |
-| Lang-50 | seman | patch1-Lang-50-SimFix (1) | label_stands | probe | 43 | 43-div record is an applier artifact (out-of-order hunks); fully applied = 0/518. BLOCKED on pi |
+| Lang-50 | seman | patch1-Lang-50-SimFix (1) | label_stands | probe | 43 | 43-div record was an applier artifact (out-of-order hunks); fully applied = 0/518. P0.1 applier fix landed 2026-07-17, build+trigger verified — UNBLOCKED |
 | Chart-1 | seman | patch1-Chart-1-CapGen (1) | label_stands | probe | 0 |  |
 | Chart-3 | seman | patch1-Chart-3-Arja (1) | label_stands | probe | 0 |  |
 | Chart-7 | seman | patch1-Chart-7-SimFix (1) | label_stands | probe | 0 |  |
@@ -266,7 +266,7 @@ side): pin the sorted-first patch file if the audit gave it a TRUE verdict
 (overfit → detectable; correct → label stands); otherwise fall back to the
 next candidate, certify, pin at `pin_rank: 2`. Rows carry verdict,
 verdict_source (probe / witness+deep-dive), strong divergences, env, date,
-notes (incl. `BLOCKED` flags — Lang-50/SimFix awaits the applier fix).
+notes (Lang-50/SimFix was BLOCKED on the applier fix; unblocked 2026-07-17 when P0.1 landed and its full build passed trigger verification).
 Statuses: `pinned` / `unpinnable` (with reason and tried-files list) /
 `excluded` (deprecated bugs). FINAL headline (2026-07-17, nothing
 pending): **101 pinned legs — 44 overfit + 57 correct**. Consume THIS

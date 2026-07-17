@@ -295,6 +295,37 @@ def crash_signature(output: str) -> Optional[str]:
     return f"{exc_type}@{top_frame}" if top_frame else exc_type
 
 
+_CAUSE_RE = re.compile(r'Caused by:\s+([\w.$]+)')
+
+
+def cause_signature(output: str) -> Optional[str]:
+    """Signature (`class@first-project-frame`) of the ROOT cause in a
+    Java `Caused by:` chain — the deepest entry, i.e. the crash that
+    actually started it all. None when the trace has no cause chain.
+
+    P0.3: a harness that catches a library crash and re-throws it as its
+    own alarm type hides the crash from the headline signature; the
+    attached cause (mandated by the campaign gate) preserves its
+    identity so attribution can still ask "does this underlying crash
+    also happen on the unpatched buggy build?" (the Chart-26 launder)."""
+    matches = list(_CAUSE_RE.finditer(output or ''))
+    if not matches:
+        return None
+    last = matches[-1]
+    tail = output[last.start():]
+    cls = last.group(1)
+    top_frame = None
+    for frame_cls, method in _FRAME_RE.findall(tail):
+        if (frame_cls.startswith('com.code_intelligence.jazzer')
+                or frame_cls.startswith('java.')
+                or frame_cls.startswith('jdk.')
+                or frame_cls.startswith('sun.')):
+            continue
+        top_frame = f"{frame_cls}.{method}"
+        break
+    return f"{cls}@{top_frame}" if top_frame else cls
+
+
 # Generic JDK runtime exceptions that commonly ESCAPE library code on
 # malformed / out-of-domain input (mirrors the valid-by-construction rule in
 # prompts.py). For a SEMANTIC bug the defect is a wrong value, so a firing of
@@ -313,6 +344,16 @@ GENERIC_ESCAPE_EXCEPTIONS = frozenset({
     'java.lang.ArithmeticException',
     'java.lang.NegativeArraySizeException',
 })
+
+
+def is_generic_cause(cause_sig: Optional[str]) -> bool:
+    """True iff a cause signature ('class@frame' from cause_signature)
+    names a generic JDK escape class — i.e. the underlying crash behind a
+    harness-own alarm is the kind that may be pre-existing library
+    surface rather than evidence about the patch."""
+    if not cause_sig:
+        return False
+    return cause_sig.split('@', 1)[0] in GENERIC_ESCAPE_EXCEPTIONS
 
 
 def is_generic_escape(headline: Optional[str]) -> bool:
@@ -825,6 +866,35 @@ class FuzzRunner:
             return []
         return exception_headlines(outcome.stdout + '\n' + outcome.stderr)
 
+    def keep_going_output(self,
+                          harness_path: str,
+                          class_name: str,
+                          project_cp: str,
+                          keep_going: int = 16,
+                          timeout_seconds: int = 45) -> str:
+        """Fuzz ONE harness against an arbitrary classpath with
+        --keep_going and return the raw output. P0.4 uses this on the
+        BUGGY classpath at acceptance to record which named oracles ever
+        fire there — a check that never fires on buggy is flagged latent
+        instead of meeting its first-ever execution on the patched
+        build. Returns '' on any error (caller treats that as
+        no-information, never as 'all oracles exercised')."""
+        try:
+            outcome = run_jazzer(
+                jazzer_standalone_jar=self.jazzer_standalone_jar,
+                target_class=class_name,
+                harness_dir=os.path.dirname(harness_path),
+                project_cp=project_cp,
+                timeout_seconds=timeout_seconds,
+                expected_exceptions=self.expected_exceptions,
+                jazzer_api_jar=self.jazzer_api_jar,
+                keep_going=keep_going,
+            )
+        except Exception as exc:
+            print(f"  (buggy keep-going run failed: {exc})")
+            return ''
+        return outcome.stdout + '\n' + outcome.stderr
+
     def _run_one(self, build_result: BuildResult,
                  patched_cp: str) -> FuzzRunResult:
         harness_dir = os.path.dirname(build_result.harness_path)
@@ -885,6 +955,35 @@ class FuzzRunner:
         if not outcome.triggered:
             return None
         return crash_signature(outcome.combined_output)
+
+    def replay_input_signatures(self,
+                                harness_path: str,
+                                class_name: str,
+                                project_cp: str,
+                                input_file: str,
+                                timeout_seconds: int = 30
+                                ) -> Tuple[Optional[str], Optional[str]]:
+        """Like replay_input, but returns (headline_signature,
+        cause_signature) — the P0.3 laundering check needs the cause
+        chain of the buggy-build replay, not just its headline."""
+        try:
+            outcome = run_jazzer(
+                jazzer_standalone_jar=self.jazzer_standalone_jar,
+                target_class=class_name,
+                harness_dir=os.path.dirname(harness_path),
+                project_cp=project_cp,
+                timeout_seconds=timeout_seconds,
+                expected_exceptions=self.expected_exceptions,
+                jazzer_api_jar=self.jazzer_api_jar,
+                input_file=input_file,
+            )
+        except Exception as exc:
+            print(f"  (single-input replay failed: {exc})")
+            return None, None
+        if not outcome.triggered:
+            return None, None
+        return (crash_signature(outcome.combined_output),
+                cause_signature(outcome.combined_output))
 
 
 def _print_fuzz_result(r: FuzzRunResult) -> None:
