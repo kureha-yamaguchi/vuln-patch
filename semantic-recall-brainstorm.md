@@ -473,6 +473,32 @@ P3.2 makes it deterministic; no previously-caught overfit regresses.
   SOFix patch stays clean because the rule compares with a tolerance
   rather than exact equality. If this fails, stop and debug before
   building anything more on aiming.
+- *Result (2026-07-17 p32val2): mechanism validated, one real bug found
+  and one tolerance bug found.* A direct deterministic probe settled the
+  ground truth: getNumericalMean at the overflow params is −49.76 on
+  BOTH the buggy and Arja-overfit builds (Arja edits elsewhere, never
+  fixes it) and 49.82 on the SOFix-correct build (= the formula, = the
+  dev fix); sample() is likewise identical between SOFix and the dev fix
+  (always in-support) and all-negative on buggy. So the deterministic
+  mean-formula SEPARATES the pair perfectly at normal params. The
+  pooling/anchoring/direction machinery all fired correctly (pool
+  save→load→re-screen confirmed; a relation came back
+  direction-confirmed). TWO real bugs surfaced, both now understood:
+  (1) the JSON double-escape that made the mean-formula fail to compile
+  (fixed — literal `\n` recovery); (2) **the synthesized mean-formula
+  used too-tight tolerance (1e-12 relative) and FALSE-FIRED on the
+  correct SOFix build at extreme parameters (N=n≈2.1 billion), where
+  double rounding exceeds 1e-12** — the FP. This is the standing
+  tolerance rule not being honoured generously enough; the fix is in the
+  synthesis prompt (magnitude-scaled tolerance, looser floor for
+  large-integer intermediates). Math-2-o's residual FN is a separate
+  input-coverage issue: the harness must feed the overflow-inducing
+  large parameters to the mean-formula on the patched build for it to
+  fire there. **Net: the P3.2 hypothesis (a deterministic discriminator
+  cleanly separates the pair) is confirmed true by probe; the pipeline
+  needs the tolerance fix + reliable large-param generation to realise
+  it. Math-2 is a NOISY binary-gate target — its verdict swings on
+  tolerance and input luck — so treat the probe as the real evidence.**
 
 **P3.3 A "must not crash" check should insist on the SAME crash it saw before**
 - *Case:* Chart-26's other half. One check says "drawing the chart must
