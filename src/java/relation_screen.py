@@ -39,6 +39,7 @@ from typing import List, Optional
 
 from build import HarnessBuilder
 from fuzz_runner import run_jazzer
+from java_source import violation_swallowed
 
 _STATS_RE = re.compile(
     r'\[relscreen\]\s+checked=(\d+)\s+violated=(\d+)')
@@ -125,7 +126,7 @@ def screen_relations(candidates: List,
     what the screen observed. Fails soft per candidate — a candidate that
     cannot be compiled/run is dropped with a printed reason, never injected
     unscreened."""
-    selective, silent = [], []
+    selective, silent, high_ratio = [], [], []
     for i, rel in enumerate(candidates):
         name = getattr(rel, 'name', f'relation{i}')
         # Format gate: the counting harness recognises a violation ONLY by
@@ -137,6 +138,16 @@ def screen_relations(candidates: List,
         if 'violated' not in getattr(rel, 'check', ''):
             print(f"  [screen] {name}: check never throws the mandated "
                   f"'violated' message — format-rejected, dropped")
+            continue
+        # P0.2 self-swallow lint: an alarm thrown inside the check's own
+        # catch-everything block is caught and discarded before the
+        # counting wrapper can see it — the check then measures 0/20,000
+        # on buggy and gets promoted as "well-behaved" (every Lang-7-run
+        # candidate had this). Reject BEFORE spending a compile.
+        swallow_reason = violation_swallowed(getattr(rel, 'check', ''))
+        if swallow_reason is not None:
+            print(f"  [screen] {name}: SELF-SWALLOWED ALARM — "
+                  f"{swallow_reason} — dropped")
             continue
         cls = f'RelScreen{i}'
         src = _screen_harness_source(package, imports or [], cls,
@@ -151,6 +162,42 @@ def screen_relations(candidates: List,
             reason = (build.stderr or '').strip().splitlines()
             print(f"  [screen] {name}: does not compile — dropped"
                   + (f" ({reason[0]})" if reason else ""))
+            continue
+        # P0.2 canary: compile+run a variant FORCED to raise its alarm and
+        # require the counting wrapper to register it. The lint above
+        # proves the alarm escapes the check's own catches statically;
+        # this proves the whole counting plumbing can hear it end to end.
+        # (`if (data != null)` — always true, but the compiler can't
+        # prove it, so no unreachable-code error.)
+        canary_body = ('if (data != null) throw new RuntimeException('
+                       '"canary relation violated");\n'
+                       + getattr(rel, 'check', ''))
+        canary_src = _screen_harness_source(package, imports or [],
+                                            f'{cls}Canary', canary_body)
+        try:
+            canary_build = builder.build(canary_src, buggy_dir,
+                                         output_subdir=f'relscreen_{i}c')
+            canary_heard = False
+            if canary_build.compiled:
+                canary_out = run_jazzer(
+                    jazzer_standalone_jar=jazzer_standalone_jar,
+                    target_class=canary_build.class_name,
+                    harness_dir=os.path.dirname(canary_build.harness_path),
+                    project_cp=builder.test_classpath(buggy_dir),
+                    timeout_seconds=20,
+                    jazzer_api_jar=jazzer_api_jar,
+                    extra_libfuzzer_args=['-runs=50'],
+                )
+                cm = _STATS_RE.search(canary_out.stdout + '\n'
+                                      + canary_out.stderr)
+                canary_heard = bool(cm and int(cm.group(2)) >= 1)
+        except Exception as exc:
+            print(f"  [screen] {name}: canary error ({exc}) — dropped")
+            continue
+        if not canary_heard:
+            print(f"  [screen] {name}: CANARY FAILED — a forced alarm was "
+                  f"not registered by the counting wrapper; this "
+                  f"candidate's violations cannot be measured — dropped")
             continue
         try:
             outcome = run_jazzer(
@@ -179,9 +226,22 @@ def screen_relations(candidates: List,
             continue
         ratio = violated / checked
         if ratio > MAX_FIRE_RATIO:
-            print(f"  [screen] {name}: fired on {violated}/{checked} "
-                  f"({ratio:.0%}) buggy-build inputs — out-of-domain, "
-                  f"dropped")
+            # P0.2 interim semantics (until P2.2 lands): a correctly-aimed
+            # check fires on nearly EVERY buggy input once its alarm stops
+            # being swallowed — dropping above-cap candidates would delete
+            # exactly the best ones. Keep, rank behind selective firers,
+            # and say so loudly; P2.2's direction check (does it fire on
+            # the failing test's own inputs?) will replace this heuristic.
+            note = (f"fired on {violated}/{checked} ({ratio:.0%}) buggy "
+                    f"inputs — ABOVE the {MAX_FIRE_RATIO:.0%} cap; kept "
+                    f"provisionally pending direction confirmation (P2.2); "
+                    f"treat with suspicion")
+            try:
+                rel.screen_note = note
+            except Exception:
+                pass
+            print(f"  [screen] {name}: RATIO-CAP — {note}")
+            high_ratio.append(rel)
             continue
         note = (f"fired on {violated}/{checked} fuzzed inputs on the "
                 f"buggy build" + (" (selective — consistent with the "
@@ -201,8 +261,9 @@ def screen_relations(candidates: List,
     # overfits, both caught by earlier configs, went FN with exactly 3
     # silent generic contracts injected). Selective firers keep the full
     # cap; silent survivors are capped at ONE.
-    kept = (selective + silent[:1])[:max_keep]
-    dropped_by_cap = [r for r in selective + silent if r not in kept]
+    kept = (selective + high_ratio + silent[:1])[:max_keep]
+    dropped_by_cap = [r for r in selective + high_ratio + silent
+                      if r not in kept]
     if dropped_by_cap:
         # Not a screening failure — the prompt-size/distraction cap. Say
         # so, or "4 KEPT" followed by "3 survived" reads as an off-by-one.

@@ -35,6 +35,7 @@ from typing import List, Dict, Optional, Callable
 
 from build import HarnessBuilder, BuildResult
 sys.path.insert(0, str(Path(__file__).parent.parent))
+from java_source import violation_swallowed
 from llm import HarnessGenerator
 from fuzz_runner import HarnessVerifier, VerificationResult
 from oracle_strength import exception_headline
@@ -275,6 +276,29 @@ class HarnessCampaign:
             # the instance only for backward compatibility with callers
             # that read it.
 
+            # --- gate 0: alarms must be able to escape (P0.2) -----------
+            # An oracle throw inside the harness's own catch-everything
+            # block is caught and discarded before Jazzer can see it —
+            # the harness then looks "silent on buggy" and the acceptance
+            # gate promotes a check that can never fire. Reject with a
+            # targeted repair turn instead of compiling a deaf harness.
+            swallow_reason = violation_swallowed(source)
+            if swallow_reason is not None:
+                print(f"✗ self-swallowed alarm: {swallow_reason}")
+                repair_failures, current_messages, original_messages = (
+                    self._handle_failure(
+                        diagnostic=self._build_swallow_message(
+                            swallow_reason),
+                        raw=raw,
+                        is_repair_attempt=is_repair_attempt,
+                        repair_failures=repair_failures,
+                        current_messages=current_messages,
+                        original_messages=original_messages,
+                        fresh_prompt=fresh_prompt,
+                    )
+                )
+                continue
+
             build = self.builder.build(
                 source, buggy_dir,
                 output_subdir=attempt_label,
@@ -428,6 +452,29 @@ class HarnessCampaign:
             "project classpath. If javac says 'cannot find symbol', "
             "remove that import and use only classes visible in the "
             "source_imports block or java.* / java.awt.*."
+        )
+
+    def _build_swallow_message(self, reason: str) -> str:
+        """Repair turn for a harness whose alarm throw can never escape
+        its own error handling (P0.2)."""
+        return (
+            "Your harness has a fatal structural problem: "
+            f"{reason}\n\n"
+            "The violation/oracle throw is your harness's ONLY way to "
+            "report a finding. If it is thrown inside a try whose catch "
+            "clause catches Throwable/Exception/RuntimeException and "
+            "returns, the finding is silently discarded and the harness "
+            "can never fire at all.\n\n"
+            "Return the full corrected FuzzHarness.java. Keep try/catch "
+            "ONLY around the code that CALLS the library (to skip invalid "
+            "inputs), and either:\n"
+            "- move the violation check and its throw AFTER/OUTSIDE that "
+            "try block, or\n"
+            "- add `catch (RuntimeException e) { if "
+            "(String.valueOf(e.getMessage()).contains(\"violated\")) "
+            "throw e; }` BEFORE any broader catch, so the alarm is "
+            "re-thrown while input-rejection noise is still skipped.\n"
+            "Raw Java source only. No markdown fences. No prose."
         )
 
     def _build_no_trigger_message(self,

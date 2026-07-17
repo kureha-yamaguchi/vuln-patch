@@ -277,3 +277,146 @@ def expected_assert_literals(method_source: str) -> List[str]:
         if len(literal) >= 3 and literal not in out:
             out.append(literal)
     return out
+
+
+# ---------------------------------------------------------------------------
+# P0.2: self-swallow lint.
+#
+# A check raises its alarm by throwing (RuntimeException("... violated ..."),
+# FuzzerSecurityIssue*, AssertionError). In the Lang-7 runs every generated
+# check threw its alarm INSIDE its own catch-everything block, so the alarm
+# was thrown, immediately caught, and discarded — a rule that should fire on
+# every buggy input measured 0 firings and was promoted as "well-behaved".
+# This lint finds alarm throws that cannot escape: lexically inside a try
+# whose catch clause catches Throwable/Exception/RuntimeException and never
+# rethrows.
+
+_ALARM_THROW_RE = re.compile(
+    r'\bthrow\b[^;]{0,400}?(?:violated|FuzzerSecurityIssue'
+    r'|semantic\s+mismatch)', re.I | re.S)
+_BROAD_CATCH_TYPES = ('Throwable', 'Exception', 'RuntimeException')
+# Word-bounded: `catch (NumberFormatException e)` must NOT count as broad
+# just because 'Exception' is a substring of the type name.
+_BROAD_CATCH_RE = re.compile(
+    r'\b(?:java\.lang\.)?(?:Throwable|Exception|RuntimeException)\b')
+
+
+def strip_comments(src: str) -> str:
+    """Remove // and /* */ comments, preserving string/char literals and
+    the character count of nothing in particular (positions shift)."""
+    out = []
+    i, n = 0, len(src or '')
+    while i < n:
+        c = src[i]
+        if c in '"\'':
+            j = skip_literal(src, i)
+            out.append(src[i:j])
+            i = j
+        elif src.startswith('//', i):
+            j = src.find('\n', i)
+            i = n if j < 0 else j
+        elif src.startswith('/*', i):
+            j = src.find('*/', i)
+            out.append(' ')
+            i = n if j < 0 else j + 2
+        else:
+            out.append(c)
+            i += 1
+    return ''.join(out)
+
+
+def _try_blocks(src: str):
+    """[(open_idx, close_idx, [(catch_params, catch_body), ...])] for every
+    `try { ... }` in src (comments must already be stripped)."""
+    blocks = []
+    for m in re.finditer(r'\btry\b', src):
+        i, n = m.end(), len(src)
+        while i < n and src[i] in ' \t\r\n':
+            i += 1
+        if i < n and src[i] == '(':          # try-with-resources header
+            depth = 0
+            while i < n:
+                if src[i] in '"\'':
+                    i = skip_literal(src, i) - 1
+                elif src[i] == '(':
+                    depth += 1
+                elif src[i] == ')':
+                    depth -= 1
+                    if depth == 0:
+                        i += 1
+                        break
+                i += 1
+            while i < n and src[i] in ' \t\r\n':
+                i += 1
+        if i >= n or src[i] != '{':
+            continue
+        open_idx = i
+        close_idx = match_brace(src, open_idx)
+        if close_idx < 0:
+            continue
+        catches = []
+        j = close_idx + 1
+        while True:
+            mm = re.match(r'\s*catch\s*\(', src[j:])
+            if not mm:
+                break
+            k = j + mm.end()
+            depth, start = 1, k
+            while k < n and depth:
+                if src[k] in '"\'':
+                    k = skip_literal(src, k) - 1
+                elif src[k] == '(':
+                    depth += 1
+                elif src[k] == ')':
+                    depth -= 1
+                k += 1
+            params = src[start:k - 1]
+            b = src.find('{', k)
+            if b < 0:
+                break
+            bend = match_brace(src, b)
+            if bend < 0:
+                break
+            catches.append((params, src[b + 1:bend]))
+            j = bend + 1
+        blocks.append((open_idx, close_idx, catches))
+    return blocks
+
+
+def violation_swallowed(source: str) -> Optional[str]:
+    """Return a human-readable reason if ANY alarm throw in `source` is
+    lexically inside a try whose broad catch (Throwable / Exception /
+    RuntimeException) absorbs it without rethrowing; None when every alarm
+    can escape. Walks enclosing tries innermost-outward: a rethrowing broad
+    catch passes the alarm to the next enclosing try."""
+    src = strip_comments(source or '')
+    alarm_positions = [m.start() for m in _ALARM_THROW_RE.finditer(src)]
+    if not alarm_positions:
+        return None
+    tries = _try_blocks(src)
+    for pos in alarm_positions:
+        enclosing = sorted(
+            (t for t in tries if t[0] < pos < t[1]),
+            key=lambda t: t[1] - t[0])          # innermost first
+        for open_idx, _close_idx, catches in enclosing:
+            handler = next(
+                (body for params, body in catches
+                 if _BROAD_CATCH_RE.search(params)),
+                None)
+            if handler is None:
+                continue                        # escapes to outer try
+            if 'throw' not in handler:
+                line = src[:pos].count('\n') + 1
+                return (f'the alarm throw near line {line} is inside a '
+                        f'try whose catch ({_catch_types_of(catches)}) '
+                        f'swallows it — the alarm can never be heard. '
+                        f'Rethrow the violation from that catch, or move '
+                        f'the throw outside the try.')
+            # broad catch rethrows: the alarm continues outward — the next
+            # enclosing try must be checked too, it may swallow it there
+    return None
+
+
+def _catch_types_of(catches) -> str:
+    return ', '.join(p.strip().split()[0] if p.strip() else '?'
+                     for p, _b in catches)

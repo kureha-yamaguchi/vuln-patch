@@ -33,7 +33,8 @@ from build import HarnessBuilder
 from campaign import HarnessCampaign, CampaignResult
 from crash_input import CrashInputExtractor
 from failure_test import FailureTestExtractor, classify_bug_kind, is_crashing_bug
-from fuzz_runner import FuzzRunner, HarnessVerifier
+from fuzz_runner import (FuzzRunner, HarnessVerifier, PatchApplyError,
+                         PatchedProjectBuilder, TriggerVerificationError)
 from jazzer import JazzerEnvironment
 from llm import (HarnessGenerator, reset_token_usage, token_usage,
                  usage_totals)
@@ -331,6 +332,23 @@ def main():
                      status='semantic_skip', selection=selection,
                      bug_kind=bug_kind)
         sys.exit(4)
+
+    # 4a-ter) P0.1 safety net, buggy half: the bug's own trigger tests must
+    #     FAIL on the unpatched checkout before we spend a single LLM token
+    #     on it. Lang-7 burned weeks because the bug's behavior didn't
+    #     exist on our JVM and nothing ever said so. Costs one `defects4j
+    #     test -t` per trigger test, cached per checkout.
+    try:
+        PatchedProjectBuilder().verify_bug_reproduces(selection.buggy_dir)
+    except TriggerVerificationError as exc:
+        print(f"\nSAFETY NET ({selection.project_name}-{selection.bug_id}): "
+              f"{exc}")
+        _emit_record(args.results_json,
+                     label='correct' if args.correct else 'overfitting',
+                     status=exc.status, selection=selection,
+                     bug_kind=bug_kind,
+                     extras={'safety_net': str(exc)})
+        sys.exit(5)
 
     # 4b) Extract the patch + every project function it touches +
     #     cross-references for each of those functions.
@@ -825,6 +843,22 @@ def main():
                 buggy_dir=selection.buggy_dir,
             )
             _print_fuzz_summary(fuzz_results)
+        except (PatchApplyError, TriggerVerificationError) as exc:
+            # P0.1 safety net, patched half. These are NOT generic infra
+            # hiccups: the program under test is not what we believe it
+            # is. Recording 'no_harnesses' here is how do-nothing runs
+            # got counted as passes for weeks — mark the run with its
+            # specific unscoreable status and stop.
+            status = getattr(exc, 'status', 'bad_patch')
+            print(f"\nSAFETY NET: {exc}")
+            _emit_record(args.results_json,
+                         label='correct' if args.correct else 'overfitting',
+                         status=status, selection=selection,
+                         result=result, bug_kind=bug_kind,
+                         extras={**(record_extras or {}),
+                                 'safety_net': str(exc)})
+            _print_token_usage()
+            sys.exit(5)
         except Exception as exc:
             print(f"  patched-code fuzzing failed: {exc}")
 

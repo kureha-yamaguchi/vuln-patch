@@ -26,10 +26,11 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from build import BuildResult
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -363,32 +364,280 @@ class FuzzRunResult:
     artifact_path: Optional[str] = None
 
 
+class PatchApplyError(RuntimeError):
+    """The patch file could not be FULLY applied: malformed, truncated,
+    reversed, or a hunk failed. A partial apply must never survive —
+    Lang-50 (silently dropped out-of-order hunk) and Math-2/SOFix
+    (reversed+truncated file that never applied) both produced weeks of
+    results about programs that weren't what the pipeline believed."""
+
+
+class TriggerVerificationError(RuntimeError):
+    """The trigger-test safety net failed.
+
+    status is one of:
+      'bug_not_reproduced' — the bug's own failing test does NOT fail on
+          the unpatched buggy checkout: the bug doesn't exist in our
+          environment, so no verdict about a patch for it means anything
+          (the Lang-7 lesson).
+      'bad_patch' — the failing test still fails on the patched build:
+          the patch didn't fully apply or doesn't do what a plausible
+          patch must. Catches half-applied patches end-to-end.
+    """
+
+    def __init__(self, status: str, detail: str):
+        super().__init__(f"{status}: {detail}")
+        self.status = status
+
+
+_HUNK_HEADER_RE = re.compile(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@')
+
+
+def _parse_unified_patch(text: str) -> List[Tuple[List[str], List[Tuple[int, List[str]]]]]:
+    """Split a unified diff into file sections with COUNTED hunks.
+
+    Returns [(header_lines, [(old_start_line, hunk_lines), ...]), ...].
+
+    Counted parsing: each hunk consumes exactly the number of old/new
+    lines its `@@ -a,b +c,d @@` header promises, so a truncated file
+    (the original Math-2/SOFix patch ended mid-hunk) or garbage in the
+    middle raises PatchApplyError instead of being silently mis-read.
+    """
+    lines = text.splitlines()
+    sections: list = []
+    header: List[str] = []
+    hunks: List[Tuple[int, List[str]]] = []
+    i, n = 0, len(lines)
+    while i < n:
+        m = _HUNK_HEADER_RE.match(lines[i])
+        if m:
+            if not header and not hunks and not sections:
+                raise PatchApplyError(
+                    f'{lines[i]!r}: hunk appears before any file header')
+            old_start = int(m.group(1))
+            old_count = int(m.group(2)) if m.group(2) is not None else 1
+            new_count = int(m.group(4)) if m.group(4) is not None else 1
+            body = [lines[i]]
+            i += 1
+            seen_old = seen_new = 0
+            while seen_old < old_count or seen_new < new_count:
+                if i >= n:
+                    # Common APR-generator artifact: the hunk's LAST line
+                    # is an empty line at end-of-file, which vanishes in
+                    # line-splitting and leaves the counts exactly one
+                    # short. Synthesize it; anything beyond one line is a
+                    # real truncation. (12 of 1263 drr files need this;
+                    # the apply-time reverse-verify still guards the
+                    # synthesized content.)
+                    deficit = (old_count - seen_old, new_count - seen_new)
+                    fill = {(1, 1): '', (0, 1): '+', (1, 0): '-'}.get(deficit)
+                    if fill is not None:
+                        body.append(fill)
+                        break
+                    raise PatchApplyError(
+                        f'truncated patch: hunk at old line {old_start} ends '
+                        f'mid-way ({seen_old}/{old_count} old, '
+                        f'{seen_new}/{new_count} new lines present)')
+                line = lines[i]
+                if line.startswith('\\'):
+                    pass  # "\ No newline at end of file" — counts nothing
+                elif line.startswith(' ') or line == '':
+                    seen_old += 1
+                    seen_new += 1
+                elif line.startswith('-'):
+                    seen_old += 1
+                elif line.startswith('+'):
+                    seen_new += 1
+                else:
+                    raise PatchApplyError(
+                        f'malformed line inside hunk at old line '
+                        f'{old_start}: {line!r}')
+                if seen_old > old_count or seen_new > new_count:
+                    raise PatchApplyError(
+                        f'malformed hunk at old line {old_start}: body has '
+                        f'more lines than the @@ header promises '
+                        f'({seen_old}/{old_count} old, '
+                        f'{seen_new}/{new_count} new)')
+                body.append(line)
+                i += 1
+            if i < n and lines[i].startswith('\\'):
+                body.append(lines[i])
+                i += 1
+            hunks.append((old_start, body))
+        else:
+            if hunks:
+                sections.append((header, hunks))
+                header, hunks = [], []
+            header.append(lines[i])
+            i += 1
+    if hunks:
+        sections.append((header, hunks))
+    elif any(line.startswith('--- ') for line in header):
+        raise PatchApplyError(
+            'file header with no hunks at end of patch (truncated file?)')
+    if not sections:
+        raise PatchApplyError('no hunks found — not a unified diff?')
+    return sections
+
+
+def _file_sections(text: str) -> List[Tuple[List[str], List[Tuple[int, List[str]]]]]:
+    """Group parsed sections by TARGET FILE, merging (a) repeated
+    sections for the same file and (b) header-less continuation sections
+    — Lang-50's descending second hunk sits after junk lines with no new
+    ---/+++ header, so naive per-section handling never sees the two
+    hunks side by side. Returns [(header_lines, hunks)] with one entry
+    per file; junk lines outside headers/hunks are dropped."""
+    files: List[list] = []
+    key_to_idx: dict = {}
+    for header, hunks in _parse_unified_patch(text):
+        file_lines = [l for l in header
+                      if l.startswith(('--- ', '+++ ', 'diff ', 'Index:'))]
+        if not any(l.startswith('--- ') for l in file_lines):
+            # no file header at all: these hunks continue the previous file
+            if not files:
+                raise PatchApplyError('hunks appear before any file header')
+            files[-1][1].extend(hunks)
+            continue
+        key = next(l for l in reversed(file_lines)
+                   if l.startswith(('+++ ', '--- ')))
+        if key in key_to_idx:
+            files[key_to_idx[key]][1].extend(hunks)
+        else:
+            key_to_idx[key] = len(files)
+            files.append([file_lines, list(hunks)])
+    return [(hdr, hks) for hdr, hks in files]
+
+
+def _normalized_patch_text(text: str) -> str:
+    """Rewrite a unified diff with each file's hunks sorted ascending by
+    source line. `patch` applied Lang-50's descending-order hunks first
+    hunk only, silently; ascending order is what every applier expects."""
+    out: List[str] = []
+    for header, hunks in _file_sections(text):
+        out.extend(header)
+        for _start, body in sorted(hunks, key=lambda h: h[0]):
+            out.extend(body)
+    return '\n'.join(out) + '\n'
+
+
 class PatchedProjectBuilder:
     """Copy a buggy Defects4J checkout, apply a DRR patch, and compile it.
 
     DRR patches use `/src/...` path prefixes (no `a/`/`b/`), so we use
     `patch -p1` which strips the leading `/` to produce a relative path
     matching the project layout inside the checkout directory.
+
+    Safety nets (P0.1): the patch must FULLY apply (PatchApplyError
+    otherwise), and unless verify_trigger=False the bug's own trigger
+    tests must fail on the buggy checkout and pass on the patched build
+    (TriggerVerificationError otherwise).
     """
 
     def __init__(self, patched_root: str = config.D4J_CHECKOUT_ROOT):
         self.patched_root = patched_root
         self._classpath_cache: dict = {}
 
-    def build_patched_dir(self, buggy_dir: str, patch_path: str) -> str:
+    def build_patched_dir(self, buggy_dir: str, patch_path: str,
+                          verify_trigger: bool = True) -> str:
         """Return a compiled patched copy of buggy_dir with the DRR patch
         applied. Idempotent: skips copy/patch/compile if the directory
-        already exists."""
+        already exists. A failed copy/apply/compile removes the directory
+        again — a half-built tree left behind would be silently reused as
+        "already built" on the next run."""
         patched_dir = self._patched_dir_path(buggy_dir, patch_path)
         if not os.path.isdir(patched_dir):
             print(f"Copying {buggy_dir} → {patched_dir}")
-            shutil.copytree(buggy_dir, patched_dir)
-            self._apply_patch(patched_dir, patch_path)
-            subprocess.run(
-                ['defects4j', 'compile'],
-                cwd=patched_dir, check=True,
-            )
+            try:
+                shutil.copytree(buggy_dir, patched_dir)
+                self._apply_patch(patched_dir, patch_path)
+                subprocess.run(
+                    ['defects4j', 'compile'],
+                    cwd=patched_dir, check=True,
+                )
+            except BaseException:
+                shutil.rmtree(patched_dir, ignore_errors=True)
+                raise
+        if verify_trigger:
+            self._verify_trigger_tests(buggy_dir, patched_dir)
         return patched_dir
+
+    # ---- P0.1b: trigger-test safety net --------------------------------
+
+    def verify_bug_reproduces(self, buggy_dir: str) -> None:
+        """Cheap early gate: every d4j trigger test must FAIL on the
+        unpatched buggy checkout, else TriggerVerificationError
+        ('bug_not_reproduced'). Cached in the checkout via a marker file
+        — the answer never changes for a given checkout."""
+        marker = os.path.join(buggy_dir, '.d4j_bug_reproduced')
+        if os.path.exists(marker):
+            return
+        triggers = self._trigger_tests(buggy_dir)
+        failing = self._failing_tests(buggy_dir, triggers)
+        passing = sorted(set(triggers) - failing)
+        if passing:
+            raise TriggerVerificationError(
+                'bug_not_reproduced',
+                f'trigger test(s) PASS on the unpatched buggy checkout '
+                f'{buggy_dir}: {passing} — the bug does not exist in this '
+                f'environment; any harness verdict for it is meaningless')
+        with open(marker, 'w') as fh:
+            fh.write('\n'.join(sorted(failing)) + '\n')
+
+    def _verify_trigger_tests(self, buggy_dir: str, patched_dir: str) -> None:
+        """Both halves of the net, cached per patched build: the bug
+        reproduces on buggy, and the patch makes the trigger tests pass."""
+        marker = os.path.join(patched_dir, '.d4j_trigger_verified')
+        if os.path.exists(marker):
+            return
+        self.verify_bug_reproduces(buggy_dir)
+        triggers = self._trigger_tests(buggy_dir)
+        still_failing = self._failing_tests(patched_dir, triggers)
+        if still_failing:
+            raise TriggerVerificationError(
+                'bad_patch',
+                f'trigger test(s) still FAIL on the patched build '
+                f'{patched_dir}: {sorted(still_failing)} — the patch did '
+                f'not fully apply or does not fix the bug')
+        with open(marker, 'w') as fh:
+            fh.write('\n'.join(sorted(triggers)) + '\n')
+
+    @staticmethod
+    def _trigger_tests(buggy_dir: str) -> List[str]:
+        """`defects4j export -p tests.trigger` → ['Class::method', ...]."""
+        result = subprocess.run(
+            ['defects4j', 'export', '-p', 'tests.trigger'],
+            cwd=buggy_dir, capture_output=True, text=True,
+        )
+        tests = [t.strip() for t in result.stdout.splitlines()
+                 if '::' in t]
+        if result.returncode != 0 or not tests:
+            raise TriggerVerificationError(
+                'bug_not_reproduced',
+                f'could not export trigger tests from {buggy_dir}: '
+                f'{(result.stderr or result.stdout).strip()[:300]}')
+        return tests
+
+    @staticmethod
+    def _failing_tests(project_dir: str, tests: List[str]) -> set:
+        """Run each named test via `defects4j test -t`; return the subset
+        that fails. A test whose run doesn't complete cleanly counts as
+        failing — loudly, never silently."""
+        failing = set()
+        for t in tests:
+            result = subprocess.run(
+                ['defects4j', 'test', '-t', t],
+                cwd=project_dir, capture_output=True, text=True,
+            )
+            output = (result.stdout or '') + (result.stderr or '')
+            m = re.search(r'Failing tests:\s*(\d+)', output)
+            if result.returncode != 0 or m is None:
+                print(f"  trigger net: `defects4j test -t {t}` did not "
+                      f"complete cleanly in {project_dir} "
+                      f"(rc={result.returncode}) — counting as failing")
+                failing.add(t)
+            elif int(m.group(1)) > 0:
+                failing.add(t)
+        return failing
 
     def classpath(self, patched_dir: str,
                   fallback_buggy_dir: str | None = None) -> str:
@@ -433,18 +682,75 @@ class PatchedProjectBuilder:
 
     @staticmethod
     def _apply_patch(target_dir: str, patch_path: str) -> None:
-        abs_patch = os.path.abspath(patch_path)
-        # DRR patches have `/src/...` paths; -p1 strips the leading `/`.
-        # Try git apply first (d4j checkouts are git repos), fall back to patch.
-        git_result = subprocess.run(
-            ['git', 'apply', '--whitespace=fix', abs_patch],
-            cwd=target_dir,
-        )
-        if git_result.returncode != 0:
-            subprocess.run(
-                ['patch', '-p1', '--forward', '--input', abs_patch],
-                cwd=target_dir, check=True,
+        """Fully apply the patch or raise PatchApplyError.
+
+        Guarantees, in order:
+        1. counted parsing rejects truncated/malformed/empty patch files
+           up front (the original Math-2/SOFix file);
+        2. hunks are re-sorted ascending by source line per file before
+           applying (`patch` silently dropped Lang-50's out-of-order
+           second hunk);
+        3. the applier's exit code is checked and any *.rej file left
+           behind is an error, never a warning;
+        4. after applying, the WHOLE patch must reverse-apply cleanly in
+           a dry run — the strongest available "everything landed" check
+           (a reversed input patch also dies here: its forward apply
+           fails step 3).
+        """
+        with open(patch_path, encoding='utf-8', errors='replace') as fh:
+            raw = fh.read()
+        try:
+            normalized = _normalized_patch_text(raw)
+        except PatchApplyError as exc:
+            raise PatchApplyError(f'{patch_path}: {exc}') from None
+        fd, norm_path = tempfile.mkstemp(suffix='.patch')
+        try:
+            with os.fdopen(fd, 'w') as fh:
+                fh.write(normalized)
+            # DRR patches have `/src/...` paths; -p1 strips the leading
+            # `/`. git apply is atomic (all-or-nothing), so try it first;
+            # fall back to `patch` for the diffs git rejects entirely.
+            git_result = subprocess.run(
+                ['git', 'apply', '--whitespace=fix', norm_path],
+                cwd=target_dir, capture_output=True, text=True,
             )
+            if git_result.returncode != 0:
+                # --forward is load-bearing: plain `patch --batch` answers
+                # "Assume -R?" with YES on a reversed patch and silently
+                # applies it BACKWARDS (measured on the Math-2 .bak — the
+                # "patched" tree became the dev fix). --forward refuses
+                # with a nonzero exit instead; the reverse-verify below
+                # backstops any hunk it merely skips.
+                patch_result = subprocess.run(
+                    ['patch', '-p1', '--forward', '--batch',
+                     '--input', norm_path],
+                    cwd=target_dir, capture_output=True, text=True,
+                )
+                if patch_result.returncode != 0:
+                    raise PatchApplyError(
+                        f'{patch_path} failed to apply.\n'
+                        f'git apply: {git_result.stderr.strip()[:500]}\n'
+                        f'patch:     {(patch_result.stdout + patch_result.stderr).strip()[:500]}')
+            rejects = [os.path.join(root, f)
+                       for root, _dirs, files in os.walk(target_dir)
+                       for f in files if f.endswith('.rej')]
+            if rejects:
+                raise PatchApplyError(
+                    f'{patch_path}: applier left reject files (some hunks '
+                    f'did NOT apply): {rejects}')
+            verify = subprocess.run(
+                ['patch', '-p1', '--reverse', '--dry-run', '--batch',
+                 '--ignore-whitespace', '--input', norm_path],
+                cwd=target_dir, capture_output=True, text=True,
+            )
+            if verify.returncode != 0:
+                raise PatchApplyError(
+                    f'{patch_path}: applied without error but the tree is '
+                    f'NOT in the fully-patched state (reverse dry-run '
+                    f'failed):\n'
+                    f'{(verify.stdout + verify.stderr).strip()[:500]}')
+        finally:
+            os.unlink(norm_path)
 
 
 class FuzzRunner:

@@ -62,7 +62,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import config  # noqa: E402
 from analysis import TargetAnalyzer  # noqa: E402
 from failure_test import FailureTestExtractor  # noqa: E402
-from fuzz_runner import PatchedProjectBuilder  # noqa: E402
+from fuzz_runner import (PatchApplyError, PatchedProjectBuilder,  # noqa: E402
+                         TriggerVerificationError)
 from llm import HarnessGenerator, usage_totals  # noqa: E402
 from patches import PatchSelector  # noqa: E402
 
@@ -458,6 +459,17 @@ def main():
             print(f"\n=== {tag} ===")
             try:
                 rec = certify_one(cand, gen, args.probes, args.timeout)
+            except (PatchApplyError, TriggerVerificationError) as e:
+                # P0.1 safety net: the candidate build is not what it
+                # claims to be (patch broken / half-applied / bug absent
+                # in this environment). A distinct, queryable status —
+                # certifying such a build produced the phantom Lang-50
+                # 43-divergence record.
+                rec = {**cand, "divergences": None,
+                       "certified_detectable": None,
+                       "probe_status":
+                           [getattr(e, 'status', 'bad_patch')],
+                       "safety_net": str(e)}
             except Exception as e:
                 rec = {**cand, "divergences": None,
                        "certified_detectable": None,
