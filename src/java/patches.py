@@ -1,7 +1,6 @@
-"""Pick a random patch from the drr dataset and check out the buggy
+"""Pick a patch from the drr dataset (deterministically pinned) and check out the buggy
 Defects4J project version it corresponds to."""
 import os
-import random
 import shutil
 import subprocess
 import sys
@@ -40,18 +39,20 @@ class PatchSelection:
 
 
 class PatchSelector:
-    """Picks a random patch for a project from the drr dataset and
+    """Picks a patch for a project from the drr dataset — always the
+    first in sorted order (pinned; see suites/DATASET_AUDIT.md §6) — and
     ensures the buggy version of the project is checked out via the
     defects4j CLI."""
 
     def __init__(self, project_name: str = None, correct: bool = False,
                  overfitting: bool = False, patch_file: str = None,
                  bug_id=None, apr_tool: str = None):
-        """``bug_id``/``apr_tool`` pin the sampling: only patches for that
-        bug (and, when given, from that tool) are considered. New
-        functionality — the pre-pinning selector sampled uniformly from
-        the project directory and had no way to target one bug's patches.
-        None = unpinned (the original random behaviour)."""
+        """``bug_id``/``apr_tool`` narrow the candidate set: only patches
+        for that bug (and, when given, from that tool) are considered.
+        Selection within the candidate set is ALWAYS deterministic
+        (sorted-first, i.e. patch1); random sampling was removed
+        2026-07-16 because sibling patches of one bug/tool can have
+        opposite audit verdicts."""
         if correct and overfitting:
             raise ValueError("pass only one of correct/overfitting, not both")
         if correct:
@@ -78,7 +79,13 @@ class PatchSelector:
                 raise ValueError(
                     f'no {self.project_name}-{self.bug_id} patch under '
                     f'{target_dir}')
-        chosen_file = random.choice(candidates)
+        # PINNED (2026-07-16): always the first file in sorted order —
+        # alphabetical puts patch1-* first even when patch10+ exist. The
+        # dataset audit is per patch FILE (sibling patches of one bug/tool
+        # can have opposite verdicts, e.g. Closure-86 patch2 vs patch3),
+        # so a random pick silently changes what a run measures and breaks
+        # comparability with certified verdicts and historical suites.
+        chosen_file = sorted(candidates)[0]
         bug_id = chosen_file.split('-')[2]
         patch_path = os.path.join(target_dir, chosen_file)
         buggy_dir = self._ensure_checkout(self.project_name, bug_id)
@@ -157,7 +164,10 @@ class PatchSelector:
             raise ValueError(
                 f'no APR tool has a matching patch for '
                 f'project={self.project_name} bug_id={self.bug_id}')
-        apr_tool = random.choice(eligible)
+        # PINNED (2026-07-16): deterministic tool choice for the same
+        # reason as the file pick above — reruns must resolve to the same
+        # patch file or results are not comparable across runs.
+        apr_tool = sorted(eligible)[0]
         return apr_tool, os.path.join(self.patch_dir, apr_tool,
                                       self.project_name)
 

@@ -6,6 +6,12 @@
 MODEL="gpt-5.4"
 COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations"
 CASES=(
+  # NOTE: Lang-7/Arja, Lang-22/Arja and Math-70/SketchFix o-legs are
+  # undetectable (suites/UNDETECTABLE.md). Kept ACTIVE here for
+  # comparability with the historical diag baseline — but score recall
+  # against the certified-detectable denominator (i.e. expect these three
+  # as permanent FNs). All other o-legs in this suite are now certified
+  # detectable (certified_suite.jsonl, 2026-07-16).
   "-o Lang 7 Arja"
   "-c Lang 7 ACS"
   "-o Lang 22 Arja"

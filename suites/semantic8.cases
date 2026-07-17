@@ -6,9 +6,11 @@
 MODEL="gpt-5.4"
 COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
 CASES=(
-  "-o Lang 7 Arja"
+  # o-legs of Lang-7/Arja and Lang-22/Arja EXCLUDED (environment-
+  # undetectable — see suites/UNDETECTABLE.md); c-legs kept for precision.
+  # "-o Lang 7 Arja"
   "-c Lang 7 ACS"
-  "-o Lang 22 Arja"
+  # "-o Lang 22 Arja"
   "-c Lang 22 DeepRepair"
   "-o Lang 55 Arja"
   "-c Lang 55 Jaid"

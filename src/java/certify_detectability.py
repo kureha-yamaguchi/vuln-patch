@@ -76,11 +76,20 @@ _PROBE_INSTRUCTIONS = """\
 Write a single Java file:
 - package {package};
 - public class DivergenceProbe with public static void main(String[] args).
-- Enumerate AT LEAST 200 DETERMINISTIC inputs for the patched method's
-  domain: a fixed grid over the relevant parameter ranges, densely covering
-  the boundary values of the condition the patch changed, plus the inputs
-  used by the test shown below. NO randomness, NO current time, NO
-  identity hashCodes — every run must print byte-identical output.
+- Enumerate AT LEAST 200 DETERMINISTIC inputs covering TWO surfaces:
+  (a) the patched method's domain: a fixed grid over the relevant parameter
+      ranges, densely covering the boundary values of the condition the
+      patch changed;
+  (b) the failing test's surface: construct the EXACT objects the test
+      below constructs (same constructor arguments, same setup) and print
+      the result of EVERY public observable/accessor method of those
+      objects — not only the patched method. An overfit patch often
+      silences the test's symptom while leaving a sibling observable of
+      the same object broken; only (b) reveals that. Repeat (b) on a small
+      grid of parameter variations around the test's values (including
+      extreme magnitudes of the same shape).
+  NO randomness, NO current time, NO identity hashCodes — every run must
+  print byte-identical output.
 - For EACH input print EXACTLY ONE line:
     IN=<compact input description> OUT=<stable result representation>
   For results, print primitives/Strings directly; for objects print a

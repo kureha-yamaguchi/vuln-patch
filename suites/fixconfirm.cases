@@ -10,7 +10,10 @@
 MODEL="gpt-5.4"
 COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
 CASES=(
-  "-o Lang 7 Arja"
+  # Lang-7/Arja o-leg EXCLUDED 2026-07-16: measured extensionally identical
+  # to the dev fix on this JVM (message-only NFE divergence) — see
+  # suites/UNDETECTABLE.md. Do not count as FN; c-leg kept for precision.
+  # "-o Lang 7 Arja"
   "-c Lang 7 ACS"
   "-o Math 2 Arja"
   "-c Math 2 SOFix"
