@@ -63,9 +63,15 @@ _CRASH_MARKERS = (
     'ERROR: libFuzzer: deadly signal',
     'ERROR: libFuzzer: fuzz target exited',
     'Uncaught exception',
-    'Test unit written to',        # crash artifact persisted
-    'artifact_prefix',             # crash artifact path echoed on a finding
 )
+# Artifact evidence counts ONLY for crash-* files. libFuzzer also writes
+# slow-unit-* / timeout-* / oom-* artifacts on runs with NO finding — a
+# 21s-slow input on the Math-2 correct leg printed "Test unit written to
+# .../slow-unit-..." plus "artifact_prefix=..." on a clean exit-0 run and
+# was scored as a crash (p0gate leg 03, 2026-07-17). The bare
+# 'Test unit written to' and 'artifact_prefix' markers are therefore
+# phantom-crash generators, not crash evidence.
+_CRASH_ARTIFACT_RE = re.compile(r'Test unit written to \S*crash-')
 
 
 def _looks_like_crash(returncode: int,
@@ -91,6 +97,9 @@ def _looks_like_crash(returncode: int,
     for marker in _CRASH_MARKERS:
         if marker in combined:
             return f"output marker: {marker!r}"
+
+    if _CRASH_ARTIFACT_RE.search(combined):
+        return "crash artifact written (crash-* file)"
 
     # Expected-exception evidence. Requires BOTH the throwable type and a
     # stack frame so we don't fire on the type merely being named in a log

@@ -586,11 +586,32 @@ previously-caught overfit regresses.
 
 ## Standing predictions (falsifiable; check at each measurement gate)
 
+**P0 gate outcome (2026-07-17, 5 legs, gpt-5.4, 350k tokens): 2 catches,
+0 misses, 1 clean, 2 false alarms — both false alarms mechanistically
+explained on the spot.**
+
 1. The Chart-26 correct side flips false-alarm → clean from P0.3 alone.
+   **PARTIALLY FALSIFIED at the P0 gate**: P0.3 DID mechanically drop the
+   wrapped-crash variant (the historical FP), but a second harness
+   smuggled the same pre-existing crash through as MESSAGE TEXT with the
+   alarm thrown outside any catch (a "flag pattern" — no cause chain for
+   P0.3 to see). That variant is exactly what P3.3's crash-site pinning
+   addresses; until then Chart-26-c remains an expected false alarm.
 2. The Math-2 correct side is genuinely clean now (file repaired + the
-   check uses a tolerance).
+   check uses a tolerance). **CONFIRMED after one more P0-class fix**:
+   the gate's Math-2-c "false alarm" was a PHANTOM — libFuzzer wrote a
+   `slow-unit-*` artifact on a clean exit-0 run and the crash classifier
+   counted "Test unit written to"/"artifact_prefix" as crash markers.
+   Fixed (crash-* artifacts only); no real oracle fired on the patched
+   build.
 3. The Math-2 overfit side stays a miss until P3.2, then flips to a
-   catch via the mean-formula rule.
+   catch via the mean-formula rule. **FALSIFIED IN THE GOOD DIRECTION at
+   the P0 gate**: Math-2-o was CAUGHT already, by the seed-anchored
+   sample-bounds oracle ([oracle:seed-sample-nonnegative], a real
+   exit-77 finding) — the trigger-test anchoring was enough once the
+   Phase-0 plumbing stopped eating the signal. P3.2's decisive
+   experiment now only needs to show the correct side stays clean and
+   the pooled mean-formula rule ALSO fires (defense in depth).
 4. The patches with tiny behavior differences show the lowest catch rate
    before P3.1 and the largest improvement from it.
 5. The five wrongly-cleared patches flip to "difference found" under
