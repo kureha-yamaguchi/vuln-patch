@@ -326,6 +326,20 @@ P3.2 makes it deterministic; no previously-caught overfit regresses.
 - *Validate:* rerun the Lang-7 correct side (one cheap task): the
   backwards rules are gone and the new candidates cite the test's
   expected error.
+- *Result (2026-07-17 p2val, 3 legs): mechanism confirmed, no
+  regression.* On Math-2's CORRECT leg synthesis proposed the
+  mean-formula and the direction check ranked
+  `mean_matches_documented_formula` FIRST as direction-confirmed
+  (fires on the failing test's inputs, 20000/20000 on random) — the
+  exact deterministic discriminator that was latent at the baseline —
+  and the leg stayed clean (the formula holds on the fixed build, so no
+  false alarm). Lang-7-c stayed clean too. Math-2's OVERFIT leg,
+  however, is STILL a miss — because synthesis that run proposed
+  different relations (quantile/sample) and never generated the
+  mean-formula on that leg. The convicting relation exists on the
+  sibling leg but is not shared → this is the P3.2 pooling gap, not a
+  Phase-2 failure. Phase 2 does what it controls; P3.2 is what closes
+  Math-2-o.
 
 **P2.2 Test every candidate rule on the failing test's own inputs before trusting it**
 - *Case:* two failures, one fix. (a) The backwards Lang-7 rule survived
