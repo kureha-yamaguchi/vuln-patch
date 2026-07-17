@@ -117,6 +117,20 @@ _INSTRUCTIONS = (
 )
 
 
+def _unflatten_check(check: str) -> str:
+    """Recover a check the model double-escaped in its JSON. Sometimes the
+    whole snippet arrives as ONE physical line with literal `\\n`/`\\t`
+    sequences instead of real newlines (stochastic model output); javac
+    then dies on 'illegal character \\'. Only transform when there is NO
+    real newline yet literal `\\n` markers are present — a well-formed
+    multi-line check is left untouched, and a legitimate `"\\n"` string
+    literal (which sits inside otherwise multi-line code) is never
+    reached."""
+    if '\n' not in check and '\\n' in check:
+        return check.replace('\\n', '\n').replace('\\t', '\t')
+    return check
+
+
 def javadoc_for(source: str, method_name: str, max_chars: int = 1500) -> str:
     """The /** ... */ javadoc immediately preceding `method_name`'s
     declaration in `source`, or ''. The documented contract is the ONLY
@@ -359,6 +373,6 @@ class RelationSynthesizer:
                 kind=str(it.get('kind', 'invariant')),
                 contract=str(it.get('contract', '')),
                 input_spec=str(it.get('input', '')),
-                check=str(it['check']),
+                check=_unflatten_check(str(it['check'])),
             ))
         return rels
