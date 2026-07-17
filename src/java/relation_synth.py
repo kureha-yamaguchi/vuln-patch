@@ -170,7 +170,8 @@ class RelationSynthesizer:
                    javadocs: Optional[List[str]] = None,
                    class_context: Optional[List[str]] = None,
                    source_imports: Optional[List[str]] = None,
-                   trigger_test_block: str = ''
+                   trigger_test_block: str = '',
+                   trigger_methods: Optional[List[str]] = None
                    ) -> List[Relation]:
         """Propose candidate relations for the patched method(s).
 
@@ -290,6 +291,20 @@ class RelationSynthesizer:
         if reachable:
             ctx.append("Reachable API (call these, do not reimplement): "
                        + ", ".join(reachable[:30]))
+        if trigger_methods:
+            # P3.2b: the discriminating relation may constrain a method the
+            # FAILING TEST exercises even when the patch edited elsewhere
+            # (a patched-elsewhere overfit like Math-2: the bug is int
+            # overflow in getNumericalMean, which the failing test reads,
+            # but the overfit edits a coincidentally-passing sibling).
+            ctx.append(
+                "METHODS/TYPES THE FAILING TEST EXERCISES — the bug's"
+                " symptom is observed THROUGH these. If the patch changed a"
+                " DIFFERENT method than the one whose output is wrong, the"
+                " discriminating relation lives on one of THESE, not on the"
+                " edited line. Prefer a relation that constrains one of them"
+                " when the failing test's expected value pins it:\n    "
+                + ", ".join(trigger_methods))
         if mined_tests:
             ctx.append("Real API usage from the project's own tests (mirror"
                        " these call shapes; they are trusted):")

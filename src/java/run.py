@@ -557,6 +557,7 @@ def main():
             # inverted relations (Lang-7). Build from the primary test's
             # source plus the exact values it asserts.
             trigger_test_block = ''
+            trigger_methods: list = []
             if primary_test is not None and primary_test.has_source:
                 exp = expected_assert_literals(
                     primary_test.method_source or '')
@@ -569,6 +570,25 @@ def main():
                         "(the patched code must reproduce these): "
                         + ", ".join(exp[:12]))
                 trigger_test_block = "\n".join(block)
+                # P3.2b root-region anchoring: the methods/types the
+                # failing test actually exercises. The discriminating
+                # relation may constrain ONE of THESE even when the patch
+                # edited a different method (Math-2's overflow surfaces in
+                # getNumericalMean() though Arja edited elsewhere), so
+                # feeding them widens the synthesis anchor past the
+                # patch-touched region.
+                src_t = primary_test.method_source or ''
+                _JUNIT = {'assertEquals', 'assertTrue', 'assertFalse',
+                          'assertNull', 'assertNotNull', 'assertSame',
+                          'assertArrayEquals', 'assertThat', 'assertThrows',
+                          'fail', 'expect', 'valueOf', 'toString', 'equals'}
+                for name in re.findall(r'\.([a-zA-Z_]\w*)\s*\(', src_t):
+                    if name not in _JUNIT and name not in trigger_methods:
+                        trigger_methods.append(name)
+                for ctor in re.findall(r'\bnew\s+([A-Z]\w*)\s*\(', src_t):
+                    if ctor not in trigger_methods:
+                        trigger_methods.append(ctor)
+                trigger_methods = trigger_methods[:20]
             candidates = synthesizer.synthesize(
                 patched_sources, class_name,
                 context.root_cause_reachable or [], mined_oracles, '',
@@ -576,7 +596,8 @@ def main():
                 javadocs=touched_javadocs,
                 class_context=class_ctx,
                 source_imports=context.source_imports,
-                trigger_test_block=trigger_test_block)
+                trigger_test_block=trigger_test_block,
+                trigger_methods=trigger_methods)
             if candidates:
                 print(f"  [synth] {len(candidates)} candidate relation(s) "
                       f"({synth_model}): "
@@ -584,6 +605,22 @@ def main():
             else:
                 print("  [synth] WARNING: synthesis returned no candidates "
                       "(after one retry) — nothing to screen or inject")
+            # P3.2 pooling: add relations screened SOUND on this bug's
+            # buggy build in earlier legs/runs. Synthesis is stochastic —
+            # the mean-formula that convicts Math-2's overfit was proposed
+            # only on the correct leg — so unioning the pool makes each
+            # bug's best discriminators available on EVERY leg. The pool
+            # carries no label or patch identity, only project+bug+text.
+            from relation_pool import load_pool, merge_candidates
+            pooled = load_pool(selection.project_name, selection.bug_id)
+            if pooled:
+                before = len(candidates)
+                candidates = merge_candidates(candidates, pooled)
+                added = len(candidates) - before
+                if added:
+                    print(f"  [pool] +{added} relation(s) from earlier legs "
+                          f"of {selection.project_name}-{selection.bug_id} "
+                          f"(re-screened here before use)")
             synthesized_relations = candidates
             record_extras["synth_candidates"] = len(candidates)
 
@@ -704,6 +741,16 @@ def main():
                 synthesized_relations = []
             print(f"  [screen] {len(synthesized_relations)} relation(s) "
                   "survived screening")
+            # P3.2 pooling: persist this leg's screened survivors so the
+            # bug's OTHER legs can reuse them. Sound-on-buggy is a
+            # per-bug property, so this is label-free.
+            if synthesized_relations:
+                from relation_pool import save_relations
+                n = save_relations(selection.project_name, selection.bug_id,
+                                   synthesized_relations)
+                if n:
+                    print(f"  [pool] saved {n} screened relation(s) for "
+                          f"{selection.project_name}-{selection.bug_id}")
         else:
             print("  [screen] no jazzer driver available — dropping all "
                   "candidates rather than injecting unscreened")
