@@ -683,6 +683,27 @@ P3.2 makes it deterministic; no previously-caught overfit regresses.
 0 misses, 1 clean, 2 false alarms — both false alarms mechanistically
 explained on the spot.**
 
+**PHASE 2+3 COMBINED GATE (2026-07-17, p23gate, full dev set): NEGATIVE
+RESULT — the interventions REGRESSED the pipeline.** Recall 0.56 → 0.43
+(9/16 → 6/14); correct-side clean 13/14 → 8/12 (four false alarms).
+Prior true-positives flipped to misses (Closure-33, Lang-41, Lang-60);
+new false positives appeared (Closure-62, Closure-73, Lang-7); one gain
+(Closure-73-o); Math-57 built no harness. Mechanism, confirmed on
+Lang-60-o: at baseline it caught the overfit via its seed-anchored
+lifted oracle; in the gate it received 3 synthesized + 3 POOLED
+relations, fired on the buggy build via a generic `contains` oracle, and
+lost the specific witness input that discriminates on the patched build.
+This is EXACTLY the documented dead-end — "injected oracle mass
+distracts the generator from the seed-anchored oracle" — which P3.2
+pooling directly triggers by ADDING sibling-leg relations. The
+strict-improvement fixes from this phase (JSON double-escape recovery,
+numeric tolerance, the direction/heading corrections) are keepers; the
+POOLING and the aggressive direction-confirmed RANKING that displaces
+the working lifted oracle are the regressors. Next: revert/gate those,
+re-measure. The deterministic probe still shows the Phase-2 direction
+logic is individually correct — the failure is systemic (oracle mass),
+not per-relation.
+
 **PHASE-1 BASELINE (2026-07-17, full 30-leg dev set, gpt-5.4, ~2.5M
 tokens across p1base + b + c): recall 9/16 = 56%, correct-side 13/14
 clean (the one FP is the expected Chart-26-c flag pattern), positive-
