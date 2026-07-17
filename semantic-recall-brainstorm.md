@@ -249,22 +249,51 @@ uses the dev fix, so never in the decision path)**
   like the same miss; sorted this way, they demand opposite fixes — and
   the split decides whether Phase 3 starts with better checks (P3.1) or
   better aim (P3.2).
-- *Third bucket — the witness-only patches.* Six dev overfits (Chart-7,
-  Lang-60, Closure-62, Math-57, Closure-92, Time-11, plus Lang-41) have
-  a probe count of ZERO — even our certifier's probe missed them, and
+- *Third bucket — the witness-only patches.* Seven dev overfits (Chart-7,
+  Lang-41, Lang-60, Closure-62, Math-57, Closure-92, Time-11) have a
+  probe count of ZERO — even our certifier's probe missed them, and
   they're only proven catchable by a hand-written program that looks at
   exactly the right thing (overlapping time periods, the buffer's
-  capacity, one specific formatter mode…). A miss there says nothing
-  about input generation OR missing checks in the ordinary sense — it
-  says the harness never looked at the right SURFACE at all. These are
-  the hardest recall targets in the whole set; expect them to stay
-  misses until P3.1, and don't let them dominate the triage statistics
-  for the other buckets.
+  capacity, one specific formatter mode…). We EXPECTED these to be the
+  hardest. **The baseline falsified that: the pipeline caught 5 of the 7
+  (Chart-7, Lang-41, Lang-60, Closure-62, Closure-92) — only Math-57
+  (float width) and Time-11 (cross-thread, the expected permanent miss)
+  stayed misses.** The lesson: "witness-only" describes the CERTIFIER's
+  single probe, not the pipeline — the pipeline generates several diverse
+  harnesses and finds surfaces the one probe didn't. Don't treat
+  witness-only as pipeline-hard.
+
+- *What the baseline actually showed about the buckets (2026-07-17).*
+  Refinement to the dichotomy above. The two BROAD misses (Lang-50: 225
+  divergences; Math-2: 117) were NOT "we never checked the property" —
+  in both, the discriminating check WAS generated, but it was either
+  LATENT (never fired on the buggy build, so unanchored — P0.4 flags this
+  exactly) or STOCHASTIC (see below). So a broad-divergence miss is
+  three-way, and P0.4's latent data tells them apart: (a) the
+  discriminator was never generated; (b) generated but latent →
+  P2.1/P2.2 (feed direction, screen on the trigger inputs) + P3.2
+  (anchor at the bug); (c) generated but flaky. In EVERY one of the
+  seven baseline misses the check that DID fire on buggy was the
+  lifted-seed oracle — the reported input, which the overfit
+  special-cased — so the patched build passes it. That single mechanism
+  unifies the misses and points squarely at Phase 2 as the next step.
+
+- *Stochastic-oracle miss (new; Math-2-o).* Math-2's overfit was a catch
+  at the P0 gate and a miss at the baseline — a real flip-flop, not
+  noise. Cause: the check that fires on buggy is built on `sample()`, a
+  RANDOM draw, so its verdict depends on fuzzing luck (the RNG must hit
+  the overflow path AND produce a negative sample). The reliable
+  discriminator is `getNumericalMean()` = −49.76, which is DETERMINISTIC
+  and which the Arja patch never touches — and it sat latent. Lesson: an
+  oracle anchored on a nondeterministic method gives flaky verdicts;
+  prefer a deterministic discriminator. This is what P2.2 must add (a
+  reproducibility check) and what P3.2's pooled mean-formula rule
+  delivers.
 
 *Predictions:* Chart-26 correct side flips false-alarm → clean from P0.3
 alone; Math-2 correct side is genuinely clean now (file repaired +
-tolerance in the check); Math-2 overfit side stays a miss until P3.2; no
-previously-caught overfit regresses.
+tolerance in the check); Math-2 overfit side is caught only FLAKILY until
+P3.2 makes it deterministic; no previously-caught overfit regresses.
 
 ---
 
@@ -320,6 +349,17 @@ previously-caught overfit regresses.
   The 20% discard rule remains only for unconfirmed rules.
 - *Validate:* from saved logs — the backwards Lang-7 rule drops; the
   corrected one ranks first. Depends on: P0.2, P2.1.
+- *Add a reproducibility check (new, from the baseline).* Math-2's
+  overfit was caught once and missed once because its firing check reads
+  `sample()`, a random draw — the verdict depended on fuzzing luck. When
+  the trigger-input measurement above runs, run it a few times: a check
+  that fires on the trigger inputs on some repeats and not others is
+  FLAKY. Rank a deterministic discriminator ahead of a flaky one, and
+  when only a flaky check is available, say so in the record (so a
+  changed outcome for that leg is known to need the confirm-repeat from
+  measurement rule #2). The reliable Math-2 discriminator
+  (`getNumericalMean` = −49.76, deterministic) was generated but latent;
+  ranking determinism first is what surfaces it.
 
 **P2.3 Don't approve a rule the harness is forbidden to contain**
 - *Case:* For Math-2, check-writing actually produced the ONE rule that
@@ -603,6 +643,22 @@ previously-caught overfit regresses.
 0 misses, 1 clean, 2 false alarms — both false alarms mechanistically
 explained on the spot.**
 
+**PHASE-1 BASELINE (2026-07-17, full 30-leg dev set, gpt-5.4, ~2.5M
+tokens across p1base + b + c): recall 9/16 = 56%, correct-side 13/14
+clean (the one FP is the expected Chart-26-c flag pattern), positive-
+prediction precision 9/10 = 90%. No unexpected false alarm anywhere.**
+This is the number every later phase diffs against. Recall ≈ the old
+pre-Phase-0 58% — as designed: Phase 0 bought TRUST (every miss now
+explained, zero mystery FPs, full per-oracle attribution), not recall;
+the recall gain is Phases 2–3. The 7 misses: Lang-50 & Math-2 (broad
+divergence, discriminator generated-but-latent/stochastic), Lang-27
+(crashing, lifted-crash-only), Math-53 & Closure-73 (narrow), Math-57
+(witness, float-width), Time-11 (witness, cross-thread — the expected
+permanent miss). The one unifying cause: the check that fired on buggy
+was always the lifted seed, which the overfit special-cased. That is
+precisely Phase 2's target, so the baseline validates the plan's
+ordering without change.
+
 1. The Chart-26 correct side flips false-alarm → clean from P0.3 alone.
    **PARTIALLY FALSIFIED at the P0 gate**: P0.3 DID mechanically drop the
    wrapped-crash variant (the historical FP), but a second harness
@@ -618,19 +674,29 @@ explained on the spot.**
    Fixed (crash-* artifacts only); no real oracle fired on the patched
    build.
 3. The Math-2 overfit side stays a miss until P3.2, then flips to a
-   catch via the mean-formula rule. **FALSIFIED IN THE GOOD DIRECTION at
-   the P0 gate**: Math-2-o was CAUGHT already, by the seed-anchored
-   sample-bounds oracle ([oracle:seed-sample-nonnegative], a real
-   exit-77 finding) — the trigger-test anchoring was enough once the
-   Phase-0 plumbing stopped eating the signal. P3.2's decisive
-   experiment now only needs to show the correct side stays clean and
-   the pooled mean-formula rule ALSO fires (defense in depth).
+   catch via the mean-formula rule. **RESOLVED with a twist: caught
+   FLAKILY.** Math-2-o was a catch at the P0 gate and a miss at the
+   baseline — a real flip-flop. The firing check reads `sample()`, a
+   random draw, so the verdict depends on fuzzing luck. The spirit of
+   the prediction holds — P3.2 is still needed — but not because it is a
+   hard FN: because the deterministic discriminator (`getNumericalMean`
+   = −49.76) is generated-but-latent, and P3.2/P2.2 must surface it to
+   make the catch RELIABLE rather than lucky.
 4. The patches with tiny behavior differences show the lowest catch rate
-   before P3.1 and the largest improvement from it.
+   before P3.1 and the largest improvement from it. **PARTIALLY BORNE
+   OUT at the baseline**: the two narrow legs (Math-53: 3, Closure-73:
+   7) are both misses — but so are two BROAD legs (Lang-50, Math-2), so
+   narrowness is not the sole predictor of a miss; latent/stochastic
+   discriminators miss regardless of breadth. The narrow legs remain the
+   cleanest P3.1 targets.
 5. The five wrongly-cleared patches flip to "difference found" under
    P4.2 with no prompt changes.
-6. The witness-only overfits (Chart-7, Lang-60, Closure-62, Math-57,
-   Closure-92) are all misses at the Phase-1 baseline, and P3.1's two
-   new check types (read-only calls must not change state; equivalent
-   methods must agree) flip at least Lang-60 and Lang-41 — those two are
-   exactly the shapes the checks encode.
+6. The witness-only overfits are all misses at the Phase-1 baseline, and
+   P3.1's two new check types flip at least Lang-60 and Lang-41.
+   **FALSIFIED — in the good direction.** The pipeline caught 5 of the 7
+   witness-only overfits at baseline ALREADY (Chart-7, Lang-41, Lang-60,
+   Closure-62, Closure-92); only Math-57 (float-width) and Time-11
+   (cross-thread, expected) missed. "Witness-only" describes the
+   certifier's single probe, not the pipeline's several diverse
+   harnesses — the pipeline finds surfaces the one probe didn't. P3.1's
+   remaining witness target is really just Math-57.

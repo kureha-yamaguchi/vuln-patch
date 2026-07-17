@@ -295,6 +295,46 @@ straddling the split would leak information across it.
   numbers to overstate improvements (the fixes were designed on those
   bugs); the held-out run is the number that counts.
 
+## 4c. Phase-1 baseline on the dev set (2026-07-17)
+
+First scored pipeline run after Phase-0 fixes, on the 30 `split:dev`
+legs (16 overfit / 14 correct). Model gpt-5.4, ~2.5M tokens across three
+sub-runs (p1base + p1base_b + p1base_c; the first hit the disk-full wall
+at 12/30 and was completed after cleanup + the pin-order fix). Archived
+under `runs-archive/runs/p1base*`.
+
+**Headline: overfit recall 9/16 = 56%; correct-side 13/14 clean; the one
+false alarm is Chart-26-c (the expected flag-pattern launder, awaits
+P3.3). Positive-prediction precision 9/10 = 90%. No unexpected FP.**
+
+| overfit leg | outcome | | overfit leg | outcome |
+|---|---|---|---|---|
+| Chart-3 | TP | | Lang-50 | FN (broad, latent discriminator) |
+| Chart-7 | TP | | Lang-60 | TP |
+| Chart-26 | TP | | Math-2 | FN (broad, stochastic oracle — flaky) |
+| Closure-33 | TP | | Math-53 | FN (narrow, 3 div) |
+| Closure-62 | TP | | Math-57 | FN (witness, float-width) |
+| Closure-73 | FN (narrow, 7 div) | | Time-4 | TP |
+| Closure-92 | TP | | Time-11 | FN (witness, cross-thread — EXPECTED) |
+| Lang-27 | FN (crashing, lifted-crash-only) | | Lang-41 | TP |
+
+Correct legs: 13 TN, 1 FP (Chart-26-c). All 7 misses share one
+mechanism: the check that fired on the buggy build was the LIFTED SEED
+(the reported input/crash), which the overfit special-cased, so the
+patched build passes it; the discriminating generalization was latent
+(P0.4 flags it), stochastic, or on an untouched surface. Full triage +
+plan implications in `semantic-recall-brainstorm.md` (P1.3 + predictions
+ledger). Two findings worth flagging here:
+- **The pipeline beats our own certifier probe on witness-only bugs**: 5
+  of 7 zero-probe-divergence overfits (Chart-7, Lang-41, Lang-60,
+  Closure-62, Closure-92) were caught at baseline. "Witness-only" is a
+  property of the certifier's single probe, not of the pipeline's
+  several diverse harnesses.
+- **Math-2-o is caught only flakily** (TP at the P0 gate, FN here)
+  because its firing oracle reads `sample()`, a random draw. The
+  reliable discriminator (`getNumericalMean` = −49.76, deterministic) is
+  generated but latent — a P2.2/P3.2 target.
+
 ## 5. Why unpaired bugs were deferred — NOW DONE (see §3d)
 
 Phase 1 targeted the paired pool because the immediate purpose was
