@@ -248,3 +248,6 @@ src/db/project_zero/findings/verified/resolved_cls.json
 tunnel.sh
 # macOS
 .DS_Store
+
+# Archived VM run data (logs + manifests pulled from hetzner) — never commit
+runs-archive/
