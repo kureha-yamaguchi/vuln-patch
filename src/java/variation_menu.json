@@ -1,0 +1,1273 @@
+{
+  "version": "2026-07-18.6",
+  "frozen_for_heldout": false,
+  "comment": "The R4 closed menu of harmless-variation / metamorphic relations, built by five parallel literature-mining passes (numerical, string/text, collections, datetime, program-text, web-API, security) and consolidated. Each entry: statement, SOUNDNESS CONDITION (checkable precondition), EXCEPTIONS (the false-alarm suppressors - load-bearing), 2 examples, sources. tier=universal holds for any correct implementation; tier=documented-property (status menu_documented) only holds when the spec asserts it. Governance per semantic-recall-brainstorm.md R4(c): entries added only with literature provenance, never from a benchmark miss; frozen before held-out; injection is deterministic by detected input kind, capped at 3, priority-ranked; the model never sees the whole menu. Full cited catalog in suites/menu-candidates.md.",
+  "input_kind_vocabulary": [
+    "program_text",
+    "plain_text",
+    "number",
+    "datetime",
+    "collection",
+    "query_or_filter",
+    "encode_decode_pair",
+    "web_api",
+    "security"
+  ],
+  "entries": [
+    {
+      "id": "trig-supplement-periodicity",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "sin(pi-x)=sin(x), sin(x+2pi)=sin(x), cos(-x)=cos(x): the documented periodic/reflection identities of the function hold.",
+      "condition": "The function is a genuine trig (or documented-periodic) function over radians with the standard definition.",
+      "exceptions": "pi is not representable so argument-reduction error requires magnitude-scaled tolerance; catastrophic reduction error at very large x; degrees-vs-radians API mismatch.",
+      "examples": [
+        "FastMath.sin(PI - x) ~= FastMath.sin(x)",
+        "FastMath.cos(-x) == FastMath.cos(x) (exact, even function)"
+      ],
+      "sources": [
+        "Chen/Cheung/Yiu HKUST-CS98-01 (1998), founding MT example",
+        "Segura et al. TSE 2016"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "odd-even-symmetry",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "For a documented odd function f(-x)=-f(x); for an even function f(-x)=f(x).",
+      "condition": "The function is mathematically odd or even BY DEFINITION (identity of the function must be known).",
+      "exceptions": "signed-zero (-0.0) edge cases; asserting oddness of a non-odd function causes false accusations.",
+      "examples": [
+        "FastMath.sin(-x) == -FastMath.sin(x); Erf.erf(-x) == -Erf.erf(x)",
+        "FastMath.cosh(-x) == FastMath.cosh(x)"
+      ],
+      "sources": [
+        "Chen/Cheung/Yiu 1998",
+        "Kanewala & Bieman symmetry MR class"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "inverse-roundtrip-numeric",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Applying a function then its inverse returns the input: f_inv(f(x)) = x, ON THE PRINCIPAL BRANCH ONLY.",
+      "condition": "STRICT: x must lie where f is injective and f_inv is the true principal inverse.",
+      "exceptions": "TRAP (easy to state unsoundly): asin(sin(x))=x is FALSE outside [-pi/2,pi/2]; sqrt(x*x)=|x| not x; log(exp(x)) overflows for large x; exp(log(x)) needs x>0; complex branch cuts. Restrict input to the injective domain.",
+      "examples": [
+        "FastMath.log(FastMath.exp(x)) ~= x for |x|<700",
+        "dist.inverseCumulativeProbability(dist.cumulativeProbability(x)) ~= x in the support interior"
+      ],
+      "sources": [
+        "Murphy/Kaiser/Hu SEKE 2008 (invertive)",
+        "Segura et al. TSE 2016"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "cdf-monotonicity",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "If x1<=x2 then F(x1)<=F(x2) for a CDF; a documented-monotone function preserves (or reverses) input order.",
+      "condition": "The function is a CDF (monotone by definition) or documented/definitionally monotone (log, exp, sqrt on their domain).",
+      "exceptions": "ties allowed (<=, not <): a strict-< assertion is unsound on flat regions (discrete distributions, saturated tails); floating-point plateaus.",
+      "examples": [
+        "NormalDistribution.cumulativeProbability(x1) <= cumulativeProbability(x2) for x1<=x2",
+        "FastMath.log(x1) <= FastMath.log(x2) for 0<x1<=x2"
+      ],
+      "sources": [
+        "Segura et al. TSE 2016 (ordering MRs)",
+        "Kanewala & Bieman (increasing/decreasing class)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "distribution-invariants",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "A probability distribution satisfies 0<=F(x)<=1, pdf(x)>=0, F at support-lower=0, sf(x)=1-F(x), and inverseCDF(F(x))=x on the support interior.",
+      "condition": "The object is a probability distribution with the standard axioms.",
+      "exceptions": "discrete distributions invert a step function (roundtrip lands on lattice points); 1-F(x) loses far-tail precision; inverseCumulativeProbability(0/1) may be +-inf or support bounds.",
+      "examples": [
+        "0.0 <= NormalDistribution.cumulativeProbability(x) <= 1.0",
+        "dist.cumulativeProbability(x) + survivalProbability(x) ~= 1.0"
+      ],
+      "sources": [
+        "Segura et al. TSE 2016",
+        "Guderlei & Mayer, Statistical Metamorphic Testing (2007)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "location-scale-transform",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Shifting all inputs by c shifts location statistics (mean) by c and leaves spread (variance) invariant; scaling by c scales mean by c and variance by c^2.",
+      "condition": "The statistic is defined by its standard formula (mean, variance, std, median) and you know which statistic (variance is shift-invariant, mean is not).",
+      "exceptions": "floating-point accumulation error grows with |c| and n (magnitude-scaled tolerance); overflow when c*x exceeds range; weighted/trimmed variants may break naive invariance.",
+      "examples": [
+        "StatUtils.mean(shiftAll(data,c)) ~= StatUtils.mean(data)+c",
+        "StatUtils.variance(scaleAll(data,c)) ~= c*c*StatUtils.variance(data)"
+      ],
+      "sources": [
+        "Murphy/Kaiser/Hu 2008 (additive & multiplicative)",
+        "Kanewala & Bieman"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "permutation-invariance-numeric",
+      "input_kinds": [
+        "number",
+        "collection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Reordering/reversing the input leaves the output unchanged for any order-independent aggregate (sum, product, mean, variance, min/max, gcd-of-set).",
+      "condition": "The function is a symmetric/order-independent aggregate. NOT for order-dependent functions (median-of-stream, cumulative sums, first/last).",
+      "exceptions": "floating-point sum/product are NOT associative so sum/mean/variance need tolerance; min/max/gcd are exactly invariant; NaN presence can make ordering matter.",
+      "examples": [
+        "StatUtils.sum(perm(data)) ~= StatUtils.sum(data)",
+        "StatUtils.max(perm(data)) == StatUtils.max(data) (exact)"
+      ],
+      "sources": [
+        "Murphy/Kaiser/Hu 2008 (permutative)",
+        "Kanewala & Bieman"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "determinant-laws",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "det(A^T)=det(A); det(A*B)=det(A)*det(B); swapping two rows negates det; scaling a row by c scales det by c; adding a multiple of one row to another leaves det unchanged.",
+      "condition": "A (and B) are square; the routine computes the true determinant.",
+      "exceptions": "det(A*B) accumulates rounding through the product (generous magnitude-scaled tolerance; determinants can be huge/tiny); near-singular matrices amplify error; integer overflow for exact-integer routines.",
+      "examples": [
+        "det(A.transpose()) ~= det(A)",
+        "det(A.multiply(B)) ~= det(A)*det(B)"
+      ],
+      "sources": [
+        "Mayer & Guderlei COMPSAC 2006 (16 determinant MRs)",
+        "Segura et al. TSE 2016"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "matrix-algebraic-identities",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "(A^T)^T=A; (A*B)^T=B^T*A^T; A*I=A; A*A_inv=I (when invertible); trace and rank invariant under transpose.",
+      "condition": "conformable dimensions; inverse relations require A nonsingular (nonzero determinant).",
+      "exceptions": "A*A_inv=I degrades for ill-conditioned A (tolerance scaled by condition number); (A*B)^T=B^T*A^T exact only in exact arithmetic.",
+      "examples": [
+        "A.transpose().transpose().equals(A) (exact)",
+        "A.multiply(inverse(A)) ~= identity(n)"
+      ],
+      "sources": [
+        "Mayer & Guderlei 2006",
+        "Kanewala & Bieman"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "special-function-identities",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Closed-form identities: exp(a+b)=exp(a)*exp(b); log(a*b)=log(a)+log(b); Gamma(x+1)=x*Gamma(x); Gamma(n+1)=n!; B(a,b)=Gamma(a)Gamma(b)/Gamma(a+b).",
+      "condition": "arguments in the real domain (log/Gamma need positive / non-nonpositive-integer args).",
+      "exceptions": "overflow (exp(a)*exp(b) overflows before exp(a+b) via logs) - prefer logGamma/logBeta; Gamma has poles at nonpositive integers; recurrence loses precision for large x; tolerance throughout.",
+      "examples": [
+        "FastMath.exp(a+b) ~= FastMath.exp(a)*FastMath.exp(b) for moderate a,b",
+        "Gamma.gamma(x+1) ~= x*Gamma.gamma(x)"
+      ],
+      "sources": [
+        "Chen/Cheung/Yiu 1998",
+        "Kanewala & Bieman (48 numerical functions)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "complex-arithmetic-laws",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "conj(z*w)=conj(z)*conj(w); |z*w|=|z|*|w|; |z|^2=z*conj(z) (real); conj(conj(z))=z; arg(z*w)=arg(z)+arg(w) mod 2pi.",
+      "condition": "standard complex-number semantics.",
+      "exceptions": "TRAP: arg/phase identities live on branch cuts - arg returns principal values, so arg(z*w) may differ from arg(z)+arg(w) by 2pi; reduce mod 2pi; infinities/NaN components; magnitude products overflow.",
+      "examples": [
+        "z.multiply(w).abs() ~= z.abs()*w.abs()",
+        "z.multiply(z.conjugate()).getReal() ~= z.abs()*z.abs() (imag ~= 0)"
+      ],
+      "sources": [
+        "Kanewala & Bieman",
+        "Segura et al. TSE 2016 (complex-number MRs)"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "number-theory-combinatorics",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "gcd(a,b)=gcd(b,a)=gcd(a,b-a); gcd(a,b)*lcm(a,b)=a*b; C(n,k)=C(n,n-k); C(n,k)=C(n-1,k-1)+C(n-1,k); n!=n*(n-1)!.",
+      "condition": "integer inputs in the routine's domain (0<=k<=n, non-negative for factorial).",
+      "exceptions": "these are EXACT (no tolerance) but OVERFLOW is the failure mode: n! and large binomials exceed long; a*b for the gcd*lcm law overflows before it is checkable - use BigInteger or bound inputs; sign conventions for gcd(0,0)/negatives differ by library.",
+      "examples": [
+        "ArithmeticUtils.gcd(a,b) == ArithmeticUtils.gcd(b,a) (exact)",
+        "CombinatoricsUtils.binomialCoefficient(n,k) == binomialCoefficient(n,n-k)"
+      ],
+      "sources": [
+        "Kanewala & Bieman",
+        "Murphy/Kaiser/Hu 2008"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "integration-linearity-additivity",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "A definite integral is linear and interval-additive: integral[a,c] f = integral[a,b] f + integral[b,c] f; reversing limits negates.",
+      "condition": "f,g integrable; for numerical quadrature the relations hold up to the method's stated error bound. Linearity/additivity are definitional; EXACT equality is documented-tolerance.",
+      "exceptions": "quadrature error of the split differs from the whole (use the routine's stated accuracy as tolerance); singularities at the split point; non-adaptive rules can violate additivity beyond tolerance.",
+      "examples": [
+        "integrate(f,lo,mid)+integrate(f,mid,hi) ~= integrate(f,lo,hi) (SimpsonIntegrator)"
+      ],
+      "sources": [
+        "Chen/Feng/Tse COMPSAC 2002 (PDE MRs)",
+        "Kanewala & Bieman"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "refinement-convergence",
+      "input_kinds": [
+        "number"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Making an iterative/discretized computation finer (more iterations, smaller step, tighter tolerance) does not move the result away from the true answer.",
+      "condition": "The method is DOCUMENTED to converge under refinement (grid-refinable solver, adaptive quadrature, iterative root-finder). NOT universal - needs a documented convergence guarantee.",
+      "exceptions": "non-monotone convergence (error can oscillate) - compare final results within tolerance, not per-step improvement; round-off can dominate truncation past a point (finer gets worse); stopping-criterion differences.",
+      "examples": [
+        "BrentSolver with tighter accuracy yields a root at least as close to the true root as a looser run"
+      ],
+      "sources": [
+        "Chen/Feng/Tse COMPSAC 2002",
+        "Segura et al. TSE 2016 (convergence MRs)"
+      ],
+      "priority": 3
+    },
+    {
+      "id": "roundtrip-inverse-text",
+      "input_kinds": [
+        "encode_decode_pair",
+        "plain_text"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "For an encode/decode (serialize/parse, escape/unescape) pair, decode(encode(x))=x for every x in the encoder's domain.",
+      "condition": "The two ops are documented inverses AND the forward op is LOSSLESS (injective). Assert the pair that starts from the encoder's native domain.",
+      "exceptions": "lossy/normalizing codecs (Base64 padding, URL + vs %20, JSON 1.0->1, precision loss); whitespace-trimming parsers; format(parse(s)) is generally NOT identity even when parse(format(x)) is.",
+      "examples": [
+        "URLDecoder.decode(URLEncoder.encode(s,UTF_8),UTF_8) equals s",
+        "StringEscapeUtils.unescapeJava(StringEscapeUtils.escapeJava(s)) equals s"
+      ],
+      "sources": [
+        "Hughes, How to Specify It! (round-trip)",
+        "Claessen & Hughes, QuickCheck ICFP 2000"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "concat-length-homomorphism",
+      "input_kinds": [
+        "plain_text"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "len(a+b)=len(a)+len(b), measured in the SAME unit the function counts in.",
+      "condition": "Length measured in code units or bytes (additive under concatenation); concatenation triggers no normalization.",
+      "exceptions": "grapheme-cluster counting is NOT additive (base char + combining mark fuse); normalizing concat (NFC) can change code-point count. String.length() (UTF-16 code units) IS additive and safe.",
+      "examples": [
+        "(a+b).length() == a.length()+b.length() for java.lang.String (always true)",
+        "avoid asserting on BreakIterator grapheme counts"
+      ],
+      "sources": [
+        "monoid homomorphism law",
+        "Unicode TR#29 for the exception"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "concat-associativity-identity",
+      "input_kinds": [
+        "plain_text"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "(a+b)+c = a+(b+c), and a+\"\" = a = \"\"+a.",
+      "condition": "plain concatenation, no separator insertion, no normalization, no trimming.",
+      "exceptions": "join-style APIs that insert separators are NOT associative; builders that normalize.",
+      "examples": [
+        "((a+b)+c).equals(a+(b+c)) for String (universal)",
+        "\"\".concat(s).equals(s)"
+      ],
+      "sources": [
+        "free-monoid algebra of strings",
+        "Hughes (algebraic properties)"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "split-join-inverse",
+      "input_kinds": [
+        "plain_text"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "join(sep, split(s,sep)) = s.",
+      "condition": "sep is a fixed LITERAL (not regex), occurs, and the split does NOT discard trailing empties and does NOT limit splits. Only sound if docs guarantee empties preserved.",
+      "exceptions": "BIGGEST false-accusation source in string testing: Java String.split(regex) drops TRAILING empties and takes a REGEX; StringUtils.split collapses adjacent separators. Use split(regex,-1) and Pattern.quote for literal delimiters.",
+      "examples": [
+        "SOUND: String.join(\",\", \"a,b,c\".split(\",\")).equals(\"a,b,c\")",
+        "UNSOUND to flag: \"a,b,,\".split(\",\") -> [a,b] loses fields - documented Java behavior"
+      ],
+      "sources": [
+        "Java String.split Javadoc",
+        "Hughes (split/join with precondition)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "reverse-involution",
+      "input_kinds": [
+        "plain_text",
+        "collection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "reverse(reverse(s))=s, and reverse(a+b)=reverse(b)+reverse(a) (anti-homomorphism).",
+      "condition": "Reversal operates on a unit the double-reverse restores exactly. Code-unit reversal is self-inverse. Assert anti-homomorphism at code-unit level only.",
+      "exceptions": "reversing UTF-16 code units splits surrogate pairs mid-way (double-reverse still restores s, but single reverse is grapheme-wrong); combining marks migrate. Involution is safe even when single reverse is 'wrong'.",
+      "examples": [
+        "new StringBuilder(s).reverse().reverse().toString().equals(s) (universal)",
+        "StringUtils.reverse(StringUtils.reverse(s)).equals(s)"
+      ],
+      "sources": [
+        "involution algebra",
+        "commons-lang StringUtils.reverse Javadoc"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "case-insensitive-search-invariance",
+      "input_kinds": [
+        "plain_text",
+        "query_or_filter"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "A case-insensitive search/compare is invariant to changing the case of query or text.",
+      "condition": "The op is documented case-insensitive AND case mapping is consistent (same locale both sides). Sound as a metamorphic relation (compare two runs) without an oracle for the boolean.",
+      "exceptions": "Locale case folding: Turkish dotless-i, German ss (length-CHANGING), Greek final sigma. toLowerCase/toUpperCase without explicit Locale use default. Case transforms are NOT length-preserving nor always round-trippable.",
+      "examples": [
+        "StringUtils.containsIgnoreCase(\"Hello World\",\"WORLD\") == containsIgnoreCase(\"HELLO WORLD\",\"world\")",
+        "avoid: s.toUpperCase().length()==s.length() (false for ss)"
+      ],
+      "sources": [
+        "Zhou/Xiang/Chen TSE 2016 (search MRs)",
+        "Unicode TR#21; Java toLowerCase(Locale) Javadoc"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "query-refinement-subset-text",
+      "input_kinds": [
+        "query_or_filter",
+        "plain_text"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "A more restrictive search/filter yields a subset; appending text to a haystack cannot remove an already-present match.",
+      "condition": "The added constraint is a pure conjunction/restriction, ranking/pagination held constant, search deterministic. Containment: if t.contains(x) then (t+anything).contains(x).",
+      "exceptions": "fuzzy/ranked search where a longer query re-scores (autocomplete, stemming); pagination truncation; stop-word removal; countMatches overlap policy.",
+      "examples": [
+        "if StringUtils.contains(t,x) then StringUtils.contains(t+suffix,x) (universal for exact substring)",
+        "results('open source license') subset results('license') for exact-match"
+      ],
+      "sources": [
+        "Zhou/Xiang/Chen TSE 2016",
+        "Segura et al. MET 2019 (inclusive MRP)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "replace-count-consistency",
+      "input_kinds": [
+        "plain_text"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "After r=replace(s,a,b) (all occurrences, a non-empty, b not containing a): countMatches(r,a)=0 and len(r)=len(s)+countMatches(s,a)*(len(b)-len(a)).",
+      "condition": "Literal (non-regex) replacement of all non-overlapping occurrences; b does not contain a; non-overlapping match semantics agreed between replace and countMatches.",
+      "exceptions": "regex replace with $/backreferences; b containing a (replace a->aa cascades); overlapping-match ambiguity; empty a; case-insensitive replace.",
+      "examples": [
+        "StringUtils.countMatches(StringUtils.replace(\"a.b.c\",\".\",\"_\"),\".\")==0",
+        "trap: \"aaa\".replace(\"a\",\"aa\") - condition b not-contains a violated"
+      ],
+      "sources": [
+        "derived algebraic invariant",
+        "Segura TSE 2016 (multiplicity MRs)"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "permutation-multiset-invariance-text",
+      "input_kinds": [
+        "plain_text",
+        "collection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Order-ignoring operations (sort, char-frequency, anagram, set-tokenization) are invariant under permutation of the input.",
+      "condition": "The op is order-insensitive by spec; comparison on the multiset/sorted form.",
+      "exceptions": "stable-sort tie-break observable via payload; locale collation; normalization merging code points; grapheme vs code-point for 'character frequency'.",
+      "examples": [
+        "sortChars(\"listen\").equals(sortChars(\"silent\"))",
+        "char histogram of s equals histogram of reverse(s)"
+      ],
+      "sources": [
+        "Segura et al. TSE 2016 (permutation MRs)",
+        "Zhou/Xiang/Chen 2016"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "trim-idempotence-invariance",
+      "input_kinds": [
+        "plain_text"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "trim(trim(s))=trim(s) (idempotent), and whitespace-ignoring ops are invariant to added leading/trailing whitespace.",
+      "condition": "The function is documented to strip/ignore whitespace and is idempotent. The invariance form requires docs to state whitespace is ignored.",
+      "exceptions": "String.trim() strips only <=U+0020, NOT Unicode whitespace (NBSP); strip() does. A patch moving trim->strip changes output legitimately. Significant-whitespace formats (YAML, Python).",
+      "examples": [
+        "s.trim().trim().equals(s.trim()) (universal idempotence)",
+        "trap: \"\\u00A0x\".trim() unchanged but strip() -> x"
+      ],
+      "sources": [
+        "Hughes (idempotence)",
+        "Java String.trim() vs strip() Javadoc"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "normalization-idempotence",
+      "input_kinds": [
+        "plain_text"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "A normalizer is idempotent: norm(norm(x))=norm(x); canonically-equivalent inputs normalize equal.",
+      "condition": "The function is documented as a canonicalizer/normalizer (Unicode NFC/NFD/NFKC/NFKD, path canonicalization, whitespace collapsing). Idempotence guaranteed by the Unicode spec.",
+      "exceptions": "NFC/NFD change length and code-point count (length equality UNSOUND); NFKC/NFKD are lossy; concat does not distribute over normalization at the seam.",
+      "examples": [
+        "Normalizer.normalize(Normalizer.normalize(s,NFC),NFC).equals(Normalizer.normalize(s,NFC))",
+        "normalize('e\\u0301',NFC).equals(normalize('\\u00E9',NFC))"
+      ],
+      "sources": [
+        "Unicode UAX #15",
+        "Segura TSE 2016; Hughes"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "escape-neutralization",
+      "input_kinds": [
+        "plain_text",
+        "encode_decode_pair"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "unescape(escape(x))=x, AND the escaped output embedded in its target grammar parses back to literal x (no injection).",
+      "condition": "Docs name a specific escaping scheme (HTML, XML, JSON, CSV, SQL-literal, regex-quote) and its matching unescaper. Round-trip only guaranteed encoder->decoder.",
+      "exceptions": "escapers are usually NOT idempotent (double-escaping & -> &amp; -> &amp;amp;) - never assert escaper idempotence; many-to-one decoding; context-sensitive escaping (HTML attr vs text vs URL vs JS).",
+      "examples": [
+        "StringEscapeUtils.unescapeHtml4(StringEscapeUtils.escapeHtml4(s)).equals(s)",
+        "trap: escapeHtml4(escapeHtml4(\"&\")) double-escapes"
+      ],
+      "sources": [
+        "Hughes (round-trip)",
+        "OWASP output-encoding; commons-text Javadoc"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "format-parse-locale-roundtrip",
+      "input_kinds": [
+        "encode_decode_pair",
+        "number",
+        "datetime"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "parse(format(x))=x for a formatter/parser pair with the SAME locale, pattern, and rounding.",
+      "condition": "Docs specify the format is reversible and both sides share locale + pattern + precision.",
+      "exceptions": "locale mismatch (, vs . decimal separator); rounding/precision loss (#.## drops digits); grouping separators; currency symbols; date formats without year/timezone; format(parse(s)) normalizes and is usually NOT identity.",
+      "examples": [
+        "NumberFormat.getInstance(US).parse(NumberFormat.getInstance(US).format(1234.5)).doubleValue()==1234.5",
+        "trap: format US then parse GERMANY -> wrong value"
+      ],
+      "sources": [
+        "Hughes (round-trip)",
+        "Java NumberFormat/DateTimeFormatter Javadoc"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "inclusive-monotonicity",
+      "input_kinds": [
+        "collection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Adding one element increases size by exactly one (bag) or zero-or-one (set), never decreases it, never removes a present element.",
+      "condition": "size before/after and membership of untouched elements both checkable. Bag (List): size +1. Set/keyed (Set/Map): +1 iff element absent, else equal.",
+      "exceptions": "bounded/capacity structures with eviction (LRU, ring buffers); Set.add returns false on duplicate; List.add(index,e) still +1.",
+      "examples": [
+        "set.add(x); assert set.contains(x) && set.size()==old+(wasAbsent?1:0)",
+        "list.add(x); assert list.size()==old+1"
+      ],
+      "sources": [
+        "Murphy et al. 2008 (inclusive)",
+        "Hughes (insert-then-find postcondition)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "exclusive-monotonicity",
+      "input_kinds": [
+        "collection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Removing an element decreases size by at most one, never introduces new elements; removed element absent (set) or count-1 (bag).",
+      "condition": "removal target present. Set: size-1 and !contains. Bag: exactly one occurrence removed (List.remove(Object) removes FIRST).",
+      "exceptions": "List.remove(Object) vs remove(int) overload ambiguity; removeAll removes every occurrence; removing absent element is a no-op.",
+      "examples": [
+        "set.remove(x); assert !set.contains(x)",
+        "list.remove(x); assert count(list,x)==oldCount-1 (bag)"
+      ],
+      "sources": [
+        "Murphy et al. 2008 (exclusive)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "read-only-noninterference",
+      "input_kinds": [
+        "collection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "A query documented as read-only leaves all observable state unchanged: size, capacity, contents, iteration order, internal position/capacity identical before and after.",
+      "condition": "The method is a pure accessor per contract (size, contains, get, peek, indexOf, charAt, length, capacity). Compare a deep snapshot before vs after.",
+      "exceptions": "documented lazy/caching accessors that legitimately mutate (access-order LinkedHashMap.get reorders BY CONTRACT - gate it out); iterators advancing position are not read-only.",
+      "examples": [
+        "int c=sb.capacity(); sb.charAt(3); assert sb.capacity()==c && sb.length()==len (a read-only StrBuilder query must not grow the buffer)",
+        "queue.peek(); assert queue.size()==old"
+      ],
+      "sources": [
+        "Command-Query Separation (Meyer)",
+        "Murphy et al. non-mutating-input relations"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "sibling-agreement",
+      "input_kinds": [
+        "collection",
+        "plain_text",
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Two API entry points documented to compute the same thing return equal results on the same input: overloads, convenience wrappers, default-argument forms.",
+      "condition": "The two methods are specified as equivalent (one delegates to / is a special case of the other). Identical arguments; assert equal outputs and equal resulting state.",
+      "exceptions": "overloads with genuinely different contracts (remove(int) vs remove(Object)); primitive-vs-boxed autoboxing; default charset/locale differences.",
+      "examples": [
+        "sb.append(x) equals sb.append(x,0,x.length())",
+        "Collections.sort(list) equals list.sort(null); String.indexOf(s) equals indexOf(s,0)"
+      ],
+      "sources": [
+        "metamorphic equivalent-computation pattern",
+        "Segura equivalence MRP"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "insert-commutativity",
+      "input_kinds": [
+        "collection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "For distinct keys/elements, insertion order does not affect the final container: insert(a);insert(b) == insert(b);insert(a).",
+      "condition": "DISTINCT keys and set/keyed semantics. Equality by abstraction (entrySet/toList canonicalized).",
+      "exceptions": "same-key collision -> last-write-wins makes order matter; LinkedHashMap/LinkedHashSet preserve insertion order so toList differs though key-set equal; Map.merge/putIfAbsent order-sensitive.",
+      "examples": [
+        "TreeMap: put(1,a),put(2,b) equals put(2,b),put(1,a)",
+        "trap: use equals() not iteration order for LinkedHashSet"
+      ],
+      "sources": [
+        "Hughes 2019 (insert-insert law)"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "collection-idempotence",
+      "input_kinds": [
+        "collection",
+        "plain_text",
+        "number",
+        "datetime"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Applying a documented normalizing operation twice equals once: sort(sort(xs))=sort(xs), distinct twice = once, trim twice = once.",
+      "condition": "The op is genuinely idempotent (sort, dedupe/distinct, Set construction, trim, canonical-format). NOT for accumulating ops.",
+      "exceptions": "unstable sort may reorder equal elements on the second pass (equal as bag, differing identity); locale case-folding edge cases.",
+      "examples": [
+        "sort(sort(xs)).equals(sort(xs))",
+        "new HashSet<>(new HashSet<>(xs)).equals(new HashSet<>(xs))"
+      ],
+      "sources": [
+        "QuickCheck/algebraic-law tradition; Hughes 2019"
+      ],
+      "priority": 3
+    },
+    {
+      "id": "identity-and-monoid-laws",
+      "input_kinds": [
+        "collection",
+        "plain_text",
+        "number"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Combining with the empty/identity element is a no-op, and combination is associative: concat(x,empty)=x, concat(concat(a,b),c)=concat(a,concat(b,c)).",
+      "condition": "The op forms a monoid (list concat, append, Set union, addAll, sum/product). Identity is []/\"\"/emptySet/0/1. Commutativity ONLY for set-union / abelian aggregation - NOT list concat or string append.",
+      "exceptions": "non-associative combiners (float sum); bounded capacity truncating on overflow; Set union commutes but list concat does not.",
+      "examples": [
+        "sb.append(\"\") leaves StrBuilder unchanged",
+        "union(union(a,b),c).equals(union(a,union(b,c))) for HashSet; trap: 'a'+'b' != 'b'+'a'"
+      ],
+      "sources": [
+        "QuickCheck/Haskell monoid-law tradition"
+      ],
+      "priority": 3
+    },
+    {
+      "id": "roundtrip-inverse-collection",
+      "input_kinds": [
+        "collection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "An operation followed by its inverse returns to the original (bag/value-wise): pop(push(s,e))=s, remove(add(c,x))~=c, reverse(reverse(xs))=xs.",
+      "condition": "A true inverse exists. Bag/value equality, not identity.",
+      "exceptions": "lossy operations (dedupe, toLowerCase have no inverse); capacity growth from push not undone by pop (compare contents, not capacity); add-then-remove of a duplicate in a set vs bag differs.",
+      "examples": [
+        "sb.insert(i,s); sb.delete(i,i+s.length()) -> original content",
+        "Collections.reverse(l); Collections.reverse(l) -> original"
+      ],
+      "sources": [
+        "Murphy et al. 2008 (invertive)",
+        "QuickCheck round-trip"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "model-agreement",
+      "input_kinds": [
+        "collection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "The result equals that computed by a trivially-correct reference model (linear scan / sorted association list) under an abstraction function.",
+      "condition": "A simpler obvious-correct oracle exists. Abstraction applied to BOTH sides (compare toList outputs, not internal layout). Model must match set-vs-bag semantics.",
+      "exceptions": "model must agree on the SAME semantic; ordering of toList for unordered structures canonicalized (sort) before comparison.",
+      "examples": [
+        "map.get(k) equals linear scan over assocList",
+        "Collections.binarySearch(sorted,k)>=0 iff linear contains(sorted,k)"
+      ],
+      "sources": [
+        "Hughes, How to Specify It! (model-based properties)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "subset-under-restrictive-filter",
+      "input_kinds": [
+        "collection",
+        "query_or_filter"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Strengthening a query with a conjunctive filter yields a subset (size non-increasing); relaxing with a disjunctive clause yields a superset.",
+      "condition": "DOCUMENTED filter/query semantics with no side effects. filter(p AND q) subset filter(p).",
+      "exceptions": "non-deterministic ordering/pagination limits; filters with side effects; short-circuit predicates that mutate; capacity-limited results.",
+      "examples": [
+        "xs.stream().filter(p.and(q)).toList() is a subsequence of filter(p).toList()",
+        "adding a WHERE clause returns a subset of rows"
+      ],
+      "sources": [
+        "Segura et al. MET 2019 (subset/conjunctive/disjunctive MRPs)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "cardinality-conservation",
+      "input_kinds": [
+        "collection",
+        "query_or_filter",
+        "number"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Partitioning and recombining conserves count: |filter(p)|+|filter(not p)|=|all|; size(a)+size(b)=size(concat(a,b)) for bags; |A union B|=|A|+|B|-|A intersect B| for sets.",
+      "condition": "Bag vs set is decisive: bag concat adds counts; set union uses inclusion-exclusion. Partition predicate total and side-effect-free.",
+      "exceptions": "overlapping partitions double-count; groupingBy key collision; set dedupe drops the additive law; capacity truncation.",
+      "examples": [
+        "Collectors.partitioningBy: matched.size()+unmatched.size()==total",
+        "set trap: setA.size()+setB.size() != union.size() when overlapping"
+      ],
+      "sources": [
+        "Segura et al. MET 2019 (cardinality MRP)",
+        "Murphy additive relations"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "documented-order-stability",
+      "input_kinds": [
+        "collection"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Operations documented to preserve an order actually preserve it: a stable sort keeps relative order of equal-key elements; LinkedHashMap preserves insertion order.",
+      "condition": "ONLY when the contract promises the order (the counterpart trap to permutation-invariance).",
+      "exceptions": "Arrays.sort(primitive[]) is NOT stable (dual-pivot quicksort); HashMap/HashSet promise no order; parallel streams may reorder.",
+      "examples": [
+        "Collections.sort(list,byKey) keeps prior relative order of equal-key records",
+        "trap: Arrays.sort(int[]) gives no stability guarantee"
+      ],
+      "sources": [
+        "JDK Collections.sort/List.sort stability contract"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "instant-zone-invariance",
+      "input_kinds": [
+        "datetime"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "The same physical instant rendered in two time zones represents the same timeline point: comparing them as instants yields equal; only wall-clock fields differ.",
+      "condition": "Comparison at the INSTANT (epoch-millis/Instant/UTC) level, not local-field. Type must be instant-carrying (DateTime, Instant, ZonedDateTime) - NOT a local/partial type.",
+      "exceptions": "LocalDateTime/LocalDate/Partial carry no zone so are legitimately unequal as instants (category error, not a bug); leap-second smearing; different tzdata versions disagree on historical offsets.",
+      "examples": [
+        "the same instant in America/New_York and Europe/London compares equal via isEqual",
+        "instant.atZone(z1).toInstant()==instant"
+      ],
+      "sources": [
+        "Joda-Time User Guide (Instant definition)",
+        "java.time Instant/ZonedDateTime design"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "parse-format-roundtrip-datetime",
+      "input_kinds": [
+        "datetime",
+        "encode_decode_pair"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Formatting a temporal value with formatter F and parsing back with the same F reproduces the original (parse(format(x))=x).",
+      "condition": "F must be LOSSLESS for the type (include every field: zone/offset for ZonedDateTime, fractional seconds) and use a fixed explicit Locale and zone.",
+      "exceptions": "locale-dependent formatting (month/day names, AM/PM); lossy patterns (dropping zone); zone abbreviations (EST) ambiguous; DST-overlap wall times; format(parse(s)) fails for non-canonical valid text.",
+      "examples": [
+        "LocalDateTime.parse(dt.toString()).equals(dt)",
+        "a pattern lacking an offset must NOT be asserted to round-trip a zoned value"
+      ],
+      "sources": [
+        "round-trip PBT pattern",
+        "Joda-Time User Guide formatting"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "duration-monotonic-advance",
+      "input_kinds": [
+        "datetime"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Adding a strictly positive EXACT duration (fixed nanos/millis) to an instant moves it strictly forward; x.plus(d) > x and x.plus(d).minus(d)=x.",
+      "condition": "Use a MACHINE-TIME duration (Joda/java.time Duration - fixed elapsed) applied to an INSTANT type. Distinguish from calendar amounts (Period, months/days).",
+      "exceptions": "TRAP: for zone-aware local-time arithmetic, adding a Period of '1 hour' across a DST gap/overlap does NOT add fixed elapsed time (spring-forward=23h, fall-back=25h) so wall-clock can appear non-monotonic; adding months/years is not reversible (Jan31+1month=Feb28); overflow at min/max instant; leap seconds.",
+      "examples": [
+        "instant.plus(Duration.standardHours(1)) is strictly after instant, always",
+        "across fall-back, localDateTime.plusHours(1) can repeat a wall time - legitimately"
+      ],
+      "sources": [
+        "Joda-Time User Guide (Period vs Duration)",
+        "Baeldung DST in Java"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "zone-conversion-preserves-ordering",
+      "input_kinds": [
+        "datetime"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Converting a set of instants into any common zone preserves their pairwise ordering and pairwise elapsed durations (Duration.between is zone-invariant at the instant level).",
+      "condition": "Comparison and duration computed on instants. All values converted to the same target zone (or kept as instants).",
+      "exceptions": "wall-clock FIELD differences are NOT preserved across a DST transition (two instants 1h apart can show same or 2h wall gap); assert instant arithmetic only.",
+      "examples": [
+        "if instant a<b in UTC then a<b viewed in Asia/Kolkata",
+        "Duration.between(a,b) identical regardless of display zone"
+      ],
+      "sources": [
+        "Joda-Time DateTimeZone semantics",
+        "MT invariant patterns"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "dst-gap-overlap-well-definedness",
+      "input_kinds": [
+        "datetime"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "A local wall time in a spring-forward GAP corresponds to no instant; a wall time in a fall-back OVERLAP corresponds to two; a correct patch handles these per the library's documented resolution policy, not by assuming a bijection.",
+      "condition": "Applies only to zone-aware construction from local fields. You must know the library's policy (Joda throws/adjusts; java.time ZonedDateTime.of shifts gap times forward).",
+      "exceptions": "THIS IS THE EXCEPTION SET for the other datetime relations: Joda throwing IllegalInstantException on a gap is CORRECT, not a regression; java.time pushing a gap time forward; overlap resolving to earlier offset by default.",
+      "examples": [
+        "constructing 02:30 on US spring-forward day in America/New_York is illegal/shifted - not a round-trip failure",
+        "01:30 on fall-back maps to two instants differing by the DST offset"
+      ],
+      "sources": [
+        "Joda-Time FAQ (Illegal instant)",
+        "Baeldung DST"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "leap-year-calendar-consistency",
+      "input_kinds": [
+        "datetime"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Feb 29 exists iff the year is a leap year (ISO/Gregorian rule); day-of-year has 366 in leap years; plusYears(n) on Feb 29 lands on Feb 28 in a non-leap target.",
+      "condition": "Use the chronology the value is expressed in (ISO/Gregorian, Julian differ). Leap SECONDS are separate and unsupported in Joda.",
+      "exceptions": "non-ISO chronologies (Julian pre-1582, Islamic) have different leap rules; Feb29+1year clamping to Feb28 is not reversible; Julian->Gregorian cutover dates.",
+      "examples": [
+        "new LocalDate(2000,2,29) valid; 2001-02-29 must be rejected",
+        "2020-02-29 plus 1 year equals 2021-02-28 (clamp, not invertible)"
+      ],
+      "sources": [
+        "Joda-Time FAQ (chronologies, leap seconds)"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "emi-dead-code-prune",
+      "input_kinds": [
+        "program_text"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "For a fixed input I, deleting statements that I never executes yields a program that produces identical output for that same I under a correct compiler; a mismatch signals miscompilation.",
+      "condition": "Deadness established by PROFILING the actual execution of I (coverage), not static analysis. Equivalence claimed only for input I. Program deterministic and free of undefined behavior.",
+      "exceptions": "UNDEFINED/unspecified behavior (uninitialized reads, signed overflow, strict-aliasing) voids the guarantee - the #1 EMI false positive; non-determinism; timing/__LINE__ reflective values; stack-layout perturbation of UB-dependent output.",
+      "examples": [
+        "EMI/Orion: pruning a branch input I never takes must not change I's output",
+        "removing an unexecuted loop body leaves the same result for the profiled input"
+      ],
+      "sources": [
+        "Le/Afshari/Su PLDI 2014 (EMI/Orion)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "emi-dead-region-insertion",
+      "input_kinds": [
+        "program_text"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Inserting syntactically valid code into a region unreachable under input I must not change I's output under a correct compiler.",
+      "condition": "Insertion site must be provably-under-profile dead for I, or guarded by a predicate false at runtime for I. Inserted code well-defined if ever reached.",
+      "exceptions": "if inserted code has side effects reachable under I (opaque predicate the optimizer folds), divergence is expected; UB inside inserted code; insertion changing code size shifting UB-sensitive behavior.",
+      "examples": [
+        "Athena: MCMC-guided insertion into dead blocks preserves I's behavior",
+        "wrapping junk in if(opaque_false){...} must not alter output"
+      ],
+      "sources": [
+        "Le/Sun/Su OOPSLA 2015 (Athena)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "emi-live-code-mutation",
+      "input_kinds": [
+        "program_text"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Mutating LIVE code in a value-preserving way (equivalence-preserving rewrites of executed statements) must not change I's observable output.",
+      "condition": "Each mutation must be semantically value-preserving on the live path (identity-net-effect statements, proven-equal expression replacement). Stronger precondition than dead-code because the code runs.",
+      "exceptions": "UB introduced by the rewrite; floating-point reassociation/contraction (FMA, -ffast-math) legitimately changing results; integer overflow in the rewritten expression; volatile/atomic ordering.",
+      "examples": [
+        "Hermes: injecting live statements that recompute and restore a variable's value preserves output",
+        "replacing x*2 with x+x on integers where no overflow occurs"
+      ],
+      "sources": [
+        "Sun/Le/Su OOPSLA 2016 (Hermes)"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "insignificant-whitespace-comment-invariance",
+      "input_kinds": [
+        "program_text"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Inserting insignificant whitespace or comments must not change the SEMANTIC result: same token stream (modulo trivia), same AST, same diagnostic SET by rule/category, same compiled behavior.",
+      "condition": "The trivia must be genuinely insignificant for that language and position: not inside a string/char literal, not splitting a token, and the language not whitespace/indentation-significant at that point.",
+      "exceptions": "CRITICAL: line-number/column/offset fields in diagnostics and AST node positions legitimately change with inserted newlines - compare diagnostic IDENTITY/COUNT, not positions; indentation-significant languages (Python, YAML, Haskell, Makefiles); minifiers, normalizing/style-preserving printers; preprocessor token-pasting.",
+      "examples": [
+        "inserting a /* comment */ between two statements must not change the number or category of diagnostics",
+        "a linter's warning COUNT is invariant to comments though warning line numbers shift"
+      ],
+      "sources": [
+        "lexical-analysis principle",
+        "consistent with EMI/GraphicsFuzz reducers"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "format-idempotence-parse-stability",
+      "input_kinds": [
+        "program_text"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "A code formatter is idempotent (fmt(fmt(x))=fmt(x)) and semantics-preserving: parse(fmt(x)) yields an AST equivalent to parse(x); for a parser, unparse(parse(s)) re-parses to an equivalent AST.",
+      "condition": "Formatter claims idempotence/stability. Equivalence at the SEMANTIC AST level (ignoring trivia/positions), not text identity.",
+      "exceptions": "style-preserving vs normalizing printers differ (a normalizer changes text on first pass but must be idempotent after); comment reflow may not be text-idempotent; trailing-comma/quote normalization changes bytes not semantics; version-upgrade non-idempotence expected.",
+      "examples": [
+        "gofmt/clang-format applied twice equals once",
+        "formatting must not change the program's runtime behavior (AST-equivalent)"
+      ],
+      "sources": [
+        "round-trip/idempotence PBT applied to compilers",
+        "EMI semantics-preservation lineage"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "filter-subset",
+      "input_kinds": [
+        "web_api",
+        "query_or_filter"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Adding a conjunctive filter never enlarges the result set (filtered output is a subset); adding a disjunctive OR term never shrinks it.",
+      "condition": "The added parameter is documented as a pure result filter (does not change ranking or the queried collection); both requests run against the same data snapshot and authorization scope.",
+      "exceptions": "pagination caps (compare full sets/totals, not one page); top-N ranking cutoff pushing a legitimate item out of view; eventual-consistency churn between calls; personalized/randomized ranking.",
+      "examples": [
+        "GET /items?status=open returns a subset of GET /items",
+        "adding a second keyword yields count(new) <= count(old)"
+      ],
+      "sources": [
+        "Segura et al. TSE 2018 (Subset MROP)",
+        "Segura et al. MET 2019 (conjunctive/disjunctive MRPs)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "ordering-equivalence",
+      "input_kinds": [
+        "web_api",
+        "query_or_filter"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Re-issuing a query with a different sort criterion returns the same SET of items (order aside).",
+      "condition": "The sort attribute is documented display-only and does not interact with a truncating limit; the full result set is compared (not one ranked page).",
+      "exceptions": "paginated/top-N responses where sorting changes which items land on page one; ties broken non-deterministically; a sort key that is also a filter.",
+      "examples": [
+        "search ordered by date vs by rating returns the same video set",
+        "GET /hotels?city=London sorted by price vs by score returns the same hotels"
+      ],
+      "sources": [
+        "Segura et al. TSE 2018 (Equivalence MROP)",
+        "Segura et al. MET 2019 (Shuffling MRP)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "default-parameter-equality",
+      "input_kinds": [
+        "web_api",
+        "query_or_filter"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Omitting a parameter with a documented default produces output IDENTICAL to explicitly passing that default; equivalently-expressed inputs (1MB == 1024KB) produce identical output.",
+      "condition": "The parameter's default is documented and stable; no other implicit context (time, personalization) differs.",
+      "exceptions": "server-side default varying by client/locale/experiment; non-deterministic default ordering; time-sensitive defaults.",
+      "examples": [
+        "search with no order equals search with order=relevance (the documented default)",
+        "search with no page size equals limit=20"
+      ],
+      "sources": [
+        "Segura et al. TSE 2018 (Equality MROP)",
+        "Segura et al. MET 2019 (Input equivalence MRP)"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "partition-disjoint",
+      "input_kinds": [
+        "web_api",
+        "query_or_filter"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Two queries differing only by mutually exclusive values of the same attribute return disjoint result sets.",
+      "condition": "The partitioning attribute is single-valued per item and its values are exclusive per the data model.",
+      "exceptions": "multi-valued attributes (an item legitimately in two categories); overlapping ranges; items re-classified between calls.",
+      "examples": [
+        "videoDimension=2d vs =3d return disjoint sets",
+        "GET /refunds?status=COMPLETED and status=CANCELLED share no items"
+      ],
+      "sources": [
+        "Segura et al. TSE 2018 (Disjoint MROP)",
+        "Segura et al. MET 2019 (Disjoint partitions MRP)"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "partition-complete",
+      "input_kinds": [
+        "web_api",
+        "query_or_filter"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "When an attribute's value domain fully partitions the data, the union of per-value follow-up outputs equals the unfiltered source output; optionally |S|=sum|Fi|.",
+      "condition": "The partition is both disjoint AND exhaustive - every item falls in exactly one bucket (no uncategorized residue).",
+      "exceptions": "items outside all named buckets (disjoint but not complete); pagination truncating a sub-query; data changing mid-sequence.",
+      "examples": [
+        "videoDuration short union medium union long = all videos for a keyword",
+        "orders filtered by each status value, unioned, equal all orders"
+      ],
+      "sources": [
+        "Segura et al. TSE 2018 (Complete MROP)",
+        "Segura et al. MET 2019 (Complete partitions MRP)"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "partition-difference",
+      "input_kinds": [
+        "web_api",
+        "query_or_filter"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "For a partitioning attribute, the source output minus the union of some value-buckets equals the union of the remaining buckets.",
+      "condition": "Disjoint + exhaustive domain; set difference computed on stable identifiers.",
+      "exceptions": "residual uncategorized items; pagination cutoffs; churn.",
+      "examples": [
+        "all testing videos minus long videos = medium union short videos",
+        "all orders minus (shipped union delivered) = pending union cancelled"
+      ],
+      "sources": [
+        "Segura et al. TSE 2018 (Difference MROP)",
+        "Segura et al. MET 2019 (Partition difference MRP)"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "broken-access-control",
+      "input_kinds": [
+        "security",
+        "web_api"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Replaying a request that reaches a protected resource, changed only so a user lacking that privilege (or another user's object id) issues it, must NOT return the same protected content - it must yield an error or a different output.",
+      "condition": "The system documents role/ownership-based authorization for that resource; the source action legitimately retrieved it; the URL is a real resource. Guard with cannotReachThroughGUI / userCanAccess preconditions (as SMRL does).",
+      "exceptions": "intentionally public/shared resources; an admin follow-up user who legitimately has access (exclude admins via a user precondition); resources identical for all users by design.",
+      "examples": [
+        "changing only the user id / object id in a URL must not grant access to another user's data (IDOR, CWE-286)",
+        "a link from an admin interface, requested by a non-admin, must return an error"
+      ],
+      "sources": [
+        "Bayati Chaleshtari et al. TSE 2023 (MST-wi/SMRL, pattern P1)",
+        "OWASP Authorization Testing"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "input-sanitization",
+      "input_kinds": [
+        "security"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Modifying only one parameter to contain a malicious payload must be neutralized (output equal to the benign case) OR lead to an error - the injected code's effect must never be observable.",
+      "condition": "The mutated field is user-controlled input reflected/stored by the system; the source action succeeded benignly; the oracle observes where the payload's effect would surface. Avoid actions whose normal output is already an error.",
+      "exceptions": "fields documented to accept raw markup (rich-text editors); benign inputs coincidentally matching the attack detector; response non-determinism unrelated to the payload.",
+      "examples": [
+        "inject <SCRIPT>alert('XSS')</SCRIPT> - must not execute (CWE-79)",
+        "concatenate ' OR '1'='1 into a field - must not alter query results (CWE-89)"
+      ],
+      "sources": [
+        "Bayati Chaleshtari et al. TSE 2023 (pattern P2)",
+        "OWASP Input Validation Testing"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "session-integrity",
+      "input_kinds": [
+        "security"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "After any authentication-state-changing action (login, sign-up) the session identifier must change; session tokens must not be reusable across the boundary.",
+      "condition": "The system documents session-based auth via cookies; the actions occur after a login boundary.",
+      "exceptions": "stateless (token-per-request) auth with no server session id; deliberate SSO flows preserving a session; documented long-lived 'remember me' sessions.",
+      "examples": [
+        "the session id after login must differ from the pre-login session id (session fixation, OWASP OTG-SESS-003)",
+        "session variables/cookies must not be reused after logout"
+      ],
+      "sources": [
+        "Bayati Chaleshtari et al. TSE 2023 (Fig.15)",
+        "OWASP Session Management Testing"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "workflow-precedence",
+      "input_kinds": [
+        "security",
+        "web_api"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Removing a mandatory prerequisite action from a source sequence and replaying the rest must fail - a later action must not succeed when a required earlier step was skipped.",
+      "condition": "The business logic documents an ordered precondition (step B requires step A); the source sequence executed A then B successfully.",
+      "exceptions": "steps documented as optional; idempotent re-entry points; prerequisite satisfiable out-of-band.",
+      "examples": [
+        "register->confirm email->login succeeds, but register->login (skipping confirmation) must be rejected (CWE-841)",
+        "checkout must not complete if payment-authorization is dropped"
+      ],
+      "sources": [
+        "Bayati Chaleshtari et al. TSE 2023 (CWE_841, subset-of-actions follow-ups)",
+        "OWASP Business Logic Testing"
+      ],
+      "priority": 2
+    },
+    {
+      "id": "secure-transport-cookie-attributes",
+      "input_kinds": [
+        "security"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Requesting a credential-bearing or session-setting endpoint over an unencrypted channel must not transmit credentials in cleartext and must set protective cookie attributes.",
+      "condition": "The system documents that authentication endpoints require HTTPS and that session cookies carry Secure/HttpOnly flags.",
+      "exceptions": "endpoints explicitly documented as public/non-authenticated; TLS-terminating proxies where the app legitimately sees HTTP internally (test at the edge).",
+      "examples": [
+        "login credentials must never be sent over an unencrypted channel",
+        "session cookies must carry Secure/HttpOnly attributes"
+      ],
+      "sources": [
+        "Bayati Chaleshtari et al. TSE 2023 (OWASP config/session mapping)",
+        "OWASP WSTG"
+      ],
+      "priority": 3
+    },
+    {
+      "id": "rate-and-lifetime-controls",
+      "input_kinds": [
+        "security"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Adding environment or repetition actions must trigger the documented control: N failed logins lock the account; a simulated time delay forces a password change; a state-changing POST without a valid anti-CSRF token is rejected.",
+      "condition": "The system documents a lockout threshold, password-aging window, usage cap, or CSRF-token requirement.",
+      "exceptions": "controls intentionally disabled in the tested config; accounts exempt from lockout (service accounts); a legitimate rate-limit response that itself looks like an error IS the expected outcome, not a failure.",
+      "examples": [
+        "advance the clock a year after login - the next action must prompt a credential change (CWE-262/263/309/324)",
+        "replay a state-changing request without the CSRF token - must be rejected"
+      ],
+      "sources": [
+        "Bayati Chaleshtari et al. TSE 2023 (Fig.16, added DelayAction)",
+        "OWASP Authentication/Business Logic Testing"
+      ],
+      "priority": 3
+    }
+  ]
+}

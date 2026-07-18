@@ -42,6 +42,10 @@ actually allowed to do differently.
 
 ## The pipeline in seven stations (referenced throughout this doc)
 
+(One "leg" = one candidate patch being judged, start to finish. A bug
+usually has two legs in our data: its correct patch and its overfit
+patch. Every leg passes through these seven stations.)
+
 1. **Setup** — apply the patch; prove the bug's test fails before it
    and passes after it.
 2. **Rule-writing** — a model reads the changed code, its docs and the
@@ -166,11 +170,15 @@ Closure-92-o → c62confirm added Closure-62-o = 10/16 at precision
 - Safety net (P0.1): the bug's trigger test must FAIL on buggy and
   PASS on patched before anything else runs; otherwise the leg is
   marked `bug_not_reproduced` / `bad_patch`, never silently scored.
-- *Quality audit (2026-07-18): quality solid — every failure mode here
-  was mechanical and is mechanically guarded. The one criticism: this
-  station's BYPRODUCTS are under-used — it produces the bug's real
-  failure message and the exact crashing inputs and throws both away
-  (H2 and JD1 in TO DO reuse them).*
+- *Quality check (2026-07-18): this station works well and needs no
+  fixing. One criticism: it LEARNS useful things and then throws them
+  away. When it runs the failing test on the buggy program, that run
+  produces (a) the test's failure message — which literally says which
+  value came out wrong and what it should have been — and (b) the
+  exact inputs that trigger the bug. Today neither is passed on to the
+  later stations. Two TO DO items reuse them: H2 passes the failure
+  message to the harness writer, JD1 passes the trigger inputs to the
+  patched-side fuzzing.*
 
 **Station 2 — Rule-writing.**
 - Direction grounding (P2.1): the failing test's source and expected
@@ -359,186 +367,85 @@ which is what J1 below measures.
 
 ## TO DO — by station, ordered by impact vs risk
 
-Global order (do top to bottom; each item names its target legs, the
-evidence, and the risk; items marked NEW come from the quality audit
-above):
+How this section is organised: the LIST below is ordered by what to
+do first — most expected benefit for least risk — so it deliberately
+jumps between stations. The DETAILED descriptions after the list are
+in station order (2, 3, 4/5, 6, 7, then things outside the pipeline).
+Every item has a short reference code in parentheses (H1, OBS, ACC1
+…); the code carries no meaning by itself — it only exists so other
+parts of the doc can point at the item. Items marked NEW come from the
+2026-07-18 quality check.
 
-1. **H1+H2+H3** — complete the test context, show the real failure
-   output, add the fidelity gate (stations 4/5)
-2. **R1** — compile-repair for rules (station 2)
-3. **JD1** (NEW) — seed the patched-side fuzz with the buggy-side
-   firing inputs (station 6; cheap, broad)
-4. **J1+J3** — measure the judge offline; show it the failing test
-   (station 7)
-5. **R2+R4+R-INH** — six rules with an anchor quota; input-kind
-   context + closed menu; inherited contracts (station 2; R-INH NEW)
-6. **H4+H5+H6** — observables list, sibling map, known-crash list
-   (station 4)
-7. **ACC1** (NEW) — isolated latent-check scan (station 5)
-8. **OBS** — observer code generation [P3.1's delivery] (station 4;
-   targets Math-53)
-9. **R3** — doc-poor pivot to passing-test extension (station 2;
-   targets Closure-33, Closure-92)
-10. **BND** — documented-boundary + numeric-literal corpus for
-    screening and replay (stations 3/6; targets Math-57)
-11. **RETRY** — check-kind checklist with one aimed retry (station 4)
-12. **P4.1** — compare-to-buggy (new stage; targets Chart-3) — gated
-    on an offline false-alarm measurement first
-13. **CRASH** — crash-neighbourhood value rules (stations 2/6; targets
-    Lang-27) — uncertain payoff
-14. **J2** — trusted-literal short-circuit (station 7) — parked behind
-    J1 and H3
-15. **T11** — one-hour initialization-order experiment for Time-11
-16. **P4.2 / P4.4** — offline certifier split + dataset growth
-    (offline; never mixed into a measured run)
-17. **Full30 confirm** of the accumulated changes → then **THE
-    HELD-OUT RUN** (spent once; the number that counts)
+Do in this order:
 
-### Stations 4/5 — Harness writing & acceptance
-
-*Quality audit (2026-07-18).* Station 4: a QUALITY problem,
-definitively not quantity — rerolls flip flaky legs but every extra
-harness is a false-alarm lottery ticket, and zero-FP was measured at
-n=3, so raw count is the wrong knob (RETRY is the aimed exception).
-The quality split is measured: scenario-rebuild fidelity (fix = the
-context items H1/H2 and the gate H3) and check diversity (fix = the
-aimed context H4/H5/H6 and OBS codegen). The inherited-contract gap
-(R-INH, station 2) applies here too: a hidden-state or sibling check
-justified by a parent interface's javadoc is currently unwritable
-because the writer never sees that javadoc. Station 5: solid except
-one real MEASUREMENT blind spot — the buggy-side scan stops at the
-first firing check per input, so a check behind an always-firing seed
-check is recorded LATENT, which means "unmeasured", not "quiet". That
-one blind spot drove errors in BOTH directions (the true Lang-60-o
-capacity catch looked latent and our first auto-dismissal killed it;
-the junk Lang-7-c hex check looked latent and the judge kept it). We
-compensate downstream with the buggy-replay fact; the honest fix is
-upstream — ACC1 below.
-
-**H1 — complete the test's context (the highest-value single fix; do
-first).** The problem, found by direct inspection of the prompts: the
-harness writer is shown ONLY the failing test's method body.
-Closure-62's test method calls `formatter("assert (1;")` — a helper
-defined elsewhere in the test class that performs exactly the setup
-harnesses keep rebuilding wrong (it wires the source-text provider) —
-and uses `FOO_TYPE`, a class constant. Neither appears anywhere in the
-prompt; the model must improvise the setup, and every setup-divergence
-failure follows from that. Observed cost so far: the two p23gate false
-alarms (Closure-62-c, Closure-73-c — lifted checks firing over missing
-source wiring / a trailing semicolon), two of the three Closure-62-o
-drops in full30/recov2 (judged setup-divergent — correctly!), and
-Chart-26's improvised entity wiring across at least 3 runs. The fix is
-mechanical: resolve the identifiers the test method uses against its
-test class and include what they refer to — setUp()/@Before methods,
-helper methods, class constants — plus the content of any fixture
-FILE the test references by a path-like string literal. Validate: the
-Closure-62 pair (the overfit side finally gets a faithfully-built
-scenario; the correct side stays clean) and Chart-26-c as guard. Risk:
-low — showing the true setup can only reduce improvisation; watch
-prompt size on big test classes.
-
-**H2 — show the real failure output (do together with H1).** Station 1
-already runs the failing test on the buggy build; its JUnit message
-("expected:<X> but was:<Y>") names the exact observable that diverges
-AND the wrong value the bug produces — and today we throw it away.
-Put it in the harness prompt. Cost ~zero (the run already happens).
-Risk: none identified.
-
-**H3 — mechanical setup-fidelity gate (needs H2).** At acceptance: a
-test-copy check firing on the buggy build must observe the SAME wrong
-value the real test observed there. A different observed value means
-the harness's scenario is NOT the test's scenario — reject with
-exactly that message into the existing repair loop. This converts "is
-this firing just setup divergence?" — today a judgment call made at
-station 7, fallibly — into a station-5 string comparison. Validate:
-the archived Closure-62-c false-alarm harness must be auto-rejected.
-Risk: low; normalize values that legitimately vary (whitespace — the
-same normalization station 4 now mandates).
-
-**H4 — list the touched class's cheap observables.** The raw material
-of hidden-state checks — the kind that convicts Lang-60 ("capacity
-went from 43 to 6 after a call documented as read-only") — is buried
-in a truncated class skeleton today. Mechanically list the public
-no-argument getters: "state you can read: capacity(), length(),
-size()". Risk: none. Feeds OBS.
-
-**H5 — list the sibling pairs.** Mechanically list same-name overloads
-and doc-identical method pairs of the touched class:
-"getPackageName(Class) and getPackageName(String) are documented to
-agree". Sibling-agreement checks convict Lang-41 — and in 2 of 7 runs
-the model did not notice the pair on its own and the leg missed.
-Risk: none.
-
-**H6 — tell the writer (and the judge) about known pre-existing
-crashes.** Acceptance and the latent scan already OBSERVE the generic
-crashes that live in the buggy build — e.g. the text-measuring crash
-behind every Chart-26 flag-pattern false alarm (observed in at least 4
-runs across the project's history). Collect their identities and state
-them in the harness prompt: "these exceptions exist on the buggy build
-and are NOT the bug — never convert them into an alarm"; give the
-same list to the judge. Kills that class at the source instead of at
-judgment. Risk: low — for crashing bugs, exclude the bug's OWN crash
-from the list.
-
-**OBS — observer code generation (P3.1's two check-shapes delivered as
-code, not advice). Targets Math-53.** Math-53's divergence (3 outputs)
-is invisible to `equals()` because commons-math defines all-NaN
-complex numbers as equal; only field-level reads (`getReal()` is NaN
-vs 4.0) can see it — which is why every run's NaN rules screened
-"silent" and the leg missed every time. Rather than asking the model
-to please read fields (advice — the same lossy channel that muted
-Phase 2), generate the observer block as CODE in the harness template:
-call every public no-argument getter before/after each API call,
-compare per-field with NaN-bitwise and tolerance semantics. Risk:
-medium — an observer with side effects would perturb the scenario
-(restrict to getters whose docs read as pure, and say so in the
-limitation notes).
-
-**RETRY — check-kind checklist, one aimed retry. Do NOT raise the
-blanket harness count.** After the harnesses are written, mechanically
-list which check KINDS are present (test-copies / rules /
-sibling-agreement / hidden-state — readable from check IDs and
-shapes); if an applicable kind is missing, spend ONE extra attempt
-asking for exactly the missing kind. The evidence cuts both ways on
-"more harnesses": rerolls DO flip flaky legs (minfix_w2's rerolls
-recovered Closure-33 and Lang-41 after w1 missed them), but every
-extra harness is also a false-alarm lottery ticket on the correct
-sibling — each false-alarm class this cycle arrived via ONE harness in
-ONE roll — and zero-false-alarms was measured at n=3. Risk:
-low-medium (kind detection is heuristic; keep it advisory).
-
-**ACC1 (NEW, from the quality audit) — isolated latent-check scan.**
-Fix the station-5 blind spot at its source: after the normal scan,
-take each harness's LATENT checks and rerun the buggy-side scan with
-the checks that fired DISABLED (mechanically commented out by their
-recorded IDs), so the shadowed checks actually execute on the buggy
-build. A latent check then becomes either "fires on buggy when
-reached" (the Lang-60 capacity case — its later patched-side firing is
-the classic overfit signature, symmetric evidence in hand) or "quiet
-on buggy even when reached" (the Lang-7 hex case — a first-ever firing
-on patched now carries REAL buggy-side evidence against it, not
-absence of evidence). Cost: one extra compile plus a short fuzz per
-harness that has latents — minutes of VM time, zero model calls.
-Risk: low — it only upgrades "unmeasured" to "measured"; the disabled
-variant never influences acceptance itself. Validate: rerun the
-archived Lang-60-o and Lang-7-c fixtures — the capacity check must
-measure as fires-on-buggy, the hex check as quiet-on-buggy.
+1. [Show the harness writer the WHOLE test](#show-the-harness-writer-the-whole-test-h1) — setup, helpers,
+   constants, fixture files (H1); [show it the real failure message](#show-the-real-failure-message-h2)
+   (H2); and [reject harnesses that rebuild the test wrong](#reject-harnesses-that-rebuild-the-test-wrong-h3) (H3).
+   Stations 4/5.
+2. [Let rules fix their own compile errors](#let-rules-fix-their-own-compile-errors-r1) (R1). Station 2.
+3. NEW: [reuse the bug-triggering inputs on the patched program](#reuse-the-bug-triggering-inputs-on-the-patched-program-jd1-new)
+   (JD1). Station 6. Cheap and broad.
+4. [Measure the judge offline on archived decisions](#measure-the-judge-offline-j1) (J1) and
+   [show the judge the failing test itself](#show-the-judge-the-failing-test-j3-new) (J3). Station 7.
+5. [Six rules with a variety requirement](#six-rules-with-a-variety-requirement-r2) (R2);
+   [name the input kind plus the fixed list of harmless variations](#name-the-input-kind-with-a-fixed-list-of-harmless-variations-r4)
+   (R4); NEW: [show the inherited interface documentation](#show-the-inherited-interface-documentation-r-inh-new)
+   (R-INH). Station 2.
+6. Hand the harness writer ready-made raw material:
+   [the list of readable state](#list-the-readable-state-h4) (H4),
+   [the list of look-alike methods](#list-the-look-alike-methods-h5) (H5),
+   [the list of known pre-existing crashes](#list-the-known-pre-existing-crashes-h6) (H6). Station 4.
+7. NEW: [a second buggy-side scan with the always-firing checks switched off](#second-scan-for-shadowed-checks-acc1-new)
+   (ACC1). Station 5.
+8. [Generate the state-observer checks as code](#generate-the-state-observer-checks-as-code-obs) (OBS).
+   Station 4; targets Math-53.
+9. [Doc-poor mode: build rules from the project's own passing tests](#doc-poor-mode-build-rules-from-passing-tests-r3)
+   (R3). Station 2; targets Closure-33 and Closure-92.
+10. [Better inputs for screening and replay: the test's numbers plus the documented limits](#better-inputs-the-tests-numbers-and-the-documented-limits-bnd)
+    (BND). Stations 3/6; targets Math-57.
+11. [One aimed extra harness attempt when a whole kind of check is missing](#one-aimed-extra-attempt-when-a-check-kind-is-missing-retry)
+    (RETRY). Station 4.
+12. [Compare the patch's behaviour to the buggy program's](#compare-the-patch-to-the-buggy-program-p41)
+    ("your change did nothing, yet the test passes") (P4.1). New
+    stage; targets Chart-3; only after an offline false-alarm
+    measurement.
+13. [Rules aimed at the crash's own inputs](#rules-aimed-at-the-crashs-own-inputs-crash), for bugs whose
+    only symptom is a crash (CRASH). Stations 2/6; targets Lang-27;
+    uncertain payoff.
+14. [Let a failing-test value bypass the judge](#let-a-failing-test-value-bypass-the-judge-j2) (J2). Station 7;
+    parked until J1 and H3 exist.
+15. [The one-hour initialization-order experiment for the thread bug](#the-one-hour-experiment-for-the-thread-bug-t11)
+    (T11).
+16. Offline tooling: [the certifier probe split](#offline-split-the-certifier-probe-machinery-p42) (P4.2) and
+    [labeling the 205 unlabeled patches](#offline-label-the-205-unlabeled-patch-files-p44) (P4.4). Never mixed
+    into a measured run.
+17. A full 30-leg confirm of everything accumulated → then
+    [THE HELD-OUT RUN](#the-final-held-out-run-final) (spent once; the number that counts).
 
 ### Station 2 — Rule-writing
 
-*Quality audit (2026-07-18): quality is CONTRACT-LIMITED, not
-model-limited.* Where docs are rich the model writes sound rules
-(rules-through-replay convicted 5 of 8 full30 catches); where docs are
-sparse it produces zero survivors (4 of 5 Closure rounds). So the
-model is not the bottleneck — its INPUT is. Quantity genuinely lacks
-on doc-rich legs (R2); context has two real gaps: inherited contracts
-(R-INH — the parent interface's javadoc, where Java convention puts
-the contract, is invisible today) and the input's kind (R4). And one
-principle for ALL context additions: never bulk-add codebase context —
-we have measured that indiscriminate prompt mass distracts (the
-p23gate crowding; the mined-54 experiment) — additions must be
-mechanically SELECTED (parent javadocs, input kind, sibling map),
-never "here is more of the repo".
+*Quality check (2026-07-18). The question asked: are the rules bad,
+too few, or starved of information?* The answer: the rule-writer is
+only as good as the documentation we feed it — the model itself is not
+the weak point. Where the code is well documented (the math and text
+libraries), the rules it writes are good enough that running them
+directly against the patched program produced 5 of our 8 catches in
+the last full run. Where the code is barely documented (the Closure
+compiler's internals), the same model produced ZERO usable rules in 4
+out of 5 attempts — there was simply no written contract to build
+rules from. Given that: yes, we are also short on QUANTITY for
+well-documented code (the same class produced completely different
+rule sets in different runs, proving more good rules exist than the
+four slots we ask for — item R2), and we are short on two pieces of
+INFORMATION: the documentation of the interface a method implements
+(where Java convention actually puts the promises — item R-INH), and a
+plain statement of what KIND of data the code consumes (item R4). One
+warning for all information additions: do not dump more of the
+codebase into the prompt wholesale. We have measured twice that piling
+material into a prompt makes the model perform worse, not better. Every
+addition must be a specific, mechanically-chosen piece (the parent
+interface's documentation, the input kind, the list of look-alike
+methods) — never "here is more of the repository".
 
 Grounding data (full30, 28 synthesizing legs): 4 candidates per leg,
 ~1.7 survive screening; 25 of ~112 candidates never compile — and
@@ -549,14 +456,18 @@ validates them); rules-through-replay contributed to 5 of the 8 full30
 catches. Doc-rich legs (Math/Lang/Time) keep 2–5 rules; Closure
 synthesis rounds ended with ZERO survivors in 4 of 5 cases.
 
-**R1 — compile-repair round (pure recovery; do first).** On a compile
+#### Let rules fix their own compile errors (R1)
+
+Pure recovery; do first. On a compile
 failure, feed the compiler's error plus the candidate back ONCE for a
 corrected version — exactly what the harness repair loop already does.
 Recovers up to ~22% of all candidates at one cheap call each.
 Validate: compile-death rate halves on a 4-leg micro-suite, survivor
 quality unchanged (screening still judges them). Risk: none.
 
-**R2 — six candidates with an ANCHOR-DIVERSITY quota.** Each rule
+#### Six rules with a variety requirement (R2)
+
+Each rule
 declares its anchor: (a) the changed method's documented
 contract/formula, (b) methods the failing test reads, (c)
 sibling-agreement between overloads, (d) domain-level transformation
@@ -568,36 +479,267 @@ runs produced disjoint 4-rule sets run to run — the contract holds
 them. Validate: doc-rich micro-pair (Math-53): anchor spread rises,
 no new false alarm. Risk: low.
 
-**R4 — name the input's KIND up front, and attach its fixed menu of
-harmless variations (feeds R2 and R3).** Two parts:
+#### Name the input kind, with a fixed list of harmless variations (R4)
+
+Feeds R2 and R3. Two parts:
+
 (a) *Input-kind as context, stated at the TOP of rule-writing.* Today
 the rule-writer sees code, docs and tests but nothing NAMES what kind
-of data the code consumes. It is mechanically readable from the entry
-point's signature (a String fed to a compiler = program text;
-int/double parameters = numbers; a List = a collection). Compute it
-and state it first: "the public entry points consume JavaScript source
-text." Knowing the kind changes which rules even make sense to
-propose — it belongs at the start of the context, not as an
-afterthought.
-(b) *The closed menu:* a short FIXED list written once into the
-pipeline's standing instructions — not generated per bug, not learned
-from this benchmark — one entry per broad input kind, each a
-universally-true harmless variation: program/markup text → inserting
-whitespace or a comment changes no meaning; parse/print pairs → print
-then re-parse returns the input; numbers → only invariances the docs
-state (scaling, translation); collections → order must not matter
-where the docs say order does not matter; formatters → the output
-must parse back to the input. "Closed" means the model may only PICK
-from this list when it needs a harmless variation, never invent its
-own — a freely-invented "harmless" change that is not actually
-harmless is exactly how unsound rules are born. The list sits on the
-same trust tier as "sorting twice = sorting once" (source #4 in the
-ranking above) and may only ever be extended with entries of that
-universality. If a task's input kind is not on the list, R4 simply
-contributes nothing for that task — no rule rather than a wrong rule.
-Risk: low.
+of data the code consumes. HOW THE KIND IS DETECTED (honest version —
+a signature gives the type, not the meaning): a three-tier hybrid.
+Tier 1, purely mechanical: type-shaped kinds read straight off
+signatures — numeric parameters = number, Collection/List/array =
+collection, a documented format*/parse* method pair = encode/decode
+pair. Tier 2, one CONSTRAINED classification call for the ambiguous
+cases (a String input could be program text, a query, or a person's
+name — no grep settles that): a dedicated model call with its own
+small fixed prompt — input: the entry-point signatures, class/package
+names, the first javadoc lines, and the failing test's call shape;
+required output: a SET of labels from the closed vocabulary (usually
+one, possibly several — a date formatter consumes numbers AND is a
+format/parse pair; empty set = unknown), plus one justification line
+per label for the log. The set stays auditable exactly like a single
+label — what matters is the closed vocabulary, not the count. Temperature 0;
+cached per BUG (both legs share the same buggy entry points, so the
+second leg reuses the label free); cost ~2k tokens against a leg's
+~50-100k. The labels are the ONLY thing that flows onward — they select
+fixed TEMPLATE sentences plus the matching menu entries, taken as the
+UNION over the detected kinds, deduplicated, prioritized by the kinds
+of the touched method's own parameters, and CAPPED at three entries
+(the measured injected-mass lesson applies to menu text like anything
+else), so
+the classifier has no channel to smuggle free-form advice; its worst
+failure is injecting the wrong FIXED text, which the entry's own
+APPLIES-ONLY-IF condition, screening, and the judge each defuse. This is a model
+used as a narrow detector (like the judge), not as an advice-follower
+— the forbidden thing remains putting the whole menu in the
+rule-writing prompt and letting the model pick mid-generation. Tier 3,
+the fail-safe: "unknown" injects nothing. Layered defense even against
+a wrong label: every entry carries its own APPLIES-ONLY-IF condition
+the rule-writer must verify against the docs, and the resulting rule
+still has to survive screening and the judge. The detected kind is
+then stated first in the context: "the public entry points consume
+JavaScript source text."
 
-**R-INH (NEW, from the quality audit) — include inherited contracts.**
+(b) *The closed menu:* a short FIXED list, one entry per broad input
+kind — not generated per bug, not composed per task. WHEN AND HOW IT
+IS ADDED: the pipeline's input-kind detection from part (a) picks the
+ONE entry matching the detected kind and injects it into the
+rule-writing instructions when that prompt is built (same for the
+harness writer). The model never sees the whole menu and never chooses
+a category itself — that would be advice plus a judgment call, the
+exact pattern this design avoids. If the detector matches no entry,
+nothing is injected (the fail-safe below). "Closed" means the model
+may only USE the injected variation, never invent its own: a
+freely-invented "harmless" change that is not actually harmless is
+exactly how unsound rules are born.
+WHERE THE ENTRIES COME FROM — and an admitted bias to correct: the
+five starting entries were written by looking at what our tasks
+consume, so their SELECTION is benchmark-flavoured even though each
+entry is a universal fact (this does not distort dev-vs-held-out
+comparisons — held-out is the same five projects — but it narrows
+usefulness beyond this benchmark). The fix before the menu is
+finalized: populate it from an INDEPENDENT source — the metamorphic-
+testing literature's published catalogs of standard relation patterns
+— imported wholesale, so our tasks merely activate a subset rather
+than dictate the list.
+Every entry has three mandatory fields — the variation, the CONDITION
+under which it applies (checkable from the task's own docs/grammar,
+never assumed), and its KNOWN EXCEPTIONS. The starting entries, with
+their conditions and exceptions spelled out:
+
+- *Program/markup text* — inserting spaces or comments changes no
+  meaning, CONDITION: the input language's grammar defines whitespace
+  and comments as insignificant (true for Java/JS/C-family; NOT true
+  for Python, YAML, Markdown — check, don't assume). KNOWN EXCEPTION,
+  demonstrated inside our own dev set: inserting a NEWLINE changes
+  line numbers, and outputs that report source positions (error
+  formatters — Closure-62's output literally contains "line 6")
+  legitimately change with them. So: insert only same-line spaces or
+  same-line comments when the asserted property could reference
+  positions, or assert only position-independent properties (counts,
+  kinds, semantic content of the output).
+- *Parse/print pairs* — print then re-parse must preserve the input,
+  CONDITION: at the level the documentation promises. Printers
+  legitimately normalize; assert semantic equivalence or the
+  documented normal form, never byte-for-byte identity unless the
+  docs promise that.
+- *Numbers* — only invariances the docs state (scaling, translation,
+  symmetry); no invented algebra.
+- *Collections* — order must not matter, CONDITION: only where the
+  docs say order does not matter.
+- *Formatters* — the output must parse back to the input, CONDITION: a
+  parser for the format exists in the library and the docs claim
+  compatibility.
+
+*DONE 2026-07-18: the menu is BUILT — not a five-item sketch but a
+full literature mine. Five parallel research passes (numerical, string,
+collections, datetime, program-text, web-API, security) produced 62
+relation families, consolidated into `src/java/variation_menu.json`
+(the operational menu) with the cited provenance in
+`suites/menu-candidates.md`. 38 are universal (hold for any correct
+implementation), 24 documented-property. Every entry carries a
+checkable soundness CONDITION and an EXCEPTIONS list (the false-alarm
+suppressors — e.g. Java split's trailing-empty drop, Turkish-i case
+folding, DST gap/overlap, EMI's undefined-behavior void, line-number
+shifts under inserted newlines). Coverage per detected kind: number 19,
+plain_text 15, collection 15, query_or_filter 10, datetime 8, web_api
+8, security 6, program_text 5, encode_decode_pair 4. The web-API and
+security families are REAL (SMRL's IDOR / injection / session /
+workflow / CSRF relations with their guard preconditions), not the
+deleted placeholder. The `variation_menu.py` loader injects per detected
+kind, universal-before-documented, priority-ranked, capped at 3. Key
+source anchors per domain:*
+- Segura et al., "A Survey on Metamorphic Testing" (IEEE TSE 2016) —
+  the field survey; its corpus of published relations across domains
+  is the primary import source.
+  https://eprints.whiterose.ac.uk/id/eprint/110335/1/segura16-tse.pdf
+- Chen et al., "Metamorphic Testing: A Review of Challenges and
+  Opportunities" (ACM Computing Surveys 2018).
+  https://dl.acm.org/doi/10.1145/3143561
+- Segura et al., "Metamorphic Relation Patterns for Query-Based
+  Systems" (MET 2019) — seven abstract relation patterns plus six
+  output patterns (equivalence, equality, subset, disjoint, complete,
+  difference).
+  https://personales.us.es/sergiosegura/files/papers/segura19-met.pdf
+- "Metamorphic Relation Generation: State of the Art and Research
+  Directions" (ACM TOSEM 2025) — recent overview incl. pattern
+  hierarchies that organize prior catalogs into one structure.
+  https://arxiv.org/pdf/2406.05397
+- Ying et al., "Metamorphic Relation Patterns for Metamorphic Testing,
+  Exploration and Robustness" (STVR 2025) — symmetry-based patterns as
+  reusable abstractions. https://onlinelibrary.wiley.com/doi/10.1002/stvr.70003
+- For the PROGRAM-TEXT entry specifically: Le, Afshari & Su, "Compiler
+  Validation via Equivalence Modulo Inputs" (PLDI 2014) — the
+  principled generalization of our whitespace/comment idea: variants
+  that mutate only code paths a given input never executes must not
+  change that input's output (the Orion/Athena/Hermes family found
+  140+ GCC/LLVM bugs this way).
+  https://www.vuminhle.com/pdf/pldi14-emi.pdf
+- For rule SHAPES beyond metamorphic: Hughes, "How to Specify It!" —
+  five property families (invariants, postconditions, metamorphic,
+  inductive, model-based) with round-trip guidance; measured: the
+  metamorphic and model-based families catch the most.
+  https://research.chalmers.se/publication/517894/file/517894_Fulltext.pdf
+- For the NUMBERS/COLLECTIONS entries: Murphy et al.'s six classes for
+  numeric and collection data (additive, multiplicative, permutative,
+  invertive, inclusive, exclusive), used and validated in Kanewala &
+  Bieman's scientific-software work.
+  https://onlinelibrary.wiley.com/doi/10.1002/stvr.1594 and the
+  fault-detection effectiveness study
+  https://arxiv.org/pdf/1904.07348
+
+(b-EXACT) *The precise mechanism — what decides which entries reach
+which leg, deterministic parts vs the one LLM call. This is the answer
+to "how do we choose".*
+
+STEP 1 — detect the input kind(s). DETERMINISTIC, no model, over the
+entry-point signatures we already extract (touched methods + the
+failing test's called methods). For every parameter and return type:
+- numeric type (int/long/double/float/BigInteger/BigDecimal and arrays
+  of them) -> emit `number`.
+- array, or a type whose simple name is in a fixed list
+  {List, Set, Map, Collection, Iterable, ...} -> emit `collection`.
+- type whose simple name is in a fixed date/time list {Date, Calendar,
+  Instant, LocalDate, LocalDateTime, ZonedDateTime, Duration, Period,
+  TimeZone, DateTime, DateTimeZone, ...} -> emit `datetime`.
+- two entry methods whose names match format-side
+  /(format|to|write|encode|serialize|print)/i and parse-side
+  /(parse|from|read|decode|deserialize|valueOf)/i over the same type ->
+  emit `encode_decode_pair`.
+- a String parameter with none of the above resolving it -> mark
+  STRING-AMBIGUOUS and go to step 2. (A String could be program text,
+  a query, or a person's name -- the TYPE cannot tell them apart, which
+  is the one place determinism genuinely cannot decide.)
+Everything except the String case is settled here with zero model
+calls.
+
+STEP 2 -- resolve the String-ambiguous case only. ONE LLM call,
+temperature 0, cached per (project,bug). Its fixed prompt contains:
+the entry-point signatures (names + types), the class and package
+name, the first ~500 chars of the class javadoc, and one or two
+example calls from the failing test. Its instruction: "these methods
+consume String input(s); reply with a JSON array of labels drawn ONLY
+from [program_text, plain_text, query_or_filter], or [] if unsure, one
+short reason each." The output is parsed and INTERSECTED with that
+closed set -- anything else, or [], contributes no string-kind (the
+fail-safe). The label(s) are the only thing that leaves this call: a
+narrow classifier used like the judge, never an advice channel.
+
+STEP 3 -- select the entries. DETERMINISTIC
+(variation_menu.entries_for_kinds): union of menu entries whose
+input_kinds intersect the detected kinds, deduplicated by id, ranked
+(status `menu` before `menu_optional`, then each entry's `priority`
+field so the strongest fit for the kind survives the cap), capped at 3
+to respect the measured injected-mass limit. Unknown/empty kind -> no
+entry (fail-safe).
+
+STEP 4 -- render and inject. DETERMINISTIC: each selected entry becomes
+its statement + its APPLIES-ONLY-IF condition + its DO-NOT-APPLY-TO
+exceptions + the one example matching the detected kind (never the
+statement alone). The detected kinds also produce a fixed TEMPLATE
+sentence stated at the top of the context ("The public entry points
+consume numeric values and date-time values") -- assembled from the
+labels by a lookup table, NOT written by any model.
+
+STEP 5 -- who checks each entry's CONDITION. The kind-match (steps 1-3)
+is deterministic and coarse: it says "a monotonicity rule is POSSIBLE
+for a number leg", not "this method has a monotone quantity". The
+fine check -- does the entry's condition actually hold here? -- is done
+by the RULE-WRITER model, which is handed the condition text and
+instructed to verify it against the shown docs and SKIP the entry if
+it does not hold. Backstops if the model gets it wrong: screening
+drops a rule that fires indiscriminately on the buggy build, and the
+judge drops an unsound one. So: coarse relevance = deterministic
+(kind); fine relevance = LLM-with-two-mechanical-backstops (condition).
+OPTIONAL future refinement (not built): a deterministic keyword
+pre-filter on the touched javadoc (e.g. drop `documented-monotonicity`
+unless the docs contain cumulative/sorted/non-decreasing/monotone)
+before the cap, to spend the 3 slots better -- a pure precision aid,
+never a soundness mechanism.
+
+(c) *Safeguards that keep the menu general (the anti-overfitting
+contract). When each applies: the first three are an EDIT-TIME
+checklist — they gate every addition or change to the menu; the next
+two are enforced BY THE PIPELINE at run time; the last is a one-time
+checkpoint at the held-out boundary.*
+- **Provenance rule (edit-time).** An entry may only be added with a written
+  justification citing a universal definition — a language grammar, a
+  mathematical identity, a documented API-contract category. "Because
+  it would catch bug X" is never a justification; an entry whose only
+  known use is one benchmark bug family does not belong.
+- **Independent-derivability test (edit-time).** Every entry must be one that a
+  competent test engineer with NO access to our benchmark would put on
+  the same list (all the starting entries are standard metamorphic-
+  testing practice). If an entry needs our bugs to be explained, it is
+  benchmark-shaped — reject it.
+- **Checkable condition (run-time, pipeline-enforced).** An entry applies only when its stated
+  condition is verifiable from the task's own artifacts (the language,
+  the docs, the signature) at the time of use. No condition, no use.
+- **Size discipline (edit-time), stated precisely.** What must stay
+  small is the number of distinct PATTERNS and, above all, the rule
+  that growth NEVER comes from our misses — a menu that grows an entry
+  per newly-missed bug is the overfitting smell in its purest form.
+  What MAY grow, from the literature only: the input KINDS each
+  pattern covers and worked examples across contexts (the 2026-07-18
+  expansion added idempotence and identity-element — both standard
+  QuickCheck-tradition properties, one of them literally this doc's
+  own trust-source-#4 example — plus datetime/plain-text kinds as new
+  coverage of EXISTING patterns). Prompt mass is controlled at
+  injection (at most 3 entries for the detected kinds), not by
+  starving the menu.
+- **Freeze before held-out (one-time checkpoint).** The menu is frozen before the held-out
+  run and may not be edited based on anything seen there — same
+  hygiene as prompts and thresholds (measurement rule 4).
+- **Fail-safe (run-time, pipeline-enforced).** If a task's input kind is not on the list, R4
+  contributes nothing for that task — no rule rather than a wrong
+  rule.
+
+The list sits on the same trust tier as "sorting twice = sorting once"
+(source #4 in the ranking above). Risk after these safeguards: low.
+
+#### Show the inherited interface documentation (R-INH, NEW)
+
 When a touched method implements or overrides an interface/superclass
 method, the contract usually lives on the PARENT's javadoc — classic
 Java style documents the interface, not each implementation — and
@@ -614,9 +756,9 @@ selected context, not bulk context; keep it to the direct parents.
 Validate: count rules citing inherited contracts on a Closure
 micro-pair; watch the false-alarm guards.
 
-**R3 — doc-density mode switch + passing-test extension (the doc-poor
-answer; medium risk; decisive targets Closure-33 and Closure-92).**
-Mechanically measure how much documentation the touched methods have
+#### Doc-poor mode: build rules from passing tests (R3)
+
+Medium risk; decisive targets Closure-33 and Closure-92. Mechanically measure how much documentation the touched methods have
 (javadoc characters per touched method — already extracted, so
 measuring is free). BELOW a threshold — the Closure situation, where
 4 of 5 synthesis rounds produced zero surviving rules — rule-writing
@@ -652,40 +794,28 @@ Closure-33-o (its winner becomes derivable-by-recipe instead of a
 lucky roll); Closure-92-o second target; Closure-62-c as the
 false-alarm guard.
 
-### Stations 3/6 — Screening inputs & judgment day
+### Station 3 — Rule screening
 
-*Quality audit (2026-07-18).* Station 3: the mechanism is fine; the
-INPUTS carry almost no signal — 76 of 78 surviving rules never fire on
-the 20,000 random inputs (random bytes essentially never reach a
-rule's violation region), so the fire-rate screening ranks by is
-mostly "silent vs silent" and all real signal comes from the
-trigger-literal replay. And that corpus currently contains ONLY QUOTED
-STRINGS from the failing test — Math-2's trigger values are NUMBERS
-(N=43130568, m=42976365, n=50) and never enter it, so numeric rules
-run their direction check blind (folded into BND below). More random
-runs would not fix an input problem. Station 6: replay is the
-healthiest component in the pipeline; the harness-side fuzz, however,
-wastes evidence it already owns — it starts from an EMPTY corpus
-although station 5 captured the exact inputs that fired on the buggy
-build (JD1 below).
+*Quality check (2026-07-18). The question asked: is 20,000 random
+tries the right amount, and are they the right tries?* The amount is
+fine; the TRIES are the weak point. Of the 78 rules that survived
+screening in the last full run, 76 never fired even once during their
+20,000 random tries — random inputs almost never wander into the
+narrow situations where a rule would object. So the number screening
+ranks rules by ("how often did it fire?") is usually zero-vs-zero and
+says little. The measurements that DO carry information are the runs
+on the failing test's own inputs. And there we found a hole: we
+collect those inputs by pulling the QUOTED TEXT out of the failing
+test — but for the Math-2 bug the important inputs are NUMBERS
+(a population of 43,130,568 and so on), and numbers are currently not
+collected at all, so rules about numeric behaviour get tested without
+the one set of inputs known to matter. Fix folded into item BND. More
+random tries would not help any of this — wrong-tries is not fixed by
+more-tries.
 
-**JD1 (NEW, from the quality audit) — seed the patched-side fuzz with
-the buggy-side firing inputs.** The inputs that actually fired checks
-on the buggy build (their crash artifacts are already saved at
-acceptance) are exactly the inputs most likely to still fire on an
-overfit that special-cased only the reported input — and today the
-patched-side fuzz rediscovers them by luck or not at all. Fix: pass
-the buggy-side artifact files as the seed corpus of the patched-side
-fuzz run. Within-run, firewall-clean, ~zero cost (the files exist; the
-fuzzer accepts a corpus directory). Risk: low; one care point — a seed
-that fires via a pre-existing generic crash will fire immediately on
-patched too, so the existing attribution/differential-replay guards
-must stay in the path (they do). Validate: on the archived flaky legs
-(Closure-33-o, Lang-41-o), the catch rate across repeats should rise;
-correct-side guards stay clean.
+#### Better inputs: the test's numbers and the documented limits (BND)
 
-**BND — documented-boundary + numeric-literal corpus for screening AND
-replay (targets Math-57; fixes the station-3 input gap).** Two parts:
+Targets Math-57; fixes the station-3 input gap. Two parts:
 (a) extract NUMERIC literals from the failing test alongside the
 quoted strings, so the direction check and the replay's deterministic
 tier can steer toward the trigger values (honest note: fuzzer inputs
@@ -703,8 +833,9 @@ the judge and never convicts alone at extreme magnitudes. Interplay
 with the station-4 fence: harness fuzzing stays capped; replay rules
 whose stated contract covers extremes may use them.
 
-**CRASH — crash-neighbourhood value rules (targets Lang-27; uncertain
-payoff — try after everything above).** The problem in plain words:
+#### Rules aimed at the crash's own inputs (CRASH)
+
+Targets Lang-27; uncertain payoff — try after everything above. The problem in plain words:
 for this bug the only trusted signal is "this input makes the program
 crash". The overfit wraps the code so it never crashes — anywhere.
 Nothing fires. And "did it return the RIGHT value instead?" has no
@@ -725,18 +856,215 @@ belong in `UNDETECTABLE.md` rather than on this backlog. Risk:
 medium-high — contracts are often silent near crash boundaries (that
 is why the code crashed there in the first place).
 
+### Stations 4/5 — Harness writing & acceptance
+
+*Quality check (2026-07-18). The question asked: is the problem that
+we write too FEW harnesses, or that the harnesses are not GOOD enough
+— and if quality, are we giving the writer the right information?*
+
+For station 4 the answer is clear: quality, not quantity. We measured
+both directions. Writing the same harnesses again in a new run does
+sometimes catch a bug the previous run missed (that is how Closure-33
+and Lang-41 came back) — but every additional harness is also one more
+chance for a wrong check to accuse a correct patch, and our
+zero-false-alarm result was measured with exactly three harnesses per
+leg. So simply writing more harnesses buys a little and risks a lot.
+The quality problems are two, both measured: (a) the harness rebuilds
+the failing test's situation slightly wrong, and that DIFFERENCE — not
+the patch — makes checks go off (fixed by giving the writer the
+missing information, items H1/H2, plus an automatic comparison, item
+H3); (b) which checks the writer invents varies run to run (helped by
+handing it ready-made raw material, items H4/H5/H6, and by generating
+the routine checks as code, item OBS). One more missing piece of
+information, shared with station 2: in Java the promised behaviour of
+a method is often written on the INTERFACE the class implements, not
+on the class itself — and the writer is never shown the interface's
+documentation (item R-INH).
+
+For station 5 the answer is: it works, with one real measurement gap.
+When we test which checks fire on the buggy program, the test run
+stops at the FIRST check that fires for each input. So a check that
+sits behind an always-firing check never gets a turn, and we record it
+as "never fired on buggy" — which really means "never got to run", not
+"stays quiet". This one gap caused mistakes in both directions: a
+GOOD check looked unexercised and an earlier version of our code threw
+its accusation away (that cost us the Lang-60 catch once), and a BAD
+check looked unexercised and the judge believed its first-ever firing
+(that caused the Lang-7 false alarm once). Item ACC1 closes the gap by
+re-running the test with the always-firing checks switched off, so the
+shadowed checks actually get their turn on the buggy program.
+
+#### Show the harness writer the whole test (H1)
+
+The highest-value single fix; do first. The problem, found by direct inspection of the prompts: the
+harness writer is shown ONLY the failing test's method body.
+Closure-62's test method calls `formatter("assert (1;")` — a helper
+defined elsewhere in the test class that performs exactly the setup
+harnesses keep rebuilding wrong (it wires the source-text provider) —
+and uses `FOO_TYPE`, a class constant. Neither appears anywhere in the
+prompt; the model must improvise the setup, and every setup-divergence
+failure follows from that. Observed cost so far: the two p23gate false
+alarms (Closure-62-c, Closure-73-c — lifted checks firing over missing
+source wiring / a trailing semicolon), two of the three Closure-62-o
+drops in full30/recov2 (judged setup-divergent — correctly!), and
+Chart-26's improvised entity wiring across at least 3 runs. The fix is
+mechanical: resolve the identifiers the test method uses against its
+test class and include what they refer to — setUp()/@Before methods,
+helper methods, class constants — plus the content of any fixture
+FILE the test references by a path-like string literal. Validate: the
+Closure-62 pair (the overfit side finally gets a faithfully-built
+scenario; the correct side stays clean) and Chart-26-c as guard. Risk:
+low — showing the true setup can only reduce improvisation; watch
+prompt size on big test classes.
+
+#### Show the real failure message (H2)
+
+Do together with H1. Station 1
+already runs the failing test on the buggy build; its JUnit message
+("expected:<X> but was:<Y>") names the exact observable that diverges
+AND the wrong value the bug produces — and today we throw it away.
+Put it in the harness prompt. Cost ~zero (the run already happens).
+Risk: none identified.
+
+#### Reject harnesses that rebuild the test wrong (H3)
+
+Needs H2. At acceptance: a
+test-copy check firing on the buggy build must observe the SAME wrong
+value the real test observed there. A different observed value means
+the harness's scenario is NOT the test's scenario — reject with
+exactly that message into the existing repair loop. This converts "is
+this firing just setup divergence?" — today a judgment call made at
+station 7, fallibly — into a station-5 string comparison. Validate:
+the archived Closure-62-c false-alarm harness must be auto-rejected.
+Risk: low; normalize values that legitimately vary (whitespace — the
+same normalization station 4 now mandates).
+
+#### List the readable state (H4)
+
+The raw material
+of hidden-state checks — the kind that convicts Lang-60 ("capacity
+went from 43 to 6 after a call documented as read-only") — is buried
+in a truncated class skeleton today. Mechanically list the public
+no-argument getters: "state you can read: capacity(), length(),
+size()". Risk: none. Feeds OBS.
+
+#### List the look-alike methods (H5)
+
+Mechanically list same-name overloads
+and doc-identical method pairs of the touched class:
+"getPackageName(Class) and getPackageName(String) are documented to
+agree". Sibling-agreement checks convict Lang-41 — and in 2 of 7 runs
+the model did not notice the pair on its own and the leg missed.
+Risk: none.
+
+#### List the known pre-existing crashes (H6)
+
+Acceptance and the latent scan already OBSERVE the generic
+crashes that live in the buggy build — e.g. the text-measuring crash
+behind every Chart-26 flag-pattern false alarm (observed in at least 4
+runs across the project's history). Collect their identities and state
+them in the harness prompt: "these exceptions exist on the buggy build
+and are NOT the bug — never convert them into an alarm"; give the
+same list to the judge. Kills that class at the source instead of at
+judgment. Risk: low — for crashing bugs, exclude the bug's OWN crash
+from the list.
+
+#### Generate the state-observer checks as code (OBS)
+
+The P3.1 check-shapes delivered as code, not advice; targets Math-53. Math-53's divergence (3 outputs)
+is invisible to `equals()` because commons-math defines all-NaN
+complex numbers as equal; only field-level reads (`getReal()` is NaN
+vs 4.0) can see it — which is why every run's NaN rules screened
+"silent" and the leg missed every time. Rather than asking the model
+to please read fields (advice — the same lossy channel that muted
+Phase 2), generate the observer block as CODE in the harness template:
+call every public no-argument getter before/after each API call,
+compare per-field with NaN-bitwise and tolerance semantics. Risk:
+medium — an observer with side effects would perturb the scenario
+(restrict to getters whose docs read as pure, and say so in the
+limitation notes).
+
+#### One aimed extra attempt when a check kind is missing (RETRY)
+
+Do NOT raise the blanket harness count. After the harnesses are written, mechanically
+list which check KINDS are present (test-copies / rules /
+sibling-agreement / hidden-state — readable from check IDs and
+shapes); if an applicable kind is missing, spend ONE extra attempt
+asking for exactly the missing kind. The evidence cuts both ways on
+"more harnesses": rerolls DO flip flaky legs (minfix_w2's rerolls
+recovered Closure-33 and Lang-41 after w1 missed them), but every
+extra harness is also a false-alarm lottery ticket on the correct
+sibling — each false-alarm class this cycle arrived via ONE harness in
+ONE roll — and zero-false-alarms was measured at n=3. Risk:
+low-medium (kind detection is heuristic; keep it advisory).
+
+#### Second scan for shadowed checks (ACC1, NEW)
+
+Fix the station-5 blind spot at its source: after the normal scan,
+take each harness's LATENT checks and rerun the buggy-side scan with
+the checks that fired DISABLED (mechanically commented out by their
+recorded IDs), so the shadowed checks actually execute on the buggy
+build. A latent check then becomes either "fires on buggy when
+reached" (the Lang-60 capacity case — its later patched-side firing is
+the classic overfit signature, symmetric evidence in hand) or "quiet
+on buggy even when reached" (the Lang-7 hex case — a first-ever firing
+on patched now carries REAL buggy-side evidence against it, not
+absence of evidence). Cost: one extra compile plus a short fuzz per
+harness that has latents — minutes of VM time, zero model calls.
+Risk: low — it only upgrades "unmeasured" to "measured"; the disabled
+variant never influences acceptance itself. Validate: rerun the
+archived Lang-60-o and Lang-7-c fixtures — the capacity check must
+measure as fires-on-buggy, the hex check as quiet-on-buggy.
+
+### Station 6 — Judgment day
+
+*Quality check (2026-07-18), continued.* Station 6 (running everything against the patched
+program): the newest part — running rules directly — is the healthiest
+piece of the whole pipeline. The older part — running the harnesses —
+wastes evidence we already hold: fuzzing on the patched program starts
+from scratch, even though station 5 saved the exact inputs that made
+checks fire on the buggy program, and those are precisely the inputs
+most worth trying first on the patched one (item JD1).
+
+#### Reuse the bug-triggering inputs on the patched program (JD1, NEW)
+
+The inputs that actually fired checks
+on the buggy build (their crash artifacts are already saved at
+acceptance) are exactly the inputs most likely to still fire on an
+overfit that special-cased only the reported input — and today the
+patched-side fuzz rediscovers them by luck or not at all. Fix: pass
+the buggy-side artifact files as the seed corpus of the patched-side
+fuzz run. Within-run, firewall-clean, ~zero cost (the files exist; the
+fuzzer accepts a corpus directory). Risk: low; one care point — a seed
+that fires via a pre-existing generic crash will fire immediately on
+patched too, so the existing attribution/differential-replay guards
+must stay in the path (they do). Validate: on the archived flaky legs
+(Closure-33-o, Lang-41-o), the catch rate across repeats should rise;
+correct-side guards stay clean.
+
 ### Station 7 — The judge
 
-*Quality audit (2026-07-18): quality is good WHEN a computed fact
-applies — every measured failure followed a missing fact, and every
-fact added killed its class. One cheap context omission remains: the
-judge is told the failing test's expected LITERALS but never shown the
-failing TEST ITSELF (J3 below). Whether more votes help is
-deliberately unresolved until J1 measures it — voting was only ever
-tested without the facts.*
+*Quality check (2026-07-18). The question asked: how often does the
+judge get it wrong, and does it have what it needs?* The pattern from
+this whole cycle: whenever we HAND the judge a hard, machine-computed
+fact about the accusation ("this same check also fired on the buggy
+program", "the real test passes on this patched program", "this
+exception is not one of the harness's own checks"), it decides
+correctly almost every time — and every class of wrong decision we
+found was fixed by adding exactly one such fact. When no fact applies,
+the verdict rests on one model opinion, and that is where the
+remaining wrong decisions live. Two things follow. First, a cheap
+information gap: the judge is told the VALUES the failing test expects
+but is never shown the failing test itself — seeing the actual test
+line would have prevented at least one wrong dismissal (item J3).
+Second, we honestly do not know whether asking the judge several times
+and taking a majority would help, because that was only ever measured
+BEFORE the facts existed — item J1 measures it properly, offline, on
+archived decisions where we know the right answer.*
 
-**J3 (NEW, from the quality audit) — show the judge the failing
-test.** In the Closure-62 backwards judgment the judge weighed the
+#### Show the judge the failing test (J3, NEW)
+
+In the Closure-62 backwards judgment the judge weighed the
 buggy guard code against a bare literal; the test's own source
 (assertEquals with the caret string, on an error placed at
 end-of-line) would have made the trust hierarchy concrete instead of
@@ -746,8 +1074,9 @@ extracted for stations 2 and 4). Risk: low — it is trust-source #1;
 the one care point is prompt length on multi-test bugs (include the
 test the fired check lifts, not all of them).
 
-**J1 — measure the judge offline before tuning it (zero pipeline
-risk, highest information-per-token; do early).** This cycle's
+#### Measure the judge offline (J1)
+
+Zero pipeline risk, highest information per effort; do early. This cycle's
 forensics named, for dozens of archived keep/drop decisions, what the
 RIGHT decision was — runs-archive holds them all. Replay those
 decisions through the existing `verifier_replay` tool under different
@@ -757,8 +1086,9 @@ computed fact — and MEASURE keep-error and drop-error rates. The old
 deserves re-measurement WITH them. Whatever measurably wins becomes
 the configuration.
 
-**J2 — trusted-literal short-circuit (parked behind J1 and H3).**
-Where an accusation's expected value is literally one the failing test
+#### Let a failing-test value bypass the judge (J2)
+
+Parked behind J1 and H3. Where an accusation's expected value is literally one the failing test
 asserts, bypass the judge — the test outranks it. Tempting, but the
 Closure-62-c false alarms were EXACTLY such values fired from a
 badly-rebuilt scenario; with H3's fidelity gate in place this becomes
@@ -767,9 +1097,9 @@ link on precisely these.
 
 ### New stage / offline / last
 
-**P4.1 — compare the patch to the BUGGY build (targets Chart-3;
-impactful, but unmeasured false-alarm risk — measure offline first).**
-Chart-3's overfit passes the faithful test scenario by construction
+#### Compare the patch to the buggy program (P4.1)
+
+Targets Chart-3; impactful but with unmeasured false-alarm risk — measure offline first. Chart-3's overfit passes the faithful test scenario by construction
 and its generalized checks stay latent; it has missed 4 consecutive
 runs and its baseline "catch" was a loose reconstruction that
 happened to fire. Its signature is exactly P4.1's: "the edited region
@@ -782,15 +1112,18 @@ patches and measure the false-flag rate. Ship only with a measured
 rate near zero, and initially as an ESCALATION trigger (spend the
 aimed retry on flagged legs) rather than a verdict.
 
-**T11 — one-hour experiment before declaring Time-11 permanent
-forever.** The untrustworthy part of thread bugs is TIMING; if this
+#### The one-hour experiment for the thread bug (T11)
+
+The untrustworthy part of thread bugs is TIMING; if this
 bug is really about initialization ORDER (which class got set up
 first), order can be forced deterministically: run twice in separate
 processes with a different forced first-touch order and compare.
 Unvetted; may not match the defect's actual shape; explicitly not in
 the plan until someone spends the hour.
 
-**P4.2 — probe machinery split (offline certifier).** The model only
+#### Offline: split the certifier probe machinery (P4.2)
+
+The model only
 constructs interesting objects and call sequences; a fixed piece of
 our code enumerates and prints every public observable before/after
 each step. Known validation: the five wrongly-cleared patches
@@ -798,13 +1131,16 @@ each step. Known validation: the five wrongly-cleared patches
 "difference found" with NO prompt changes. Offline tooling — never
 mixed into a measured run.
 
-**P4.4 — certifier-label the 205 unlabeled patch files** (dataset
-growth, not pipeline): one file per (bug, tool) first; "difference
+#### Offline: label the 205 unlabeled patch files (P4.4)
+
+Dataset growth, not the pipeline: one file per (bug, tool) first; "difference
 found" verdicts trustworthy directly; "no difference" only after the
 deep-dive protocol; manual spot-check before anything enters the
 pinned set.
 
-**FINAL — the held-out run.** After the above stabilize and one more
+#### The final held-out run (FINAL)
+
+After the above stabilize and one more
 full30 confirms the accumulated changes: run the 71 held-out legs
 ONCE, flagship model. Targets fixed in advance (no goalpost-moving):
 at least 70% of the 28 held-out overfits caught, at most 1 false
