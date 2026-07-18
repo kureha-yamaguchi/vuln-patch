@@ -629,6 +629,17 @@ source anchors per domain:*
   fault-detection effectiveness study
   https://arxiv.org/pdf/1904.07348
 
+(b-SAFETY, added 2026-07-18 per review) *Detection is ADVISORY for
+relation selection ONLY — it never constrains fuzzing.* Detecting
+`number` does not stop the fuzzer feeding strings; input generation is
+untouched by the detected kind. The kind only picks which menu
+relations are OFFERED to the rule-writer as candidates, and every
+candidate is condition-checked, screened on the buggy build, and
+judged. A String that holds a number (createNumber) is still fuzzed
+with arbitrary strings. Worst case of a wrong kind: a less-relevant
+candidate in one of the 3 slots — never a narrowed input space, never
+a changed verdict.
+
 (b-EXACT) *The precise mechanism — what decides which entries reach
 which leg, deterministic parts vs the one LLM call. This is the answer
 to "how do we choose".*
@@ -1150,6 +1161,66 @@ would project to ~3 held-out false alarms against a budget of 1; the
 current measured rate is 0-in-13.
 
 ---
+
+## DIRECTION-CHANGING FINDING (2026-07-18): the menu covers only ~18% of
+## what the model freely invents — free exploration is the stronger engine
+
+Two experiments settled how much rule-writing should SUGGEST relations
+from the R4 menu vs let the model INVENT them from the code
+(study/rank_eval.py, study/coverage_eval.py; 25 diverse methods).
+
+**Ranking test.** Deterministic keyword ranking of menu entries agreed
+with a nano ranking only 1.26/3 and fell back to bad static defaults
+(trig injected for KMeans / Base64 / MessageDigest) in ~7/19 cases.
+Fixes applied (demote narrow number relations out of the default; add
+Complex/matrix types; add a nano content-aware selector with keyword
+fallback). But the next test undercut the premise.
+
+**Coverage test — the decisive one.** For 11 methods the flagship model
+FREELY invented metamorphic relations from the code alone (signature +
+javadoc + class), no menu shown; each was then mapped to a menu family
+or marked NOVEL. Result: **88 relations invented, 16 covered by the
+84-entry menu (18%), 72 NOVEL (82%)** — and the novel ones are BETTER:
+specific to the exact method's contract where the menu is generic.
+- Math-2: the model invented complement-symmetry (swapping
+  successes/failures complements the mean), all-successes, full-draw,
+  sample-linearity, population-scaling — the menu had only generic
+  "distribution-invariants". Complement-symmetry is the very shape that
+  convicts the -49.76 mean.
+- Lang-7: invented hex-case-invariance (literally the meta-hex-case
+  relation from the real runs), plus-sign, leading-zeros. Menu 0/8.
+- Closure-62: caret-column-correctness, no-excerpt-without-source-line
+  — the actual Closure-62 bug relations. Menu 0/8.
+- Lang-60: capacity-irrelevance (the read-only/capacity convictor),
+  empty-builder-false, indexOf-equivalence. Menu 2/8.
+
+**What it means (and it reconciles p23gate).** Free invention given the
+code is the stronger engine by ~5x and yields the more discriminating
+relations. That is exactly WHY injecting menu/pool rule-mass regressed
+p23gate — it displaced the model's own better free-form checks. So:
+- Relation synthesis stays PRIMARY and free; the model explores the
+  contract itself — that is where convicting relations come from.
+- The menu is NOT a relation source to inject wholesale. Two defensible
+  roles remain: (a) a small CATEGORY-CHECKLIST backstop — only when the
+  free output omits an applicable CATEGORY the model measurably forgets
+  (hidden-state/read-only, sibling-agreement), spend ONE targeted nudge
+  (the RETRY item), never a bulk list; (b) DOMAIN REFERENCE for kinds the
+  model may not know well (security SMRL, reflection JLS traps, geometry
+  degenerate-shape traps) — at most 1-2, only for the matching kind.
+- R4 is therefore DEMOTED from "inject relevant relations" to "category
+  checklist + domain reference". Keep the artifact (cheap; the soundness
+  conditions/exceptions are genuinely useful reference), but do NOT build
+  the pipeline around injecting it. Re-scope R4 to: (1) mechanically
+  detect whether free synthesis already emitted each applicable category
+  (from oracle shapes); (2) one targeted retry for a missing category;
+  (3) optionally show 1 domain relation for a security/reflection/
+  geometry leg. The input-kind detector + menu stay as the mechanism for
+  (3) only.
+- Caveat: the mapper was strict (marked capacity-irrelevance NOVEL though
+  it matches read-only), so true coverage is perhaps ~25%. Still low; the
+  conclusion stands. And the bigger reassurance for the whole project:
+  the existing FREE synthesis is doing the real work (rules-through-replay
+  convicted 5/8 in full30), consistent with this finding.
 
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 

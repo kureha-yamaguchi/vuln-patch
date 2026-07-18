@@ -1,0 +1,5 @@
+MODEL="gpt-5.4"
+COMMON="-n 1 -m 1 --fuzz_timeout 20 --synthesize_relations --rulegen_only"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
+)

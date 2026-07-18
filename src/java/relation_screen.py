@@ -162,7 +162,8 @@ def screen_relations(candidates: List,
                      trigger_literals: Optional[List[str]] = None,
                      runs: int = 20000,
                      timeout_seconds: int = 45,
-                     max_keep: int = 3) -> List:
+                     max_keep: int = 3,
+                     repair_fn=None) -> List:
     """Screen each candidate on the buggy build; return the survivors
     (ranked: selective-firing first, silent second), capped at `max_keep`
     so the prompt is never flooded. Each survivor's `screen_note` records
@@ -223,9 +224,30 @@ def screen_relations(candidates: List,
             continue
         if not build.compiled:
             reason = (build.stderr or '').strip().splitlines()
-            print(f"  [screen] {name}: does not compile — dropped"
-                  + (f" ({reason[0]})" if reason else ""))
-            continue
+            # R1: one repair attempt before giving up — a compile error is
+            # otherwise death, and ~22% of candidates die here, many on a
+            # fixable typo (wrong import/type/method) rather than a bad idea.
+            repaired = None
+            if repair_fn is not None:
+                repaired = repair_fn(rel, build.stderr or '')
+            if repaired:
+                try:
+                    rel.check = repaired
+                except Exception:
+                    pass
+                src = _screen_harness_source(package, imports or [], cls,
+                                             repaired)
+                try:
+                    build = builder.build(
+                        src, buggy_dir, output_subdir=f'relscreen_{i}r')
+                except Exception:
+                    build = None
+            if not build or not build.compiled:
+                print(f"  [screen] {name}: does not compile — dropped"
+                      + (" (repair failed)" if repair_fn is not None else "")
+                      + (f" ({reason[0]})" if reason else ""))
+                continue
+            print(f"  [screen] {name}: compile-repaired (R1)")
         # P0.2 canary: compile+run a variant FORCED to raise its alarm and
         # require the counting wrapper to register it. The lint above
         # proves the alarm escapes the check's own catches statically;

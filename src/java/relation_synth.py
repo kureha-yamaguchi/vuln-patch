@@ -138,6 +138,29 @@ _INSTRUCTIONS = (
     " input, check. No prose outside the JSON."
 )
 
+# R2 (toggled by synthesize(diverse6=True)): ask for 6 DIVERSE relations
+# instead of up to 4, spanning distinct angles so the extra slots are not
+# variants of the first idea. Injected right before the JSON-format line.
+_DIVERSE6_CLAUSE = (
+    "IMPORTANT — propose UP TO 6 relations, and they MUST BE DIVERSE, not"
+    " variations of one idea. Cover as many of these distinct ANGLES as"
+    " genuinely apply, AT MOST TWO from any single angle: (a) the"
+    " DOCUMENTED CONTRACT of the changed method (its javadoc guarantee or a"
+    " documented formula); (b) a method the FAILING TEST reads, even if the"
+    " patch edited elsewhere — the wrong value may surface there; (c)"
+    " SIBLING AGREEMENT — two methods documented to do the same job"
+    " (overloads taking char vs String, Class vs class-name, an is*/get*"
+    " pair) must agree on the same logical input; (d) a HIDDEN-STATE /"
+    " read-only check — after a call documented as a query (get*/is*/"
+    "contains/size/indexOf, no mention of mutating), the object's cheap"
+    " observable properties (size, length, capacity, later lookups) must be"
+    " unchanged; (e) a MODEL check — compare the result against a"
+    " trivially-correct reference computed a different way (a linear scan"
+    " for a lookup, the textbook formula for an aggregate). Six"
+    " near-identical checks are WORSE than three diverse ones — screening"
+    " keeps the diverse survivors and near-duplicates only waste slots.\n"
+)
+
 
 def _unflatten_check(check: str) -> str:
     """Recover a check the model double-escaped in its JSON. Sometimes the
@@ -213,7 +236,8 @@ class RelationSynthesizer:
                    class_context: Optional[List[str]] = None,
                    source_imports: Optional[List[str]] = None,
                    trigger_test_block: str = '',
-                   trigger_methods: Optional[List[str]] = None
+                   trigger_methods: Optional[List[str]] = None,
+                   diverse6: bool = False
                    ) -> List[Relation]:
         """Propose candidate relations for the patched method(s).
 
@@ -357,7 +381,12 @@ class RelationSynthesizer:
         if trigger_summary:
             ctx.append("The reported failure on the buggy code: "
                        + trigger_summary)
-        user = "\n".join(ctx) + "\n\n" + _INSTRUCTIONS
+        instr = _INSTRUCTIONS
+        if diverse6:
+            instr = instr.replace(
+                "Return ONLY a JSON array of objects",
+                _DIVERSE6_CLAUSE + "Return ONLY a JSON array of objects", 1)
+        user = "\n".join(ctx) + "\n\n" + instr
         messages = [
             {'role': 'system', 'content': _SYSTEM},
             {'role': 'user', 'content': user},
@@ -384,6 +413,38 @@ class RelationSynthesizer:
                     " input, check) — no prose, no fences."},
             ]
         return []
+
+    def repair_check(self, rel: 'Relation', javac_error: str,
+                     imports: Optional[List[str]] = None) -> Optional[str]:
+        """R1: given a candidate relation whose Java `check` failed to
+        compile, ask the model ONCE for a corrected check body. Returns the
+        corrected snippet or None. ~22% of candidates die at compile with no
+        second chance today; this recovers the ones that are a fixable typo
+        (wrong import, undeclared type, bad method name) rather than a
+        genuinely unimplementable idea."""
+        try:
+            avail = "\n".join((imports or [])[:40])
+            msg = [
+                {'role': 'system', 'content':
+                 "You fix a Java snippet that failed to compile. Return ONLY "
+                 "the corrected snippet (the body that runs inside "
+                 "fuzzerTestOneInput, drawing inputs from `data`), no prose, "
+                 "no fences. Keep the SAME property being checked; change only "
+                 "what is needed to compile. Throw the violation with "
+                 "`throw new RuntimeException(\"relation <name> violated: \"+"
+                 "...)` OUTSIDE any catch. Use only real API on the classpath."},
+                {'role': 'user', 'content':
+                 f"Property (keep it): {getattr(rel,'contract','')}\n"
+                 f"Available imports:\n{avail}\n\n"
+                 f"Snippet that failed:\n{getattr(rel,'check','')}\n\n"
+                 f"javac error:\n{javac_error[:600]}\n\nCorrected snippet:"},
+            ]
+            out = self._gen.generate(msg) or ""
+            # strip fences if the model added them despite instructions
+            out = re.sub(r'^```[a-z]*\n?|```$', '', out.strip(), flags=re.M)
+            return out.strip() or None
+        except Exception:
+            return None
 
     @staticmethod
     def _parse(out: str) -> List[Relation]:

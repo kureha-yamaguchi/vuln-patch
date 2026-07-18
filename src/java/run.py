@@ -166,6 +166,37 @@ def parse_args():
                              "Requires --synthesize_relations and "
                              "--verify_relations (replay never convicts "
                              "without the verifier).")
+    parser.add_argument("--synth_diverse", action="store_true",
+                        help="R2: ask synthesis for up to 6 DIVERSE relations "
+                             "(spanning contract / failing-test-neighborhood / "
+                             "sibling-agreement / hidden-state / model angles, "
+                             "<=2 per angle) instead of up to 4. Measured "
+                             "on/off in --rulegen_only mode.")
+    parser.add_argument("--screen_runs", type=int, default=20000,
+                        help="fuzz iterations per candidate during relation "
+                             "screening AND patched-side replay. Default "
+                             "20000. Drop to ~5000 for the cheap rule-gen "
+                             "iteration loop (faster, slightly noisier "
+                             "fire-ratio); keep 20000 for a measurement that "
+                             "is compared apples-to-apples.")
+    parser.add_argument("--rule_compile_repair", action="store_true",
+                        help="R1: on a rule candidate's compile failure, make "
+                             "ONE model call to fix it before dropping it "
+                             "(recovers fixable typos; ~22%% of candidates die "
+                             "at compile today). Measured on/off in "
+                             "--rulegen_only mode.")
+    parser.add_argument("--rulegen_only", action="store_true",
+                        help="RULE-GENERATION QUALITY MODE. Run synthesis + "
+                             "screening (on buggy) + replay (on THIS leg's "
+                             "patched build), emit the rule-gen metrics, and "
+                             "STOP before harness generation and the judge. "
+                             "The cheap iterate-on-rules loop: ~10-15k tokens "
+                             "vs ~50-100k for a full leg. Requires "
+                             "--synthesize_relations. Join a bug's -o and -c "
+                             "records offline: convict = a relation fires on "
+                             "the overfit-patch build and stays quiet on the "
+                             "correct one; false-fire = fires on the correct "
+                             "one.")
     parser.add_argument("--results_json", type=str, default=None,
                         metavar="PATH",
                         help="append a one-line JSON record describing this "
@@ -609,7 +640,8 @@ def main():
                 class_context=class_ctx,
                 source_imports=context.source_imports,
                 trigger_test_block=trigger_test_block,
-                trigger_methods=trigger_methods)
+                trigger_methods=trigger_methods,
+                diverse6=getattr(args, 'synth_diverse', False))
             if candidates:
                 print(f"  [synth] {len(candidates)} candidate relation(s) "
                       f"({synth_model}): "
@@ -746,6 +778,14 @@ def main():
                 # max_keep=8: the old cap of 3 sized the PROMPT; the prompt
                 # is now sliced separately (prompt_relations, ≤2 own-leg),
                 # so screening may keep more survivors for pool/replay use.
+                # R1 compile-repair: one model call to fix a candidate that
+                # fails to compile, before dropping it. On behind
+                # --rule_compile_repair so it can be measured on/off.
+                _repair = None
+                if getattr(args, 'rule_compile_repair', False):
+                    _imp = context.source_imports
+                    _repair = (lambda rel, err:
+                               synthesizer.repair_check(rel, err, imports=_imp))
                 synthesized_relations = screen_relations(
                     synthesized_relations,
                     builder=builder,
@@ -756,6 +796,8 @@ def main():
                     jazzer_api_jar=jazzer_api_jar,
                     trigger_literals=_trig_lits,
                     max_keep=8,
+                    repair_fn=_repair,
+                    runs=args.screen_runs,
                 )
             except Exception as exc:
                 print(f"  [screen] screening failed ({exc}) — dropping all "
@@ -792,6 +834,57 @@ def main():
                   "candidates rather than injecting unscreened")
             synthesized_relations = []
         record_extras["synth_survivors"] = len(synthesized_relations)
+
+    # RULE-GENERATION QUALITY MODE: replay the screened relations directly
+    # against THIS leg's patched build, record what fired, and stop before
+    # the expensive harness-generation + judge stages. Everything here
+    # reuses the exact synthesis/screen/replay the full pipeline uses — the
+    # only difference is we skip steps 6+. Metrics land in the record so an
+    # offline join of a bug's -o and -c legs gives convict-recall and
+    # false-fire per bug.
+    if args.rulegen_only:
+        replay_fired = []
+        if (synthesized_relations and jazzer_standalone_jar
+                and bug_kind == "semantic"):
+            try:
+                from relation_screen import replay_on_patched
+                _pdir = PatchedProjectBuilder().build_patched_dir(
+                    selection.buggy_dir, selection.patch_path)
+                _tl = []
+                for ft in failure_tests:
+                    if getattr(ft, 'method_source', None):
+                        _tl += re.findall(
+                            r'"((?:[^"\\]|\\.){1,120})"', ft.method_source)
+                _tl = [s for s in dict.fromkeys(_tl) if s.strip()][:32]
+                _f = replay_on_patched(
+                    synthesized_relations, builder=builder,
+                    patched_dir=_pdir,
+                    jazzer_standalone_jar=jazzer_standalone_jar,
+                    package=context.package, imports=context.source_imports,
+                    jazzer_api_jar=jazzer_api_jar, trigger_literals=_tl,
+                    runs=args.screen_runs)
+                replay_fired = [
+                    {'name': x['name'], 'tier': x['tier'],
+                     'note': x['note']} for x in _f]
+            except (PatchApplyError, TriggerVerificationError) as exc:
+                record_extras['rulegen_status'] = getattr(
+                    exc, 'status', 'bad_patch')
+            except Exception as exc:
+                record_extras['rulegen_status'] = f'replay_error: {exc}'
+        record_extras['rulegen_only'] = True
+        record_extras['relation_replay_fired'] = replay_fired
+        record_extras['screened_relation_names'] = [
+            getattr(r, 'name', '?') for r in (synthesized_relations or [])]
+        print(f"\n[rulegen] candidates={record_extras.get('synth_candidates',0)}"
+              f" survivors={len(synthesized_relations or [])}"
+              f" replay-fired={len(replay_fired)}: "
+              f"{[x['name'] for x in replay_fired]}")
+        _emit_record(args.results_json,
+                     label='correct' if args.correct else 'overfitting',
+                     status='rulegen_only', selection=selection,
+                     result=None, bug_kind=bug_kind, extras=record_extras)
+        _print_token_usage()
+        sys.exit(0)
 
     # Throwable names this bug raises, gathered from D4J root-cause metadata
     # and the captured runtime crash. Both fully-qualified and simple names
@@ -1630,6 +1723,7 @@ def main():
                 imports=context.source_imports,
                 jazzer_api_jar=jazzer_api_jar,
                 trigger_literals=_trig_lits_r,
+                runs=args.screen_runs,
             )
             record_extras['relation_replay_fired'] = [
                 {'name': f['name'], 'tier': f['tier'], 'note': f['note']}
