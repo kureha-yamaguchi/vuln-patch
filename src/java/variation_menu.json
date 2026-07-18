@@ -1,5 +1,5 @@
 {
-  "version": "2026-07-18.6",
+  "version": "2026-07-18.9",
   "frozen_for_heldout": false,
   "comment": "The R4 closed menu of harmless-variation / metamorphic relations, built by five parallel literature-mining passes (numerical, string/text, collections, datetime, program-text, web-API, security) and consolidated. Each entry: statement, SOUNDNESS CONDITION (checkable precondition), EXCEPTIONS (the false-alarm suppressors - load-bearing), 2 examples, sources. tier=universal holds for any correct implementation; tier=documented-property (status menu_documented) only holds when the spec asserts it. Governance per semantic-recall-brainstorm.md R4(c): entries added only with literature provenance, never from a benchmark miss; frozen before held-out; injection is deterministic by detected input kind, capped at 3, priority-ranked; the model never sees the whole menu. Full cited catalog in suites/menu-candidates.md.",
   "input_kind_vocabulary": [
@@ -11,7 +11,9 @@
     "query_or_filter",
     "encode_decode_pair",
     "web_api",
-    "security"
+    "security",
+    "type_or_reflection",
+    "geometry"
   ],
   "entries": [
     {
@@ -32,7 +34,17 @@
         "Chen/Cheung/Yiu HKUST-CS98-01 (1998), founding MT example",
         "Segura et al. TSE 2016"
       ],
-      "priority": 1
+      "priority": 6,
+      "keywords": [
+        "sin",
+        "cos",
+        "tan",
+        "angle",
+        "radian",
+        "trig",
+        "sinh",
+        "cosh"
+      ]
     },
     {
       "id": "odd-even-symmetry",
@@ -52,7 +64,19 @@
         "Chen/Cheung/Yiu 1998",
         "Kanewala & Bieman symmetry MR class"
       ],
-      "priority": 1
+      "priority": 6,
+      "keywords": [
+        "sin",
+        "cos",
+        "tan",
+        "abs",
+        "erf",
+        "atan",
+        "sinh",
+        "cosh",
+        "negate",
+        "symmetr"
+      ]
     },
     {
       "id": "inverse-roundtrip-numeric",
@@ -72,7 +96,18 @@
         "Murphy/Kaiser/Hu SEKE 2008 (invertive)",
         "Segura et al. TSE 2016"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "inverse",
+        "log",
+        "exp",
+        "sqrt",
+        "asin",
+        "acos",
+        "atan",
+        "cumulative",
+        "quantile"
+      ]
     },
     {
       "id": "cdf-monotonicity",
@@ -92,7 +127,17 @@
         "Segura et al. TSE 2016 (ordering MRs)",
         "Kanewala & Bieman (increasing/decreasing class)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "cumulative",
+        "distribution",
+        "probability",
+        "cdf",
+        "monoton",
+        "sorted",
+        "rank",
+        "percentile"
+      ]
     },
     {
       "id": "distribution-invariants",
@@ -112,7 +157,18 @@
         "Segura et al. TSE 2016",
         "Guderlei & Mayer, Statistical Metamorphic Testing (2007)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "distribution",
+        "probability",
+        "density",
+        "cumulative",
+        "sample",
+        "pmf",
+        "pdf",
+        "variance",
+        "mean"
+      ]
     },
     {
       "id": "location-scale-transform",
@@ -132,7 +188,17 @@
         "Murphy/Kaiser/Hu 2008 (additive & multiplicative)",
         "Kanewala & Bieman"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "mean",
+        "variance",
+        "std",
+        "deviation",
+        "average",
+        "sum",
+        "statistic",
+        "moment"
+      ]
     },
     {
       "id": "permutation-invariance-numeric",
@@ -153,7 +219,18 @@
         "Murphy/Kaiser/Hu 2008 (permutative)",
         "Kanewala & Bieman"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "sum",
+        "mean",
+        "variance",
+        "max",
+        "min",
+        "gcd",
+        "aggregate",
+        "statistic",
+        "sample"
+      ]
     },
     {
       "id": "determinant-laws",
@@ -173,7 +250,12 @@
         "Mayer & Guderlei COMPSAC 2006 (16 determinant MRs)",
         "Segura et al. TSE 2016"
       ],
-      "priority": 2
+      "priority": 6,
+      "keywords": [
+        "determinant",
+        "matrix",
+        "det"
+      ]
     },
     {
       "id": "matrix-algebraic-identities",
@@ -193,7 +275,14 @@
         "Mayer & Guderlei 2006",
         "Kanewala & Bieman"
       ],
-      "priority": 2
+      "priority": 6,
+      "keywords": [
+        "matrix",
+        "transpose",
+        "inverse",
+        "multiply",
+        "identity"
+      ]
     },
     {
       "id": "special-function-identities",
@@ -213,7 +302,15 @@
         "Chen/Cheung/Yiu 1998",
         "Kanewala & Bieman (48 numerical functions)"
       ],
-      "priority": 1
+      "priority": 6,
+      "keywords": [
+        "exp",
+        "log",
+        "gamma",
+        "beta",
+        "factorial",
+        "logGamma"
+      ]
     },
     {
       "id": "complex-arithmetic-laws",
@@ -233,7 +330,15 @@
         "Kanewala & Bieman",
         "Segura et al. TSE 2016 (complex-number MRs)"
       ],
-      "priority": 2
+      "priority": 6,
+      "keywords": [
+        "complex",
+        "conjugate",
+        "imaginary",
+        "real",
+        "abs",
+        "argument"
+      ]
     },
     {
       "id": "number-theory-combinatorics",
@@ -253,7 +358,15 @@
         "Kanewala & Bieman",
         "Murphy/Kaiser/Hu 2008"
       ],
-      "priority": 1
+      "priority": 6,
+      "keywords": [
+        "gcd",
+        "lcm",
+        "binomial",
+        "factorial",
+        "combinator",
+        "prime"
+      ]
     },
     {
       "id": "integration-linearity-additivity",
@@ -272,7 +385,14 @@
         "Chen/Feng/Tse COMPSAC 2002 (PDE MRs)",
         "Kanewala & Bieman"
       ],
-      "priority": 2
+      "priority": 6,
+      "keywords": [
+        "integral",
+        "integrate",
+        "quadrature",
+        "simpson",
+        "romberg"
+      ]
     },
     {
       "id": "refinement-convergence",
@@ -291,7 +411,16 @@
         "Chen/Feng/Tse COMPSAC 2002",
         "Segura et al. TSE 2016 (convergence MRs)"
       ],
-      "priority": 3
+      "priority": 3,
+      "keywords": [
+        "solver",
+        "iterat",
+        "converg",
+        "tolerance",
+        "root",
+        "accuracy",
+        "step"
+      ]
     },
     {
       "id": "roundtrip-inverse-text",
@@ -312,7 +441,15 @@
         "Hughes, How to Specify It! (round-trip)",
         "Claessen & Hughes, QuickCheck ICFP 2000"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "encode",
+        "decode",
+        "escape",
+        "unescape",
+        "serialize",
+        "parse"
+      ]
     },
     {
       "id": "concat-length-homomorphism",
@@ -332,7 +469,13 @@
         "monoid homomorphism law",
         "Unicode TR#29 for the exception"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "length",
+        "concat",
+        "append",
+        "size"
+      ]
     },
     {
       "id": "concat-associativity-identity",
@@ -352,7 +495,13 @@
         "free-monoid algebra of strings",
         "Hughes (algebraic properties)"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "concat",
+        "append",
+        "join",
+        "plus"
+      ]
     },
     {
       "id": "split-join-inverse",
@@ -372,7 +521,13 @@
         "Java String.split Javadoc",
         "Hughes (split/join with precondition)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "split",
+        "join",
+        "tokenize",
+        "delimit"
+      ]
     },
     {
       "id": "reverse-involution",
@@ -393,7 +548,10 @@
         "involution algebra",
         "commons-lang StringUtils.reverse Javadoc"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "reverse"
+      ]
     },
     {
       "id": "case-insensitive-search-invariance",
@@ -414,7 +572,16 @@
         "Zhou/Xiang/Chen TSE 2016 (search MRs)",
         "Unicode TR#21; Java toLowerCase(Locale) Javadoc"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "ignorecase",
+        "lowercase",
+        "uppercase",
+        "case",
+        "contains",
+        "indexof",
+        "equals"
+      ]
     },
     {
       "id": "query-refinement-subset-text",
@@ -435,7 +602,15 @@
         "Zhou/Xiang/Chen TSE 2016",
         "Segura et al. MET 2019 (inclusive MRP)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "search",
+        "contains",
+        "match",
+        "filter",
+        "find",
+        "query"
+      ]
     },
     {
       "id": "replace-count-consistency",
@@ -455,7 +630,13 @@
         "derived algebraic invariant",
         "Segura TSE 2016 (multiplicity MRs)"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "replace",
+        "count",
+        "countmatches",
+        "substitute"
+      ]
     },
     {
       "id": "permutation-multiset-invariance-text",
@@ -476,7 +657,14 @@
         "Segura et al. TSE 2016 (permutation MRs)",
         "Zhou/Xiang/Chen 2016"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "sort",
+        "anagram",
+        "frequency",
+        "histogram",
+        "tokenize"
+      ]
     },
     {
       "id": "trim-idempotence-invariance",
@@ -496,7 +684,12 @@
         "Hughes (idempotence)",
         "Java String.trim() vs strip() Javadoc"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "trim",
+        "strip",
+        "whitespace"
+      ]
     },
     {
       "id": "normalization-idempotence",
@@ -516,7 +709,13 @@
         "Unicode UAX #15",
         "Segura TSE 2016; Hughes"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "normalize",
+        "canonical",
+        "nfc",
+        "nfd"
+      ]
     },
     {
       "id": "escape-neutralization",
@@ -537,7 +736,13 @@
         "Hughes (round-trip)",
         "OWASP output-encoding; commons-text Javadoc"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "escape",
+        "unescape",
+        "encode",
+        "sanitize"
+      ]
     },
     {
       "id": "format-parse-locale-roundtrip",
@@ -559,7 +764,14 @@
         "Hughes (round-trip)",
         "Java NumberFormat/DateTimeFormatter Javadoc"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "format",
+        "parse",
+        "locale",
+        "number",
+        "decimal"
+      ]
     },
     {
       "id": "inclusive-monotonicity",
@@ -579,7 +791,14 @@
         "Murphy et al. 2008 (inclusive)",
         "Hughes (insert-then-find postcondition)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "add",
+        "insert",
+        "put",
+        "append",
+        "size"
+      ]
     },
     {
       "id": "exclusive-monotonicity",
@@ -598,7 +817,15 @@
       "sources": [
         "Murphy et al. 2008 (exclusive)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "remove",
+        "delete",
+        "discard",
+        "pop",
+        "clear",
+        "size"
+      ]
     },
     {
       "id": "read-only-noninterference",
@@ -618,7 +845,19 @@
         "Command-Query Separation (Meyer)",
         "Murphy et al. non-mutating-input relations"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "contains",
+        "get",
+        "is",
+        "indexof",
+        "size",
+        "peek",
+        "length",
+        "capacity",
+        "charat",
+        "tostring"
+      ]
     },
     {
       "id": "sibling-agreement",
@@ -640,7 +879,15 @@
         "metamorphic equivalent-computation pattern",
         "Segura equivalence MRP"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "getpackagename",
+        "getshortclassname",
+        "overload",
+        "append",
+        "indexof",
+        "sort"
+      ]
     },
     {
       "id": "insert-commutativity",
@@ -659,7 +906,13 @@
       "sources": [
         "Hughes 2019 (insert-insert law)"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "put",
+        "add",
+        "insert",
+        "merge"
+      ]
     },
     {
       "id": "collection-idempotence",
@@ -681,7 +934,15 @@
       "sources": [
         "QuickCheck/algebraic-law tradition; Hughes 2019"
       ],
-      "priority": 3
+      "priority": 3,
+      "keywords": [
+        "sort",
+        "distinct",
+        "dedup",
+        "normalize",
+        "trim",
+        "canonical"
+      ]
     },
     {
       "id": "identity-and-monoid-laws",
@@ -702,7 +963,15 @@
       "sources": [
         "QuickCheck/Haskell monoid-law tradition"
       ],
-      "priority": 3
+      "priority": 3,
+      "keywords": [
+        "append",
+        "concat",
+        "add",
+        "union",
+        "addall",
+        "empty"
+      ]
     },
     {
       "id": "roundtrip-inverse-collection",
@@ -722,7 +991,16 @@
         "Murphy et al. 2008 (invertive)",
         "QuickCheck round-trip"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "push",
+        "pop",
+        "add",
+        "remove",
+        "insert",
+        "delete",
+        "reverse"
+      ]
     },
     {
       "id": "model-agreement",
@@ -741,7 +1019,14 @@
       "sources": [
         "Hughes, How to Specify It! (model-based properties)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "get",
+        "contains",
+        "search",
+        "find",
+        "lookup"
+      ]
     },
     {
       "id": "subset-under-restrictive-filter",
@@ -761,7 +1046,14 @@
       "sources": [
         "Segura et al. MET 2019 (subset/conjunctive/disjunctive MRPs)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "filter",
+        "where",
+        "select",
+        "query",
+        "restrict"
+      ]
     },
     {
       "id": "cardinality-conservation",
@@ -783,7 +1075,14 @@
         "Segura et al. MET 2019 (cardinality MRP)",
         "Murphy additive relations"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "partition",
+        "group",
+        "split",
+        "count",
+        "size"
+      ]
     },
     {
       "id": "documented-order-stability",
@@ -802,7 +1101,13 @@
       "sources": [
         "JDK Collections.sort/List.sort stability contract"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "sort",
+        "order",
+        "stable",
+        "sorted"
+      ]
     },
     {
       "id": "instant-zone-invariance",
@@ -822,7 +1127,15 @@
         "Joda-Time User Guide (Instant definition)",
         "java.time Instant/ZonedDateTime design"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "instant",
+        "zone",
+        "timezone",
+        "utc",
+        "offset",
+        "datetime"
+      ]
     },
     {
       "id": "parse-format-roundtrip-datetime",
@@ -843,7 +1156,14 @@
         "round-trip PBT pattern",
         "Joda-Time User Guide formatting"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "format",
+        "parse",
+        "print",
+        "pattern",
+        "tostring"
+      ]
     },
     {
       "id": "duration-monotonic-advance",
@@ -863,7 +1183,17 @@
         "Joda-Time User Guide (Period vs Duration)",
         "Baeldung DST in Java"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "plus",
+        "minus",
+        "add",
+        "duration",
+        "period",
+        "withduration",
+        "plushours",
+        "plusdays"
+      ]
     },
     {
       "id": "zone-conversion-preserves-ordering",
@@ -883,7 +1213,15 @@
         "Joda-Time DateTimeZone semantics",
         "MT invariant patterns"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "zone",
+        "compare",
+        "before",
+        "after",
+        "duration",
+        "between"
+      ]
     },
     {
       "id": "dst-gap-overlap-well-definedness",
@@ -903,7 +1241,14 @@
         "Joda-Time FAQ (Illegal instant)",
         "Baeldung DST"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "zone",
+        "local",
+        "offset",
+        "transition",
+        "dst"
+      ]
     },
     {
       "id": "leap-year-calendar-consistency",
@@ -922,7 +1267,16 @@
       "sources": [
         "Joda-Time FAQ (chronologies, leap seconds)"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "year",
+        "month",
+        "day",
+        "leap",
+        "february",
+        "date",
+        "calendar"
+      ]
     },
     {
       "id": "emi-dead-code-prune",
@@ -941,7 +1295,14 @@
       "sources": [
         "Le/Afshari/Su PLDI 2014 (EMI/Orion)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "compile",
+        "optimize",
+        "codegen",
+        "emit",
+        "parse"
+      ]
     },
     {
       "id": "emi-dead-region-insertion",
@@ -960,7 +1321,13 @@
       "sources": [
         "Le/Sun/Su OOPSLA 2015 (Athena)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "compile",
+        "optimize",
+        "codegen",
+        "parse"
+      ]
     },
     {
       "id": "emi-live-code-mutation",
@@ -979,7 +1346,12 @@
       "sources": [
         "Sun/Le/Su OOPSLA 2016 (Hermes)"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "compile",
+        "optimize",
+        "codegen"
+      ]
     },
     {
       "id": "insignificant-whitespace-comment-invariance",
@@ -999,7 +1371,18 @@
         "lexical-analysis principle",
         "consistent with EMI/GraphicsFuzz reducers"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "parse",
+        "lex",
+        "token",
+        "compile",
+        "diagnostic",
+        "warning",
+        "error",
+        "format",
+        "source"
+      ]
     },
     {
       "id": "format-idempotence-parse-stability",
@@ -1019,7 +1402,15 @@
         "round-trip/idempotence PBT applied to compilers",
         "EMI semantics-preservation lineage"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "format",
+        "print",
+        "pretty",
+        "unparse",
+        "tosource",
+        "codeprinter"
+      ]
     },
     {
       "id": "filter-subset",
@@ -1040,7 +1431,13 @@
         "Segura et al. TSE 2018 (Subset MROP)",
         "Segura et al. MET 2019 (conjunctive/disjunctive MRPs)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "filter",
+        "query",
+        "search",
+        "where"
+      ]
     },
     {
       "id": "ordering-equivalence",
@@ -1061,7 +1458,12 @@
         "Segura et al. TSE 2018 (Equivalence MROP)",
         "Segura et al. MET 2019 (Shuffling MRP)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "sort",
+        "order",
+        "rank"
+      ]
     },
     {
       "id": "default-parameter-equality",
@@ -1082,7 +1484,12 @@
         "Segura et al. TSE 2018 (Equality MROP)",
         "Segura et al. MET 2019 (Input equivalence MRP)"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "default",
+        "optional",
+        "param"
+      ]
     },
     {
       "id": "partition-disjoint",
@@ -1103,7 +1510,13 @@
         "Segura et al. TSE 2018 (Disjoint MROP)",
         "Segura et al. MET 2019 (Disjoint partitions MRP)"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "category",
+        "status",
+        "type",
+        "partition"
+      ]
     },
     {
       "id": "partition-complete",
@@ -1124,7 +1537,14 @@
         "Segura et al. TSE 2018 (Complete MROP)",
         "Segura et al. MET 2019 (Complete partitions MRP)"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "category",
+        "status",
+        "type",
+        "partition",
+        "all"
+      ]
     },
     {
       "id": "partition-difference",
@@ -1145,7 +1565,12 @@
         "Segura et al. TSE 2018 (Difference MROP)",
         "Segura et al. MET 2019 (Partition difference MRP)"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "category",
+        "status",
+        "partition"
+      ]
     },
     {
       "id": "broken-access-control",
@@ -1166,7 +1591,15 @@
         "Bayati Chaleshtari et al. TSE 2023 (MST-wi/SMRL, pattern P1)",
         "OWASP Authorization Testing"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "auth",
+        "access",
+        "permission",
+        "role",
+        "user",
+        "protected"
+      ]
     },
     {
       "id": "input-sanitization",
@@ -1186,7 +1619,14 @@
         "Bayati Chaleshtari et al. TSE 2023 (pattern P2)",
         "OWASP Input Validation Testing"
       ],
-      "priority": 1
+      "priority": 1,
+      "keywords": [
+        "input",
+        "sanitize",
+        "escape",
+        "validate",
+        "param"
+      ]
     },
     {
       "id": "session-integrity",
@@ -1206,7 +1646,14 @@
         "Bayati Chaleshtari et al. TSE 2023 (Fig.15)",
         "OWASP Session Management Testing"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "session",
+        "login",
+        "auth",
+        "cookie",
+        "token"
+      ]
     },
     {
       "id": "workflow-precedence",
@@ -1227,7 +1674,13 @@
         "Bayati Chaleshtari et al. TSE 2023 (CWE_841, subset-of-actions follow-ups)",
         "OWASP Business Logic Testing"
       ],
-      "priority": 2
+      "priority": 2,
+      "keywords": [
+        "workflow",
+        "step",
+        "sequence",
+        "precondition"
+      ]
     },
     {
       "id": "secure-transport-cookie-attributes",
@@ -1247,7 +1700,14 @@
         "Bayati Chaleshtari et al. TSE 2023 (OWASP config/session mapping)",
         "OWASP WSTG"
       ],
-      "priority": 3
+      "priority": 3,
+      "keywords": [
+        "cookie",
+        "https",
+        "ssl",
+        "secure",
+        "transport"
+      ]
     },
     {
       "id": "rate-and-lifetime-controls",
@@ -1267,7 +1727,634 @@
         "Bayati Chaleshtari et al. TSE 2023 (Fig.16, added DelayAction)",
         "OWASP Authentication/Business Logic Testing"
       ],
-      "priority": 3
+      "priority": 3,
+      "keywords": [
+        "lock",
+        "rate",
+        "limit",
+        "csrf",
+        "password",
+        "attempt"
+      ]
+    },
+    {
+      "id": "type-sibling-overload-agreement",
+      "input_kinds": [
+        "type_or_reflection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Class-taking and String-taking overloads of the same type operation must return equal results for the same underlying type: op(String)(cls.getName()) equals op(Class)(cls).",
+      "condition": "The overloads are documented to compute the same quantity and the String overload accepts the SAME name form the Class overload emits (binary vs canonical). Agreement required only over the shared input form.",
+      "exceptions": "arrays/primitives (the classic divergence: one branch strips [L..; wrapper, the other does not); null/valueIfNull sentinels differ by overload; String overload cannot tell canonical Outer.Inner from binary Outer$Inner.",
+      "examples": [
+        "ClassUtils.getPackageName(String.class).equals(ClassUtils.getPackageName(\"java.lang.String\"))",
+        "TRAP: getPackageName(String[].class) vs getPackageName(\"[Ljava.lang.String;\") must both yield java.lang - the dominant ClassUtils bug shape"
+      ],
+      "sources": [
+        "JLS 13.1 (binary names)",
+        "commons-lang ClassUtils paired overloads Javadoc"
+      ],
+      "keywords": [
+        "getpackagename",
+        "getshortclassname",
+        "overload",
+        "class",
+        "type",
+        "name"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "package-plus-short-reconstructs-name",
+      "input_kinds": [
+        "type_or_reflection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "For a non-array non-primitive non-default-package type, getPackageName(cls) + '.' + getShortClassName(cls) reconstructs the canonical fully-qualified name.",
+      "condition": "getName() factors uniquely as package.tail for reference types with a canonical name (JLS 6.7).",
+      "exceptions": "default (unnamed) package - must NOT prepend '.' (produces .String bug); arrays/primitives (no package); nested classes reconstruct the CANONICAL name (Map.Entry) not binary getName() (Map$Entry); local/anonymous have null canonical name.",
+      "examples": [
+        "getPackageName(Integer.class)+'.'+getShortClassName(Integer.class) == Integer.class.getName()",
+        "default package: getPackageName is '' so join must be getShortClassName alone"
+      ],
+      "sources": [
+        "JLS 6.7, 7.4.2",
+        "Class getName/getSimpleName/getCanonicalName Javadoc"
+      ],
+      "keywords": [
+        "getpackagename",
+        "getshortclassname",
+        "canonical",
+        "name",
+        "fully",
+        "qualified"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "binary-name-forname-roundtrip",
+      "input_kinds": [
+        "type_or_reflection",
+        "encode_decode_pair"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "For every loadable reference or array type, Class.forName(cls.getName(), false, cls.getClassLoader()) == cls.",
+      "condition": "getName() returns exactly the string forName accepts for that type (binary name / array descriptor); class identity is per (name, defining-loader).",
+      "exceptions": "primitives (int.class.getName()=='int' but forName('int') throws); getCanonicalName NOT round-trippable for nested types (Map.Entry fails, need Map$Entry); wrong/null loader; anonymous/local/hidden/lambda names not resolvable.",
+      "examples": [
+        "Class.forName(\"[Ljava.lang.String;\") == String[].class",
+        "Class.forName(\"java.util.Map$Entry\") == Map.Entry.class; forName(\"java.util.Map.Entry\") throws"
+      ],
+      "sources": [
+        "Class.getName / Class.forName Javadoc",
+        "JVMS 4.3.2, 5.3"
+      ],
+      "keywords": [
+        "forname",
+        "getname",
+        "load",
+        "class",
+        "resolve"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "array-descriptor-consistency",
+      "input_kinds": [
+        "type_or_reflection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "An array class name equals '['*dim + componentDescriptor (L<binary>; for references, single-letter code I/Z/B/C/S/J/F/D for primitives); canonical equals elementCanonical + '[]'*dim.",
+      "condition": "JVMS 4.3.2 fixes the field-descriptor grammar; getName() for arrays is the descriptor.",
+      "exceptions": "element letter codes must be exact (long=J, boolean=Z, byte=B, char=C - long->L is a classic bug); [] count must equal true dimension (int[][]=[[I); reference element uses L..; with trailing semicolon and dot-separated binary name.",
+      "examples": [
+        "int[][].class.getName() == \"[[I\"",
+        "long[].class.getName() == \"[J\" (not [L / [Long)"
+      ],
+      "sources": [
+        "JVMS 4.3.2",
+        "Class.getName array clause; getComponentType/arrayType Javadoc"
+      ],
+      "keywords": [
+        "array",
+        "descriptor",
+        "component",
+        "dimension",
+        "getname",
+        "type"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "component-type-inverse",
+      "input_kinds": [
+        "type_or_reflection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "For an array class A: A.getComponentType().arrayType() == A; and for any class C: C.arrayType().getComponentType() == C.",
+      "condition": "getComponentType and arrayType are documented mutual inverses for one array level; array classes canonical per (component, loader).",
+      "exceptions": "non-array classes: getComponentType returns null; multi-dimensional peels/adds exactly one level (int[][].getComponentType()==int[] not int); distinguish component type (one level) from element type (fully peeled).",
+      "examples": [
+        "String[].class.getComponentType() == String.class",
+        "int[][].class.getComponentType() == int[].class (component), element is int.class"
+      ],
+      "sources": [
+        "Class.getComponentType/arrayType Javadoc",
+        "JVMS 4.3.2"
+      ],
+      "keywords": [
+        "array",
+        "component",
+        "type",
+        "dimension",
+        "element"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "primitive-wrapper-bijection",
+      "input_kinds": [
+        "type_or_reflection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "The 8 primitives, their wrappers, and descriptor letters are in fixed 1:1 correspondence; mapping utilities must be mutual inverses: wrapperToPrimitive(primitiveToWrapper(p))==p and Wrapper.TYPE==primitive.",
+      "condition": "The set is closed and fixed by JLS 4.2; each wrapper exposes .TYPE; primitive Class identity guaranteed (int.class==Integer.TYPE).",
+      "exceptions": "TRAP: a primitive Class is NOT the wrapper and NOT assignable to it (int.class != Integer.class); void/Void special ninth; mapping undefined for non-primitive/non-wrapper (must pass through unchanged); autoboxing flag must be threaded consistently.",
+      "examples": [
+        "ClassUtils.wrapperToPrimitive(Integer.class) == int.class",
+        "ClassUtils.primitiveToWrapper(String.class) == String.class (unchanged)"
+      ],
+      "sources": [
+        "JLS 4.2, 5.1.7",
+        "Integer.TYPE Javadoc; ClassUtils primitiveToWrapper/wrapperToPrimitive"
+      ],
+      "keywords": [
+        "primitive",
+        "wrapper",
+        "boxing",
+        "type",
+        "int",
+        "integer"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "assignability-reflexive-transitive",
+      "input_kinds": [
+        "type_or_reflection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "isAssignableFrom is a reflexive transitive preorder consistent with the type hierarchy: C.isAssignableFrom(C) always true; transitivity holds; Object.class.isAssignableFrom(R) true for every reference type R.",
+      "condition": "isAssignableFrom reflects JLS widening reference conversion plus identity; subtyping is reflexive and transitive; Object tops the reference hierarchy.",
+      "exceptions": "primitives: no widening/boxing (Number.isAssignableFrom(int.class) false); Object.isAssignableFrom(primitive) false; primitive-array covariance fails (Object[].isAssignableFrom(int[]) false); generics erased.",
+      "examples": [
+        "Collection.isAssignableFrom(List) && List.isAssignableFrom(ArrayList) => Collection.isAssignableFrom(ArrayList)",
+        "TRAP: Object.class.isAssignableFrom(int.class) is false"
+      ],
+      "sources": [
+        "Class.isAssignableFrom Javadoc",
+        "JLS 4.10, 5.1.5, 4.10.3"
+      ],
+      "keywords": [
+        "assignable",
+        "isassignablefrom",
+        "subtype",
+        "hierarchy",
+        "inherit",
+        "cast"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "simple-name-suffix-of-binary-name",
+      "input_kinds": [
+        "type_or_reflection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "For a top-level or member class, getSimpleName() equals the terminal segment of getName() after the last $ (members) or last . (top-level).",
+      "condition": "JLS 6.7/13.1: member binary name is enclosing$simple, top-level is package.simple; simple name has no . or $.",
+      "exceptions": "anonymous classes: getSimpleName is '' but getName ends in $<digits>; local classes: getName is Outer$1Local (number-prefixed), simple name Local is NOT a plain $-split suffix; arrays append [] so not a substring of the descriptor.",
+      "examples": [
+        "Map.Entry.class.getSimpleName() == \"Entry\"",
+        "TRAP: anonymous Runnable getName 'pkg.Outer$1', getSimpleName '' (not '1')"
+      ],
+      "sources": [
+        "JLS 6.7, 13.1",
+        "Class.getSimpleName Javadoc"
+      ],
+      "keywords": [
+        "simplename",
+        "getsimplename",
+        "short",
+        "name",
+        "class"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "canonical-null-guard",
+      "input_kinds": [
+        "type_or_reflection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Any relation over canonical names must guard on getCanonicalName() != null: it is null for local classes, anonymous classes, and arrays whose element is such a class.",
+      "condition": "JLS 6.7: a canonical name exists only for top-level classes and members reachable by member-access chains (and arrays thereof).",
+      "exceptions": "the null-producing inputs ARE the guard: anonymous, local, array-of-local/anonymous, hidden classes (getName has '/'), lambda classes. Primitives and ordinary arrays DO have canonical names.",
+      "examples": [
+        "Map.Entry.class.getCanonicalName() == \"java.util.Map.Entry\"",
+        "new Runnable(){}.getClass().getCanonicalName() == null"
+      ],
+      "sources": [
+        "JLS 6.7",
+        "Class.getCanonicalName Javadoc; JEP 371"
+      ],
+      "keywords": [
+        "canonical",
+        "getcanonicalname",
+        "name",
+        "null"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "nesting-separator-normalization",
+      "input_kinds": [
+        "type_or_reflection"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Converting a binary name to canonical replaces each nesting $ with . and that is the ONLY difference for a nested reference type.",
+      "condition": "JLS 13.1: member binary names use $ as the nesting separator; canonical (6.7) uses . uniformly. Well-defined only when every $ is a genuine nesting separator.",
+      "exceptions": "$ is a legal identifier char - a class literally named A$B is indistinguishable from nested A.B by string surgery (blind $->. corrupts it); anonymous/local $<digits> must NOT become .; arrays must strip [L..; first.",
+      "examples": [
+        "\"com.x.Outer$Inner\" -> \"com.x.Outer.Inner\"",
+        "TRAP: anonymous \"com.x.Outer$1\" must stay Outer$1 / canonical null, not Outer.1"
+      ],
+      "sources": [
+        "JLS 6.7, 13.1, 3.8",
+        "Class getName vs getCanonicalName Javadoc"
+      ],
+      "keywords": [
+        "nesting",
+        "canonical",
+        "binary",
+        "separator",
+        "inner",
+        "nested",
+        "name"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "bbox-range-monotonic-growth",
+      "input_kinds": [
+        "geometry"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Adding a point/item to a shape or dataset can only enlarge or preserve its bounding box / value range, never shrink it.",
+      "condition": "The follow-up is the source plus one or more points (pure insertion, no removal or mutation).",
+      "exceptions": "starting from an EMPTY/uninitialized Rectangle2D the first add REPLACES rather than grows (empty-is-identity, not a violation); NaN/infinite coords void it; compare each edge with tolerance.",
+      "examples": [
+        "r2=r1.clone(); r2.add(px,py) => r2.getMinX()<=r1.getMinX()+eps && r2.getMaxX()>=r1.getMaxX()-eps",
+        "Range.expandToInclude(r,v) => lower<=r.lower, upper>=r.upper"
+      ],
+      "sources": [
+        "Rectangle2D.add / Range.expandToInclude Javadoc"
+      ],
+      "keywords": [
+        "add",
+        "bounds",
+        "range",
+        "expand",
+        "include",
+        "min",
+        "max",
+        "bbox",
+        "axis",
+        "autorange"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "range-union-superset",
+      "input_kinds": [
+        "geometry"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "The union/combine of two rectangles or ranges contains each operand.",
+      "condition": "Both operands non-empty.",
+      "exceptions": "if one operand is EMPTY (isEmpty(): non-positive width/height) union semantics are underspecified (an empty rect still has a location); skip when either isEmpty; contains is exclusive on max edges - verify by min/max comparison not union.contains(operand).",
+      "examples": [
+        "U=A.createUnion(B) => U.getMinX()<=min(A.minX,B.minX)+eps and U.getMaxX()>=max(A.maxX,B.maxX)-eps",
+        "Range.combine(r1,r2) encloses both"
+      ],
+      "sources": [
+        "Rectangle2D.createUnion / Range.combine Javadoc"
+      ],
+      "keywords": [
+        "union",
+        "combine",
+        "createunion",
+        "merge",
+        "bounds",
+        "range",
+        "enclose"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "range-combine-null-identity",
+      "input_kinds": [
+        "geometry"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Range.combine obeys the documented null-identity: combine(r,null)==r, combine(null,r)==r, combine(null,null)==null; and is monotone (encloses both).",
+      "condition": "Standard combine (not combineIgnoringNaN).",
+      "exceptions": "combine does NOT special-case NaN: a NaN input propagates NaN (that is intended, hence combineIgnoringNaN); test identity/monotonicity only with finite bounds.",
+      "examples": [
+        "Range.combine(new Range(2,5),null).equals(new Range(2,5))",
+        "Range.combineIgnoringNaN(new Range(2,5),new Range(NaN,NaN)) == (2,5)"
+      ],
+      "sources": [
+        "Range.combine / combineIgnoringNaN Javadoc"
+      ],
+      "keywords": [
+        "combine",
+        "null",
+        "nan",
+        "range",
+        "identity",
+        "ignoringnan"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "point-in-shape-implies-in-bbox",
+      "input_kinds": [
+        "geometry"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "If a point is inside a shape it is inside (or on) that shape's bounding box: shape.contains(p) => shape.getBounds2D() encloses p.",
+      "condition": "Shape non-degenerate; implication is one-directional (a bbox point need not be in the shape).",
+      "exceptions": "contains is EXCLUSIVE on right/bottom edges - verify via coordinate comparison minX-eps<=px<=maxX+eps not bounds.contains(p); empty shapes contain no point (antecedent vacuous).",
+      "examples": [
+        "area.contains(px,py) => px in [bounds.minX,maxX] and py in [minY,maxY]",
+        "range.contains(v) => range.getLowerBound()<=v<=range.getUpperBound()"
+      ],
+      "sources": [
+        "Shape insideness / Rectangle2D.contains / Range.contains Javadoc"
+      ],
+      "keywords": [
+        "contains",
+        "bounds",
+        "getbounds",
+        "inside",
+        "point",
+        "range",
+        "intersect"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "contains-intersects-duality",
+      "input_kinds": [
+        "geometry"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Containment is stronger than intersection: if A contains non-empty B then A intersects B.",
+      "condition": "B non-empty; interiors non-degenerate.",
+      "exceptions": "edge-only overlap: touching rectangles have zero-area interior overlap - intersects tests INTERIOR and may return false for touching-not-overlapping; intersects may conservatively over-report true; empty B breaks the antecedent.",
+      "examples": [
+        "A.contains(B) && !B.isEmpty() => A.intersects(B)",
+        "outer.contains(inner.lower) && outer.contains(inner.upper) => outer.intersects(inner)"
+      ],
+      "sources": [
+        "Rectangle2D.intersects/createIntersection / Range.intersects Javadoc"
+      ],
+      "keywords": [
+        "contains",
+        "intersects",
+        "overlap",
+        "createintersection",
+        "bounds"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "geometry-translation-invariance",
+      "input_kinds": [
+        "geometry"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Translating every input point by (dx,dy) translates the bounding box by exactly (dx,dy) and leaves width, height, area, and range length invariant.",
+      "condition": "Pure translation (AffineTransform m00=m11=1,m01=m10=0) applied to all points identically.",
+      "exceptions": "large translations lose low-order precision (invariant within relative tolerance); overflow to Infinity for huge offsets voids it; empty/degenerate boxes keep zero width trivially.",
+      "examples": [
+        "bboxOf(translate(points,dx,dy)): minX'~=minX+dx, width'~=width, area'~=area",
+        "Range.shift(r,delta): shifted.getLength()~=r.getLength(), lower'~=lower+delta"
+      ],
+      "sources": [
+        "AffineTransform (translation) / Range.shift Javadoc"
+      ],
+      "keywords": [
+        "translate",
+        "shift",
+        "transform",
+        "bounds",
+        "width",
+        "height",
+        "area",
+        "length",
+        "invariant"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "geometry-scaling-area-quadratic",
+      "input_kinds": [
+        "geometry"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Scaling all coordinates by k about the origin scales lengths/ranges by k and areas by k^2; a uniform-scale AffineTransform has |determinant|=k^2.",
+      "condition": "Uniform scale k>0 applied to all points (or a uniform-scale transform); for area the shape must have 2D extent.",
+      "exceptions": "k=0 collapses area and makes the transform non-invertible; negative k (reflection) preserves |area| but flips orientation; non-uniform scale: determinant is sx*sy not k^2 - restrict to uniform; Range.scale requires non-negative factor.",
+      "examples": [
+        "getScaleInstance(k,k).getDeterminant()~=k*k; areaOf(scale(shape,k))~=k*k*areaOf(shape)",
+        "Range.scale(r,k) (k>=0): scaled.getLength()~=k*r.getLength()"
+      ],
+      "sources": [
+        "AffineTransform.getDeterminant / Range.scale Javadoc"
+      ],
+      "keywords": [
+        "scale",
+        "determinant",
+        "area",
+        "transform",
+        "zoom",
+        "range",
+        "factor"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "range-invariants",
+      "input_kinds": [
+        "geometry"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "A valid Range/bbox obeys: lower<=upper; getLength()==upper-lower; getCentralValue()==(lower+upper)/2; rectangle width==maxX-minX>=0, height==maxY-minY>=0.",
+      "condition": "The Range was validly constructed (constructor requires lower<=upper) or the rectangle is non-empty.",
+      "exceptions": "Rectangle2D permits EMPTY rectangles with negative width/height as a sentinel - the >=0 clause applies only when !isEmpty(); NaN bounds break every identity; getCentralValue can overflow to Infinity for extreme bounds.",
+      "examples": [
+        "new Range(a,b) requires a<=b; r.getLength()~=r.getUpperBound()-r.getLowerBound()",
+        "r.getCentralValue()~=(lower+upper)/2"
+      ],
+      "sources": [
+        "Range Javadoc; Rectangle2D isEmpty semantics"
+      ],
+      "keywords": [
+        "range",
+        "length",
+        "getlength",
+        "central",
+        "lower",
+        "upper",
+        "min",
+        "max",
+        "width",
+        "height",
+        "bounds"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "transform-inverse-roundtrip",
+      "input_kinds": [
+        "geometry"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "Applying an invertible AffineTransform then its inverse returns the original point: t.inverseTransform(t.transform(p)) ~= p.",
+      "condition": "t.getDeterminant() != 0 (invertible); createInverse() does not throw NoninvertibleTransformException.",
+      "exceptions": "singular transforms (zero determinant, scale by 0) legitimately throw NoninvertibleTransformException (not a bug - gate on invertibility); round-trip accuracy degrades with condition number (looser tolerance for near-singular); NaN/infinite entries void it.",
+      "examples": [
+        "p2=t.inverseTransform(t.transform(p1)) => p2.distance(p1)<=eps",
+        "rotation by theta then -theta returns each point (det=1)"
+      ],
+      "sources": [
+        "AffineTransform.createInverse/inverseTransform Javadoc"
+      ],
+      "keywords": [
+        "transform",
+        "inverse",
+        "affine",
+        "rotate",
+        "roundtrip",
+        "point",
+        "determinant"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "geometry-order-independence",
+      "input_kinds": [
+        "geometry"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "The bounding box / value range of a SET of points is invariant to the order in which points are supplied.",
+      "condition": "Pure aggregation over a set (bounds, min/max range); same multiset of finite points.",
+      "exceptions": "summation-based aggregates (mean, variance, shoelace area) are NOT order-independent to the bit (need tolerance) - only min/max extremal bounds are exactly order-independent; NaN in the set makes min/max implementation-dependent; empty set has no bounds.",
+      "examples": [
+        "bboxOf(shuffle(points)).equals(bboxOf(points)) for a min/max-grown Rectangle2D",
+        "folding Range.combine left vs right over the same ranges gives an equal result"
+      ],
+      "sources": [
+        "Range.combine/Rectangle2D.add commutative min/max aggregation Javadoc"
+      ],
+      "keywords": [
+        "bounds",
+        "order",
+        "permute",
+        "shuffle",
+        "aggregate",
+        "min",
+        "max",
+        "range"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "intersection-subset",
+      "input_kinds": [
+        "geometry"
+      ],
+      "status": "menu",
+      "tier": "universal",
+      "statement": "The intersection of two rectangles is contained in each operand and its area is <= min of the two areas.",
+      "condition": "A and B overlap.",
+      "exceptions": "when A and B do NOT overlap, createIntersection returns an EMPTY rectangle (non-positive width/height, coordinates may lie outside both) - check isEmpty() first, treat non-overlap as the empty-set (vacuous subset); edge-touching yields zero-area empty.",
+      "examples": [
+        "I=A.createIntersection(B); !I.isEmpty() => A and B enclose I by coordinates, I.width<=min(A.width,B.width)+eps",
+        "overlap of two Ranges has length<=min of the two lengths"
+      ],
+      "sources": [
+        "Rectangle2D.createIntersection Javadoc"
+      ],
+      "keywords": [
+        "intersection",
+        "createintersection",
+        "overlap",
+        "subset",
+        "bounds",
+        "area"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "empty-combine-identity",
+      "input_kinds": [
+        "geometry"
+      ],
+      "status": "menu_documented",
+      "tier": "documented-property",
+      "statement": "Combining with an empty/absent operand is identity for Range/null: Range.combine(r,null)==r.",
+      "condition": "Exactly one operand empty/absent, the other well-formed. Documented for Range.combine with null; for Rectangle2D only the uninitialized-empty-rect convention.",
+      "exceptions": "PRIMARY FALSE-ACCUSATION TRAP: Rectangle2D union with an isEmpty() rect is NOT contractually identity (an empty rect still has a location; createUnion can stretch to include its zero-size point) - assert identity only for Range/null and the documented first-add-into-uninitialized case.",
+      "examples": [
+        "Range.combine(new Range(1,4),null).equals(new Range(1,4))",
+        "fresh empty Rectangle2D then add(3,7) yields the point-box [3,7]x[3,7] (first add only)"
+      ],
+      "sources": [
+        "Range.combine/combineIgnoringNaN Javadoc; Rectangle2D empty semantics"
+      ],
+      "keywords": [
+        "combine",
+        "empty",
+        "null",
+        "identity",
+        "union",
+        "range",
+        "isempty"
+      ],
+      "priority": 1
     }
   ]
 }
