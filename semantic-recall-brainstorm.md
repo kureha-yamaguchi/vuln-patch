@@ -1474,6 +1474,49 @@ fuzzed-tier relation-replay path still has no buggy-side computed fact
 validated against Math-2-o, whose true catch has the same
 fires-on-both-builds shape); R3, BND-b, P4.1, T11.
 
+## batch4 RESULT (2026-07-19 late): TP=2 FN=2 FP=2 TN=2, 62-c UNSCORED
+
+Validated again: Math-53 pair (R-THROWS 3rd consecutive — now fires on
+the TRIGGER tier deterministically via the receiver-state variation),
+Closure-62-o (4th), Math-2-c. The three problems, each diagnosed from
+the trace and fixed the same evening:
+
+- **Lang-27-c FP, third costume.** fpfix6: signed-zero via the loose
+  family test; batch3: symmetric contract-override; batch4: LATENT path
+  — the -0.0 sign-bit check's input crashes buggy with the defect, so
+  the new crash-suppression fact fired and its wording ("strong
+  evidence against the patch") prejudged the judge's only real question.
+  Every correct fix has the buggy-crashes/patched-completes signature at
+  former crash inputs. FIX: wording neutralized — fix and overfit differ
+  only in whether the completed value is correct. LESSON: at defect
+  inputs, c-vs-o discrimination is irreducibly the completed-value
+  soundness question; no mechanical drop can take it from the judge.
+- **Chart-26-c FP (regression vs batch3).** The old axis-entity class
+  returned through the latent+shadowed path, whose notes carried no
+  bug-family framing (the symmetric note's criterion never applied).
+  FIX: family criterion added to the shadowed/other-exception notes.
+- **Closure-62-c UNSCORED — H3 rejected all 8 harnesses.** The prompt
+  mandates whitespace-REMOVAL in check messages; H3 compared with
+  collapse-to-one-space, so multi-word values could never match and
+  the gate rejected FAITHFUL harnesses. FIX: _values_match also
+  compares whitespace-removed (verified on the exact rejected
+  headline; true divergences still reject). The widened gate had
+  turned a scoring leg into a non-scoring one — gates need the same
+  normalization as the artifacts they judge.
+- **Math-2-o FN (catch lost vs full30 era).** Not a facts problem:
+  synthesis never PROPOSED a mean-shaped relation (6/6 survivors were
+  sample/invcum — anchored on Arja's patched method), while the -c
+  leg's roll produced three mean relations. Fresh, strong evidence for
+  R2 (variety/coverage quota over distinct documented observables).
+  The fuzzed-tier comparison fact went untested here (nothing fired);
+  on 62-o it dropped two invented-premise caret rules while the
+  harness path still convicted — no harm observed.
+
+Score note: the mechanical drop went UNEXERCISED (no eligible firing
+shape recurred) — the FP generator keeps shapeshifting to whichever
+path lacks framing. The judge is now the single dominant error source
+in both directions; J1 outranks everything else.
+
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
