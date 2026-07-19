@@ -21,6 +21,7 @@ Pipeline (post-campaign):
     PatchedProjectBuilder   copy buggy dir, apply patch, compile
     FuzzRunner              run Jazzer per harness, collect FuzzRunResult
 """
+import glob
 import json
 import os
 import re
@@ -1032,6 +1033,26 @@ class FuzzRunner:
                  patched_cp: str) -> FuzzRunResult:
         harness_dir = os.path.dirname(build_result.harness_path)
         started_at = time.time()
+        # JD1: seed the patched-side fuzz with the exact inputs that fired
+        # this harness's checks on the BUGGY build (the crash-* artifacts
+        # the acceptance gate wrote to <harness_dir>/crashes/). Those are
+        # precisely the inputs most likely to still fire on an overfit
+        # that special-cased only the reported input — previously the
+        # patched fuzz had to rediscover them by luck. Copied into a
+        # separate seed dir so patched-side artifacts never mix with the
+        # buggy-side evidence. Firewall-clean: buggy-side data only.
+        seed_dir = None
+        buggy_artifacts = [
+            p for p in glob.glob(os.path.join(harness_dir, 'crashes',
+                                              'crash-*'))
+            if os.path.getmtime(p) < started_at]
+        if buggy_artifacts:
+            seed_dir = os.path.join(harness_dir, 'seeds_from_buggy')
+            os.makedirs(seed_dir, exist_ok=True)
+            for p in buggy_artifacts:
+                shutil.copy2(p, os.path.join(seed_dir, os.path.basename(p)))
+            print(f"  [JD1] seeding patched fuzz with "
+                  f"{len(buggy_artifacts)} buggy-side firing input(s)")
         outcome = run_jazzer(
             jazzer_standalone_jar=self.jazzer_standalone_jar,
             target_class=build_result.class_name,
@@ -1040,6 +1061,7 @@ class FuzzRunner:
             timeout_seconds=self.timeout_seconds,
             expected_exceptions=self.expected_exceptions,
             jazzer_api_jar=self.jazzer_api_jar,
+            corpus_dir=seed_dir,
         )
         artifact = None
         if outcome.triggered:
