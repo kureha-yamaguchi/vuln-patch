@@ -2,7 +2,7 @@
 # relations seed the pool before its overfit leg runs (pooling works
 # within one parallel run). vs baseline recall 9/16, 13/14 clean, 1 FP.
 MODEL="gpt-5.4"
-COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched"
 CASES=(
   "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Chart/patch1-Chart-3-Arja.patch"
   "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Chart/patch1-Chart-7-SimFix.patch"

@@ -3,7 +3,7 @@
 # FN (the Arja overfit the verifier once over-killed) + its correct twin.
 #   ./run_suite.sh <name> suites/t4.cases
 MODEL="gpt-5.4"
-COMMON="-n 2 -m 6 --fuzz_timeout 15 --verify_timeout 15 --verify_relations --synthesize_relations"
+COMMON="-n 2 -m 6 --fuzz_timeout 15 --verify_timeout 15 --verify_relations --synthesize_relations --replay_relations_on_patched"
 CASES=(
   "-o Time 4 Arja"
   "-c Time 4 Elixir"

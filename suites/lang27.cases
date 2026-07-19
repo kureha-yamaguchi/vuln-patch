@@ -8,7 +8,7 @@
 # Accept: run.log contains "[attribution] dropped"; record is TN.
 #   ./run_suite.sh <name> suites/lang27.cases
 MODEL="gpt-5.4"
-COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched"
 CASES=(
   "-c Lang 27 SimFix"
 )

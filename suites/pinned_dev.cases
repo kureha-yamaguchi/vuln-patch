@@ -4,7 +4,7 @@
 # Expected permanent miss: Time-11-o (cross-thread). Expected FP until
 # P3.3: Chart-26-c (flag-pattern message launder).
 MODEL="gpt-5.4"
-COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched"
 CASES=(
   "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Chart/patch1-Chart-3-Arja.patch"
   "-o patchfile:/home/code/drr/Patches/Doverfitting/Elixir/Chart/patch1-Chart-3-Elixir-plausible.patch"

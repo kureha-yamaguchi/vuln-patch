@@ -5,7 +5,7 @@
 #   deterministic getNumericalMean discriminator should now rank first.
 #   Overfit should catch RELIABLY; correct must stay clean.
 MODEL="gpt-5.4"
-COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched"
 CASES=(
   "-c patchfile:/home/code/drr/Patches/Dcorrect/ACS/Lang/patch1-Lang-7-ACS.patch"
   "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"

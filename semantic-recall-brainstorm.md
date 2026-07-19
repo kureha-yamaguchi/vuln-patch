@@ -1222,6 +1222,82 @@ p23gate — it displaced the model's own better free-form checks. So:
   the existing FREE synthesis is doing the real work (rules-through-replay
   convicted 5/8 in full30), consistent with this finding.
 
+## CORRECTION (2026-07-19): the "relations aren't a detection
+## contributor" finding is RETRACTED — it was measured with replay off
+
+The 2026-07-19 commit concluded the rule pipeline contributes nothing
+to detection and demoted it to opt-in. That conclusion does not
+survive a check against our own archives. Three faults, in order of
+severity:
+
+1. **Both ablation arms ran with the replay stage switched off.** Every
+   cases file written since the evening of 2026-07-18 (`onefull`,
+   `math53_full`, `abl_norel`, `abl_withrel`) was missing
+   `--replay_relations_on_patched` — the exact launch-check failure
+   measurement rule 8 warns about. So the ablation compared "rules
+   injected into the harness prompt" against "no rules" with the one
+   mechanism that makes rules matter disabled in BOTH arms. It ablated
+   the channel we already knew was weak (p23gate: injection displaces
+   the model's own checks) and attributed the null result to the whole
+   pipeline.
+2. **The 5-bug sample was blind to the question.** Chart-3, Lang-41,
+   Lang-60, Math-53, Math-57 — of these, only Lang-41 ever had a
+   relation contribute a catch (trigger-tier, redundant with the lifted
+   test). All five legs where replay convictions were kept in full30
+   (Chart-7, Chart-26, Lang-41, Math-2, Time-4) were absent except
+   Lang-41.
+3. **The "full30 retrospective: 0/8 caught by a relation" claim is
+   contradicted by full30's own records.** `relation_replay_kept` is
+   non-empty on 5 of the 8 caught overfits, and Math-2-o's run.log
+   verdict line reads "2 verifier-kept relation conviction(s) — patch
+   flagged as overfitting". Math-2 is caught ONLY this way: the
+   relation fires on the fuzzed tier and is silent on the trigger
+   literals, because the overfit passes the trigger scenario by
+   construction — no lifted-test check can ever see it. Weeks of
+   pre-replay history (math2pair etc.) confirm the harness alone
+   missed it every time.
+
+**The corrected statement:** rule INJECTION into harness prompts is
+not a detection contributor (the ablation is valid evidence for that,
+and it agrees with p23gate). Rule REPLAY is a detection contributor —
+load-bearing for Math-2 and margin on four more. Rules stay ON
+(with `--replay_relations_on_patched`) in every full-pipeline suite;
+injection stays minimal as already shipped.
+
+**Collateral fix 1 — the soundness-harden pass was destroying
+convictors.** The `onefull` trace shows Math-53's field-level NaN rule
+(the exact check the OBS item exists to build — it fired on 54% of
+buggy-side inputs, i.e. it detects the bug) being probed ON THE BUGGY
+BUILD, its bug-caused firings read as "fired on ordinary inputs =
+strong evidence of unsoundness", and the model rewriting it into
+`!z.isNaN()` — a form that is blind to this bug, because the buggy
+result keeps NaN in one part. The rewrite was accepted because the
+"repair still catches the bug" guard defaults to TRUE when the failing
+test has no string literals (Math-53's is numeric-only). Fixed
+mechanically in relation_screen: (a) a rule that fired on the buggy
+build during screening is never hardened — probe firings on that build
+are bug evidence, not unsoundness evidence; (b) a repair that cannot
+be verified to still catch the bug (no trigger corpus) is discarded
+and the original kept. Same lesson as ever: never auto-weaken on an
+ambiguous signal; the replay verifier judges soundness downstream.
+
+**Collateral fix 2 —** `--replay_relations_on_patched` added to every
+full-pipeline cases file that synthesizes relations (14 files;
+`abl_norel` deliberately left relation-free; `--rulegen_only` suites
+replay unconditionally and need no flag).
+
+**Process note:** the ablation runs were never archived to
+`runs-archive/`, so the retracted conclusion cannot even be re-audited
+— archive every measured run, including (especially) the ones that
+justify a direction change.
+
+**Validation in flight:** `struggle10` — the five stubborn misses
+(Chart-3, Closure-33, Lang-27, Math-53, Math-57) with their correct
+siblings as false-alarm guards, serial for pooling, replay on, harden
+off, compile-repair on. Math-53-o is the flip candidate: the convicting
+rule was already synthesized in `onefull` and only pipeline
+self-sabotage kept it from the patched build.
+
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Cross-run harness/oracle pooling (REJECTED 2026-07-18 — a hard NO

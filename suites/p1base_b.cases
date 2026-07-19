@@ -2,7 +2,7 @@
 # (legs 13-30; disk freed, pins corrected). Results merge with
 # p1base_20260717_020534's 12 valid legs to form the Phase-1 baseline.
 MODEL="gpt-5.4"
-COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched"
 CASES=(
   "-o patchfile:/home/code/drr/Patches/Doverfitting/SequenceR/Closure/patch1-Closure-92-SequenceR.patch"
   "-c patchfile:/home/code/drr/Patches/Dcorrect/ACS/Lang/patch1-Lang-7-ACS.patch"

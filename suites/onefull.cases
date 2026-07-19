@@ -1,5 +1,5 @@
 MODEL="gpt-5.4"
-COMMON="-n 2 -m 4 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --rule_compile_repair --rule_soundness_harden"
+COMMON="-n 2 -m 4 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --rule_soundness_harden"
 CASES=(
   "-o patchfile:/home/code/drr/Patches/Doverfitting/DeepRepair/Math/patch1-Math-53-DeepRepair.patch"
 )

@@ -1,10 +1,10 @@
 # 8-bug semantic set (distinct bugs of mined54_A/B) — one overfitting + one
 # correct patch per bug. Synthesis is ON since the B2 post-overhaul gate
 # (2026-07-15): this suite now measures the FULL stack. For cheaper
-# iteration without synthesis, drop --synthesize_relations locally.
+# iteration without synthesis, drop --synthesize_relations --replay_relations_on_patched locally.
 #   ./run_suite.sh <name> suites/semantic8.cases
 MODEL="gpt-5.4"
-COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched"
 CASES=(
   # o-legs of Lang-7/Arja and Lang-22/Arja EXCLUDED (environment-
   # undetectable — see suites/UNDETECTABLE.md); c-legs kept for precision.

@@ -1,6 +1,6 @@
 # ABLATION arm A: harness WITH synthesized relations
 MODEL="gpt-5.4"
-COMMON="-n 2 -m 4 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --rule_compile_repair"
+COMMON="-n 2 -m 4 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
 CASES=(
   "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Chart/patch1-Chart-3-Arja.patch"
   "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Lang/patch1-Lang-60-SimFix.patch"

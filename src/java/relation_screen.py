@@ -357,6 +357,13 @@ def screen_relations(candidates: List,
                   f'{MIN_CHECKED}, cannot screen)')
             continue
         ratio = violated / checked
+        try:
+            # Consumed by _harden_survivor: a rule that fires on the buggy
+            # build may be firing BECAUSE of the bug, so probe firings on
+            # that same build are not evidence of unsoundness.
+            rel.buggy_fire_ratio = ratio
+        except Exception:
+            pass
         record_event('deterministic', method='screen-fuzz-buggy', target=name,
                      output={'checked': checked, 'violated': violated,
                              'ratio': round(ratio, 4)})
@@ -523,6 +530,23 @@ def _harden_survivor(rel, builder, buggy_dir, jazzer_standalone_jar,
     if not check:
         _hd(outcome='skipped', reason='empty check')
         return rel
+    # The probe below runs on the BUGGY build. If this rule already fired
+    # on the buggy build during screening, its probe firings are (or may
+    # be) THE BUG showing itself — not unsoundness — and a "repair" that
+    # silences them silences the convictor (this exact failure weakened
+    # Math-53's field-level NaN rule into a bug-blind isNaN() check).
+    # Bug-caused firings on buggy are never unsoundness evidence: skip.
+    buggy_ratio = getattr(rel, 'buggy_fire_ratio', 0) or 0
+    if buggy_ratio > 0:
+        _hd(outcome='skipped-fires-on-buggy',
+            reason=(f'fired on {buggy_ratio:.0%} of buggy-side screen inputs '
+                    f'— probe firings on the buggy build are bug evidence, '
+                    f'not unsoundness evidence; hardening only applies to '
+                    f'rules silent on buggy'),
+            buggy_fire_ratio=round(buggy_ratio, 4))
+        print(f"  [harden] {name}: fires on buggy ({buggy_ratio:.0%}) — "
+              f"probe firings there are bug-caused; skipped")
+        return rel
     before = run_canned_probe(builder, buggy_dir, package, imports or [],
                               f'SVh0_{idx}', check,
                               output_subdir=f'svh0_{idx}')
@@ -581,12 +605,25 @@ def _harden_survivor(rel, builder, buggy_dir, jazzer_standalone_jar,
             proposed_repair=repaired, extremes_fired=before[1],
             ordinary_fired=ctrl_v)
         return rel
-    still_catches = True
-    if trigger_literals:
-        r = _measure_on_corpus(build, builder, buggy_dir,
-                               jazzer_standalone_jar, jazzer_api_jar,
-                               trigger_literals)
-        still_catches = bool(r and r[1] > 0)
+    if not trigger_literals:
+        # No trigger corpus (e.g. a numeric-only failing test) means guard
+        # (b) — "the repair still catches the bug" — cannot be verified.
+        # Accepting on fewer-extremes alone once replaced Math-53's
+        # convicting rule with a bug-blind one while logging "still
+        # catches the bug". Unverifiable repair: keep the original (the
+        # replay verifier still judges its soundness downstream).
+        print(f"  [harden] {name}: no trigger corpus to verify the repair "
+              f"still catches the bug — kept original")
+        _hd(outcome='repair-unverifiable',
+            reason='no trigger literals; cannot verify the repair still '
+                   'catches the bug — kept original',
+            proposed_repair=repaired, extremes_fired=before[1],
+            ordinary_fired=ctrl_v)
+        return rel
+    r = _measure_on_corpus(build, builder, buggy_dir,
+                           jazzer_standalone_jar, jazzer_api_jar,
+                           trigger_literals)
+    still_catches = bool(r and r[1] > 0)
     after = run_canned_probe(builder, buggy_dir, package, imports or [],
                              f'SVh2_{idx}', repaired, output_subdir=f'svh2_{idx}')
     fewer_extremes = bool(after and after[1] < before[1])

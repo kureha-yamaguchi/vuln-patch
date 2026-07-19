@@ -3,7 +3,7 @@
 # rule-2 confirmation repeats (Lang-27-o prior-TP regression check;
 # Math-2-o chronic flip-flop adjudication).
 MODEL="gpt-5.4"
-COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched"
 CASES=(
   "-o patchfile:/home/code/drr/Patches/Doverfitting/Jaid/Closure/patch1-Closure-62-Jaid-plausible.patch"
   "-o patchfile:/home/code/drr/Patches/Doverfitting/SequenceR/Closure/patch1-Closure-73-SequenceR.patch"

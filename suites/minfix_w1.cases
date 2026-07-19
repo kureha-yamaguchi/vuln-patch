@@ -18,7 +18,7 @@
 #   Lang-60-o   CATCH      (was miss — prompt-thinning restores free-form checks)
 #   Math-57-o   harnesses built (was no_harnesses; catch not expected pre-P3.1)
 MODEL="gpt-5.4"
-COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched"
 CASES=(
   "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Lang/patch1-Lang-60-SimFix.patch"
   "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
