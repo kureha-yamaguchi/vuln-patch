@@ -433,13 +433,23 @@ def _write_trace_md(path, bug, label, events, outcome=None):
     # feedback, updated coverage). So collapse any message already shown
     # verbatim in an earlier step, and print only the NEW messages of a call.
     seen_msg = {}
+    # Collapsible rendering: every step keeps a VISIBLE one-line headline
+    # (navigable via the markdown outline), and the bulk sits in native
+    # markdown toggles (<details>) — prompts CLOSED by default, LLM outputs
+    # OPEN but collapsible, long deterministic dumps CLOSED behind their
+    # one-line summary. The blank line after each <summary> is required for
+    # markdown (code fences etc.) to render inside the toggle.
+    L.append("*Viewing: every ▸ line is a click-to-expand toggle (VS Code "
+             "markdown preview / GitHub). Prompts are collapsed by default; "
+             "LLM outputs start expanded. The raw file stays fully "
+             "greppable.*\n")
     for e in events:
         seq = e.get('seq')
         if e.get('kind') == 'llm':
             msgs = e.get('messages') or []
             L.append(f"\n---\n## [{seq}] 🧠 LLM call — **{_llm_role(msgs)}** "
                      f"— model `{e.get('model', '')}`")
-            L.append("**Prompt:**\n")
+            prompt_parts = []
             _new = 0
             for m in msgs:
                 role = m.get('role', '?') if isinstance(m, dict) else '?'
@@ -447,24 +457,59 @@ def _write_trace_md(path, bug, label, events, outcome=None):
                            else str(m)) or ''
                 key = (role, content)
                 if key in seen_msg:
-                    L.append(f"- *[{role}] message: identical to step "
-                             f"[{seen_msg[key]}] — not reprinted*")
+                    prompt_parts.append(
+                        f"- *[{role}] message: identical to step "
+                        f"[{seen_msg[key]}] — not reprinted*")
                 else:
                     seen_msg[key] = seq
                     _new += 1
-                    L.append(f"**[{role}]**\n```\n{content}\n```")
+                    prompt_parts.append(f"**[{role}]**\n```\n{content}\n```")
             if _new == 0:
-                L.append("*(every message identical to earlier steps)*")
-            L.append("\n**Output:**\n```\n"
-                     + str(e.get('output', '')).strip() + "\n```")
+                prompt_parts.append(
+                    "*(every message identical to earlier steps)*")
+            _pchars = sum(len(p) for p in prompt_parts)
+            _dedup = (f", {_new} new" if _new < len(msgs) else "")
+            L.append(f"<details><summary>▸ Prompt ({len(msgs)} message(s), "
+                     f"~{_pchars:,} chars{_dedup})</summary>\n")
+            L.extend(prompt_parts)
+            L.append("\n</details>")
+            _out = str(e.get('output', '')).strip()
+            L.append(f"<details open><summary>▸ Output "
+                     f"(~{len(_out):,} chars)</summary>\n")
+            L.append("```\n" + _out + "\n```")
+            L.append("\n</details>")
         else:
             det = {k: v for k, v in e.items()
                    if k not in ('seq', 'kind', 'method', 'target', 'output')}
             L.append(f"\n---\n## [{seq}] ⚙️ {e.get('method', '')}"
                      + (f" · `{e.get('target')}`" if e.get('target') else ''))
-            L.append("**output:** " + _fmt_det_output(e.get('output')))
+            _body = _fmt_det_output(e.get('output'))
+            # Short outputs stay inline — they ARE the skeleton of the
+            # trace; anything long/multi-line collapses behind its first
+            # meaningful line.
+            if '\n' in _body and len(_body) > 400:
+                _head = next((ln.strip('`*# {}",') for ln
+                              in _body.strip().splitlines()
+                              if ln.strip() and not
+                              ln.strip().startswith('```')
+                              and ln.strip() not in ('{', '[')),
+                             'output')
+                _head = _head or 'output'
+                L.append(f"<details><summary>▸ output — {_head[:100]} "
+                         f"(~{len(_body):,} chars)</summary>\n")
+                L.append("**output:** " + _body)
+                L.append("\n</details>")
+            else:
+                L.append("**output:** " + _body)
             for k, v in det.items():
-                L.append(f"- {k}: {v}")
+                _vs = str(v)
+                if len(_vs) > 400:
+                    L.append(f"<details><summary>▸ {k} "
+                             f"(~{len(_vs):,} chars)</summary>\n")
+                    L.append(f"- {k}: {v}")
+                    L.append("\n</details>")
+                else:
+                    L.append(f"- {k}: {v}")
     with open(path, 'w', encoding='utf-8') as fh:
         fh.write("\n".join(L) + "\n")
 
