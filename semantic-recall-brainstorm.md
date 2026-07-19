@@ -1295,12 +1295,47 @@ replay unconditionally and need no flag).
 — archive every measured run, including (especially) the ones that
 justify a direction change.
 
-**Validation in flight:** `struggle10` — the five stubborn misses
-(Chart-3, Closure-33, Lang-27, Math-53, Math-57) with their correct
-siblings as false-alarm guards, serial for pooling, replay on, harden
-off, compile-repair on. Math-53-o is the flip candidate: the convicting
-rule was already synthesized in `onefull` and only pipeline
-self-sabotage kept it from the patched build.
+**Validation result (struggle10, 2026-07-19, 10 legs):** TP=1 FN=4
+FP=0 TN=5 — precision 1.00 held, and **Lang-27-o was caught for the
+first time in project history** (harness-invented metamorphic
+type-contract checks: `"0e0D"` must parse as Double, the overfit
+returns BigDecimal; judge kept it with correct contract reasoning).
+The repair is mechanically confirmed in every trace: replay runs on
+every leg (quiet on all five correct legs — no precision cost), and R1
+compile-repair produced 2 surviving Closure rules where history had
+zero. Full leg-by-leg reading in
+`runs-archive/runs/struggle10_20260719_073304/ANALYSIS.md`. Two
+findings that CHANGE the plan:
+- **Math-53-o is NOT an OBS bug.** The DeepRepair overfit's NaN
+  handling equals the real fix; its only certified divergence (3×
+  exception-class) is returning `Complex.NaN` from `add(null)` where
+  the javadoc says throw NullArgumentException. No NaN rule of any
+  shape can catch it. The mechanism is a documented-@throws rule —
+  item R-THROWS below.
+- **Lang-27's catch was structural luck, not new invention.** full30's
+  harnesses had the same suffix-type checks but let the seed's
+  NumberFormatException escape uncaught, so the patched-side fuzz died
+  on the first (dismissible) crash before any metamorphic check ran.
+  This roll fenced it. H6 makes the fencing deterministic; the
+  confirming repeat rides in hfix11.
+
+#### Documented-@throws rules (R-THROWS, NEW 2026-07-19)
+
+Station 2. When a touched method's javadoc declares `@throws X` for a
+named input class (null argument, malformed input, out-of-range), one
+synthesized rule must construct exactly that input class and assert
+the documented throw ("calling add(null) must throw
+NullArgumentException; completing normally violates the contract").
+Same trust tier as formula-first (the documented contract, source #3).
+Shape properties: silent on buggy whenever the buggy build honours the
+@throws (a tripwire — the screening change that keeps ALL silent
+tripwires is a prerequisite, shipped 2026-07-19), fires on an overfit
+whose reordered/added guard swallows the throw. Targets Math-53-o
+(direct trace evidence) and generalizes Lang-27's idea (b) from CRASH.
+Validate on the Math-53 pair: overfit convicts via replay, correct leg
+stays quiet (the correct fix checks null FIRST, so the rule never
+fires there). Risk: low — the input class is stated by the docs, not
+guessed; the judge still reviews every firing.
 
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
