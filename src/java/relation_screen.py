@@ -45,7 +45,6 @@ from llm import record_event
 from fuzz_runner import run_jazzer
 from java_source import (library_subclass, negative_modulo_index,
                          violation_swallowed)
-from special_corpus import build_special_corpus
 
 _STATS_RE = re.compile(
     r'\[relscreen\]\s+checked=(\d+)\s+violated=(\d+)')
