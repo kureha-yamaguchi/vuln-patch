@@ -394,6 +394,13 @@ def screen_relations(candidates: List,
                     # random inputs → it is asserting the WRONG direction
                     # exactly where the test pins the right one.
                     direction = 'inverted'
+        try:
+            # Consumed by the replay verifier (run.py): the fuzzed-tier
+            # comparison fact needs the mechanical answer to "does this
+            # relation detect the reported defect?" as data, not prose.
+            rel.screen_direction = direction
+        except Exception:
+            pass
 
         if direction == 'inverted':
             # DEMOTED, not dropped (changed after minfix_w2c): "silent on

@@ -1,7 +1,14 @@
 # batch4: validate the batch3-failure fixes (hardened defect-family drop,
 # generic-lift fact, tightened symmetric/SYM-2b escape hatches, de-overfit
-# prompt examples). Same 8 legs as batch3 for a direct before/after read,
-# plus Math-2-o as a regression guard.
+# prompt examples, [buggy-replay fact] on EVERY firing incl. the
+# existence-proof wording, [replay comparison fact] on fuzzed-tier
+# relation convictions). Same 8 legs as batch3 for a direct
+# before/after read, plus Math-2-o as a regression guard.
+# Trace fingerprints to grep: "[buggy-replay] fact attached" on every
+# firing with an artifact; "[defect-family] auto-dismissed" on the
+# Lang-27-c FP class; "[replay comparison fact]" on any fuzzed-tier
+# relation conviction (Math-2-o must KEEP through it, via its
+# documented-formula contract source).
 # Named targets:
 #   Lang-27-c — batch3 FP (judge overrode the advisory defect-family fact
 #     on explicit-float-suffix). Now a MECHANICAL drop, but only when all

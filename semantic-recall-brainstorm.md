@@ -1438,6 +1438,35 @@ legs as batch3 + Math-2-o as canonical-replay regression guard):
    Audit method: AST scan of all non-docstring string literals for
    dev-set tokens; remaining hits are generic IEEE-754 edge-value
    enumerations only.
+5. **[buggy-replay fact] on EVERY patched-side firing** (added after
+   the first four, prompted by the question "anything else general?").
+   The batch3 Lang-27-o trace has ZERO buggy-replay facts: the plain
+   (neither latent nor symmetric) case computed nothing, and a
+   dismissal WHY invented the missing fact ("already occurs on the
+   buggy build too" — never checked). Now one replay of the exact
+   firing input on the buggy build runs for every firing with a
+   persisted input, and one unified fact covers all cases:
+   fires-on-both (+ defect present = patch-failed-to-fix; absent =
+   settled-scenario wording), quiet-on-buggy (clean run = existence
+   proof: the buggy build itself satisfies the check here, so UNSOUND
+   requires a contradicted documented contract, not an imagined
+   implementation; shadowed-by-other-check and other-exception cases
+   stated as inconclusive), replay-error = ABSTAIN. The hardened
+   crashing drop now applies uniformly (scan-symmetry no longer gates
+   it — the replay itself is the evidence). This deduplicated the
+   three previous per-branch replay implementations.
+6. **[replay comparison fact] on fuzzed-tier relation convictions** —
+   the open FP channel (fpfix6 62-c) closed WITHOUT auto-dismissal.
+   Screening already measures every relation on the buggy build;
+   `screen_direction` is now persisted as data and the verifier gets
+   the computed comparison: direction-confirmed + silent-at-trigger
+   on patched = defect fixed at the trigger, keep only for
+   same-defect-beyond-trigger firings; fires-on-both-builds
+   off-trigger = decide by CONTRACT SOURCE (documented behaviour the
+   bug is about → patch-failed-to-fix, KEEP — the Math-2 shape
+   survives by construction; invented premise → pre-existing,
+   DISMISS — the caret shape dies); silent-tripwire = keep only with
+   a documented source (the R-THROWS shape survives by construction).
 
 Still OPEN after this batch (unchanged): J1 — now the top item; the
 fuzzed-tier relation-replay path still has no buggy-side computed fact

@@ -1851,65 +1851,170 @@ def main():
                     from java_source import oracle_ids_in_text as _oids
                     _latent_here = (latent_map.get(r.harness_path) or set())
                     _fired_ids = _oids(fired or '')
-                    # P0.4 step 2, REVISED after minfix_w1: never dismiss on
-                    # latency alone. The buggy-side scan stops at the first
-                    # firing oracle per input, so a sound check behind an
-                    # always-firing seed oracle looks latent although its
-                    # first real chance to run comes exactly when the
-                    # overfit silences the seed — a mechanical dismissal
-                    # here killed the true Lang-60-o capacity catch.
-                    # Instead: mechanically replay THIS firing's exact
-                    # input on the BUGGY build and give the verifier the
-                    # one fact latency can't provide.
-                    _latent_note = None
-                    if _fired_ids and _fired_ids <= _latent_here:
+                    # P0.4 step 2, REVISED after minfix_w1 and again after
+                    # batch3: never dismiss on latency alone, and never
+                    # let the judge GUESS what the buggy build does. For
+                    # EVERY firing with a persisted input — latent,
+                    # symmetric or plain (batch3's Lang-27-o dismissals
+                    # cited "already occurs on the buggy build too" with
+                    # no fact computed) — replay the exact input on the
+                    # BUGGY build once and derive the attribution fact
+                    # from what actually happens there.
+                    _breplay_ids, _breplay_out = None, ''
+                    if _fired_ids and getattr(r, 'artifact_path', None):
                         if buggy_cp is None:
                             buggy_cp = builder.test_classpath(
                                 selection.buggy_dir)
-                        _rep = None
-                        if getattr(r, 'artifact_path', None):
-                            _rep = fr.replay_input_oracles(
-                                r.harness_path, r.class_name, buggy_cp,
-                                r.artifact_path)
-                        _base = ("[latent oracle] check(s) "
-                                 + ", ".join(sorted(_fired_ids))
-                                 + " never fired during the buggy-side "
-                                 "acceptance scan (that scan stops at the "
-                                 "first firing oracle per input, so this "
-                                 "alone proves nothing). ")
-                        if _rep is None:
-                            _latent_note = (
-                                _base + "Replay of this firing's input on "
-                                "the buggy build was unavailable — judge "
-                                "on soundness alone, sceptically.")
-                        elif _fired_ids & _rep:
-                            _latent_note = (
-                                _base + "Mechanical replay: this firing's "
-                                "EXACT input fires the SAME check on the "
-                                "BUGGY build — the violated behaviour "
-                                "exists on both builds, i.e. the patch "
-                                "did not change it. If the violated "
-                                "contract is the very behaviour this bug "
-                                "report is about, the patch left the bug "
-                                "unfixed and this finding is SOUND; if it "
-                                "is an out-of-domain artifact unrelated "
-                                "to the reported bug (undocumented edge "
-                                "case, documented @throws territory), it "
-                                "is UNSOUND.")
-                            print(f"      [latent] replay: same check "
-                                  f"fires on buggy for this input — "
-                                  f"verifier decides")
+                        (_breplay_ids,
+                         _breplay_out) = fr.replay_input_report(
+                            r.harness_path, r.class_name, buggy_cp,
+                            r.artifact_path)
+                    from fuzz_runner import (
+                        exception_types_in_output as _etio)
+                    _bt_all = (_etio(_breplay_out)
+                               if _breplay_ids is not None else set())
+                    _bt_defect = _bt_all & {
+                        e.split('.')[-1]
+                        for e in (expected_exceptions or []) if e}
+                    # Universal mechanical dismissal for CRASHING bugs —
+                    # no longer limited to scan-symmetric checks
+                    # (symmetry-in-scan only proved the check fired at
+                    # SOME input; the replay proves it at THIS one). Drop
+                    # requires every leg computed: the replay succeeded
+                    # (errored replay = ABSTAIN), the SAME check fires on
+                    # the buggy build at the exact input, and no defect
+                    # exception appears anywhere in that run's output
+                    # (headlines, cause chains, fenced rethrows). Outside
+                    # the reported crash the buggy build is a
+                    # reference-correct implementation, so a property it
+                    # violates on a completed run is not a real
+                    # requirement.
+                    if (bug_kind == 'crashing' and expected_exceptions
+                            and _breplay_ids is not None
+                            and (_fired_ids & _breplay_ids)
+                            and not _bt_defect):
+                        _why = (
+                            "DEFECT-FAMILY-DISMISSED (mechanical): "
+                            "crashing bug; the exact firing input, "
+                            "replayed on the buggy build, fires this "
+                            "SAME check there and shows no trace of the "
+                            "reported defect exception anywhere in that "
+                            "run (headline, cause chain, or fenced "
+                            "rethrow; observed: "
+                            + (", ".join(sorted(_bt_all)[:4])
+                               or 'no exception types')
+                            + "). Outside the reported crash the buggy "
+                            "build is a reference-correct "
+                            "implementation, so a property it violates "
+                            "on a completed run is not a real "
+                            "requirement — the firing measures "
+                            "pre-existing surface, not the patch.")
+                        print(f"      [defect-family] auto-dismissed: "
+                              f"{(fired or '')[:90]}")
+                        drop_reasons.append((fired, _why))
+                        continue
+                    # One attribution fact, appended to whichever branch
+                    # note applies below (latent / symmetric / plain).
+                    _breplay_note = None
+                    if _fired_ids and getattr(r, 'artifact_path', None):
+                        if _breplay_ids is None:
+                            _breplay_note = (
+                                "[buggy-replay fact] replaying this "
+                                "firing's exact input on the buggy build "
+                                "was unavailable — no attribution fact; "
+                                "judge on soundness alone, sceptically.")
+                        elif _fired_ids & _breplay_ids:
+                            if _bt_defect:
+                                _breplay_note = (
+                                    "[buggy-replay fact] the exact firing "
+                                    "input fires the SAME check on the "
+                                    "BUGGY build AND the reported defect "
+                                    "exception appears there ("
+                                    + ", ".join(sorted(_bt_defect)[:4])
+                                    + ") — the input lies inside the "
+                                    "reported bug's own family and the "
+                                    "patch did not change the outcome: "
+                                    "the patch-failed-to-fix pattern.")
+                            else:
+                                _breplay_note = (
+                                    "[buggy-replay fact] the exact firing "
+                                    "input fires the SAME check on the "
+                                    "BUGGY build — behaviour at this "
+                                    "input is identical on both builds; "
+                                    "the patch did not cause or preserve "
+                                    "anything here. The REAL failing "
+                                    "test was rerun on this patched "
+                                    "build and PASSES, so the test's own "
+                                    "scenario is settled in the patch's "
+                                    "favour. Keep this finding ONLY if "
+                                    "it asserts the very behaviour the "
+                                    "failing test shows is wrong, at "
+                                    "inputs the real test does NOT "
+                                    "itself exercise; otherwise it "
+                                    "measures pre-existing surface — "
+                                    "dismiss.")
+                        elif _bt_defect:
+                            _breplay_note = (
+                                "[buggy-replay fact] on this exact input "
+                                "the BUGGY build produces the reported "
+                                "defect exception ("
+                                + ", ".join(sorted(_bt_defect)[:4])
+                                + ") while the patched build completes "
+                                "and this check condemns its completed "
+                                "output — the crash-suppressing-patch "
+                                "pattern (the patch silences the crash "
+                                "but returns a value violating the "
+                                "asserted contract). Strong evidence "
+                                "against the patch.")
+                        elif _breplay_ids:
+                            _breplay_note = (
+                                "[buggy-replay fact] on this exact input "
+                                "a DIFFERENT check fires first on the "
+                                "buggy build ("
+                                + ", ".join(sorted(_breplay_ids)[:4])
+                                + "), so whether THIS check would fire "
+                                "there is shadowed — attribution "
+                                "inconclusive; judge the check against "
+                                "the documented contract.")
+                        elif _bt_all:
+                            _breplay_note = (
+                                "[buggy-replay fact] on this exact input "
+                                "the buggy build neither fires this "
+                                "check nor shows the reported defect (it "
+                                "raises " + ", ".join(sorted(_bt_all)[:4])
+                                + " instead) — attribution unclear; "
+                                "judge the check against the documented "
+                                "contract.")
                         else:
-                            _latent_note = (
-                                _base + "Mechanical replay: this firing's "
-                                "exact input does NOT fire this check on "
-                                "the buggy build — the patch INTRODUCED "
-                                "the violation; strong evidence against "
-                                "the patch unless the check itself is "
-                                "unsound.")
-                            print(f"      [latent] replay: check quiet on "
-                                  f"buggy for this input — "
-                                  f"patch-introduced violation")
+                            _breplay_note = (
+                                "[buggy-replay fact] the buggy build "
+                                "handles this exact input cleanly "
+                                "WITHOUT firing this check — the patch "
+                                "INTRODUCED the violation here, and the "
+                                "buggy build is an existence proof that "
+                                "real code satisfies the asserted "
+                                "property on this input. 'A correct "
+                                "implementation might legitimately "
+                                "violate it' is not available as "
+                                "grounds; to answer UNSOUND you must "
+                                "point at a documented contract the "
+                                "assertion contradicts.")
+                        print(f"      [buggy-replay] fact attached "
+                              f"(same-check={bool(_fired_ids & (_breplay_ids or set()))}, "
+                              f"defect={bool(_bt_defect)})")
+                    _latent_note = None
+                    if _fired_ids and _fired_ids <= _latent_here:
+                        _latent_note = (
+                            "[latent oracle] check(s) "
+                            + ", ".join(sorted(_fired_ids))
+                            + " never fired during the buggy-side "
+                            "acceptance scan (that scan stops at the "
+                            "first firing oracle per input, so this "
+                            "alone proves nothing). "
+                            + (_breplay_note
+                               or "No persisted input to replay — judge "
+                                  "on soundness alone, sceptically."))
+                        _breplay_note = None
                     # P3.3 crash-site pinning (mechanical): the same alarm
                     # fired on both builds, but from DISJOINT underlying
                     # exception types — a different (pre-existing) crash
@@ -2003,172 +2108,15 @@ def main():
                                  "observable or a setup-dependent one "
                                  "that would fire on any build, it is "
                                  "pre-existing surface — dismiss it.")
-                        # SYM-2 (fpfix6 Lang-27-c FP): make the "behaviour
-                        # family" question COMPUTED instead of judged where
-                        # we can. For a crashing bug, replay the exact
-                        # firing input on the buggy build and check whether
-                        # it reproduces the reported defect (the
-                        # ground-truth throwable). The judge kept a
-                        # signed-zero createNumber quirk because "the bug
-                        # is in createNumber" made every createNumber
-                        # check pass the family test — but the firing
-                        # input (-0.0) does not crash on buggy, which
-                        # settles it mechanically.
-                        # SYM-2b (fpfix6 Closure-62-c residual): the
-                        # SEMANTIC version of the same computed fact.
-                        # Replay the exact firing input on the buggy
-                        # build's copy of this harness: if the SAME check
-                        # fires there, the patch did not change the
-                        # behaviour measured at this input — for a firing
-                        # at a NON-trigger input that is pre-existing
-                        # surface, whatever the check's stated rationale.
-                        # (Each run the writer invents a NEW plausible
-                        # caret/padding premise; the facts must not be
-                        # premise-specific.)
-                        if (bug_kind == 'semantic'
-                                and getattr(r, 'artifact_path', None)
-                                and buggy_cp and _fired_ids):
-                            _bids = fr.replay_input_oracles(
-                                r.harness_path, r.class_name,
-                                buggy_cp, r.artifact_path)
-                            if _bids is not None and (_fired_ids & _bids):
-                                # Wording note (batch3): an earlier
-                                # version escaped with "unless it asserts
-                                # the failing test's own pinned
-                                # behaviour" — which is exactly what an
-                                # UNFAITHFUL test-copy claims, so the
-                                # judge kept one. The real test passing
-                                # on this build settles the test's own
-                                # scenario; the only keepable shape left
-                                # is the bug's own observable at inputs
-                                # the test does not itself exercise.
-                                _note += (
-                                    "\n[defect-family fact] the exact "
-                                    "firing input was replayed on the "
-                                    "BUGGY build and the SAME check fires "
-                                    "there — behaviour at this input is "
-                                    "identical on both builds, so the "
-                                    "patch did not cause or preserve "
-                                    "anything here. The REAL failing "
-                                    "test was rerun on this patched "
-                                    "build and PASSES, so the test's own "
-                                    "scenario is settled in the patch's "
-                                    "favour — a rebuild of the test's "
-                                    "own scenario that fires here "
-                                    "diverges from the real test and "
-                                    "proves nothing. Keep this finding "
-                                    "ONLY if it asserts the very "
-                                    "behaviour the failing test shows is "
-                                    "wrong, at inputs the real test does "
-                                    "NOT itself exercise; otherwise it "
-                                    "measures pre-existing surface — "
-                                    "dismiss.")
-                            elif _bids is not None:
-                                _note += (
-                                    "\n[defect-family fact] replaying the "
-                                    "exact firing input on the BUGGY "
-                                    "build does NOT fire this check — "
-                                    "the violation is patch-introduced "
-                                    "at this input; weigh accordingly.")
-                        if (bug_kind == 'crashing' and expected_exceptions
-                                and getattr(r, 'artifact_path', None)
-                                and buggy_cp):
-                            # MECHANICAL DISMISSAL (batch3: the judge
-                            # overrode the advisory form of this fact with
-                            # contract reasoning, so where the fact is
-                            # unambiguous it must be a drop, not a note).
-                            # For a CRASHING bug the buggy build is a
-                            # reference-correct implementation at every
-                            # input that does not produce the reported
-                            # defect (it passes the whole regression suite
-                            # bar the trigger test). Drop requires ALL
-                            # THREE computed conditions — anything less
-                            # stays a fact for the judge:
-                            #   1. the replay itself succeeded (an errored
-                            #      replay is ABSTAIN, never 'no crash');
-                            #   2. no defect exception appears ANYWHERE in
-                            #      the buggy replay's output — headlines,
-                            #      cause chains, fenced rethrows — so a
-                            #      harness that fences the defect and
-                            #      rethrows under its own alarm type
-                            #      cannot fake 'no repro';
-                            #   3. the SAME check fires on buggy at this
-                            #      exact input (symmetric-in-scan is not
-                            #      enough: the scan fired at some input,
-                            #      this proves it at THIS one) — i.e. the
-                            #      library COMPLETED here on the
-                            #      reference build and the check condemns
-                            #      the completed behaviour it endorses.
-                            from fuzz_runner import (
-                                exception_types_in_output as _etio)
-                            _bids2, _bout = fr.replay_input_report(
-                                r.harness_path, r.class_name,
-                                buggy_cp, r.artifact_path)
-                            if _bids2 is None:
-                                _note += (
-                                    "\n[defect-family fact] replaying the "
-                                    "exact firing input on the buggy "
-                                    "build was unavailable — no "
-                                    "attribution fact; judge on "
-                                    "soundness alone, sceptically.")
-                            else:
-                                _bt2 = _etio(_bout)
-                                _repro = bool(_bt2 & {
-                                    e.split('.')[-1]
-                                    for e in expected_exceptions if e})
-                                if _repro:
-                                    _note += (
-                                        "\n[defect-family fact] the exact "
-                                        "firing input REPRODUCES the "
-                                        "reported defect on the buggy "
-                                        "build (observed: "
-                                        + ", ".join(sorted(_bt2)[:4])
-                                        + ") — it lies inside the "
-                                        "reported bug's own input family; "
-                                        "a check firing on it on BOTH "
-                                        "builds is the "
-                                        "patch-failed-to-fix pattern.")
-                                elif _fired_ids & _bids2:
-                                    _why = (
-                                        "DEFECT-FAMILY-DISMISSED "
-                                        "(mechanical): crashing bug; the "
-                                        "exact firing input, replayed on "
-                                        "the buggy build, fires this SAME "
-                                        "check there and shows no trace "
-                                        "of the reported defect exception "
-                                        "anywhere in that run (headline, "
-                                        "cause chain, or fenced rethrow"
-                                        "; observed: "
-                                        + (", ".join(sorted(_bt2)[:4])
-                                           or 'ran clean')
-                                        + "). Outside the reported crash "
-                                        "the buggy build is a "
-                                        "reference-correct "
-                                        "implementation, so a property it "
-                                        "violates on a completed run is "
-                                        "not a real requirement — the "
-                                        "firing measures pre-existing "
-                                        "surface, not the patch.")
-                                    print(f"      [defect-family] "
-                                          f"auto-dismissed: "
-                                          f"{(fired or '')[:90]}")
-                                    drop_reasons.append((fired, _why))
-                                    continue
-                                else:
-                                    _note += (
-                                        "\n[defect-family fact] the exact "
-                                        "firing input does not reproduce "
-                                        "the reported defect on the buggy "
-                                        "build, and this check stays "
-                                        "QUIET there at this exact input "
-                                        "(its scan-time firing was at "
-                                        "other inputs) — the patch "
-                                        "changed this behaviour here. A "
-                                        "correct fix may legitimately "
-                                        "change nearby behaviour; judge "
-                                        "whether the new behaviour "
-                                        "violates the documented "
-                                        "contract.")
+                        # The computed attribution fact (buggy replay
+                        # of the exact firing input) is built once above
+                        # for every firing; it carries the SYM-2/SYM-2b
+                        # content that used to live here, and the
+                        # unambiguous crashing case has already been
+                        # mechanically dropped before this branch.
+                        if _breplay_note:
+                            _note += "\n" + _breplay_note
+                            _breplay_note = None
                         evid = (evid + "\n" + _note) if evid else _note
                     elif _fired_ids & _latent_here:
                         _note = ("[latent oracle] check(s) "
@@ -2178,7 +2126,19 @@ def main():
                                  "acceptance — this patched-build firing "
                                  "is their first-ever execution; there is "
                                  "no buggy-side evidence behind them.")
+                        if _breplay_note:
+                            _note += "\n" + _breplay_note
+                            _breplay_note = None
                         evid = (evid + "\n" + _note) if evid else _note
+                    elif _breplay_note:
+                        # PLAIN firing — neither latent nor symmetric.
+                        # batch3 (Lang-27-o): these reached the judge with
+                        # no buggy-side fact at all, and the dismissals
+                        # invented one ("already occurs on the buggy build
+                        # too"). Attach the computed fact instead.
+                        evid = ((evid + "\n" + _breplay_note)
+                                if evid else _breplay_note)
+                        _breplay_note = None
                     # W1.5 (p23gate FP fix): when the fired oracle is a lift
                     # of a trigger test, tell the verifier the decisive fact
                     # it otherwise never learns — the REAL trigger test was
@@ -2368,6 +2328,77 @@ def main():
                             "rule's asserted property is justified by the "
                             "documented contract INDEPENDENT of the "
                             "failing test's specific setup.")
+                    else:
+                        # Fuzzed-tier comparison fact (the batch3 open
+                        # item: this path produced the fpfix6 62-c FP with
+                        # no computed buggy-side comparison). Screening
+                        # already measured this same check on the BUGGY
+                        # build — state the comparison as data instead of
+                        # leaving the judge to reconstruct it from the
+                        # screen-note prose. Both the FP shape (invented
+                        # premise firing on both builds off-trigger) and
+                        # the true-catch shape (a documented relation the
+                        # trigger corpus cannot reach) share this firing
+                        # signature, so the fact separates them by
+                        # CONTRACT SOURCE, never by auto-dismissal.
+                        _dirn = getattr(rel, 'screen_direction', None)
+                        _bfr = getattr(rel, 'buggy_fire_ratio', 0) or 0
+                        if _dirn == 'confirmed':
+                            _evid += (
+                                "\n[replay comparison fact] at screening "
+                                "this relation was DIRECTION-CONFIRMED "
+                                "(it fires on the buggy build at the "
+                                "failing test's own trigger inputs — it "
+                                "mechanically detects the reported "
+                                "defect), but on THIS patched build it "
+                                "is silent at those trigger inputs and "
+                                "fires only on other fuzzed inputs: the "
+                                "defect it measures is fixed AT the "
+                                "trigger. Keep only if these firings "
+                                "show the SAME defect surviving beyond "
+                                "the trigger (the same observable at "
+                                "inputs the trigger corpus merely "
+                                "missed); firings explained by "
+                                "edge-input fragility of the check "
+                                "itself (special values, tolerances) do "
+                                "not convict.")
+                        elif _bfr > 0:
+                            _evid += (
+                                "\n[replay comparison fact] this "
+                                "relation fired on "
+                                f"{_bfr:.0%} of fuzzed inputs on the "
+                                "BUGGY build at screening and was NOT "
+                                "direction-confirmed there (no "
+                                "mechanical evidence it detects the "
+                                "reported defect at the failing test's "
+                                "own inputs) — it fires on BOTH builds "
+                                "away from the trigger, so the patch did "
+                                "not change the behaviour it measures. "
+                                "Decide by CONTRACT SOURCE: (a) the "
+                                "asserted property is the documented "
+                                "behaviour the reported bug is about (a "
+                                "stated formula/range/format the failing "
+                                "test also pins) — then firing on both "
+                                "builds is the patch-failed-to-fix "
+                                "pattern: KEEP; (b) it has no documented "
+                                "source (an invented plausibility) or "
+                                "concerns a feature unrelated to the "
+                                "reported bug — pre-existing surface: "
+                                "DISMISS.")
+                        else:
+                            _evid += (
+                                "\n[replay comparison fact] this "
+                                "relation was SILENT everywhere on the "
+                                "buggy build at screening (a tripwire) "
+                                "and fires on THIS patched build — the "
+                                "patch introduced the violation. Keep "
+                                "only if the asserted requirement is "
+                                "stated by the documented contract (a "
+                                "declared @throws, a documented "
+                                "range/format/formula quoted in the "
+                                "relation's contract line); an invented "
+                                "premise with no documented source does "
+                                "not convict.")
                     _j3r = _j3_failing_test_block(failure_tests)
                     if _j3r:
                         _evid += "\n" + _j3r
