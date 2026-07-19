@@ -763,7 +763,9 @@ def main():
         class_ctx = assemble_class_context(
             selection.buggy_dir,
             context.modified_files or [],
-            [fn.func_name for fn in context.functions])
+            [fn.func_name for fn in context.functions],
+            test_sources=[getattr(ft, 'method_source', '') or ''
+                          for ft in failure_tests])
         if class_ctx:
             print(f"  [class-ctx] {len(class_ctx)} class skeleton(s), "
                   f"{sum(len(b) for b in class_ctx):,} chars")
@@ -1412,6 +1414,98 @@ def main():
 
     _print_summary(selection, result)
 
+    # RETRY (one aimed extra attempt): when the ACCEPTED set is dominated
+    # by test-copy / crash-reproduction checks, an overfitting patch
+    # passes it by construction — the overfit is built to pass the test's
+    # own scenario, so only INVENTED contract checks (sibling-family,
+    # metamorphic variation, hidden-state) can convict it. Batch4
+    # Lang-27-o: three accepted harnesses, ONE invented check among them,
+    # nothing fired on patched. Mechanical trigger, one extra attempt,
+    # never more (each extra harness is a false-alarm lottery ticket on
+    # the correct sibling — the blanket-increase rejection stands).
+    if result.successful_results:
+        from java_source import oracle_ids_in_text as _oids_r
+        _copyish = re.compile(r'lift|seed|crash|repro|root[-_]?cause',
+                              re.I)
+        _tnames = {getattr(ft, 'test_method', '') or ''
+                   for ft in failure_tests}
+        _invented: set = set()
+        for _br in result.successful_results:
+            try:
+                with open(_br.harness_path, encoding='utf-8',
+                          errors='replace') as _fh:
+                    _ids_here = _oids_r(_fh.read())
+            except OSError:
+                continue
+            for _oid in _ids_here:
+                if _copyish.search(_oid):
+                    continue
+                if any(t and t in _oid for t in _tnames):
+                    continue
+                _invented.add(_oid)
+        if len(_invented) < 2:
+            print(f"\n  [RETRY] accepted set has only "
+                  f"{len(_invented)} invented check(s) "
+                  f"({sorted(_invented) or 'none'}) — one aimed extra "
+                  f"attempt for contract-invented checks")
+            _retry_messages = list(messages) + [{
+                'role': 'user',
+                'content': (
+                    "AIMED RETRY — the harnesses accepted so far are "
+                    "dominated by test-copy and crash-reproduction "
+                    "checks. An overfitting patch is BUILT to pass the "
+                    "failing test's own scenario, so those checks can "
+                    "never convict it; only checks INVENTED from the "
+                    "documented contract can. Write ONE more harness "
+                    "whose value is invented checks: sibling-family "
+                    "agreement (see the method-families block if shown), "
+                    "metamorphic input variations (equivalent input "
+                    "forms must agree; a documented selection rule must "
+                    "hold), and hidden-state/read-only checks (public "
+                    "no-argument readers must not change across a "
+                    "documented read-only call). Include the minimal "
+                    "trigger reproduction so acceptance can verify the "
+                    "harness reaches the defect, but add AT LEAST THREE "
+                    "distinct invented checks with their own "
+                    "[oracle:<short-id>] names. All previous rules "
+                    "(compilation, exception fencing, oracle naming, "
+                    "whitespace normalization) still apply. Return the "
+                    "full FuzzHarness.java. Raw Java source only. No "
+                    "markdown fences.")}]
+            _retry_campaign = HarnessCampaign(
+                generator=primary_gen,
+                builder=builder,
+                target_successes=1,
+                max_attempts=3,
+                max_repair_failures=args.max_repair_failures,
+                verifier=verifier,
+                require_trigger=args.require_trigger,
+                escalation_generator=escalation_gen,
+                escalate_after=config.HARNESS_ESCALATE_AFTER,
+                trigger_wrong_values=trigger_wrong_values,
+            )
+            _retry_result = _retry_campaign.run(
+                _retry_messages, selection.buggy_dir,
+                patch_text=context.patch_text)
+            if _retry_result.successful_results:
+                result.successful_results.extend(
+                    _retry_result.successful_results)
+                try:
+                    result.accepted_trigger_details.extend(
+                        getattr(_retry_result,
+                                'accepted_trigger_details', []) or [])
+                except Exception:
+                    pass
+                record_extras['retry_harness_added'] = len(
+                    _retry_result.successful_results)
+                print(f"  [RETRY] added "
+                      f"{len(_retry_result.successful_results)} "
+                      f"aimed harness(es) to the set")
+            else:
+                record_extras['retry_harness_added'] = 0
+                print("  [RETRY] aimed attempt produced no accepted "
+                      "harness — set unchanged")
+
     # 6-0) P2.3: injected-but-not-implemented check. A screened relation
     #    handed to harness generation is worthless if no accepted harness
     #    actually contains it — the model can silently drop a relation it
@@ -1860,8 +1954,19 @@ def main():
                     # no fact computed) — replay the exact input on the
                     # BUGGY build once and derive the attribution fact
                     # from what actually happens there.
+                    # ESCAPED firings (an exception with no oracle id)
+                    # were the one shape with no computed fact at all —
+                    # batch4 Lang-27-c kept an escaped exception judged
+                    # bare. Extract its type so the same replay serves it.
+                    _esc_type = None
+                    if fired and not _fired_ids:
+                        _m_esc = re.match(
+                            r'\s*([\w.$]+(?:Exception|Error))\b', fired)
+                        if _m_esc:
+                            _esc_type = _m_esc.group(1).rsplit('.', 1)[-1]
                     _breplay_ids, _breplay_out = None, ''
-                    if _fired_ids and getattr(r, 'artifact_path', None):
+                    if ((_fired_ids or _esc_type)
+                            and getattr(r, 'artifact_path', None)):
                         if buggy_cp is None:
                             buggy_cp = builder.test_classpath(
                                 selection.buggy_dir)
@@ -1889,15 +1994,25 @@ def main():
                     # reference-correct implementation, so a property it
                     # violates on a completed run is not a real
                     # requirement.
+                    _esc_same_on_buggy = bool(
+                        _esc_type and _breplay_ids is not None
+                        and _esc_type in _bt_all)
                     if (bug_kind == 'crashing' and expected_exceptions
                             and _breplay_ids is not None
-                            and (_fired_ids & _breplay_ids)
-                            and not _bt_defect):
+                            and not _bt_defect
+                            and ((_fired_ids & _breplay_ids)
+                                 or _esc_same_on_buggy)):
+                        _same_what = (
+                            "fires this SAME check there"
+                            if (_fired_ids & _breplay_ids)
+                            else ("raises this SAME exception type ("
+                                  + (_esc_type or '?') + ") there"))
                         _why = (
                             "DEFECT-FAMILY-DISMISSED (mechanical): "
                             "crashing bug; the exact firing input, "
-                            "replayed on the buggy build, fires this "
-                            "SAME check there and shows no trace of the "
+                            "replayed on the buggy build, "
+                            + _same_what
+                            + " and shows no trace of the "
                             "reported defect exception anywhere in that "
                             "run (headline, cause chain, or fenced "
                             "rethrow; observed: "
@@ -1934,7 +2049,11 @@ def main():
                                     + ") — the input lies inside the "
                                     "reported bug's own family and the "
                                     "patch did not change the outcome: "
-                                    "the patch-failed-to-fix pattern.")
+                                    "the patch-failed-to-fix pattern, IF "
+                                    "the harness constructed this input "
+                                    "as valid; on fuzzed junk both "
+                                    "builds merely reject and nothing "
+                                    "is convicted.")
                             else:
                                 _breplay_note = (
                                     "[buggy-replay fact] the exact firing "
@@ -2036,6 +2155,66 @@ def main():
                         print(f"      [buggy-replay] fact attached "
                               f"(same-check={bool(_fired_ids & (_breplay_ids or set()))}, "
                               f"defect={bool(_bt_defect)})")
+                    elif _esc_type and getattr(r, 'artifact_path', None):
+                        # Escaped firing: type-based attribution (there is
+                        # no oracle id to match). The crashing same-type
+                        # no-defect case was already dropped above.
+                        if _breplay_ids is None:
+                            _breplay_note = (
+                                "[buggy-replay fact] replaying this "
+                                "escaped exception's exact input on the "
+                                "buggy build was unavailable — no "
+                                "attribution fact; judge on soundness "
+                                "alone, sceptically.")
+                        elif _esc_type in _bt_defect:
+                            _breplay_note = (
+                                "[buggy-replay fact] this escaped "
+                                "exception IS the reported defect type "
+                                "and the SAME exception occurs on the "
+                                "BUGGY build at this exact input — "
+                                "identical crash on both builds. Two "
+                                "readings, decided by the INPUT: if the "
+                                "harness constructed this input to be "
+                                "valid by construction, the patch left "
+                                "the reported defect unfixed here; if it "
+                                "is fuzzed junk no implementation is "
+                                "obliged to accept, this is pre-existing "
+                                "malformed-input surface that even a "
+                                "correct fix retains — dismiss.")
+                        elif _esc_same_on_buggy:
+                            _breplay_note = (
+                                "[buggy-replay fact] the BUGGY build "
+                                "raises this same exception type ("
+                                + _esc_type + ") at this exact input — "
+                                "identical rejection on both builds; the "
+                                "patch did not change this behaviour. "
+                                "Pre-existing input-rejection surface — "
+                                "dismiss.")
+                        elif _bt_defect:
+                            _breplay_note = (
+                                "[buggy-replay fact] at this exact input "
+                                "the BUGGY build produces the reported "
+                                "defect ("
+                                + ", ".join(sorted(_bt_defect)[:4])
+                                + ") while the patched build raises "
+                                + _esc_type + " instead — the patch "
+                                "changed the failure mode at a defect "
+                                "input. Judge whether the new exception "
+                                "is a documented, acceptable rejection "
+                                "or nonsense wearing an exception type.")
+                        else:
+                            _breplay_note = (
+                                "[buggy-replay fact] the buggy build "
+                                "handles this exact input WITHOUT "
+                                "raising " + _esc_type + " — the patch "
+                                "INTRODUCED this exception here. On an "
+                                "input the harness constructed to be "
+                                "valid, that is strong evidence against "
+                                "the patch; on fuzzed junk it is "
+                                "ordinary rejection surface — decide by "
+                                "the harness's input construction.")
+                        print(f"      [buggy-replay] escaped-firing fact "
+                              f"attached ({_esc_type})")
                     _latent_note = None
                     if _fired_ids and _fired_ids <= _latent_here:
                         _latent_note = (

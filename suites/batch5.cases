@@ -1,0 +1,60 @@
+# batch5: validate the batch3-failure fixes (hardened defect-family drop,
+# ADDS over batch4: R2 (coverage quota + test-subject class skeletons in
+#   synthesis context — Math-2-o must now SEE the subject's documented
+#   formula), escaped-firing buggy-replay fact (Lang-27-c's second FP
+#   door), RETRY (aimed extra harness when accepted set has <2 invented
+#   checks — Lang-27-o's batch4 mode), H3 whitespace-removal parity
+#   (62-c must SCORE again), neutral crash-suppression + family-framed
+#   inconclusive facts.
+# Fingerprints: '[RETRY]' line on invention-poor legs; role="test-subject"
+#   in synthesis context; 'escaped-firing fact attached'; 62-c harnesses
+#   accepted (H3 no longer rejects all).
+# generic-lift fact, tightened symmetric/SYM-2b escape hatches, de-overfit
+# prompt examples, [buggy-replay fact] on EVERY firing incl. the
+# existence-proof wording, [replay comparison fact] on fuzzed-tier
+# relation convictions). Same 8 legs as batch3 for a direct
+# before/after read, plus Math-2-o as a regression guard.
+# Trace fingerprints to grep: "[buggy-replay] fact attached" on every
+# firing with an artifact; "[defect-family] auto-dismissed" on the
+# Lang-27-c FP class; "[replay comparison fact]" on any fuzzed-tier
+# relation conviction (Math-2-o must KEEP through it, via its
+# documented-formula contract source).
+# Named targets:
+#   Lang-27-c — batch3 FP (judge overrode the advisory defect-family fact
+#     on explicit-float-suffix). Now a MECHANICAL drop, but only when all
+#     three computed conditions hold (replay succeeded; no defect
+#     exception anywhere in the buggy replay output incl. cause chains and
+#     fenced rethrows; the SAME check fires on buggy at the exact input).
+#     Expect CLEAN with a "[defect-family] auto-dismissed" trace line.
+#   Lang-27-o — must NOT lose its catches to the drop: the winning
+#     type-contract checks are silent on buggy, so the drop's condition 3
+#     cannot hit them. Catch still rides on invention + judge.
+#   Closure-62-c — batch3 FP (generically-named 'lifted-test' oracle
+#     dodged the trigger-test-lift fact; SYM-2b's old escape hatch is
+#     exactly what an unfaithful test-copy claims). Expect the
+#     [trigger-test lift] fact on generic ids and the reworded
+#     "settled in the patch's favour" defect-family text; target CLEAN.
+#   Closure-62-o — must stay CAUGHT (4th consecutive); its error/warning
+#     asymmetry checks are silent on buggy, untouched by the new drops.
+#   Math-53 pair — R-THROWS stability repeat rides along (relation path
+#     untouched by this batch); 53-c CLEAN, 53-o CAUGHT.
+#   Chart-26-c, Math-2-c — precision guards (symmetric-note rewording
+#     must keep their dismissals working).
+#   Math-2-o — NEW guard: the canonical fuzzed-tier relation-replay catch
+#     (mean-formula shape). Untouched code paths, but it has not been
+#     re-validated since the fact-block changes and any harness-side drop
+#     regression would surface here first.
+# LAUNCH: PARALLEL=4.
+MODEL="gpt-5.4"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Lang/patch1-Lang-27-SimFix.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/DeepRepair/Lang/patch1-Lang-27-DeepRepair.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Jaid/Closure/patch1-Closure-62-Jaid-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-53-Arja.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/DeepRepair/Math/patch1-Math-53-DeepRepair.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
+)

@@ -204,16 +204,38 @@ def assemble_class_context(buggy_dir: str,
                            max_supertypes: int = 3,
                            max_collaborators: int = 5,
                            per_class_chars: int = 12000,
-                           total_chars: int = 48000) -> List[str]:
+                           total_chars: int = 48000,
+                           test_sources: Optional[List[str]] = None
+                           ) -> List[str]:
     """Labeled skeleton blocks for (1) each patched class — full bodies for
     the touched methods, (2) its supertypes/interfaces resolvable in the
-    source tree, (3) the most-referenced collaborator types in the touched
-    method bodies. Ordered by relevance; truncated by the total budget."""
+    source tree, (3) the classes the failing TEST itself constructs/reads
+    (role="test-subject"), (4) the most-referenced collaborator types in
+    the touched method bodies. Ordered by relevance; truncated by the
+    total budget.
+
+    (3) exists because the documented contract that convicts a patch
+    routinely lives in the test's SUBJECT class rather than the patched
+    one: a patch to an abstract/parent method leaves the subject class's
+    documented accessor formula wrong, and neither the supertype walk
+    (wrong direction) nor the collaborator scan (patched file only) ever
+    surfaces it — the synthesizer then cannot propose the one relation
+    that matters (batch4 Math-2-o: six relations, all anchored on the
+    patched method's class, none on the subject's documented formula)."""
     blocks: List[str] = []
     seen_classes: Set[str] = set()
     touched = set(touched_method_names or [])
     supertype_names: List[str] = []
     collab_counts: Dict[str, int] = {}
+    test_subject_counts: Dict[str, int] = {}
+    for ts in test_sources or []:
+        # Constructed types outrank merely-mentioned ones.
+        for t in re.findall(r'\bnew\s+([A-Z]\w+)\s*\(', ts or ''):
+            if t not in _JDKISH:
+                test_subject_counts[t] = test_subject_counts.get(t, 0) + 3
+        for t in _TYPE_REF_RE.findall(ts or ''):
+            if t not in _JDKISH:
+                test_subject_counts[t] = test_subject_counts.get(t, 0) + 1
 
     for rel in modified_files or []:
         path = os.path.join(buggy_dir, rel)
@@ -254,6 +276,30 @@ def assemble_class_context(buggy_dir: str,
         blocks.append(
             f'<class name="{name}" role="supertype-contract">\n{skel}\n'
             f'</class>')
+
+    # Test-subject classes BEFORE collaborators: the failing test's own
+    # subjects are the highest-relevance contract source after the patched
+    # class itself.
+    ranked_subjects = sorted(test_subject_counts.items(),
+                             key=lambda kv: -kv[1])
+    added = 0
+    for name, _n in ranked_subjects:
+        if added >= 3:
+            break
+        if name in seen_classes:
+            continue
+        path = _find_class_file(buggy_dir, name)
+        if not path:
+            continue
+        try:
+            src = open(path, encoding='utf-8', errors='replace').read()
+        except OSError:
+            continue
+        seen_classes.add(name)
+        skel = class_skeleton(src, max_chars=per_class_chars // 2)
+        blocks.append(
+            f'<class name="{name}" role="test-subject">\n{skel}\n</class>')
+        added += 1
 
     ranked = sorted(collab_counts.items(), key=lambda kv: -kv[1])
     added = 0
