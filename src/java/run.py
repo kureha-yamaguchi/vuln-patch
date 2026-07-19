@@ -2392,12 +2392,14 @@ def main():
                                 "buggy build at screening (a tripwire) "
                                 "and fires on THIS patched build — the "
                                 "patch introduced the violation. Keep "
-                                "only if the asserted requirement is "
-                                "stated by the documented contract (a "
-                                "declared @throws, a documented "
-                                "range/format/formula quoted in the "
-                                "relation's contract line); an invented "
-                                "premise with no documented source does "
+                                "only if the asserted requirement has a "
+                                "stated source in the relation's "
+                                "contract line: a declared @throws, a "
+                                "documented range/format/formula, or a "
+                                "visible code invariant that every "
+                                "correct implementation of this API "
+                                "must preserve; an invented "
+                                "plausibility with no such source does "
                                 "not convict.")
                     _j3r = _j3_failing_test_block(failure_tests)
                     if _j3r:
