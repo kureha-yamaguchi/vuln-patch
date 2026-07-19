@@ -1954,19 +1954,38 @@ def main():
                                     "measures pre-existing surface — "
                                     "dismiss.")
                         elif _bt_defect:
+                            # Batch4 Lang-27-c: an earlier wording called
+                            # this "strong evidence against the patch" —
+                            # but EVERY correct fix produces this exact
+                            # signature at former crash inputs (buggy
+                            # crashes, fixed completes). Fix and
+                            # crash-suppressing overfit differ ONLY in
+                            # whether the completed value is right; the
+                            # fact must not prejudge that.
                             _breplay_note = (
                                 "[buggy-replay fact] on this exact input "
                                 "the BUGGY build produces the reported "
                                 "defect exception ("
                                 + ", ".join(sorted(_bt_defect)[:4])
-                                + ") while the patched build completes "
-                                "and this check condemns its completed "
-                                "output — the crash-suppressing-patch "
-                                "pattern (the patch silences the crash "
-                                "but returns a value violating the "
-                                "asserted contract). Strong evidence "
-                                "against the patch.")
+                                + ") while the patched build completes. "
+                                "Turning a defect input's crash into "
+                                "completion is exactly what a FIX does — "
+                                "and also what a crash-suppressing "
+                                "overfit does; they differ ONLY in "
+                                "whether the completed value is correct. "
+                                "The crash's disappearance is not "
+                                "evidence either way. Judge solely the "
+                                "condemned completed value: if it "
+                                "violates a documented contract, this is "
+                                "the overfit pattern (SOUND); if the "
+                                "check demands more than the documented "
+                                "contract guarantees, it is UNSOUND.")
                         elif _breplay_ids:
+                            # Batch4 Chart-26-c: the inconclusive notes
+                            # carried no bug-family framing, and the old
+                            # axis-entity FP class walked through this
+                            # gap — an unrelated feature's contract,
+                            # argued from a partial skeleton, was kept.
                             _breplay_note = (
                                 "[buggy-replay fact] on this exact input "
                                 "a DIFFERENT check fires first on the "
@@ -1974,17 +1993,32 @@ def main():
                                 + ", ".join(sorted(_breplay_ids)[:4])
                                 + "), so whether THIS check would fire "
                                 "there is shadowed — attribution "
-                                "inconclusive; judge the check against "
-                                "the documented contract.")
+                                "inconclusive. Judge the check against "
+                                "the documented contract, and weigh "
+                                "whether its observable is the very "
+                                "behaviour the failing test shows is "
+                                "wrong: a DIFFERENT feature's contract, "
+                                "argued from a partial skeleton with no "
+                                "buggy-side evidence behind it, is the "
+                                "classic false-positive shape — keep "
+                                "only with a shown contract the "
+                                "observed value contradicts.")
                         elif _bt_all:
                             _breplay_note = (
                                 "[buggy-replay fact] on this exact input "
                                 "the buggy build neither fires this "
                                 "check nor shows the reported defect (it "
                                 "raises " + ", ".join(sorted(_bt_all)[:4])
-                                + " instead) — attribution unclear; "
-                                "judge the check against the documented "
-                                "contract.")
+                                + " instead) — attribution unclear. "
+                                "Judge the check against the documented "
+                                "contract, and weigh whether its "
+                                "observable is the very behaviour the "
+                                "failing test shows is wrong: a "
+                                "DIFFERENT feature's contract with no "
+                                "buggy-side evidence behind it is the "
+                                "classic false-positive shape — keep "
+                                "only with a shown contract the "
+                                "observed value contradicts.")
                         else:
                             _breplay_note = (
                                 "[buggy-replay fact] the buggy build "

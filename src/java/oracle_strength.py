@@ -127,6 +127,15 @@ def _values_match(a: str, b: str) -> bool:
         return False
     if na == nb or na in nb or nb in na:
         return True
+    # The harness prompt tells checks to normalize text by REMOVING all
+    # whitespace (replaceAll("\\s+","")), so a lifted check's observed
+    # value has no spaces while the real failure message keeps them —
+    # collapse-to-one-space comparison then NEVER matches multi-word
+    # values and H3 rejects faithful harnesses (batch4 Closure-62-c:
+    # all 8 attempts). Compare with whitespace fully removed as well.
+    ra, rb = re.sub(r'\s+', '', na), re.sub(r'\s+', '', nb)
+    if ra and rb and (ra == rb or ra in rb or rb in ra):
+        return True
     try:
         import math
         fa, fb = float(na), float(nb)
