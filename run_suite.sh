@@ -54,13 +54,12 @@ STAMP="$(date +%Y%m%d_%H%M%S)"
 ROOT=/home/code/scratch/runs/${SUITE}_${STAMP}
 mkdir -p "$ROOT"
 
-# Relation pool (P3.2) isolation: the pool persists across runs when left at
-# its default (~/.vuln_patch_relation_pool), so relations screened by an OLD
-# suite would silently feed every later one and the measurement stops being
-# attributable. Each suite gets a fresh pool inside its own run folder;
-# in-run sharing between a bug's legs (the point of pooling) still works.
+# Relation pooling (P3.2) was REMOVED entirely on 2026-07-19 (user rule:
+# any leg-to-leg sharing is benchmark farming — each leg must be fully
+# self-contained). RELATION_POOL_DIR is still exported defensively so that
+# if pool code is ever accidentally reintroduced, it at least stays inside
+# this run's folder where it is visible, instead of persisting globally.
 export RELATION_POOL_DIR="$ROOT/relation_pool"
-mkdir -p "$RELATION_POOL_DIR"
 
 # ---- defaults (overridden by the sourced cases file) ----
 MODEL="gpt-5.4"                    # or gpt-5.4-nano (with escalation)

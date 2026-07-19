@@ -483,18 +483,26 @@ def screen_relations(candidates: List,
                      (silent, 'silent on buggy (tripwire)')):
         for _r in _b:
             _mark(_r, 'kept', _lbl)
+    # ALL silent tripwires are kept (was silent[:1]): the prompt-mass
+    # lesson that motivated the [:1] cut is enforced downstream anyway
+    # (run.py injects at most 2 rules into the harness prompt), while
+    # every survivor here also feeds the patched-build REPLAY, which
+    # costs only compute — and a silent-on-buggy tripwire is exactly the
+    # shape that catches a contract violation the patch INTRODUCES
+    # (e.g. a documented-@throws rule: quiet on buggy, loud on an
+    # overfit that swallows the throw). Math-53 had 4 silent tripwires
+    # and the old cut kept the wrong one.
     kept = (confirmed + confirmed_flaky + selective
-            + high_ratio + silent[:1])[:max_keep]
+            + high_ratio + silent)[:max_keep]
     dropped_by_cap = [r for r in confirmed + confirmed_flaky + selective
                       + high_ratio + silent if r not in kept]
     for _r in dropped_by_cap:
-        _mark(_r, 'dropped', 'cut by the keep-cap (kept the higher-ranked '
-              'ones; at most one silent tripwire)')
+        _mark(_r, 'dropped', 'cut by the keep-cap (kept the higher-ranked ones)')
     if dropped_by_cap:
         # Not a screening failure — the prompt-size/distraction cap. Say
         # so, or "4 KEPT" followed by "3 survived" reads as an off-by-one.
         print(f"  [screen] cap: injecting {len(kept)} "
-              f"(direction-confirmed first, at most 1 silent); "
+              f"(direction-confirmed first); "
               + ", ".join(getattr(r, 'name', '?') for r in dropped_by_cap)
               + " kept-but-cut")
     if harden_fn is not None:

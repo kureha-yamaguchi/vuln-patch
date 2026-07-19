@@ -4,8 +4,9 @@
 # CORRECTION section in semantic-recall-brainstorm.md. Math-53-o is the flip
 # candidate (its convicting field-level NaN rule was synthesized in `onefull`
 # and lost to the harden pass + missing replay flag).
-# LAUNCH: PARALLEL=1 (serial) — pooling needs each correct leg to FINISH
-# before its overfit sibling STARTS; pairs are ordered c-then-o per bug.
+# LAUNCH NOTE: the 20260719_073304 run of this suite ran PARALLEL=1
+# (serial) because pooling still existed then. Pooling was removed the
+# same day (no-pooling hard rule) — future runs may use PARALLEL=4.
 # Harden deliberately OFF; compile-repair (R1, measured win) ON.
 MODEL="gpt-5.4"
 COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"

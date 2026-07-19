@@ -80,15 +80,19 @@ real fix and every correct label is double-checked. On the pinned set,
 every miss is a real technique failure and every false alarm a real
 safety failure.
 
-**No cross-run pooling — HARD RULE (2026-07-18).** Never persist
-harnesses, oracle checks, relations, corpora or verdicts BETWEEN runs
-and reuse them on later legs of the same bug. That farms the benchmark:
-dev numbers inflate with repeated attempts while nothing transfers to a
-bug seen once — which is what the held-out set and the real world are.
-The permitted boundary: sharing WITHIN one run between a bug's several
-patches (P3.2 relation pooling; the pool directory is wiped per suite
-by `run_suite.sh`) — that mirrors one real deployment holding one bug
-report and several candidate patches.
+**No pooling AT ALL — HARD RULE (tightened 2026-07-19).** Never share
+harnesses, oracle checks, relations, corpora or verdicts between legs
+or between runs — every leg is fully self-contained. The 2026-07-18
+version of this rule permitted within-run sharing between a bug's legs
+(P3.2 pooling); the user closed that boundary on 2026-07-19: a leg
+convicting via a sibling leg's rules is still a verdict the leg did
+not earn from the bug alone, and nothing transfers to a deployment
+that sees one patch. Pooling was removed from run.py the same day.
+The sanctioned compensation for synthesis randomness is MORE OWN
+rules per leg (`--synth_max_rules` default 8; every screened survivor
+feeds the patched-build replay — the prompt stays capped at 2). Side
+effect: with no pooling there is no correct-leg-before-overfit-leg
+ordering constraint — suites may run fully parallel at any size.
 
 **No dataset overfitting.** Mechanisms may encode general categories
 ("read-only calls must not mutate state", "program text tolerates
@@ -111,11 +115,10 @@ category before it ships.
 5. Suite mechanics: run legs 4-way parallel (up to 6 for small
    projects; beyond that the model API is the bottleneck). Check free
    disk first (a Chart/Closure-heavy suite once filled the disk and 18
-   legs died at checkout). Pooling requires a bug's correct leg to
-   FINISH before its overfit sibling STARTS — true for 30-leg
-   correct-first suites at PARALLEL=4, false for tiny suites: run
-   pairs serial (a 2-leg parallel run silently gave the overfit leg an
-   empty pool). After every suite: delete working copies, archive
+   legs died at checkout). (The old pooling ordering constraint —
+   correct leg before overfit sibling — is GONE with pooling itself,
+   2026-07-19: suites of any size may run fully parallel.) After
+   every suite: delete working copies, archive
    results to the Mac under `runs-archive/`, verify the archive, prune
    VM runs.
 6. Iterate cheap: day-to-day iteration uses the 2–6 legs relevant to
@@ -265,17 +268,18 @@ Closure-92-o → c62confirm added Closure-62-o = 10/16 at precision
 
 **Station 6 — Judgment day.**
 - Replay (P3.2, `--replay_relations_on_patched`): every screened rule
-  — own and pooled — is compiled unchanged against the patched build
+  (own-leg; pooling removed 2026-07-19) is compiled unchanged against
+  the patched build
   and run two ways: on the failing test's own inputs (deterministic
   tier) and on 20k fuzzed inputs; firings go to the judge like any
   other accusation. The biggest recall mechanism shipped: contributed
   to 5 of 8 catches in full30 and made Math-2-o deterministic (the
   mean-formula fired 7,144/20,000 on the Arja build, two runs in a
   row).
-- Within-run pooling with per-suite isolation (P3.2): a bug's screened
-  rules are shared between its legs within one run; the pool directory
-  is created fresh per suite (a stale cross-run pool would silently
-  contaminate every later measurement).
+- Within-run pooling (P3.2) — REMOVED 2026-07-19 (see the tightened
+  no-pooling ground rule): every leg is now fully self-contained;
+  synthesis stochasticity is compensated by more own rules per leg
+  (--synth_max_rules 8) and by replaying every screened survivor.
 - Phantom-crash fix: libFuzzer `slow-unit-*` artifacts no longer count
   as crashes (a clean exit-0 run was once scored as a false alarm).
 - Crash-type pinning (P3.3): a must-not-crash check only counts on the
@@ -1300,13 +1304,13 @@ self-sabotage kept it from the patched build.
 
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
-- **Cross-run harness/oracle pooling (REJECTED 2026-07-18 — a hard NO
-  by decision, not an evidence question).** Persisting accepted
-  harnesses or checks between runs and rerunning them on later legs of
-  the same bug farms the benchmark: dev recall inflates monotonically
-  with repeated attempts while nothing transfers to a bug seen once.
-  The permitted boundary is within-run sharing between a bug's legs
-  (P3.2); nothing crosses the run boundary.
+- **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
+  cross-run 2026-07-18, within-run 2026-07-19; a hard NO by decision,
+  not an evidence question).** Persisting or sharing accepted
+  instruments between runs farms the benchmark; sharing them between a
+  bug's legs within one run still hands a leg a verdict it did not
+  derive from the bug alone. Every leg is fully self-contained; the
+  compensation for synthesis randomness is more own rules per leg.
 - **Mechanical auto-dismissal of latent firings**: a check behind an
   always-firing seed check is latent on buggy precisely because the
   scan stops at the first firing per input — its first real chance to

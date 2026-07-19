@@ -172,7 +172,8 @@ def parse_args():
                              "semantic-recall-brainstorm.md.")
     parser.add_argument("--replay_relations_on_patched", action="store_true",
                         help="P3.2 replay: execute every screened relation "
-                             "(own + pooled) directly against the PATCHED "
+                             "(own-leg only; pooling removed 2026-07-19) directly "
+                             "against the PATCHED "
                              "build — trigger-literal replay (deterministic) "
                              "plus a fuzzed pass — and hand firings to the "
                              "relation verifier as candidate findings. "
@@ -189,9 +190,9 @@ def parse_args():
                              "iteration loop (faster, slightly noisier "
                              "fire-ratio); keep 20000 for a measurement that "
                              "is compared apples-to-apples.")
-    parser.add_argument("--synth_max_rules", type=int, default=4,
+    parser.add_argument("--synth_max_rules", type=int, default=8,
                         help="how many candidate relations synthesis may "
-                             "propose per leg (default 4). Raising it is a "
+                             "propose per leg (default 8). Raising it is a "
                              "numbers game against generation variance — more "
                              "draws, higher odds the discriminating relation "
                              "appears. Only the count changes; the guidance is "
@@ -879,7 +880,7 @@ def main():
                 source_imports=context.source_imports,
                 trigger_test_block=trigger_test_block,
                 trigger_methods=trigger_methods,
-                max_rules=getattr(args, 'synth_max_rules', 4))
+                max_rules=getattr(args, 'synth_max_rules', 8))
             if candidates:
                 print(f"  [synth] {len(candidates)} candidate relation(s) "
                       f"({synth_model}): "
@@ -887,22 +888,14 @@ def main():
             else:
                 print("  [synth] WARNING: synthesis returned no candidates "
                       "(after one retry) — nothing to screen or inject")
-            # P3.2 pooling: add relations screened SOUND on this bug's
-            # buggy build in earlier legs/runs. Synthesis is stochastic —
-            # the mean-formula that convicts Math-2's overfit was proposed
-            # only on the correct leg — so unioning the pool makes each
-            # bug's best discriminators available on EVERY leg. The pool
-            # carries no label or patch identity, only project+bug+text.
-            from relation_pool import load_pool, merge_candidates
-            pooled = load_pool(selection.project_name, selection.bug_id)
-            if pooled:
-                before = len(candidates)
-                candidates = merge_candidates(candidates, pooled)
-                added = len(candidates) - before
-                if added:
-                    print(f"  [pool] +{added} relation(s) from earlier legs "
-                          f"of {selection.project_name}-{selection.bug_id} "
-                          f"(re-screened here before use)")
+            # NO pooling (2026-07-19, user decision): sharing relations
+            # between a bug's legs — even within one run — is judged the
+            # same benchmark-farming shape as cross-run pooling: a leg's
+            # verdict must rest on what THIS leg derives from the bug
+            # alone, or nothing transfers to a patch seen once. The
+            # compensation for synthesis stochasticity is MORE OWN rules
+            # per leg (--synth_max_rules default raised, all screened
+            # survivors replayed), never a sibling's.
             synthesized_relations = candidates
             record_extras["synth_candidates"] = len(candidates)
             # Keep references to EVERY candidate (pre-screen) so the trace can
@@ -1048,7 +1041,7 @@ def main():
                     imports=context.source_imports,
                     jazzer_api_jar=jazzer_api_jar,
                     trigger_literals=_trig_lits,
-                    max_keep=8,
+                    max_keep=12,
                     repair_fn=_repair,
                     harden_fn=_harden,
                     runs=args.screen_runs,
@@ -1077,16 +1070,8 @@ def main():
                       f"relation(s) (own-leg, best-first); the other "
                       f"{len(synthesized_relations) - len(prompt_relations)} "
                       "stay screening/replay-only")
-            # P3.2 pooling: persist this leg's screened survivors so the
-            # bug's OTHER legs can reuse them. Sound-on-buggy is a
-            # per-bug property, so this is label-free.
-            if synthesized_relations:
-                from relation_pool import save_relations
-                n = save_relations(selection.project_name, selection.bug_id,
-                                   synthesized_relations)
-                if n:
-                    print(f"  [pool] saved {n} screened relation(s) for "
-                          f"{selection.project_name}-{selection.bug_id}")
+            # (Pool persistence removed 2026-07-19 with the pooling ban —
+            # nothing a leg screens is visible to any other leg.)
         else:
             print("  [screen] no jazzer driver available — dropping all "
                   "candidates rather than injecting unscreened")
@@ -1995,7 +1980,8 @@ def main():
                           f"{_unsound_oracle_ids[_oid]}")
                     _r.triggered = False
 
-    # 7d) P3.2 replay: execute every screened relation (own + pooled)
+    # 7d) P3.2 replay: execute every screened relation (own-leg only —
+    #     pooling removed 2026-07-19, user rule)
     #     DIRECTLY against the patched build. Until now a relation only
     #     mattered if the harness writer implemented it AND the patched
     #     fuzz found the right inputs — two coin flips that cost Math-2-o
