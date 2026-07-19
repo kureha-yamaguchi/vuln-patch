@@ -403,6 +403,32 @@ def per_oracle_crash_types(output: str) -> dict:
     return result
 
 
+def exception_types_in_output(output: str) -> set:
+    """Every exception type (simple name) discernible in a run's crash
+    reports: each banner headline, each cause chain, and exception names
+    embedded in alarm message text — generic alarm wrappers excluded.
+    Unlike crash_signature this reads ALL banners and their causes, so a
+    defect exception that a harness fences and rethrows under its own
+    alarm type (named only in the message or the cause chain) is still
+    seen. Text before the first banner is ignored so launcher noise
+    (e.g. an expected-exception option string) cannot masquerade as an
+    observed crash."""
+    text = output or ''
+    m = _EXC_RE.search(text)
+    if not m:
+        return set()
+    tail = text[m.start():]
+    types = _underlying_crash_types(tail)
+    # _underlying_crash_types reads only the FIRST banner's headline; a
+    # keep-going run has several banners — collect every headline too.
+    for bm in _EXC_RE.finditer(tail):
+        simple = bm.group(1).rsplit('.', 1)[-1]
+        if not any(simple == a or simple.startswith('FuzzerSecurityIssue')
+                   for a in _ALARM_TYPES):
+            types.add(simple)
+    return types
+
+
 # Generic JDK runtime exceptions that commonly ESCAPE library code on
 # malformed / out-of-domain input (mirrors the valid-by-construction rule in
 # prompts.py). For a SEMANTIC bug the defect is a wrong value, so a firing of
@@ -1182,6 +1208,41 @@ class FuzzRunner:
             return None, None
         return (crash_signature(outcome.combined_output),
                 cause_signature(outcome.combined_output))
+
+    def replay_input_report(self,
+                            harness_path: str,
+                            class_name: str,
+                            project_cp: str,
+                            input_file: str,
+                            timeout_seconds: int = 30
+                            ) -> Tuple[Optional[set], str]:
+        """Replay ONE persisted input and return (fired_oracle_ids,
+        full_output). ids None = the replay itself ERRORED (caller must
+        ABSTAIN — never a substitute for 'ran clean'); empty set = ran
+        clean. The full output is returned so the caller can look for
+        exception types anywhere in the run's crash reports
+        (exception_types_in_output) — the headline signature alone
+        misses a defect exception the harness fences and rethrows under
+        its own alarm type."""
+        try:
+            outcome = run_jazzer(
+                jazzer_standalone_jar=self.jazzer_standalone_jar,
+                target_class=class_name,
+                harness_dir=os.path.dirname(harness_path),
+                project_cp=project_cp,
+                timeout_seconds=timeout_seconds,
+                expected_exceptions=self.expected_exceptions,
+                jazzer_api_jar=self.jazzer_api_jar,
+                input_file=input_file,
+            )
+        except Exception as exc:
+            print(f"  (single-input replay failed: {exc})")
+            return None, ''
+        out = outcome.combined_output
+        if not outcome.triggered:
+            return set(), out
+        from java_source import oracle_ids_in_text
+        return oracle_ids_in_text(out), out
 
 
 def _print_fuzz_result(r: FuzzRunResult) -> None:

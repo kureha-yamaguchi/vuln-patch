@@ -1368,6 +1368,83 @@ stays quiet (the correct fix checks null FIRST, so the rule never
 fires there). Risk: low — the input class is stated by the docs, not
 guessed; the judge still reviews every firing.
 
+## batch3 RESULT + the fix batch it forced (2026-07-19 eve)
+
+batch3 (8 legs, same-day): TP=2 FN=1 FP=2 TN=3. Confirmed and now
+stable: the Math-53 pair (R-THROWS 2nd consecutive), Closure-62-o (3rd
+consecutive), Chart-26-c / Math-2-c guards (keep_going cost no
+precision on the old FP classes). All three hard-pair targets failed,
+and the traces name the causes — none of which is "the shipped
+mechanism didn't work":
+
+- **Lang-27-c FP — the judge OVERRODE a computed dismiss fact.** SYM-2
+  fired correctly on `explicit-float-suffix` ("input does not
+  reproduce the defect on buggy — dismiss") and the judge answered
+  SOUND anyway, reasoning from the API contract. The older
+  [symmetric firing] escape hatch ("keep if it belongs to the failing
+  test's methods and observables") sat above the new fact and offered
+  the looser criterion — everything in the patched method qualifies.
+- **Closure-62-c FP — the right fact never fired.** The FP moved from
+  the relation path (fpfix6) to a harness test-copy named generically
+  `lifted-test`, which dodged the trigger-method name-matching of the
+  [trigger-test lift] fact; SYM-2b's escape hatch ("unless it asserts
+  the failing test's own pinned behaviour") is exactly what an
+  unfaithful test-copy claims, so the judge kept it — although the
+  real test was rerun on that build and PASSES, which mechanically
+  proves the copy diverges.
+- **Lang-27-o FN — invention now works, the judge is the bottleneck.**
+  H4/H5 delivered the create*-family checks, keep_going ran them, they
+  fired — and the judge dismissed 10/10, in the same batch where it
+  kept the equivalent check shape on the CORRECT sibling. Strongest
+  evidence yet that J1 (offline judge measurement) outranks R3.
+
+Fixes applied (all general; validate via suites/batch4.cases, same 8
+legs as batch3 + Math-2-o as canonical-replay regression guard):
+
+1. **Hardened mechanical dismissal for the crashing symmetric case**
+   (replaces the advisory note the judge overrode, and hardens the
+   first auto-drop draft). Drop ONLY when all three computed conditions
+   hold: (a) the buggy replay itself succeeded — an errored replay is
+   ABSTAIN, never "no crash" (the draft conflated them via
+   `replay_input(...) or ''`); (b) no defect exception appears
+   ANYWHERE in the buggy replay output — headlines, cause chains,
+   fenced rethrows (`exception_types_in_output`; headline-signature
+   matching alone would let a harness that fences the defect and
+   rethrows under its own alarm type fake "no repro" and delete a true
+   catch); (c) the SAME check fires on buggy at the exact firing input
+   (`replay_input_report`) — symmetric-in-scan alone proves it fired
+   at SOME input, not this one. Anything less stays a fact for the
+   judge. Consistent with the crash-pin precedent: a drop is allowed
+   because every leg of the signal is computed, none judged.
+2. **[trigger-test lift] fact now fires on generically-named lifts**
+   (`lift`/`seed-test` id patterns), with the observed-value-vs-real-
+   failure-message cross-check spelled out (the other agent's Part B,
+   kept).
+3. **Escape hatches rewritten to close the test-copy loophole.**
+   [symmetric firing]: "same observable the failing test shows is
+   wrong, not merely the same method". SYM-2b: states that the real
+   test passing settles the test's own scenario in the patch's
+   favour; keepable only for the bug's own observable at inputs the
+   real test does NOT itself exercise (this is precisely the Math-2
+   complement-symmetry shape, so the true-catch path stays open).
+4. **De-overfitting sweep of prompt strings** (rule: abstract schemas,
+   no bug-shaped examples). Removed from prompts: the
+   createNumber/"L"-suffix example (valid-by-construction block), the
+   "documented type-suffix selects the type" e.g.-clause (H5 families
+   block — Lang-27's winning check verbatim), the add(null)+NaN
+   receiver example (R-THROWS variation — Math-53 verbatim), and the
+   `[oracle:mean-formula]` id example in two places (Math-2's convictor
+   name). Each replaced with a neutral phrasing of the same principle.
+   Audit method: AST scan of all non-docstring string literals for
+   dev-set tokens; remaining hits are generic IEEE-754 edge-value
+   enumerations only.
+
+Still OPEN after this batch (unchanged): J1 — now the top item; the
+fuzzed-tier relation-replay path still has no buggy-side computed fact
+(the Closure-62-c FP class could reappear THERE; any fix must be
+validated against Math-2-o, whose true catch has the same
+fires-on-both-builds shape); R3, BND-b, P4.1, T11.
+
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —

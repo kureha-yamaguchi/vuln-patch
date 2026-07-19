@@ -663,8 +663,8 @@ def sibling_and_state_hints(class_source: str, cap: int = 1400) -> str:
         parts.append(
             "METHOD FAMILIES over the same input space (factory/parser "
             "siblings — where the docs state a selection or agreement "
-            "rule, equivalent inputs must respect it, e.g. a documented "
-            "type-suffix must select the documented type):\n"
+            "rule between family members, equivalent inputs must "
+            "respect it):\n"
             + "\n".join(fam_lines[:6]))
     # H4: readable state
     readers = sorted({n for n, params, ret in sigs

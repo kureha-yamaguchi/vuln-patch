@@ -347,8 +347,8 @@ class HarnessCampaign:
                             "name: " + id_reason + "\n"
                             "Start each distinct check's message with "
                             "[oracle:<short-id>], e.g. `throw new "
-                            "FuzzerSecurityIssueLow(\"[oracle:mean-"
-                            "formula] semantic mismatch: ...\")`. Use a "
+                            "FuzzerSecurityIssueLow(\"[oracle:round-"
+                            "trip] semantic mismatch: ...\")`. Use a "
                             "DIFFERENT id per check. Return the full "
                             "corrected FuzzHarness.java. Raw Java source "
                             "only. No markdown fences."),
