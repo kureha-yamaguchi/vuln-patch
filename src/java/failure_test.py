@@ -419,19 +419,32 @@ def _read(path):
 
 
 def _field_declarations(class_source: str, wanted: set) -> List[str]:
-    """Single-line field/constant declarations of the class whose name is
-    in `wanted`. Line-based on purpose: multi-line initializers are rare
-    in test classes and a missed one costs a context line, not a verdict."""
+    """Field/constant declarations of the class whose name is in `wanted`,
+    INCLUDING multi-line initializers: the declaration is captured up to
+    its terminating ';' (bounded at 6 lines / 500 chars). The single-line
+    version truncated Closure-62's FOO_TYPE constant mid-declaration —
+    the harness needed exactly the cut-off initializer value (the
+    diagnostic's message text)."""
     out = []
     decl_re = re.compile(
         r'^\s*(?:public|protected|private)\s+(?:static\s+|final\s+)*'
         r'[\w<>\[\],.\s]+?\s+(' + '|'.join(re.escape(w) for w in wanted)
         + r')\s*[=;]')
-    for line in class_source.splitlines():
-        if decl_re.match(line):
-            out.append(line.strip())
-            if len(out) >= 12:
-                break
+    lines = class_source.splitlines()
+    i = 0
+    while i < len(lines) and len(out) < 12:
+        if decl_re.match(lines[i]):
+            decl = [lines[i].strip()]
+            j = i
+            # extend to the terminating ';' (skip when already terminated)
+            while (not decl[-1].rstrip().endswith(';')
+                   and j + 1 < len(lines) and len(decl) < 6
+                   and sum(len(d) for d in decl) < 500):
+                j += 1
+                decl.append(lines[j].strip())
+            out.append(' '.join(decl))
+            i = j
+        i += 1
     return out
 
 

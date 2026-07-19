@@ -917,6 +917,30 @@ def main():
                         "// values this test asserts as CORRECT "
                         "(the patched code must reproduce these): "
                         + ", ".join(exp[:12]))
+                # H1->station-2 (hfix11 FP fix): the rule-writer had the
+                # same setup blind spot as the harness writer — it wrote
+                # direction-confirmed rules that rebuild the test's
+                # scenario WITHOUT its wiring (Closure-62's source
+                # provider), and those fired on every build. Show it the
+                # resolved test-class support and the real failure
+                # message, with the same replicate-or-drop instruction.
+                if getattr(primary_test, 'failure_message', None):
+                    block.append(
+                        "// On the BUGGY build this test FAILS with "
+                        "(names the diverging observable + wrong value):\n"
+                        + "// " + primary_test.failure_message.replace(
+                            "\n", "\n// "))
+                if getattr(primary_test, 'support_source', None):
+                    block.append(
+                        "// The test DEPENDS on this setup from its test "
+                        "class (helpers, fields, fixtures). A relation "
+                        "that reconstructs the test's scenario must "
+                        "REPLICATE this setup exactly — a relation that "
+                        "cannot must assert only setup-independent "
+                        "properties (counts, kinds, contract formulas), "
+                        "or it will fire on every build including "
+                        "correct ones:\n"
+                        + primary_test.support_source)
                 trigger_test_block = "\n".join(block)
                 # P3.2b root-region anchoring: the methods/types the
                 # failing test actually exercises. The discriminating
