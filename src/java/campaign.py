@@ -441,8 +441,14 @@ class HarnessCampaign:
             #     values are extractable — a reject here feeds the
             #     normal repair loop with the exact divergence.
             if verification is not None and self.trigger_wrong_values:
+                # max_len=4000: the default 200-char headline truncates
+                # BEFORE the observed value in long lifted-check messages
+                # (Closure-62's multi-line expected/actual) — the H3 gate
+                # then silently abstains on exactly the firings it exists
+                # to test.
                 _headline = exception_headline(
-                    verification.stdout + '\n' + verification.stderr) or ''
+                    verification.stdout + '\n' + verification.stderr,
+                    max_len=4000) or ''
                 _observed = lifted_observed_mismatch(
                     _headline, self.trigger_wrong_values)
                 if _observed is not None:

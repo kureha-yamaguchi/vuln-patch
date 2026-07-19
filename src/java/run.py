@@ -514,6 +514,27 @@ def _write_trace_md(path, bug, label, events, outcome=None):
         fh.write("\n".join(L) + "\n")
 
 
+
+def _j3_failing_test_block(failure_tests, cap_each=2000):
+    """J3: the trigger test's own source + its real failure message, for
+    the judge's evidence. Trust source #1 — in the Closure-62 backwards
+    judgment the judge weighed buggy guard code against a bare literal;
+    the test's actual assertion line makes the trust hierarchy concrete.
+    Capped; at most two tests (the ones the fired check lifts from are
+    always in the first two for our bugs)."""
+    lines = []
+    for ft in (failure_tests or [])[:2]:
+        if getattr(ft, 'method_source', None):
+            lines.append(
+                f"[REAL FAILING TEST {ft.test_class}::{ft.test_method} "
+                f"— trust source #1, verbatim]\n"
+                + ft.method_source[:cap_each])
+        if getattr(ft, 'failure_message', None):
+            lines.append("On the BUGGY build this test fails with: "
+                         + ft.failure_message[:400])
+    return "\n".join(lines)
+
+
 def main():
     args = parse_args()
     # Token totals are process-global; start this patch's accounting from
@@ -1972,6 +1993,9 @@ def main():
                                  "input genuinely differs from the test's "
                                  "own.")
                         evid = (evid + "\n" + _note) if evid else _note
+                    _j3 = _j3_failing_test_block(failure_tests)
+                    if _j3:
+                        evid = (evid + "\n" + _j3) if evid else _j3
                     ok, why = rv.verify(src, fired_assertion=fired,
                                         trusted_values=trusted_values,
                                         concrete_evidence=evid,
@@ -2095,6 +2119,35 @@ def main():
                              "quiet; judge whether the relation itself is "
                              "sound for ANY correct implementation "
                              "(tolerances generous, inputs fenced).")
+                    # The Closure-62-c FP fact (hfix11): a rule that fires
+                    # on the TRIGGER literals on the patched build, while
+                    # the REAL failing test passes there (guaranteed by the
+                    # safety net, or we'd have exited bad_patch), is firing
+                    # on its OWN reconstruction of the test's scenario on
+                    # both builds. If the reconstruction were faithful it
+                    # could not fire where the real test passes — the
+                    # default explanation is that the rule's scenario lacks
+                    # the test's setup/wiring, exactly like a divergent
+                    # lifted check. A fact for the judge, never an
+                    # auto-dismissal (fuzzed-tier firings — Math-2's shape
+                    # — are untouched).
+                    if f.get('tier') == 'trigger':
+                        _evid += (
+                            "\n[trigger-tier fact] this rule fires on the "
+                            "failing test's OWN input literals on THIS "
+                            "patched build — yet the REAL failing test was "
+                            "rerun here and PASSES. A faithful "
+                            "reconstruction of the test's scenario cannot "
+                            "fire where the test itself passes; the usual "
+                            "cause is that the rule rebuilds the scenario "
+                            "WITHOUT the test's setup (source wiring, "
+                            "registered files, locale). Dismiss unless the "
+                            "rule's asserted property is justified by the "
+                            "documented contract INDEPENDENT of the "
+                            "failing test's specific setup.")
+                    _j3r = _j3_failing_test_block(failure_tests)
+                    if _j3r:
+                        _evid += "\n" + _j3r
                     _src = ("// relation: " + f['name'] + "\n"
                             + "// holds because: "
                             + (getattr(rel, 'contract', '') or '?') + "\n"

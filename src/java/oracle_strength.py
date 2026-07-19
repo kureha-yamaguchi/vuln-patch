@@ -105,7 +105,11 @@ def real_wrong_values(failure_messages) -> list:
     out = []
     for msg in failure_messages:
         for m in _EXPECTED_ACTUAL_RE.finditer(msg or ''):
-            actual = m.group(2).replace('[', '').replace(']', '').strip()
+            # ComparisonFailure marks the differing region with [] and
+            # elides long common prefixes/suffixes with '...' — strip both
+            # so the value compares against raw harness output.
+            actual = m.group(2).replace('[', '').replace(']', '')
+            actual = actual.strip().lstrip('.…').strip()
             if actual:
                 out.append(actual)
     return list(dict.fromkeys(out))
@@ -134,10 +138,17 @@ def _values_match(a: str, b: str) -> bool:
 
 
 _OBSERVED_RES = [
-    re.compile(r'but was:?\s*<([^>\n]{1,200})>'),
-    re.compile(r'but was:?\s*([^<>;\n]{1,200})'),
-    re.compile(r'\bwas:?\s*<([^>\n]{1,200})>'),
-    re.compile(r'\bwas:?\s*([^<>;\n]{1,200})'),
+    # JUnit style: "... but was:<X>"
+    re.compile(r'but was:?\s*<([^>\n]{1,400})>'),
+    re.compile(r'but was:?\s*([^<>;\n]{1,400})'),
+    # free-form harness style: "expected=X actual=Y" / "observed: Y"
+    # (the Closure-62-c FP used exactly 'expected=... actual=...' and the
+    # old patterns matched nothing). Multi-line values allowed: capture to
+    # end-of-message, compare whitespace-normalized.
+    re.compile(r'\bactual\s*[=:]\s*(.{1,600})', re.S),
+    re.compile(r'\bobserved\s*[=:]\s*(.{1,600})', re.S),
+    re.compile(r'\bwas:?\s*<([^>\n]{1,400})>'),
+    re.compile(r'\bwas:?\s*([^<>;\n]{1,400})'),
 ]
 
 
@@ -166,9 +177,10 @@ def lifted_observed_mismatch(headline: Optional[str],
         return None
     if any(_values_match(observed, ra) for ra in real_actuals):
         return None
-    # A real wrong value appearing anywhere in the headline also counts
-    # as agreement (free-form harness messages embed values mid-sentence).
-    hl = _ws_norm(headline)
-    if any(_ws_norm(ra) in hl for ra in real_actuals if _ws_norm(ra)):
-        return None
+    # NOTE: no headline-wide containment fallback. The message's EXPECTED
+    # half naturally contains the real actual as a prefix/substring
+    # (expected = actual + the missing caret line), so headline
+    # containment silently excused the exact divergence this gate exists
+    # to catch (the Closure-62-c FP). Agreement must come from the
+    # extracted OBSERVED value itself.
     return observed

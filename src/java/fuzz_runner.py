@@ -1053,6 +1053,14 @@ class FuzzRunner:
                 shutil.copy2(p, os.path.join(seed_dir, os.path.basename(p)))
             print(f"  [JD1] seeding patched fuzz with "
                   f"{len(buggy_artifacts)} buggy-side firing input(s)")
+        # keep_going: without it the patched fuzz STOPS at the first crash
+        # — and with JD1 seeding, the first input is often a buggy-side
+        # artifact whose junk rejection (a dismissible NFE) would end the
+        # run before any real check executes. Lang-27 was caught or missed
+        # across runs on exactly this coin flip (struggle10 vs full30 vs
+        # hfix11): same checks, different fencing luck. Continuing past
+        # early findings lets every oracle have its turn; the judge
+        # already handles multiple headlines (collect_fired_oracles).
         outcome = run_jazzer(
             jazzer_standalone_jar=self.jazzer_standalone_jar,
             target_class=build_result.class_name,
@@ -1062,6 +1070,7 @@ class FuzzRunner:
             expected_exceptions=self.expected_exceptions,
             jazzer_api_jar=self.jazzer_api_jar,
             corpus_dir=seed_dir,
+            keep_going=8,
         )
         artifact = None
         if outcome.triggered:
