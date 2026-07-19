@@ -138,30 +138,6 @@ _INSTRUCTIONS = (
     " input, check. No prose outside the JSON."
 )
 
-# R2 (toggled by synthesize(diverse6=True)): ask for 6 DIVERSE relations
-# instead of up to 4, spanning distinct angles so the extra slots are not
-# variants of the first idea. Injected right before the JSON-format line.
-_DIVERSE6_CLAUSE = (
-    "IMPORTANT — propose UP TO 6 relations, and they MUST BE DIVERSE, not"
-    " variations of one idea. Cover as many of these distinct ANGLES as"
-    " genuinely apply, AT MOST TWO from any single angle: (a) the"
-    " DOCUMENTED CONTRACT of the changed method (its javadoc guarantee or a"
-    " documented formula); (b) a method the FAILING TEST reads, even if the"
-    " patch edited elsewhere — the wrong value may surface there; (c)"
-    " SIBLING AGREEMENT — two methods documented to do the same job"
-    " (overloads taking char vs String, Class vs class-name, an is*/get*"
-    " pair) must agree on the same logical input; (d) a HIDDEN-STATE /"
-    " read-only check — after a call documented as a query (get*/is*/"
-    "contains/size/indexOf, no mention of mutating), the object's cheap"
-    " observable properties (size, length, capacity, later lookups) must be"
-    " unchanged; (e) a MODEL check — compare the result against a"
-    " trivially-correct reference computed a different way (a linear scan"
-    " for a lookup, the textbook formula for an aggregate). Six"
-    " near-identical checks are WORSE than three diverse ones — screening"
-    " keeps the diverse survivors and near-duplicates only waste slots.\n"
-)
-
-
 def _unflatten_check(check: str) -> str:
     """Recover a check the model double-escaped in its JSON. Sometimes the
     whole snippet arrives as ONE physical line with literal `\\n`/`\\t`
@@ -225,6 +201,20 @@ class RelationSynthesizer:
 
     def __init__(self, generator: Optional[HarnessGenerator] = None):
         self._gen = generator or HarnessGenerator(temperature=0.3, top_p=1.0)
+        # Full record of every LLM call this synthesizer makes (synthesis,
+        # compile-repair, soundness-harden) — prompt messages + raw output —
+        # so a run can dump a complete, auditable pipeline trace.
+        self.llm_calls: List[dict] = []
+
+    def _record_generate(self, messages, phase: str) -> str:
+        """generate() + record the (phase, prompt, output) for the trace."""
+        out = self._gen.generate(messages) or ""
+        try:
+            self.llm_calls.append(
+                {'phase': phase, 'messages': messages, 'output': out})
+        except Exception:
+            pass
+        return out
 
     def synthesize(self, patched_sources: List[str],
                    class_name: str,
@@ -237,7 +227,7 @@ class RelationSynthesizer:
                    source_imports: Optional[List[str]] = None,
                    trigger_test_block: str = '',
                    trigger_methods: Optional[List[str]] = None,
-                   diverse6: bool = False
+                   max_rules: int = 4,
                    ) -> List[Relation]:
         """Propose candidate relations for the patched method(s).
 
@@ -382,15 +372,22 @@ class RelationSynthesizer:
             ctx.append("The reported failure on the buggy code: "
                        + trigger_summary)
         instr = _INSTRUCTIONS
-        if diverse6:
-            instr = instr.replace(
-                "Return ONLY a JSON array of objects",
-                _DIVERSE6_CLAUSE + "Return ONLY a JSON array of objects", 1)
+        if max_rules != 4:
+            # Only the candidate COUNT changes — the strong-shape guidance is
+            # untouched, so a 4-vs-N comparison isolates whether more draws
+            # raise the odds the discriminating relation appears (vs generation
+            # variance) rather than confounding it with a prompt reword.
+            instr = instr.replace("Propose up to 4 relations",
+                                  f"Propose up to {max_rules} relations", 1)
         user = "\n".join(ctx) + "\n\n" + instr
         messages = [
             {'role': 'system', 'content': _SYSTEM},
             {'role': 'user', 'content': user},
         ]
+        # Stash the exact prompt so callers can dump a full, inspectable trace
+        # (what context the model saw + the instructions it was given).
+        self.last_prompt = {'system': _SYSTEM, 'context': "\n".join(ctx),
+                            'instructions': instr}
         # One retry on an unparseable/empty response: a JSON-shaped ask can
         # still come back wrapped in prose, and silently returning zero
         # candidates hides the failure from the whole run (observed: a leg
@@ -399,7 +396,7 @@ class RelationSynthesizer:
         # the caller via the empty return.
         for attempt in range(2):
             try:
-                out = self._gen.generate(messages) or ""
+                out = self._record_generate(messages, 'synthesis') or ""
             except Exception:
                 return []
             rels = self._parse(out)
@@ -439,10 +436,107 @@ class RelationSynthesizer:
                  f"Snippet that failed:\n{getattr(rel,'check','')}\n\n"
                  f"javac error:\n{javac_error[:600]}\n\nCorrected snippet:"},
             ]
-            out = self._gen.generate(msg) or ""
+            out = self._record_generate(msg, 'compile_repair') or ""
             # strip fences if the model added them despite instructions
             out = re.sub(r'^```[a-z]*\n?|```$', '', out.strip(), flags=re.M)
             return out.strip() or None
+        except Exception:
+            return None
+
+    def harden_for_soundness(self, rel: 'Relation', extremes_text: str,
+                             n_fired: int, n_ordinary: int = 0,
+                             imports: Optional[List[str]] = None
+                             ) -> Optional[str]:
+        """Soundness repair via deep domain reasoning. The check fired on
+        `n_fired` extreme inputs AND `n_ordinary` benign/ordinary inputs during
+        soundness testing. The model must think through WHY the input caused
+        firing and, crucially, WHETHER that input is one the method is
+        contractually required to handle (in-domain) or garbage it never
+        promised anything about (out-of-domain), then either KEEP it or fix it.
+        Firing on ORDINARY inputs is strong evidence of unsoundness — those are
+        valid values a correct implementation must handle. Reasons ONLY from the
+        documented contract (we have no correct implementation to run). Returns
+        the corrected snippet, or None to KEEP the original unchanged."""
+        try:
+            avail = "\n".join((imports or [])[:40])
+            ordinary_note = (
+                f" It ALSO fired on {n_ordinary} ORDINARY, benign inputs "
+                f"(small finite numbers, simple non-empty strings) — those are "
+                f"plainly in-domain values a correct implementation MUST handle, "
+                f"so firing there is very strong evidence the rule is unsound."
+                if n_ordinary > 0 else
+                " It stayed quiet on ordinary benign inputs, so if it is unsound "
+                "it is only at an extreme.")
+            msg = [
+                {'role': 'system', 'content':
+                 "You are a SKEPTICAL reviewer whose job is to PROVE a Java "
+                 "relation check is UNSOUND. The check asserts a property that "
+                 "must hold for EVERY correct implementation and throws a "
+                 "'...violated...' RuntimeException otherwise. It fired during "
+                 "soundness testing, and you must think DEEPLY before deciding "
+                 "its fate. Do NOT rush to KEEP and do NOT rush to rewrite — "
+                 "reason it out in these explicit steps:\n"
+                 "STEP 1 — WHICH INPUT fired it? Read the check line by line and "
+                 "identify the specific input value(s) that make it throw "
+                 "'violated' (a NaN, an Inf+(-Inf), a negative index, an empty "
+                 "string, Integer.MIN_VALUE, ...). Name the concrete triggering "
+                 "input.\n"
+                 "STEP 2 — IS THAT INPUT ONE THE METHOD MUST HANDLE? Consult the "
+                 "documented contract (@param ranges, @throws, prose). Decide "
+                 "which case this is:\n"
+                 "  (a) IN-DOMAIN — the contract requires the method to accept "
+                 "this input and return a defined result. Then ask: would a "
+                 "CORRECT implementation ALSO produce a result that trips this "
+                 "check on that input? If yes, the check is UNSOUND (it demands "
+                 "more than the contract guarantees) — you MUST fix it.\n"
+                 "  (b) OUT-OF-DOMAIN — the contract says the input is illegal / "
+                 "unspecified / the method may throw or do anything. Then the "
+                 "firing is meaningless and the check must simply NOT run on it: "
+                 "fix it by GUARDING (skip/return when the drawn input is out of "
+                 "domain) so it can never false-fire there.\n"
+                 "  (c) IN-DOMAIN and the correct result does NOT trip the check "
+                 "— then this firing is the genuine DEFECT the buggy code "
+                 "exhibits, and the check is sound: KEEP.\n"
+                 "STEP 3 — Watch the classic soundness traps in your STEP-2 "
+                 "reasoning: comparing doubles with == / equals when the value "
+                 "can be NaN (NaN==NaN is FALSE, so min==max on two NaNs fails "
+                 "for correct code); assuming a NaN result implies a NaN operand "
+                 "(Inf+(-Inf)=NaN, 0.0/0.0=NaN with no NaN operand); assuming a "
+                 "total order where NaN makes it partial; integer overflow "
+                 "(Math.abs(MIN_VALUE)<0, -MIN_VALUE==MIN_VALUE); empty/very-"
+                 "long strings; empty collections.\n"
+                 "DECIDE: if case (c) for every firing, reply with the single "
+                 "token KEEP. Otherwise (case a or b) rewrite the check so it "
+                 "STILL throws '<name> violated' on the original defect for "
+                 "ordinary inputs, but no longer fires on the input you found "
+                 "unsound/out-of-domain (handle it in the expected value, or "
+                 "guard/skip that drawn input). A rewrite that stops catching "
+                 "the defect is wrong. Return ONLY the corrected Java snippet "
+                 "(body inside fuzzerTestOneInput, draws from `data`, throws "
+                 "OUTSIDE any catch) — no prose, no fences — or the token KEEP."},
+                {'role': 'user', 'content':
+                 f"Documented contract (the ONLY source of truth for what a "
+                 f"correct implementation guarantees, and for what is in-domain "
+                 f"vs illegal input): {getattr(rel,'contract','')}\n"
+                 f"Available imports:\n{avail}\n\n"
+                 f"Soundness-test result: the check fired on {n_fired} extreme "
+                 f"inputs.{ordinary_note}\n\n"
+                 f"The extreme/boundary inputs fed (identify which one fires "
+                 f"it):\n{extremes_text}\n\n"
+                 f"Check that fired:\n{getattr(rel,'check','')}\n\n"
+                 f"Work through STEP 1, 2, 3, then answer KEEP or a corrected "
+                 f"snippet:"},
+            ]
+            out = (self._record_generate(msg, 'soundness_harden') or "").strip()
+            if not out or out.upper().startswith('KEEP'):
+                return None
+            out = re.sub(r'^```[a-z]*\n?|```$', '', out, flags=re.M).strip()
+            # A repaired check must still throw the mandated violation token,
+            # or the counting wrapper can never see it — reject a degenerate
+            # "repair" that removed the alarm.
+            if 'violated' not in out:
+                return None
+            return out or None
         except Exception:
             return None
 

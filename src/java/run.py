@@ -38,7 +38,8 @@ from fuzz_runner import (FuzzRunner, HarnessVerifier, PatchApplyError,
                          PatchedProjectBuilder, TriggerVerificationError)
 from jazzer import JazzerEnvironment
 from llm import (HarnessGenerator, reset_token_usage, token_usage,
-                 usage_totals)
+                 usage_totals, enable_recording, reset_events, get_events,
+                 record_event)
 from patches import DeprecatedBugError, PatchSelector
 from prompts import PromptBuilder
 from java_source import candidate_anchor_literals, expected_assert_literals
@@ -153,7 +154,16 @@ def parse_args():
                              "escalation/flagship model — proposing sound "
                              "relations is the hardest reasoning step in the "
                              "pipeline and the cheap model demonstrably "
-                             "invents unsound ones.")
+                             "invents unsound ones. "
+                             "EXPERIMENTAL / OPTIONAL — leave OFF for detection. "
+                             "A 2026-07-19 ablation (harness with vs without "
+                             "injected relations, 5 bugs) found IDENTICAL recall "
+                             "and precision, and a full30 retrospective found "
+                             "0/8 caught overfits were caught by a relation "
+                             "(all via lifted-test or harness-invented "
+                             "oracles). The relation pipeline is not a "
+                             "detection contributor; it is kept opt-in for "
+                             "research on documented-formula/metamorphic bugs.")
     parser.add_argument("--replay_relations_on_patched", action="store_true",
                         help="P3.2 replay: execute every screened relation "
                              "(own + pooled) directly against the PATCHED "
@@ -166,12 +176,6 @@ def parse_args():
                              "Requires --synthesize_relations and "
                              "--verify_relations (replay never convicts "
                              "without the verifier).")
-    parser.add_argument("--synth_diverse", action="store_true",
-                        help="R2: ask synthesis for up to 6 DIVERSE relations "
-                             "(spanning contract / failing-test-neighborhood / "
-                             "sibling-agreement / hidden-state / model angles, "
-                             "<=2 per angle) instead of up to 4. Measured "
-                             "on/off in --rulegen_only mode.")
     parser.add_argument("--screen_runs", type=int, default=20000,
                         help="fuzz iterations per candidate during relation "
                              "screening AND patched-side replay. Default "
@@ -179,12 +183,31 @@ def parse_args():
                              "iteration loop (faster, slightly noisier "
                              "fire-ratio); keep 20000 for a measurement that "
                              "is compared apples-to-apples.")
+    parser.add_argument("--synth_max_rules", type=int, default=4,
+                        help="how many candidate relations synthesis may "
+                             "propose per leg (default 4). Raising it is a "
+                             "numbers game against generation variance — more "
+                             "draws, higher odds the discriminating relation "
+                             "appears. Only the count changes; the guidance is "
+                             "unchanged. Compare 4 vs 8 over MULTIPLE samples "
+                             "(single-sample convict noise is +-1-2 legs).")
     parser.add_argument("--rule_compile_repair", action="store_true",
                         help="R1: on a rule candidate's compile failure, make "
                              "ONE model call to fix it before dropping it "
                              "(recovers fixable typos; ~22%% of candidates die "
                              "at compile today). Measured on/off in "
                              "--rulegen_only mode.")
+    parser.add_argument("--rule_soundness_harden", action="store_true",
+                        help="Soundness pass: probe each surviving relation "
+                             "with real extreme/boundary values (canned "
+                             "FuzzedDataProvider); if it fires there it may be "
+                             "UNSOUND (asserts more than the contract "
+                             "guarantees at an extreme, e.g. NaN-result implies "
+                             "NaN-operand, which Inf+-Inf breaks). Ask the model "
+                             "to repair it from the contract, accepting the "
+                             "repair only if it still catches the bug and fires "
+                             "on fewer extremes. Attacks false positives from "
+                             "unsound rules. Measured on/off in --rulegen_only.")
     parser.add_argument("--rulegen_only", action="store_true",
                         help="RULE-GENERATION QUALITY MODE. Run synthesis + "
                              "screening (on buggy) + replay (on THIS leg's "
@@ -272,11 +295,182 @@ def _print_token_usage():
           f"({tot['prompt_tokens']:,} in + {tot['completion_tokens']:,} out)")
 
 
+def _fmt_messages(messages):
+    parts = []
+    for m in messages or []:
+        role = m.get('role', '?') if isinstance(m, dict) else '?'
+        content = m.get('content', '') if isinstance(m, dict) else str(m)
+        parts.append(f"**[{role}]**\n```\n{content}\n```")
+    return "\n\n".join(parts)
+
+
+def _llm_role(messages):
+    """Label an LLM call by its stage, read from its system prompt."""
+    sysmsg = ''
+    for m in messages or []:
+        if isinstance(m, dict) and m.get('role') == 'system':
+            sysmsg = (m.get('content') or '').lower()
+            break
+    if 'software-verification expert' in sysmsg or 'propose relation' in sysmsg:
+        return 'rule synthesis'
+    if 'skeptical reviewer' in sysmsg or 'prove a java relation' in sysmsg:
+        return 'rule soundness-repair'
+    if 'jazzer fuzzing harness' in sysmsg or 'security engineer' in sysmsg:
+        return 'harness generation'
+    if 'failed to compile' in sysmsg or 'fix a java snippet' in sysmsg:
+        return 'compile-repair'
+    if 'verif' in sysmsg or 'judge' in sysmsg or 'dismiss' in sysmsg:
+        return 'verifier / judge'
+    return 'LLM'
+
+
+# What each pipeline component/step in the trace is (only those that appear
+# are shown). Keeps the sequential trace self-explanatory.
+_STEP_LEGEND = [
+    ("failing-tests-found",
+     "the project's own tests that expose the bug (extracted from Defects4J)"),
+    ("analysis (TargetAnalyzer)",
+     "parses the patch and builds the code context the model reasons over — "
+     "the touched method(s), their documented contract, the call-graph "
+     "reachable set + sibling members (via fuzz-introspector), and imports"),
+    ("rule synthesis (LLM)",
+     "proposes candidate RELATIONS — invariants / metamorphic properties a "
+     "correct implementation must satisfy — from the documented contract"),
+    ("screen-fuzz-buggy",
+     "compiles each candidate rule and fuzzes it many times on the BUGGY "
+     "build; the output is checked/violated/fire-ratio"),
+    ("screen",
+     "the keep/drop decision for each rule (direction-confirmed, selective, "
+     "silent, or dropped by a lint/compile/cap)"),
+    ("rule soundness-repair (LLM)",
+     "a skeptical reviewer that rewrites a rule which fired on extreme inputs "
+     "if it is unsound (asserts more than the contract guarantees)"),
+    ("soundness-harden",
+     "the deterministic outcome of probing a rule with extreme values: "
+     "no-fire / artifact-skip / model-KEEP / HARDENED"),
+    ("screening-survivors",
+     "the final set of rules kept — these are passed to replay / harness "
+     "generation"),
+    ("replay-on-patched",
+     "(rulegen mode) runs each surviving rule directly on the patched build"),
+    ("harness generation (LLM)",
+     "writes a Jazzer fuzzing harness that embeds the surviving rules plus "
+     "oracles lifted from the failing test"),
+    ("harness-attempt",
+     "accept/reject of one generated harness — ACCEPTED = it compiles AND "
+     "crashes the BUGGY build (with the triggering input shown)"),
+    ("patched-fuzz",
+     "fuzzes an accepted harness against the PATCHED build — FIRED (with the "
+     "input + mismatch) means the overfit was caught; quiet means it escaped"),
+]
+
+
+def _fmt_det_output(o):
+    """Format a deterministic step's output: pretty-print structured values,
+    fence long/multiline strings, bold short scalars."""
+    if isinstance(o, (dict, list)):
+        return ("\n```json\n"
+                + json.dumps(o, indent=2, ensure_ascii=False, default=str)
+                + "\n```")
+    s = '' if o is None else str(o)
+    if len(s) > 200 or '\n' in s:
+        return "\n```\n" + s + "\n```"
+    return f"**{s}**"
+
+
+def _write_trace_md(path, bug, label, events, outcome=None):
+    """ONE purely SEQUENTIAL markdown transcript: every deterministic step and
+    every LLM call, in the exact order they happened. Each LLM step shows its
+    full prompt (deduped: a repeat of an earlier prompt is noted, not
+    reprinted) and full output; each deterministic step shows its method,
+    target and output. Nothing is summarised out of order — the sequence IS
+    the record."""
+    n_llm = sum(1 for e in events if e.get('kind') == 'llm')
+    L = [f"# Pipeline trace — {bug}\n"]
+    L.append(f"**Patch label:** {label}  "
+             f"*(the patch under analysis is a "
+             f"{'known-OVERFIT' if 'over' in str(label).lower() else 'known-CORRECT'}"
+             f" fix — the pipeline is not told this)*")
+    if outcome is not None:
+        L.append(f"\n**Outcome:** {outcome}")
+    # Patch under analysis — pulled from the analysis event's output so it sits
+    # up top for orientation (it is also inside step [1] in full).
+    _patch = ''
+    for e in events:
+        out = e.get('output')
+        if e.get('kind') != 'llm' and isinstance(out, dict) and out.get(
+                'patch_text'):
+            _patch = out['patch_text']
+            break
+    if _patch:
+        L.append("\n**Patch under analysis:**\n```diff\n"
+                 + _patch.strip() + "\n```")
+    L.append(f"\n{len(events)} sequential steps — {n_llm} LLM calls, "
+             f"{len(events) - n_llm} deterministic. Read top to bottom.\n")
+    # Legend — describe only the step types that actually appear.
+    present = set()
+    for e in events:
+        if e.get('kind') == 'llm':
+            present.add(_llm_role(e.get('messages')) + ' (LLM)')
+        else:
+            present.add(str(e.get('method', '')))
+    shown = [(n, d) for n, d in _STEP_LEGEND
+             if n in present or n.split(' (')[0] in present]
+    if shown:
+        L.append("<details><summary>Legend — what each step is</summary>\n")
+        for n, d in shown:
+            L.append(f"- **{n}** — {d}")
+        L.append("\n</details>\n")
+    # Per-MESSAGE dedup: the harness-generation calls share a huge identical
+    # system + instruction/context message and differ only in the tail (repair
+    # feedback, updated coverage). So collapse any message already shown
+    # verbatim in an earlier step, and print only the NEW messages of a call.
+    seen_msg = {}
+    for e in events:
+        seq = e.get('seq')
+        if e.get('kind') == 'llm':
+            msgs = e.get('messages') or []
+            L.append(f"\n---\n## [{seq}] 🧠 LLM call — **{_llm_role(msgs)}** "
+                     f"— model `{e.get('model', '')}`")
+            L.append("**Prompt:**\n")
+            _new = 0
+            for m in msgs:
+                role = m.get('role', '?') if isinstance(m, dict) else '?'
+                content = (m.get('content', '') if isinstance(m, dict)
+                           else str(m)) or ''
+                key = (role, content)
+                if key in seen_msg:
+                    L.append(f"- *[{role}] message: identical to step "
+                             f"[{seen_msg[key]}] — not reprinted*")
+                else:
+                    seen_msg[key] = seq
+                    _new += 1
+                    L.append(f"**[{role}]**\n```\n{content}\n```")
+            if _new == 0:
+                L.append("*(every message identical to earlier steps)*")
+            L.append("\n**Output:**\n```\n"
+                     + str(e.get('output', '')).strip() + "\n```")
+        else:
+            det = {k: v for k, v in e.items()
+                   if k not in ('seq', 'kind', 'method', 'target', 'output')}
+            L.append(f"\n---\n## [{seq}] ⚙️ {e.get('method', '')}"
+                     + (f" · `{e.get('target')}`" if e.get('target') else ''))
+            L.append("**output:** " + _fmt_det_output(e.get('output')))
+            for k, v in det.items():
+                L.append(f"- {k}: {v}")
+    with open(path, 'w', encoding='utf-8') as fh:
+        fh.write("\n".join(L) + "\n")
+
+
 def main():
     args = parse_args()
     # Token totals are process-global; start this patch's accounting from
     # zero so a future multi-patch-per-process driver can't accumulate.
     reset_token_usage()
+    # Record EVERY pipeline event (LLM calls + deterministic decisions) so the
+    # leg can dump a complete, ordered, auditable transcript.
+    enable_recording()
+    reset_events()
 
     if not (args.correct or args.overfitting):
         print("Please select either --correct flag or --overfitting flag")
@@ -343,6 +537,9 @@ def main():
         bug_id=selection.bug_id,
     )
     _print_failure_tests(failure_tests)
+    record_event('deterministic', method='failing-tests-found',
+                 output=[getattr(t, 'method_name', str(t))
+                         for t in (failure_tests or [])])
 
     # 4a-bis) Classify the bug. Crashing bugs fail their trigger test with a
     #     thrown application exception; semantic bugs fail a JUnit assertion
@@ -405,6 +602,11 @@ def main():
         buggy_dir=selection.buggy_dir,
     )
     print(json.dumps(context.as_dict(), indent=2))
+    try:
+        record_event('deterministic', method='analysis (TargetAnalyzer)',
+                     output=context.as_dict())
+    except Exception:
+        pass
 
     # Empty touched-function extraction silently disables everything that
     # keys on the patched method — the function blocks in the prompt,
@@ -573,6 +775,7 @@ def main():
                     touched_javadocs.append(jd)
 
     synthesized_relations = []
+    _all_candidates = []
     if bug_kind == "semantic" and args.synthesize_relations:
         if context_degraded:
             print("  [synth] skipped: no touched function extracted "
@@ -641,7 +844,7 @@ def main():
                 source_imports=context.source_imports,
                 trigger_test_block=trigger_test_block,
                 trigger_methods=trigger_methods,
-                diverse6=getattr(args, 'synth_diverse', False))
+                max_rules=getattr(args, 'synth_max_rules', 4))
             if candidates:
                 print(f"  [synth] {len(candidates)} candidate relation(s) "
                       f"({synth_model}): "
@@ -667,6 +870,11 @@ def main():
                           f"(re-screened here before use)")
             synthesized_relations = candidates
             record_extras["synth_candidates"] = len(candidates)
+            # Keep references to EVERY candidate (pre-screen) so the trace can
+            # dump the ones screening/hardening later drop, with the reason —
+            # screen_relations attaches .screen_decision/.harden_decision to
+            # these same objects.
+            _all_candidates = list(candidates)
 
     # 5) Build the chat-completion prompt. Rather than a single fixed
     #    prompt, we wrap PromptBuilder in a factory the campaign calls
@@ -786,6 +994,16 @@ def main():
                     _imp = context.source_imports
                     _repair = (lambda rel, err:
                                synthesizer.repair_check(rel, err, imports=_imp))
+                # Soundness hardening (--rule_soundness_harden): probe each
+                # survivor with real extreme values; if it fires there, ask the
+                # model to repair it from the contract, accepting only a repair
+                # that still catches the bug and fires on fewer extremes.
+                _harden = None
+                if getattr(args, 'rule_soundness_harden', False):
+                    _imp = context.source_imports
+                    _harden = (lambda rel, extremes, n, n_ord, imports=_imp:
+                               synthesizer.harden_for_soundness(
+                                   rel, extremes, n, n_ord, imports=imports))
                 synthesized_relations = screen_relations(
                     synthesized_relations,
                     builder=builder,
@@ -797,8 +1015,13 @@ def main():
                     trigger_literals=_trig_lits,
                     max_keep=8,
                     repair_fn=_repair,
+                    harden_fn=_harden,
                     runs=args.screen_runs,
                 )
+                record_event('deterministic', method='screening-survivors',
+                             output={'kept': [getattr(r, 'name', '?')
+                                              for r in synthesized_relations],
+                                     'count': len(synthesized_relations)})
             except Exception as exc:
                 print(f"  [screen] screening failed ({exc}) — dropping all "
                       "candidates rather than injecting unscreened")
@@ -879,6 +1102,21 @@ def main():
               f" survivors={len(synthesized_relations or [])}"
               f" replay-fired={len(replay_fired)}: "
               f"{[x['name'] for x in replay_fired]}")
+        # Full inspectable trace: the exact prompt + context the model saw,
+        # and every surviving rule with its full body (name/kind/contract/
+        # input/check/screen_note) — so a run.log's names can be read as
+        # actual rules against the actual context.
+        try:
+            if args.results_json:
+                _tp = os.path.join(os.path.dirname(args.results_json),
+                                   'trace.md')
+                _write_trace_md(
+                    _tp, f"{selection.project_name}-{selection.bug_id}",
+                    'correct' if args.correct else 'overfitting',
+                    get_events(), outcome='rulegen_only (no harness/verdict)')
+                print(f"  [trace] wrote {_tp} ({len(get_events())} steps)")
+        except Exception as _e:
+            print(f"  [trace] dump failed: {_e}")
         _emit_record(args.results_json,
                      label='correct' if args.correct else 'overfitting',
                      status='rulegen_only', selection=selection,
@@ -1141,6 +1379,29 @@ def main():
                 buggy_dir=selection.buggy_dir,
             )
             _print_fuzz_summary(fuzz_results)
+            for _fr in (fuzz_results or []):
+                _fired = getattr(_fr, 'triggered', False)
+                _kw = {}
+                if _fired:
+                    _blob = ((getattr(_fr, 'stderr', '') or '') + '\n'
+                             + (getattr(_fr, 'stdout', '') or ''))
+                    # The oracle message names the DISCRIMINATING INPUT and the
+                    # mismatch, e.g. "x.add(new Complex(1, NaN)).getReal()
+                    # expected NaN but got 4.0" — i.e. exactly what caught it.
+                    _m = re.search(r'\[oracle:[^\]]*\][^\n]*', _blob)
+                    _out = ('FIRED — ' + (_m.group(0)[:500] if _m
+                                          else 'crash on patched build'))
+                    # The raw reproducing input Jazzer persisted (the bytes the
+                    # FuzzedDataProvider decoded into that triggering input).
+                    _art = getattr(_fr, 'artifact_path', None)
+                    if _art:
+                        _kw['reproducing_input_file'] = _art
+                else:
+                    _out = 'quiet on patched build (no overfit signal)'
+                record_event(
+                    'deterministic', method='patched-fuzz',
+                    target=getattr(_fr, 'attempt_label', 'harness'),
+                    output=_out, **_kw)
         except (PatchApplyError, TriggerVerificationError) as exc:
             # P0.1 safety net, patched half. These are NOT generic infra
             # hiccups: the program under test is not what we believe it
@@ -1797,6 +2058,34 @@ def main():
         status = 'evaluated'
     else:
         status = 'no_harnesses'
+    # ONE complete markdown transcript for the full run too (harness
+    # generation + judge LLM calls are captured via the global recorder).
+    try:
+        if args.results_json:
+            _tp = os.path.join(os.path.dirname(args.results_json), 'trace.md')
+            _caught = bool(fuzz_results
+                           and any(getattr(r, 'triggered', False)
+                                   for r in fuzz_results))
+            _lbl = 'overfitting' if args.overfitting else 'correct'
+            if _lbl == 'overfitting':
+                _verdict = ('OVERFIT CAUGHT (a harness fired on the patched '
+                            'build)' if _caught else
+                            'overfit MISSED (all harnesses quiet on the '
+                            'patched build)')
+            else:
+                _verdict = ('FALSE ALARM (a harness fired on this CORRECT '
+                            'patch)' if _caught else
+                            'correctly quiet (no false alarm)')
+            _write_trace_md(
+                _tp, f"{selection.project_name}-{selection.bug_id}", _lbl,
+                get_events(),
+                outcome=f"{_verdict}. [{status}; "
+                        f"{len(fuzz_results or [])} harness(es) fuzzed on the "
+                        f"patched build; campaign converged="
+                        f"{getattr(result, 'converged', None)}]")
+            print(f"  [trace] wrote {_tp} ({len(get_events())} steps)")
+    except Exception as _e:
+        print(f"  [trace] dump failed: {_e}")
     _emit_record(args.results_json,
                  label='correct' if args.correct else 'overfitting',
                  status=status, selection=selection,

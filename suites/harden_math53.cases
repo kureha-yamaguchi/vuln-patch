@@ -1,0 +1,10 @@
+# Focused qualitative probe: Math-53 only (the known unsound NaN relation),
+# harden ON with repair-body logging. Read the [harden] ORIGINAL vs REPAIRED
+# check dumps to judge whether the model's soundness repair is sensible, and
+# whether the -c false-fire disappears. NOT a measurement run — deep inspection.
+MODEL="gpt-5.4"
+COMMON="-n 1 -m 1 --fuzz_timeout 20 --synthesize_relations --rulegen_only --screen_runs 5000 --rule_compile_repair --rule_soundness_harden"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-53-Arja.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/DeepRepair/Math/patch1-Math-53-DeepRepair.patch"
+)

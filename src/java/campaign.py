@@ -37,7 +37,7 @@ from build import HarnessBuilder, BuildResult
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from java_source import (alarm_ids_missing, negative_modulo_index,
                          rethrow_without_cause, violation_swallowed)
-from llm import HarnessGenerator
+from llm import HarnessGenerator, record_event
 from fuzz_runner import HarnessVerifier, VerificationResult
 from oracle_strength import exception_headline
 
@@ -428,6 +428,12 @@ class HarnessCampaign:
             result.successful_results.append(build)
             result.achieved_successes += 1
             attempts_at_last_accept = result.attempts
+            record_event('deterministic', method='harness-attempt',
+                         target=attempt_label,
+                         output='ACCEPTED (compiles + crashes the buggy build)',
+                         trigger=(exception_headline(
+                             verification.stdout + '\n' + verification.stderr)
+                             if verification else ''))
             signature = verification.signature if verification else None
             result.accepted_signatures.append(signature or '')
             # Attribute the trigger: WHICH throwable fired on the buggy
@@ -469,6 +475,12 @@ class HarnessCampaign:
         """Shared failure bookkeeping for both gates (compile, trigger).
         Returns the updated (repair_failures, current_messages,
         original_messages) triple."""
+        # Every gate rejection funnels through here — record it so the trace
+        # shows what happened to each generated harness.
+        record_event('deterministic', method='harness-attempt',
+                     output='REJECTED',
+                     reason=str(diagnostic).strip().splitlines()[0][:200]
+                     if diagnostic else '')
         if is_repair_attempt:
             repair_failures += 1
 

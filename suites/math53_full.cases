@@ -1,0 +1,7 @@
+# Math-53 FULL pipeline (harness generation + judge) — one file trace.md each.
+MODEL="gpt-5.4"
+COMMON="-n 2 -m 4 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --rule_compile_repair --rule_soundness_harden"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-53-Arja.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/DeepRepair/Math/patch1-Math-53-DeepRepair.patch"
+)

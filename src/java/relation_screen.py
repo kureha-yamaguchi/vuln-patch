@@ -35,13 +35,17 @@ cannot screen, and unscreened means uninjected.
 """
 import os
 import re
+import shutil
 import tempfile
 from typing import List, Optional
 
 from build import HarnessBuilder
+from canned_probe import run_canned_probe, EXTREMES_CHECKLIST, SEEDS as _SEEDS
+from llm import record_event
 from fuzz_runner import run_jazzer
 from java_source import (library_subclass, negative_modulo_index,
                          violation_swallowed)
+from special_corpus import build_special_corpus
 
 _STATS_RE = re.compile(
     r'\[relscreen\]\s+checked=(\d+)\s+violated=(\d+)')
@@ -131,21 +135,31 @@ def _measure_on_corpus(build, builder, buggy_dir, jazzer_standalone_jar,
             with open(os.path.join(corpus, f'seed_{i:03d}'), 'w',
                       encoding='utf-8', errors='replace') as fh:
                 fh.write(lit)
+        return _measure_on_dir(build, builder, buggy_dir,
+                               jazzer_standalone_jar, jazzer_api_jar,
+                               corpus, timeout_seconds)
+    finally:
+        shutil.rmtree(corpus, ignore_errors=True)
+
+
+def _measure_on_dir(build, builder, work_dir, jazzer_standalone_jar,
+                    jazzer_api_jar, corpus_dir, timeout_seconds=25):
+    """Replay one already-compiled counting harness over EXACTLY the seeds
+    in `corpus_dir` (`-runs=0`, no mutation) against `work_dir`'s classpath,
+    and return (checked, violated) or None on failure."""
+    try:
         outcome = run_jazzer(
             jazzer_standalone_jar=jazzer_standalone_jar,
             target_class=build.class_name,
             harness_dir=os.path.dirname(build.harness_path),
-            project_cp=builder.test_classpath(buggy_dir),
+            project_cp=builder.test_classpath(work_dir),
             timeout_seconds=timeout_seconds,
             jazzer_api_jar=jazzer_api_jar,
-            corpus_dir=corpus,
+            corpus_dir=corpus_dir,
             extra_libfuzzer_args=['-runs=0'],
         )
     except Exception:
         return None
-    finally:
-        import shutil
-        shutil.rmtree(corpus, ignore_errors=True)
     m = _STATS_RE.search(outcome.stdout + '\n' + outcome.stderr)
     if not m:
         return None
@@ -163,7 +177,8 @@ def screen_relations(candidates: List,
                      runs: int = 20000,
                      timeout_seconds: int = 45,
                      max_keep: int = 3,
-                     repair_fn=None) -> List:
+                     repair_fn=None,
+                     harden_fn=None) -> List:
     """Screen each candidate on the buggy build; return the survivors
     (ranked: selective-firing first, silent second), capped at `max_keep`
     so the prompt is never flooded. Each survivor's `screen_note` records
@@ -172,6 +187,16 @@ def screen_relations(candidates: List,
     unscreened."""
     confirmed, confirmed_flaky, selective, silent, high_ratio = (
         [], [], [], [], [])
+
+    def _mark(r, outcome, reason):
+        try:
+            r.screen_decision = {'outcome': outcome, 'reason': reason}
+        except Exception:
+            pass
+        record_event('deterministic', method='screen',
+                     target=getattr(r, 'name', '?'), output=outcome,
+                     reason=reason)
+
     for i, rel in enumerate(candidates):
         name = getattr(rel, 'name', f'relation{i}')
         # Format gate: the counting harness recognises a violation ONLY by
@@ -183,6 +208,8 @@ def screen_relations(candidates: List,
         if 'violated' not in getattr(rel, 'check', ''):
             print(f"  [screen] {name}: check never throws the mandated "
                   f"'violated' message — format-rejected, dropped")
+            _mark(rel, 'dropped', 'format: never throws the mandated '
+                  '"violated" message')
             continue
         # P0.2 self-swallow lint: an alarm thrown inside the check's own
         # catch-everything block is caught and discarded before the
@@ -193,6 +220,7 @@ def screen_relations(candidates: List,
         if swallow_reason is not None:
             print(f"  [screen] {name}: SELF-SWALLOWED ALARM — "
                   f"{swallow_reason} — dropped")
+            _mark(rel, 'dropped', f'self-swallowed alarm: {swallow_reason}')
             continue
         # P2.3 constraint parity: the harness may not subclass a library
         # class to force behaviour. A relation that needs one compiles
@@ -204,6 +232,8 @@ def screen_relations(candidates: List,
             print(f"  [screen] {name}: needs an anonymous/local subclass of "
                   f"`{subclassed}` — forbidden in harnesses (use a real "
                   f"library subclass instead) — dropped")
+            _mark(rel, 'dropped', f'needs forbidden library subclass of '
+                  f'{subclassed}')
             continue
         # Harness-bug lint (same as campaign gate 0d): an index computed as
         # Math.abs(consume…()) % n goes negative on Integer.MIN_VALUE and
@@ -212,6 +242,7 @@ def screen_relations(candidates: List,
         if negmod is not None:
             print(f"  [screen] {name}: NEGATIVE-MODULO INDEX — {negmod} — "
                   f"dropped")
+            _mark(rel, 'dropped', f'negative-modulo index bug: {negmod}')
             continue
         cls = f'RelScreen{i}'
         src = _screen_harness_source(package, imports or [], cls,
@@ -221,6 +252,7 @@ def screen_relations(candidates: List,
                                   output_subdir=f'relscreen_{i}')
         except Exception as exc:
             print(f"  [screen] {name}: build error ({exc}) — dropped")
+            _mark(rel, 'dropped', f'build error: {exc}')
             continue
         if not build.compiled:
             reason = (build.stderr or '').strip().splitlines()
@@ -246,8 +278,15 @@ def screen_relations(candidates: List,
                 print(f"  [screen] {name}: does not compile — dropped"
                       + (" (repair failed)" if repair_fn is not None else "")
                       + (f" ({reason[0]})" if reason else ""))
+                _mark(rel, 'dropped', 'does not compile'
+                      + (' (R1 repair failed)' if repair_fn is not None else '')
+                      + (f': {reason[0]}' if reason else ''))
                 continue
             print(f"  [screen] {name}: compile-repaired (R1)")
+            try:
+                rel.compile_repaired = True
+            except Exception:
+                pass
         # P0.2 canary: compile+run a variant FORCED to raise its alarm and
         # require the counting wrapper to register it. The lint above
         # proves the alarm escapes the check's own catches statically;
@@ -278,11 +317,14 @@ def screen_relations(candidates: List,
                 canary_heard = bool(cm and int(cm.group(2)) >= 1)
         except Exception as exc:
             print(f"  [screen] {name}: canary error ({exc}) — dropped")
+            _mark(rel, 'dropped', f'canary error: {exc}')
             continue
         if not canary_heard:
             print(f"  [screen] {name}: CANARY FAILED — a forced alarm was "
                   f"not registered by the counting wrapper; this "
                   f"candidate's violations cannot be measured — dropped")
+            _mark(rel, 'dropped', 'canary failed: forced alarm not registered '
+                  'by the counting wrapper (unmeasurable)')
             continue
         try:
             outcome = run_jazzer(
@@ -298,18 +340,26 @@ def screen_relations(candidates: List,
             )
         except Exception as exc:
             print(f"  [screen] {name}: run error ({exc}) — dropped")
+            _mark(rel, 'dropped', f'run error: {exc}')
             continue
         m = _STATS_RE.search(outcome.stdout + '\n' + outcome.stderr)
         if not m:
             print(f"  [screen] {name}: no stats line (harness crashed the "
                   f"JVM or never ran) — dropped")
+            _mark(rel, 'dropped', 'no stats line (harness crashed the JVM or '
+                  'never ran)')
             continue
         checked, violated = int(m.group(1)), int(m.group(2))
         if checked < MIN_CHECKED:
             print(f"  [screen] {name}: only {checked} checks executed — "
                   f"dropped (cannot screen)")
+            _mark(rel, 'dropped', f'only {checked} checks executed (< '
+                  f'{MIN_CHECKED}, cannot screen)')
             continue
         ratio = violated / checked
+        record_event('deterministic', method='screen-fuzz-buggy', target=name,
+                     output={'checked': checked, 'violated': violated,
+                             'ratio': round(ratio, 4)})
 
         # --- P2.2: direction + determinism on the trigger inputs --------
         # Two focused replays over EXACTLY the failing test's literals.
@@ -418,10 +468,21 @@ def screen_relations(candidates: List,
     # past the first, each adds prompt mass without new evidence and
     # measurably distracts the generator (mined54: Lang-7 TP->FN under 36
     # mined assertions).
+    # Record each candidate's bucket for the trace.
+    for _b, _lbl in ((confirmed, 'kept: direction-confirmed'),
+                     (confirmed_flaky, 'kept: direction-confirmed (flaky)'),
+                     (selective, 'kept: selective firer'),
+                     (high_ratio, 'kept: above-ratio-cap / inverted (replay-only)'),
+                     (silent, 'silent on buggy (tripwire)')):
+        for _r in _b:
+            _mark(_r, 'kept', _lbl)
     kept = (confirmed + confirmed_flaky + selective
             + high_ratio + silent[:1])[:max_keep]
     dropped_by_cap = [r for r in confirmed + confirmed_flaky + selective
                       + high_ratio + silent if r not in kept]
+    for _r in dropped_by_cap:
+        _mark(_r, 'dropped', 'cut by the keep-cap (kept the higher-ranked '
+              'ones; at most one silent tripwire)')
     if dropped_by_cap:
         # Not a screening failure — the prompt-size/distraction cap. Say
         # so, or "4 KEPT" followed by "3 survived" reads as an off-by-one.
@@ -429,7 +490,130 @@ def screen_relations(candidates: List,
               f"(direction-confirmed first, at most 1 silent); "
               + ", ".join(getattr(r, 'name', '?') for r in dropped_by_cap)
               + " kept-but-cut")
+    if harden_fn is not None:
+        kept = [_harden_survivor(r, builder, buggy_dir, jazzer_standalone_jar,
+                                 jazzer_api_jar, package, imports,
+                                 trigger_literals, harden_fn, idx)
+                for idx, r in enumerate(kept)]
     return kept
+
+
+def _harden_survivor(rel, builder, buggy_dir, jazzer_standalone_jar,
+                     jazzer_api_jar, package, imports, trigger_literals,
+                     harden_fn, idx):
+    """Soundness pass on ONE surviving relation: probe it with real extreme
+    values (canned provider); if it fires there it MAY be unsound, so ask the
+    model to repair it from the contract. Accept the repair ONLY if it (a)
+    compiles, (b) still catches the bug (fires on the buggy build's trigger
+    inputs), and (c) fires on STRICTLY FEWER extremes than the original — the
+    mechanical guard that distinguishes a genuine unsoundness fix from a repair
+    that either broke the catch or was a firing that was the bug all along.
+    Returns the hardened relation, or the original unchanged."""
+    name = getattr(rel, 'name', 'relation')
+    check = getattr(rel, 'check', '')
+
+    def _hd(**kw):
+        try:
+            rel.harden_decision = kw
+        except Exception:
+            pass
+        record_event('deterministic', method='soundness-harden',
+                     target=name, output=kw.get('outcome'), detail=kw)
+
+    if not check:
+        _hd(outcome='skipped', reason='empty check')
+        return rel
+    before = run_canned_probe(builder, buggy_dir, package, imports or [],
+                              f'SVh0_{idx}', check,
+                              output_subdir=f'svh0_{idx}')
+    if not before or before[1] == 0:
+        _hd(outcome='no-fire', reason='silent on all extreme inputs — nothing '
+            'to harden', extremes_fired=(before[1] if before else 0))
+        return rel   # sound at every extreme — nothing to harden
+    # Artifact filter: does it also fire on ORDINARY (benign, in-domain)
+    # canned inputs? If so the firing is a degenerate-structure artifact (the
+    # probe built a malformed input), NOT an extreme-specific unsoundness —
+    # skip the model call. Only extreme-specific firings (loud on extremes,
+    # quiet on ordinary) are real soundness candidates.
+    ctrl = run_canned_probe(builder, buggy_dir, package, imports or [],
+                            f'SVhc_{idx}', check, output_subdir=f'svhc_{idx}',
+                            ordinary=True)
+    ctrl_v = ctrl[1] if ctrl else 0
+    # NEAR-TOTAL ordinary firing = a degenerate-input artifact (the probe built
+    # a malformed structure, so the check trips on basically every input) —
+    # skip it. PARTIAL ordinary firing is AMBIGUOUS: it may be a genuinely
+    # over-strong rule tripping on a VALID ordinary input (negative index,
+    # empty string) — that must go to the model, not be silently skipped, or
+    # the exact false-alarm class we are hunting survives.
+    artifact_floor = int(0.75 * _SEEDS)
+    if ctrl_v >= artifact_floor:
+        print(f"  [harden] {name}: fires on {ctrl_v}/{_SEEDS} ORDINARY inputs "
+              f"(near-total, extremes {before[1]}/{_SEEDS}) — degenerate-input "
+              f"artifact, skipped (no model call)")
+        _hd(outcome='artifact-skip', reason='near-total ordinary firing = '
+            'degenerate-input artifact', extremes_fired=before[1],
+            ordinary_fired=ctrl_v)
+        return rel
+    print(f"  [harden] {name}: extremes {before[1]}/{_SEEDS}, ordinary "
+          f"{ctrl_v}/{_SEEDS} — asking model to reason about domain validity")
+    repaired = harden_fn(rel, EXTREMES_CHECKLIST, before[1], ctrl_v, imports)
+    if not repaired or repaired == check:
+        print(f"  [harden] {name}: model judged it sound (KEEP)")
+        _hd(outcome='model-KEEP', reason='model reasoned it is sound',
+            extremes_fired=before[1], ordinary_fired=ctrl_v)
+        return rel
+    # Log both sides so qualitative runs are inspectable.
+    print(f"  [harden] {name}: --- ORIGINAL check ---\n{check}")
+    print(f"  [harden] {name}: --- REPAIRED check ---\n{repaired}")
+    # Verify the repair on the buggy build before trusting it.
+    try:
+        cls = f'RelHarden{idx}'
+        src = _screen_harness_source(package, imports or [], cls, repaired)
+        build = builder.build(src, buggy_dir, output_subdir=f'svh1_{idx}')
+    except Exception as exc:
+        _hd(outcome='repair-build-error', reason=str(exc),
+            proposed_repair=repaired, extremes_fired=before[1],
+            ordinary_fired=ctrl_v)
+        return rel
+    if not build.compiled:
+        print(f"  [harden] {name}: repair did not compile — kept original")
+        _hd(outcome='repair-no-compile', reason='model repair did not compile',
+            proposed_repair=repaired, extremes_fired=before[1],
+            ordinary_fired=ctrl_v)
+        return rel
+    still_catches = True
+    if trigger_literals:
+        r = _measure_on_corpus(build, builder, buggy_dir,
+                               jazzer_standalone_jar, jazzer_api_jar,
+                               trigger_literals)
+        still_catches = bool(r and r[1] > 0)
+    after = run_canned_probe(builder, buggy_dir, package, imports or [],
+                             f'SVh2_{idx}', repaired, output_subdir=f'svh2_{idx}')
+    fewer_extremes = bool(after and after[1] < before[1])
+    if still_catches and fewer_extremes:
+        try:
+            rel.check = repaired
+            rel.screen_note = (getattr(rel, 'screen_note', '')
+                               + f" | HARDENED: was unsound at {before[1]} "
+                               f"extreme(s), repaired to {after[1]} while still "
+                               f"catching the bug on trigger inputs")
+        except Exception:
+            pass
+        print(f"  [harden] {name}: HARDENED (extreme firings "
+              f"{before[1]}->{after[1]}, still catches the bug)")
+        _hd(outcome='HARDENED', reason='repair still catches the bug and fires '
+            'on fewer extremes', extremes_fired=before[1],
+            ordinary_fired=ctrl_v, extremes_after=(after[1] if after else None),
+            original_check=check, repaired_check=repaired)
+    else:
+        print(f"  [harden] {name}: repair rejected (still_catches="
+              f"{still_catches}, extremes {before[1]}->"
+              f"{after[1] if after else '?'}) — kept original")
+        _hd(outcome='repair-rejected', reason=f'still_catches={still_catches}, '
+            f'fewer_extremes={fewer_extremes}', extremes_fired=before[1],
+            ordinary_fired=ctrl_v, extremes_after=(after[1] if after else None),
+            proposed_repair=repaired)
+    return rel
 
 
 def replay_on_patched(relations: List,
@@ -529,8 +713,12 @@ def replay_on_patched(relations: List,
             if checked is not None or trig_v is not None:
                 print(f"  [replay] {name}: quiet on the patched build"
                       + (f" ({checked} fuzzed inputs)" if checked else ""))
+            record_event('deterministic', method='replay-on-patched',
+                         target=name, output='quiet (did not fire)')
             continue
         print(f"  [replay] {name}: FIRED [{tier}] — {note}")
+        record_event('deterministic', method='replay-on-patched', target=name,
+                     output=f'FIRED [{tier}]', note=note)
         findings.append({
             'relation': rel, 'name': name, 'tier': tier, 'note': note,
             'trigger_violations': trig_v,

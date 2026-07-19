@@ -1,0 +1,6 @@
+# Quick verify of the one-file trace.md (single rulegen leg).
+MODEL="gpt-5.4"
+COMMON="-n 1 -m 1 --fuzz_timeout 20 --synthesize_relations --rulegen_only --screen_runs 5000 --rule_compile_repair --rule_soundness_harden"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/DeepRepair/Math/patch1-Math-53-DeepRepair.patch"
+)

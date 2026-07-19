@@ -201,10 +201,10 @@ _JDKISH = frozenset({
 def assemble_class_context(buggy_dir: str,
                            modified_files: List[str],
                            touched_method_names: List[str],
-                           max_supertypes: int = 2,
-                           max_collaborators: int = 2,
-                           per_class_chars: int = 9000,
-                           total_chars: int = 30000) -> List[str]:
+                           max_supertypes: int = 3,
+                           max_collaborators: int = 5,
+                           per_class_chars: int = 12000,
+                           total_chars: int = 48000) -> List[str]:
     """Labeled skeleton blocks for (1) each patched class — full bodies for
     the touched methods, (2) its supertypes/interfaces resolvable in the
     source tree, (3) the most-referenced collaborator types in the touched

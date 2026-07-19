@@ -1,0 +1,14 @@
+# ABLATION arm B: harness WITHOUT synthesized relations (lifted+invented only)
+MODEL="gpt-5.4"
+COMMON="-n 2 -m 4 --fuzz_timeout 20 --verify_timeout 20 --verify_relations"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Chart/patch1-Chart-3-Arja.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Lang/patch1-Lang-60-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-53-Arja.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-57-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Elixir/Chart/patch1-Chart-3-Elixir-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-60-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/DeepRepair/Math/patch1-Math-53-DeepRepair.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/ssFix/Math/patch1-Math-57-ssFix-plausible.patch"
+)

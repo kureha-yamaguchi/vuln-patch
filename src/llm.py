@@ -77,6 +77,45 @@ def reset_token_usage() -> None:
     _USAGE_BY_MODEL.clear()
 
 
+# --- Full pipeline transcript (ordered LLM + deterministic events) ----------
+# One process-global ordered log so a run can dump EVERY step of the whole
+# pipeline: each LLM call (which model, its full prompt, its full output — all
+# funnel through HarnessGenerator.generate below) AND each deterministic
+# decision (which method, its output). Opt-in (off by default = no cost).
+_EVENTS: List[Dict] = []
+_RECORD = False
+
+
+def enable_recording() -> None:
+    global _RECORD
+    _RECORD = True
+
+
+def reset_events() -> None:
+    _EVENTS.clear()
+
+
+def get_events() -> List[Dict]:
+    """Every recorded event in call order. LLM events:
+    {seq, kind:'llm', model, messages, output}. Deterministic events:
+    {seq, kind:'deterministic', method, ...detail..., output}."""
+    return list(_EVENTS)
+
+
+def record_event(kind: str, **fields) -> None:
+    """Append one ordered pipeline event (LLM or deterministic)."""
+    if not _RECORD:
+        return
+    try:
+        _EVENTS.append({'seq': len(_EVENTS), 'kind': kind, **fields})
+    except Exception:
+        pass
+
+
+def _record_llm_call(model, messages, output) -> None:
+    record_event('llm', model=model, messages=messages, output=output)
+
+
 def usage_totals() -> Dict[str, int]:
     """Summed prompt/completion/total tokens and call count across models."""
     out = {'prompt_tokens': 0, 'completion_tokens': 0,
@@ -185,7 +224,9 @@ class HarnessGenerator:
         if not self._stream:
             result = self._client.chat.completions.create(**params)
             _record_usage(self.model, getattr(result, 'usage', None))
-            return result.choices[0].message.content
+            out = result.choices[0].message.content
+            _record_llm_call(self.model, messages, out)
+            return out
 
         # Streaming path: accumulate content deltas as they arrive. The
         # constant traffic keeps proxies/gateways from treating the
@@ -211,4 +252,6 @@ class HarnessGenerator:
             close = getattr(stream, 'close', None)
             if close is not None:
                 close()
-        return ''.join(chunks)
+        out = ''.join(chunks)
+        _record_llm_call(self.model, messages, out)
+        return out

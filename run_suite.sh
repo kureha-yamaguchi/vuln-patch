@@ -5,11 +5,14 @@
 # never collides):
 #   scratch/runs/<suite>_<YYYYMMDD_HHMMSS>/
 #     config.json         suite metadata: model, flags, git SHA, cases
-#     manifest.jsonl      every run's result record, rolled up (one line each)
-#     summary.md          confusion matrix + P/R/F1 (generated at the end)
+#     summary.md          confusion matrix + P/R/F1 (from each result.jsonl)
 #     NN_<Proj>-<bug>_<tool>_<o|c>/
 #       result.jsonl      this run's record (incl. exact token usage)
-#       run.log           full log (prompt, harness, differential)
+#       trace.md          THE full transcript: bug, prompt+context, every rule,
+#                         every LLM call (full prompt+output) + every
+#                         deterministic decision, ordered. This is the record.
+#       run.log           ONLY if the leg crashed (crash insurance); a
+#                         successful leg leaves just trace.md + result.jsonl
 #   scratch/co/<suite>_<STAMP>/<tag>/   isolated checkout per run
 #
 # Usage: run_suite.sh <suite_name> [cases_file]
@@ -50,7 +53,6 @@ cd /home/code/experiments-vuln-patch/src
 STAMP="$(date +%Y%m%d_%H%M%S)"
 ROOT=/home/code/scratch/runs/${SUITE}_${STAMP}
 mkdir -p "$ROOT"
-MANIFEST="$ROOT/manifest.jsonl"; : > "$MANIFEST"
 
 # Relation pool (P3.2) isolation: the pool persists across runs when left at
 # its default (~/.vuln_patch_relation_pool), so relations screened by an OLD
@@ -70,8 +72,8 @@ CASES=(
 if [ -n "$CASES_FILE" ]; then
   # shellcheck disable=SC1090
   source "$CASES_FILE"
-  # Provenance: the exact case set this suite ran, next to its results.
-  cp "$CASES_FILE" "$ROOT/cases.sourced"
+  # (Provenance lives in config.json — MODEL, COMMON and the case list — so no
+  # separate cases.sourced copy is written.)
 fi
 # ---------------------------------------------------------
 
@@ -112,6 +114,11 @@ run_one() {
       --results_json "$rundir/result.jsonl" \
       > "$rundir/run.log" 2>&1
   local ec=$?
+  # One-file policy: trace.md is the record. Drop run.log on SUCCESS (a
+  # result.jsonl means run.py finished and wrote trace.md); keep it ONLY when
+  # the leg failed, as crash insurance (a traceback before trace.md is written
+  # would otherwise vanish).
+  if [ -f "$rundir/result.jsonl" ]; then rm -f "$rundir/run.log"; fi
   echo "  [$idx/$total] $tag exit=$ec  rec: $(tail -1 "$rundir/result.jsonl" 2>/dev/null)"
 }
 
@@ -159,18 +166,23 @@ while IFS=$'\t' read -r idx tag flag pf; do
 done < "$WORKLIST"
 wait
 
-# Phase 3 — assemble the manifest in index order (race-free: nothing appended
-# to it during the parallel runs).
-: > "$MANIFEST"
-while IFS=$'\t' read -r idx tag flag pf; do
-  [ -f "$ROOT/$tag/result.jsonl" ] && cat "$ROOT/$tag/result.jsonl" >> "$MANIFEST"
-done < "$WORKLIST"
-
-# summary.md — confusion matrix + P/R/F1 straight from the manifest.
-uv run python - "$MANIFEST" "$ROOT/summary.md" "$SUITE" "$STAMP" <<'PY'
-import json, math, sys, collections
-manifest, out, suite, stamp = sys.argv[1:5]
-rows = [json.loads(l) for l in open(manifest)] if __import__('os').path.exists(manifest) else []
+# summary.md — confusion matrix + P/R/F1, read straight from each leg's
+# result.jsonl in worklist (index) order. No manifest file: it was byte-for-
+# byte the concatenation of these, so it added no information.
+uv run python - "$ROOT" "$WORKLIST" "$ROOT/summary.md" "$SUITE" "$STAMP" <<'PY'
+import json, math, sys, collections, os
+root, worklist, out, suite, stamp = sys.argv[1:6]
+rows = []
+if os.path.exists(worklist):
+    for line in open(worklist):
+        parts = line.rstrip('\n').split('\t')
+        if len(parts) < 2:
+            continue
+        rj = os.path.join(root, parts[1], 'result.jsonl')
+        if os.path.exists(rj):
+            txt = open(rj).read().strip()
+            if txt:
+                rows.append(json.loads(txt.splitlines()[-1]))
 cm = collections.Counter(); tok = 0
 lines = [f"# {suite} ({stamp})\n", f"{len(rows)} runs\n", "| bug | label | kind | crashed | outcome |", "|---|---|---|---|---|"]
 for r in rows:

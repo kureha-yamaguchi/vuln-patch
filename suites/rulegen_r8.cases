@@ -1,0 +1,17 @@
+# "More rules" arm: propose up to 8 candidates instead of 4. Identical to
+# the 4-rules baseline (rulegen_widen.cases) except --synth_max_rules 8, so
+# a 4-vs-8 comparison over 3 samples each isolates whether more draws beat
+# the +-1-2-leg single-sample generation noise. rulegen_only, 5k runs.
+MODEL="gpt-5.4"
+COMMON="-n 1 -m 1 --fuzz_timeout 20 --synthesize_relations --rulegen_only --screen_runs 5000 --rule_compile_repair --synth_max_rules 8"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Chart/patch1-Chart-3-Arja.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Lang/patch1-Lang-60-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-53-Arja.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-57-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Elixir/Chart/patch1-Chart-3-Elixir-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-60-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/DeepRepair/Math/patch1-Math-53-DeepRepair.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/ssFix/Math/patch1-Math-57-ssFix-plausible.patch"
+)
