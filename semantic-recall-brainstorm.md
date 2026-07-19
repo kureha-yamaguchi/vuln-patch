@@ -1517,6 +1517,57 @@ shape recurred) — the FP generator keeps shapeshifting to whichever
 path lacks framing. The judge is now the single dominant error source
 in both directions; J1 outranks everything else.
 
+## batch5 RESULT (2026-07-19 night): TP=2 FN=2 FP=1 TN=4 — P=0.67 R=0.50
+
+The day's headline: **Math-2-o CAUGHT for the first time since full30**
+— `hypergeom-mean-formula`, deterministic TRIGGER-tier replay
+conviction (2/2), synthesized only because the R2 test-subject
+skeletons put the subject class's documented formula in front of the
+synthesizer. The mechanism chain (context → formula-first → screening
+→ replay → verifier) worked end to end. Also validated: Lang-27-c
+finally TN (the three-costume FP cleared; RETRY fired on this correct
+leg and cost no precision), Closure-62-c scores AND is clean (H3
+parity fix confirmed), Math-53 pair stable (R-THROWS 4th consecutive).
+
+The three remaining errors, each diagnosed:
+
+- **Chart-26-c FP (2nd consecutive).** The fires-on-both fact was
+  present THREE times and the judge kept sibling-chart-type
+  null-info-draw checks anyway — and the fact's own escape hatch
+  permits it: "the very behaviour the failing test shows is wrong, at
+  inputs the test does not exercise" is satisfied by pre-existing
+  sibling surface (same observable family, different chart type,
+  crashes on both builds from an UNRELATED underlying exception).
+  Missing discriminator, now named (NEXT-1): for a fires-on-both check
+  that wraps an exception, compare the underlying exception types at
+  the firing input (from the buggy replay output, per_oracle_crash
+  parsing) against the DEFECT's own underlying types (the buggy-side
+  types of the trigger-firing oracles) — disjoint = a different
+  pre-existing crash wearing the family's clothes, computed dismissal
+  fact. This generalizes crash-pin to latent/replay-sourced types and
+  to semantic bugs whose defect manifests as a wrapped exception.
+- **Closure-62-o FN (after 4 consecutive TP).** NOT a dismissal
+  regression: nothing fired anywhere (3 harnesses quiet on patched,
+  relations quiet, 3 survivors without the error/warning-asymmetry
+  shape). Pure synthesis/fuzz roll. The reliable convictor shape for
+  this leg is the sibling-agreement RELATION (formatError vs
+  formatWarning) — R2's sibling-agreement slot should raise the odds;
+  it did not fire this roll.
+- **Lang-27-o FN (invention now SOLVED, reach is not).** All seven
+  family checks were invented and accepted (double/float-suffix-agree,
+  int-family, anchor-types …) — the exact struggle10-winning shapes —
+  but stayed LATENT: the 20s patched fuzz never reached the
+  discriminating suffix inputs. The bottleneck moved from invention
+  (fixed by H4/H5+RETRY) to CORPUS REACH. Named (NEXT-2): seed the
+  patched-side harness fuzz corpus with the failing test's literals
+  plus mechanical suffix/case/sign variations (the H4/H5 family
+  vocabulary applied to corpus seeding, not just prompts) — the
+  deterministic version of the fuzz luck that made struggle10's catch.
+
+Standing: J1 remains the top structural item (Chart-26-c is another
+judge-override-with-facts-present data point). NEXT-1 and NEXT-2 are
+the two mechanical builds; both are general (no bug-shaped content).
+
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
