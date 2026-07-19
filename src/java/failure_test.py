@@ -32,6 +32,16 @@ class FailureTest:
     # if it couldn't be determined. This is the crashing-vs-semantic
     # discriminator: an assertion-failure type means the bug is semantic.
     exception_type: Optional[str] = None
+    # H2: the failure message this test produced on the BUGGY build
+    # ('...AssertionFailedError: expected:<NaN> but was:<4.0>') — names
+    # the diverging observable and the wrong value. Captured by the P0.1
+    # safety net run; None on checkouts that predate the capture.
+    failure_message: Optional[str] = None
+    # H1: the parts of the test class this method actually uses —
+    # setUp/@Before, helper methods, referenced fields/constants, fixture
+    # file contents — so the harness writer replicates the real setup
+    # instead of improvising it. None when unresolvable.
+    support_source: Optional[str] = None
 
     @property
     def has_source(self) -> bool:
@@ -372,3 +382,157 @@ class FailureTestExtractor:
             else:
                 i += 1
         return None
+
+# --------------------------------------------------------------------------
+# H1: resolve what the trigger-test method USES from its test class, so the
+# harness prompt can show the whole scenario instead of a bare method body.
+# Every setup-divergence failure traced in the 2026-07-18 quality check
+# (Closure-62's formatter() helper, Chart-26's entity wiring) came from the
+# model improvising setup it was never shown. Selected context only — the
+# measured lesson is that BULK context makes the model worse, so each piece
+# is included because the method references it, and the total is capped.
+
+# JUnit / language names that look like calls but never live in the class.
+_NON_HELPER_CALLS = frozenset({
+    'assertEquals', 'assertTrue', 'assertFalse', 'assertNull',
+    'assertNotNull', 'assertSame', 'assertNotSame', 'assertArrayEquals',
+    'assertThat', 'fail', 'if', 'for', 'while', 'switch', 'catch', 'new',
+    'return', 'super', 'this', 'synchronized', 'assertNotEquals',
+})
+_CALL_RE = re.compile(r'(?<![\w.])([a-zA-Z_]\w*)\s*\(')
+_IDENT_RE = re.compile(r'\b([A-Za-z_]\w*)\b')
+_BEFORE_RE = re.compile(
+    r'@(?:Before|BeforeClass|BeforeEach|Override)\s+(?:public\s+|protected\s+|'
+    r'static\s+)*void\s+(setUp|\w*[Ss]etup\w*)\s*\(')
+_EXTENDS_RE = re.compile(r'\bclass\s+\w+\s+extends\s+([\w.]+)')
+_FIXTURE_RE = re.compile(
+    r'"([\w][\w./ -]*\.(?:txt|xml|json|csv|properties|ser|dat|html|js|java|'
+    r'bin|gz|zip|properties))"')
+
+
+def _read(path):
+    try:
+        with open(path, 'r', encoding='utf-8', errors='replace') as fh:
+            return fh.read()
+    except OSError:
+        return None
+
+
+def _field_declarations(class_source: str, wanted: set) -> List[str]:
+    """Single-line field/constant declarations of the class whose name is
+    in `wanted`. Line-based on purpose: multi-line initializers are rare
+    in test classes and a missed one costs a context line, not a verdict."""
+    out = []
+    decl_re = re.compile(
+        r'^\s*(?:public|protected|private)\s+(?:static\s+|final\s+)*'
+        r'[\w<>\[\],.\s]+?\s+(' + '|'.join(re.escape(w) for w in wanted)
+        + r')\s*[=;]')
+    for line in class_source.splitlines():
+        if decl_re.match(line):
+            out.append(line.strip())
+            if len(out) >= 12:
+                break
+    return out
+
+
+def resolve_test_support(ft: FailureTest,
+                         checkout_dir: Optional[str] = None,
+                         cap: int = 8000) -> Optional[str]:
+    """Assemble the test-class context `ft.method_source` depends on:
+    setUp/@Before methods, same-class (and one-superclass-hop) helper
+    methods it calls, field/constant declarations it references, and the
+    content of fixture files it names. Returns one labeled block, capped
+    at `cap` chars, or None if nothing could be resolved."""
+    if not (ft.source_path and ft.method_source):
+        return None
+    class_src = _read(ft.source_path)
+    if not class_src:
+        return None
+    extractor = FailureTestExtractor()
+    sections: List[str] = []
+    seen_methods = {ft.test_method}
+
+    def _grab(path, name, label):
+        if name in seen_methods:
+            return None
+        seen_methods.add(name)
+        body = extractor._extract_method(path, name)
+        if body:
+            sections.append(f"// --- {label} ---\n{body}")
+        return body
+
+    # 1. Lifecycle setup always matters when present.
+    for m in _BEFORE_RE.finditer(class_src):
+        _grab(ft.source_path, m.group(1), f"{m.group(1)}() (test setup)")
+    if 'void setUp' in class_src and 'setUp' not in seen_methods:
+        _grab(ft.source_path, 'setUp', 'setUp() (test setup)')
+
+    # 2. Helper methods the test method calls, one recursion level deep
+    #    (helpers calling helpers), resolved in the test class first and
+    #    then one superclass hop (Closure tests keep helpers on a base
+    #    class like CompilerTestCase).
+    super_src = super_path = None
+    m = _EXTENDS_RE.search(class_src)
+    if m and checkout_dir:
+        simple = m.group(1).split('.')[-1]
+        if simple not in ('TestCase',):    # JUnit's own base has no helpers
+            for root, _dirs, files in os.walk(checkout_dir):
+                if simple + '.java' in files:
+                    super_path = os.path.join(root, simple + '.java')
+                    super_src = _read(super_path)
+                    break
+
+    frontier = [ft.method_source]
+    for _depth in range(2):
+        calls: set = set()
+        for body in frontier:
+            calls.update(_CALL_RE.findall(body))
+        calls -= _NON_HELPER_CALLS
+        calls -= seen_methods
+        frontier = []
+        for name in sorted(calls):
+            body = None
+            if re.search(r'\b' + re.escape(name) + r'\s*\(', class_src):
+                body = _grab(ft.source_path, name, f'helper {name}()')
+            if body is None and super_src and re.search(
+                    r'\b' + re.escape(name) + r'\s*\(', super_src):
+                body = _grab(super_path, name,
+                             f'helper {name}() (from superclass)')
+            if body:
+                frontier.append(body)
+
+    # 3. Fields / constants the method (or its helpers) reference.
+    used = set(_IDENT_RE.findall(
+        ft.method_source + ''.join(sections)))
+    fields = _field_declarations(class_src, used)
+    if super_src:
+        fields += _field_declarations(super_src, used)
+    if fields:
+        sections.append("// --- class fields/constants the test uses ---\n"
+                        + '\n'.join(dict.fromkeys(fields)))
+
+    # 4. Fixture files named by path-like string literals.
+    if checkout_dir:
+        fixture_names = _FIXTURE_RE.findall(
+            ft.method_source + ''.join(sections))[:3]
+        included = 0
+        for fx in dict.fromkeys(fixture_names):
+            base = os.path.basename(fx)
+            for root, _dirs, files in os.walk(checkout_dir):
+                if base in files:
+                    content = _read(os.path.join(root, base))
+                    if content:
+                        sections.append(
+                            f"// --- fixture file {fx} (content) ---\n"
+                            + content[:1500])
+                        included += 1
+                    break
+            if included >= 2:
+                break
+
+    if not sections:
+        return None
+    out = '\n\n'.join(sections)
+    if len(out) > cap:
+        out = out[:cap] + '\n// ... (test support truncated at cap)'
+    return out

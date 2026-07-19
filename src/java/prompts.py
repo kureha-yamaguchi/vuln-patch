@@ -374,6 +374,7 @@ class PromptBuilder:
                     chosen.method_source,
                     "</failing_test>",
                 ])
+                parts.extend(self._test_context_blocks(chosen))
             else:
                 parts.append(
                     "Target trigger test (source unavailable — reconstruct"
@@ -754,12 +755,50 @@ class PromptBuilder:
                     body,
                     "</failing_test>",
                 ])
+                parts.extend(self._test_context_blocks(ft))
             else:
                 parts.append(
                     f'<failing_test class="{ft.test_class}"'
                     f' method="{ft.test_method}" />'
                 )
         return '\n'.join(parts)
+
+    @staticmethod
+    def _test_context_blocks(ft: FailureTest) -> List[str]:
+        """H1/H2 companion blocks for a rendered <failing_test>: the REAL
+        failure message the test produced on the buggy build (names the
+        diverging observable and the wrong value), and the test-class
+        support the method depends on (setUp/helpers/constants/fixtures)
+        so the harness replicates the scenario instead of improvising the
+        setup — the root of every setup-divergence false alarm."""
+        parts: List[str] = []
+        if getattr(ft, 'failure_message', None):
+            parts.extend([
+                "On the BUGGY build this exact test FAILS with:",
+                "<real_failure_message>",
+                ft.failure_message,
+                "</real_failure_message>",
+                "This is ground truth: it names the observable that"
+                " diverges and the wrong value the buggy build produces."
+                " A faithful copy of this test MUST observe exactly this"
+                " wrong value on the buggy build — if your check observes"
+                " a different value, your setup diverges from the test's"
+                " and the harness will be rejected.",
+            ])
+        if getattr(ft, 'support_source', None):
+            parts.extend([
+                "The test method depends on the following from its test"
+                " class — setUp, helper methods, constants, fixture"
+                " files. Replicate this environment EXACTLY (register the"
+                " same files, wire the same providers, use the same"
+                " constants); do NOT improvise setup the test performs"
+                " differently, and DROP any check whose setup you cannot"
+                " replicate:",
+                f'<test_support class="{ft.test_class}">',
+                ft.support_source,
+                "</test_support>",
+            ])
+        return parts
 
     @staticmethod
     def _entry_point_hint(failure_tests: List[FailureTest]) -> str:

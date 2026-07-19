@@ -155,15 +155,21 @@ def parse_args():
                              "relations is the hardest reasoning step in the "
                              "pipeline and the cheap model demonstrably "
                              "invents unsound ones. "
-                             "EXPERIMENTAL / OPTIONAL — leave OFF for detection. "
-                             "A 2026-07-19 ablation (harness with vs without "
-                             "injected relations, 5 bugs) found IDENTICAL recall "
-                             "and precision, and a full30 retrospective found "
-                             "0/8 caught overfits were caught by a relation "
-                             "(all via lifted-test or harness-invented "
-                             "oracles). The relation pipeline is not a "
-                             "detection contributor; it is kept opt-in for "
-                             "research on documented-formula/metamorphic bugs.")
+                             "Run WITH --replay_relations_on_patched: rule "
+                             "INJECTION into harness prompts is not a "
+                             "contributor (2026-07-19 ablation, 5 bugs, "
+                             "identical recall/precision — consistent with "
+                             "p23gate), but rule REPLAY is: full30's "
+                             "result.jsonl records verifier-kept replay "
+                             "convictions on 5 of 8 caught overfits, and "
+                             "Math-2-o is caught ONLY this way (fuzzed-tier "
+                             "replay; the overfit passes the trigger scenario "
+                             "by construction, so no lifted test can see it). "
+                             "The 2026-07-19 'not a contributor' conclusion "
+                             "was measured with replay accidentally OFF in "
+                             "both ablation arms and is retracted — see the "
+                             "CORRECTION section in "
+                             "semantic-recall-brainstorm.md.")
     parser.add_argument("--replay_relations_on_patched", action="store_true",
                         help="P3.2 replay: execute every screened relation "
                              "(own + pooled) directly against the PATCHED "
@@ -590,6 +596,35 @@ def main():
                      bug_kind=bug_kind,
                      extras={'safety_net': str(exc)})
         sys.exit(5)
+
+    # H2: the safety net just ran every trigger test on the buggy build and
+    # its failure message names the diverging observable AND the wrong
+    # value the bug produces ('expected:<NaN> but was:<4.0>') — attach it
+    # to each FailureTest so the harness prompt and the H3 acceptance gate
+    # can use it instead of throwing it away.
+    _trigger_msgs = PatchedProjectBuilder.trigger_failure_messages(
+        selection.buggy_dir)
+    for _ft in failure_tests:
+        _ft.failure_message = _trigger_msgs.get(
+            f'{_ft.test_class}::{_ft.test_method}')
+    # H1: resolve the parts of the test class each trigger test actually
+    # uses (setUp/@Before, helpers, constants, fixture files) — the
+    # harness writer replicates the real scenario instead of improvising
+    # the setup, which was the root of every setup-divergence failure.
+    from failure_test import resolve_test_support
+    for _ft in failure_tests:
+        try:
+            _ft.support_source = resolve_test_support(
+                _ft, checkout_dir=selection.buggy_dir)
+        except Exception as _exc:   # context is best-effort, never fatal
+            print(f"  [test-support] {_ft.test_method}: resolution failed "
+                  f"({_exc}) — prompt falls back to the bare method body")
+    record_event(
+        'deterministic', method='test-context (H1/H2)',
+        output=[{'test': f'{t.test_class}::{t.test_method}',
+                 'failure_message': t.failure_message,
+                 'support_chars': len(t.support_source or '')}
+                for t in failure_tests])
 
     # 4b) Extract the patch + every project function it touches +
     #     cross-references for each of those functions.
@@ -1254,6 +1289,17 @@ def main():
     # (not raw) candidate set.
     messages = prompt_factory([], [])
 
+    # H3: the wrong values the real trigger tests observe on the buggy
+    # build (parsed from their captured failure messages). Semantic bugs
+    # only — a crash-shaped failure has no expected/actual pair, and
+    # real_wrong_values returns [] there, which disables the gate.
+    from oracle_strength import real_wrong_values
+    trigger_wrong_values = (
+        real_wrong_values([ft.failure_message for ft in failure_tests])
+        if bug_kind == 'semantic' else [])
+    if trigger_wrong_values:
+        print(f"  [H3] real wrong value(s) on buggy: {trigger_wrong_values}")
+
     campaign = HarnessCampaign(
         generator=primary_gen,
         builder=builder,
@@ -1264,6 +1310,7 @@ def main():
         require_trigger=args.require_trigger,
         escalation_generator=escalation_gen,
         escalate_after=config.HARNESS_ESCALATE_AFTER,
+        trigger_wrong_values=trigger_wrong_values,
     )
     result = campaign.run(messages, selection.buggy_dir,
                           prompt_factory=prompt_factory,

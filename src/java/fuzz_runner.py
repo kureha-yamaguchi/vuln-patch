@@ -21,6 +21,7 @@ Pipeline (post-campaign):
     PatchedProjectBuilder   copy buggy dir, apply patch, compile
     FuzzRunner              run Jazzer per harness, collect FuzzRunResult
 """
+import json
 import os
 import re
 import shutil
@@ -683,12 +684,22 @@ class PatchedProjectBuilder:
         """Cheap early gate: every d4j trigger test must FAIL on the
         unpatched buggy checkout, else TriggerVerificationError
         ('bug_not_reproduced'). Cached in the checkout via a marker file
-        — the answer never changes for a given checkout."""
+        — the answer never changes for a given checkout.
+
+        Side product (H2): the failure MESSAGE of each trigger test
+        ("expected:<X> but was:<Y>", or the thrown exception) is saved to
+        `.d4j_failure_messages.json` beside the marker. It names the
+        exact observable that diverges and the wrong value the buggy
+        build produces — the harness writer and the H3 acceptance gate
+        read it via `trigger_failure_messages`."""
         marker = os.path.join(buggy_dir, '.d4j_bug_reproduced')
-        if os.path.exists(marker):
+        msg_path = os.path.join(buggy_dir, '.d4j_failure_messages.json')
+        if os.path.exists(marker) and os.path.exists(msg_path):
             return
         triggers = self._trigger_tests(buggy_dir)
-        failing = self._failing_tests(buggy_dir, triggers)
+        messages: dict = {}
+        failing = self._failing_tests(buggy_dir, triggers,
+                                      messages_out=messages)
         passing = sorted(set(triggers) - failing)
         if passing:
             raise TriggerVerificationError(
@@ -696,8 +707,27 @@ class PatchedProjectBuilder:
                 f'trigger test(s) PASS on the unpatched buggy checkout '
                 f'{buggy_dir}: {passing} — the bug does not exist in this '
                 f'environment; any harness verdict for it is meaningless')
+        try:
+            with open(msg_path, 'w') as fh:
+                json.dump(messages, fh, indent=1)
+        except OSError:
+            pass   # message capture is best-effort; the gate stands alone
         with open(marker, 'w') as fh:
             fh.write('\n'.join(sorted(failing)) + '\n')
+
+    @staticmethod
+    def trigger_failure_messages(buggy_dir: str) -> dict:
+        """`{'Class::method': failure message}` captured when
+        verify_bug_reproduces ran the trigger tests on this checkout.
+        Empty dict if the checkout predates message capture (its marker
+        exists but no json) — callers must degrade gracefully."""
+        msg_path = os.path.join(buggy_dir, '.d4j_failure_messages.json')
+        try:
+            with open(msg_path) as fh:
+                data = json.load(fh)
+            return data if isinstance(data, dict) else {}
+        except (OSError, ValueError):
+            return {}
 
     def _verify_trigger_tests(self, buggy_dir: str, patched_dir: str) -> None:
         """Both halves of the net, cached per patched build: the bug
@@ -734,11 +764,20 @@ class PatchedProjectBuilder:
         return tests
 
     @staticmethod
-    def _failing_tests(project_dir: str, tests: List[str]) -> set:
+    def _failing_tests(project_dir: str, tests: List[str],
+                       messages_out: Optional[dict] = None) -> set:
         """Run each named test via `defects4j test -t`; return the subset
         that fails. A test whose run doesn't complete cleanly counts as
-        failing — loudly, never silently."""
+        failing — loudly, never silently.
+
+        When `messages_out` is given, the failure detail defects4j writes
+        to `<project_dir>/failing_tests` (the throwable line and message,
+        e.g. 'AssertionFailedError: expected:<NaN> but was:<4.0>') is
+        stored under the test's 'Class::method' key. The file is
+        overwritten per `test -t` run, so it is read immediately after
+        each one."""
         failing = set()
+        detail_path = os.path.join(project_dir, 'failing_tests')
         for t in tests:
             result = subprocess.run(
                 ['defects4j', 'test', '-t', t],
@@ -753,6 +792,25 @@ class PatchedProjectBuilder:
                 failing.add(t)
             elif int(m.group(1)) > 0:
                 failing.add(t)
+            if messages_out is not None and t in failing:
+                try:
+                    with open(detail_path, encoding='utf-8',
+                              errors='replace') as fh:
+                        detail = fh.read()
+                except OSError:
+                    continue
+                # Keep the headline + message lines, stop at the stack
+                # trace — the message is the information, frames are bulk.
+                msg_lines = []
+                for line in detail.splitlines():
+                    if line.lstrip().startswith('at '):
+                        break
+                    if line.strip():
+                        msg_lines.append(line.rstrip())
+                    if len(msg_lines) >= 12:
+                        break
+                if msg_lines:
+                    messages_out[t] = '\n'.join(msg_lines)[:1500]
         return failing
 
     def classpath(self, patched_dir: str,

@@ -39,7 +39,7 @@ from java_source import (alarm_ids_missing, negative_modulo_index,
                          rethrow_without_cause, violation_swallowed)
 from llm import HarnessGenerator, record_event
 from fuzz_runner import HarnessVerifier, VerificationResult
-from oracle_strength import exception_headline
+from oracle_strength import exception_headline, lifted_observed_mismatch
 
 
 # A prompt factory takes the current set-coverage state (the functions
@@ -107,7 +107,8 @@ class HarnessCampaign:
                  verifier: Optional[HarnessVerifier] = None,
                  require_trigger: bool = True,
                  escalation_generator: Optional[HarnessGenerator] = None,
-                 escalate_after: int = 0):
+                 escalate_after: int = 0,
+                 trigger_wrong_values: Optional[List[str]] = None):
         if target_successes < 1:
             raise ValueError("target_successes must be at least 1")
         if max_attempts < target_successes:
@@ -145,6 +146,12 @@ class HarnessCampaign:
         # False, the campaign falls back to the old compile-only gate —
         # useful for ablation experiments.
         self.require_trigger = require_trigger
+        # H3: the ACTUAL (wrong) values the real trigger tests observe on
+        # the buggy build. When set, a lifted/test-copy check that fires
+        # on buggy with a DIFFERENT observed value is rejected — its
+        # scenario is not the test's scenario (setup divergence), and its
+        # firing would measure the divergence, not the patch.
+        self.trigger_wrong_values = trigger_wrong_values or []
         # Two-tier generation: if `escalation_generator` is set and the
         # primary produces no ACCEPTED harness after `escalate_after`
         # attempts, we swap to it for the rest of this bug (see run()).
@@ -423,6 +430,62 @@ class HarnessCampaign:
                     continue
             else:
                 verification = None
+
+            # --- gate 3 (H3): a test-copy check must observe the REAL
+            #     wrong value. The trigger tests' failure messages name
+            #     the exact value the buggy build produces; a lifted
+            #     check firing with a DIFFERENT observed value has
+            #     rebuilt the scenario wrong, and that difference — not
+            #     the patch — is what it measures (the Closure-62-c /
+            #     Closure-73-c false-alarm class). Abstains unless both
+            #     values are extractable — a reject here feeds the
+            #     normal repair loop with the exact divergence.
+            if verification is not None and self.trigger_wrong_values:
+                _headline = exception_headline(
+                    verification.stdout + '\n' + verification.stderr) or ''
+                _observed = lifted_observed_mismatch(
+                    _headline, self.trigger_wrong_values)
+                if _observed is not None:
+                    _reals = '; '.join(self.trigger_wrong_values)
+                    print(f"✗ H3 setup-fidelity gate: lifted check observed "
+                          f"{_observed!r} on the buggy build, but the real "
+                          f"test observes {_reals!r}")
+                    record_event(
+                        'deterministic', method='harness-attempt',
+                        target=attempt_label,
+                        output='REJECTED (H3: lifted check observed a '
+                               'different wrong value than the real test '
+                               '— setup divergence)',
+                        detail={'observed': _observed,
+                                'real_wrong_values':
+                                    self.trigger_wrong_values,
+                                'headline': _headline})
+                    repair_failures, current_messages, original_messages = (
+                        self._handle_failure(
+                            diagnostic=(
+                                "Your test-copy check fired on the buggy "
+                                "build, but it observed a DIFFERENT wrong "
+                                f"value ({_observed}) than the real test "
+                                f"observes there ({_reals}). That means "
+                                "your harness rebuilds the test's scenario "
+                                "differently from the test itself — the "
+                                "firing measures your setup divergence, "
+                                "not the bug. Replicate the test's setup "
+                                "EXACTLY (helpers, registered files, "
+                                "constants — see <test_support>), or drop "
+                                "the check you cannot set up faithfully. "
+                                "Return the full corrected "
+                                "FuzzHarness.java. Raw Java source only. "
+                                "No markdown fences."),
+                            raw=raw,
+                            is_repair_attempt=is_repair_attempt,
+                            repair_failures=repair_failures,
+                            current_messages=current_messages,
+                            original_messages=original_messages,
+                            fresh_prompt=fresh_prompt,
+                        )
+                    )
+                    continue
 
             # --- accepted ---------------------------------------------
             result.successful_results.append(build)

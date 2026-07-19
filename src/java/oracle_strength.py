@@ -82,3 +82,93 @@ def exception_headlines(output: str, max_len: int = 200) -> list:
                 seen.add(line)
                 out.append(line)
     return out
+
+
+# --------------------------------------------------------------------------
+# H3: does a test-copy ("lifted") check observe the SAME wrong value the
+# real trigger test observes on the buggy build? If not, the harness has
+# rebuilt the test's scenario wrong, and the DIFFERENCE — not the patch —
+# is what its check measures. That divergence caused the Closure-62-c /
+# Closure-73-c false alarms and was, until now, a judgment call made at
+# station 7; here it becomes a station-5 string comparison.
+
+# JUnit3 "expected:<X> but was:<Y>" and ComparisonFailure variants (whose
+# X/Y may carry [] diff brackets around the differing region).
+_EXPECTED_ACTUAL_RE = re.compile(
+    r'expected:?\s*<(.*?)>\s*but was:?\s*<(.*?)>', re.S)
+
+
+def real_wrong_values(failure_messages) -> list:
+    """The ACTUAL (wrong) values the buggy build produced, parsed out of
+    the trigger tests' real failure messages. Empty list when no message
+    carries an expected/actual pair (crash-shaped failures)."""
+    out = []
+    for msg in failure_messages:
+        for m in _EXPECTED_ACTUAL_RE.finditer(msg or ''):
+            actual = m.group(2).replace('[', '').replace(']', '').strip()
+            if actual:
+                out.append(actual)
+    return list(dict.fromkeys(out))
+
+
+def _ws_norm(s: str) -> str:
+    return re.sub(r'\s+', ' ', s or '').strip()
+
+
+def _values_match(a: str, b: str) -> bool:
+    """Whitespace-normalized equality / containment, with numeric-aware
+    comparison so '4.0' matches '4' and NaN matches NaN."""
+    na, nb = _ws_norm(a), _ws_norm(b)
+    if not na or not nb:
+        return False
+    if na == nb or na in nb or nb in na:
+        return True
+    try:
+        import math
+        fa, fb = float(na), float(nb)
+        if math.isnan(fa) and math.isnan(fb):
+            return True
+        return fa == fb or math.isclose(fa, fb, rel_tol=1e-9)
+    except (ValueError, OverflowError):
+        return False
+
+
+_OBSERVED_RES = [
+    re.compile(r'but was:?\s*<([^>\n]{1,200})>'),
+    re.compile(r'but was:?\s*([^<>;\n]{1,200})'),
+    re.compile(r'\bwas:?\s*<([^>\n]{1,200})>'),
+    re.compile(r'\bwas:?\s*([^<>;\n]{1,200})'),
+]
+
+
+def lifted_observed_mismatch(headline: Optional[str],
+                             real_actuals: list) -> Optional[str]:
+    """H3 gate decision for ONE accepted-trigger headline.
+
+    Applies ONLY to lifted/test-copy checks (the headline carries the
+    oracle id, and lifted checks are named so by prompt convention).
+    Returns the observed value when it provably differs from EVERY real
+    wrong value — the reject signal — and None to abstain (not a lifted
+    check, no observed value extractable, no real value known, or the
+    values agree). Conservative on purpose: an abstain keeps today's
+    behaviour, a reject sends the harness to the repair loop."""
+    if not headline or not real_actuals:
+        return None
+    if 'lift' not in headline.lower():
+        return None
+    observed = None
+    for pat in _OBSERVED_RES:
+        m = pat.search(headline)
+        if m and _ws_norm(m.group(1)):
+            observed = m.group(1).strip().rstrip('.').strip()
+            break
+    if not observed:
+        return None
+    if any(_values_match(observed, ra) for ra in real_actuals):
+        return None
+    # A real wrong value appearing anywhere in the headline also counts
+    # as agreement (free-form harness messages embed values mid-sentence).
+    hl = _ws_norm(headline)
+    if any(_ws_norm(ra) in hl for ra in real_actuals if _ws_norm(ra)):
+        return None
+    return observed
