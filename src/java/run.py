@@ -727,6 +727,26 @@ def main():
         print("!" * 60)
     record_extras = {"context_degraded": context_degraded}
 
+    # H4/H5: same-name overloads, shared-prefix method families, and the
+    # class's readable no-arg state — the mechanically-listed raw material
+    # of the two historically-winning invented check shapes
+    # (sibling-agreement: Lang-41, Lang-27's create* family; hidden-state:
+    # Lang-60's capacity). Computed once from the touched file's source;
+    # injected into BOTH the harness prompt and rule synthesis.
+    sibling_hints = ''
+    try:
+        from java_source import sibling_and_state_hints
+        for _mf in (context.modified_files or [])[:1]:
+            _mp = os.path.join(selection.buggy_dir, _mf.lstrip('/'))
+            if os.path.isfile(_mp):
+                with open(_mp, encoding='utf-8', errors='replace') as _fh:
+                    sibling_hints = sibling_and_state_hints(_fh.read())
+        if sibling_hints:
+            print(f"  [H4/H5] sibling/state hints: "
+                  f"{len(sibling_hints)} chars")
+    except Exception as _exc:
+        print(f"  [H4/H5] hint extraction failed ({_exc}) — skipped")
+
     # Class-level codebase context for the LLM judgment stages: relation
     # synthesis, relation verification, and the 'consistency' harness slot
     # (one skeleton-aware harness per set). Task inspection showed the
@@ -941,6 +961,8 @@ def main():
                         "or it will fire on every build including "
                         "correct ones:\n"
                         + primary_test.support_source)
+                if sibling_hints:
+                    block.append(sibling_hints)
                 trigger_test_block = "\n".join(block)
                 # P3.2b root-region anchoring: the methods/types the
                 # failing test actually exercises. The discriminating
@@ -1071,6 +1093,7 @@ def main():
             # Only the 'consistency' slot renders this (one
             # skeleton-aware harness per set); other slots stay lean.
             class_context=class_ctx,
+            sibling_hints=sibling_hints or None,
         )
 
     # 6) Run the campaign: regenerate, recompile, and (by default) verify
@@ -1093,13 +1116,9 @@ def main():
             # P2.2 direction/determinism check needs the failing test's own
             # input literals (the values the bug is about). Same extraction
             # as the acceptance-gate seed corpus below.
-            _trig_lits = []
-            for ft in failure_tests:
-                if getattr(ft, 'method_source', None):
-                    _trig_lits += re.findall(
-                        r'"((?:[^"\\]|\\.){1,120})"', ft.method_source)
-            _trig_lits = [s for s in dict.fromkeys(_trig_lits)
-                          if s.strip()][:32]
+            from java_source import trigger_seed_literals
+            _trig_lits = trigger_seed_literals(
+                [getattr(ft, 'method_source', '') for ft in failure_tests])
             try:
                 # max_keep=8: the old cap of 3 sized the PROMPT; the prompt
                 # is now sliced separately (prompt_relations, ≤2 own-leg),
@@ -1982,6 +2001,90 @@ def main():
                                  "observable that would fire on any "
                                  "build, it is pre-existing surface — "
                                  "dismiss it.")
+                        # SYM-2 (fpfix6 Lang-27-c FP): make the "behaviour
+                        # family" question COMPUTED instead of judged where
+                        # we can. For a crashing bug, replay the exact
+                        # firing input on the buggy build and check whether
+                        # it reproduces the reported defect (the
+                        # ground-truth throwable). The judge kept a
+                        # signed-zero createNumber quirk because "the bug
+                        # is in createNumber" made every createNumber
+                        # check pass the family test — but the firing
+                        # input (-0.0) does not crash on buggy, which
+                        # settles it mechanically.
+                        # SYM-2b (fpfix6 Closure-62-c residual): the
+                        # SEMANTIC version of the same computed fact.
+                        # Replay the exact firing input on the buggy
+                        # build's copy of this harness: if the SAME check
+                        # fires there, the patch did not change the
+                        # behaviour measured at this input — for a firing
+                        # at a NON-trigger input that is pre-existing
+                        # surface, whatever the check's stated rationale.
+                        # (Each run the writer invents a NEW plausible
+                        # caret/padding premise; the facts must not be
+                        # premise-specific.)
+                        if (bug_kind == 'semantic'
+                                and getattr(r, 'artifact_path', None)
+                                and buggy_cp and _fired_ids):
+                            _bids = fr.replay_input_oracles(
+                                r.harness_path, r.class_name,
+                                buggy_cp, r.artifact_path)
+                            if _bids is not None and (_fired_ids & _bids):
+                                _note += (
+                                    "\n[defect-family fact] the exact "
+                                    "firing input was replayed on the "
+                                    "BUGGY build and the SAME check fires "
+                                    "there — behaviour at this input is "
+                                    "identical on both builds, so the "
+                                    "patch did not cause or preserve "
+                                    "anything here. Unless this check "
+                                    "asserts the failing test's own "
+                                    "pinned behaviour at the test's own "
+                                    "boundary, it measures pre-existing "
+                                    "surface — dismiss.")
+                            elif _bids is not None:
+                                _note += (
+                                    "\n[defect-family fact] replaying the "
+                                    "exact firing input on the BUGGY "
+                                    "build does NOT fire this check — "
+                                    "the violation is patch-introduced "
+                                    "at this input; weigh accordingly.")
+                        if (bug_kind == 'crashing' and expected_exceptions
+                                and getattr(r, 'artifact_path', None)
+                                and buggy_cp):
+                            try:
+                                _bsig = fr.replay_input(
+                                    r.harness_path, r.class_name,
+                                    buggy_cp, r.artifact_path) or ''
+                            except Exception:
+                                _bsig = None
+                            if _bsig is not None:
+                                _repro = any(
+                                    e.split('.')[-1] in _bsig
+                                    for e in expected_exceptions if e)
+                                if _repro:
+                                    _note += (
+                                        "\n[defect-family fact] the exact "
+                                        "firing input REPRODUCES the "
+                                        "reported defect on the buggy "
+                                        "build (" + _bsig[:120] + ") — it "
+                                        "lies inside the reported bug's "
+                                        "own input family; a check firing "
+                                        "on it on BOTH builds is the "
+                                        "patch-failed-to-fix pattern.")
+                                else:
+                                    _note += (
+                                        "\n[defect-family fact] the exact "
+                                        "firing input was replayed on the "
+                                        "BUGGY build and does NOT "
+                                        "reproduce the reported defect "
+                                        "there (buggy outcome: "
+                                        + (_bsig[:120] or 'no crash')
+                                        + "). Identical check behaviour on "
+                                        "both builds at an input OUTSIDE "
+                                        "the reported defect's family is "
+                                        "pre-existing surface unrelated "
+                                        "to this patch — dismiss.")
                         evid = (evid + "\n" + _note) if evid else _note
                     elif _fired_ids & _latent_here:
                         _note = ("[latent oracle] check(s) "
@@ -2094,13 +2197,9 @@ def main():
             # this returns the cached patched copy.
             _patched_dir = PatchedProjectBuilder().build_patched_dir(
                 selection.buggy_dir, selection.patch_path)
-            _trig_lits_r = []
-            for ft in failure_tests:
-                if getattr(ft, 'method_source', None):
-                    _trig_lits_r += re.findall(
-                        r'"((?:[^"\\]|\\.){1,120})"', ft.method_source)
-            _trig_lits_r = [s for s in dict.fromkeys(_trig_lits_r)
-                            if s.strip()][:32]
+            from java_source import trigger_seed_literals
+            _trig_lits_r = trigger_seed_literals(
+                [getattr(ft, 'method_source', '') for ft in failure_tests])
             _replay_findings = replay_on_patched(
                 synthesized_relations,
                 builder=builder,

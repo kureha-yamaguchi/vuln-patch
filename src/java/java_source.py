@@ -608,3 +608,109 @@ def library_subclass(check: str) -> Optional[str]:
             if t not in _JDK_ANON_OK:
                 return t
     return None
+
+
+# --------------------------------------------------------------------------
+# H4/H5: mechanically-listed raw material for hidden-state and
+# sibling-agreement checks — the two historically-winning invented shapes.
+# H5: same-name overloads and shared-prefix factory families (Lang-41's
+# getShortClassName(Class)/(String); Lang-27's createNumber/createFloat/
+# createDouble family). H4: public no-argument readers ("capacity(),
+# length(), size()" — the raw material of Lang-60's convicting check).
+
+_PUB_METHOD_RE = re.compile(
+    r'public\s+(?:static\s+|final\s+|synchronized\s+)*'
+    r'([\w<>\[\],.\s]+?)\s+(\w+)\s*\(([^)]*)\)')
+
+_STATE_PREFIX_BLOCKLIST = ('main',)
+
+
+def sibling_and_state_hints(class_source: str, cap: int = 1400) -> str:
+    """One rendered block: same-name overload groups, shared-prefix
+    method families (3+ members), and the public no-arg readers of the
+    class. Empty string when nothing qualifies."""
+    sigs = []
+    for m in _PUB_METHOD_RE.finditer(class_source or ''):
+        ret, name, params = (m.group(1).strip(), m.group(2),
+                             m.group(3).strip())
+        if name and name[0].islower():
+            sigs.append((name, params, ret))
+    if not sigs:
+        return ''
+    parts = []
+    # H5a: same-name overloads
+    by_name: dict = {}
+    for name, params, _ret in sigs:
+        by_name.setdefault(name, []).append(params or '')
+    overloads = [(n, ps) for n, ps in by_name.items() if len(set(ps)) > 1]
+    if overloads:
+        lines = [f"  {n}({') / ('.join(dict.fromkeys(ps))})"
+                 for n, ps in sorted(overloads)[:8]]
+        parts.append(
+            "SAME-NAME OVERLOADS (documented to agree where their docs "
+            "match — a sibling-agreement check compares them on "
+            "equivalent inputs):\n" + "\n".join(lines))
+    # H5b: shared-prefix families (createX/createY..., parseA/parseB...)
+    fam: dict = {}
+    for name in sorted(by_name):
+        m = re.match(r'([a-z]+)(?=[A-Z])', name)
+        if m:
+            fam.setdefault(m.group(1), set()).add(name)
+    fam_lines = [f"  {p}* family: " + ", ".join(sorted(ns))
+                 for p, ns in sorted(fam.items())
+                 if len(ns) >= 3 and p not in ('is', 'set')]
+    if fam_lines:
+        parts.append(
+            "METHOD FAMILIES over the same input space (factory/parser "
+            "siblings — where the docs state a selection or agreement "
+            "rule, equivalent inputs must respect it, e.g. a documented "
+            "type-suffix must select the documented type):\n"
+            + "\n".join(fam_lines[:6]))
+    # H4: readable state
+    readers = sorted({n for n, params, ret in sigs
+                      if not params and ret != 'void'
+                      and n not in _STATE_PREFIX_BLOCKLIST})
+    if readers:
+        parts.append(
+            "STATE YOU CAN READ (public no-argument readers — capture "
+            "them BEFORE and AFTER a call documented as read-only or "
+            "non-mutating; an unexplained change is a hidden-state "
+            "violation): " + ", ".join(readers[:20]))
+    out = "\n\n".join(parts)
+    return out[:cap]
+
+
+_NUM_LITERAL_RE = re.compile(
+    r'(?<![\w.])'                       # not mid-identifier / mid-number
+    r'-?\d[\d_]*'                       # integer part
+    r'(?:\.\d[\d_]*)?'                  # optional fraction
+    r'(?:[eE][+-]?\d+)?'                 # optional exponent
+    r'[LlFfDd]?'                         # optional type suffix
+    r'(?![\w.])')
+
+
+def trigger_seed_literals(method_sources, cap=48):
+    """BND-a: the failing test's own STRING and NUMERIC literals, for the
+    screening direction-check and the patched-replay corpora. Numbers were
+    previously dropped (only quoted strings were extracted), so a numeric
+    bug like Math-2 (population 43,130,568) had its most important trigger
+    inputs missing from the direction check. De-duplicated, strings first
+    (they carry more meaning), capped. `method_sources` is an iterable of
+    test-method source strings."""
+    strings, nums = [], []
+    for src in method_sources:
+        if not src:
+            continue
+        strings += re.findall(r'"((?:[^"\\]|\\.){1,120})"', src)
+        for m in _NUM_LITERAL_RE.findall(src):
+            # skip bare 0/1 and the trivial loop indices — they are noise,
+            # not bug-triggering magnitudes
+            core = m.rstrip('LlFfDd')
+            if core.lstrip('-') not in ('0', '1', '2'):
+                nums.append(m)
+    seen, out = set(), []
+    for v in [x for x in strings if x.strip()] + nums:
+        if v not in seen:
+            seen.add(v)
+            out.append(v)
+    return out[:cap]

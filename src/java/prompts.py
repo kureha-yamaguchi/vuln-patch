@@ -37,6 +37,7 @@ class PromptBuilder:
               oracle_mechanism: Optional[str] = None,
               touched_javadocs: Optional[List[str]] = None,
               class_context: Optional[List[str]] = None,
+              sibling_hints: Optional[str] = None,
               ) -> List[Dict[str, str]]:
         """Assemble the chat-completion messages.
 
@@ -100,6 +101,7 @@ class PromptBuilder:
                 oracle_mechanism=oracle_mechanism,
                 touched_javadocs=touched_javadocs,
                 class_context=class_context,
+                sibling_hints=sibling_hints,
             )
         codebase = os.path.basename(buggy_dir.rstrip('/'))
 
@@ -122,6 +124,8 @@ class PromptBuilder:
         precond = self._preconditions_block(touched_javadocs)
         if precond:
             sections.append(precond)
+        if sibling_hints:
+            sections.append(sibling_hints)
         if context.root_cause_reachable:
             sections.append(self._variant_analysis_block(
                 context.root_cause_reachable,
@@ -164,6 +168,7 @@ class PromptBuilder:
                         oracle_mechanism: Optional[str] = None,
                         touched_javadocs: Optional[List[str]] = None,
                         class_context: Optional[List[str]] = None,
+                        sibling_hints: Optional[str] = None,
                         ) -> List[Dict[str, str]]:
         """Build the prompt for a semantic (assertion-failing) bug.
 
@@ -200,6 +205,8 @@ class PromptBuilder:
         precond = self._preconditions_block(touched_javadocs)
         if precond:
             sections.append(precond)
+        if sibling_hints:
+            sections.append(sibling_hints)
         sections.append(self._lifted_assertion_block(
             chosen, all_failure_tests,
             verifier_enabled=verifier_enabled))

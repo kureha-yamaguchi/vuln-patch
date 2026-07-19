@@ -371,6 +371,37 @@ which is what J1 below measures.
 
 ## TO DO — by station, ordered by impact vs risk
 
+**IMPLEMENTATION STATUS (2026-07-19 eod — read this before the list).**
+Much of the list below is now BUILT. The detailed descriptions are kept
+verbatim for their rationale, but their current state is:
+- SHIPPED & validated: H1 (whole test), H2 (real failure message), H3
+  (setup-fidelity gate — armed after the hfix11 extractor fixes), JD1
+  (buggy-input seeds), R-THROWS (Math-53-o caught via
+  `add_null_rejected_with_nullargumentexception` in fpfix6 — first ever),
+  J3 (judge sees the failing test), the replay flag repair, harden fix,
+  pooling removal, synth-8 + all-tripwires.
+- SHIPPED, awaiting measurement: H1/H2 extended to rule synthesis;
+  multi-line constant capture; H4 (readable state) + H5 (look-alike
+  methods / factory families) as one mechanical block into both harness
+  and synthesis prompts; keep_going on patched fuzz; SYM-2 (crashing
+  defect-family fact) + SYM-2b (semantic input-replay fact) — the fixes
+  for the fpfix6 Lang-27-c and Closure-62-c false alarms; R-THROWS
+  receiver-state variation; BND part (a) (numeric literals from the
+  failing test into the screening + replay corpora).
+- NOT yet built: BND part (b) (documented-limit inputs — 1e20/2^31/NaN),
+  ACC1 (shadowed-check rescan), R-INH (inherited javadoc), R2 (anchor
+  quota), R3 (doc-poor passing-test anchoring — the biggest remaining
+  build, targets Closure-33/92), OBS (demoted — its target Math-53 turned
+  out to be an @throws bug, not a field-read bug), P4.1 (Chart-3, gated on
+  the offline false-flag study), J1/J2, CRASH remainder, T11, the offline
+  P4.2/P4.4 tooling.
+- KILLED: R4 menu (deleted), all rule pooling (deleted), soundness-harden
+  (fixed but off, on a prove-it-or-delete clock), prompt-exhortation arms.
+
+The next measurement batch validates the "awaiting measurement" group;
+then BND(b)/R3 are the remaining recall builds before the full30 confirm
+→ freeze → held-out sequence.
+
 How this section is organised: the LIST below is ordered by what to
 do first — most expected benefit for least risk — so it deliberately
 jumps between stations. The DETAILED descriptions after the list are
