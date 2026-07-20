@@ -1568,6 +1568,45 @@ Standing: J1 remains the top structural item (Chart-26-c is another
 judge-override-with-facts-present data point). NEXT-1 and NEXT-2 are
 the two mechanical builds; both are general (no bug-shaped content).
 
+## batch6 RESULT (2026-07-20): TP=2 FN=2 FP=2 TN=3 — the split works;
+## two known walls remain
+
+Two-judge split, first live outing — the harm-watch PASSED and the
+mechanism behaved exactly as designed where facts were decisive:
+- Math-2-o and Math-53-o both KEPT through attribution (the
+  documented-formula / @throws clauses held by construction).
+- Chart-26-c TN (2-run FP streak ended).
+- Attribution's first NOT_ATTRIBUTED was correct (62-c's
+  fires-on-both seed check, dismissed with the right reasoning).
+
+The four errors, decomposed:
+- Lang-27-c FP: attribution said ATTRIBUTED for an escaped defect-type
+  crash shared with buggy ("same observable as the failing test — duty
+  to fix"). This is the diag-24 label-boundary class: a correct-labeled
+  patch retaining defect-type crashes on junk inputs. The judge was
+  never shown THE INPUT — the one datum that decides junk-vs-valid.
+  NEXT: include the firing input's actual bytes/string in the fact.
+- Closure-62-c FP: attribution went 1 NOT_ATTRIBUTED (right), 1
+  INCONCLUSIVE (shadowed replay, fails open) — the INCONCLUSIVE one
+  convicted. Shadowed-replay conclusiveness is the remaining
+  mechanical gap (rerun with the shadowing check suppressed, or J1).
+- Closure-62-o FN: the family mandate produced A family relation but
+  not THE pair (JSError.format-vs-formatter instead of
+  formatError-vs-formatWarning; the overfit preserves the former).
+  Mandate needs "one relation PER same-prefix sibling pair of the
+  patched method", not "one family relation".
+- Lang-27-o FN: three firings, none kept; corpus fingerprint not
+  verifiable from trace (prints don't land in trace.md — add a
+  record_event for corpus seeding).
+
+Standing read after six same-day batches on the same nine legs:
+mechanical facts + the split have fixed every fixable class once, but
+the residual errors now rotate among judge-discretion cases
+(INCONCLUSIVE fail-open, duty-to-fix scope, input validity). That is
+J1's territory, and further same-nine iteration has clearly
+diminishing returns — next session: J1 offline on six batches of
+archived decisions, then the full30 confirm.
+
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
