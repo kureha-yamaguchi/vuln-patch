@@ -1705,6 +1705,47 @@ acceptance gates unchanged.
   with no surviving counterexample stated.
 - Held-out discipline: FINAL only after full30 is stable.
 
+## full30v2 RESULT (2026-07-20): TP=3 FN=13 FP=1 TN=13 — the audit
+## run caught a regression MY OWN prompt optimization introduced
+
+P=0.75 (only Lang-27-c FP — precision machinery generalized to the
+full 30). R=0.19 — a recall COLLAPSE against the historical full30
+(8/16). Root cause found within the hour, from the traces:
+
+**The five-step soundness protocol's step 4 tested counterexamples
+against catch/skip + trusted values but NOT against the observed
+firing values.** Instructed to "construct the strongest
+counterexample", the judge became a systematic counterexample
+generator, and every conviction with ANY conceivable edge-case story
+died — the Math-2-o formula conviction (DIRECTION-CONFIRMED,
+deterministic 2/2 trigger replay, observed -49.76 vs +49.82) was
+dismissed on a tolerance hypothetical that cannot produce a
+100-unit sign-flipped divergence. The numbered protocol operationally
+overrode the prose "observed evidence beats hypotheticals" guidance.
+FIXED same hour: step 4 is now a two-part test — (a) catch/skip +
+trusted values, (b) the counterexample must be able to produce THE
+OBSERVED disagreement in kind and magnitude (tolerance stories cannot
+explain sign flips; nondeterminism stories cannot explain 2/2
+deterministic replays). Verified discriminating against the traces:
+it revives Math-2-o while correctly leaving the KMeans
+randomness dismissal dead (that counterexample CAN produce the
+observed disagreement).
+
+Context-sufficiency verdict (the question this run was framed to
+answer): the sampled wrong verdicts cite only in-prompt information —
+no hallucinated grounds found; the remaining failures were reasoning
+CALIBRATION, not missing context. The context sweep held up.
+
+Separate open diagnosis: Math-53-o's @throws relation (correct shape,
+screened, replayed) was QUIET on the patched build this run — 4 prior
+runs fired 20000/20000. Not a judge issue; needs trace-level
+debugging of the replay wrapper before the next run.
+
+Process note: a 3M-token confirm run after single-batch prompt
+changes was the right order — it caught the regression before FINAL.
+Protocol for the future: any change to judge REASONING structure
+(not facts) gets a mini-suite validation (the 9 legs) BEFORE a full30.
+
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
