@@ -1788,6 +1788,52 @@ already decides. Next: revalidate falsefix legs with attribution off
 (should restore the full30-era catches), then ceiling-raising builds
 (R3, BND-b, P4.1) — NOT more judge layers — then J1.
 
+## ATTRIBUTION FIX VALIDATED + the real bottleneck exposed (2026-07-20)
+
+The attribution rebuild is DONE and WORKS. Evidence:
+- attr2 iter-2 (2 legs): Math-2-o TP via the mechanical
+  direction-confirmed keep (no LLM); Lang-27-c (the persistent 6-run
+  FP) TN via a CORRECT attribution NOT_ATTRIBUTED that read the
+  firing-input bytes and called them non-numeric junk. Both right
+  reasons.
+- attr5 (5 legs): Lang-41-o flipped FN->TP via a correct ATTRIBUTED.
+  So where a catch FIRES, the re-resourced symmetric deep-dive prompt
+  + mechanical keep now attribute correctly — the falsefix13 collapse
+  (attribution vetoing ~100%) is fixed.
+Config: --attribution_judge, still OFF by default; the shadowed-note
+dismissal bias in run.py was neutralised.
+
+THE REAL BOTTLENECK (attr5 exposed it): recall is dominated by
+SYNTHESIS ROLL-VARIANCE, not the judges. attr5's three FN legs
+(Math-2-o, Lang-60-o, Math-53-o) each had replay_fired=[] and
+harnesses_crashed=0 — NOTHING reached attribution. Math-2-o: this
+roll synthesis proposed 6 relations and NONE was the mean-formula
+(it wrote hypergeom-VARIANCE-formula + inverse-cdf instead); the one
+relation that convicts this overfit was simply not proposed. It WAS
+proposed in iter-2/batch5/batch6. Same code, different roll.
+'formula-first MUST' is satisfied by ANY documented formula, not the
+one the patch breaks.
+
+DIRECTION VERDICT (sharpened, the standing question): the judge work
+this cycle was necessary cleanup (attribution is now net-positive
+when a catch fires) but recall is gated UPSTREAM, at synthesis: the
+convicting relation is a per-roll coin flip. The next lever is
+SYNTHESIS RELIABILITY, a mechanism, not more judge prose:
+- PER-SOURCE / MULTI-ROLL SYNTHESIS (TODO item, now top priority):
+  run synthesis as N independent passes (or one pass per contract
+  source — formula / @throws / family / state), union the screened
+  survivors. The union reliably contains the convicting relation
+  where a single roll misses it. Respects p23gate (no injection) and
+  the no-pooling rule (within-leg only). This directly kills the
+  Math-2-o variance-vs-mean roll variance.
+- Only measure attribution's aggregate value AFTER synthesis is
+  reliable — otherwise attribution's contribution is masked by
+  catches that never fire. J1 still applies to the judge decisions.
+
+Do NOT keep expanding attr* sets: they have already answered their
+question (attribution works when catches fire). Next build is
+per-source synthesis; validate it on the SAME legs (Math-2-o must
+fire the mean-formula every roll).
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
