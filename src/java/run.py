@@ -1949,6 +1949,39 @@ def main():
                         + ((getattr(_ft0, 'failure_message', '') or
                             getattr(_ft0, 'exception_type', '') or '?')
                            )[:400])
+                    _alines = [
+                        _l.strip() for _l in
+                        (getattr(_ft0, 'method_source', '') or
+                         '').splitlines()
+                        if 'assert' in _l][:6]
+                    if _alines:
+                        _bug_summary += (
+                            "\nThe failing test's own assertions (the "
+                            "pinned observables):\n  "
+                            + "\n  ".join(_alines))
+                    try:
+                        from java_source import (
+                            oracle_ids_in_text as _oidsX)
+                        _def_id = {e.split('.')[-1]
+                                   for e in (expected_exceptions or [])
+                                   if e}
+                        _trig_oids = set()
+                        for _d in (getattr(result,
+                                           'accepted_trigger_details',
+                                           []) or []):
+                            _trig_oids |= _oidsX(_d or '')
+                        for _hmap in (buggy_crash_types or {}).values():
+                            for _oid in _trig_oids:
+                                _def_id |= (_hmap.get(_oid) or set())
+                        if _def_id:
+                            _bug_summary += (
+                                "\nUnderlying exception identity of the "
+                                "defect (types recorded beneath the "
+                                "trigger-firing checks on the buggy "
+                                "build): "
+                                + ", ".join(sorted(_def_id)[:6]))
+                    except Exception:
+                        pass
                 # P3.3: underlying exception types per oracle for the
                 # ORIGINAL patched-side firing output.
                 from fuzz_runner import per_oracle_crash_types as _poct
@@ -2269,6 +2302,29 @@ def main():
                                 "the harness's input construction.")
                         print(f"      [buggy-replay] escaped-firing fact "
                               f"attached ({_esc_type})")
+                    # The firing INPUT itself, verbatim (batch6 Lang-27-c:
+                    # attribution ruled 'duty to fix' on a defect-type
+                    # crash without ever seeing that the input was fuzzer
+                    # junk — the one datum that decides junk-vs-valid).
+                    if _breplay_note and getattr(r, 'artifact_path', None):
+                        try:
+                            with open(r.artifact_path, 'rb') as _afh:
+                                _raw = _afh.read(256)
+                            _irepr = repr(_raw)[2:-1][:220]
+                            if _irepr:
+                                _breplay_note += (
+                                    "\nThe exact firing input, raw bytes "
+                                    "(capped; the harness may consume them "
+                                    "as several values): \"" + _irepr
+                                    + "\". Judge input validity from THIS, "
+                                    "not from assumptions: well-formed "
+                                    "content resembling the API's domain "
+                                    "suggests a constructed/valid input; "
+                                    "control bytes and arbitrary junk "
+                                    "suggest fuzzer noise no "
+                                    "implementation is obliged to accept.")
+                        except OSError:
+                            pass
                     _latent_note = None
                     if _fired_ids and _fired_ids <= _latent_here:
                         _latent_note = (
@@ -2582,6 +2638,39 @@ def main():
                         + ((getattr(_ft0r, 'failure_message', '') or
                             getattr(_ft0r, 'exception_type', '') or '?')
                            )[:400])
+                    _alines = [
+                        _l.strip() for _l in
+                        (getattr(_ft0r, 'method_source', '') or
+                         '').splitlines()
+                        if 'assert' in _l][:6]
+                    if _alines:
+                        _bug_summary_r += (
+                            "\nThe failing test's own assertions (the "
+                            "pinned observables):\n  "
+                            + "\n  ".join(_alines))
+                    try:
+                        from java_source import (
+                            oracle_ids_in_text as _oidsX)
+                        _def_id = {e.split('.')[-1]
+                                   for e in (expected_exceptions or [])
+                                   if e}
+                        _trig_oids = set()
+                        for _d in (getattr(result,
+                                           'accepted_trigger_details',
+                                           []) or []):
+                            _trig_oids |= _oidsX(_d or '')
+                        for _hmap in (buggy_crash_types or {}).values():
+                            for _oid in _trig_oids:
+                                _def_id |= (_hmap.get(_oid) or set())
+                        if _def_id:
+                            _bug_summary_r += (
+                                "\nUnderlying exception identity of the "
+                                "defect (types recorded beneath the "
+                                "trigger-firing checks on the buggy "
+                                "build): "
+                                + ", ".join(sorted(_def_id)[:6]))
+                    except Exception:
+                        pass
                 for f in _replay_findings:
                     rel = f['relation']
                     _fired = (f"relation {f['name']} violated "

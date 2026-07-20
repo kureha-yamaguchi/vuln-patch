@@ -1105,6 +1105,16 @@ class FuzzRunner:
             if _n:
                 print(f"  [corpus] {_n} literal-variation seed(s) "
                       f"added to the patched fuzz")
+                try:
+                    from llm import record_event
+                    record_event(
+                        'deterministic', method='corpus-seed',
+                        target=os.path.basename(harness_dir),
+                        output=(f'{_n} literal-variation seeds into the '
+                                f'patched-side fuzz corpus'),
+                        detail={'sample': self.seed_literals[:8]})
+                except Exception:
+                    pass
         # keep_going: without it the patched fuzz STOPS at the first crash
         # — and with JD1 seeding, the first input is often a buggy-side
         # artifact whose junk rejection (a dismissible NFE) would end the

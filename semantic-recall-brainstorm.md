@@ -1607,6 +1607,104 @@ J1's territory, and further same-nine iteration has clearly
 diminishing returns — next session: J1 offline on six batches of
 archived decisions, then the full30 confirm.
 
+## TO DO v2 (2026-07-20, post-batch6) — consolidated, by station
+
+SHIPPED this session (context-insufficiency sweep, all general): firing
+input bytes into the buggy-replay facts; the failing test's assert
+lines AND the defect's underlying exception identity (types beneath
+the trigger-firing checks on buggy) into both judges' bug summaries;
+attribution answers restructured (quote the decisive FACT line, cite
+the rule number; shadowed-replay = rule 3, not inconclusive);
+soundness judge five-step reasoning protocol (restate -> source ->
+strongest counterexample -> test vs catch/skip+trusted -> verdict);
+synthesis deep-dive enumeration (list documented observables with doc
+lines, mark patch-affectable, then spend slots) + sibling-PAIR
+agreement mandate (per close pair, up to two); corpus-seed
+record_event.
+
+### Station 1 — bug context (EXACT SPEC, build next)
+**Defect-identity capture at extraction time.** Run the trigger test
+once against the buggy checkout at extraction (station 1 already
+parses its failure); record structured: full expected/actual values
+(whole, not ComparisonFailure fragments), the headline exception, and
+the COMPLETE cause chain (type@frame per link). Store on FailureTest
+(e.g. .defect_exception_chain, .expected_actual_pairs) and thread into:
+H3's real_wrong_values (replaces fragment parsing), both judge bug
+summaries (replaces the verdict-time reconstruction shipped today,
+which only sees types the acceptance scan happened to record), and the
+crash-identity comparison. One mechanism, four consumers.
+
+### Station 2 — rule writing
+- **Per-source synthesis passes (multi-LLM).** N small independent
+  calls, each owning ONE contract source — formula-only, @throws-only,
+  family-agreement-only, state/read-only — blind to each other; union
+  screened as usual (screening dedupes). Coverage becomes structural
+  instead of quota-enforced. Respects the p23gate lesson: nothing is
+  injected into anyone's prompt.
+- R-INH inherited javadoc: verify supertype skeletons actually carry
+  the parent declaration's @throws/@param for the touched method; add
+  interface files if missing.
+- R3 (doc-poor passing-test anchoring): unchanged, still the only
+  mechanism for Closure-33/92-class legs.
+
+### Station 3 — screening
+- BND-b: documented-limit probes (MAX_VALUE, 1e20-scale, NaN, empty)
+  in screening + replay corpora; shares the literal_variations
+  generator. Targets the Math-57 class of divergences.
+
+### Stations 4/5 — harness + acceptance (EXACT SPEC, build next)
+**Deterministic slot roles.** The -n 3 harness slots get assigned
+roles in the prompt instead of hoping diversity emerges: slot 1 =
+test-copy + trigger reproduction (the acceptance anchor); slot 2 =
+family/metamorphic checks ONLY (sibling agreement, input variations,
+documented selection rules) plus minimal trigger reproduction; slot 3
+= state/consistency checks ONLY (read-only guarantees, recompute-and-
+compare aggregates) plus minimal trigger reproduction. RETRY remains
+as the backstop when a role-slot fails acceptance. Implementation:
+role paragraph appended per-slot in the campaign's prompt_factory;
+acceptance gates unchanged.
+- Math-57 harness-generation robustness (javac repair loop) — that leg
+  is unmeasurable until fixed.
+
+### Station 6 — patched-side execution
+- **Single-check replay for shadowed firings.** Extract the fired
+  check (its oracle id names the throw site; take the enclosing
+  method/block), wrap it in the relation-screen single-check template,
+  compile against buggy, replay the exact input. Converts the
+  shadowed INCONCLUSIVE (batch6 62-c FP) into a computed fact. Reuses
+  _screen_harness_source machinery.
+- Quiet-leg bounded extension: one extra 60s fuzz pass when zero
+  checks fired anywhere on patched (keys on observed silence, not
+  labels).
+- P4.1 do-nothing detector: still the only mechanism for
+  behaviour-preserving overfits (Chart-3), still gated on the offline
+  false-flag study.
+
+### Station 7 — judges (EXACT SPEC for the next steps)
+- **J1 offline judge study (FIRST, before any further judge change).**
+  Materials exist: six archived batches with VERDICT/WHY and
+  ATTRIBUTION/FACT/WHY lines plus known ground truth. Measure: (a)
+  soundness flip-rate on near-identical checks; (b) fact-override
+  rate; (c) attribution rule-citation accuracy; (d) whether the
+  3-lens vote ensemble (already implemented, votes=1 default) helps
+  WITH facts present — the old null result was measured without them.
+  Output decides: enable votes, add verdict categories, or stop.
+- Attribution INCONCLUSIVE handling after single-check replay lands:
+  re-examine whether any inconclusive class remains.
+- Two-judge split: shipped and validated (batch6); no further split
+  without J1 evidence.
+
+### Cross-cutting
+- The next full run is the FULL30 confirm (pinned_dev set), not a
+  7th same-nine batch — six same-day tuning rounds on nine legs is
+  selection pressure even with fully general code. Framing: context-
+  sufficiency audit — for every judge call in the run, does the
+  prompt contain what a careful human would need? Grep targets:
+  verdicts whose WHY cites information NOT present in the prompt
+  (hallucinated grounds), INCONCLUSIVE attributions, UNSOUND verdicts
+  with no surviving counterexample stated.
+- Held-out discipline: FINAL only after full30 is stable.
+
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —

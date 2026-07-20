@@ -113,9 +113,25 @@ _GUIDANCE = (
     " collection whose reported size disagrees with its contents), the"
     " assertion that caught it is SOUND regardless of how speculative its"
     " general form sounds.\n\n"
+    "REASONING PROTOCOL — work through these five steps, in order,"
+    " before answering (they exist because measured failures came from"
+    " skipping one of them):\n"
+    "1. RESTATE what the fired check asserts, as a contract claim"
+    " ('for input class X, the result must satisfy Y').\n"
+    "2. NAME the claim's source: a quoted documentation sentence, a"
+    " trusted test-lifted value, or invented plausibility. An invented"
+    " claim survives only via step 3.\n"
+    "3. CONSTRUCT the strongest counterexample: a concrete correct"
+    " implementation and a concrete input that would fire this check.\n"
+    "4. TEST the counterexample against the harness's catch/skip"
+    " structure and the trusted values — if it would be swallowed, is"
+    " unreachable, or contradicts a trusted value, it does not count.\n"
+    "5. VERDICT: UNSOUND only if a counterexample survives step 4;"
+    " otherwise SOUND.\n\n"
     "Answer on two lines EXACTLY:\n"
     "VERDICT: SOUND | UNSOUND\n"
-    "WHY: <one sentence>"
+    "WHY: <one sentence — for UNSOUND, it must contain the surviving"
+    " counterexample>"
 )
 
 # Ensemble lenses for votes > 1: each vote reviews the same finding from a
@@ -180,12 +196,18 @@ _ATTRIB_GUIDANCE = (
     " domain the report never covers; a crash whose underlying exception"
     " differs from the reported one) with NO quoted documented guarantee"
     " -> NOT_ATTRIBUTED: pre-existing surface.\n"
-    "4. INCONCLUSIVE facts (replay unavailable, shadowed by another"
-    " check, ambiguous) -> INCONCLUSIVE; the finding then stands on"
-    " soundness alone.\n"
-    "Answer on two lines EXACTLY:\n"
+    "4. INCONCLUSIVE facts -> INCONCLUSIVE; the finding then stands on"
+    " soundness alone. RESERVE this for facts that genuinely cut"
+    " neither way (replay unavailable, no comparable data). A SHADOWED"
+    " replay (a different check fired first on buggy) removes only the"
+    " replay comparison — it does NOT remove the observable comparison"
+    " of rule 3: shadowed-plus-a-different-observable-than-the-test's"
+    " is rule 3's NOT_ATTRIBUTED shape, not inconclusive.\n"
+    "Answer on three lines EXACTLY:\n"
+    "FACT: <quote the single computed fact line that most constrains"
+    " this decision>\n"
     "ATTRIBUTION: ATTRIBUTED | NOT_ATTRIBUTED | INCONCLUSIVE\n"
-    "WHY: <one sentence>")
+    "WHY: <one sentence naming the rule number you applied>")
 
 
 class RelationVerifier:
