@@ -1,13 +1,15 @@
-# attr2: 2-leg iteration harness for the re-resourced attribution judge.
-#   Math-2-o  — relation-path catch the OLD attribution wrongly vetoed;
-#     must be TP (mechanical direction-confirmed keep, no LLM).
-#   Chart-26-c — harness-path precision FP attribution exists to catch;
-#     must be TN via a CORRECT NOT_ATTRIBUTED on the sibling-chart check
-#     (different underlying crash identity than the null-info defect).
-# --attribution_judge ON here (off in prod until this validates).
+# attr2 iter-2: catch + a RELIABLY-FIRING precision leg.
+#   Math-2-o   — relation-path catch (mechanical direction-confirmed keep);
+#     must stay TP.
+#   Lang-27-c  — the PERSISTENT FP: escaped defect-type crash on junk
+#     input fires nearly every run, so attribution actually has to make
+#     the call. Correct answer: NOT the patch's duty (the input bytes
+#     show fuzzer junk, not a valid input) -> dismissed -> TN. This is
+#     the real test of attribution's precision job + the input-bytes
+#     fact, unlike Chart-26-c whose FP is roll-dependent.
 MODEL="gpt-5.4"
 COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --attribution_judge"
 CASES=(
   "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
-  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Lang/patch1-Lang-27-SimFix.patch"
 )

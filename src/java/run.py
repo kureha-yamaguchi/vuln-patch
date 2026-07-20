@@ -2199,28 +2199,28 @@ def main():
                                 "check demands more than the documented "
                                 "contract guarantees, it is UNSOUND.")
                         elif _breplay_ids:
-                            # Batch4 Chart-26-c: the inconclusive notes
-                            # carried no bug-family framing, and the old
-                            # axis-entity FP class walked through this
-                            # gap — an unrelated feature's contract,
-                            # argued from a partial skeleton, was kept.
+                            # Shadowed replay: a different check fired
+                            # first on buggy at this input, so the buggy
+                            # replay cannot directly confirm THIS check
+                            # there. State the mechanical fact only —
+                            # NO dismissal editorialising (the old
+                            # "classic false-positive shape" wording
+                            # biased the judge toward vetoing sound
+                            # generalisation catches, falsefix13). The
+                            # screening direction fact (if any) and the
+                            # attribution deep-dive decide.
                             _breplay_note = (
                                 "[buggy-replay fact] on this exact input "
-                                "a DIFFERENT check fires first on the "
+                                "a DIFFERENT check fired first on the "
                                 "buggy build ("
                                 + ", ".join(sorted(_breplay_ids)[:4])
-                                + "), so whether THIS check would fire "
-                                "there is shadowed — attribution "
-                                "inconclusive. Judge the check against "
-                                "the documented contract, and weigh "
-                                "whether its observable is the very "
-                                "behaviour the failing test shows is "
-                                "wrong: a DIFFERENT feature's contract, "
-                                "argued from a partial skeleton with no "
-                                "buggy-side evidence behind it, is the "
-                                "classic false-positive shape — keep "
-                                "only with a shown contract the "
-                                "observed value contradicts.")
+                                + "), so the buggy replay does not "
+                                "directly show whether THIS check fires "
+                                "there. Rely on the screening/direction "
+                                "fact and the check's documented "
+                                "contract; a screening result of "
+                                "DIRECTION-CONFIRMED already establishes "
+                                "the buggy build violates this check.")
                         elif _bt_all:
                             _breplay_note = (
                                 "[buggy-replay fact] on this exact input "
