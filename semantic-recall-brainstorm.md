@@ -1834,6 +1834,53 @@ Do NOT keep expanding attr* sets: they have already answered their
 question (attribution works when catches fire). Next build is
 per-source synthesis; validate it on the SAME legs (Math-2-o must
 fire the mean-formula every roll).
+## FOCUSED SYNTHESIS: recall WIN, precision cost exposed (2026-07-20)
+
+Built --focused_synthesis: 4 narrow per-source passes (formula /
+throws / family / state), unioned, screened as one. Validated across
+foc2 (Math-2 pair, 4 iterations to clean) and foc5 (5 legs).
+
+RECALL — clear win, the goal achieved:
+- foc5: 4/4 overfits caught, EACH by its own pass — Math-2-o (formula),
+  Math-53-o (throws), Lang-60-o (family), Lang-41-o (sibling). The
+  roll-variance that made these coin flips is gone; the convicting
+  relation is now reliably PROPOSED. This is better recall than any
+  full30 (which caught ~8/16).
+
+PRECISION — a real cost, honestly: Math-2-c FP'd FOUR distinct ways
+across the iterations, one per pass:
+  1. throws: ctor must throw NotPositiveException (multi-constraint
+     input) -> ISOLATION RULE (break only one precondition).
+  2. harness bounds: mean vs integer support off by 2e-12 rounding ->
+     ROUNDING FLOOR in soundness (sub-1e-9-relative = rounding).
+  3. relation bounds/exact-formula: no-tolerance checks -> restored the
+     SHARED FENCING block the passes had dropped.
+  4. state: 'no public reader changes across getNumericalMean()' fires
+     on correct code (lazy cache / call-order reader). STILL OPEN.
+Each fix was general and correct, but the pattern is the point: MORE
+candidate checks (the mechanism of focused synthesis) means MORE FP
+surface on a pathological correct leg (Math-2-c has billion-scale
+inputs + lazy caching + degenerate n=N). In the real full30, Math-2-c
+was TN under single-call synthesis; focused synthesis is what makes it
+FP. Precision now depends on the SOUNDNESS JUDGE catching unsound
+checks regardless of source — and it passed all four (said SOUND on a
+'no reader changes' check that fires on correct code).
+
+CONCLUSIONS (do not whack-a-mole a 5th fence):
+1. KEEP focused synthesis (behind --focused_synthesis) — the recall
+   win is real and it is the answer to roll-variance.
+2. The STATE pass is the weakest link (broad 'no reader changed'
+   checks are FP-prone via lazy caching, and Lang-60 was caught by the
+   FAMILY pass, not state) — make it conservative (only assert a
+   SPECIFIC documented read-only guarantee, never a blanket
+   all-readers snapshot) or gate it off.
+3. J1 is now DOUBLY confirmed as top priority: as candidate volume
+   grows, the soundness judge's reliability IS the precision ceiling.
+   It let four unsound checks through. Measure it offline (7+ archived
+   batches) before trusting focused synthesis on the full set.
+4. The recall-vs-precision tradeoff of focused synthesis can only be
+   judged on the FULL set, not 5 legs — but ONLY after (2) and (3),
+   or the pathological-correct-leg FPs will dominate the number.
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
