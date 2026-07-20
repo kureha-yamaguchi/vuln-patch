@@ -1,0 +1,25 @@
+# attr8: expanded attribution validation (iter-2 passed Math-2-o + Lang-27-c
+# for the right reasons). Legs chosen to ACTUALLY exercise attribution both
+# ways — each fires something the judge must rule on.
+# CATCHES attribution must preserve (were vetoed in falsefix13):
+#   Math-2-o  (direction-confirmed relation -> mechanical keep)
+#   Lang-41-o (sibling-agreement generalization catch)
+#   Lang-50-o, Lang-60-o (hidden-state / capacity catches)
+#   Math-53-o (R-THROWS -> ATTRIBUTED via @throws)
+# PRECISION attribution must dismiss / not break:
+#   Lang-27-c (the persistent FP — junk-input escaped crash)
+#   Chart-26-c, Math-2-c (correct-leg guards)
+# Pass bar: all 5 -o = TP, all 3 -c = TN. Compare against falsefix13's
+# attribution-ON collapse (every -o was FN).
+MODEL="gpt-5.4"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --attribution_judge"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-50-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-60-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/DeepRepair/Math/patch1-Math-53-DeepRepair.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Lang/patch1-Lang-27-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch"
+)
