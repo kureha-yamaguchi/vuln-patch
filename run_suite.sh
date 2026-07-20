@@ -76,7 +76,11 @@ if [ -n "$CASES_FILE" ]; then
 fi
 # ---------------------------------------------------------
 
-GITSHA="$(git -C /home/code/experiments-vuln-patch rev-parse --short HEAD 2>/dev/null || echo unknown)"
+# VERSION is stamped by push-to-vm.sh from the Mac-side git state (rsync
+# excludes .git, so asking git here always said "unknown").
+GITSHA="$(cat /home/code/experiments-vuln-patch/VERSION 2>/dev/null \
+  || git -C /home/code/experiments-vuln-patch rev-parse --short HEAD 2>/dev/null \
+  || echo unknown)"
 # config.json — makes the folder self-explanatory months later.
 {
   printf '{\n'

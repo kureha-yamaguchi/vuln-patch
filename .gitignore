@@ -251,3 +251,4 @@ tunnel.sh
 
 # Archived VM run data (logs + manifests pulled from hetzner) — never commit
 runs-archive/
+VERSION

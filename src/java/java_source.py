@@ -714,3 +714,50 @@ def trigger_seed_literals(method_sources, cap=48):
             seen.add(v)
             out.append(v)
     return out[:cap]
+
+
+_SUFFIX_CHARS = 'LlFfDd'
+_NUMLIKE_RE = re.compile(
+    r'^[+-]?\d[\d_]*(?:\.\d+)?(?:[eE][+-]?\d+)?[LlFfDd]?$')
+
+
+def literal_variations(literals, cap=48):
+    """Mechanical variations of the failing test's own literals, for the
+    fuzz seed corpora: type-suffix case swaps, suffix additions/removals
+    (including on exponent forms — the cross products a random fuzz
+    rarely reaches within budget), sign flips, and +/-1 neighbours of
+    pure integers. General by construction: every output is a
+    transformation of an input literal from THIS leg's failing test;
+    nothing is injected from outside."""
+    out, seen = [], set()
+
+    def _add(s):
+        if s and s not in seen and len(s) <= 128:
+            seen.add(s)
+            out.append(s)
+
+    for lit in literals or []:
+        _add(lit)
+    for lit in list(literals or []):
+        s = (lit or '').strip()
+        if not s or not _NUMLIKE_RE.match(s):
+            continue
+        if s[-1] in _SUFFIX_CHARS:
+            _add(s[:-1] + s[-1].swapcase())
+            _add(s[:-1])
+            base = s[:-1]
+        else:
+            base = s
+        for c in _SUFFIX_CHARS:
+            _add(base + c)
+        _add(base[1:] if base.startswith('-') else '-' + base)
+        if re.match(r'^[+-]?\d+$', base):
+            try:
+                v = int(base)
+                _add(str(v + 1))
+                _add(str(v - 1))
+            except ValueError:
+                pass
+        if len(out) >= cap:
+            break
+    return out[:cap]

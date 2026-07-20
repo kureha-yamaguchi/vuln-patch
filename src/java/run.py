@@ -1317,17 +1317,20 @@ def main():
     # Semantic harnesses construct their inputs in code and are far less
     # corpus-dependent; the asymmetry is harmless there.
     corpus_dir = None
-    seed_literals = []
-    if bug_kind == "semantic":
-        for ft in failure_tests:
-            if getattr(ft, 'method_source', None):
-                seed_literals += re.findall(
-                    r'"((?:[^"\\]|\\.){1,120})"', ft.method_source)
-        for t in mined_oracles:
-            seed_literals += re.findall(
-                r'"((?:[^"\\]|\\.){1,120})"', getattr(t, 'source', ''))
-        seed_literals = [s for s in dict.fromkeys(seed_literals)
-                         if s.strip()][:64]
+    # ALL bug kinds now (the semantic-only asymmetry existed because only
+    # the acceptance gate was seeded; both sides are seeded identically
+    # now, so a seed that reaches the trigger at acceptance also starts
+    # the patched fuzz). Strings AND numerics, plus their mechanical
+    # variations (suffix case/addition/removal incl. exponent forms,
+    # sign flips, integer neighbours) — batch5 showed every invented
+    # check present yet latent because random fuzz never generated the
+    # discriminating literal shape within budget.
+    from java_source import literal_variations, trigger_seed_literals
+    seed_literals = trigger_seed_literals(
+        [getattr(ft, 'method_source', '') or '' for ft in failure_tests]
+        + [getattr(t, 'source', '') or '' for t in mined_oracles],
+        cap=48)
+    seed_literals = literal_variations(seed_literals, cap=96)
     if seed_literals:
         corpus_path = Path(selection.buggy_dir) / 'fuzz' / 'corpus'
         try:
@@ -1608,6 +1611,7 @@ def main():
                 timeout_seconds=args.fuzz_timeout,
                 expected_exceptions=expected_exceptions,
                 jazzer_api_jar=jazzer_api_jar,
+                seed_literals=seed_literals,
             ).run_all(
                 successful_results=result.successful_results,
                 patch_path=selection.patch_path,
@@ -1933,6 +1937,18 @@ def main():
                 _trigger_method_names = {
                     getattr(ft, 'test_method', '') for ft in failure_tests
                     if getattr(ft, 'test_method', '')}
+                # Two-judge split: the attribution judge sees ONLY the
+                # computed fact notes plus this bug summary — no code.
+                _bug_summary = ''
+                if failure_tests:
+                    _ft0 = failure_tests[0]
+                    _bug_summary = (
+                        "failing test "
+                        + (getattr(_ft0, 'test_method', '') or '?')
+                        + " — on the buggy build it fails with: "
+                        + ((getattr(_ft0, 'failure_message', '') or
+                            getattr(_ft0, 'exception_type', '') or '?')
+                           )[:400])
                 # P3.3: underlying exception types per oracle for the
                 # ORIGINAL patched-side firing output.
                 from fuzz_runner import per_oracle_crash_types as _poct
@@ -1942,6 +1958,7 @@ def main():
                 for fired in fired_all:
                     evid = (excerpt if excerpt and fired
                             and fired[:40] in excerpt else None)
+                    _fact_notes = []
                     from java_source import oracle_ids_in_text as _oids
                     _latent_here = (latent_map.get(r.harness_path) or set())
                     _fired_ids = _oids(fired or '')
@@ -2055,6 +2072,43 @@ def main():
                                     "builds merely reject and nothing "
                                     "is convicted.")
                             else:
+                                # Crash-identity comparison (batch5
+                                # Chart-26-c): when the firing wraps an
+                                # exception, NAME the exception identity
+                                # on both sides so attribution can tell
+                                # "the bug's own crash surviving" from
+                                # "a different pre-existing crash wearing
+                                # the family's clothes". Stated as data;
+                                # the attribution judge owns the call.
+                                _idline = ''
+                                try:
+                                    from fuzz_runner import (
+                                        crash_signature as _csig,
+                                        cause_signature as _causesig)
+                                    _s1 = _csig(_breplay_out) or ''
+                                    _s2 = _causesig(_breplay_out) or ''
+                                    _ptt = set()
+                                    for _oid in _fired_ids:
+                                        _ptt |= (_patched_types.get(_oid)
+                                                 or set())
+                                    if _s1 or _s2 or _ptt:
+                                        _idline = (
+                                            " Underlying exception "
+                                            "identity — on the buggy "
+                                            "replay: "
+                                            + (_s1 or 'no crash')
+                                            + (("; root cause: " + _s2)
+                                               if _s2 else '')
+                                            + "; under the patched "
+                                            "firing: "
+                                            + (", ".join(sorted(_ptt))
+                                               or 'none recorded')
+                                            + ". An identity different "
+                                            "from the reported bug's own "
+                                            "failure is a different, "
+                                            "pre-existing problem.")
+                                except Exception:
+                                    pass
                                 _breplay_note = (
                                     "[buggy-replay fact] the exact firing "
                                     "input fires the SAME check on the "
@@ -2071,7 +2125,7 @@ def main():
                                     "inputs the real test does NOT "
                                     "itself exercise; otherwise it "
                                     "measures pre-existing surface — "
-                                    "dismiss.")
+                                    "dismiss." + _idline)
                         elif _bt_defect:
                             # Batch4 Lang-27-c: an earlier wording called
                             # this "strong evidence against the patch" —
@@ -2287,8 +2341,10 @@ def main():
                                  "Judge it UNSOUND unless the patch itself "
                                  "demonstrably introduces this exception "
                                  "on a VALID input.")
+                        _fact_notes.append(_note)
                         evid = (evid + "\n" + _note) if evid else _note
                     if _latent_note:
+                        _fact_notes.append(_latent_note)
                         evid = ((evid + "\n" + _latent_note)
                                 if evid else _latent_note)
                     elif (_fired_ids and r.harness_path in latent_map
@@ -2330,6 +2386,7 @@ def main():
                         if _breplay_note:
                             _note += "\n" + _breplay_note
                             _breplay_note = None
+                        _fact_notes.append(_note)
                         evid = (evid + "\n" + _note) if evid else _note
                     elif _fired_ids & _latent_here:
                         _note = ("[latent oracle] check(s) "
@@ -2342,6 +2399,7 @@ def main():
                         if _breplay_note:
                             _note += "\n" + _breplay_note
                             _breplay_note = None
+                        _fact_notes.append(_note)
                         evid = (evid + "\n" + _note) if evid else _note
                     elif _breplay_note:
                         # PLAIN firing — neither latent nor symmetric.
@@ -2349,6 +2407,7 @@ def main():
                         # no buggy-side fact at all, and the dismissals
                         # invented one ("already occurs on the buggy build
                         # too"). Attach the computed fact instead.
+                        _fact_notes.append(_breplay_note)
                         evid = ((evid + "\n" + _breplay_note)
                                 if evid else _breplay_note)
                         _breplay_note = None
@@ -2392,6 +2451,7 @@ def main():
                                  "below: if they match, the harness "
                                  "reproduced the TEST's scenario, where a "
                                  "correct patch passes — dismiss.")
+                        _fact_notes.append(_note)
                         evid = (evid + "\n" + _note) if evid else _note
                     _j3 = _j3_failing_test_block(failure_tests)
                     if _j3:
@@ -2401,6 +2461,17 @@ def main():
                                         concrete_evidence=evid,
                                         code_context=('\n\n'.join(class_ctx)
                                                       if class_ctx else None))
+                    if ok and _fact_notes:
+                        _att_ok, _att_why = rv.attribute(
+                            fired or '', "\n".join(_fact_notes),
+                            _bug_summary)
+                        if not _att_ok:
+                            print(f"      [attribution] sound but NOT "
+                                  f"attributed — {_att_why[:120]}")
+                            drop_reasons.append(
+                                (fired,
+                                 "SOUND-BUT-NOT-ATTRIBUTED: " + _att_why))
+                            continue
                     if ok:
                         kept_reason = (fired, why)
                         break
@@ -2501,10 +2572,21 @@ def main():
                             expected_assert_literals(ft.method_source))
                 _tvals = list(dict.fromkeys(_tvals))
                 _kept_replays = []
+                _bug_summary_r = ''
+                if failure_tests:
+                    _ft0r = failure_tests[0]
+                    _bug_summary_r = (
+                        "failing test "
+                        + (getattr(_ft0r, 'test_method', '') or '?')
+                        + " — on the buggy build it fails with: "
+                        + ((getattr(_ft0r, 'failure_message', '') or
+                            getattr(_ft0r, 'exception_type', '') or '?')
+                           )[:400])
                 for f in _replay_findings:
                     rel = f['relation']
                     _fired = (f"relation {f['name']} violated "
                               f"[replay-on-patched, {f['tier']} tier]")
+                    _rfacts = []
                     _evid = ("[relation replay] the check below was "
                              "mechanically screened on the buggy build ("
                              + (getattr(rel, 'screen_note', '') or
@@ -2515,6 +2597,7 @@ def main():
                              "quiet; judge whether the relation itself is "
                              "sound for ANY correct implementation "
                              "(tolerances generous, inputs fenced).")
+                    _rfacts.append(_evid)
                     # The Closure-62-c FP fact (hfix11): a rule that fires
                     # on the TRIGGER literals on the patched build, while
                     # the REAL failing test passes there (guaranteed by the
@@ -2614,6 +2697,10 @@ def main():
                                 "must preserve; an invented "
                                 "plausibility with no such source does "
                                 "not convict.")
+                    # everything appended after the base note is a
+                    # computed fact — hand the same text to attribution
+                    if len(_evid) > len(_rfacts[0]):
+                        _rfacts.append(_evid[len(_rfacts[0]):].strip())
                     _j3r = _j3_failing_test_block(failure_tests)
                     if _j3r:
                         _evid += "\n" + _j3r
@@ -2629,6 +2716,17 @@ def main():
                         concrete_evidence=_evid,
                         code_context=('\n\n'.join(class_ctx)
                                       if class_ctx else None))
+                    if ok and _rfacts:
+                        _att_ok, _att_why = _rv2.attribute(
+                            _fired, "\n".join(_rfacts), _bug_summary_r,
+                            check_rationale=(getattr(rel, 'contract', '')
+                                             or None))
+                        if not _att_ok:
+                            print(f"  ✗ replay firing sound but NOT "
+                                  f"attributed: {f['name']} — "
+                                  f"{_att_why[:120]}")
+                            ok = False
+                            why = "SOUND-BUT-NOT-ATTRIBUTED: " + _att_why
                     if ok:
                         print(f"  ✓ replay conviction kept: {f['name']} "
                               f"[{f['tier']}]")

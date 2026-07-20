@@ -962,13 +962,22 @@ class FuzzRunner:
                  jazzer_standalone_jar: str,
                  timeout_seconds: int = config.FUZZ_TIMEOUT_SECONDS,
                  expected_exceptions: Optional[List[str]] = None,
-                 jazzer_api_jar: Optional[str] = None):
+                 jazzer_api_jar: Optional[str] = None,
+                 seed_literals: Optional[List[str]] = None):
         self.jazzer_standalone_jar = jazzer_standalone_jar
         self.timeout_seconds = timeout_seconds
         self.expected_exceptions = expected_exceptions or []
         # API jar (FuzzedDataProvider) for the runtime classpath; see
         # run_jazzer. Defaults there to config.JAZZER_API_JAR if None.
         self.jazzer_api_jar = jazzer_api_jar
+        # Literal seeds (the failing test's own literals plus their
+        # mechanical variations — java_source.literal_variations) written
+        # into the patched-side seed corpus. A short fuzz budget then
+        # tries the discriminating input NEIGHBOURHOOD deterministically
+        # instead of hoping random bytes reach it (batch5: every
+        # invented check was present and stayed latent because 20s of
+        # fuzz never generated an exponent-plus-suffix string).
+        self.seed_literals = list(seed_literals or [])
 
     def run_all(self,
                 successful_results: List[BuildResult],
@@ -1079,6 +1088,23 @@ class FuzzRunner:
                 shutil.copy2(p, os.path.join(seed_dir, os.path.basename(p)))
             print(f"  [JD1] seeding patched fuzz with "
                   f"{len(buggy_artifacts)} buggy-side firing input(s)")
+        if self.seed_literals:
+            if seed_dir is None:
+                seed_dir = os.path.join(harness_dir, 'seeds_from_buggy')
+                os.makedirs(seed_dir, exist_ok=True)
+            _n = 0
+            for i, lit in enumerate(self.seed_literals):
+                try:
+                    with open(os.path.join(seed_dir, f'lit_{i:03d}'),
+                              'w', encoding='utf-8',
+                              errors='replace') as fh:
+                        fh.write(lit)
+                    _n += 1
+                except OSError:
+                    continue
+            if _n:
+                print(f"  [corpus] {_n} literal-variation seed(s) "
+                      f"added to the patched fuzz")
         # keep_going: without it the patched fuzz STOPS at the first crash
         # — and with JD1 seeding, the first input is often a buggy-side
         # artifact whose junk rejection (a dismissible NFE) would end the
