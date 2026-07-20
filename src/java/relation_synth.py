@@ -222,6 +222,45 @@ _INSTRUCTIONS = (
 # relations to write) changes per pass.
 _OUTPUT_SPEC = _INSTRUCTIONS[_INSTRUCTIONS.index("For each relation"):]
 
+# Shared FENCING rules prepended to EVERY focused pass. The focused passes
+# were first written with terse selection text and LOST the tolerance /
+# magnitude / degenerate / valid-by-construction guidance the single-call
+# _INSTRUCTIONS accumulated over many FP fixes — every foc2 false positive
+# (throws-class, no-tolerance bounds, exact-equality formula) came from a
+# focused pass generating a check the main prompt's fencing would have
+# prevented. This block restores that fencing at the SOURCE so unsound
+# checks are never generated, rather than relying on the soundness judge to
+# catch them all downstream.
+_FOCUSED_FENCING = (
+    "SOUNDNESS FENCING — every relation you write in this pass MUST obey"
+    " these, or it fires on CORRECT code (a false positive, the worst"
+    " outcome):\n"
+    "- TOLERANCE: never compare doubles with == or a tolerance below"
+    " 1e-9-relative. Use `Math.abs(a-b) <= tol * Math.max(1.0,"
+    " Math.max(Math.abs(a), Math.abs(b)))` with tol AT LEAST 1e-9, and"
+    " tol = 1e-6 when the computation multiplies/sums large"
+    " integer/long intermediates (products near or above 2^31,"
+    " billion-scale inputs) — a correct implementation legitimately"
+    " reassociates a formula and differs by rounding. A 'value within"
+    " its bounds' check must allow the SAME tolerance at the boundary"
+    " (a mean can land one ulp below an integer support bound). The real"
+    " defect diverges by a LARGE amount (sign flip, value multiples"
+    " off), never a last-digit epsilon.\n"
+    "- MAGNITUDES: cap fuzzed numeric parameters to moderate ranges by"
+    " construction (rule of thumb |value| <= 1_000_000 for integers fed"
+    " to combinatorial/statistical formulas) unless the contract"
+    " explicitly covers larger; at billion-scale, correct double"
+    " arithmetic legitimately overflows to NaN / saturates / rounds"
+    " beyond any fixed tolerance.\n"
+    "- DEGENERATE INPUTS: construct inputs non-degenerate by"
+    " construction (non-empty, singleton supports excluded unless the"
+    " contract covers them); a check whose only violations occur on"
+    " empty/degenerate inputs tests unspecified behaviour.\n"
+    "- VALID BY CONSTRUCTION: build every input to satisfy the"
+    " documented preconditions yourself (order/clamp/force valid before"
+    " the call); catch and skip any exception — a rejection is never a"
+    " violation.\n")
+
 # FOCUSED SYNTHESIS PASSES (per-source). One broad "write up to N relations"
 # ask is a lottery over WHICH documented facts get written down: Math-2's
 # convicting mean-formula was proposed on some rolls and replaced by a
@@ -539,7 +578,8 @@ class RelationSynthesizer:
             seen_names = set()
             per_pass = {}
             for tag, selection in _FOCUSED_PASSES:
-                user = (ctx_str + "\n\n" + selection + "\n" + _OUTPUT_SPEC)
+                user = (ctx_str + "\n\n" + _FOCUSED_FENCING + "\n"
+                        + selection + "\n" + _OUTPUT_SPEC)
                 messages = [
                     {'role': 'system', 'content': _SYSTEM},
                     {'role': 'user', 'content': user},
