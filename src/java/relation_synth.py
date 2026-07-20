@@ -211,6 +211,68 @@ _INSTRUCTIONS = (
     " input, check. No prose outside the JSON."
 )
 
+# The OUTPUT-FORMAT half of _INSTRUCTIONS (how to write each relation:
+# name/kind/contract/input/check, the structure rule, the JSON schema).
+# Constant across the focused passes below — only the SELECTION half (which
+# relations to write) changes per pass.
+_OUTPUT_SPEC = _INSTRUCTIONS[_INSTRUCTIONS.index("For each relation"):]
+
+# FOCUSED SYNTHESIS PASSES (per-source). One broad "write up to N relations"
+# ask is a lottery over WHICH documented facts get written down: Math-2's
+# convicting mean-formula was proposed on some rolls and replaced by a
+# variance-formula on others (attr5). Splitting the ask into narrow passes —
+# each dedicated to ONE contract source and told to enumerate ALL of that
+# kind — makes the convicting relation appear reliably; the union is then
+# screened exactly as a single roll's output is (junk dropped, no new FP
+# risk), and nothing is shared between legs. Each pass reuses the SAME
+# grounding context; only the selection guidance below differs.
+_FOCUSED_PASSES = [
+    ("formula",
+     "FOCUS — DOCUMENTED FORMULAS / EXACT-VALUE RULES ONLY. Scan the"
+     " javadoc and code of the patched class AND every class shown with"
+     " role=\"test-subject\" for EVERY stated closed-form formula or exact"
+     " value rule: a mean/variance/sum/count/size/bound equal to an"
+     " expression of the object's parameters or inputs ('the mean is"
+     " n*m/N', 'returns p*(1-p)', 'the lower bound is max(0, n+m-N)')."
+     " ENUMERATE THEM ALL first, then write ONE relation per formula:"
+     " recompute it independently from the object's own parameters/output"
+     " and compare with a generous magnitude-scaled tolerance. Propose one"
+     " relation for EACH documented formula you found (up to 5). Write"
+     " ONLY documented-formula relations in this pass; other passes cover"
+     " throws, agreement and state."),
+    ("throws",
+     "FOCUS — DOCUMENTED @throws ONLY. Scan the touched method's javadoc"
+     " (and any parent declaration shown) for declared exceptions —"
+     " '@throws X when <condition>'. For EACH whose triggering input you"
+     " can construct, assert the documented throw using the MANDATORY"
+     " check shape (call it; a normal completion OR a wrong, non-subclass"
+     " exception class is the violation — never fence foreign exceptions"
+     " into a skip). Vary the receiver/other-argument special states while"
+     " holding the rejected input fixed. Propose one relation per declared"
+     " @throws (up to 4). Write ONLY documented-throw relations in this"
+     " pass."),
+    ("family",
+     "FOCUS — SIBLING AGREEMENT ONLY. From the SAME-NAME OVERLOADS and"
+     " METHOD FAMILY lists in the context, take the siblings of the"
+     " patched method that share the MOST documented behaviour (same"
+     " output shape, documented shared semantics). For each close pair,"
+     " assert the two members agree on equivalent inputs up to their"
+     " documented difference. Propose one relation per close sibling pair"
+     " (up to 3). Write ONLY sibling-agreement relations in this pass; if"
+     " the context lists no family for the patched method, return an empty"
+     " JSON array []."),
+    ("state",
+     "FOCUS — READ-ONLY / STRUCTURAL INVARIANTS ONLY. Identify calls the"
+     " docs describe as read-only/non-mutating and the class's public"
+     " no-argument readers (size/length/capacity/get*); assert such a call"
+     " does not change those readers. Also assert documented STRUCTURAL"
+     " invariants: a reported summary lies within the object's own stated"
+     " bounds, a collection stays sorted/canonical, a reported size equals"
+     " the actual element count. Propose up to 4. Write ONLY"
+     " state/invariant relations in this pass."),
+]
+
+
 def _unflatten_check(check: str) -> str:
     """Recover a check the model double-escaped in its JSON. Sometimes the
     whole snippet arrives as ONE physical line with literal `\\n`/`\\t`
@@ -272,8 +334,12 @@ class Relation:
 class RelationSynthesizer:
     """Proposes candidate relations (unscreened) for a semantic bug."""
 
-    def __init__(self, generator: Optional[HarnessGenerator] = None):
+    def __init__(self, generator: Optional[HarnessGenerator] = None,
+                 focused: bool = False):
         self._gen = generator or HarnessGenerator(temperature=0.3, top_p=1.0)
+        # focused=True runs per-source passes (formula/throws/family/state)
+        # and unions the survivors, instead of one broad synthesis call.
+        self.focused = focused
         # Full record of every LLM call this synthesizer makes (synthesis,
         # compile-repair, soundness-harden) — prompt messages + raw output —
         # so a run can dump a complete, auditable pipeline trace.
@@ -444,6 +510,49 @@ class RelationSynthesizer:
         if trigger_summary:
             ctx.append("The reported failure on the buggy code: "
                        + trigger_summary)
+        ctx_str = "\n".join(ctx)
+
+        # FOCUSED (per-source) synthesis: several narrow passes unioned,
+        # instead of one broad "up to N relations" lottery. Each pass sees
+        # the SAME grounding context; only its selection guidance differs.
+        # The union is de-duplicated by name and returned for the normal
+        # downstream screen (no new FP risk — screening filters every
+        # candidate). Kills the roll-variance that dropped Math-2's
+        # mean-formula (attr5).
+        if getattr(self, 'focused', False):
+            unioned: List[Relation] = []
+            seen_names = set()
+            per_pass = {}
+            for tag, selection in _FOCUSED_PASSES:
+                user = (ctx_str + "\n\n" + selection + "\n" + _OUTPUT_SPEC)
+                messages = [
+                    {'role': 'system', 'content': _SYSTEM},
+                    {'role': 'user', 'content': user},
+                ]
+                try:
+                    out = self._record_generate(
+                        messages, f'synthesis:{tag}') or ""
+                except Exception:
+                    per_pass[tag] = 0
+                    continue
+                rels = self._parse(out)
+                kept = 0
+                for r in rels:
+                    nm = getattr(r, 'name', '') or ''
+                    key = nm.lower()
+                    if key and key in seen_names:
+                        continue
+                    seen_names.add(key)
+                    unioned.append(r)
+                    kept += 1
+                per_pass[tag] = kept
+            self.last_prompt = {
+                'system': _SYSTEM, 'context': ctx_str,
+                'instructions': 'FOCUSED PASSES: '
+                + ', '.join(f'{t}={per_pass.get(t, 0)}'
+                            for t, _ in _FOCUSED_PASSES)}
+            return unioned
+
         instr = _INSTRUCTIONS
         if max_rules != 4:
             # Only the candidate COUNT changes — the strong-shape guidance is
@@ -452,14 +561,14 @@ class RelationSynthesizer:
             # variance) rather than confounding it with a prompt reword.
             instr = instr.replace("Propose up to 4 relations",
                                   f"Propose up to {max_rules} relations", 1)
-        user = "\n".join(ctx) + "\n\n" + instr
+        user = ctx_str + "\n\n" + instr
         messages = [
             {'role': 'system', 'content': _SYSTEM},
             {'role': 'user', 'content': user},
         ]
         # Stash the exact prompt so callers can dump a full, inspectable trace
         # (what context the model saw + the instructions it was given).
-        self.last_prompt = {'system': _SYSTEM, 'context': "\n".join(ctx),
+        self.last_prompt = {'system': _SYSTEM, 'context': ctx_str,
                             'instructions': instr}
         # One retry on an unparseable/empty response: a JSON-shaped ask can
         # still come back wrapped in prose, and silently returning zero

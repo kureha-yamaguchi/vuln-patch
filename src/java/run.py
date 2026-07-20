@@ -111,6 +111,18 @@ def parse_args():
                              "findings (invented relations that fire on correct "
                              "code) — a non-cheating false-positive filter. "
                              "Off by default.")
+    parser.add_argument("--focused_synthesis", action="store_true",
+                        help="run relation synthesis as SEVERAL focused "
+                             "passes (documented-formula, @throws, "
+                             "sibling-agreement, read-only/invariant) and "
+                             "union the screened survivors, instead of one "
+                             "broad 'up to N relations' call. Fixes the "
+                             "roll-variance where the convicting relation "
+                             "(e.g. Math-2's mean-formula) is proposed on "
+                             "some rolls and dropped on others. More LLM "
+                             "calls per leg, each narrow; the union is "
+                             "screened identically so there is no new FP "
+                             "risk. Within-leg only — no pooling.")
     parser.add_argument("--attribution_judge", action="store_true",
                         help="SECOND judge of the two-judge split: after a "
                              "firing is judged SOUND, a facts-only LLM "
@@ -932,7 +944,8 @@ def main():
             class_name = _syn_cls[0] if _syn_cls else ''
             synthesizer = RelationSynthesizer(
                 HarnessGenerator(model=synth_model,
-                                 temperature=0.3, top_p=1.0))
+                                 temperature=0.3, top_p=1.0),
+                focused=getattr(args, 'focused_synthesis', False))
             # P2.1: hand synthesis the bug's own failing test — the one
             # trusted source of the correct DIRECTION. Was '' for the whole
             # project history, so synthesis read only the buggy body and
