@@ -316,14 +316,24 @@ _FOCUSED_PASSES = [
      " the context lists no family for the patched method, return an empty"
      " JSON array []."),
     ("state",
-     "FOCUS — READ-ONLY / STRUCTURAL INVARIANTS ONLY. Identify calls the"
-     " docs describe as read-only/non-mutating and the class's public"
-     " no-argument readers (size/length/capacity/get*); assert such a call"
-     " does not change those readers. Also assert documented STRUCTURAL"
-     " invariants: a reported summary lies within the object's own stated"
-     " bounds, a collection stays sorted/canonical, a reported size equals"
-     " the actual element count. Propose up to 4. Write ONLY"
-     " state/invariant relations in this pass."),
+     "FOCUS — SPECIFIC DOCUMENTED READ-ONLY / STRUCTURAL INVARIANTS"
+     " ONLY. Assert a read-only guarantee ONLY when a method is"
+     " DOCUMENTED non-mutating AND a SPECIFIC named property is"
+     " documented as unaffected by it — then check THAT ONE property is"
+     " unchanged across the call. NEVER snapshot 'all public readers'"
+     " and fire if any differ: that is unsound because a correct"
+     " implementation may LAZILY compute and cache a derived value"
+     " (variance, a bound, a hash) on first access, changing a reader"
+     " with no defect (this exact blanket check fired on correct code)."
+     " Exclude any value the docs call derived/computed/cached, and any"
+     " value obtained through a getter that could compute on demand;"
+     " compare only stored constructor inputs and explicitly-documented"
+     " stable properties. You may also assert a documented STRUCTURAL"
+     " invariant with a SPECIFIC contract citation (a reported summary"
+     " within the object's own stated bounds — WITH the tolerance from"
+     " the fencing block; a reported size equals the actual element"
+     " count). Propose up to 3. If nothing is DOCUMENTED read-only or"
+     " structurally invariant, return an empty JSON array []."),
 ]
 
 
