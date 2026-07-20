@@ -1924,6 +1924,44 @@ DIRECTION VERDICT — J1 makes it quantitative, not intuitive:
 NEXT (evidence-ordered): confirm foc15 (synthesis reach on 15 legs) ->
 extend step-4b calibration to non-numeric checks (soundness bucket) ->
 re-run J1 to confirm the FP/FN cells shrank -> THEN ceiling builds.
+## foc15 RESULT (15 legs): R=0.89 best-of-cycle, P=0.73 — the
+## focused-synthesis tradeoff, measured
+
+TP=8 FN=1 FP=3 TN=3. Recall 0.89 (8/9 mechanism-reachable overfits) is
+the HIGHEST of the whole cycle (historical full30 ~0.50). Focused
+synthesis + variation corpus + the state-pass fix delivers the recall
+win at scale, not just on 5 legs. Precision 0.73 (3 FP of 6 correct).
+
+The state-pass fix WORKED: Math-2-c is now TN (the 4-iteration foc2 FP).
+
+The 3 FPs, by source:
+- Closure-62-c: RELATION caret-at-end-of-line-error — the chronic
+  Closure-62 caret-premise class, pre-dates focused synthesis.
+- Time-4-c: RELATION with_vs_withField_valid_absent_field — a FAMILY
+  pass sibling-agreement asserting with()==withField() where they
+  legitimately differ on an ABSENT field. NEW, focused-synthesis-
+  introduced, fixable (family pass must exclude cases where the
+  documented difference between siblings applies).
+- Lang-60-c: HARNESS oracle (not a relation) — harness-path FP,
+  independent of focused synthesis.
+The one FN (Lang-60-o) was a bad roll: the correct sibling FP'd while
+the overfit's convicting check did not fire.
+
+READ: focused synthesis added ONE new FP class (family-pass absent-
+field); the other two FPs are pre-existing/harness-path. So the
+precision cost of focused synthesis SPECIFICALLY is smaller than the
+raw 3 suggests. The recall gain is large and real.
+
+This is consistent with J1: FP surface grows with candidate volume and
+is gated by the soundness judge (which passed all three). NEXT per the
+evidence order: (1) family pass — exclude the documented-difference
+case (sibling agreement holds only where docs say the members agree);
+(2) the soundness calibration build (J1's 36% bucket) — extend step-4b
+so a dismissal's counterexample must reproduce the OBSERVED firing for
+boolean/exception checks too, which should shrink BOTH the FN
+over-dismissal and stop future volume FPs; (3) re-run J1 + foc15 to
+confirm cells shrank; THEN ceiling builds. Focused synthesis is worth
+shipping behind its flag; default-on decision waits on (1)-(3).
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
