@@ -1881,6 +1881,49 @@ CONCLUSIONS (do not whack-a-mole a 5th fence):
 4. The recall-vs-precision tradeoff of focused synthesis can only be
    judged on the FULL set, not 5 legs — but ONLY after (2) and (3),
    or the pathological-correct-leg FPs will dominate the number.
+## J1 RESULT (2026-07-20): the recall misses, quantified — synthesis
+## reach is the biggest bucket, soundness over-dismissal the second
+
+Ran study/j1_judge_audit.py offline over all archived traces (158 legs,
+no VM). Two headline outputs:
+
+MISSED OVERFITS (56 FN legs) decompose into three buckets:
+  26 (46%)  NOTHING reached a judge — the convicting check was never
+            synthesized or never fired (synthesis roll-variance +
+            fuzz reach). THE BIGGEST bucket.
+  20 (36%)  soundness dismissed ALL checks (UNSOUND with no SOUND) —
+            counterexample-generation over-dismissal (the full30v2
+            5-step regression class: the judge invents an edge/lazy/
+            reject counterexample that does NOT reproduce the observed
+            firing, e.g. 'a correct StrBuilder could lazily eval
+            contains(char)').
+  10 (18%)  attribution killed a sound check (NOT_ATTRIBUTED) — the
+            rule-3 over-restriction (already rebuilt).
+
+FALSE POSITIVES: soundness said SOUND on a correct leg 27 times;
+clustered by WHY, the fixable groups are bounds/support (9, the
+no-tolerance mean-within-support class) and exception-class (4, the
+multi-constraint @throws class). Both now have fixes (rounding floor,
+isolation rule) — J1 is the way to confirm they shrink these cells.
+
+DIRECTION VERDICT — J1 makes it quantitative, not intuitive:
+1. Synthesis reach is the #1 recall lever (46% of misses). Focused
+   synthesis + variation-seeded corpus attack exactly this, and foc5
+   showed 4/4. This session's biggest effort targeted the biggest
+   bucket — right direction, confirmed by data.
+2. Soundness OVER-dismissal is #2 (36%). The lever is NOT 'dismiss
+   less' (it must still dismiss the 27 FP-risk checks on correct legs)
+   — it is CALIBRATION: a dismissal is valid only if the counterexample
+   reproduces the OBSERVED firing (step-4b), extended beyond numerics
+   to boolean/exception checks (a 'could lazily eval' counterexample
+   must be shown to actually produce the observed true/exception, not
+   asserted). This is the top judge build.
+3. Attribution is #3 (18%) and already rebuilt; keep off until foc15
+   confirms the rebuild in aggregate.
+
+NEXT (evidence-ordered): confirm foc15 (synthesis reach on 15 legs) ->
+extend step-4b calibration to non-numeric checks (soundness bucket) ->
+re-run J1 to confirm the FP/FN cells shrank -> THEN ceiling builds.
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
