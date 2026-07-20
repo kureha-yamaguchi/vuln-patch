@@ -2818,7 +2818,23 @@ def main():
                         concrete_evidence=_evid,
                         code_context=('\n\n'.join(class_ctx)
                                       if class_ctx else None))
-                    if ok and _rfacts and getattr(
+                    _attr_skip = (
+                        getattr(rel, 'screen_direction', None)
+                        == 'confirmed')
+                    if _attr_skip and getattr(
+                            args, 'attribution_judge', False):
+                        # MECHANICAL attribution: a direction-confirmed
+                        # relation fires on the buggy build at the trigger
+                        # inputs (it detects the reported defect there) and
+                        # has passed the soundness judge; still firing on
+                        # the patched build is the patch-failed-to-fix
+                        # pattern by definition — not an LLM call. This is
+                        # the falsefix13 Math-2-o class the attribution LLM
+                        # wrongly vetoed.
+                        print(f"  ✓ attribution: MECHANICAL (relation is "
+                              f"direction-confirmed and still fires) — "
+                              f"kept without LLM")
+                    if ok and _rfacts and not _attr_skip and getattr(
                             args, 'attribution_judge', False):
                         _att_ok, _att_why = _rv2.attribute(
                             _fired, "\n".join(_rfacts), _bug_summary_r,

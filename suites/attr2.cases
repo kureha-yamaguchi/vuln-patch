@@ -1,0 +1,13 @@
+# attr2: 2-leg iteration harness for the re-resourced attribution judge.
+#   Math-2-o  — relation-path catch the OLD attribution wrongly vetoed;
+#     must be TP (mechanical direction-confirmed keep, no LLM).
+#   Chart-26-c — harness-path precision FP attribution exists to catch;
+#     must be TN via a CORRECT NOT_ATTRIBUTED on the sibling-chart check
+#     (different underlying crash identity than the null-info defect).
+# --attribution_judge ON here (off in prod until this validates).
+MODEL="gpt-5.4"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --attribution_judge"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+)
