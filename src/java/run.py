@@ -111,6 +111,18 @@ def parse_args():
                              "findings (invented relations that fire on correct "
                              "code) — a non-cheating false-positive filter. "
                              "Off by default.")
+    parser.add_argument("--attribution_judge", action="store_true",
+                        help="SECOND judge of the two-judge split: after a "
+                             "firing is judged SOUND, a facts-only LLM "
+                             "decides whether it is ATTRIBUTED to this "
+                             "patch. OFF by default: falsefix13 measured it "
+                             "vetoing ~100%% of sound generalization catches "
+                             "(a relation testing a different observable "
+                             "than the test's exact assertion is exactly how "
+                             "an overfit is caught, and rule 3 rejects that "
+                             "shape). Do not re-enable without J1 offline "
+                             "evidence that its precision gain beats its "
+                             "recall cost.")
     parser.add_argument("--fuzz_timeout", type=int, default=60,
                         metavar="SECONDS",
                         help="seconds Jazzer runs per harness against the "
@@ -2517,7 +2529,8 @@ def main():
                                         concrete_evidence=evid,
                                         code_context=('\n\n'.join(class_ctx)
                                                       if class_ctx else None))
-                    if ok and _fact_notes:
+                    if ok and _fact_notes and getattr(
+                            args, 'attribution_judge', False):
                         _att_ok, _att_why = rv.attribute(
                             fired or '', "\n".join(_fact_notes),
                             _bug_summary)
@@ -2805,7 +2818,8 @@ def main():
                         concrete_evidence=_evid,
                         code_context=('\n\n'.join(class_ctx)
                                       if class_ctx else None))
-                    if ok and _rfacts:
+                    if ok and _rfacts and getattr(
+                            args, 'attribution_judge', False):
                         _att_ok, _att_why = _rv2.attribute(
                             _fired, "\n".join(_rfacts), _bug_summary_r,
                             check_rationale=(getattr(rel, 'contract', '')

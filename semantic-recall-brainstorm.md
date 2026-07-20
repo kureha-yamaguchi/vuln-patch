@@ -1746,6 +1746,48 @@ changes was the right order — it caught the regression before FINAL.
 Protocol for the future: any change to judge REASONING structure
 (not facts) gets a mini-suite validation (the 9 legs) BEFORE a full30.
 
+## falsefix13 RESULT (2026-07-20): the two-judge split's ATTRIBUTION
+## stage is a recall killer — REVERTED to off-by-default
+
+falsefix13 (13 wrong legs rerun): TP=1 FN=11 FP=0 — worse than
+full30v2. But the trace tabulation is the real result and it is
+decisive: on EVERY leg with a SOUND check (Closure-73, Closure-92,
+Lang-41, Lang-50, Lang-60, Math-2 — 13 sound findings across 6 legs),
+attribution returned NOT_ATTRIBUTED. 100%. The only attribution
+survivor in the whole run was Math-53 (via R-THROWS).
+
+Two separate results, do not conflate:
+1. Step-4b WORKED. Soundness now correctly rules Math-2-o's
+   mean-formula SOUND (was the full30v2 regression). Keep it.
+2. The ATTRIBUTION judge, as specified, vetoes ~100% of sound
+   GENERALIZATION catches. Its rule 3 ("same-on-both-builds ->
+   attributed only for the test's own observable or a quoted
+   documented guarantee") rejects exactly the catch shape the whole
+   system produces: an overfit is caught precisely BY a check on a
+   DIFFERENT observable than the one it special-cased (Lang-41
+   sibling-agreement, Lang-60 capacity, Math-2 mean). A
+   DIRECTION-CONFIRMED relation is MECHANICALLY proven to detect the
+   defect on buggy; routing it through an attribution LLM that then
+   says 'different observable, not the patch's duty' throws that
+   proof away. batch6 hid this (9 legs, the rules happened to pass
+   Math-2/53); the full catch-shape spread exposes it.
+
+ACTION: --attribution_judge added, DEFAULT OFF. Both call sites gated.
+Reverts to the batch5 single-verifier state (caught Math-2-o at zero
+FP). The split's precision motivation (Chart-26-c) is already covered
+by the computed crash-identity fact + crash-pin; attribution added
+little precision and destroyed recall. Do NOT re-enable without J1
+offline proof that per-shape precision gain > recall cost.
+
+DIRECTION VERDICT (the standing question): computed facts + context =
+right direction, every such fix durable. LLM JUDGMENT LAYERS added on
+top of facts = wrong direction, now demonstrated twice in one session
+(the 5-step protocol regression AND the attribution veto). The
+discipline holds: add facts and context, REMOVE judgment where a fact
+already decides. Next: revalidate falsefix legs with attribution off
+(should restore the full30-era catches), then ceiling-raising builds
+(R3, BND-b, P4.1) — NOT more judge layers — then J1.
+
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
