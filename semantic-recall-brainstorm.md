@@ -1962,6 +1962,39 @@ boolean/exception checks too, which should shrink BOTH the FN
 over-dismissal and stop future volume FPs; (3) re-run J1 + foc15 to
 confirm cells shrank; THEN ceiling builds. Focused synthesis is worth
 shipping behind its flag; default-on decision waits on (1)-(3).
+## foc15b RESULT: family + soundness fixes -> P 0.73->0.80, R held 0.89
+
+Same 15 legs, before/after:
+  foc15  TP=8 FN=1 FP=3 TN=3  P=0.73 R=0.89 F1=0.80
+  foc15b TP=8 FN=1 FP=2 TN=4  P=0.80 R=0.89 F1=0.84
+Recall HELD (the stricter soundness dismissal did not false-keep into
+lost catches); precision UP; F1 up. Both fixes landed:
+- Family documented-difference rule: Time-4-c CLEARED (was the family
+  with/withField absent-element FP) -> TN.
+- Lang-60-c also cleared -> TN.
+
+THE RESIDUAL FPs ARE NOW BOTH HARNESS-PATH, not relations — the
+synthesis/relation side is CLEAN:
+- Closure-62-c: HARNESS caret lifted check (chronic).
+- Math-53-c: NEW — HARNESS lifted check `lifted-w-real` asserting
+  x.add(Complex(1,NaN)).getReal()==NaN, but a correct add returns
+  real=4.0 (only the IMAGINARY part is NaN); the check is unsound and
+  soundness kept it. WATCH: this may be a side effect of the step-4b
+  boolean/exception extension making dismissal stricter (foc15 had
+  Math-53-c TN); could also be harness roll-variance. One targeted
+  re-run of the Math-53 pair would disambiguate.
+
+Lang-60-o FN: replay_fired=[] harnesses_crashed=0 — NOTHING fired
+(J1's 46% synthesis-reach bucket), not a judge dismissal. The
+soundness fix cannot help a check that never fired; focused synthesis
+still missed the Lang-60 capacity check THIS roll.
+
+NET READ: the synthesis+judge work has driven the RELATION path clean
+(0 relation FPs) at R=0.89. The frontier moves to (a) HARNESS-path
+lifted-check soundness (both residual FPs), and (b) synthesis reach
+for the specific legs that still roll-miss (Lang-60). Confirm Math-53-c
+is roll-variance not a step-4b overcorrection before shipping the
+soundness extension wider; then re-run J1 to confirm the cells shrank.
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
