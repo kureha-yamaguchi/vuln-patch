@@ -16,11 +16,12 @@ Spent one-off experiment `.cases` (batch*/attr*/foc*/rulegen*/minfix* etc.) were
 deleted 2026-07-21 — they are preserved in git history if ever needed.
 
 ## Label coverage (2026-07-21)
-117 bugs have a Dcorrect/Doverfitting patch. **92 are labeled** in `labels/`,
-**by `kind`: 72 semantic, 18 crashing, 2 deprecated** (Closure-63/93). Kind is
-authoritative: from `pinned_tasks.jsonl`'s `bug_kind` (semantic pool) and, for
-the rest, derived from the Defects4J trigger-test root cause (real exception =
-crashing, assertion failure = semantic). No `"unknown"` remain.
+117 bugs have a Dcorrect/Doverfitting patch (74 semantic, 43 crashing).
+**`labels/` is now SEMANTIC-ONLY: 74 semantic bugs labeled.** The 18 crashing
+bugs that had been certified alongside them were moved to **`labels/crashing/`**
+(kept, but out of the semantic lists). Kind is authoritative: from
+`pinned_tasks.jsonl`'s `bug_kind` and, for the rest, the Defects4J trigger-test
+root cause (real exception = crashing, assertion failure = semantic).
 
 **Scope caveat:** the audit and this label set are effectively a SEMANTIC
 effort. Crashing bugs are a separate pool (43 total, see DATASET_AUDIT §7)

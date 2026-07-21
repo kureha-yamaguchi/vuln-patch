@@ -6,7 +6,7 @@ actual behaviour vs the DEVELOPER FIX (defects4j `<id>f`). These files are the
 single machine-readable source of that truth. **Do not re-derive labels
 elsewhere — consume these.**
 
-## SCOPE: semantic vs crashing
+## SCOPE: SEMANTIC ONLY (crashing moved to labels/crashing/)
 The detection pipeline (and the eval split) is for **semantic** bugs. The
 certification itself is kind-agnostic, so the sweep also touched a few
 crashing bugs. Every row carries a `kind` field: `semantic` | `crashing` |

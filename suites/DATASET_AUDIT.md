@@ -75,7 +75,7 @@ not a verdict category, so all semantic bugs appear in the same tables.
 Sibling patch files
 remain uncovered (§6).
 
-### 3a. Overfit side — one pinned file per bug (52 bugs)
+### 3a. Overfit side — one pinned file per bug (48 bugs)
 
 | Bug | Kind | Pinned file (rank) | Verdict | Source | Strong div | Notes |
 |---|---|---|---|---|---|---|
@@ -84,7 +84,6 @@ remain uncovered (§6).
 | Math-71 | seman | patch1-Math-71-Arja-plausible (1) | detectable | probe | 562 |  |
 | Chart-1 | seman | patch1-Chart-1-Arja-plausible (1) | detectable | probe | 472 |  |
 | Chart-15 | seman | patch1-Chart-15-Arja-plausible (1) | detectable | probe | 404 |  |
-| Chart-5 | crash | patch1-Chart-5-DeepRepair (1) | detectable | probe | 396 |  |
 | Math-88 | seman | patch1-Math-88-SimFix-plausible (1) | detectable | probe | 254 |  |
 | Chart-12 | seman | patch1-Chart-12-Arja-plausible (1) | detectable | probe | 242 |  |
 | Math-74 | seman | patch1-Math-74-Arja-plausible (1) | detectable | probe | 231 |  |
@@ -105,10 +104,7 @@ remain uncovered (§6).
 | Lang-55 | seman | patch1-Lang-55-Arja-plausible (1) | detectable | probe | 65 |  |
 | Closure-86 | seman | patch3-Closure-86-SequenceR (2) | detectable | probe | 55 |  |
 | Math-63 | seman | patch2-Math-63-CapGen-plausible (2) | detectable | probe | 46 |  |
-| Lang-43 | crash | patch1-Lang-43-Arja-plausible (1) | detectable | probe | 39 |  |
 | Closure-33 | seman | patch1-Closure-33-Jaid-plausible (1) | detectable | probe | 38 |  |
-| Lang-27 | crash | patch1-Lang-27-DeepRepair (1) | detectable | probe | 30 |  |
-| Math-70 | crash | patch2-Math-70-SketchFix-plausible (2) | detectable | probe | 27 |  |
 | Closure-38 | seman | patch1-Closure-38-SequenceR (1) | detectable | probe | 18 |  |
 | Math-33 | seman | patch1-Math-33-SketchFix-plausible (1) | detectable | probe | 16 |  |
 | Chart-19 | seman | patch1-Chart-19-Arja-plausible (1) | detectable | probe | 14 |  |
@@ -132,11 +128,10 @@ remain uncovered (§6).
 | Math-30 | — | — | **UNPINNABLE** | — | — | single overfit file equivalent to dev fix tried: patch1-ssFix-plausible |
 | Math-59 | — | — | **UNPINNABLE** | — | — | single overfit file IS the dev fix (label error) tried: patch1-SequenceR |
 
-### 3b. Correct side — one pinned file per bug (60 bugs)
+### 3b. Correct side — one pinned file per bug (59 bugs)
 
 | Bug | Kind | Pinned file (rank) | Verdict | Source | Strong div | Notes |
 |---|---|---|---|---|---|---|
-| Lang-27 | crash | patch1-Lang-27-SimFix (1) | label_stands | probe | 631 | 631 div all exception_generic_latent (B1 refined classifier) - label stands |
 | Lang-50 | seman | patch1-Lang-50-SimFix (1) | label_stands | probe | 43 | 43-div record was an applier artifact (out-of-order hunks); fully applied = 0/518. P0.1 applier fix landed 2026-07-17, build+trigger verified — UNBLOCKED |
 | Chart-1 | seman | patch1-Chart-1-CapGen (1) | label_stands | probe | 0 |  |
 | Chart-3 | seman | patch1-Chart-3-Arja (1) | label_stands | probe | 0 |  |
