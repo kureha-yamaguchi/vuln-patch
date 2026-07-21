@@ -16,8 +16,18 @@ Spent one-off experiment `.cases` (batch*/attr*/foc*/rulegen*/minfix* etc.) were
 deleted 2026-07-21 — they are preserved in git history if ever needed.
 
 ## Label coverage (2026-07-21)
-117 bugs have a Dcorrect/Doverfitting patch. **91 are labeled** in `labels/`
-(overfit side: all 92 scoreable patches certified + deep-dived, plus the
-§3a-audited singletons). **25 are uncovered** (unpaired or unlabeled, never
-audited): Chart-4/13/14/17/24, Closure-40, Lang-33/35/57/61, Math-3/4/8/28/31/
-49/60/61/81/89/90/97/98, Time-7/14.
+117 bugs have a Dcorrect/Doverfitting patch. **91 are labeled** in `labels/`,
+**by `kind`: 70 semantic, 4 crashing, 18 unknown** (fresh bugs whose kind is
+not yet confirmed — run a `defects4j` check before using in a semantic eval).
+
+**Scope caveat:** the audit and this label set are effectively a SEMANTIC
+effort. Crashing bugs are a separate pool (43 total, see DATASET_AUDIT §7)
+and are MOSTLY UNCERTIFIED — only 4 crashing bugs happen to be labeled here
+because they were scoreable. Filter to `kind=="semantic"` for the semantic eval.
+
+Verified coverage is asymmetric: OVERFIT side is complete (all patches of
+every scoreable bug), CORRECT side was one-pinned-patch-per-bug (full
+152-patch sweep 2026-07-21 in progress).
+
+**25 bugs uncovered** (unpaired or unlabeled, never audited): Chart-4/13/14/17/24,
+Closure-40, Lang-33/35/57/61, Math-3/4/8/28/31/49/60/61/81/89/90/97/98, Time-7/14.

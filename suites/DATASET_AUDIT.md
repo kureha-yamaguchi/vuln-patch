@@ -65,11 +65,14 @@ not equivalent.
 
 ## 3. What has been checked (the audit), and the verdicts
 
-Coverage: EVERY bug in the labeled dataset has a verdict (or an explicit
-pending/excluded status) for one pinned patch file per side. The tables
-below are GENERATED from `pinned_tasks.jsonl` — the dataset is the source
-of truth; paired/unpaired is a scoring property (§2), not a verdict
-category, so all bugs appear in the same tables. Sibling patch files
+Coverage: **SEMANTIC POOL ONLY** (§2, 74 bugs). Every bug IN THE SEMANTIC
+POOL has a verdict (or an explicit pending/excluded status) for one pinned
+patch file per side. **Crashing bugs (§7, 43 bugs) are a SEPARATE pool and
+are mostly UNCERTIFIED — they are NOT covered by the tables here.** The
+tables below are GENERATED from `pinned_tasks.jsonl` (semantic) — the
+dataset is the source of truth; paired/unpaired is a scoring property (§2),
+not a verdict category, so all semantic bugs appear in the same tables.
+Sibling patch files
 remain uncovered (§6).
 
 ### 3a. Overfit side — one pinned file per bug (52 bugs)
