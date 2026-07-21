@@ -1995,6 +1995,39 @@ lifted-check soundness (both residual FPs), and (b) synthesis reach
 for the specific legs that still roll-miss (Lang-60). Confirm Math-53-c
 is roll-variance not a step-4b overcorrection before shipping the
 soundness extension wider; then re-run J1 to confirm the cells shrank.
+## harn6 RESULT: NaN-artifact fix validated; Closure-62 caret is the
+## last stubborn FP class (harness/relation reconstruction, not my rule)
+
+harn6 (6 legs): Math-53-c NaN-artifact FP -> TN (FIXED); Math-53-o,
+Math-2-o, Lang-41-o all TP (recall held). The soundness rule 'a
+structurally-impossible firing (immutable operand changed) is the
+check's NaN==NaN comparison broken, not a defect' works, and confirmed
+the foc15b Math-53-c FP was harness roll-variance NOT a step-4b
+overcorrection.
+
+Closure-62 pair inverted this roll: 62-c FP (HARNESS caret check),
+62-o FN (a caret RELATION fired 6240/20000 but was not kept). NOT my
+regression — the NaN-rule text in the trace is prompt-template (3x =
+one per soundness call), zero actual drops cite it. This is the
+chronic CLOSURE-62 CARET-RECONSTRUCTION class: the caret checks
+(harness lifted AND focused-synthesis) rebuild the formatter's exact
+output (source line + per-char space padding + caret), and the
+reconstruction diverges from the real formatter, so the same check
+can fire on BOTH builds and be kept on one leg / dropped on the other
+(a judge flip). It is separate from every FP fixed today and is
+genuinely hard (H3 faithfulness territory).
+
+STANDING after today's judge/synthesis push: FOUR FP classes fixed
+(family absent-element, state blanket-snapshot, bounds/@throws
+tolerance, NaN==NaN structural artifact); relation path otherwise
+clean at R~0.89. The one unresolved precision class is the Closure-62
+caret RECONSTRUCTION (a check that rebuilds formatter output instead
+of reading a post-condition). NEXT if continuing precision: forbid /
+fence output-reconstruction checks (assert a post-condition read off
+the API — a caret is present/absent, a column index — never a rebuilt
+full string), which is the general form of H3's lesson. Otherwise the
+core recall+precision work is in a good, shippable-behind-flags state;
+re-run J1 to quantify the net cell movement.
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
