@@ -29,8 +29,14 @@ import re
 import sys
 from collections import defaultdict
 
-ROOT = os.path.join(os.path.dirname(__file__), '..', 'runs-archive', 'runs')
-ROOT = os.path.abspath(ROOT)
+def _repo_root():
+    d = os.path.dirname(os.path.abspath(__file__))
+    while d != "/":
+        if os.path.isdir(os.path.join(d, "runs-archive")):
+            return d
+        d = os.path.dirname(d)
+    return os.getcwd()
+ROOT = os.path.join(_repo_root(), "runs-archive", "runs")
 
 _VERDICT = re.compile(r'^VERDICT: (SOUND|UNSOUND)$')
 _ATTRIB = re.compile(r'^ATTRIBUTION: (ATTRIBUTED|NOT_ATTRIBUTED|INCONCLUSIVE)$')
