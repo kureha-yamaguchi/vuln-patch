@@ -30,9 +30,17 @@ These are in `Dcorrect/` but diverge from the dev fix — a partial fix or behav
 | Patch | Why it's really overfit | Verification |
 |---|---|---|
 | Lang-10 / DeepRepair (`patch1-Lang-10-DeepRepair.patch`) | keeps whitespace-collapse but emits first char instead of \s*+ : parse('3  Tue' vs pattern 'M  E') diverges from BOTH dev fix and SimpleDateFormat; passes full FastDateParserTest incl. trigger testLANG_831 (plausible-but-wrong) | /tmp/d4j/wit_anom/WLang10.java on hetzner; unpaired_correct.jsonl 22 strong (July audit; UNDETECTABLE.md) |
-| Lang-41 / SimFix (`patch1-Lang-41-SimFix.patch`) | reroutes Class overloads only; root-cause String helpers left broken (getShortClassName('[Ljava.lang.String;') -> 'String;' vs dev 'String[]'); byte-identical to Doverfitting patch1-Lang-41-Arja-plausible | UNDETECTABLE.md; /tmp/l41_*.txt, /tmp/wit/WLang41.java on hetzner (July audit; UNDETECTABLE.md) |
+| Lang-41 / SimFix (`patch1-Lang-41-SimFix.patch`) | reroutes Class overloads only; root-cause String helpers left broken (getShortClassName('[Ljava.lang.String;') -> 'String;' vs dev 'String[]'); byte-identical to Doverfitting patch1-Lang-41-Arja-plausible; correct-side cert 176 strong value-div | UNDETECTABLE.md; /tmp/l41_*.txt, /tmp/wit/WLang41.java on hetzner; runs-archive/certification/2026-07-21_correct-side/ |
+| Math-63 / SimFix (`patch1-Math-63-SimFix.patch`) | dev fix is `equals(x,y,1)`; SimFix adds `\|\| FastMath.abs(y-x)<=SAFE_MIN`, so it returns **equal for UNEQUAL subnormals** (x=-2.225e-308, y=-4.9e-324: `eq1=false` but `absLeSafeMin=true`) — a real widening of the equality contract, not subsumed by 1-ULP equals; 37 strong value-div | cert 2026-07-21 correct-side -> runs-archive/certification/2026-07-21_correct-side/verdicts.md |
 
-> **NOTE:** the correct side is NOT yet fully swept per-patch. Section B lists only confirmed correct-mislabels so far; the running 152-patch correct-side certification will add any others here + to `verified_incorrect.jsonl`.
+> **NOTE (correct-side sweep COMPLETE, 2026-07-21):** all 152 `Dcorrect` patches were
+> certified against the dev fix. 142 confirmed correct; **4 mislabels** total — the two
+> SEMANTIC ones are above (Lang-41-SimFix, Math-63-SimFix); the two CRASHING ones live in
+> `labels/crashing/verified_incorrect.jsonl` (Lang-58-Nopol2015 110 exc-class-div,
+> Chart-5-Nopol2015 60 value-div). **3 strong-div corrects were probe FALSE-POSITIVES and
+> the label STANDS** (recorded in `verified_correct.jsonl`): Lang-55-Nopol2015 & Lang-55-Jaid
+> (StopWatch wall-clock timing noise; both patches are logically the dev fix) and
+> Lang-43-CapGen (adds `next(pos)` at the same site as the dev fix). See verdicts.md for evidence.
 
 ## C. Correctly labeled `overfitting`, but UNUSABLE (NOT a mislabel — still exclude)
 The overfit IS behaviourally distinct from the dev fix, but the divergence cannot be caught by any SOUND black-box oracle (it lives only in a dev-fix bug, non-contractual text/formatting, an environment ceiling, or a deprecated bug). Exclude from recall, but the label is not wrong.

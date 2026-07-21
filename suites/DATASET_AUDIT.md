@@ -75,6 +75,24 @@ not a verdict category, so all semantic bugs appear in the same tables.
 Sibling patch files
 remain uncovered (§6).
 
+### 3.0 Verification-coverage matrix (what's been certified vs. not)
+
+Certification = the detectability probe run against the DEVELOPER FIX
+(`certify_detectability.py` → `defects4j {id}f`). "Per-patch" = every available
+patch file certified; "one-pinned" = a single representative file per bug.
+
+| Side × kind | Coverage | When / where | Result |
+|---|---|---|---|
+| **Overfit, semantic** | per-patch (all files) | 2026-07-21 sweep, §8b-supplement | detectable vs. equivalent-mislabel per patch |
+| **Correct, semantic** | **per-patch** (32 bugs in the correct-sweep) | **2026-07-21 correct-side**, `runs-archive/certification/2026-07-21_correct-side/` | 90 correct, 2 mislabel (Lang-41, Math-63 SimFix), 2 probe-FP (Lang-55×2), 2 excluded (Closure-63) |
+| **Correct, crashing** | per-patch (18 bugs in the correct-sweep) | 2026-07-21 correct-side | 52 correct, 2 mislabel (Lang-58, Chart-5 Nopol2015), 1 probe-FP (Lang-43-CapGen), 1 excluded (Math-79) |
+| **Overfit, crashing** | partial (only the 18 crashing bugs with scoreable files) | July curation + `labels/crashing/` | mixed; the other 25 crashing bugs are UNCERTIFIED |
+| Semantic bugs NOT in a sweep | — | — | one-pinned verdict only (§3a/§3b tables); siblings uncovered (§6) |
+
+The **authoritative** per-patch truth is `suites/labels/*.jsonl` (+ `labels/crashing/`).
+The 152-patch correct-side sweep touched **50 bugs (32 semantic + 18 crashing)**;
+crashing bugs with no `Dcorrect` file in the sweep remain uncertified.
+
 ### 3a. Overfit side — one pinned file per bug (48 bugs)
 
 | Bug | Kind | Pinned file (rank) | Verdict | Source | Strong div | Notes |
@@ -377,7 +395,7 @@ stressors (different-looking programs a harness must NOT flag).
 resolve their patch via `head -1` (patch1 by sort), so ALL current eval
 legs and ALL certifications in §3 are patch1 files — except Closure-86,
 where Doverfitting/SequenceR has no patch1 and patch2 was certified.
-Additionally, `PatchSelector` (src/java/patches.py) — the fallback used
+Additionally, `PatchSelector` (src/java/bug_context/patches.py) — the fallback used
 by ad-hoc `run.py` invocations without `--patch_file` — previously
 `random.choice()`d both the APR tool and the patch file; as of 2026-07-16
 both picks are sorted-first deterministic, so NO code path can select an

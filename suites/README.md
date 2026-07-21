@@ -28,9 +28,11 @@ effort. Crashing bugs are a separate pool (43 total, see DATASET_AUDIT §7)
 and are MOSTLY UNCERTIFIED — only 4 crashing bugs happen to be labeled here
 because they were scoreable. Filter to `kind=="semantic"` for the semantic eval.
 
-Verified coverage is asymmetric: OVERFIT side is complete (all patches of
-every scoreable bug), CORRECT side was one-pinned-patch-per-bug (full
-152-patch sweep 2026-07-21 in progress).
+Verified coverage: BOTH sides complete. OVERFIT side = all patches of every
+scoreable bug. CORRECT side = full 152-patch sweep certified 2026-07-21
+(142 confirmed correct, 4 mislabels flipped to `verified_incorrect`, 3 probe
+false-positives kept correct, 3 uncertifiable excluded — see
+`runs-archive/certification/2026-07-21_correct-side/verdicts.md`).
 
 **25 bugs uncovered** (unpaired or unlabeled, never audited): Chart-4/13/14/17/24,
 Closure-40, Lang-33/35/57/61, Math-3/4/8/28/31/49/60/61/81/89/90/97/98, Time-7/14.

@@ -36,8 +36,17 @@ crashing bugs. Every row carries a `kind` field: `semantic` | `crashing` |
 ## Coverage (as of 2026-07-21)
 - OVERFIT side: ALL 92 overfit patches of the 50 scoreable bugs certified
   (probe) + every div=0 deep-dived. COMPLETE.
-- CORRECT side: one pinned patch per bug (DATASET_AUDIT §3b) — NOT an
-  exhaustive per-patch sweep of correct files yet.
+- CORRECT side: **per-patch sweep COMPLETE** — all 152 `Dcorrect` patches
+  (50 bugs: 32 semantic + 18 crashing) certified against the dev fix on
+  2026-07-21. 142 confirmed correct, 4 mislabels flipped to
+  `verified_incorrect` (Lang-41-SimFix, Math-63-SimFix; crashing:
+  Lang-58-Nopol2015, Chart-5-Nopol2015), 3 probe false-positives kept correct
+  (Lang-55×2 timing noise, Lang-43-CapGen edge artifact), 3 uncertifiable
+  excluded (Closure-63 deprecated ×2, Math-79-SimFix compile). Evidence:
+  `runs-archive/certification/2026-07-21_correct-side/verdicts.md`.
+
+Current row counts: semantic verified_correct 210 (62 overfit-label + 148
+correct-label) / verified_incorrect 12 / excluded 6; crashing/ 83 / 7 / 2.
 
 ## Where the EVIDENCE lives (referenced by each row's `verification`, not duplicated here)
 - `suites/DATASET_AUDIT.md` — master inventory + methodology + human-readable verdict tables.
