@@ -2028,6 +2028,52 @@ the API — a caret is present/absent, a column index — never a rebuilt
 full string), which is the general form of H3's lesson. Otherwise the
 core recall+precision work is in a good, shippable-behind-flags state;
 re-run J1 to quantify the net cell movement.
+## A/B RESULT (clean, same 12 legs): focused+attribution does NOT beat
+## the single-call baseline — the real win was the JUDGE calibration
+
+The decisive measurement. Both arms carry today's UNCONDITIONAL
+soundness fixes (rounding floor, NaN structural-artifact rule, step-4b,
+@throws isolation); the ONLY difference is the two flags.
+
+  ab_off (single-call, NO attribution): TP=5 FN=1 FP=0 TN=6
+      P=1.00 R=0.83 F1=0.91   1.06M tokens
+  ab_on  (focused + attribution):       TP=5 FN=1 FP=2 TN=4
+      P=0.71 R=0.83 F1=0.77   1.57M tokens
+
+Per-leg diff (on vs off): Lang-41-o off-FN->on-TP (+1 recall);
+Lang-60-o off-TP->on-FN (-1 recall); Math-2-c and Closure-62-c
+off-TN->on-FP (-2 precision). Closure-92-o (a WALL) was caught by
+BOTH arms — single-call got it, not focused synthesis.
+
+VERDICT: flags-on shows NO net recall gain (the one win and one loss
+are roll-variance — recall count is identical and within noise) and a
+robust PRECISION COST (2 distinct FP mechanisms), at +48% tokens. On
+this set the single-call baseline is strictly better.
+
+The honest reframing of the whole session: the recall gains attributed
+to focused synthesis (foc15 R=0.89, the J1 0.28->0.90 cut) were
+CONFOUNDED — most of the lift came from the UNCONDITIONAL judge
+calibration, which also lifts the baseline to R=0.83 P=1.00. foc15/
+foc15b never had a flags-OFF control; this A/B provides it and
+disconfirms the focused-synthesis-specific benefit.
+
+DECISIONS:
+1. KEEP --focused_synthesis and --attribution_judge OFF by default
+   (they already are). The A/B says they do not earn their cost/FP.
+2. SHIP + RELY ON the unconditional soundness-judge calibration —
+   baseline R=0.83 P=1.00 on 12 legs (incl. a wall) is the strong,
+   genuine deliverable of this session.
+3. Focused synthesis stays available behind its flag for the narrow
+   case where a SPECIFIC convicting relation's reach is the proven
+   bottleneck (it does reliably produce e.g. Math-2's mean-formula) —
+   not as a default.
+4. Do NOT overclaim from 12 legs: recall is within noise; the
+   precision cost is the more robust signal. A larger held-out A/B
+   would tighten it, but the direction is clear enough to set defaults.
+
+Frontier now: the judge calibration is the proven lever. Next real
+recall work is the untouched WALLS (R3/BND-b/P4.1), which neither arm
+addresses.
 ## REJECTED / DEAD ENDS — do not revisit without new evidence
 
 - **Pooling of harnesses/oracles/relations, in ANY form (REJECTED —
