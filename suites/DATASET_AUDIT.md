@@ -29,7 +29,7 @@ Status as of 2026-07-16 (evening). Environment for all behavioral verdicts:
 OpenJDK 11.0.31, Hetzner VM. Records: hetzner
 `scratch/eval_expansion/{certified_known,certified_suite,certified_suite_v2,b3_certified_overfit,b3_mislabel_correct,b1_mislabel}.jsonl`;
 deep-dive witnesses `/tmp/wit/`, `/tmp/d4j/witness57/`,
-`/tmp/d4j/Lang_50_fullpatch_check`. Per-case detail: `UNDETECTABLE.md`.
+`/tmp/d4j/Lang_50_fullpatch_check`. Per-case detail: `suites/labels/incorrect_labels.md`.
 
 ---
 
@@ -533,7 +533,7 @@ patch behaviorally wrong vs both dev fix and JDK reference behavior).
 
 Where to find the detailed reasoning and reproducible evidence per bug.
 "Addendum" = `semantic-recall-brainstorm.md` ADDENDUM sections; "UND" =
-`UNDETECTABLE.md`; VM paths are on hetzner. Run logs for the pipeline
+`suites/labels/incorrect_labels.md`; VM paths are on hetzner. Run logs for the pipeline
 (not certifier) analyses are the local scratchpad copies of
 `fixconfirm_20260716_023210` / `sem8_v2_20260715_124137`.
 

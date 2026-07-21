@@ -5,7 +5,7 @@
   `verified_correct.jsonl` / `verified_incorrect.jsonl` / `excluded.jsonl`, kind-tagged.
 - **`DATASET_AUDIT.md`** — master inventory of the drr Java dataset + audit methodology
   + human-readable verdict tables (the narrative behind `labels/`).
-- **`UNDETECTABLE.md`** — detailed equivalence / probe-false-zero writeups.
+- **`suites/labels/incorrect_labels.md`** — detailed equivalence / probe-false-zero writeups.
 - **`pinned_tasks.jsonl`** — the pinned semantic dev task set (canonical; only copy).
 - **`cases/`** — active `run_suite.sh` configs:
   - `pinned_dev.cases` — the semantic dev set

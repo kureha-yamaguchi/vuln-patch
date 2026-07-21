@@ -731,13 +731,13 @@ zero is ever shown false.
 **Math-70/SketchFix is a genuine Lang-7-class exclusion** — the patch IS
 the dev fix plus a dead disjunct (`|| i < 0` on a loop counter starting at
 0). Extensionally identical on every JVM. Added to
-`suites/UNDETECTABLE.md`; diag24 header updated (3 expected permanent FNs:
+`suites/labels/incorrect_labels.md`; diag24 header updated (3 expected permanent FNs:
 Lang-7, Lang-22, Math-70).
 
 **B3 expansion-pool sweep + zero-divergence deep-dive (same day, pm):**
 61 legs probed across all 33 paired bugs (~575k tokens? no — ~350k; exact
 totals in b3_sweep.log). Headline findings, full detail in
-`suites/UNDETECTABLE.md`:
+`suites/labels/incorrect_labels.md`:
 - 14/28 overfit legs certified detectable outright; 11 zeros; 3 infra.
 - Deep-dive split the zeros 5/5: **five GENUINE equivalences** — of which
   **Math-59/SequenceR's "overfitting" patch IS the developer fix
@@ -748,7 +748,7 @@ totals in b3_sweep.log). Headline findings, full detail in
   Closure-62, Math-57) — even the v2 widened probe misses divergences that
   live on sibling overloads, observer state (a query method that mutates
   capacity), non-default configs, or float-width extremes. Probe-v3
-  instruction candidates recorded in UNDETECTABLE.md.
+  instruction candidates recorded in suites/labels/incorrect_labels.md.
 - Correct-side final verdicts: **Lang-50/SimFix = pipeline patch-APPLIER
   bug** (hunks in descending line order → the applier silently applied
   only the first; the certified build even fails the trigger test; with
@@ -770,7 +770,7 @@ totals in b3_sweep.log). Headline findings, full detail in
 Updated denominators: every ACTIVE o-leg in semantic8 is now certified
 detectable; diag24 has 3 certified-undetectable legs kept only for
 baseline comparability. Any future FN on a certified leg is a technique
-failure worth debugging; any FN on an UNDETECTABLE.md leg is expected.
+failure worth debugging; any FN on an suites/labels/incorrect_labels.md leg is expected.
 
 ### F2c. CORRECTION to F2b's fuzzer decision rule (2026-07-16, late)
 
@@ -904,7 +904,7 @@ The divergence surfaces, ranked by what we hit:
 This taxonomy is dataset-DERIVED but not dataset-SHAPED — the categories
 are general API-design facts, safe under the no-overfitting rule. It has
 two consumers:
-- **Certifier probe-v3** (already drafted in UNDETECTABLE.md).
+- **Certifier probe-v3** (already drafted in suites/labels/incorrect_labels.md).
 - **The harness generator and relation synthesis — this is the new part.**
   The generator's variant-strategy menu and the synthesis anchor should
   enumerate exactly these five surfaces for the touched class: propose
@@ -1002,7 +1002,7 @@ mislabels. Two consequences:
 
 Rewritten 2026-07-16 (late). Full forensic history in
 `semantic-recall-history.md`. Companion docs: `suites/DATASET_AUDIT.md`
-(inventory + verdicts), `suites/UNDETECTABLE.md` (exclusion evidence),
+(inventory + verdicts), `suites/labels/incorrect_labels.md` (exclusion evidence),
 `suites/pinned_tasks.jsonl` (the verified task set),
 `suites/label_annotations.jsonl` (label corrections).
 

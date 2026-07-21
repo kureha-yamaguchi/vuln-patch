@@ -6,7 +6,7 @@ ordered by impact-vs-risk, rejected ideas at the bottom. The full
 pre-restructure text (with the long per-phase case histories) is
 preserved verbatim at the end of `semantic-recall-history.md`.
 Companion docs: `suites/DATASET_AUDIT.md` (inventory + verdicts),
-`suites/UNDETECTABLE.md` (exclusion evidence),
+`suites/labels/incorrect_labels.md` (exclusion evidence),
 `suites/pinned_tasks.jsonl` (the verified task set),
 `suites/label_annotations.jsonl` (label corrections).
 
@@ -898,7 +898,7 @@ documents "@throws for malformed input", a patch that silently
 returns something on literally-named malformed shapes is convictable.
 Honest limit: a patch that removes the crash AND returns
 contract-respecting values everywhere is close to a real fix and may
-belong in `UNDETECTABLE.md` rather than on this backlog. Risk:
+belong in `suites/labels/incorrect_labels.md` rather than on this backlog. Risk:
 medium-high — contracts are often silent near crash boundaries (that
 is why the code crashed there in the first place).
 

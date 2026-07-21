@@ -41,7 +41,7 @@ crashing bugs. Every row carries a `kind` field: `semantic` | `crashing` |
 
 ## Where the EVIDENCE lives (referenced by each row's `verification`, not duplicated here)
 - `suites/DATASET_AUDIT.md` — master inventory + methodology + human-readable verdict tables.
-- `suites/UNDETECTABLE.md` — detailed equivalence / false-zero writeups (July).
+- `suites/labels/incorrect_labels.md` — detailed equivalence / false-zero writeups (July).
 - `runs-archive/certification/2026-07-21_scoreable-overfits/` — the 92-overfit
   probe (`overfit_detectability.jsonl`), worker logs, and `deepdive_verdicts.md`
   (the 16 per-patch deep-dives with witnesses).
