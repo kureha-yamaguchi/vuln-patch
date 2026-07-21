@@ -1,8 +1,0 @@
-# One-leg smoke: does replay_on_patched execute end-to-end (build vs
-# patched dir, trigger+fuzzed tiers, verifier hand-off)? Math-2-o is the
-# replay's design target.
-MODEL="gpt-5.4"
-COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched"
-CASES=(
-  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
-)
