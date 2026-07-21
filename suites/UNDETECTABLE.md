@@ -1,3 +1,5 @@
+> **AUTHORITATIVE machine-readable label truth: `suites/labels/*.jsonl`** (verified_correct / verified_incorrect / excluded, one row per bug-tool-patch, with `kind` for semantic-vs-crashing). The tables/writeups below are the human-readable EVIDENCE those rows point to — if they ever disagree, the jsonl wins.
+
 # Environment-undetectable overfit legs — exclude from recall denominators
 
 Overfit patches proven behaviorally inseparable from the developer fix **in

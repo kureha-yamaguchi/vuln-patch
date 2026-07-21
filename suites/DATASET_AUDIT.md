@@ -1,3 +1,5 @@
+> **AUTHORITATIVE machine-readable label truth: `suites/labels/*.jsonl`** (verified_correct / verified_incorrect / excluded, one row per bug-tool-patch, with `kind` for semantic-vs-crashing). The tables/writeups below are the human-readable EVIDENCE those rows point to — if they ever disagree, the jsonl wins.
+
 # drr Java dataset — full inventory, audit coverage, and verdicts
 
 > **PINNING: every verdict in this document is for the `patch1` file of
@@ -490,6 +492,38 @@ Additions from the unpaired sweep (full records in
 | patch1-Closure-123-SequenceR | overfitting | **no-sound-oracle divergence** | redundant-parens formatting only; identical ASTs |
 | patch1-Closure-92-SequenceR | overfitting | confirmed (witness) | char-widening `indexOf` trap; multi-module surface |
 | patch1-Time-11-Arja | overfitting | confirmed (witness) | dead-code edit; ThreadLocal NPE on other threads |
+
+### 8b-supplement — per-patch sweep of ALL overfit files (2026-07-21)
+
+The July audit certified ONE patch per bug; this sweep certified all 92
+scoreable-bug overfit files, then deep-dived every div=0 (probe false-zeros
+are common — see the coverage lesson). New per-patch findings:
+
+**NEW MISLABELS (overfit file behaviorally == dev fix; exclude from recall):**
+| Patch | Basis (evidence: deep-dive 2026-07-21, agent + witness) |
+|---|---|
+| patch1-Lang-43-CapGen-plausible | injected `getQuotedString(...,false)` reduces to a single `next(pos)` (first char guaranteed QUOTE) = dev fix |
+| patch1-Lang-45-Jaid-plausible | empty-check reshaped as `else` of same clamp; sole divergent path returns "" like dev fix; 3200 inputs 0 div |
+| patch1-Lang-51-Arja-plausible | equalsIgnoreCase chain recognizes identical {true,on,yes}; false/off/no branches dead; total function = dev fix |
+| patch1-Lang-39-Elixir-plausible | `i>searchList.length` makes size loop dead (capacity-only); output+exceptions identical to dev fix |
+| patch1-Math-50-Jaid-plausible | recompute block dead (contradictory else/if guard); redundant `x1=x` overwritten post-switch; 4800 cases 0 div |
+
+**NEW DETECTABLE (probe false-zeros — real divergence; usable eval legs the
+one-per-bug audit never covered):**
+| Patch | Witness |
+|---|---|
+| patch1-Math-85-CapGen-plausible | uses param `upperBound` for function value `fb` → spurious ConvergenceException on valid brackets |
+| patch1-Chart-12-Arja-plausible | deletes ctor `pieChart.setTitle(seriesTitle)` → title null vs BOTTOM/Bold-12 (getPieChart().getTitle()) |
+| patch1-Closure-18-SequenceR | `A\|\|B` vs dev `A` → spurious CIRCULAR_DEPENDENCY_ERROR when closurePass on + dep-mgmt off |
+| patch1-Lang-39-Nopol2015-plausible | `replaceEachRepeatedly` (repeat=true) NPEs on null entry vs dev "zz" (sibling-method false-zero) |
+| patch1-Math-50-HDRepair | keeps x0-nudge block → converged root vs dev TooManyEvaluationsException (1218/4800 div) |
+| patch1-Math-32-Jaid-plausible | `tree==tree.getCut()` always false → whole-space size 0 vs dev Infinity |
+| patch1-Math-32-Elixir-plausible | `tree.getPlus().getAttribute()` NPEs on leaf tree vs dev Infinity/0 |
+
+**DETECTABLE-BUT-NO-SOUND-ORACLE (exclude, like Lang-7/Closure-123):**
+| Patch | Basis |
+|---|---|
+| patch1-Lang-20-Arja-plausible | differs only via dev-fix's `noOfItems*16` int-overflow (NegativeArraySizeException at 2^27 elems); a sound oracle cannot assert the dev-fix overflow bug |
 
 Upstream-report candidates: the three patch≡dev-fix **label error** rows,
 the Lang-41 self-contradiction pair, and **Lang-10** (correct-labeled
