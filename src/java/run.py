@@ -26,23 +26,23 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents if (p / 'config.py').exists())))
 
 import config
-from analysis import TargetAnalyzer
-from build import HarnessBuilder
-from campaign import HarnessCampaign, CampaignResult
-from crash_input import CrashInputExtractor
-from failure_test import FailureTestExtractor, classify_bug_kind, is_crashing_bug
-from fuzz_runner import (FuzzRunner, HarnessVerifier, PatchApplyError,
+from java.bug_context.analysis import TargetAnalyzer
+from java.harness.build import HarnessBuilder
+from java.harness.campaign import HarnessCampaign, CampaignResult
+from java.bug_context.crash_input import CrashInputExtractor
+from java.bug_context.failure_test import FailureTestExtractor, classify_bug_kind, is_crashing_bug
+from java.execution.fuzz_runner import (FuzzRunner, HarnessVerifier, PatchApplyError,
                          PatchedProjectBuilder, TriggerVerificationError)
-from jazzer import JazzerEnvironment
+from java.execution.jazzer import JazzerEnvironment
 from llm import (HarnessGenerator, reset_token_usage, token_usage,
                  usage_totals, enable_recording, reset_events, get_events,
                  record_event)
-from patches import DeprecatedBugError, PatchSelector
-from prompts import PromptBuilder
-from java_source import candidate_anchor_literals, expected_assert_literals
+from java.bug_context.patches import DeprecatedBugError, PatchSelector
+from java.harness.prompts import PromptBuilder
+from java.parsing.java_source import candidate_anchor_literals, expected_assert_literals
 
 
 
@@ -702,7 +702,7 @@ def main():
     # uses (setUp/@Before, helpers, constants, fixture files) — the
     # harness writer replicates the real scenario instead of improvising
     # the setup, which was the root of every setup-divergence failure.
-    from failure_test import resolve_test_support
+    from java.bug_context.failure_test import resolve_test_support
     for _ft in failure_tests:
         try:
             _ft.support_source = resolve_test_support(
@@ -759,7 +759,7 @@ def main():
     # injected into BOTH the harness prompt and rule synthesis.
     sibling_hints = ''
     try:
-        from java_source import sibling_and_state_hints
+        from java.parsing.java_source import sibling_and_state_hints
         for _mf in (context.modified_files or [])[:1]:
             _mp = os.path.join(selection.buggy_dir, _mf.lstrip('/'))
             if os.path.isfile(_mp):
@@ -783,7 +783,7 @@ def main():
     # the consistency slot in flag-off configs.
     class_ctx = []
     if bug_kind == "semantic" and not context_degraded:
-        from code_context import assemble_class_context
+        from java.bug_context.code_context import assemble_class_context
         class_ctx = assemble_class_context(
             selection.buggy_dir,
             context.modified_files or [],
@@ -837,7 +837,7 @@ def main():
     #      the project's own tests, never the developer fix or the label.
     mined_oracles = []
     if bug_kind == "semantic" and args.mined_oracles:
-        from test_oracle_miner import mine_sibling_tests
+        from java.harness.test_oracle_miner import mine_sibling_tests
         # Read every trigger test's class source once.
         class_srcs, seen_src = [], set()
         for ft in failure_tests:
@@ -910,7 +910,7 @@ def main():
     # consumer falls back cleanly.
     touched_javadocs = []
     if context.functions:
-        from relation_synth import javadoc_for
+        from java.relations.relation_synth import javadoc_for
         for rel in (context.modified_files or []):
             full = Path(selection.buggy_dir) / rel
             try:
@@ -929,7 +929,7 @@ def main():
             print("  [synth] skipped: no touched function extracted "
                   "(context degraded — see warning above)")
         else:
-            from relation_synth import RelationSynthesizer
+            from java.relations.relation_synth import RelationSynthesizer
             # Always the escalation/flagship model, regardless of the
             # harness-generation tier: proposing relations that must hold
             # for EVERY correct implementation is the hardest reasoning
@@ -1139,11 +1139,11 @@ def main():
     if synthesized_relations:
         if jazzer_standalone_jar:
             print("\n" + "#" * 20 + " relation screening " + "#" * 20)
-            from relation_screen import screen_relations
+            from java.relations.relation_screen import screen_relations
             # P2.2 direction/determinism check needs the failing test's own
             # input literals (the values the bug is about). Same extraction
             # as the acceptance-gate seed corpus below.
-            from java_source import trigger_seed_literals
+            from java.parsing.java_source import trigger_seed_literals
             _trig_lits = trigger_seed_literals(
                 [getattr(ft, 'method_source', '') for ft in failure_tests])
             try:
@@ -1226,7 +1226,7 @@ def main():
         if (synthesized_relations and jazzer_standalone_jar
                 and bug_kind == "semantic"):
             try:
-                from relation_screen import replay_on_patched
+                from java.relations.relation_screen import replay_on_patched
                 _pdir = PatchedProjectBuilder().build_patched_dir(
                     selection.buggy_dir, selection.patch_path)
                 _tl = []
@@ -1350,7 +1350,7 @@ def main():
     # sign flips, integer neighbours) — batch5 showed every invented
     # check present yet latent because random fuzz never generated the
     # discriminating literal shape within budget.
-    from java_source import literal_variations, trigger_seed_literals
+    from java.parsing.java_source import literal_variations, trigger_seed_literals
     seed_literals = trigger_seed_literals(
         [getattr(ft, 'method_source', '') or '' for ft in failure_tests]
         + [getattr(t, 'source', '') or '' for t in mined_oracles],
@@ -1417,7 +1417,7 @@ def main():
     # build (parsed from their captured failure messages). Semantic bugs
     # only — a crash-shaped failure has no expected/actual pair, and
     # real_wrong_values returns [] there, which disables the gate.
-    from oracle_strength import real_wrong_values
+    from java.execution.oracle_strength import real_wrong_values
     trigger_wrong_values = (
         real_wrong_values([ft.failure_message for ft in failure_tests])
         if bug_kind == 'semantic' else [])
@@ -1452,7 +1452,7 @@ def main():
     # never more (each extra harness is a false-alarm lottery ticket on
     # the correct sibling — the blanket-increase rejection stands).
     if result.successful_results:
-        from java_source import oracle_ids_in_text as _oids_r
+        from java.parsing.java_source import oracle_ids_in_text as _oids_r
         _copyish = re.compile(r'lift|seed|crash|repro|root[-_]?cause',
                               re.I)
         _tnames = {getattr(ft, 'test_method', '') or ''
@@ -1574,8 +1574,8 @@ def main():
     # exception types is a DIFFERENT crash wearing the same alarm.
     buggy_crash_types: dict = {}
     if result.successful_results and jazzer_standalone_jar:
-        from java_source import oracle_ids_in_text
-        from fuzz_runner import per_oracle_crash_types
+        from java.parsing.java_source import oracle_ids_in_text
+        from java.execution.fuzz_runner import per_oracle_crash_types
         _fr_lat = FuzzRunner(
             jazzer_standalone_jar=jazzer_standalone_jar,
             timeout_seconds=args.fuzz_timeout,
@@ -1714,10 +1714,10 @@ def main():
     attribution_notes: dict = {}
     if (bug_kind == "semantic"
             and fuzz_results and any(r.triggered for r in fuzz_results)):
-        from fuzz_runner import (cause_signature, crash_signature,
+        from java.execution.fuzz_runner import (cause_signature, crash_signature,
                                  is_generic_cause, is_generic_escape)
-        from oracle_strength import exception_headline as _headline
-        from java_source import oracle_ids_in_text as _oids_attr
+        from java.execution.oracle_strength import exception_headline as _headline
+        from java.parsing.java_source import oracle_ids_in_text as _oids_attr
 
         def _non_alarm_escape(h):
             # ANY escaped exception (not our alarm, no oracle ID) on a
@@ -1862,8 +1862,8 @@ def main():
         triggered = [r for r in fuzz_results if r.triggered]
         if triggered:
             print("\n" + "#" * 20 + " relation verification " + "#" * 20)
-            from relation_verifier import RelationVerifier
-            from oracle_strength import exception_headline, crash_excerpt
+            from java.relations.relation_verifier import RelationVerifier
+            from java.execution.oracle_strength import exception_headline, crash_excerpt
             # Thread the run's model explicitly: the default
             # HarnessGenerator resolves from .env, and a stale deployment
             # there once 404'd EVERY verify call — the verifier then
@@ -1985,7 +1985,7 @@ def main():
                             "pinned observables):\n  "
                             + "\n  ".join(_alines))
                     try:
-                        from java_source import (
+                        from java.parsing.java_source import (
                             oracle_ids_in_text as _oidsX)
                         _def_id = {e.split('.')[-1]
                                    for e in (expected_exceptions or [])
@@ -2009,7 +2009,7 @@ def main():
                         pass
                 # P3.3: underlying exception types per oracle for the
                 # ORIGINAL patched-side firing output.
-                from fuzz_runner import per_oracle_crash_types as _poct
+                from java.execution.fuzz_runner import per_oracle_crash_types as _poct
                 _patched_types = _poct(
                     (r.stdout or '') + '\n' + (r.stderr or ''))
                 _buggy_types = buggy_crash_types.get(r.harness_path) or {}
@@ -2017,7 +2017,7 @@ def main():
                     evid = (excerpt if excerpt and fired
                             and fired[:40] in excerpt else None)
                     _fact_notes = []
-                    from java_source import oracle_ids_in_text as _oids
+                    from java.parsing.java_source import oracle_ids_in_text as _oids
                     _latent_here = (latent_map.get(r.harness_path) or set())
                     _fired_ids = _oids(fired or '')
                     # P0.4 step 2, REVISED after minfix_w1 and again after
@@ -2049,7 +2049,7 @@ def main():
                          _breplay_out) = fr.replay_input_report(
                             r.harness_path, r.class_name, buggy_cp,
                             r.artifact_path)
-                    from fuzz_runner import (
+                    from java.execution.fuzz_runner import (
                         exception_types_in_output as _etio)
                     _bt_all = (_etio(_breplay_out)
                                if _breplay_ids is not None else set())
@@ -2140,7 +2140,7 @@ def main():
                                 # the attribution judge owns the call.
                                 _idline = ''
                                 try:
-                                    from fuzz_runner import (
+                                    from java.execution.fuzz_runner import (
                                         crash_signature as _csig,
                                         cause_signature as _causesig)
                                     _s1 = _csig(_breplay_out) or ''
@@ -2617,13 +2617,13 @@ def main():
             and jazzer_standalone_jar):
         print("\n" + "#" * 20 + " relation replay on patched " + "#" * 20)
         try:
-            from relation_screen import replay_on_patched
-            from relation_verifier import RelationVerifier
+            from java.relations.relation_screen import replay_on_patched
+            from java.relations.relation_verifier import RelationVerifier
             # Idempotent: run_all already built+verified this checkout, so
             # this returns the cached patched copy.
             _patched_dir = PatchedProjectBuilder().build_patched_dir(
                 selection.buggy_dir, selection.patch_path)
-            from java_source import trigger_seed_literals
+            from java.parsing.java_source import trigger_seed_literals
             _trig_lits_r = trigger_seed_literals(
                 [getattr(ft, 'method_source', '') for ft in failure_tests])
             _replay_findings = replay_on_patched(
@@ -2675,7 +2675,7 @@ def main():
                             "pinned observables):\n  "
                             + "\n  ".join(_alines))
                     try:
-                        from java_source import (
+                        from java.parsing.java_source import (
                             oracle_ids_in_text as _oidsX)
                         _def_id = {e.split('.')[-1]
                                    for e in (expected_exceptions or [])

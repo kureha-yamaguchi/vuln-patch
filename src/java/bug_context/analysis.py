@@ -20,8 +20,8 @@ from typing import Dict, List, Optional, Tuple
 import javalang
 
 import config
-from java_source import match_brace
-from call_graph import (fi_method_name, arg_count, reachable_of,
+from java.parsing.java_source import match_brace
+from java.bug_context.call_graph import (fi_method_name, arg_count, reachable_of,
                         with_timeout, is_project_fn, project_prefix,
                         short_name)
 try:
@@ -602,7 +602,7 @@ class TargetAnalyzer:
                 break
         if not super_name or own_node is None:
             return []
-        from code_context import _find_class_file
+        from java.bug_context.code_context import _find_class_file
         super_path = _find_class_file(buggy_dir, super_name)
         if not super_path:
             return []

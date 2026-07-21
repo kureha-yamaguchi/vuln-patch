@@ -41,10 +41,10 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents if (p / 'config.py').exists())))
 
 from llm import HarnessGenerator, token_usage, usage_totals  # noqa: E402
-from relation_verifier import RelationVerifier  # noqa: E402
+from java.relations.relation_verifier import RelationVerifier  # noqa: E402
 
 
 def parse_args():

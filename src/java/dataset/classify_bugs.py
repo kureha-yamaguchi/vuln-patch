@@ -1,3 +1,6 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents if (p / 'config.py').exists())))
 #!/usr/bin/env python3
 """Classify Defects4J bugs as "semantic" or "crashing" from their trigger-test stack traces.
 
@@ -21,7 +24,7 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from failure_test import classify_exceptions
+from java.bug_context.failure_test import classify_exceptions
 
 TRIGGER_HEADER_RE = re.compile(r"^---\s*(\S+)")
 EXCEPTION_CLASS_RE = re.compile(r"^([\w.$]+)")

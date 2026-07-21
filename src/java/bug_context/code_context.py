@@ -27,7 +27,7 @@ developer fix, no labels.
 import os
 import re
 from typing import Dict, List, Optional, Set
-from java_source import match_brace
+from java.parsing.java_source import match_brace
 
 _CLASS_DECL_RE = re.compile(
     r'(?:public\s+|abstract\s+|final\s+|strictfp\s+)*'

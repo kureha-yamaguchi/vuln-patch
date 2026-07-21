@@ -39,11 +39,11 @@ import shutil
 import tempfile
 from typing import List, Optional
 
-from build import HarnessBuilder
-from canned_probe import run_canned_probe, EXTREMES_CHECKLIST, SEEDS as _SEEDS
+from java.harness.build import HarnessBuilder
+from java.harness.canned_probe import run_canned_probe, EXTREMES_CHECKLIST, SEEDS as _SEEDS
 from llm import record_event
-from fuzz_runner import run_jazzer
-from java_source import (library_subclass, negative_modulo_index,
+from java.execution.fuzz_runner import run_jazzer
+from java.parsing.java_source import (library_subclass, negative_modulo_index,
                          violation_swallowed)
 
 _STATS_RE = re.compile(

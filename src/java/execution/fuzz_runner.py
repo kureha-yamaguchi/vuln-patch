@@ -34,7 +34,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from build import BuildResult
+from java.harness.build import BuildResult
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import config
 
@@ -383,7 +383,7 @@ def per_oracle_crash_types(output: str) -> dict:
     fuzzing output that may contain several firings (keep_going or plain).
     Chunks are split on Jazzer's exception banner; a chunk with no oracle
     ID contributes nothing."""
-    from java_source import oracle_ids_in_text
+    from java.parsing.java_source import oracle_ids_in_text
     result: dict = {}
     text = output or ''
     starts = [m.start() for m in _EXC_RE.finditer(text)]
@@ -1012,7 +1012,7 @@ class FuzzRunner:
         to judge EVERY oracle that fires on the patched code, not just the
         first one Jazzer surfaced. Returns [] on any error (caller then
         falls back to the single already-captured headline)."""
-        from oracle_strength import exception_headlines
+        from java.execution.oracle_strength import exception_headlines
         try:
             builder = PatchedProjectBuilder()
             patched_dir = builder.build_patched_dir(buggy_dir, patch_path)
@@ -1213,7 +1213,7 @@ class FuzzRunner:
             return None
         if not outcome.triggered:
             return set()
-        from java_source import oracle_ids_in_text
+        from java.parsing.java_source import oracle_ids_in_text
         return oracle_ids_in_text(outcome.combined_output)
 
     def replay_input_signatures(self,
@@ -1277,7 +1277,7 @@ class FuzzRunner:
         out = outcome.combined_output
         if not outcome.triggered:
             return set(), out
-        from java_source import oracle_ids_in_text
+        from java.parsing.java_source import oracle_ids_in_text
         return oracle_ids_in_text(out), out
 
 

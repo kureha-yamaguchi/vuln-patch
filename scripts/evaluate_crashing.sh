@@ -7,7 +7,7 @@
 # of sampling.
 #
 # This pipeline only evaluates crashing bugs, so semantic bugs are filtered
-# out of the queue BEFORE sampling (via src/java/classify_bugs.py, which reads
+# out of the queue BEFORE sampling (via src/java/dataset/classify_bugs.py, which reads
 # defects4j's static trigger_tests files — no checkout needed). That keeps
 # SAMPLE_SIZE meaning what it says: N crashing-bug patches, not N patches of
 # which some unpredictable fraction turn out semantic. run.py is still
@@ -59,7 +59,7 @@ echo ""
 #      per bug. Only "crashing" bugs are eligible for the queue below, so
 #      semantic bugs never consume a slot in SAMPLE_SIZE. ------------------
 CLASS_CSV="${OUTDIR}/bug_classes.csv"
-python3 src/java/classify_bugs.py --csv "$CLASS_CSV" > "${OUTDIR}/bug_classes.log"
+python3 src/java/dataset/classify_bugs.py --csv "$CLASS_CSV" > "${OUTDIR}/bug_classes.log"
 declare -A IS_CRASHING
 {
   read -r _header

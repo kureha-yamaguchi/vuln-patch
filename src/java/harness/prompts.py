@@ -9,10 +9,10 @@ import re
 from typing import List, Dict, Optional
 
 import config
-from analysis import PatchContext, TouchedFunction
-from crash_input import CrashInput
-from failure_test import FailureTest
-from java_source import highlight_trigger_calls
+from java.bug_context.analysis import PatchContext, TouchedFunction
+from java.bug_context.crash_input import CrashInput
+from java.bug_context.failure_test import FailureTest
+from java.parsing.java_source import highlight_trigger_calls
 
 
 

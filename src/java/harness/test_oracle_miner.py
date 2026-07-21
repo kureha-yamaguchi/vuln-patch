@@ -24,7 +24,7 @@ is simply not mined.
 from dataclasses import dataclass, field
 from typing import List, Set
 import re
-from java_source import match_brace
+from java.parsing.java_source import match_brace
 
 _LINE_COMMENT = re.compile(r'//[^\n]*')
 _BLOCK_COMMENT = re.compile(r'/\*.*?\*/', re.DOTALL)

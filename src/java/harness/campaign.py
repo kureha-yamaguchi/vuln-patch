@@ -33,13 +33,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Dict, Optional, Callable
 
-from build import HarnessBuilder, BuildResult
+from java.harness.build import HarnessBuilder, BuildResult
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from java_source import (alarm_ids_missing, negative_modulo_index,
+from java.parsing.java_source import (alarm_ids_missing, negative_modulo_index,
                          rethrow_without_cause, violation_swallowed)
 from llm import HarnessGenerator, record_event
-from fuzz_runner import HarnessVerifier, VerificationResult
-from oracle_strength import exception_headline, lifted_observed_mismatch
+from java.execution.fuzz_runner import HarnessVerifier, VerificationResult
+from java.execution.oracle_strength import exception_headline, lifted_observed_mismatch
 
 
 # A prompt factory takes the current set-coverage state (the functions

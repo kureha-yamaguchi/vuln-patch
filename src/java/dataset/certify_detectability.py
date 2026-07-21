@@ -57,15 +57,15 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents if (p / 'config.py').exists())))
 
 import config  # noqa: E402
-from analysis import TargetAnalyzer  # noqa: E402
-from failure_test import FailureTestExtractor  # noqa: E402
-from fuzz_runner import (PatchApplyError, PatchedProjectBuilder,  # noqa: E402
+from java.bug_context.analysis import TargetAnalyzer  # noqa: E402
+from java.bug_context.failure_test import FailureTestExtractor  # noqa: E402
+from java.execution.fuzz_runner import (PatchApplyError, PatchedProjectBuilder,  # noqa: E402
                          TriggerVerificationError)
 from llm import HarnessGenerator, usage_totals  # noqa: E402
-from patches import PatchSelector  # noqa: E402
+from java.bug_context.patches import PatchSelector  # noqa: E402
 
 _PROBE_SYSTEM = (
     "You write deterministic Java PROBE programs that print a program's"

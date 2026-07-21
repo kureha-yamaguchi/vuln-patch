@@ -18,10 +18,10 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents if (p / 'config.py').exists())))
 
 import config  # noqa: E402
-from failure_test import classify_bug_kind  # noqa: E402
+from java.bug_context.failure_test import classify_bug_kind  # noqa: E402
 
 
 def parse_args():
