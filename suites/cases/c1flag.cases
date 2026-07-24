@@ -1,0 +1,18 @@
+# Cycle-1 validation, flagship (2026-07-24): same four legs as c1mini, on
+# gpt-5.4 — the judge that produced the original errors — so the verdicts are
+# meaningful, not just the facts. (c1mini on nano was aborted: leg 1 ended
+# no_harnesses — nano can't build the machinery on a Closure-sized bug, so
+# the new fact code never executes there.) PARALLEL=4 at launch: legs are
+# fully self-contained since relation pooling was removed 2026-07-19, and
+# the box (8 cores / 15 GB) fits 4 concurrent legs.
+# Expected if cycle-1 mechanisms work: Closure-70/Math-30/Math-65 -> TN
+# (SHADOWED / UNKNOWN-at-this-input facts), Math-68 -> TP (value-gated lift
+# note says "differs", catch kept). BURNED legs — mechanism validation only.
+MODEL="gpt-5.4"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-70-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-30-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-68-Arja-plausible.patch"
+)
