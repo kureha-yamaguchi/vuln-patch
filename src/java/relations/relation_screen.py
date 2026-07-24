@@ -45,15 +45,17 @@ from llm import record_event
 from java.execution.fuzz_runner import run_jazzer
 from java.parsing.java_source import (library_subclass, negative_modulo_index,
                          violation_swallowed)
-
-_STATS_RE = re.compile(
-    r'\[relscreen\]\s+checked=(\d+)\s+violated=(\d+)')
-
 # Fire ratio above which a relation is out-of-domain: the buggy build is
 # known-correct on the overwhelming majority of inputs (it passes its whole
 # suite bar the triggers), so a relation violated this often contradicts
-# known-good behaviour rather than detecting the localized defect.
-MAX_FIRE_RATIO = 0.20
+# known-good behaviour rather than detecting the localized defect. Defined in
+# evidence_facts (the pure fact module) and imported here so the two sites that
+# reason about it share one number — see evidence_facts for the direction
+# rationale (no import cycle; keeps evidence_facts JVM-free for unit tests).
+from java.relations.evidence_facts import MAX_FIRE_RATIO
+
+_STATS_RE = re.compile(
+    r'\[relscreen\]\s+checked=(\d+)\s+violated=(\d+)')
 # Below this many executed checks the run tells us nothing (e.g. every
 # input was rejected by the body's own try/catch fences).
 MIN_CHECKED = 100
@@ -361,6 +363,10 @@ def screen_relations(candidates: List,
             # build may be firing BECAUSE of the bug, so probe firings on
             # that same build are not evidence of unsoundness.
             rel.buggy_fire_ratio = ratio
+            # Spec H: the raw buggy-side counts, in structured form, so the
+            # fire-rate fact can quote them (not just the rounded ratio) when
+            # this relation later fires on a patched-build replay.
+            rel.screen_stats = (checked, violated)
         except Exception:
             pass
         record_event('deterministic', method='screen-fuzz-buggy', target=name,
@@ -775,5 +781,8 @@ def replay_on_patched(relations: List,
             'trigger_violations': trig_v,
             'trigger_deterministic': trig_deterministic,
             'fuzz_checked': checked, 'fuzz_violated': violated,
+            # Spec H aliases: the patched-build fuzz counts under the names the
+            # fire-rate fact reads (the fuzzed tier IS the patched-build rate).
+            'patched_checked': checked, 'patched_violated': violated,
         })
     return findings

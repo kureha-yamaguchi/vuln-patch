@@ -19,6 +19,23 @@ types) and does the printing; the note wording is assembled here.
 
 import re
 
+# Fire-rate thresholds (Spec H). MAX_FIRE_RATIO lives HERE, not in
+# relation_screen, so this pure module stays importable without the
+# JVM/harness stack (relation_screen pulls in HarnessBuilder, fuzz_runner and
+# llm); relation_screen imports the constant from here. No import cycle exists
+# in either direction (each module is imported lazily only by run.py and
+# neither imports the other today), so the direction is chosen purely to keep
+# evidence_facts unit-testable in isolation.
+#
+#   MAX_FIRE_RATIO      — a relation violated on more than this share of random
+#     valid inputs on the buggy build is out-of-domain (the buggy build is
+#     known-correct on the overwhelming majority of inputs); on the PATCHED
+#     build the same share indicts the check rather than the patch.
+#   INTRINSIC_FIRE_RATIO — at or above this share the firing is structural
+#     (fires on essentially every input), not a detection of the defect.
+MAX_FIRE_RATIO = 0.20
+INTRINSIC_FIRE_RATIO = 0.95
+
 # Oracle-id shapes, reimplemented locally so this module stays dependency
 # light (java.parsing.java_source.oracle_ids_in_text uses the same two
 # regexes). An "[oracle:<id>]" tag or a "relation <name> violated" phrase
@@ -368,3 +385,132 @@ def trigger_lift_note(lifted_names, generic_lift, value_verdict):
             + "; the REAL test passes on this build. Whether this firing "
             "replays the test's own scenario is undetermined (no numeric "
             "value could be compared) — judge on soundness alone.")
+
+
+# ---------------------------------------------------------------------------
+# Spec G-G3 — muted per-check replay note (the definitive shadowed-replay
+# fact). When a firing's buggy-side replay is shadowed — a DIFFERENT check (or
+# the harness's own oracle before an escaped-crash site) throws first — the
+# per-input question "does THIS check fire / crash on the buggy build?" is
+# uncomputable, and the honest UNKNOWN note left a vacuum the judge filled with
+# stories. Silencing the shadowing throws and re-replaying computes the missing
+# fact; this builder words the three outcomes.
+# ---------------------------------------------------------------------------
+
+def muted_replay_note(target_ids, muted_ids, status, fired_ids,
+                      esc_type, bt_all):
+    """Word the outcome of ONE muted re-replay on the buggy build.
+
+    The shadowing checks `muted_ids` were mechanically silenced and the exact
+    firing input replayed again. `target_ids` are the oracle ids the patched
+    firing carries (empty for an escaped exception, in which case `esc_type`
+    names the escaped throwable). `status` in {"crashed", "clean", "error",
+    "mute_failed"} is the muted replay's status; `fired_ids` the oracle ids
+    that fired on it; `bt_all` every exception type seen in its output.
+
+    Returns:
+      * target fires (its oracle id — or, for an escaped firing, its exception
+        type — appears in the muted replay) -> the identical-on-both-builds
+        family: silencing the shadow reveals THIS check fires on buggy too.
+      * target quiet + a CLEAN run -> the existence-proof family: the buggy
+        build runs this exact input without the violation; the patch
+        introduced it.
+      * status error/mute_failed -> a one-line note that a muted re-replay was
+        attempted and unavailable (the caller appends it to the cycle-1 UNKNOWN
+        note, which stands unchanged).
+      * target quiet but the run still crashed at something ELSE (neither the
+        target nor a clean completion) -> None: nothing new was learned, so the
+        cycle-1 UNKNOWN note is left intact.
+    """
+    target_ids = target_ids or set()
+    muted_ids = muted_ids or set()
+    fired_ids = fired_ids or set()
+    bt_all = bt_all or set()
+
+    if status in ("error", "mute_failed"):
+        return ("[muted-replay fact] a muted re-replay was attempted and "
+                "unavailable.")
+
+    ids_txt = ", ".join(sorted(muted_ids)[:4]) or "the shadowing check(s)"
+
+    if target_ids:
+        target_fired = bool(target_ids & fired_ids)
+    elif esc_type:
+        target_fired = esc_type in bt_all
+    else:
+        target_fired = False
+
+    if target_fired:
+        return ("[muted-replay fact] with the shadowing check(s) " + ids_txt
+                + " silenced, THIS check fires on the BUGGY build at this "
+                "exact input — behaviour is identical on both builds; the "
+                "patch did not cause this.")
+
+    if status == "clean":
+        return ("[muted-replay fact] with the shadowing check(s) " + ids_txt
+                + " silenced, the buggy build runs this exact input WITHOUT "
+                "firing this check — the patch introduced the violation here.")
+
+    # Target quiet, but the muted run still crashed at some OTHER site: the
+    # per-input question stays unanswered, so add no new fact.
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Spec H — fire-rate facts. The pipeline already computes the numbers that
+# indict a broken check (buggy-side screen ratio and patched-side replay-fuzz
+# counts), but they reach the judge unlabelled. A check firing on a large share
+# of RANDOM VALID inputs on the patched (or both) build(s) contradicts
+# known-good behaviour broadly — that indicts the check, not the patch.
+# ---------------------------------------------------------------------------
+
+def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
+                   patched_violated, screen_outcome_reason):
+    """Build a "[fire-rate fact]" block from the screen/replay counts.
+
+    `*_checked` / `*_violated` are the raw counts from the buggy-side screen
+    and the patched-side replay-fuzz (either pair may be None/0 when that
+    measurement is unavailable). `screen_outcome_reason` is the screening
+    demotion reason (e.g. "above-ratio-cap / inverted (replay-only)"), included
+    verbatim when non-empty.
+
+    Returns the fact block, or None when neither the patched nor the buggy rate
+    crosses its threshold (or the counts are missing) — no noise.
+    """
+    def _rate(violated, checked):
+        if not checked or checked <= 0 or violated is None:
+            return None
+        return violated / checked
+
+    p_rate = _rate(patched_violated, patched_checked)
+    b_rate = _rate(buggy_violated, buggy_checked)
+
+    interp = None
+    if p_rate is not None and p_rate >= MAX_FIRE_RATIO:
+        interp = ("a contract violated by {:.0%} of random valid inputs on "
+                  "the PATCHED build indicts the check, not the patch — real "
+                  "defect discriminators fire rarely and asymmetrically; keep "
+                  "only with a shown contract that makes every one of those "
+                  "inputs a genuine violation.".format(p_rate))
+    elif b_rate is not None and b_rate >= INTRINSIC_FIRE_RATIO:
+        interp = ("fires on essentially every input on the buggy build "
+                  "({:.0%}) — the firing is intrinsic to the check/setup "
+                  "construction, not a detection of the defect.".format(b_rate))
+
+    if interp is None:
+        return None
+
+    parts = []
+    if b_rate is not None:
+        parts.append("buggy build {}/{} = {:.0%}".format(
+            buggy_violated, buggy_checked, b_rate))
+    if p_rate is not None:
+        parts.append("patched build {}/{} = {:.0%}".format(
+            patched_violated, patched_checked, p_rate))
+
+    text = ("[fire-rate fact] " + "; ".join(parts) + " of random valid "
+            "inputs. " + interp)
+    if screen_outcome_reason:
+        text += (" Screening demotion reason: "
+                 + str(screen_outcome_reason).strip() + ".")
+    return text

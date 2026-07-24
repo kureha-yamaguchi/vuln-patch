@@ -1342,6 +1342,114 @@ class FuzzRunner:
         from java.parsing.java_source import oracle_ids_in_text
         return oracle_ids_in_text(out), out
 
+    def replay_input_muted(self,
+                           harness_path: str,
+                           class_name: str,
+                           project_cp: str,
+                           input_file: str,
+                           mute_ids=None,
+                           mute_all: bool = False,
+                           builder=None,
+                           buggy_dir: str = None,
+                           timeout_seconds: int = 30
+                           ) -> Tuple[str, Optional[set], str]:
+        """Replay ONE input against a MUTED build of the harness and report
+        `(status, fired_ids, output)`.
+
+        Silencing the harness's shadowing alarm throws (`oracle_mute`) and
+        re-replaying the SAME input computes the per-input fact a raw replay
+        cannot when a shadowing throw ends the run first: does THIS check
+        fire / crash on `project_cp` once the shadow is muted?
+
+        `status` is one of:
+          * "crashed"     — the muted build triggered on the input;
+            `fired_ids` = the oracle ids in the output (a set, possibly
+            empty when a non-oracle crash escaped).
+          * "clean"       — the muted build ran the input to completion
+            without triggering; `fired_ids` = empty set.
+          * "error"       — run_jazzer raised, the subprocess timed out, or
+            it exited nonzero without a recognised finding; `fired_ids`
+            None. Same never-manufacture rule as replay_input_result: an
+            ambiguous non-clean outcome is "error", never "clean".
+          * "mute_failed" — no `builder`, the harness source could not be
+            read, or the muted variant did not COMPILE (removing a
+            guaranteed throw can break Java's definite-return analysis).
+            `fired_ids` None; the caller keeps its pre-existing
+            UNKNOWN/SHADOWED fact unchanged — never worse than today.
+
+        `builder` must be a HarnessBuilder; the muted variant is compiled
+        against `buggy_dir` (the project dir the caller wants — the buggy
+        build for a shadowed-fact check) via `builder.build`, which writes
+        under `<buggy_dir>/fuzz/<subdir>`. `output` is Jazzer's combined
+        stdout+stderr (empty when compile/setup failed)."""
+        if builder is None or buggy_dir is None:
+            return "mute_failed", None, ''
+
+        from java.execution.oracle_mute import mute_oracles
+
+        # harness_path is the .java in the run.py flow (BuildResult.harness_path);
+        # tolerate a directory too and pick the harness .java inside it.
+        src_path = harness_path
+        if os.path.isdir(harness_path):
+            javas = [p for p in glob.glob(os.path.join(harness_path, '*.java'))]
+            if not javas:
+                return "mute_failed", None, ''
+            src_path = javas[0]
+        try:
+            with open(src_path, encoding='utf-8', errors='replace') as fh:
+                source = fh.read()
+        except OSError as exc:
+            print(f"  (muted replay: could not read harness source: {exc})")
+            return "mute_failed", None, ''
+
+        muted_source = mute_oracles(source, mute_ids=mute_ids,
+                                    mute_all=mute_all)
+
+        # Place the muted variant beside the original when it lives under
+        # <buggy_dir>/fuzz (the run.py layout); build() joins buggy_dir/fuzz/
+        # <output_subdir>, so we derive that subdir. A harness outside the
+        # fuzz tree falls back to a uniquely-named subdir.
+        harness_dir = os.path.dirname(os.path.abspath(src_path))
+        fuzz_root = os.path.join(os.path.abspath(buggy_dir), 'fuzz')
+        rel = os.path.relpath(harness_dir, fuzz_root)
+        if rel.startswith('..') or os.path.isabs(rel):
+            rel = os.path.basename(os.path.normpath(harness_dir)) or 'harness'
+        output_subdir = os.path.join(rel, 'muted_0')
+
+        try:
+            build_result = builder.build(muted_source, buggy_dir,
+                                         output_subdir)
+        except Exception as exc:
+            print(f"  (muted variant build raised: {exc})")
+            return "mute_failed", None, ''
+        if not build_result.compiled:
+            # Expected sometimes: silencing a guaranteed throw can break
+            # definite-return analysis. Caller keeps its cycle-1 fact.
+            return "mute_failed", None, ''
+
+        try:
+            outcome = run_jazzer(
+                jazzer_standalone_jar=self.jazzer_standalone_jar,
+                target_class=build_result.class_name,
+                harness_dir=os.path.dirname(build_result.harness_path),
+                project_cp=project_cp,
+                timeout_seconds=timeout_seconds,
+                expected_exceptions=self.expected_exceptions,
+                jazzer_api_jar=self.jazzer_api_jar,
+                input_file=input_file,
+            )
+        except Exception as exc:
+            print(f"  (muted single-input replay failed: {exc})")
+            return "error", None, ''
+
+        out = outcome.combined_output
+        if outcome.triggered:
+            from java.parsing.java_source import oracle_ids_in_text
+            return "crashed", oracle_ids_in_text(out), out
+        if outcome.timed_out or outcome.returncode != 0:
+            return "error", None, out
+        return "clean", set(), out
+
 
 def _print_fuzz_result(r: FuzzRunResult) -> None:
     if r.timed_out:

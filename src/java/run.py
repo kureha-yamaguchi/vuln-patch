@@ -1762,6 +1762,35 @@ def main():
                 expected_exceptions=expected_exceptions,
                 jazzer_api_jar=jazzer_api_jar,
             )
+
+            def _apply_preexisting_drop(r, patched_sig, extra_note=""):
+                # The pre-existing drop path: the generic crash reproduces on
+                # the buggy build, so drop it — UNLESS a NON-generic oracle in
+                # the same harness also fires on the patched code, which must
+                # not be buried by the pre-existing crash (the non-generic
+                # sibling rescue). `extra_note` prefixes the note when the
+                # pre-existence was established via a muted re-replay.
+                fired_all = _fr.collect_fired_oracles(
+                    r.harness_path, r.class_name,
+                    selection.patch_path, selection.buggy_dir)
+                non_generic = [f for f in fired_all
+                               if f and not is_generic_escape(f)]
+                if non_generic:
+                    attribution_notes[id(r)] = (
+                        extra_note
+                        + f"differential replay: generic firing {patched_sig} "
+                        f"reproduces identically on the buggy build "
+                        f"(pre-existing surface, ignore it), but non-generic "
+                        f"oracle(s) also fire: {'; '.join(non_generic[:3])}")
+                    print(f"  ✓ kept: {patched_sig} is pre-existing, but "
+                          f"non-generic oracles also fire: "
+                          f"{non_generic[0][:80]}")
+                    return
+                r.triggered = False
+                print(f"  [attribution] dropped: {patched_sig} reproduces "
+                      f"on buggy build (pre-existing, not patch-caused): "
+                      f"{r.harness_path}")
+
             for r in generic_hits:
                 out = (r.stdout or '') + '\n' + (r.stderr or '')
                 patched_sig = crash_signature(out)
@@ -1796,36 +1825,55 @@ def main():
                     attribution_notes[id(r)] = _dr_note
                     print(f"  ~ shadowed (buggy alarm {buggy_sig} fires "
                           f"first): {r.harness_path}")
+                    # Spec G-G3.2: silence ALL of the harness's own checks on
+                    # the buggy build and replay this exact input. If the
+                    # patched crash site now reproduces with the SAME
+                    # signature, the crash pre-exists (it was merely hidden
+                    # behind the harness's alarms) — upgrade to PREEXISTING
+                    # (existing drop path + non-generic sibling rescue). A
+                    # clean muted run is the INTRODUCED family. Bounded to one
+                    # muted re-replay; any failure leaves SHADOWED intact.
+                    try:
+                        _mstatus, _mfired, _mout = _fr.replay_input_muted(
+                            r.harness_path, r.class_name, buggy_cp,
+                            r.artifact_path, mute_all=True,
+                            builder=builder, buggy_dir=selection.buggy_dir)
+                        _msig = crash_signature(_mout or '')
+                        print(f"  [muted-replay] status={_mstatus} "
+                              f"sig={_msig or 'none'}")
+                        if _mstatus == "crashed" and _msig == patched_sig \
+                                and '@' in (_msig or ''):
+                            print(f"  ~ shadowed->pre-existing: crash site "
+                                  f"reproduces on buggy once the harness's "
+                                  f"own checks are silenced: {r.harness_path}")
+                            _apply_preexisting_drop(
+                                r, patched_sig,
+                                extra_note=(
+                                    "muted re-replay: with the harness's own "
+                                    "checks silenced, this exact input "
+                                    "reproduces the SAME crash "
+                                    f"({patched_sig}) on the buggy build — "
+                                    "the crash pre-exists, it was hidden "
+                                    "behind the harness's alarms. "))
+                        elif _mstatus == "clean":
+                            attribution_notes[id(r)] += (
+                                " Muted re-replay: with the harness's own "
+                                "checks silenced, the buggy build runs this "
+                                "exact input cleanly — the crash does NOT "
+                                "pre-exist behind the shadow; the patch "
+                                "introduced it here.")
+                        # error / mute_failed: leave SHADOWED unchanged.
+                    except Exception as _mexc:
+                        print(f"  [muted-replay] unavailable ({_mexc}) — "
+                              f"SHADOWED unchanged")
                     continue
                 if _verdict == "INTRODUCED":
                     attribution_notes[id(r)] = _dr_note
                     print(f"  ✓ patch-caused ({patched_sig}): "
                           f"{r.harness_path}")
                     continue
-                # _verdict == "PREEXISTING":
-                # Same generic crash on both builds. Before dropping, check
-                # whether any NON-generic oracle in this harness also fires
-                # on the patched code — a pre-existing crash must not bury
-                # a genuine sibling detection.
-                fired_all = _fr.collect_fired_oracles(
-                    r.harness_path, r.class_name,
-                    selection.patch_path, selection.buggy_dir)
-                non_generic = [f for f in fired_all
-                               if f and not is_generic_escape(f)]
-                if non_generic:
-                    attribution_notes[id(r)] = (
-                        f"differential replay: generic firing {patched_sig} "
-                        f"reproduces identically on the buggy build "
-                        f"(pre-existing surface, ignore it), but non-generic "
-                        f"oracle(s) also fire: {'; '.join(non_generic[:3])}")
-                    print(f"  ✓ kept: {patched_sig} is pre-existing, but "
-                          f"non-generic oracles also fire: "
-                          f"{non_generic[0][:80]}")
-                    continue
-                r.triggered = False
-                print(f"  [attribution] dropped: {patched_sig} reproduces "
-                      f"on buggy build (pre-existing, not patch-caused): "
-                      f"{r.harness_path}")
+                # _verdict == "PREEXISTING": same generic crash on both builds.
+                _apply_preexisting_drop(r, patched_sig)
             for r in laundered_hits:
                 out = (r.stdout or '') + '\n' + (r.stderr or '')
                 patched_cause = cause_signature(out)
@@ -2194,6 +2242,42 @@ def main():
                         else:
                             print(f"      [buggy-replay] escaped-firing fact "
                                   f"attached ({_esc_type})")
+                        # Spec G-G3.1: when a DIFFERENT check fired FIRST on the
+                        # buggy replay (shadowed — _breplay_ids non-empty,
+                        # disjoint from _fired_ids, no defect exception) the
+                        # per-input question "does THIS check fire on buggy?"
+                        # is unanswered and semantic_buggy_replay_note returned
+                        # the honest UNKNOWN wording. Silence the shadowing
+                        # check(s) and replay this exact input ONCE to compute
+                        # the missing fact, then append it. Bounded to one
+                        # muted re-replay; any failure leaves the cycle-1 note
+                        # intact.
+                        _shadowed = bool(
+                            _fired_ids and (_breplay_ids or set())
+                            and not (_fired_ids & (_breplay_ids or set()))
+                            and not _bt_defect)
+                        if _shadowed:
+                            try:
+                                (_ms, _mf, _mo) = fr.replay_input_muted(
+                                    r.harness_path, r.class_name, buggy_cp,
+                                    r.artifact_path, mute_ids=_breplay_ids,
+                                    builder=builder,
+                                    buggy_dir=selection.buggy_dir)
+                                from java.execution.fuzz_runner import (
+                                    exception_types_in_output as _etio2)
+                                _mbt = _etio2(_mo) if _mo else set()
+                                print(f"      [muted-replay] status={_ms} "
+                                      f"fired={sorted(_mf or set())}")
+                                from java.relations.evidence_facts import (
+                                    muted_replay_note as _mrn)
+                                _mnote = _mrn(_fired_ids, _breplay_ids, _ms,
+                                              _mf, _esc_type, _mbt)
+                                if _mnote:
+                                    _breplay_note = (
+                                        (_breplay_note or '') + " " + _mnote)
+                            except Exception as _mexc:
+                                print(f"      [muted-replay] unavailable "
+                                      f"({_mexc}) — UNKNOWN note kept")
                     # The firing INPUT itself, verbatim (batch6 Lang-27-c:
                     # attribution ruled 'duty to fix' on a defect-type
                     # crash without ever seeing that the input was fuzzer
@@ -2675,6 +2759,27 @@ def main():
                                 "must preserve; an invented "
                                 "plausibility with no such source does "
                                 "not convict.")
+                    # Spec H: fire-rate fact — the buggy-side screen ratio and
+                    # the patched-side replay-fuzz counts, labelled with
+                    # percentages and interpretation so the judge rules against
+                    # numbers, not prose. When the relation was demoted at
+                    # screening (above-ratio-cap / inverted, replay-only), that
+                    # demotion reason rides along in the fact.
+                    from java.relations.evidence_facts import fire_rate_fact
+                    _sstats = getattr(rel, 'screen_stats', None) or (None, None)
+                    _sdec = getattr(rel, 'screen_decision', None) or {}
+                    _sreason = _sdec.get('reason', '') or ''
+                    _demote = (_sreason
+                               if ('above-ratio-cap' in _sreason
+                                   or 'inverted' in _sreason)
+                               else '')
+                    _frfact = fire_rate_fact(
+                        _sstats[0], _sstats[1],
+                        f.get('patched_checked'), f.get('patched_violated'),
+                        _demote)
+                    if _frfact:
+                        _evid += "\n" + _frfact
+                        print(f"      [fire-rate] {_frfact[:120]}")
                     # everything appended after the base note is a
                     # computed fact — hand the same text to attribution
                     if len(_evid) > len(_rfacts[0]):
