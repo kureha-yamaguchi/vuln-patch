@@ -410,27 +410,71 @@ def _observed_numbers(msg):
     return out
 
 
+# Any `<name>=<value>` pair in a fired message, numeric or the IEEE tokens.
+# Same-oracle messages share a format, so pairwise comparison of the SHARED
+# keys is the general cross-build comparison: reference keys (expected=,
+# tol=) and input keys (n=) are equal on both sides by construction and
+# cannot cause a false "different"; an observed key (actual=, p=, whatever
+# the oracle author named it) that differs beyond the floor is a real
+# behavioural difference at this input.
+_KV_PAIR_RE = re.compile(
+    r'([A-Za-z_]\w*)\s*=\s*'
+    r'(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|NaN|-?Infinity)')
+
+
+def _kv_values(msg):
+    """{key: [float values]} for every key=value pair in `msg` (NaN/Infinity
+    parsed as their IEEE floats; a repeated key keeps every occurrence)."""
+    out = {}
+    for k, v in _KV_PAIR_RE.findall(msg or ''):
+        try:
+            out.setdefault(k, []).append(float(v))
+        except (TypeError, ValueError):
+            pass
+    return out
+
+
+def _vals_match(a, b):
+    if math.isnan(a) or math.isnan(b):
+        return math.isnan(a) and math.isnan(b)
+    if math.isinf(a) or math.isinf(b):
+        # The rounding floor is meaningless at infinity (inf <= inf), and
+        # +Infinity vs -Infinity must never match.
+        return a == b
+    return _close(a, b)
+
+
 def compare_fired_values(patched_msg, buggy_msg):
     """Compare the observed values of the SAME check firing on both builds.
 
-    Uses `_observed_numbers` (actual=/got=/was=-tagged, trailing-number
-    fallback) on BOTH messages — observed-vs-observed only, never the shared
-    expected= reference.
-
-    Returns:
-      * "identical" — some patched observed value matches some buggy observed
-        value within the `_close` rounding floor (NaN-safe: NaN == NaN counts
-        as a match); OR the two messages are textually identical even without
-        any extractable number.
-      * "different" — numbers are present on BOTH sides and NO patched observed
-        value matches any buggy observed value.
-      * "unknown"   — either side has no extractable observed value (and the
-        messages are not textually identical).
+    Comparison ladder:
+    1. Textually identical messages -> "identical".
+    2. key=value pairwise: on the keys BOTH messages carry, every shared key
+       matching (NaN-safe, `_close` floor; multi-valued keys match as
+       multisets-with-floor) -> "identical"; any shared key differing ->
+       "different". Requires at least one shared key.
+    3. Fallback for tag-less messages: `_observed_numbers`
+       (actual=/got=/was=-tagged, trailing-number fallback) any-match ->
+       "identical" / no-match -> "different"; no numbers on a side ->
+       "unknown".
     """
     # Textually identical messages fire identically even with no numerics
     # (e.g. a NaN message: "...expected p-value 1.0 but got NaN").
     if patched_msg and buggy_msg \
             and str(patched_msg).strip() == str(buggy_msg).strip():
+        return "identical"
+
+    p_kv, b_kv = _kv_values(patched_msg), _kv_values(buggy_msg)
+    shared = [k for k in p_kv if k in b_kv]
+    if shared:
+        for k in shared:
+            pv, bv = list(p_kv[k]), list(b_kv[k])
+            for a in pv:
+                hit = next((i for i, b in enumerate(bv)
+                            if _vals_match(a, b)), None)
+                if hit is None:
+                    return "different"
+                bv.pop(hit)
         return "identical"
 
     p_nums = _observed_numbers(patched_msg)
@@ -440,11 +484,7 @@ def compare_fired_values(patched_msg, buggy_msg):
 
     for a in p_nums:
         for b in b_nums:
-            if math.isnan(a) and math.isnan(b):
-                return "identical"
-            if math.isnan(a) or math.isnan(b):
-                continue
-            if _close(a, b):
+            if _vals_match(a, b):
                 return "identical"
     return "different"
 

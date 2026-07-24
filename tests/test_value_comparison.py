@@ -87,10 +87,11 @@ def test_nonnumeric_pair_is_unknown():
 
 
 def test_matching_value_within_floor_is_identical():
-    # Same actual observed value (within the 1e-9 floor), different expected
-    # reference -> a patched value matches a buggy value -> identical.
+    # Same oracle at the same input carries the SAME expected= reference
+    # (expected derives from the input/constants); only the observed actual=
+    # jitters within the 1e-9 floor -> identical.
     a = "[oracle:x] actual=4.948952097518721 expected=6.99887517584575"
-    b = "[oracle:x] actual=4.948952097518800 expected=1.0"
+    b = "[oracle:x] actual=4.948952097518800 expected=6.99887517584575"
     assert evidence_facts.compare_fired_values(a, b) == "identical"
 
 
@@ -208,3 +209,37 @@ def test_shared_expected_reference_does_not_fake_identity():
     buggy = ("[oracle:fr-1-rms] semantic mismatch: "
              "actual=4.601233010847492 expected=6.99887517584575")
     assert compare_fired_values(patched, buggy) == "different"
+
+
+def test_kv_pairwise_nan_observed_identical():
+    """Real c2b Math-30 asymptotic-formula shape (trace line 2416): the
+    observed value prints as p=NaN (no actual= tag), so tagged extraction
+    fails — the key=value pairwise ladder must certify identity when every
+    shared key (p, expected, tol, n, u) matches NaN-safely."""
+    from java.relations.evidence_facts import compare_fired_values
+    patched = ("[oracle:asymptotic-formula] consistency violation: p-value "
+               "disagrees with independent recomputation; n=46341 "
+               "u=3.221204618E9 p=NaN expected=0.0 tol=NaN")
+    buggy = ("[oracle:asymptotic-formula] consistency violation: p-value "
+             "disagrees with independent recomputation; n=46341 "
+             "u=3.221204618E9 p=NaN expected=0.0 tol=NaN")
+    assert compare_fired_values(patched, buggy) == "identical"
+
+
+def test_kv_pairwise_differing_observed_key_is_different():
+    """Same format, one shared observed key differs -> different (the
+    partial-fix keep path), even though expected= and n= match."""
+    from java.relations.evidence_facts import compare_fired_values
+    patched = ("[oracle:u-statistic] semantic mismatch: n=46340 "
+               "expectedU=1.07367463E9 actualU=1.07372097E9")
+    buggy = ("[oracle:u-statistic] semantic mismatch: n=46340 "
+             "expectedU=1.07367463E9 actualU=1.07369999E9")
+    assert compare_fired_values(patched, buggy) == "different"
+
+
+def test_kv_pairwise_infinity_token():
+    from java.relations.evidence_facts import compare_fired_values
+    assert compare_fired_values("got x=Infinity n=5",
+                                "got x=Infinity n=5") == "identical"
+    assert compare_fired_values("got x=Infinity n=5",
+                                "got x=-Infinity n=5") == "different"
