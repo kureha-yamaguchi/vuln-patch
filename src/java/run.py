@@ -1716,6 +1716,7 @@ def main():
             and fuzz_results and any(r.triggered for r in fuzz_results)):
         from java.execution.fuzz_runner import (cause_signature, crash_signature,
                                  is_generic_cause, is_generic_escape)
+        from java.relations.evidence_facts import classify_differential_replay
         from java.execution.oracle_strength import exception_headline as _headline
         from java.parsing.java_source import oracle_ids_in_text as _oids_attr
 
@@ -1777,18 +1778,31 @@ def main():
                     print(f"  ? abstain (frame-less signature): "
                           f"{r.harness_path}")
                     continue
-                buggy_sig = _fr.replay_input(
+                buggy_status, buggy_sig = _fr.replay_input_result(
                     r.harness_path, r.class_name, buggy_cp, r.artifact_path)
-                if buggy_sig != patched_sig or '@' not in (buggy_sig or ''):
-                    attribution_notes[id(r)] = (
-                        f"differential replay: the exact firing input does "
-                        f"NOT reproduce this crash on the buggy build "
-                        f"(patched={patched_sig}, buggy="
-                        f"{buggy_sig or 'no crash'}) — the crash is "
-                        f"introduced by the patch")
+                _verdict, _dr_note = classify_differential_replay(
+                    patched_sig, buggy_status, buggy_sig)
+                if _verdict == "ABSTAIN":
+                    # Spec B: the replay itself errored — attach the note and
+                    # let the judge rule; NEVER drop mechanically (an infra
+                    # failure must not manufacture evidence against the patch).
+                    attribution_notes[id(r)] = _dr_note
+                    print(f"  ? abstain (replay errored): {r.harness_path}")
+                    continue
+                if _verdict == "SHADOWED":
+                    # Spec B: buggy died at its own alarm before reaching the
+                    # patched crash site — uninformative, not exculpatory.
+                    # Attach the note and let the judge rule; do NOT drop.
+                    attribution_notes[id(r)] = _dr_note
+                    print(f"  ~ shadowed (buggy alarm {buggy_sig} fires "
+                          f"first): {r.harness_path}")
+                    continue
+                if _verdict == "INTRODUCED":
+                    attribution_notes[id(r)] = _dr_note
                     print(f"  ✓ patch-caused ({patched_sig}): "
                           f"{r.harness_path}")
                     continue
+                # _verdict == "PREEXISTING":
                 # Same generic crash on both builds. Before dropping, check
                 # whether any NON-generic oracle in this harness also fires
                 # on the patched code — a pre-existing crash must not bury
@@ -1829,8 +1843,21 @@ def main():
                     print(f"  ? abstain (frame-less cause): "
                           f"{r.harness_path}")
                     continue
-                buggy_sig, buggy_cause = _fr.replay_input_signatures(
-                    r.harness_path, r.class_name, buggy_cp, r.artifact_path)
+                _lstatus, buggy_sig, buggy_cause = (
+                    _fr.replay_input_signatures_result(
+                        r.harness_path, r.class_name, buggy_cp,
+                        r.artifact_path))
+                if _lstatus == "error":
+                    # Spec B (same rule as the generic path): an errored
+                    # replay is not a clean buggy run — it must not read as
+                    # "NOT the same pre-existing crash".
+                    attribution_notes[id(r)] = (
+                        "laundering check ABSTAINED: replaying the exact "
+                        "firing input on the buggy build was unavailable "
+                        "(the replay itself errored) — no attribution fact "
+                        "either way; judge sceptically.")
+                    print(f"  ? abstain (replay errored): {r.harness_path}")
+                    continue
                 # Pre-existing iff the same underlying crash appears on the
                 # unpatched build — either escaping directly (headline) or
                 # wrapped by the same alarm (cause). A DIFFERENT crash site
@@ -2018,6 +2045,9 @@ def main():
                             and fired[:40] in excerpt else None)
                     _fact_notes = []
                     from java.parsing.java_source import oracle_ids_in_text as _oids
+                    from java.relations.evidence_facts import (
+                        semantic_buggy_replay_note, trigger_lift_note,
+                        fired_value_vs_trusted)
                     _latent_here = (latent_map.get(r.harness_path) or set())
                     _fired_ids = _oids(fired or '')
                     # P0.4 step 2, REVISED after minfix_w1 and again after
@@ -2106,227 +2136,64 @@ def main():
                     # One attribution fact, appended to whichever branch
                     # note applies below (latent / symmetric / plain).
                     _breplay_note = None
-                    if _fired_ids and getattr(r, 'artifact_path', None):
-                        if _breplay_ids is None:
-                            _breplay_note = (
-                                "[buggy-replay fact] replaying this "
-                                "firing's exact input on the buggy build "
-                                "was unavailable — no attribution fact; "
-                                "judge on soundness alone, sceptically.")
-                        elif _fired_ids & _breplay_ids:
-                            if _bt_defect:
-                                _breplay_note = (
-                                    "[buggy-replay fact] the exact firing "
-                                    "input fires the SAME check on the "
-                                    "BUGGY build AND the reported defect "
-                                    "exception appears there ("
-                                    + ", ".join(sorted(_bt_defect)[:4])
-                                    + ") — the input lies inside the "
-                                    "reported bug's own family and the "
-                                    "patch did not change the outcome: "
-                                    "the patch-failed-to-fix pattern, IF "
-                                    "the harness constructed this input "
-                                    "as valid; on fuzzed junk both "
-                                    "builds merely reject and nothing "
-                                    "is convicted.")
-                            else:
-                                # Crash-identity comparison (batch5
-                                # Chart-26-c): when the firing wraps an
-                                # exception, NAME the exception identity
-                                # on both sides so attribution can tell
-                                # "the bug's own crash surviving" from
-                                # "a different pre-existing crash wearing
-                                # the family's clothes". Stated as data;
-                                # the attribution judge owns the call.
-                                _idline = ''
-                                try:
-                                    from java.execution.fuzz_runner import (
-                                        crash_signature as _csig,
-                                        cause_signature as _causesig)
-                                    _s1 = _csig(_breplay_out) or ''
-                                    _s2 = _causesig(_breplay_out) or ''
-                                    _ptt = set()
-                                    for _oid in _fired_ids:
-                                        _ptt |= (_patched_types.get(_oid)
-                                                 or set())
-                                    if _s1 or _s2 or _ptt:
-                                        _idline = (
-                                            " Underlying exception "
-                                            "identity — on the buggy "
-                                            "replay: "
-                                            + (_s1 or 'no crash')
-                                            + (("; root cause: " + _s2)
-                                               if _s2 else '')
-                                            + "; under the patched "
-                                            "firing: "
-                                            + (", ".join(sorted(_ptt))
-                                               or 'none recorded')
-                                            + ". An identity different "
-                                            "from the reported bug's own "
-                                            "failure is a different, "
-                                            "pre-existing problem.")
-                                except Exception:
-                                    pass
-                                _breplay_note = (
-                                    "[buggy-replay fact] the exact firing "
-                                    "input fires the SAME check on the "
-                                    "BUGGY build — behaviour at this "
-                                    "input is identical on both builds; "
-                                    "the patch did not cause or preserve "
-                                    "anything here. The REAL failing "
-                                    "test was rerun on this patched "
-                                    "build and PASSES, so the test's own "
-                                    "scenario is settled in the patch's "
-                                    "favour. Keep this finding ONLY if "
-                                    "it asserts the very behaviour the "
-                                    "failing test shows is wrong, at "
-                                    "inputs the real test does NOT "
-                                    "itself exercise; otherwise it "
-                                    "measures pre-existing surface — "
-                                    "dismiss." + _idline)
-                        elif _bt_defect:
-                            # Batch4 Lang-27-c: an earlier wording called
-                            # this "strong evidence against the patch" —
-                            # but EVERY correct fix produces this exact
-                            # signature at former crash inputs (buggy
-                            # crashes, fixed completes). Fix and
-                            # crash-suppressing overfit differ ONLY in
-                            # whether the completed value is right; the
-                            # fact must not prejudge that.
-                            _breplay_note = (
-                                "[buggy-replay fact] on this exact input "
-                                "the BUGGY build produces the reported "
-                                "defect exception ("
-                                + ", ".join(sorted(_bt_defect)[:4])
-                                + ") while the patched build completes. "
-                                "Turning a defect input's crash into "
-                                "completion is exactly what a FIX does — "
-                                "and also what a crash-suppressing "
-                                "overfit does; they differ ONLY in "
-                                "whether the completed value is correct. "
-                                "The crash's disappearance is not "
-                                "evidence either way. Judge solely the "
-                                "condemned completed value: if it "
-                                "violates a documented contract, this is "
-                                "the overfit pattern (SOUND); if the "
-                                "check demands more than the documented "
-                                "contract guarantees, it is UNSOUND.")
-                        elif _breplay_ids:
-                            # Shadowed replay: a different check fired
-                            # first on buggy at this input, so the buggy
-                            # replay cannot directly confirm THIS check
-                            # there. State the mechanical fact only —
-                            # NO dismissal editorialising (the old
-                            # "classic false-positive shape" wording
-                            # biased the judge toward vetoing sound
-                            # generalisation catches, falsefix13). The
-                            # screening direction fact (if any) and the
-                            # attribution deep-dive decide.
-                            _breplay_note = (
-                                "[buggy-replay fact] on this exact input "
-                                "a DIFFERENT check fired first on the "
-                                "buggy build ("
-                                + ", ".join(sorted(_breplay_ids)[:4])
-                                + "), so the buggy replay does not "
-                                "directly show whether THIS check fires "
-                                "there. Rely on the screening/direction "
-                                "fact and the check's documented "
-                                "contract; a screening result of "
-                                "DIRECTION-CONFIRMED already establishes "
-                                "the buggy build violates this check.")
-                        elif _bt_all:
-                            _breplay_note = (
-                                "[buggy-replay fact] on this exact input "
-                                "the buggy build neither fires this "
-                                "check nor shows the reported defect (it "
-                                "raises " + ", ".join(sorted(_bt_all)[:4])
-                                + " instead) — attribution unclear. "
-                                "Judge the check against the documented "
-                                "contract, and weigh whether its "
-                                "observable is the very behaviour the "
-                                "failing test shows is wrong: a "
-                                "DIFFERENT feature's contract with no "
-                                "buggy-side evidence behind it is the "
-                                "classic false-positive shape — keep "
-                                "only with a shown contract the "
-                                "observed value contradicts.")
+                    if (_fired_ids or _esc_type) and getattr(
+                            r, 'artifact_path', None):
+                        # Spec B/C: map the replay outcome to a status the
+                        # pure note builder understands. _breplay_ids is None
+                        # when the replay never ran / errored (unavailable);
+                        # otherwise it ran — crashed if any oracle fired or
+                        # any exception surfaced, else clean.
+                        _breplay_status = (
+                            "unavailable" if _breplay_ids is None
+                            else ("crashed" if (_breplay_ids or _bt_all)
+                                  else "clean"))
+                        # Crash-identity fragment for the same-check /
+                        # no-defect branch (batch5 Chart-26-c): NAME the
+                        # exception identity on both sides. It needs the raw
+                        # replay output and the patched per-oracle types, so
+                        # it is assembled here and passed in as data.
+                        _idline = ''
+                        if (_fired_ids
+                                and (_fired_ids & (_breplay_ids or set()))
+                                and not _bt_defect):
+                            try:
+                                from java.execution.fuzz_runner import (
+                                    crash_signature as _csig,
+                                    cause_signature as _causesig)
+                                _s1 = _csig(_breplay_out) or ''
+                                _s2 = _causesig(_breplay_out) or ''
+                                _ptt = set()
+                                for _oid in _fired_ids:
+                                    _ptt |= (_patched_types.get(_oid)
+                                             or set())
+                                if _s1 or _s2 or _ptt:
+                                    _idline = (
+                                        " Underlying exception "
+                                        "identity — on the buggy "
+                                        "replay: "
+                                        + (_s1 or 'no crash')
+                                        + (("; root cause: " + _s2)
+                                           if _s2 else '')
+                                        + "; under the patched "
+                                        "firing: "
+                                        + (", ".join(sorted(_ptt))
+                                           or 'none recorded')
+                                        + ". An identity different "
+                                        "from the reported bug's own "
+                                        "failure is a different, "
+                                        "pre-existing problem.")
+                            except Exception:
+                                pass
+                        _breplay_note = semantic_buggy_replay_note(
+                            _fired_ids, _breplay_status, _breplay_ids,
+                            _bt_all, _bt_defect, _esc_type, _idline)
+                        if _fired_ids:
+                            print(f"      [buggy-replay] fact attached "
+                                  f"(same-check={bool(_fired_ids & (_breplay_ids or set()))}, "
+                                  f"defect={bool(_bt_defect)})")
                         else:
-                            _breplay_note = (
-                                "[buggy-replay fact] the buggy build "
-                                "handles this exact input cleanly "
-                                "WITHOUT firing this check — the patch "
-                                "INTRODUCED the violation here, and the "
-                                "buggy build is an existence proof that "
-                                "real code satisfies the asserted "
-                                "property on this input. 'A correct "
-                                "implementation might legitimately "
-                                "violate it' is not available as "
-                                "grounds; to answer UNSOUND you must "
-                                "point at a documented contract the "
-                                "assertion contradicts.")
-                        print(f"      [buggy-replay] fact attached "
-                              f"(same-check={bool(_fired_ids & (_breplay_ids or set()))}, "
-                              f"defect={bool(_bt_defect)})")
-                    elif _esc_type and getattr(r, 'artifact_path', None):
-                        # Escaped firing: type-based attribution (there is
-                        # no oracle id to match). The crashing same-type
-                        # no-defect case was already dropped above.
-                        if _breplay_ids is None:
-                            _breplay_note = (
-                                "[buggy-replay fact] replaying this "
-                                "escaped exception's exact input on the "
-                                "buggy build was unavailable — no "
-                                "attribution fact; judge on soundness "
-                                "alone, sceptically.")
-                        elif _esc_type in _bt_defect:
-                            _breplay_note = (
-                                "[buggy-replay fact] this escaped "
-                                "exception IS the reported defect type "
-                                "and the SAME exception occurs on the "
-                                "BUGGY build at this exact input — "
-                                "identical crash on both builds. Two "
-                                "readings, decided by the INPUT: if the "
-                                "harness constructed this input to be "
-                                "valid by construction, the patch left "
-                                "the reported defect unfixed here; if it "
-                                "is fuzzed junk no implementation is "
-                                "obliged to accept, this is pre-existing "
-                                "malformed-input surface that even a "
-                                "correct fix retains — dismiss.")
-                        elif _esc_same_on_buggy:
-                            _breplay_note = (
-                                "[buggy-replay fact] the BUGGY build "
-                                "raises this same exception type ("
-                                + _esc_type + ") at this exact input — "
-                                "identical rejection on both builds; the "
-                                "patch did not change this behaviour. "
-                                "Pre-existing input-rejection surface — "
-                                "dismiss.")
-                        elif _bt_defect:
-                            _breplay_note = (
-                                "[buggy-replay fact] at this exact input "
-                                "the BUGGY build produces the reported "
-                                "defect ("
-                                + ", ".join(sorted(_bt_defect)[:4])
-                                + ") while the patched build raises "
-                                + _esc_type + " instead — the patch "
-                                "changed the failure mode at a defect "
-                                "input. Judge whether the new exception "
-                                "is a documented, acceptable rejection "
-                                "or nonsense wearing an exception type.")
-                        else:
-                            _breplay_note = (
-                                "[buggy-replay fact] the buggy build "
-                                "handles this exact input WITHOUT "
-                                "raising " + _esc_type + " — the patch "
-                                "INTRODUCED this exception here. On an "
-                                "input the harness constructed to be "
-                                "valid, that is strong evidence against "
-                                "the patch; on fuzzed junk it is "
-                                "ordinary rejection surface — decide by "
-                                "the harness's input construction.")
-                        print(f"      [buggy-replay] escaped-firing fact "
-                              f"attached ({_esc_type})")
+                            print(f"      [buggy-replay] escaped-firing fact "
+                                  f"attached ({_esc_type})")
                     # The firing INPUT itself, verbatim (batch6 Lang-27-c:
                     # attribution ruled 'duty to fix' on a defect-type
                     # crash without ever seeing that the input was fuzzer
@@ -2516,24 +2383,20 @@ def main():
                             re.search(r'lift|seed[-_]?test', fid, re.I)
                             for fid in _fired_ids))
                     if _lifted_of or _generic_lift:
-                        _which = (", ".join(sorted(_lifted_of))
-                                  if _lifted_of
-                                  else "the failing test (generic lift id)")
-                        _note = ("[trigger-test lift] this oracle lifts "
-                                 + _which
-                                 + " — the REAL test was rerun on this "
-                                 "patched build and PASSES. If this firing "
-                                 "replays the test's own scenario/inputs, "
-                                 "it is harness-setup divergence and must "
-                                 "be dismissed; keep it only if the firing "
-                                 "input genuinely differs from the test's "
-                                 "own. Cross-check the observed value "
-                                 "against the real failure message shown "
-                                 "below: if they match, the harness "
-                                 "reproduced the TEST's scenario, where a "
-                                 "correct patch passes — dismiss.")
-                        _fact_notes.append(_note)
-                        evid = (evid + "\n" + _note) if evid else _note
+                        # Spec D: the name regex only DETECTS lift provenance;
+                        # dismissal wording is licensed by a mechanical value
+                        # comparison, never by the name alone. A divergent
+                        # value is the definition of a generalisation catch.
+                        _value_verdict = fired_value_vs_trusted(
+                            fired, trusted_values)
+                        _note = trigger_lift_note(
+                            sorted(_lifted_of), bool(_generic_lift),
+                            _value_verdict)
+                        if _note:
+                            print(f"      [trigger-test lift] "
+                                  f"value-vs-trusted={_value_verdict}")
+                            _fact_notes.append(_note)
+                            evid = (evid + "\n" + _note) if evid else _note
                     _j3 = _j3_failing_test_block(failure_tests)
                     if _j3:
                         evid = (evid + "\n" + _j3) if evid else _j3

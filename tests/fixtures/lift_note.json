@@ -1,0 +1,52 @@
+{
+  "math68_armC_differs": {
+    "provenance": {
+      "run": "armC_attr_20260721_150801",
+      "trace": "runs-archive/runs/armC_attr_20260721_150801/11_patch1-Math-68-Arja-plausible_o/trace.md",
+      "line": 6864,
+      "note": "FIRED [oracle:lifted-param-1]; trusted MINPACK literal at lines 289-294 / 4575 (testMinpackJennrichSampson second expected param). fired actual differs from trusted by ~1.2e-5. Killed a real generalization catch under the old dismissal wording (WHY block ~7658)."
+    },
+    "oracle_name": "lifted-param-1",
+    "fired_msg": "[oracle:lifted-param-1] semantic mismatch: expected=0.257829976764542 actual=0.25781765926522887",
+    "fired_actual": 0.25781765926522887,
+    "trusted_values": [0.2578330049, 0.257829976764542],
+    "expected_value_verdict": "differs",
+    "generic_lift": true,
+    "lifted_names": []
+  },
+  "math68_armA_undetected": {
+    "provenance": {
+      "run": "armA_off_20260721_122647",
+      "trace": "runs-archive/runs/armA_off_20260721_122647/11_patch1-Math-68-Arja-plausible_o/trace.md",
+      "line": 7916,
+      "note": "FIRED [oracle:jennrich-seed-p1]; name does NOT match lift|seed[-_]?test regex ('seed-p1' != 'seed-test'), so lift provenance is undetected -> no note today. fired actual differs from trusted by ~1.2e-5."
+    },
+    "oracle_name": "jennrich-seed-p1",
+    "fired_msg": "[oracle:jennrich-seed-p1] semantic mismatch: expected 0.257829976764542 but was 0.25781765926522127",
+    "fired_actual": 0.25781765926522127,
+    "trusted_values": [0.2578330049, 0.257829976764542],
+    "expected_value_verdict": "differs",
+    "generic_lift": false,
+    "lifted_names": []
+  },
+  "synthetic_matches": {
+    "provenance": {
+      "note": "Synthetic (Spec D): fired value equal to a trusted literal within 1e-12 -> matches -> dismissal wording allowed."
+    },
+    "fired_msg": "[oracle:lifted-x] semantic mismatch: expected=1.5 actual=1.5000000000001",
+    "trusted_values": [1.5],
+    "expected_value_verdict": "matches",
+    "generic_lift": true,
+    "lifted_names": []
+  },
+  "synthetic_unknown_nonnumeric": {
+    "provenance": {
+      "note": "Synthetic (Spec D): exception-only firing with no extractable numeric on either side -> unknown -> neutral wording."
+    },
+    "fired_msg": "[oracle:lifted-x] semantic mismatch: NullPointerException thrown during optimize",
+    "trusted_values": ["some documented contract text"],
+    "expected_value_verdict": "unknown",
+    "generic_lift": true,
+    "lifted_names": []
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "math30_shadowed_branch": {
+    "provenance": {
+      "run": "armA_off_20260721_122647",
+      "trace": "runs-archive/runs/armA_off_20260721_122647/08_patch1-Math-30-CapGen_c/trace.md",
+      "line": 2726,
+      "note": "[buggy-replay fact] shadowed branch. Today: 'a screening result of DIRECTION-CONFIRMED already establishes the buggy build violates this check' (extrapolation that helped convict a correct patch)."
+    },
+    "fired_ids": ["large-identical-p1"],
+    "breplay_status": "crashed",
+    "breplay_ids": ["big-dataset-threshold"],
+    "bt_all": [],
+    "bt_defect": [],
+    "esc_type": null,
+    "idline": "",
+    "must_contain_ci": "unknown",
+    "must_not_contain": "already establishes"
+  },
+  "math65_shadowed_branch": {
+    "provenance": {
+      "run": "armA_off_20260721_122647",
+      "trace": "runs-archive/runs/armA_off_20260721_122647/10_patch1-Math-65-CapGen_c/trace.md",
+      "line": 4980,
+      "note": "Same shadowed-branch wording; second robust wrongful conviction. Also at line 6019."
+    },
+    "fired_ids": ["chi-weighted-sum"],
+    "breplay_status": "crashed",
+    "breplay_ids": ["circle-dense-err0"],
+    "bt_all": [],
+    "bt_defect": [],
+    "esc_type": null,
+    "idline": "",
+    "must_contain_ci": "unknown",
+    "must_not_contain": "already establishes"
+  },
+  "same_check_regression": {
+    "provenance": {
+      "run": "armA_off_20260721_122647",
+      "trace": "runs-archive/runs/armA_off_20260721_122647/10_patch1-Math-65-CapGen_c/trace.md",
+      "line": 6866,
+      "note": "Regression: fired_ids & breplay_ids non-empty -> same-check branch keeps current wording (run.py ~2170-2186)."
+    },
+    "fired_ids": ["chi-weighted-sum"],
+    "breplay_status": "crashed",
+    "breplay_ids": ["chi-weighted-sum"],
+    "bt_all": [],
+    "bt_defect": [],
+    "esc_type": null,
+    "idline": "",
+    "must_contain": ["identical on both builds", "the patch did not cause"]
+  },
+  "error_status_regression": {
+    "provenance": {
+      "note": "Regression (Spec C): breplay_status == 'error' keeps current unavailable wording (run.py ~2110-2115)."
+    },
+    "fired_ids": ["large-identical-p1"],
+    "breplay_status": "error",
+    "breplay_ids": null,
+    "bt_all": [],
+    "bt_defect": [],
+    "esc_type": null,
+    "idline": "",
+    "must_contain_ci": "unavailable"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "closure70_shadowed": {
+    "provenance": {
+      "run": "armA_off_20260721_122647",
+      "trace": "runs-archive/runs/armA_off_20260721_122647/05_patch1-Closure-70-Jaid_c/trace.md",
+      "line": 6719,
+      "note": "[differential replay] evidence block; today emits 'the crash is introduced by the patch' (wrong fact that convicted a correct patch)."
+    },
+    "patched_sig": "java.lang.IllegalStateException@com.google.common.base.Preconditions.checkState",
+    "buggy_status": "crashed",
+    "buggy_sig": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow@com.google.javascript.jscomp.FuzzHarness.runOracle",
+    "expected_verdict": "SHADOWED",
+    "old_wording_must_not_appear": "the crash is introduced by the patch"
+  },
+  "error_status_abstain": {
+    "provenance": {
+      "note": "Synthetic (Spec B): replay itself failed to run. Today conflated with clean and emitted INTRODUCED."
+    },
+    "patched_sig": "java.lang.IllegalStateException@com.google.common.base.Preconditions.checkState",
+    "buggy_status": "error",
+    "buggy_sig": null,
+    "expected_verdict": "ABSTAIN"
+  },
+  "identical_sig_preexisting": {
+    "provenance": {
+      "note": "Regression (Spec B): identical escaped signature on both builds -> pre-existing surface."
+    },
+    "patched_sig": "java.lang.NullPointerException@com.example.Foo.bar",
+    "buggy_status": "crashed",
+    "buggy_sig": "java.lang.NullPointerException@com.example.Foo.bar",
+    "expected_verdict": "PREEXISTING"
+  },
+  "buggy_clean_introduced": {
+    "provenance": {
+      "note": "Regression (Spec B): buggy ran to completion without crashing; clean really means clean -> patch introduced."
+    },
+    "patched_sig": "java.lang.IllegalStateException@com.example.Foo.bar",
+    "buggy_status": "clean",
+    "buggy_sig": null,
+    "expected_verdict": "INTRODUCED"
+  },
+  "different_nonalarm_introduced": {
+    "provenance": {
+      "note": "Regression (Spec B): buggy crashed with a DIFFERENT, non-harness-alarm signature -> introduced (trustworthy now that error is separated)."
+    },
+    "patched_sig": "java.lang.IllegalStateException@com.example.Foo.bar",
+    "buggy_status": "crashed",
+    "buggy_sig": "java.lang.ArrayIndexOutOfBoundsException@com.example.Other.baz",
+    "expected_verdict": "INTRODUCED"
+  }
+}

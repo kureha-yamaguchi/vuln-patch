@@ -1153,17 +1153,32 @@ class FuzzRunner:
             artifact_path=artifact,
         )
 
-    def replay_input(self,
-                     harness_path: str,
-                     class_name: str,
-                     project_cp: str,
-                     input_file: str,
-                     timeout_seconds: int = 30) -> Optional[str]:
-        """Execute ONE persisted crashing input against `project_cp` and
-        return the resulting crash_signature, or None if it does not crash
-        (or the replay itself errors — the attribution check must ABSTAIN
-        on doubt, never block). The caller passes the BUGGY classpath to
-        ask whether a firing is pre-existing rather than patch-caused."""
+    def replay_input_result(self,
+                            harness_path: str,
+                            class_name: str,
+                            project_cp: str,
+                            input_file: str,
+                            timeout_seconds: int = 30
+                            ) -> Tuple[str, Optional[str]]:
+        """Execute ONE persisted input against `project_cp` and report a
+        THREE-way outcome (status, sig):
+
+          * "crashed" — the input triggered a crash; sig = crash_signature.
+          * "clean"   — the replay ran to completion without triggering.
+          * "error"   — run_jazzer raised, the subprocess timed out, or it
+            exited nonzero without a recognised finding; sig = None.
+
+        Spec B (G1): a differential replay must never say "clean" when it
+        errored or never arrived — an infrastructure failure must not
+        manufacture evidence against the patch. run_jazzer collapses "ran
+        clean" and several infra-failure modes onto triggered=False, so we
+        separate them here: only a run that COMPLETED (returncode 0, no
+        timeout) and did not trigger is "clean"; every other non-triggering
+        outcome is "error". run_jazzer cannot distinguish a genuinely clean
+        nonzero exit from a Jazzer/JVM startup failure, so that ambiguity
+        maps to "error" (never to "clean"), per the never-manufacture rule.
+        The caller passes the BUGGY classpath to ask whether a firing is
+        pre-existing rather than patch-caused."""
         try:
             outcome = run_jazzer(
                 jazzer_standalone_jar=self.jazzer_standalone_jar,
@@ -1177,10 +1192,34 @@ class FuzzRunner:
             )
         except Exception as exc:
             print(f"  (single-input replay failed: {exc})")
-            return None
-        if not outcome.triggered:
-            return None
-        return crash_signature(outcome.combined_output)
+            return "error", None
+        if outcome.triggered:
+            return "crashed", crash_signature(outcome.combined_output)
+        if outcome.timed_out or outcome.returncode != 0:
+            # Did not trigger, but did not cleanly complete either — a hung
+            # or failed replay, not evidence the input runs clean on buggy.
+            return "error", None
+        return "clean", None
+
+    def replay_input(self,
+                     harness_path: str,
+                     class_name: str,
+                     project_cp: str,
+                     input_file: str,
+                     timeout_seconds: int = 30) -> Optional[str]:
+        """Execute ONE persisted crashing input against `project_cp` and
+        return the resulting crash_signature, or None if it does not crash
+        (or the replay itself errors — the attribution check must ABSTAIN
+        on doubt, never block). The caller passes the BUGGY classpath to
+        ask whether a firing is pre-existing rather than patch-caused.
+
+        Thin wrapper over replay_input_result for callers that only need the
+        crash signature: "clean" and "error" both collapse to None (the
+        historical behaviour), while replay_input_result keeps them apart."""
+        status, sig = self.replay_input_result(
+            harness_path, class_name, project_cp, input_file,
+            timeout_seconds)
+        return sig if status == "crashed" else None
 
     def replay_input_oracles(self,
                              harness_path: str,
@@ -1216,16 +1255,21 @@ class FuzzRunner:
         from java.parsing.java_source import oracle_ids_in_text
         return oracle_ids_in_text(outcome.combined_output)
 
-    def replay_input_signatures(self,
-                                harness_path: str,
-                                class_name: str,
-                                project_cp: str,
-                                input_file: str,
-                                timeout_seconds: int = 30
-                                ) -> Tuple[Optional[str], Optional[str]]:
-        """Like replay_input, but returns (headline_signature,
-        cause_signature) — the P0.3 laundering check needs the cause
-        chain of the buggy-build replay, not just its headline."""
+    def replay_input_signatures_result(self,
+                                       harness_path: str,
+                                       class_name: str,
+                                       project_cp: str,
+                                       input_file: str,
+                                       timeout_seconds: int = 30
+                                       ) -> Tuple[str, Optional[str],
+                                                  Optional[str]]:
+        """Like replay_input_result, but returns (status,
+        headline_signature, cause_signature) — the P0.3 laundering check
+        needs the cause chain of the buggy-build replay, not just its
+        headline. Same Spec B rule as replay_input_result: a replay that
+        errored or never completed must report "error", never read as a
+        clean buggy run (which would manufacture evidence against the
+        patch)."""
         try:
             outcome = run_jazzer(
                 jazzer_standalone_jar=self.jazzer_standalone_jar,
@@ -1239,11 +1283,29 @@ class FuzzRunner:
             )
         except Exception as exc:
             print(f"  (single-input replay failed: {exc})")
-            return None, None
-        if not outcome.triggered:
-            return None, None
-        return (crash_signature(outcome.combined_output),
-                cause_signature(outcome.combined_output))
+            return "error", None, None
+        if outcome.triggered:
+            return ("crashed",
+                    crash_signature(outcome.combined_output),
+                    cause_signature(outcome.combined_output))
+        if outcome.timed_out or outcome.returncode != 0:
+            return "error", None, None
+        return "clean", None, None
+
+    def replay_input_signatures(self,
+                                harness_path: str,
+                                class_name: str,
+                                project_cp: str,
+                                input_file: str,
+                                timeout_seconds: int = 30
+                                ) -> Tuple[Optional[str], Optional[str]]:
+        """Thin wrapper over replay_input_signatures_result for callers that
+        do not need the error/clean distinction (both collapse to
+        (None, None), the historical behaviour)."""
+        _status, sig, cause = self.replay_input_signatures_result(
+            harness_path, class_name, project_cp, input_file,
+            timeout_seconds)
+        return sig, cause
 
     def replay_input_report(self,
                             harness_path: str,
