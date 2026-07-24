@@ -190,15 +190,19 @@ def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
                         + (idline or ""))
             if value_verdict == "identical":
                 return ("[buggy-replay fact] the exact firing input fires the "
-                        "SAME check on the BUGGY build — behaviour at this "
-                        "input is identical on both builds; the patch did not "
-                        "cause or preserve anything here. The REAL failing "
-                        "test was rerun on this patched build and PASSES, so "
-                        "the test's own scenario is settled in the patch's "
-                        "favour. Keep this finding ONLY if it asserts the very "
-                        "behaviour the failing test shows is wrong, at inputs "
-                        "the real test does NOT itself exercise; otherwise it "
-                        "measures pre-existing surface — dismiss."
+                        "SAME check on the BUGGY build with the SAME observed "
+                        "values — behaviour at this input is identical on "
+                        "both builds; the patch did not cause or preserve "
+                        "anything here. No contract argument can rescue this "
+                        "finding: if the asserted contract is real, the "
+                        "UNPATCHED code violates it identically at this "
+                        "input, making it pre-existing surface by "
+                        "definition. The REAL failing test was rerun on this "
+                        "patched build and PASSES, so the test's own scenario "
+                        "is settled in the patch's favour. Keep this finding "
+                        "ONLY if it asserts the very behaviour the failing "
+                        "test shows is wrong, at inputs the real test does "
+                        "NOT itself exercise; otherwise dismiss."
                         + (idline or ""))
             # unknown: no observed value could be compared — state the
             # fires-on-both fact WITHOUT the "identical" over-claim, and keep
@@ -617,8 +621,15 @@ def muted_replay_note(target_ids, muted_ids, status, fired_ids,
         if value_verdict == "identical":
             return ("[muted-replay fact] with the shadowing check(s) "
                     + ids_txt + " silenced, THIS check fires on the BUGGY "
-                    "build at this exact input — behaviour is identical on "
-                    "both builds; the patch did not cause this.")
+                    "build at this exact input with the SAME observed values "
+                    "— behaviour is identical on both builds; the patch did "
+                    "not cause this. No contract argument can rescue the "
+                    "finding: if the asserted contract is real, the UNPATCHED "
+                    "code violates it identically at this input — "
+                    "pre-existing surface by definition. Keep ONLY under the "
+                    "patch-failed-to-fix pattern (the violated property is "
+                    "the failing test's own observable, beyond the test's "
+                    "own inputs).")
         return ("[muted-replay fact] with the shadowing check(s) " + ids_txt
                 + " silenced, THIS check fires on the BUGGY build at this "
                 "exact input — the same check fires on both builds (observed "
