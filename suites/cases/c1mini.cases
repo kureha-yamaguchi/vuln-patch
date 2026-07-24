@@ -1,0 +1,14 @@
+# Cycle-1 middle-loop mini-suite (2026-07-24): the four legs the G5+G1
+# evidence-fact fixes claim to move, re-run on the cheap model to see the new
+# facts (SHADOWED verdict, de-extrapolated shadowed note, value-gated lift
+# note) appear in real traces. Serial (PARALLEL=1 default) per the
+# tiny-suite protocol. These bugs are BURNED (regression pool) — this run
+# validates mechanism, it is not evidence of generalization.
+MODEL="gpt-5.4-nano"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-70-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-30-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-68-Arja-plausible.patch"
+)
