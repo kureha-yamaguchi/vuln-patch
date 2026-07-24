@@ -38,7 +38,7 @@
       "run": "armA_off_20260721_122647",
       "trace": "runs-archive/runs/armA_off_20260721_122647/10_patch1-Math-65-CapGen_c/trace.md",
       "line": 6866,
-      "note": "Regression: fired_ids & breplay_ids non-empty -> same-check branch keeps current wording (run.py ~2170-2186)."
+      "note": "Regression: fired_ids & breplay_ids non-empty -> same-check branch keeps current wording (run.py same-check site). Spec I (cycle-2b): the identical-on-both-builds wording is now EARNED by value_verdict='identical' (observed values compared and matching); the default 'unknown' no longer over-claims."
     },
     "fired_ids": ["chi-weighted-sum"],
     "breplay_status": "crashed",
@@ -47,6 +47,7 @@
     "bt_defect": [],
     "esc_type": null,
     "idline": "",
+    "value_verdict": "identical",
     "must_contain": ["identical on both builds", "the patch did not cause"]
   },
   "error_status_regression": {

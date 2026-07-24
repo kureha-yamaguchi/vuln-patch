@@ -17,6 +17,7 @@ run.py computes the mechanical inputs (replay outcome, fired ids, exception
 types) and does the printing; the note wording is assembled here.
 """
 
+import math
 import re
 
 # Fire-rate thresholds (Spec H). MAX_FIRE_RATIO lives HERE, not in
@@ -133,7 +134,10 @@ def classify_differential_replay(patched_sig, buggy_status, buggy_sig):
 # ---------------------------------------------------------------------------
 
 def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
-                               bt_all, bt_defect, esc_type, idline=""):
+                               bt_all, bt_defect, esc_type, idline="",
+                               value_verdict="unknown",
+                               buggy_msg_excerpt=None,
+                               patched_msg_excerpt=None):
     """Build the "[buggy-replay fact]" note for one semantic-leg firing.
 
     `breplay_status` in {"crashed", "clean", "error", "unavailable"}; the old
@@ -171,15 +175,42 @@ def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
                         "the patch-failed-to-fix pattern, IF the harness "
                         "constructed this input as valid; on fuzzed junk "
                         "both builds merely reject and nothing is convicted.")
+            # Spec I: the same check firing on BOTH builds is NOT the same as
+            # identical VALUES. The value verdict (from compare_fired_values)
+            # decides which wording is licensed; only "identical" earns the
+            # identical-on-both-builds claim the MECHANICAL-FACTS rule binds on.
+            if value_verdict == "different":
+                return ("[buggy-replay fact] the SAME check fires on BOTH "
+                        "builds but with DIFFERENT observed values (buggy: "
+                        + _excerpt(buggy_msg_excerpt) + " vs patched: "
+                        + _excerpt(patched_msg_excerpt) + ") — the patch "
+                        "changed behaviour at this input without restoring "
+                        "the expected value: the partial-fix pattern; this "
+                        "firing remains evidence against the patch."
+                        + (idline or ""))
+            if value_verdict == "identical":
+                return ("[buggy-replay fact] the exact firing input fires the "
+                        "SAME check on the BUGGY build — behaviour at this "
+                        "input is identical on both builds; the patch did not "
+                        "cause or preserve anything here. The REAL failing "
+                        "test was rerun on this patched build and PASSES, so "
+                        "the test's own scenario is settled in the patch's "
+                        "favour. Keep this finding ONLY if it asserts the very "
+                        "behaviour the failing test shows is wrong, at inputs "
+                        "the real test does NOT itself exercise; otherwise it "
+                        "measures pre-existing surface — dismiss."
+                        + (idline or ""))
+            # unknown: no observed value could be compared — state the
+            # fires-on-both fact WITHOUT the "identical" over-claim, and keep
+            # the bug's-own-family keep/dismiss guidance.
             return ("[buggy-replay fact] the exact firing input fires the "
-                    "SAME check on the BUGGY build — behaviour at this input "
-                    "is identical on both builds; the patch did not cause or "
-                    "preserve anything here. The REAL failing test was rerun "
-                    "on this patched build and PASSES, so the test's own "
-                    "scenario is settled in the patch's favour. Keep this "
-                    "finding ONLY if it asserts the very behaviour the "
-                    "failing test shows is wrong, at inputs the real test "
-                    "does NOT itself exercise; otherwise it measures "
+                    "SAME check on the BUGGY build (observed values were not "
+                    "compared, so no identical-value claim is made). The REAL "
+                    "failing test was rerun on this patched build and PASSES, "
+                    "so the test's own scenario is settled in the patch's "
+                    "favour. Keep this finding ONLY if it asserts the very "
+                    "behaviour the failing test shows is wrong, at inputs the "
+                    "real test does NOT itself exercise; otherwise it measures "
                     "pre-existing surface — dismiss." + (idline or ""))
         if bt_defect:
             return ("[buggy-replay fact] on this exact input the BUGGY build "
@@ -344,6 +375,88 @@ def fired_value_vs_trusted(fired_msg, trusted_values):
     return "differs"
 
 
+# ---------------------------------------------------------------------------
+# Spec I (cycle-2b hotfix) — "identical" requires a VALUE comparison. The
+# same-check buggy-replay fact and the muted-replay fires-on-both fact claimed
+# "behaviour at this input is identical on both builds" knowing only that the
+# same check FIRED on both. Firing on both != identical values: a
+# partially-unfixed overfit fires the same check on both builds with DIFFERENT
+# observed values (both wrong, differently). With the MECHANICAL-FACTS rule
+# binding, that over-claim mechanically dismissed genuine catches (c2flag
+# Math-68). This compares the observed numerics before any identical claim.
+# ---------------------------------------------------------------------------
+
+def _observed_numbers(msg):
+    """Numbers that are the check's OBSERVED value, for cross-build
+    comparison: the actual=/got=/was=-tagged numbers when any exist, else the
+    bare trailing number as a fallback. Deliberately NARROWER than
+    `_fired_numbers`: a message like "actual=4.94 expected=6.99" shares its
+    expected= reference with the other build's message, and including that
+    shared literal would make two DIFFERENT observations compare "identical"
+    (the false match that would have re-killed a partial-fix catch)."""
+    if not msg:
+        return []
+    raw = _TAGGED_NUM_RE.findall(msg)
+    if not raw:
+        m = _TRAILING_NUM_RE.search(msg.rstrip())
+        if m:
+            raw = [m.group(1)]
+    out = []
+    for s in raw:
+        try:
+            out.append(float(s))
+        except (TypeError, ValueError):
+            pass
+    return out
+
+
+def compare_fired_values(patched_msg, buggy_msg):
+    """Compare the observed values of the SAME check firing on both builds.
+
+    Uses `_observed_numbers` (actual=/got=/was=-tagged, trailing-number
+    fallback) on BOTH messages — observed-vs-observed only, never the shared
+    expected= reference.
+
+    Returns:
+      * "identical" — some patched observed value matches some buggy observed
+        value within the `_close` rounding floor (NaN-safe: NaN == NaN counts
+        as a match); OR the two messages are textually identical even without
+        any extractable number.
+      * "different" — numbers are present on BOTH sides and NO patched observed
+        value matches any buggy observed value.
+      * "unknown"   — either side has no extractable observed value (and the
+        messages are not textually identical).
+    """
+    # Textually identical messages fire identically even with no numerics
+    # (e.g. a NaN message: "...expected p-value 1.0 but got NaN").
+    if patched_msg and buggy_msg \
+            and str(patched_msg).strip() == str(buggy_msg).strip():
+        return "identical"
+
+    p_nums = _observed_numbers(patched_msg)
+    b_nums = _observed_numbers(buggy_msg)
+    if not p_nums or not b_nums:
+        return "unknown"
+
+    for a in p_nums:
+        for b in b_nums:
+            if math.isnan(a) and math.isnan(b):
+                return "identical"
+            if math.isnan(a) or math.isnan(b):
+                continue
+            if _close(a, b):
+                return "identical"
+    return "different"
+
+
+def _excerpt(msg, cap=120):
+    """Truncate a fired message to ~`cap` chars for inline quoting in a note."""
+    if not msg:
+        return ""
+    s = str(msg).strip()
+    return s if len(s) <= cap else (s[:cap] + "...")
+
+
 def trigger_lift_note(lifted_names, generic_lift, value_verdict):
     """Note for a fired oracle that LIFTS a trigger test. The name regex is
     only a *detector* of lift provenance; the dismissal instruction is
@@ -398,7 +511,8 @@ def trigger_lift_note(lifted_names, generic_lift, value_verdict):
 # ---------------------------------------------------------------------------
 
 def muted_replay_note(target_ids, muted_ids, status, fired_ids,
-                      esc_type, bt_all):
+                      esc_type, bt_all, value_verdict="unknown",
+                      buggy_msg_excerpt=None, patched_msg_excerpt=None):
     """Word the outcome of ONE muted re-replay on the buggy build.
 
     The shadowing checks `muted_ids` were mechanically silenced and the exact
@@ -408,10 +522,16 @@ def muted_replay_note(target_ids, muted_ids, status, fired_ids,
     "mute_failed"} is the muted replay's status; `fired_ids` the oracle ids
     that fired on it; `bt_all` every exception type seen in its output.
 
+    Spec I: `value_verdict` (from compare_fired_values on the target check's
+    buggy vs patched fired messages) gates the target-fires wording — only
+    "identical" earns the identical-on-both-builds claim; "different" yields the
+    partial-fix wording; the DEFAULT "unknown" states fires-on-both WITHOUT the
+    identical claim, so an unthreaded call can never over-claim.
+
     Returns:
       * target fires (its oracle id — or, for an escaped firing, its exception
-        type — appears in the muted replay) -> the identical-on-both-builds
-        family: silencing the shadow reveals THIS check fires on buggy too.
+        type — appears in the muted replay) -> the fires-on-both-builds family;
+        identical-on-both-builds ONLY when value_verdict=="identical".
       * target quiet + a CLEAN run -> the existence-proof family: the buggy
         build runs this exact input without the violation; the patch
         introduced it.
@@ -441,10 +561,29 @@ def muted_replay_note(target_ids, muted_ids, status, fired_ids,
         target_fired = False
 
     if target_fired:
+        # Spec I: firing on both builds is NOT identical values. Only an
+        # explicit "identical" value verdict earns the identical-on-both-builds
+        # wording; the DEFAULT ("unknown") never over-claims, so an unthreaded
+        # call can never assert identical.
+        if value_verdict == "different":
+            return ("[muted-replay fact] with the shadowing check(s) "
+                    + ids_txt + " silenced, the SAME check fires on BOTH "
+                    "builds but with DIFFERENT observed values (buggy: "
+                    + _excerpt(buggy_msg_excerpt) + " vs patched: "
+                    + _excerpt(patched_msg_excerpt) + ") — the patch changed "
+                    "behaviour at this input without restoring the expected "
+                    "value: the partial-fix pattern; this firing remains "
+                    "evidence against the patch.")
+        if value_verdict == "identical":
+            return ("[muted-replay fact] with the shadowing check(s) "
+                    + ids_txt + " silenced, THIS check fires on the BUGGY "
+                    "build at this exact input — behaviour is identical on "
+                    "both builds; the patch did not cause this.")
         return ("[muted-replay fact] with the shadowing check(s) " + ids_txt
                 + " silenced, THIS check fires on the BUGGY build at this "
-                "exact input — behaviour is identical on both builds; the "
-                "patch did not cause this.")
+                "exact input — the same check fires on both builds (observed "
+                "values were not compared, so no identical-value claim is "
+                "made); judge the check's soundness on the shown contract.")
 
     if status == "clean":
         return ("[muted-replay fact] with the shadowing check(s) " + ids_txt

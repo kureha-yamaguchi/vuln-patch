@@ -45,6 +45,24 @@ from java.harness.prompts import PromptBuilder
 from java.parsing.java_source import candidate_anchor_literals, expected_assert_literals
 
 
+def _extract_oracle_msg(output, oid, cap=200):
+    """Spec I: pull the first `[oracle:<id>]` fired message out of a replay's
+    raw output (up to ~`cap` chars, single line) so the SAME check's observed
+    value on the buggy build can be compared to the patched firing. Returns
+    None when the id's message is not present — the caller then treats the
+    value comparison as UNKNOWN (never over-claims 'identical')."""
+    if not output or not oid:
+        return None
+    tag = "[oracle:" + str(oid) + "]"
+    idx = output.find(tag)
+    if idx < 0:
+        return None
+    seg = output[idx:idx + cap]
+    nl = seg.find("\n")
+    if nl >= 0:
+        seg = seg[:nl]
+    return seg.strip() or None
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -2232,9 +2250,39 @@ def main():
                                         "pre-existing problem.")
                             except Exception:
                                 pass
+                        # Spec I: when the SAME check fires on both builds,
+                        # firing-on-both != identical VALUES. Extract the buggy
+                        # replay's fired message for the same oracle id and
+                        # compare observed numerics; extraction failure =>
+                        # "unknown" (the note then makes no identical claim).
+                        _value_verdict = "unknown"
+                        _buggy_excerpt = None
+                        _patched_excerpt = None
+                        if (_fired_ids
+                                and (_fired_ids & (_breplay_ids or set()))
+                                and not _bt_defect):
+                            try:
+                                from java.relations.evidence_facts import (
+                                    compare_fired_values as _cfv)
+                                _bmsg = None
+                                for _oid in sorted(
+                                        _fired_ids & (_breplay_ids or set())):
+                                    _bmsg = _extract_oracle_msg(
+                                        _breplay_out, _oid)
+                                    if _bmsg:
+                                        break
+                                if _bmsg:
+                                    _value_verdict = _cfv(fired, _bmsg)
+                                    _buggy_excerpt = _bmsg
+                                    _patched_excerpt = fired
+                            except Exception:
+                                _value_verdict = "unknown"
                         _breplay_note = semantic_buggy_replay_note(
                             _fired_ids, _breplay_status, _breplay_ids,
-                            _bt_all, _bt_defect, _esc_type, _idline)
+                            _bt_all, _bt_defect, _esc_type, _idline,
+                            value_verdict=_value_verdict,
+                            buggy_msg_excerpt=_buggy_excerpt,
+                            patched_msg_excerpt=_patched_excerpt)
                         if _fired_ids:
                             print(f"      [buggy-replay] fact attached "
                                   f"(same-check={bool(_fired_ids & (_breplay_ids or set()))}, "
@@ -2270,8 +2318,33 @@ def main():
                                       f"fired={sorted(_mf or set())}")
                                 from java.relations.evidence_facts import (
                                     muted_replay_note as _mrn)
+                                # Spec I: compare the target check's observed
+                                # value on the muted buggy replay against the
+                                # patched firing before any identical claim;
+                                # extraction failure => "unknown".
+                                _mvv = "unknown"
+                                _mbe = None
+                                _mpe = None
+                                try:
+                                    from java.relations.evidence_facts import (
+                                        compare_fired_values as _cfv2)
+                                    _tmsg = None
+                                    for _oid in sorted(
+                                            _fired_ids & (_mf or set())):
+                                        _tmsg = _extract_oracle_msg(_mo, _oid)
+                                        if _tmsg:
+                                            break
+                                    if _tmsg:
+                                        _mvv = _cfv2(fired, _tmsg)
+                                        _mbe = _tmsg
+                                        _mpe = fired
+                                except Exception:
+                                    _mvv = "unknown"
                                 _mnote = _mrn(_fired_ids, _breplay_ids, _ms,
-                                              _mf, _esc_type, _mbt)
+                                              _mf, _esc_type, _mbt,
+                                              value_verdict=_mvv,
+                                              buggy_msg_excerpt=_mbe,
+                                              patched_msg_excerpt=_mpe)
                                 if _mnote:
                                     _breplay_note = (
                                         (_breplay_note or '') + " " + _mnote)

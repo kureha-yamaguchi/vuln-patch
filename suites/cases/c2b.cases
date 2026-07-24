@@ -1,0 +1,13 @@
+# Cycle-2b validation (2026-07-24): Spec I value-gated "identical" claims +
+# observed-vs-observed comparison. Same 4 legs as c1flag/c2flag, with the
+# Math-68 recall leg run TWICE (its catch is synthesis-roll-dependent; two
+# rolls give a fairer read than one). BURNED legs — mechanism validation.
+MODEL="gpt-5.4"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-70-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-30-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-68-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-68-Arja-plausible.patch"
+)

@@ -105,6 +105,9 @@ def test_different_nonalarm_signature_is_introduced():
 # --------------------------------------------------------------------------
 
 def _sem_note(fx):
+    # Spec I (cycle-2b): the same-check branch now takes a value verdict. The
+    # fixtures thread it (default "unknown"); a fixture that locks the
+    # identical-on-both-builds wording sets value_verdict="identical".
     return evidence_facts.semantic_buggy_replay_note(
         set(fx["fired_ids"]),
         fx["breplay_status"],
@@ -113,6 +116,9 @@ def _sem_note(fx):
         set(fx["bt_defect"]),
         fx["esc_type"],
         fx.get("idline", ""),
+        value_verdict=fx.get("value_verdict", "unknown"),
+        buggy_msg_excerpt=fx.get("buggy_msg_excerpt"),
+        patched_msg_excerpt=fx.get("patched_msg_excerpt"),
     )
 
 

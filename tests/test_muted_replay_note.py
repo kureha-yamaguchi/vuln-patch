@@ -33,6 +33,29 @@ _SHADOW = {"big-dataset-threshold"}
 
 
 def test_target_fires_says_identical_on_both_builds():
+    # Spec I (cycle-2b): the identical-on-both-builds claim is now EARNED by an
+    # explicit value verdict — firing on both != identical values. With
+    # value_verdict="identical" the binding mechanical fact stands verbatim.
+    note = evidence_facts.muted_replay_note(
+        target_ids=_TARGET,
+        muted_ids=_SHADOW,
+        status="crashed",
+        fired_ids={"large-identical-p1"},
+        esc_type=None,
+        bt_all=[],
+        value_verdict="identical",
+    )
+    assert note is not None
+    low = note.lower()
+    # The binding mechanical fact.
+    assert "identical on both builds" in low
+    # It must NOT accuse the patch of introducing the firing.
+    assert "introduc" not in low
+
+
+def test_target_fires_default_verdict_makes_no_identical_claim():
+    # Spec I: the DEFAULT (no value_verdict) can NEVER over-claim identical —
+    # an unthreaded call states fires-on-both without the identical claim.
     note = evidence_facts.muted_replay_note(
         target_ids=_TARGET,
         muted_ids=_SHADOW,
@@ -43,9 +66,9 @@ def test_target_fires_says_identical_on_both_builds():
     )
     assert note is not None
     low = note.lower()
-    # The binding mechanical fact.
-    assert "identical on both builds" in low
-    # It must NOT accuse the patch of introducing the firing.
+    assert "identical on both builds" not in low
+    # Still reports the mechanical fires-on-both fact.
+    assert "fires on the buggy build" in low
     assert "introduc" not in low
 
 
