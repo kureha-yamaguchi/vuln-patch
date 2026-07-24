@@ -293,6 +293,16 @@ _ATTRIB_GUIDANCE = (
     "WHY: <one sentence: your Q1-Q4 answers and the decision>")
 
 
+_FAMILY_DUTY_SYSTEM = (
+    "You answer ONE narrow question about a fuzzing-harness check that fired"
+    " on a patched build. A computed, key-value-certified fact has ALREADY"
+    " established that the observed behaviour at this exact input is IDENTICAL"
+    " on the buggy and patched builds — do NOT re-judge that fact, and do NOT"
+    " apply any general oracle-soundness rubric. Decide only the single"
+    " question put to you, from the failing test and the check shown, and"
+    " answer in the two-line format requested.")
+
+
 class RelationVerifier:
     """LLM-as-critic soundness check for a harness's oracle."""
 
@@ -487,6 +497,71 @@ class RelationVerifier:
                 return False, why or "not attributed to the patch"
             return True, why or "attributed or inconclusive"
         return True, why or "no attribution verdict parsed; finding stands"
+
+    def family_duty(self, fired_assertion: str,
+                    failing_test_block: str,
+                    check_source: str) -> Tuple[bool, str]:
+        """Cycle-3 mechanical identical-drop gate (ONE focused LLM call).
+
+        A computed, key-value-certified fact has ALREADY established that the
+        observed behaviour at the exact firing input is IDENTICAL on the
+        buggy and patched builds. By the identical-on-both-builds rule that
+        makes the finding pre-existing surface, it is dropped MECHANICALLY —
+        unless the single legitimate exception holds: the property this check
+        asserts is THE VERY behaviour the failing test shows is wrong (the
+        patch-failed-to-fix pattern), observed at inputs beyond the test's
+        own. Three cycle-2 prompt wordings failed to make the general
+        soundness rubric honour that identical fact, so cycle 3 asks ONLY
+        this single narrow question here — never the full rubric.
+
+        Returns (keep, why). keep=True => the family duty applies; proceed to
+        the normal rv.verify path. keep=False => drop the finding
+        mechanically (the caller mirrors the DEFECT-FAMILY-DISMISSED block).
+
+        Fails OPEN: on ANY LLM error it returns (True, ...) so an API failure
+        can NEVER cause a drop. Parses strictly: anything not affirmatively
+        `DUTY: YES` => False."""
+        user = (
+            "THE REAL FAILING TEST — its name, source, and the message it"
+            " fails with on the buggy build:\n<failing_test>\n"
+            + (failing_test_block or "?").strip()
+            + "\n</failing_test>\n\n"
+            "THE CHECK THAT FIRED — its source:\n<check_source>\n"
+            + (check_source or "?").strip()
+            + "\n</check_source>\n\n"
+            "THE ASSERTION MESSAGE it threw on the patched build:\n    "
+            + (fired_assertion or "?") + "\n\n"
+            "The observed behaviour is identical on the buggy and patched"
+            " builds at this input. The ONLY ground to keep this finding is"
+            " the patch-failed-to-fix pattern: the property this check"
+            " asserts must be THE VERY behaviour the failing test shows is"
+            " wrong (the same observable — not merely the same method or"
+            " class), observed at inputs beyond the test's own. Is that the"
+            " case here? Answer on two lines: DUTY: YES | NO, WHY: <one"
+            " sentence>.")
+        messages = [
+            {'role': 'system', 'content': _FAMILY_DUTY_SYSTEM},
+            {'role': 'user', 'content': user},
+        ]
+        try:
+            out = self._gen.generate(messages) or ""
+        except Exception:  # fail open — an API error may NEVER cause a drop
+            return True, ("family-duty check unavailable — fail open to full"
+                          " judging")
+        why = ""
+        for line in out.splitlines():
+            s = line.strip()
+            if s.upper().startswith("WHY:"):
+                why = s[4:].strip()
+        for line in out.splitlines():
+            s = line.strip()
+            if s.upper().startswith("DUTY:"):
+                verdict = s.upper().split("DUTY:", 1)[1].lstrip()
+                if verdict.startswith("YES"):
+                    return True, why or "family duty applies; proceed"
+                return False, why or "family duty does not apply"
+        # No parseable DUTY line -> not YES -> mechanical drop.
+        return False, why or "no DUTY verdict parsed"
 
     @staticmethod
     def _parse(out: str) -> Tuple[bool, str]:

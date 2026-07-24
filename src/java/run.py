@@ -2290,6 +2290,35 @@ def main():
                         else:
                             print(f"      [buggy-replay] escaped-firing fact "
                                   f"attached ({_esc_type})")
+                        # Cycle-3 item 1: MECHANICAL identical-drop. When the
+                        # kv-certified value comparison EARNED "identical" on
+                        # this per-input buggy replay (same check fires on
+                        # both builds with matching observed values), the
+                        # identical-on-both-builds fact makes the firing
+                        # pre-existing surface by definition. Three cycle-2
+                        # prompt wordings failed to make the general soundness
+                        # rubric honour that fact, so the drop is mechanical —
+                        # the one legitimate exception (patch-failed-to-fix)
+                        # is asked as a SINGLE NARROW judged question, never
+                        # the full rubric. Fails open (family_duty returns
+                        # True on any LLM error), and is scoped to earned
+                        # "identical" on semantic legs only.
+                        if (_value_verdict == "identical"
+                                and bug_kind != 'crashing'):
+                            _fd_ok, _fd_why = rv.family_duty(
+                                fired,
+                                _j3_failing_test_block(failure_tests), src)
+                            if not _fd_ok:
+                                _why = (
+                                    "IDENTICAL-DISMISSED (mechanical): "
+                                    "kv-certified identical observed "
+                                    "behaviour on both builds at the exact "
+                                    "firing input; family-duty answered NO — "
+                                    + _fd_why)
+                                print(f"      [identical-drop] auto-dismissed "
+                                      f"firing: {(fired or '')[:90]}")
+                                drop_reasons.append((fired, _why))
+                                continue
                         # Spec G-G3.1: when a DIFFERENT check fired FIRST on the
                         # buggy replay (shadowed — _breplay_ids non-empty,
                         # disjoint from _fired_ids, no defect exception) the
@@ -2348,6 +2377,33 @@ def main():
                                 if _mnote:
                                     _breplay_note = (
                                         (_breplay_note or '') + " " + _mnote)
+                                # Cycle-3 item 1 (muted-replay site): when the
+                                # muted re-replay EARNED "identical" (target
+                                # check fires on the buggy build with matching
+                                # observed values once the shadowing check is
+                                # silenced), apply the same MECHANICAL
+                                # identical-drop, gated on the single narrow
+                                # family-duty question. Fails open; semantic
+                                # legs only.
+                                if (_mvv == "identical"
+                                        and bug_kind != 'crashing'):
+                                    _fd_ok, _fd_why = rv.family_duty(
+                                        fired,
+                                        _j3_failing_test_block(failure_tests),
+                                        src)
+                                    if not _fd_ok:
+                                        _why = (
+                                            "IDENTICAL-DISMISSED "
+                                            "(mechanical): kv-certified "
+                                            "identical observed behaviour on "
+                                            "both builds at the exact firing "
+                                            "input; family-duty answered NO "
+                                            "— " + _fd_why)
+                                        print(f"      [identical-drop] "
+                                              f"auto-dismissed firing "
+                                              f"(muted): {(fired or '')[:90]}")
+                                        drop_reasons.append((fired, _why))
+                                        continue
                             except Exception as _mexc:
                                 print(f"      [muted-replay] unavailable "
                                       f"({_mexc}) — UNKNOWN note kept")
