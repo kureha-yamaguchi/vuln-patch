@@ -4,7 +4,7 @@
 # pool score is read. This is the generalization test the whole campaign
 # answers to.
 MODEL="gpt-5.4"
-COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
 CASES=(
   "-o patchfile:/home/code/drr/Patches/patch1-Chart-12-Arja-plausible.patch"
   "-c patchfile:/home/code/drr/Patches/patch1-Chart-12-Arja.patch"
