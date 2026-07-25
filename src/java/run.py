@@ -2816,6 +2816,9 @@ def main():
                     print(f"      [one-door] considering oracle "
                           f"'{_oid_dbg}' (fired_ids={sorted(_fired_ids)}, "
                           f"relations={len(synthesized_relations or [])})")
+                    record_event('deterministic', method='one_door_entry',
+                                 target=str(_oid_dbg),
+                                 output=f'relations={len(synthesized_relations or [])}')
                     try:
                         _one_door_notes = []
                         if _fired_ids and synthesized_relations:
@@ -2924,6 +2927,9 @@ def main():
                           f"'{_oid_dbg}' matched={_one_door_matched} "
                           f"(fired_ids={bool(_fired_ids)}, "
                           f"jazzer={bool(jazzer_standalone_jar)})")
+                    record_event('deterministic', method='universal_screen_entry',
+                                 target=str(_oid_dbg),
+                                 output=f'matched={_one_door_matched}')
                     try:
                         if (_fired_ids and not _one_door_matched
                                 and jazzer_standalone_jar):
