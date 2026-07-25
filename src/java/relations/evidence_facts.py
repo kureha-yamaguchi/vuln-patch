@@ -866,3 +866,81 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
         text += (" Screening demotion reason: "
                  + str(screen_outcome_reason).strip() + ".")
     return text
+
+
+# ---------------------------------------------------------------------------
+# Spec K (cycle-3) — one-door fact parity. The replay track carries
+# screen-stats / fire-rate facts on a screened relation's firing; a
+# harness-track firing of the SAME underlying check reaches the judge with none
+# of them, and the judge convicts there (Math-73-c: the identical bogus check,
+# ruled UNSOUND on the replay track, kept on the harness track). This pure
+# matcher decides whether a harness firing is the same check as a screened
+# relation so run.py can attach the same facts. It NEVER guesses: a match must
+# be either an exact normalized-id equality or a single distinctive token that
+# belongs to exactly one relation name — anything ambiguous returns None.
+# ---------------------------------------------------------------------------
+
+# Split a string into lowercase alphanumeric tokens (drop everything else).
+_TOKEN_SPLIT_RE = re.compile(r'[^0-9A-Za-z]+')
+
+
+def _norm_id(s):
+    """Lowercase and strip every non-alphanumeric character."""
+    return re.sub(r'[^0-9a-z]', '', str(s or '').lower())
+
+
+def _token_set(s):
+    """Lowercase tokens of `s`, split on runs of non-alphanumerics."""
+    return {t for t in _TOKEN_SPLIT_RE.split(str(s or '').lower()) if t}
+
+
+def match_oracle_to_relation(oracle_id, fired_msg, relation_names):
+    """Match a fired harness oracle to one of the screened relations, or None.
+
+    Two mechanical routes, tried in order:
+
+    1. Normalized-id equality — the oracle id and a relation name are equal
+       once lowercased with all non-alphanumerics stripped (so
+       ``exact-endpoint-root`` == ``exactEndpointRoot``). First hit wins.
+
+    2. Shared distinctive token — a token of >=6 characters, drawn from the
+       oracle id OR the fired message (split on non-alphanumerics, lowercased),
+       that appears in exactly ONE relation name. A relation name "contains" a
+       token when the token is a substring of its normalized (lowercased,
+       alphanumeric-only) form — this catches the common camelCase relation
+       name a hyphenated oracle id shadows (``endpoint`` in
+       ``endpointRootConsistency``). Only tokens that land in exactly one
+       relation name count; a token shared by two or more names is ambiguous
+       and contributes nothing. If, across all distinctive tokens, exactly one
+       relation name is singled out, it is returned; zero or several -> None.
+
+    Conservative by construction: None whenever the evidence does not point at
+    one and only one relation.
+    """
+    names = [n for n in (relation_names or []) if n]
+    if not names:
+        return None
+
+    # (1) normalized-id equality.
+    oid_norm = _norm_id(oracle_id)
+    if oid_norm:
+        for n in names:
+            if _norm_id(n) == oid_norm:
+                return n
+
+    # (2) shared distinctive token (>=6 chars) from the oracle id or fired msg.
+    src_tokens = _token_set(oracle_id) | _token_set(fired_msg)
+    src_tokens = {t for t in src_tokens if len(t) >= 6}
+    if not src_tokens:
+        return None
+
+    name_norms = [(n, _norm_id(n)) for n in names]
+    matched = set()
+    for t in src_tokens:
+        holders = [n for n, norm in name_norms if t in norm]
+        if len(holders) == 1:
+            matched.add(holders[0])
+        # len >= 2: ambiguous token, contributes nothing.
+    if len(matched) == 1:
+        return next(iter(matched))
+    return None

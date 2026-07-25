@@ -2750,6 +2750,103 @@ def main():
                                   f"value-vs-trusted={_value_verdict}")
                             _fact_notes.append(_note)
                             evid = (evid + "\n" + _note) if evid else _note
+                    # Spec K (cycle-3): one-door fact parity. A harness-track
+                    # firing of the SAME underlying check the replay track
+                    # screens must carry the same fire-rate / screen-decision
+                    # facts, or the judge convicts here where the replay track
+                    # correctly rules pre-existing (Math-73-c: the identical
+                    # bogus endpoint-root check, ruled UNSOUND on the replay
+                    # track that got the facts, kept on the harness track that
+                    # did not). Match the fired oracle to a screened relation
+                    # mechanically and, on a match, attach the identical
+                    # fire_rate_fact + the relation's screen-decision reason.
+                    # K.3: independently, state the buggy-side scan record for
+                    # this oracle (data already computed at acceptance; no new
+                    # executions). Fail-open: any error attaches nothing.
+                    try:
+                        _one_door_notes = []
+                        if _fired_ids and synthesized_relations:
+                            from java.relations.evidence_facts import (
+                                match_oracle_to_relation as _motr,
+                                fire_rate_fact as _frf_k)
+                            _rel_names_k = [
+                                getattr(_rel, 'name', '')
+                                for _rel in synthesized_relations
+                                if getattr(_rel, 'name', '')]
+                            _oid_k = sorted(_fired_ids)[0]
+                            _match_k = _motr(_oid_k, fired or '', _rel_names_k)
+                            _rel_k = None
+                            if _match_k:
+                                _rel_k = next(
+                                    (_rel for _rel in synthesized_relations
+                                     if getattr(_rel, 'name', '') == _match_k),
+                                    None)
+                            if _rel_k is not None:
+                                _sstats_k = (
+                                    getattr(_rel_k, 'screen_stats', None)
+                                    or (None, None))
+                                _sdec_k = (getattr(_rel_k, 'screen_decision',
+                                                   None) or {})
+                                _sreason_k = _sdec_k.get('reason', '') or ''
+                                # Patched replay counts only exist if the replay
+                                # pass has already run this leg (it runs LATER
+                                # in main, so normally absent here) — pass None,
+                                # fire_rate_fact handles it.
+                                _pc_k = _pv_k = None
+                                _rf_k = locals().get('_replay_findings')
+                                if _rf_k:
+                                    for _ff in _rf_k:
+                                        if _ff.get('name') == _match_k:
+                                            _pc_k = _ff.get('patched_checked')
+                                            _pv_k = _ff.get('patched_violated')
+                                            break
+                                _demote_k = (
+                                    _sreason_k
+                                    if ('above-ratio-cap' in _sreason_k
+                                        or 'inverted' in _sreason_k)
+                                    else '')
+                                _frfact_k = _frf_k(
+                                    _sstats_k[0], _sstats_k[1],
+                                    _pc_k, _pv_k, _demote_k)
+                                if _frfact_k:
+                                    _one_door_notes.append(_frfact_k)
+                                if _sreason_k:
+                                    _one_door_notes.append(
+                                        "[screen-decision fact] this harness "
+                                        "firing is the SAME check as screened "
+                                        "relation '" + str(_match_k)
+                                        + "', whose screening decision was: "
+                                        + str(_sreason_k).strip() + ".")
+                                if _one_door_notes:
+                                    print(f"      [one-door] matched screened "
+                                          f"relation '{_match_k}'")
+                        # K.3: the acceptance-time buggy keep-going scan's
+                        # per-oracle record for this firing (buggy_crash_types
+                        # = the oracles that fired on buggy, with the exception
+                        # identity beneath each; no counts are recorded, so we
+                        # state only what exists).
+                        if _fired_ids and _buggy_types:
+                            _scan_hits = {
+                                _oid: sorted(_buggy_types.get(_oid) or set())
+                                for _oid in sorted(_fired_ids)
+                                if _oid in _buggy_types}
+                            if _scan_hits:
+                                _hit_txt = "; ".join(
+                                    _oid + " (" + (", ".join(_ty)
+                                                   or "no exception type")
+                                    + ")" for _oid, _ty in _scan_hits.items())
+                                _one_door_notes.append(
+                                    "[buggy-scan fact] the acceptance-time "
+                                    "buggy keep-going scan recorded this "
+                                    "oracle firing on the BUGGY build: "
+                                    + _hit_txt + " — the same check fires on "
+                                    "both builds; keep only if the violated "
+                                    "observable is the failing test's own.")
+                        for _od in _one_door_notes:
+                            _fact_notes.append(_od)
+                            evid = (evid + "\n" + _od) if evid else _od
+                    except Exception:
+                        pass
                     _j3 = _j3_failing_test_block(failure_tests)
                     if _j3:
                         evid = (evid + "\n" + _j3) if evid else _j3
