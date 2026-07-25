@@ -113,7 +113,8 @@ def arsenal_has_nonseed_power(relations) -> bool:
 def converge_nonseed_arsenal(kept_relations,
                              synth_round: Callable[[], List],
                              screen_round: Callable[[List], List],
-                             max_extra_rounds: int = 2) -> List:
+                             max_extra_rounds: int = 2,
+                             min_extra_rounds: int = 0) -> List:
     """Spec N convergence loop. While the kept arsenal has ZERO non-seed
     detection power and we are under the extra-round bound, request another
     synthesis round (`synth_round()` returns fresh candidates — reuse the
@@ -129,11 +130,20 @@ def converge_nonseed_arsenal(kept_relations,
     kept = list(kept_relations or [])
     seen = {getattr(r, 'name', None) or id(r) for r in kept}
     extra_rounds = 0
-    while (not arsenal_has_nonseed_power(kept)
+    # Cycle 4a-i: `min_extra_rounds` forces generation WIDTH regardless of
+    # power — the paired pool measurement (retro #3) showed catches ride on
+    # whether a roll happens to invent the right check, and extra measured
+    # rounds are the direct lever (safe: survivors arrive screened).
+    while ((extra_rounds < min_extra_rounds
+            or not arsenal_has_nonseed_power(kept))
            and extra_rounds < max_extra_rounds):
         extra_rounds += 1
-        print(f"[convergence] arsenal has zero non-seed detection power — "
-              f"requesting round {extra_rounds}")
+        if extra_rounds <= min_extra_rounds:
+            print(f"[convergence] width round {extra_rounds} "
+                  f"(min_extra_rounds={min_extra_rounds})")
+        else:
+            print(f"[convergence] arsenal has zero non-seed detection power "
+                  f"— requesting round {extra_rounds}")
         try:
             candidates = synth_round() or []
         except Exception as exc:

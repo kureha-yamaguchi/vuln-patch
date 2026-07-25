@@ -1240,6 +1240,7 @@ def main():
                         max_keep=12, repair_fn=_repair, harden_fn=_harden,
                         runs=args.screen_runs),
                     max_extra_rounds=2,
+                    min_extra_rounds=1,
                 )
             except Exception as _cg_exc:
                 print(f"  [convergence] gate unavailable ({_cg_exc}) — "
