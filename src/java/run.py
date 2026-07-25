@@ -2808,6 +2808,14 @@ def main():
                     # this oracle (data already computed at acceptance; no new
                     # executions). Fail-open: any error attaches nothing.
                     _one_door_matched = False
+                    # Always-on entry diagnostic (BEFORE the try/except, so a
+                    # NameError here can never be swallowed): proves this block
+                    # ran and shows the exact gate values, so it can never again
+                    # be silently inert.
+                    _oid_dbg = sorted(_fired_ids)[0] if _fired_ids else None
+                    print(f"      [one-door] considering oracle "
+                          f"'{_oid_dbg}' (fired_ids={sorted(_fired_ids)}, "
+                          f"relations={len(synthesized_relations or [])})")
                     try:
                         _one_door_notes = []
                         if _fired_ids and synthesized_relations:
@@ -2908,6 +2916,14 @@ def main():
                     # capped at 8 measured oracles per leg. Fail-open: any
                     # failure attaches nothing. (v1 extracted a single check
                     # body and it near-never compiled — see cycle3b outcome.)
+                    # Always-on entry diagnostic (BEFORE the try/except, so a
+                    # NameError here can never be swallowed): proves this block
+                    # ran and shows the exact gate values, so it can never again
+                    # be silently inert.
+                    print(f"      [universal-screen] considering oracle "
+                          f"'{_oid_dbg}' matched={_one_door_matched} "
+                          f"(fired_ids={bool(_fired_ids)}, "
+                          f"jazzer={bool(jazzer_standalone_jar)})")
                     try:
                         if (_fired_ids and not _one_door_matched
                                 and jazzer_standalone_jar):
