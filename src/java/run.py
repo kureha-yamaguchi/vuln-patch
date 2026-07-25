@@ -2893,17 +2893,21 @@ def main():
                             evid = (evid + "\n" + _od) if evid else _od
                     except Exception:
                         pass
-                    # Spec M (cycle-3b): universal screening. A fired oracle
-                    # with NO one-door relation match reached the judge with
-                    # zero measurements — the residual wrong convictions ride
-                    # on exactly such fresh harness inventions. Screen the
-                    # fired oracle's OWN check body on the buggy build (same
-                    # relscreen counting wrapper, same runs budget) and deliver
-                    # the fire-rate fact, plus the never-held fact when the
-                    # claim held on ZERO buggy inputs. Lazy at judging (fired
-                    # oracles only), cached per oracle id per leg (repeat
-                    # firings never re-measure), capped at 8 measured oracles
-                    # per leg. Fail-open: any failure attaches nothing.
+                    # Spec M (cycle-3b), M-v2: universal screening. A fired
+                    # oracle with NO one-door relation match reached the judge
+                    # with zero measurements — the residual wrong convictions
+                    # ride on exactly such fresh harness inventions. Measure it
+                    # by INSTRUMENTING the whole (known-compilable) harness:
+                    # mute every sibling alarm, replace the target oracle's
+                    # throw with a counter, and run the counting harness on the
+                    # buggy build (same relscreen -runs budget and stats parse
+                    # as the per-relation screen). Deliver the fire-rate fact,
+                    # plus the never-held fact when the claim held on ZERO buggy
+                    # inputs. Lazy at judging (fired oracles only), cached per
+                    # oracle id per leg (repeat firings never re-measure),
+                    # capped at 8 measured oracles per leg. Fail-open: any
+                    # failure attaches nothing. (v1 extracted a single check
+                    # body and it near-never compiled — see cycle3b outcome.)
                     try:
                         if (_fired_ids and not _one_door_matched
                                 and jazzer_standalone_jar):
@@ -2919,24 +2923,29 @@ def main():
                                     _universal_cap_printed = True
                             else:
                                 _u_notes = []
-                                from java.parsing.java_source import (
-                                    extract_oracle_check as _eoc)
-                                _check_u = _eoc(src, _oid_u)
-                                if _check_u:
+                                from java.execution.oracle_mute import (
+                                    instrument_for_counting as _ifc)
+                                _instr_u = _ifc(src, _oid_u)
+                                if _instr_u:
                                     from java.relations.relation_screen import (
-                                        measure_single_check as _msc)
+                                        _run_counting_fuzz as _rcf)
                                     _idx_u = _universal_seq
                                     _universal_seq += 1
-                                    _stats_u = _msc(
-                                        _check_u, builder,
-                                        selection.buggy_dir,
-                                        jazzer_standalone_jar, jazzer_api_jar,
-                                        context.package,
-                                        context.source_imports,
-                                        args.screen_runs,
-                                        class_name=f'UScreen{_idx_u}',
-                                        output_subdir=f'uscreen_{_idx_u}')
                                     _universal_measured += 1
+                                    _stats_u = None
+                                    try:
+                                        _build_u = builder.build(
+                                            _instr_u, selection.buggy_dir,
+                                            output_subdir=f'uscreen_{_idx_u}')
+                                        if _build_u and _build_u.compiled:
+                                            _stats_u = _rcf(
+                                                _build_u, builder,
+                                                selection.buggy_dir,
+                                                jazzer_standalone_jar,
+                                                jazzer_api_jar,
+                                                args.screen_runs, 45)
+                                    except Exception:
+                                        _stats_u = None
                                     if _stats_u:
                                         _cu, _vu = _stats_u
                                         print("      [universal-screen] "

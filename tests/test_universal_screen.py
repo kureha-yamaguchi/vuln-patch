@@ -1,29 +1,27 @@
-"""Spec M (cycle-3b): tests for universal screening's pure pieces.
+"""Spec M (cycle-3b) / M-v2: tests for universal screening's pure pieces.
 
-Three surfaces, all unit-testable without a JVM:
+M-v2 measures a fired oracle by INSTRUMENTING the whole (known-compilable)
+harness — mute every sibling alarm, replace the target oracle's throw with a
+`__vpViolated++` tally, inject the relscreen counting scaffold — instead of
+extracting a single check body (v1, which near-never compiled on real
+multi-oracle harnesses; see 2026-07-25-cycle3b.md "Cycle outcome"). These are
+all unit-testable without a JVM:
 
-  * java.parsing.java_source.extract_oracle_check(harness_source, oracle_id)
-    -> str|None — the per-oracle check-body extractor, exercised on TWO real
+  * java.execution.oracle_mute.instrument_for_counting(source, target_id)
+    -> str|None — the pure source transform, exercised on the TWO real
     archived harness sources (tests/fixtures/harness_sources.json).
   * java.relations.evidence_facts.never_held_fact(checked) -> str — wording.
-  * java.relations.relation_screen — the measuring helper needs a JVM, so we
-    only assert the module still imports and its existing screen entry points
-    keep their signatures (import-and-getattr), plus measure_single_check is
-    exposed.
-
-The extracted block for BOTH fixtures legitimately SPANS its siblings: each
-fixture puts every oracle in ONE method body with no per-oracle sub-block, so
-the smallest brace block holding both a throw and its feeding computation IS
-that whole method body. Per the spec that is acceptable; we therefore assert
-the returned block CONTAINS the target throw and is a brace-balanced substring
-(and document the spanning by asserting a sibling is present too).
+  * java.relations.relation_screen — the run path needs a JVM, so we only
+    assert the primitives the M-v2 path relies on (_run_counting_fuzz, the
+    _STATS_RE the injected print must satisfy) still exist, plus the existing
+    screen entry points keep their signatures.
 """
 import inspect
 import json
 import os
+import re
 
-from java.parsing.java_source import (extract_oracle_check, match_brace,
-                                      strip_comments)
+from java.execution.oracle_mute import instrument_for_counting
 from java.relations.evidence_facts import never_held_fact
 
 _FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -35,101 +33,142 @@ def _load():
         return json.load(fh)
 
 
-def _brace_balanced(block):
-    """A block that starts at '{' whose matching close is its final char.
-
-    Comments are stripped first: match_brace is literal-aware but NOT
-    comment-aware, and a `//` comment carrying an apostrophe (`library's`)
-    would otherwise be mis-read as a char literal. The extractor itself uses a
-    comment-aware scanner, so this only affects the test's own check."""
-    if block is None or not block.startswith("{") or not block.rstrip().endswith("}"):
-        return False
-    stripped = strip_comments(block).rstrip()
-    return match_brace(stripped, 0) == len(stripped) - 1
-
-
 # --------------------------------------------------------------------------
-# extract_oracle_check — fixture 1: math30 multi-oracle (single method).
+# instrument_for_counting — fixture 1: math30 multi-oracle (single method).
 # --------------------------------------------------------------------------
 
-def test_extract_math30_swap_symmetry():
+def test_instrument_math30_swap_symmetry():
     src = _load()["math30_multi_oracle"]["source"]
-    block = extract_oracle_check(src, "swap-symmetry")
-    assert block is not None
-    # Contains the target oracle's throw.
-    assert "[oracle:swap-symmetry]" in block
-    # Brace-balanced substring of the harness source.
-    assert block in src
-    assert _brace_balanced(block)
-    # Documented spanning: the conservative block is the whole
-    # fuzzerTestOneInput body, so a sibling oracle rides along.
-    assert "[oracle:u-sum]" in block
+    out = instrument_for_counting(src, "swap-symmetry")
+    assert out is not None
+    # The target's throw is replaced by the tally, so its own alarm message
+    # (the only place the tag appears) is gone and no longer thrown.
+    assert "[oracle:swap-symmetry]" not in out
+    assert "{ __vpViolated++; }" in out
+    # Every SIBLING alarm is muted, one `; /* muted:<id> */` marker each.
+    for sib in ("lifted-big-dataset", "midpoint-pvalue", "u-sum"):
+        assert "; /* muted:%s */" % sib in out
+        assert "[oracle:%s]" % sib not in out       # sibling throw gone too
+    # Counting scaffold injected exactly once.
+    assert out.count("static long __vpChecked = 0, __vpViolated = 0;") == 1
+    # fuzzerTestOneInput survives; braces still balanced.
+    assert "fuzzerTestOneInput" in out
+    assert out.count("{") == out.count("}")
 
 
-def test_extract_math30_lifted_big_dataset():
+def test_instrument_math30_each_target_isolated():
+    # Whichever oracle is the target, exactly that one becomes the tally and
+    # every other becomes a muted `;`.
     src = _load()["math30_multi_oracle"]["source"]
-    block = extract_oracle_check(src, "lifted-big-dataset")
-    assert block is not None
-    assert "[oracle:lifted-big-dataset]" in block
-    assert block in src
-    assert _brace_balanced(block)
-    # The feeding computation for this oracle is inside the returned block.
-    assert "mannWhitneyUTest(d1, d2)" in block
+    ids = ["lifted-big-dataset", "midpoint-pvalue", "swap-symmetry", "u-sum"]
+    for target in ids:
+        out = instrument_for_counting(src, target)
+        assert out is not None, target
+        assert "[oracle:%s]" % target not in out
+        assert "{ __vpViolated++; }" in out
+        for sib in ids:
+            if sib != target:
+                assert "; /* muted:%s */" % sib in out
 
 
 # --------------------------------------------------------------------------
-# extract_oracle_check — fixture 2: closure70 helper-method harness.
+# instrument_for_counting — fixture 2: closure70 helper-method harness.
 # --------------------------------------------------------------------------
 
-def test_extract_closure70_warning_array_consistency():
+def test_instrument_closure70_helper_method_oracle():
     src = _load()["closure70_oracle_and_escape"]["source"]
-    block = extract_oracle_check(src, "warning-array-consistency")
-    assert block is not None
-    assert "[oracle:warning-array-consistency]" in block
-    assert block in src
-    assert _brace_balanced(block)
-    # runOracle's feeding computation is present; siblings ride along (the
-    # block is runOracle's whole body — documented spanning).
-    assert "compiler.parseTestCode(js)" in block
-    assert "[oracle:fresh-compiler-agreement]" in block
+    # The target oracle throws inside the helper runOracle, not directly in
+    # fuzzerTestOneInput — the static tally field is still reachable there.
+    out = instrument_for_counting(src, "warning-array-consistency")
+    assert out is not None
+    assert "[oracle:warning-array-consistency]" not in out
+    assert "{ __vpViolated++; }" in out
+    for sib in ("duplicate-local-var-count", "duplicate-local-var-redef",
+                "duplicate-local-var-init", "fresh-compiler-agreement"):
+        assert "; /* muted:%s */" % sib in out
+        assert "[oracle:%s]" % sib not in out
+    assert out.count("static long __vpChecked = 0, __vpViolated = 0;") == 1
+    assert "fuzzerTestOneInput" in out
+    assert out.count("{") == out.count("}")
+    # The untagged RuntimeException error-throws are NOT alarms -> untouched.
+    assert 'throw new RuntimeException("parse failed:' in out
 
 
-def test_extract_closure70_duplicate_local_var_init():
+def test_instrument_closure70_mutes_untagged_fuzzer_security_issue():
+    # The archived closure70 fixture happens to tag every FuzzerSecurityIssue
+    # with an [oracle:] id, so to exercise untagged-alarm muting we splice one
+    # bare (untagged) FuzzerSecurityIssue throw into the same real source and
+    # confirm it is muted to `; /* muted:all */` (it would otherwise surface
+    # and pollute the count).
     src = _load()["closure70_oracle_and_escape"]["source"]
-    block = extract_oracle_check(src, "duplicate-local-var-init")
-    assert block is not None
-    assert "[oracle:duplicate-local-var-init]" in block
-    assert _brace_balanced(block)
+    injected = src.replace(
+        "    private static String normalize(String s) {",
+        "    private static void bare() {\n"
+        "        throw new com.code_intelligence.jazzer.api"
+        ".FuzzerSecurityIssueLow(\"untagged boom\");\n"
+        "    }\n"
+        "    private static String normalize(String s) {",
+        1)
+    assert injected != src                       # the splice landed
+    out = instrument_for_counting(injected, "warning-array-consistency")
+    assert out is not None
+    assert "; /* muted:all */" in out
+    assert '"untagged boom"' not in out          # the untagged throw is gone
+    assert out.count("{") == out.count("}")
 
 
 # --------------------------------------------------------------------------
-# extract_oracle_check — ambiguous / missing -> None.
+# The injected periodic print must satisfy relation_screen._STATS_RE.
 # --------------------------------------------------------------------------
 
-def test_extract_missing_id_returns_none():
+def test_injected_print_matches_relscreen_stats_re():
+    from java.relations.relation_screen import _STATS_RE
+
+    out = instrument_for_counting(
+        _load()["math30_multi_oracle"]["source"], "u-sum")
+    assert out is not None
+    # The injected code prints exactly the relscreen line shape.
+    assert 'System.err.println("[relscreen] checked=" + __vpChecked' in out
+    assert '+ " violated=" + __vpViolated' in out
+    # A concrete line that the injected println would emit at runtime parses
+    # with relation_screen's own regex (checked=N violated=M).
+    sample = "[relscreen] checked=%d violated=%d" % (1000, 3)
+    m = _STATS_RE.search(sample)
+    assert m is not None
+    assert (int(m.group(1)), int(m.group(2))) == (1000, 3)
+
+
+# --------------------------------------------------------------------------
+# instrument_for_counting — failure modes -> None (fail-open at call site).
+# --------------------------------------------------------------------------
+
+def test_instrument_missing_target_returns_none():
     src = _load()["math30_multi_oracle"]["source"]
-    assert extract_oracle_check(src, "no-such-oracle") is None
+    assert instrument_for_counting(src, "no-such-oracle") is None
 
 
-def test_extract_empty_inputs_return_none():
+def test_instrument_no_fuzzer_entrypoint_returns_none():
+    # A source with an alarm throw but no fuzzerTestOneInput cannot be
+    # instrumented -> None.
+    src = ('public class H {'
+           '  void g() {'
+           '    throw new com.code_intelligence.jazzer.api'
+           '.FuzzerSecurityIssueLow("[oracle:only] mismatch");'
+           '  }'
+           '}')
+    assert instrument_for_counting(src, "only") is None
+
+
+def test_instrument_empty_inputs_return_none():
     src = _load()["math30_multi_oracle"]["source"]
-    assert extract_oracle_check(src, "") is None
-    assert extract_oracle_check("", "swap-symmetry") is None
-    assert extract_oracle_check(None, "swap-symmetry") is None
+    assert instrument_for_counting(src, "") is None
+    assert instrument_for_counting("", "swap-symmetry") is None
+    assert instrument_for_counting(None, "swap-symmetry") is None
 
 
-def test_extract_repeated_tag_is_ambiguous():
-    # The same tag appearing twice cannot be resolved to one throw -> None.
-    dup = ('public class H { void f() {'
-           ' throw new RuntimeException("[oracle:dup] a");'
-           ' throw new RuntimeException("[oracle:dup] b"); } }')
-    assert extract_oracle_check(dup, "dup") is None
-
-
-def test_extract_single_oracle_isolated_block():
-    # A single-oracle harness (the residual-FP target case): the returned
-    # block is the fuzzerTestOneInput body, contains the throw, and does NOT
-    # span any sibling (there is none).
+def test_instrument_single_oracle_harness():
+    # A single-oracle harness (the residual-FP target shape): the sole oracle
+    # becomes the tally, no siblings to mute, scaffold injected, balanced.
     src = ('public class H {'
            '  public static void fuzzerTestOneInput('
            '      com.code_intelligence.jazzer.api.FuzzedDataProvider data) {'
@@ -140,17 +179,18 @@ def test_extract_single_oracle_isolated_block():
            '    }'
            '  }'
            '}')
-    block = extract_oracle_check(src, "only")
-    assert block is not None
-    assert "[oracle:only]" in block
-    assert "data.consumeInt()" in block          # feeding computation present
-    assert _brace_balanced(block)
-    # Not the bare guard: the block is larger than just `{ throw ...; }`.
-    assert "consumeInt" in block
+    out = instrument_for_counting(src, "only")
+    assert out is not None
+    assert "[oracle:only]" not in out
+    assert "{ __vpViolated++; }" in out
+    assert "; /* muted:" not in out              # no siblings
+    assert out.count("static long __vpChecked = 0, __vpViolated = 0;") == 1
+    assert "__vpChecked++;" in out
+    assert out.count("{") == out.count("}")
 
 
 # --------------------------------------------------------------------------
-# never_held_fact wording.
+# never_held_fact wording (unchanged — evidence_facts not touched by M-v2).
 # --------------------------------------------------------------------------
 
 def test_never_held_fact_wording():
@@ -167,10 +207,10 @@ def test_never_held_fact_counts_are_verbatim():
 
 
 # --------------------------------------------------------------------------
-# relation_screen: existing entry points unchanged; helper exposed.
+# relation_screen: existing entry points unchanged; M-v2 primitives present.
 # --------------------------------------------------------------------------
 
-def test_relation_screen_imports_and_entry_points_unchanged():
+def test_relation_screen_entry_points_and_primitives():
     import java.relations.relation_screen as rs
 
     # Existing screen entry points still present with unchanged signatures.
@@ -188,14 +228,7 @@ def test_relation_screen_imports_and_entry_points_unchanged():
         'package', 'imports', 'jazzer_api_jar', 'trigger_literals', 'runs',
         'timeout_seconds']
 
-
-def test_measure_single_check_exposed():
-    import java.relations.relation_screen as rs
-
-    assert callable(getattr(rs, 'measure_single_check', None))
-    # Signature leads with the check source, then builder/dir/jars, per spec.
-    params = list(inspect.signature(rs.measure_single_check).parameters)
-    assert params[:5] == [
-        'check_source', 'builder', 'buggy_dir', 'jazzer_standalone_jar',
-        'jazzer_api_jar']
-    assert 'runs' in params
+    # The compile-and-measure primitive and the stats regex the M-v2 universal
+    # path reuses.
+    assert callable(getattr(rs, '_run_counting_fuzz', None))
+    assert rs._STATS_RE.search("[relscreen] checked=5 violated=1")

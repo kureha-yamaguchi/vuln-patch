@@ -34,6 +34,14 @@ import re
 _ORACLE_PREFIX_RE = re.compile(r'\[oracle:([-\w]+)\]')
 # The relation-screen wrapper message shape (id = the relation name).
 _RELATION_MSG_RE = re.compile(r'relation\s+([-\w]+)\s+violated')
+# Jazzer entrypoint: the class body brace we count-instrument is the one
+# enclosing this method, and its own body is where the check-increment goes.
+_ENTRYPOINT_RE = re.compile(
+    r'\bvoid\s+fuzzerTestOneInput\s*\(\s*'
+    r'(?:com\.code_intelligence\.jazzer\.api\.)?FuzzedDataProvider\s+\w+\s*\)')
+# A type/class/interface/enum declaration whose body brace may enclose the
+# entrypoint. (`Foo.class`, `int.class` never match: no ident follows `class`.)
+_CLASS_DECL_RE = re.compile(r'\b(?:class|interface|enum)\s+[A-Za-z_$][\w$]*')
 
 
 def _is_ident_char(ch: str) -> bool:
@@ -216,4 +224,150 @@ def mute_oracles(java_source: str,
         result = (result[:start]
                   + '; /* muted:%s */' % comment_id
                   + result[semi + 1:])
+    return result
+
+
+# Counting scaffolding injected by `instrument_for_counting`. It mirrors
+# relation_screen._screen_harness_source EXACTLY so relation_screen._STATS_RE
+# parses the emitted line: the same `[relscreen] checked=.. violated=..` shape,
+# the same shutdown-hook final-stats mechanism, printed to System.err. The two
+# `long` fields are static so the muted/replaced throws — which may live in a
+# helper method, not just fuzzerTestOneInput — can reach them.
+_COUNT_FIELDS = (
+    '\n    static long __vpChecked = 0, __vpViolated = 0;'
+    '\n    static {'
+    '\n        Runtime.getRuntime().addShutdownHook(new Thread(() ->'
+    '\n            System.err.println("[relscreen] checked=" + __vpChecked'
+    '\n                + " violated=" + __vpViolated)));'
+    '\n    }')
+# Injected at the START of fuzzerTestOneInput's body: count every input and
+# print the running stats every 1000 checks (the shutdown hook guarantees a
+# final line for the trailing partial batch, exactly as relation_screen does).
+_COUNT_INCR = (
+    '\n        __vpChecked++;'
+    '\n        if (__vpChecked % 1000 == 0) {'
+    '\n            System.err.println("[relscreen] checked=" + __vpChecked'
+    '\n                + " violated=" + __vpViolated);'
+    '\n        }')
+
+
+def _match_brace(src: str, open_idx: int) -> int:
+    """Index of the `}` closing `src[open_idx]` ('{'), or -1. Comment- and
+    literal-aware (unlike java_source.match_brace), reusing this module's own
+    scanners so a `{`/`}` — or a lone apostrophe like `library's` — inside a
+    comment or string never skews the depth."""
+    n = len(src)
+    depth = 0
+    i = open_idx
+    while i < n:
+        c = src[i]
+        if c == '/' and i + 1 < n and src[i + 1] == '/':
+            j = src.find('\n', i)
+            i = n if j < 0 else j
+            continue
+        if c == '/' and i + 1 < n and src[i + 1] == '*':
+            j = src.find('*/', i + 2)
+            i = n if j < 0 else j + 2
+            continue
+        if c == '"':
+            i = _string_end(src, i)
+            continue
+        if c == "'":
+            i = _char_end(src, i)
+            continue
+        if c == '{':
+            depth += 1
+        elif c == '}':
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return -1
+
+
+def _class_open_brace_enclosing(src: str, target_idx: int) -> int:
+    """Index of the opening `{` of the INNERMOST class/interface/enum body
+    that encloses `target_idx`, or -1. Used to place the counting fields on
+    the class that declares fuzzerTestOneInput."""
+    best = -1
+    for m in _CLASS_DECL_RE.finditer(src):
+        brace = src.find('{', m.end())
+        if brace < 0:
+            continue
+        close = _match_brace(src, brace)
+        if close < 0:
+            continue
+        if brace < target_idx < close and brace > best:
+            best = brace
+    return best
+
+
+def instrument_for_counting(java_source: str, target_id: str):
+    """Return `java_source` rewritten into a COUNTING harness that measures how
+    often the `target_id` oracle's claim is violated on a build, or None when
+    the harness can't be instrumented (fail-open at the call site).
+
+    The transform, all mechanical and literal-aware (reusing `mute_oracles`'
+    throw scanner), is:
+
+      * every alarm throw EXCEPT the target is muted to `;` (siblings would
+        end the run first and hide the target); untagged `FuzzerSecurityIssue`
+        throws are muted too, since they'd surface and pollute the count;
+      * every throw carrying the target id is replaced by `{ __vpViolated++; }`
+        — the alarm becomes a tally instead of a fatal throw;
+      * a `static long __vpChecked, __vpViolated` pair plus a shutdown hook
+        that prints `[relscreen] checked=N violated=M` are injected on the
+        class declaring fuzzerTestOneInput, and a per-input increment + a
+        periodic print of the same line are injected at the top of
+        fuzzerTestOneInput — copied from relation_screen's wrapper so its
+        `_STATS_RE` parses the output unchanged.
+
+    Returns None if fuzzerTestOneInput, its enclosing class brace, or a throw
+    carrying `target_id` cannot be located. The class name is kept (the variant
+    compiles in its own output dir, like the muted-replay variants), so the
+    result is drop-in for HarnessBuilder.build. Pure: no I/O."""
+    if not java_source or not target_id:
+        return None
+
+    # Classify every throw once; collect the edit spans.
+    alarms = []            # (start, semi, oracle_id) for alarm throws
+    target_found = False
+    for start, semi, type_region, first_literal in _find_throw_statements(
+            java_source):
+        is_alarm, oracle_id = _classify(type_region, first_literal)
+        if not is_alarm:
+            continue
+        alarms.append((start, semi, oracle_id))
+        if oracle_id == target_id:
+            target_found = True
+    if not target_found:
+        return None
+
+    entry = _ENTRYPOINT_RE.search(java_source)
+    if not entry:
+        return None
+    fuzz_body_open = java_source.find('{', entry.end())
+    if fuzz_body_open < 0:
+        return None
+    class_open = _class_open_brace_enclosing(java_source, entry.start())
+    if class_open < 0:
+        return None
+
+    # Build all edits as (start, end, replacement), then splice from the last
+    # position backwards so earlier indices stay valid (same discipline as
+    # mute_oracles). Insertions use start == end.
+    edits = []
+    for start, semi, oracle_id in alarms:
+        if oracle_id == target_id:
+            edits.append((start, semi + 1, '{ __vpViolated++; }'))
+        else:
+            cid = oracle_id if oracle_id is not None else 'all'
+            edits.append((start, semi + 1, '; /* muted:%s */' % cid))
+    edits.append((class_open + 1, class_open + 1, _COUNT_FIELDS))
+    edits.append((fuzz_body_open + 1, fuzz_body_open + 1, _COUNT_INCR))
+
+    result = java_source
+    for start, end, replacement in sorted(edits, key=lambda e: e[0],
+                                          reverse=True):
+        result = result[:start] + replacement + result[end:]
     return result
