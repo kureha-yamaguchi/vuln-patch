@@ -700,6 +700,103 @@ def alarm_ids_missing(source: str) -> Optional[str]:
 
 
 # ---------------------------------------------------------------------------
+# Spec M (cycle-3b): per-oracle check-body extractor for universal screening.
+#
+# A harness alarm carries an `[oracle:<id>]` tag. To screen that one check on
+# the buggy build (the same way a synthesized relation is screened) we need the
+# code region guarding/composing the alarm. Conservative extractor: locate the
+# throw carrying the tag, then return the SMALLEST enclosing brace block
+# (compound statement or method body) that contains BOTH that throw and the
+# computation feeding it — i.e. the smallest block that has real code BEFORE
+# the throw, never the bare `{ throw ...; }` guard, never the class body.
+#
+# For a harness whose oracle lives directly in fuzzerTestOneInput drawing from
+# `data`, the returned block is that method body and wraps cleanly into the
+# relscreen counting harness. For a helper-method or multi-oracle harness the
+# block legitimately spans siblings (it is still brace-balanced and contains
+# the target throw); if it then references locals the counting wrapper cannot
+# supply it simply fails to compile and the caller fails open (no fact). Returns
+# None whenever the id cannot be located unambiguously.
+
+
+def _enclosing_brace_blocks(src: str, pos: int):
+    """All (open_idx, close_idx) brace blocks that STRICTLY enclose `pos`,
+    innermost first (smallest span first). Comment- and string/char-literal
+    aware over the RAW source, so the returned indices are valid substring
+    bounds on `src` (unlike the comment-stripped helpers, whose positions
+    shift)."""
+    stack, blocks = [], []
+    i, n = 0, len(src or '')
+    while i < n:
+        c = src[i]
+        if c in '"\'':
+            i = skip_literal(src, i)
+            continue
+        if src.startswith('//', i):
+            j = src.find('\n', i)
+            i = n if j < 0 else j
+            continue
+        if src.startswith('/*', i):
+            j = src.find('*/', i)
+            i = n if j < 0 else j + 2
+            continue
+        if c == '{':
+            stack.append(i)
+        elif c == '}':
+            if stack:
+                o = stack.pop()
+                if o < pos < i:
+                    blocks.append((o, i))
+        i += 1
+    blocks.sort(key=lambda b: b[1] - b[0])
+    return blocks
+
+
+def extract_oracle_check(harness_source: str,
+                         oracle_id: str) -> Optional[str]:
+    """Return the brace block (WITH braces) guarding the `[oracle:<id>]` alarm
+    — the smallest enclosing block that holds both the throw and the code
+    feeding it — or None when it cannot be located unambiguously.
+
+    None when: the id is empty; its `[oracle:<id>]` tag is absent or appears
+    more than once (a repeated or dynamically-built id — ambiguous); no `throw`
+    precedes the tag; or the throw is not enclosed by an identifiable method
+    body (fewer than two enclosing braces)."""
+    src = harness_source or ''
+    if not oracle_id:
+        return None
+    tag = '[oracle:' + oracle_id + ']'
+    first = src.find(tag)
+    if first < 0 or src.find(tag, first + 1) >= 0:
+        return None                     # absent, repeated, or built dynamically
+    # The throw whose message carries the tag is the nearest `throw` keyword
+    # before it (a throw's argument runs to its statement ';', so no ';' lies
+    # between the keyword and the tag inside it).
+    throw_pos = -1
+    for m in re.finditer(r'\bthrow\b', src[:first]):
+        throw_pos = m.start()
+    if throw_pos < 0:
+        return None
+    blocks = _enclosing_brace_blocks(src, throw_pos)
+    if len(blocks) < 2:
+        return None                     # need method-body + class-body at least
+    # Drop the outermost enclosing block (the class body); the remaining
+    # innermost->outer candidates are the method body and any nested compound
+    # statements around the throw.
+    candidates = blocks[:-1]
+    for o, close in candidates:
+        # Real code BEFORE the throw inside this block means the block holds
+        # both the throw and the computation feeding it (not just the bare
+        # `{ throw ...; }` guard). The smallest such block wins.
+        if strip_comments(src[o + 1:throw_pos]).strip():
+            return src[o:close + 1]
+    # The throw is the enclosing method's first statement (nothing precedes
+    # it): fall back to that method body.
+    o, close = candidates[-1]
+    return src[o:close + 1]
+
+
+# ---------------------------------------------------------------------------
 # Harness-bug lint: Math.abs(consume…()) used before % is NOT a safe index.
 # Math.abs(Integer.MIN_VALUE) is negative (two's complement has no positive
 # counterpart), so `Math.abs(data.consumeInt()) % n` eventually produces a

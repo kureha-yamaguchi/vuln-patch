@@ -869,6 +869,24 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
 
 
 # ---------------------------------------------------------------------------
+# Spec M (cycle-3b) — universal-screen "never held" fact. When a fired harness
+# oracle's OWN check was screened on the buggy build and it was VIOLATED on
+# EVERY input (violated == checked > 0), the asserted property never once held
+# on a build that is correct almost everywhere — the strongest form of the
+# fire-rate indictment, stated verbatim for the judge.
+# ---------------------------------------------------------------------------
+
+def never_held_fact(checked):
+    """Build the "[universal-screen fact]" block for a check violated on all
+    `checked` buggy inputs (its own declared domain). Pure."""
+    return ("[universal-screen fact] this claim has NEVER been observed to "
+            "hold on the buggy build (0/" + str(checked) + " inputs in its "
+            "own declared domain) — a correctness claim the known-mostly-"
+            "correct build never once satisfies is unverified speculation, "
+            "not a contract.")
+
+
+# ---------------------------------------------------------------------------
 # Spec K (cycle-3) — one-door fact parity. The replay track carries
 # screen-stats / fire-rate facts on a screened relation's firing; a
 # harness-track firing of the SAME underlying check reaches the judge with none

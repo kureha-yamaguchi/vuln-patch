@@ -105,11 +105,23 @@ def _screen_harness_source(package: Optional[str],
         '            runCheck(data);',
         '        } catch (RuntimeException e) {',
         '            String m = String.valueOf(e.getMessage());',
-        '            if (m.contains("violated")) { violated++; }',
+        '            // A relation check raises its alarm as',
+        '            // RuntimeException("...violated..."); a harness oracle',
+        '            // body (universal screen, measure_single_check) raises a',
+        '            // FuzzerSecurityIssue*. Count either — relation checks',
+        '            // never throw the latter, so per-relation screening is',
+        '            // byte-for-byte unchanged in what it counts.',
+        '            if (m.contains("violated")',
+        '                    || e.getClass().getName().contains(',
+        '                            "FuzzerSecurityIssue")) { violated++; }',
         '            // other runtime exceptions: input rejection the body',
         '            // failed to fence — not a violation, not counted',
         '        } catch (Throwable t) {',
-        '            // rejection/linkage noise — not a violation',
+        '            // rejection/linkage noise — not a violation, UNLESS it is',
+        '            // a harness oracle alarm (universal screen); relation',
+        '            // checks never reach here, so screening is unchanged.',
+        '            if (t.getClass().getName().contains(',
+        '                    "FuzzerSecurityIssue")) { violated++; }',
         '        }',
         '    }',
         '}',
@@ -165,6 +177,74 @@ def _measure_on_dir(build, builder, work_dir, jazzer_standalone_jar,
     if not m:
         return None
     return int(m.group(1)), int(m.group(2))
+
+
+def _run_counting_fuzz(build, builder, work_dir, jazzer_standalone_jar,
+                       jazzer_api_jar, runs, timeout_seconds):
+    """Run ONE already-compiled counting harness for a fixed `-runs` budget
+    (last flag wins in libFuzzer, so the ratio denominator is comparable)
+    against `work_dir`'s classpath, and return (checked, violated) parsed
+    from the `[relscreen]` shutdown line — or None when no stats line was
+    produced (the harness crashed the JVM or never ran).
+
+    Raises on a run failure so a caller can distinguish a run error from a
+    missing stats line; the per-relation screen relies on that distinction
+    for its two drop reasons, while measure_single_check collapses both to
+    None (fail-open). This is the single compile-and-measure primitive shared
+    by the per-relation screen path and the universal single-check helper."""
+    outcome = run_jazzer(
+        jazzer_standalone_jar=jazzer_standalone_jar,
+        target_class=build.class_name,
+        harness_dir=os.path.dirname(build.harness_path),
+        project_cp=builder.test_classpath(work_dir),
+        timeout_seconds=timeout_seconds,
+        jazzer_api_jar=jazzer_api_jar,
+        extra_libfuzzer_args=[f'-runs={runs}'],
+    )
+    m = _STATS_RE.search(outcome.stdout + '\n' + outcome.stderr)
+    if not m:
+        return None
+    return int(m.group(1)), int(m.group(2))
+
+
+def measure_single_check(check_source: str,
+                         builder: HarnessBuilder,
+                         buggy_dir: str,
+                         jazzer_standalone_jar: str,
+                         jazzer_api_jar: Optional[str] = None,
+                         package: Optional[str] = None,
+                         imports: Optional[List[str]] = None,
+                         runs: int = 20000,
+                         timeout_seconds: int = 45,
+                         class_name: str = 'UScreen',
+                         output_subdir: str = 'uscreen') -> Optional[tuple]:
+    """Measure ONE check body on the buggy build with the SAME relscreen
+    counting wrapper relations get, and return (checked, violated) — or None
+    on any compile/run/parse failure (fail-open).
+
+    Reuses the exact `_screen_harness_source` wrapper, the exact `-runs`
+    invocation and the exact `[relscreen]` stats parsing the per-relation
+    screen uses (via `_run_counting_fuzz`). `check_source` may be a relation
+    check body (raises RuntimeException("...violated...")) OR a harness
+    oracle's extracted body (raises a FuzzerSecurityIssue*); the counting
+    wrapper recognises both, so a fresh harness invention can be screened on
+    the buggy build exactly as a screened relation is. Spec M."""
+    if not check_source:
+        return None
+    src = _screen_harness_source(package, imports or [], class_name,
+                                 check_source)
+    try:
+        build = builder.build(src, buggy_dir, output_subdir=output_subdir)
+    except Exception:
+        return None
+    if not build or not build.compiled:
+        return None
+    try:
+        return _run_counting_fuzz(build, builder, buggy_dir,
+                                  jazzer_standalone_jar, jazzer_api_jar,
+                                  runs, timeout_seconds)
+    except Exception:
+        return None
 
 
 def screen_relations(candidates: List,
@@ -339,29 +419,23 @@ def screen_relations(candidates: List,
                   'by the counting wrapper (unmeasurable)')
             continue
         try:
-            outcome = run_jazzer(
-                jazzer_standalone_jar=jazzer_standalone_jar,
-                target_class=build.class_name,
-                harness_dir=os.path.dirname(build.harness_path),
-                project_cp=builder.test_classpath(buggy_dir),
-                timeout_seconds=timeout_seconds,
-                jazzer_api_jar=jazzer_api_jar,
-                # Fixed execution budget (last flag wins in libFuzzer), so
-                # the ratio denominator is comparable across candidates.
-                extra_libfuzzer_args=[f'-runs={runs}'],
-            )
+            # Shared compile-and-measure primitive (also used by
+            # measure_single_check). Fixed `-runs` budget so the ratio
+            # denominator is comparable across candidates.
+            _stats = _run_counting_fuzz(build, builder, buggy_dir,
+                                        jazzer_standalone_jar, jazzer_api_jar,
+                                        runs, timeout_seconds)
         except Exception as exc:
             print(f"  [screen] {name}: run error ({exc}) — dropped")
             _mark(rel, 'dropped', f'run error: {exc}')
             continue
-        m = _STATS_RE.search(outcome.stdout + '\n' + outcome.stderr)
-        if not m:
+        if _stats is None:
             print(f"  [screen] {name}: no stats line (harness crashed the "
                   f"JVM or never ran) — dropped")
             _mark(rel, 'dropped', 'no stats line (harness crashed the JVM or '
                   'never ran)')
             continue
-        checked, violated = int(m.group(1)), int(m.group(2))
+        checked, violated = _stats
         if checked < MIN_CHECKED:
             print(f"  [screen] {name}: only {checked} checks executed — "
                   f"dropped (cannot screen)")

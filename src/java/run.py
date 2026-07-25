@@ -1210,6 +1210,40 @@ def main():
                 synthesized_relations = []
             print(f"  [screen] {len(synthesized_relations)} relation(s) "
                   "survived screening")
+            # Spec N (cycle 3b) convergence gate: the campaign may not settle
+            # for an arsenal with ZERO non-seed detection power — a kept set
+            # that only ever fires on the memorized failing-test literals has
+            # learned nothing general about the defect. Bounded (+2 rounds),
+            # fail-soft (keeps what it has on any error).
+            try:
+                from java.harness.campaign import converge_nonseed_arsenal
+                synthesized_relations = converge_nonseed_arsenal(
+                    synthesized_relations,
+                    synth_round=lambda: synthesizer.synthesize(
+                        patched_sources, class_name,
+                        context.root_cause_reachable or [], mined_oracles, '',
+                        patch_text=context.patch_text or '',
+                        javadocs=touched_javadocs,
+                        class_context=class_ctx,
+                        source_imports=context.source_imports,
+                        trigger_test_block=trigger_test_block,
+                        trigger_methods=trigger_methods,
+                        max_rules=getattr(args, 'synth_max_rules', 8)),
+                    screen_round=lambda cands: screen_relations(
+                        cands, builder=builder,
+                        buggy_dir=selection.buggy_dir,
+                        jazzer_standalone_jar=jazzer_standalone_jar,
+                        package=context.package,
+                        imports=context.source_imports,
+                        jazzer_api_jar=jazzer_api_jar,
+                        trigger_literals=_trig_lits,
+                        max_keep=12, repair_fn=_repair, harden_fn=_harden,
+                        runs=args.screen_runs),
+                    max_extra_rounds=2,
+                )
+            except Exception as _cg_exc:
+                print(f"  [convergence] gate unavailable ({_cg_exc}) — "
+                      "keeping current arsenal")
             # W1.1 (p23gate regression fix): the harness prompt sees at most
             # 2 relations, best-first (screening returns direction-confirmed
             # first), and ONLY this leg's own — pooled sibling-leg relations
@@ -2008,12 +2042,22 @@ def main():
             _injected_rel_names = {
                 getattr(_rel, 'name', '')
                 for _rel in (synthesized_relations or [])} - {''}
+            # Spec M (cycle-3b): universal screening builds one counting
+            # harness per measured oracle; this run-level counter keeps their
+            # build subdirs globally unique across legs.
+            _universal_seq = 0
             for r in triggered:
                 try:
                     with open(r.harness_path) as fh:
                         src = fh.read()
                 except OSError:
                     continue
+                # Spec M: per-leg cache of universal-screen results, keyed by
+                # oracle id (so repeat firings of the same oracle never
+                # re-measure), plus a per-leg cap of 8 MEASURED oracles.
+                _universal_facts: dict = {}   # oracle id -> [fact notes]
+                _universal_measured = 0
+                _universal_cap_printed = False
                 # Collect EVERY oracle that fires on the patched code, not
                 # just the first Jazzer surfaced — a multi-oracle harness
                 # can fire via a sound oracle on one input and an unsound
@@ -2763,6 +2807,7 @@ def main():
                     # K.3: independently, state the buggy-side scan record for
                     # this oracle (data already computed at acceptance; no new
                     # executions). Fail-open: any error attaches nothing.
+                    _one_door_matched = False
                     try:
                         _one_door_notes = []
                         if _fired_ids and synthesized_relations:
@@ -2781,6 +2826,7 @@ def main():
                                     (_rel for _rel in synthesized_relations
                                      if getattr(_rel, 'name', '') == _match_k),
                                     None)
+                            _one_door_matched = _rel_k is not None
                             if _rel_k is not None:
                                 _sstats_k = (
                                     getattr(_rel_k, 'screen_stats', None)
@@ -2845,6 +2891,70 @@ def main():
                         for _od in _one_door_notes:
                             _fact_notes.append(_od)
                             evid = (evid + "\n" + _od) if evid else _od
+                    except Exception:
+                        pass
+                    # Spec M (cycle-3b): universal screening. A fired oracle
+                    # with NO one-door relation match reached the judge with
+                    # zero measurements — the residual wrong convictions ride
+                    # on exactly such fresh harness inventions. Screen the
+                    # fired oracle's OWN check body on the buggy build (same
+                    # relscreen counting wrapper, same runs budget) and deliver
+                    # the fire-rate fact, plus the never-held fact when the
+                    # claim held on ZERO buggy inputs. Lazy at judging (fired
+                    # oracles only), cached per oracle id per leg (repeat
+                    # firings never re-measure), capped at 8 measured oracles
+                    # per leg. Fail-open: any failure attaches nothing.
+                    try:
+                        if (_fired_ids and not _one_door_matched
+                                and jazzer_standalone_jar):
+                            _oid_u = sorted(_fired_ids)[0]
+                            if _oid_u in _universal_facts:
+                                _u_notes = _universal_facts[_oid_u]
+                            elif _universal_measured >= 8:
+                                _u_notes = []
+                                if not _universal_cap_printed:
+                                    print("      [universal-screen] cap: 8 "
+                                          "oracles already measured this leg "
+                                          "— skipping further screens")
+                                    _universal_cap_printed = True
+                            else:
+                                _u_notes = []
+                                from java.parsing.java_source import (
+                                    extract_oracle_check as _eoc)
+                                _check_u = _eoc(src, _oid_u)
+                                if _check_u:
+                                    from java.relations.relation_screen import (
+                                        measure_single_check as _msc)
+                                    _idx_u = _universal_seq
+                                    _universal_seq += 1
+                                    _stats_u = _msc(
+                                        _check_u, builder,
+                                        selection.buggy_dir,
+                                        jazzer_standalone_jar, jazzer_api_jar,
+                                        context.package,
+                                        context.source_imports,
+                                        args.screen_runs,
+                                        class_name=f'UScreen{_idx_u}',
+                                        output_subdir=f'uscreen_{_idx_u}')
+                                    _universal_measured += 1
+                                    if _stats_u:
+                                        _cu, _vu = _stats_u
+                                        print("      [universal-screen] "
+                                              "measured oracle '" + _oid_u
+                                              + "': violated=" + str(_vu)
+                                              + "/" + str(_cu))
+                                        from java.relations.evidence_facts \
+                                            import (fire_rate_fact as _frf_u,
+                                                    never_held_fact as _nhf_u)
+                                        _fru = _frf_u(_cu, _vu, None, None, '')
+                                        if _fru:
+                                            _u_notes.append(_fru)
+                                        if _vu == _cu and _cu > 0:
+                                            _u_notes.append(_nhf_u(_cu))
+                                _universal_facts[_oid_u] = _u_notes
+                            for _un in _u_notes:
+                                _fact_notes.append(_un)
+                                evid = (evid + "\n" + _un) if evid else _un
                     except Exception:
                         pass
                     _j3 = _j3_failing_test_block(failure_tests)

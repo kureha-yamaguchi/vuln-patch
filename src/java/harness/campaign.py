@@ -51,6 +51,111 @@ from java.execution.oracle_strength import exception_headline, lifted_observed_m
 PromptFactory = Callable[[List[str], List[str]], List[Dict[str, str]]]
 
 
+# --- Spec N (cycle 3b): generation-side convergence gate --------------------
+# The relation arsenal must not be declared finished while its ONLY buggy-side
+# detections come from the failing test's own literals — a "seed" detection. A
+# seed-only arsenal has proven nothing beyond re-deriving the one input the bug
+# report already handed us (the benchmark-farming shape); NON-seed power means
+# at least one kept relation fires on the buggy build under inputs OTHER than
+# those seeds.
+#
+# Where the seed / non-seed split lives in the screen data (relation_screen):
+#   * rel.screen_stats = (checked, violated) is the FUZZED tier. The main
+#     buggy-build screen runs Jazzer from an EMPTY corpus (no trigger seeds
+#     are planted — _measure_on_corpus, which replays exactly the seeds, is a
+#     SEPARATE call that does not touch screen_stats). Every `violated` here is
+#     therefore a firing on a mutated, non-seed input: violated > 0 is non-seed
+#     detection power by construction.
+#   * the seed/trigger tier feeds ONLY rel.screen_direction
+#     ('confirmed'|'inverted'|'uncovered'). A relation "confirmed" on the seeds
+#     but silent on the fuzzed tier has violated == 0 → it does NOT count
+#     (seed-only confirmation).
+#   * rel.screen_direction == 'inverted' (INVERTED-SUSPECT) fires on random
+#     inputs yet is silent on the very seeds the bug is about — its firing may
+#     be the BACKWARDS direction, so it is not trustworthy non-seed catching
+#     and is excluded conservatively.
+# A silent tripwire (violated == 0) never counts. Fail-open: a relation whose
+# screen data is missing or unparseable is treated as carrying no non-seed
+# power (it cannot let the campaign finish on evidence we never measured).
+
+def arsenal_has_nonseed_power(relations) -> bool:
+    """True iff ANY kept relation shows a buggy-side detection attributable to
+    a NON-seed input: it fired on the fuzzed (random, un-seeded) screen tier
+    (screen_stats violated > 0, equivalently buggy_fire_ratio > 0) AND is not
+    flagged as an inverted-direction suspect. Seed-only confirmations and
+    silent tripwires do not count. Pure predicate — no I/O, no mutation."""
+    for rel in relations or []:
+        checked = violated = 0
+        stats = getattr(rel, 'screen_stats', None)
+        if stats is not None and len(stats) == 2:
+            try:
+                checked, violated = int(stats[0]), int(stats[1])
+            except (TypeError, ValueError):
+                checked = violated = 0
+        else:
+            # No raw counts recorded — fall back to the rounded ratio, which
+            # is > 0 exactly when the fuzzed tier fired at least once.
+            try:
+                if float(getattr(rel, 'buggy_fire_ratio', 0) or 0) > 0:
+                    checked, violated = 1, 1
+            except (TypeError, ValueError):
+                pass
+        if checked <= 0 or violated <= 0:
+            # Silent tripwire OR seed-only confirmation (fuzzed-silent).
+            continue
+        if getattr(rel, 'screen_direction', '') == 'inverted':
+            # INVERTED-SUSPECT: fired on random inputs but backwards on seeds.
+            continue
+        return True
+    return False
+
+
+def converge_nonseed_arsenal(kept_relations,
+                             synth_round: Callable[[], List],
+                             screen_round: Callable[[List], List],
+                             max_extra_rounds: int = 2) -> List:
+    """Spec N convergence loop. While the kept arsenal has ZERO non-seed
+    detection power and we are under the extra-round bound, request another
+    synthesis round (`synth_round()` returns fresh candidates — reuse the
+    caller's existing synthesis call verbatim), re-screen it
+    (`screen_round(candidates)` returns survivors — reuse the caller's existing
+    screen call verbatim), and merge the new survivors into the kept set
+    (de-duplicated by name). Returns the possibly-extended kept list.
+
+    This owns only the loop and the merge; `synth_round`/`screen_round` are the
+    caller's own closures over the existing machinery, so no synthesis or
+    screening policy is duplicated here. Fails soft: a synthesis or screening
+    exception ends the loop with whatever was kept so far, never a drop."""
+    kept = list(kept_relations or [])
+    seen = {getattr(r, 'name', None) or id(r) for r in kept}
+    extra_rounds = 0
+    while (not arsenal_has_nonseed_power(kept)
+           and extra_rounds < max_extra_rounds):
+        extra_rounds += 1
+        print(f"[convergence] arsenal has zero non-seed detection power — "
+              f"requesting round {extra_rounds}")
+        try:
+            candidates = synth_round() or []
+        except Exception as exc:
+            print(f"[convergence] synthesis round {extra_rounds} failed "
+                  f"({exc}) — stopping convergence loop")
+            break
+        if not candidates:
+            continue
+        try:
+            survivors = screen_round(candidates) or []
+        except Exception as exc:
+            print(f"[convergence] screening round {extra_rounds} failed "
+                  f"({exc}) — stopping convergence loop")
+            break
+        for r in survivors:
+            key = getattr(r, 'name', None) or id(r)
+            if key not in seen:
+                seen.add(key)
+                kept.append(r)
+    return kept
+
+
 @dataclass
 class CampaignResult:
     target_successes: int
