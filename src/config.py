@@ -123,10 +123,10 @@ HARNESS_ESCALATE_AFTER = int(os.getenv('HARNESS_ESCALATE_AFTER', '3'))
 # unsound. Turn up only after the offline replay harness (verifier_replay)
 # shows the single review leaks or over-kills on the logged cases — each
 # extra vote is an extra LLM call per fired oracle.
-# Cycle 4a-ii (2026-07-25): majority-of-3 diverse-lens ensemble by default —
-# the paired pool measurement proved single-judge verdicts flip on identical
-# evidence (retro #3, judge drift); majority voting targets exactly that.
-RELATION_VERIFIER_VOTES = int(os.getenv('RELATION_VERIFIER_VOTES', '3'))
+# Cycle 4a-ii tried votes=3 by default; the offline verifier-replay A/B
+# (2026-07-25) measured IDENTICAL over-kill (17%) and leak (93%) rates vs
+# votes=1 on the logged hard cases, at 3x judging cost -> reverted to 1.
+RELATION_VERIFIER_VOTES = int(os.getenv('RELATION_VERIFIER_VOTES', '1'))
 
 # Output token cap for reasoning models (GPT-5.x, o-series). Reasoning
 # models spend tokens on hidden reasoning before emitting the answer, so
