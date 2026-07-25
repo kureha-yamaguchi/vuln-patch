@@ -1,0 +1,12 @@
+# Harness-width dial (2026-07-25): -n 3->4, -m 8->10, same 5 catch-legs as
+# the qualitative set (one-dial attribution: relation-width validated at
+# n=3; this run isolates the harness-count increase).
+MODEL="gpt-5.4"
+COMMON="-n 4 -m 10 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-50-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-60-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-7-Arja-plausible.patch"
+)
