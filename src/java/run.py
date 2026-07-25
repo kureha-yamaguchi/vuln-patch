@@ -2290,35 +2290,39 @@ def main():
                         else:
                             print(f"      [buggy-replay] escaped-firing fact "
                                   f"attached ({_esc_type})")
-                        # Cycle-3 item 1: MECHANICAL identical-drop. When the
-                        # kv-certified value comparison EARNED "identical" on
-                        # this per-input buggy replay (same check fires on
-                        # both builds with matching observed values), the
-                        # identical-on-both-builds fact makes the firing
-                        # pre-existing surface by definition. Three cycle-2
-                        # prompt wordings failed to make the general soundness
-                        # rubric honour that fact, so the drop is mechanical —
-                        # the one legitimate exception (patch-failed-to-fix)
-                        # is asked as a SINGLE NARROW judged question, never
-                        # the full rubric. Fails open (family_duty returns
-                        # True on any LLM error), and is scoped to earned
-                        # "identical" on semantic legs only.
+                        # Cycle-3 item 1, DEFUSED after pool30 (2026-07-25):
+                        # the mechanical identical-drop's only live firing
+                        # killed a GENUINE catch — an identical-on-both-builds
+                        # firing sitting AT the failing test's own input
+                        # params (patch-failed-to-fix on a sibling observable
+                        # of the same root defect), where the narrow "same
+                        # observable" family question honestly answers NO.
+                        # Until the trigger-input exemption is designed and
+                        # validated (see docs/cycles retro #2), family-duty's
+                        # answer is attached as a strong FACT for the judge —
+                        # never an auto-drop.
                         if (_value_verdict == "identical"
                                 and bug_kind != 'crashing'):
                             _fd_ok, _fd_why = rv.family_duty(
                                 fired,
                                 _j3_failing_test_block(failure_tests), src)
                             if not _fd_ok:
-                                _why = (
-                                    "IDENTICAL-DISMISSED (mechanical): "
-                                    "kv-certified identical observed "
-                                    "behaviour on both builds at the exact "
-                                    "firing input; family-duty answered NO — "
-                                    + _fd_why)
-                                print(f"      [identical-drop] auto-dismissed "
-                                      f"firing: {(fired or '')[:90]}")
-                                drop_reasons.append((fired, _why))
-                                continue
+                                _fd_note = (
+                                    "[family-duty fact] kv-certified "
+                                    "identical observed behaviour on both "
+                                    "builds at this exact firing input, and "
+                                    "a focused review found the violated "
+                                    "property is NOT the failing test's own "
+                                    "observable — " + _fd_why
+                                    + " If this firing does NOT lie at the "
+                                    "failing test's own input parameters, "
+                                    "it is pre-existing surface; at the "
+                                    "test's own inputs it is the "
+                                    "patch-failed-to-fix pattern on the "
+                                    "same underlying defect — keep it.")
+                                print(f"      [family-duty] NO — fact "
+                                      f"attached: {(fired or '')[:90]}")
+                                _fact_notes.append(_fd_note)
                         # Spec G-G3.1: when a DIFFERENT check fired FIRST on the
                         # buggy replay (shadowed — _breplay_ids non-empty,
                         # disjoint from _fired_ids, no defect exception) the
@@ -2392,18 +2396,29 @@ def main():
                                         _j3_failing_test_block(failure_tests),
                                         src)
                                     if not _fd_ok:
-                                        _why = (
-                                            "IDENTICAL-DISMISSED "
-                                            "(mechanical): kv-certified "
+                                        # DEFUSED (see the same-check site):
+                                        # fact for the judge, never an
+                                        # auto-drop, pending the
+                                        # trigger-input exemption.
+                                        _fd_note = (
+                                            "[family-duty fact] kv-certified "
                                             "identical observed behaviour on "
-                                            "both builds at the exact firing "
-                                            "input; family-duty answered NO "
-                                            "— " + _fd_why)
-                                        print(f"      [identical-drop] "
-                                              f"auto-dismissed firing "
-                                              f"(muted): {(fired or '')[:90]}")
-                                        drop_reasons.append((fired, _why))
-                                        continue
+                                            "both builds (muted replay), and "
+                                            "a focused review found the "
+                                            "violated property is NOT the "
+                                            "failing test's own observable "
+                                            "— " + _fd_why
+                                            + " If this firing does NOT lie "
+                                            "at the failing test's own input "
+                                            "parameters, it is pre-existing "
+                                            "surface; at the test's own "
+                                            "inputs it is the "
+                                            "patch-failed-to-fix pattern — "
+                                            "keep it.")
+                                        print(f"      [family-duty] NO — "
+                                              f"fact attached (muted): "
+                                              f"{(fired or '')[:90]}")
+                                        _fact_notes.append(_fd_note)
                             except Exception as _mexc:
                                 print(f"      [muted-replay] unavailable "
                                       f"({_mexc}) — UNKNOWN note kept")
