@@ -35,8 +35,9 @@ from typing import List, Dict, Optional, Callable
 
 from java.harness.build import HarnessBuilder, BuildResult
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from java.parsing.java_source import (alarm_ids_missing, negative_modulo_index,
-                         rethrow_without_cause, violation_swallowed)
+from java.parsing.java_source import (alarm_ids_missing, boolean_swallow,
+                         negative_modulo_index, rethrow_without_cause,
+                         violation_swallowed)
 from llm import HarnessGenerator, record_event
 from java.execution.fuzz_runner import HarnessVerifier, VerificationResult
 from java.execution.oracle_strength import exception_headline, lifted_observed_mismatch
@@ -375,6 +376,44 @@ class HarnessCampaign:
                             "Your harness computes an array/list index "
                             "that can go NEGATIVE: " + negmod_reason + "\n"
                             "Return the full corrected FuzzHarness.java. "
+                            "Raw Java source only. No markdown fences."),
+                        raw=raw,
+                        is_repair_attempt=is_repair_attempt,
+                        repair_failures=repair_failures,
+                        current_messages=current_messages,
+                        original_messages=original_messages,
+                        fresh_prompt=fresh_prompt,
+                    )
+                )
+                continue
+
+            # --- gate 0e: no evidence-destroying boolean-swallow (L) -----
+            # A harness that catches a crash into a bare flag
+            # (catch { success = false; }) and alarms on the flag
+            # (if (!success) throw ...) has flattened the caught exception's
+            # identity into `false` — attribution can no longer tell which
+            # exception fired or whether the unpatched build crashes the same
+            # way (the Chart-26 launder in a different disguise). Reject and
+            # ask for a regenerate rather than compile a deaf-to-identity
+            # harness.
+            boolswallow_reason = boolean_swallow(source)
+            if boolswallow_reason is not None:
+                print(f"✗ evidence-destroying alarm: {boolswallow_reason}")
+                repair_failures, current_messages, original_messages = (
+                    self._handle_failure(
+                        diagnostic=(
+                            "Your harness catches an exception into a bare "
+                            "boolean/flag and then raises its alarm on that "
+                            "flag: " + boolswallow_reason + "\n"
+                            "A caught exception is a REJECTION, never a "
+                            "violation, and flattening it into a flag "
+                            "destroys the identity attribution needs. Either "
+                            "assert on the real observable the test pins "
+                            "(compute the actual value and compare it), or "
+                            "if you must re-report a caught crash, re-throw "
+                            "it with the original as the cause: `new "
+                            "FuzzerSecurityIssueLow(\"[oracle:<id>] ...\", "
+                            "e)`. Return the full corrected FuzzHarness.java. "
                             "Raw Java source only. No markdown fences."),
                         raw=raw,
                         is_repair_attempt=is_repair_attempt,

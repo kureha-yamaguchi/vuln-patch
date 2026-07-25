@@ -423,6 +423,165 @@ def _catch_types_of(catches) -> str:
 
 
 # ---------------------------------------------------------------------------
+# L: evidence-destroying alarm lint (boolean-swallow).
+#
+# A check that catches an exception and records ONLY a bare flag —
+# `catch (...) { success = false; }` with no rethrow and no use of the
+# caught exception — and then raises its alarm on that flag
+# (`if (!success) throw ...`) has thrown the exception's identity away.
+# Whatever crashed (possibly a pre-existing library crash that ALSO
+# crashes the unpatched build) is flattened into `false`, and the
+# downstream pre-existing/laundering attribution guards can no longer ask
+# "which exception was it, and does the buggy build crash the same way?".
+# This is distinct from violation_swallowed (alarm caught by its own try)
+# and rethrow_without_cause (caught crash re-thrown without the cause): the
+# alarm here DOES escape and carries no caught exception at all — the
+# evidence is destroyed at the catch, not at the throw.
+#
+# Conservative by construction — a false hit kills a legitimate check — so
+# ALL must hold: (1) the catch body is solely literal assignments
+# (true/false/0/1/null/"...") to variables, no rethrow, no method call, no
+# reference to the caught exception; (2) a later throw/alarm is conditioned
+# on (or string-concatenates) one of those assigned variables; (3) the
+# catch is NOT the mandated catch-and-return input-rejection shape (a bare
+# `return;`, or assignments then `return;`) — that stays legal.
+
+# RHS restricted to a literal: the caught exception cannot appear on the
+# right of a literal assignment, so condition (1)'s "no reference to the
+# caught exception" is enforced by construction.
+_CATCH_LITERAL_ASSIGN_RE = re.compile(
+    r'^\s*(\w+)\s*=\s*'
+    r'(?:true|false|null'
+    r'|"(?:[^"\\]|\\.)*"'
+    r"|'(?:[^'\\]|\\.)'"
+    r'|[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?[fFdDlL]?)\s*$')
+# An alarm construction (same alarm vocabulary the other lints recognise),
+# possibly package-qualified.
+_ALARM_NEW_RE = re.compile(
+    r'throw\s+new\s+[\w.]*'
+    r'(?:FuzzerSecurityIssue\w*|RuntimeException|AssertionError)\s*\(', re.S)
+
+
+def _catch_statements(body: str) -> List[str]:
+    """Top-level `;`-separated statements of a catch body, honouring string/
+    char literals and nested (){}[] so a `;` inside them does not split."""
+    stmts, cur, i, n, depth = [], [], 0, len(body), 0
+    while i < n:
+        c = body[i]
+        if c in '"\'':
+            j = skip_literal(body, i)
+            cur.append(body[i:j])
+            i = j
+            continue
+        if c in '({[':
+            depth += 1
+            cur.append(c)
+        elif c in ')}]':
+            depth -= 1
+            cur.append(c)
+        elif c == ';' and depth == 0:
+            stmts.append(''.join(cur).strip())
+            cur = []
+        else:
+            cur.append(c)
+        i += 1
+    tail = ''.join(cur).strip()
+    if tail:
+        stmts.append(tail)
+    return [s for s in stmts if s]
+
+
+def _alarm_pos_driven_by_var(src: str, var: str) -> int:
+    """Position of a throw/alarm that is conditioned on `var` (an enclosing
+    `if (... var ...)` guarding it) or string-concatenates `var` into its
+    message; -1 if none. Strings are honoured so `var` matches only as a
+    real identifier, never as text inside a message literal."""
+    rx = re.compile(r'\b' + re.escape(var) + r'\b')
+    # (a) the flag concatenated into an alarm's message (var outside strings)
+    for m in _ALARM_NEW_RE.finditer(src):
+        end = src.find(';', m.end())
+        stmt = src[m.start():end if end > 0 else m.end() + 400]
+        stripped = re.sub(r'"(?:[^"\\]|\\.)*"', '""', stmt)
+        if rx.search(stripped):
+            return m.start()
+    # (b) an `if (... var ...)` whose guarded region contains an alarm
+    for m in re.finditer(r'\bif\s*\(', src):
+        k, depth, n = m.end(), 1, len(src)
+        start = k
+        while k < n and depth:
+            c = src[k]
+            if c in '"\'':
+                k = skip_literal(src, k) - 1
+            elif c == '(':
+                depth += 1
+            elif c == ')':
+                depth -= 1
+            k += 1
+        cond = src[start:k - 1]
+        if not rx.search(cond):
+            continue
+        j = k
+        while j < n and src[j] in ' \t\r\n':
+            j += 1
+        if j < n and src[j] == '{':
+            end = match_brace(src, j)
+            region = src[j:end + 1] if end > 0 else src[j:]
+        else:
+            semi = src.find(';', j)
+            region = src[j:semi + 1] if semi > 0 else src[j:]
+        am = _ALARM_NEW_RE.search(region)
+        if am:
+            return j + am.start()
+    return -1
+
+
+def boolean_swallow(source: str) -> Optional[str]:
+    """Return a reason string when `source` catches an exception into a bare
+    literal flag and later raises an alarm on that flag — destroying the
+    caught exception's identity; None when the pattern is absent.
+
+    The catch-and-return input-rejection shape (`catch (...) { return; }`,
+    or assignments then `return;`) is explicitly left legal — it is the
+    mandated way to skip an input, and its assigned flag never reaches a
+    later alarm because control has returned."""
+    src = strip_comments(source or '')
+    for _open, _close, catches in _try_blocks(src):
+        for _params, body in catches:
+            stmts = _catch_statements(body)
+            if not stmts:
+                continue                      # empty catch — nothing recorded
+            if any(re.match(r'return\b', s) for s in stmts):
+                continue                      # catch-and-return — legal skip
+            if any('throw' in s for s in stmts):
+                continue                      # rethrows — the alarm escapes
+            assigned, ok = [], True
+            for s in stmts:
+                m = _CATCH_LITERAL_ASSIGN_RE.match(s)
+                if not m:                     # method call / non-literal —
+                    ok = False                # not the bare-flag shape
+                    break
+                assigned.append(m.group(1))
+            if not ok or not assigned:
+                continue
+            for av in assigned:
+                pos = _alarm_pos_driven_by_var(src, av)
+                if pos >= 0:
+                    line = src[:pos].count('\n') + 1
+                    return (
+                        f'a catch block records only the bare flag `{av}` '
+                        f'(literal assignment, no rethrow, the caught '
+                        f'exception is never used) and the alarm near line '
+                        f'{line} is conditioned on `{av}` — the caught '
+                        f"exception's identity is destroyed, so attribution "
+                        f'cannot tell WHICH exception fired or whether the '
+                        f'unpatched build crashes the same way. Rethrow the '
+                        f"exception as the alarm's cause (`..., e`), or "
+                        f'assert on the real observable instead of a '
+                        f'swallowed boolean.')
+    return None
+
+
+# ---------------------------------------------------------------------------
 # P0.3: caught-crash re-throws must carry the original as their cause.
 #
 # A harness may catch a library crash and re-throw it as its own alarm

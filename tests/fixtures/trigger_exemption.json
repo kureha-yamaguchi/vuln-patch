@@ -1,0 +1,50 @@
+{
+  "setup_divergence": {
+    "provenance": {
+      "run": "pool30_20260724_162730",
+      "case": "10_patch1-Closure-62-Jaid_c",
+      "trace": "runs-archive/runs/pool30_20260724_162730/10_patch1-Closure-62-Jaid_c/trace.md",
+      "fired_line": "3170 (FIRED — [oracle:seed-test] semantic mismatch)",
+      "test_source_lines": "49 / 252-262 (testFormatErrorSpaceEndOfLine1 assertEquals literal)",
+      "note": "Setup-divergence FP: the seed-test oracle re-asserts the failing test's own pinned expected string. After whitespace-normalization the fired message's expected side equals the test's assertEquals literal exactly, so expected_is_test_literal must be True (string >= 8 chars). The real test passes on the patched build, so the decision ladder mechanically dismisses (setup-divergence)."
+    },
+    "fired_msg": "[oracle:seed-test] semantic mismatch: expected=javascript/complex.js:1:ERROR-errordescriptionhereassert(1;^ actual=javascript/complex.js:1:ERROR-errordescriptionhere",
+    "test_expected_literal": "javascript/complex.js:1: ERROR - error description here\nassert (1;\n          ^\n",
+    "trusted_values": [
+      "javascript/complex.js:1: ERROR - error description here\nassert (1;\n          ^\n"
+    ]
+  },
+  "root_defect": {
+    "provenance": {
+      "run": "pool30_20260724_162730",
+      "case": "01_patch1-Math-2-Arja-plausible_o",
+      "trace": "runs-archive/runs/pool30_20260724_162730/01_patch1-Math-2-Arja-plausible_o/trace.md",
+      "fired_line": "3084 (FIRED — [oracle:mean-within-support] mean=-49.759350398538686 lower=0 upper=50)",
+      "test_source_line": "48 (testMath1021: N=43130568, m=42976365, n=50; loop 100; assert 0 <= sample <= n)",
+      "note": "Root-defect (overfit) case. Two facts recorded here as comments in the test: (a) the message carries NO expected= tag and its only numeric values are -49.759350398538686 / 0 / 50; the bound literals 0 and 50 are non-distinctive (<4 sig digits), so expected_is_test_literal is False. (b) The failing test's distinctive literals are 43130568 and 42976365 (>=4 sig digits); NEITHER appears among the message values, and the observed -49.759... does not accidentally equal any test literal, so fired_at_test_input on the REAL Math-2 message is also False. The distinctiveness guard is proven the OTHER way by root_defect_synthetic below."
+    },
+    "fired_msg": "[oracle:mean-within-support] consistency violation: mean must lie within the distribution's own support bounds; mean=-49.759350398538686 lower=0 upper=50",
+    "trusted_values": ["43130568", "42976365", "50", "0", "100"],
+    "trigger_literals": ["43130568", "42976365", "50", "0", "100"],
+    "distinctive_test_literals": ["43130568", "42976365"],
+    "observed_value": "-49.759350398538686"
+  },
+  "root_defect_synthetic": {
+    "provenance": {
+      "note": "Synthetic sibling of the Math-2 root-defect case (no bug provenance). A distinctive literal 46341.0 (5 sig digits) is present in BOTH the trigger seed literals AND the fired message's key=value values, so fired_at_test_input must be True. This proves the distinctiveness guard fires positively, complementing the real Math-2 message where the distinctive literals are absent."
+    },
+    "fired_msg": "[oracle:variance-support] consistency violation: sampled statistic left the support; value=46341.0 lower=0 upper=100000",
+    "trigger_literals": ["46341.0", "50", "0"]
+  },
+  "trivial_guards": {
+    "provenance": {
+      "note": "Synthetic distinctiveness-guard fixtures (no bug provenance). Bare numeric literals 50 / 0 / 1.0 (all <4 significant digits) must never qualify for either helper even when they appear on both sides; a string shorter than 8 chars (ERROR) must never qualify for expected_is_test_literal."
+    },
+    "numeric_expected_msg": "[oracle:x] semantic mismatch: expected=50 actual=51",
+    "numeric_trusted_values": ["50", "0", "1.0"],
+    "numeric_trigger_msg": "[oracle:x] consistency violation: n=50 base=0 factor=1.0",
+    "numeric_trigger_literals": ["50", "0", "1.0"],
+    "short_string_expected_msg": "[oracle:x] semantic mismatch: expected=ERROR actual=WARN",
+    "short_string_trusted_values": ["ERROR"]
+  }
+}

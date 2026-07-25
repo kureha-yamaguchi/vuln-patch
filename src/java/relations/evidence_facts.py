@@ -493,6 +493,168 @@ def compare_fired_values(patched_msg, buggy_msg):
     return "different"
 
 
+# ---------------------------------------------------------------------------
+# Spec J (cycle-3) — re-armed mechanical identical-drop with the trigger-input
+# exemption. Two pure flags decide the ladder in run.py; both share ONE
+# distinctiveness rule so a trivially-common literal (a bare 0/1, a two-char
+# string) can never satisfy either — the guard that Math-2/Math-30 need.
+#
+# Distinctiveness rule (shared):
+#   * NUMERIC literal qualifies only with >=4 significant digits — strip the
+#     sign, any type suffix (LlFfDd), the exponent, underscores, the decimal
+#     point and leading zeros, then count the digits that remain. So "6.283"
+#     -> "6283" (4, YES), "50" -> "50" (2, NO), "0.0" -> "" (0, NO).
+#   * STRING literal qualifies only if len(whitespace-normalized) >= 8.
+# ---------------------------------------------------------------------------
+
+_WS_RE = re.compile(r'\s+')
+_TYPE_SUFFIX = 'LlFfDd'
+# A token that is a bare numeric literal (Java number, underscores allowed).
+_NUMERIC_LITERAL_RE = re.compile(
+    r'^[+-]?[\d_]+(?:\.[\d_]+)?(?:[eE][+-]?\d+)?[LlFfDd]?$')
+# Quoted string contents inside a fired message.
+_QUOTED_RE = re.compile(r'"((?:[^"\\]|\\.){0,200})"')
+# An EXPECTED-side tag: any key containing "expected" (case-insensitive),
+# value running up to the next ` <key>=` pair or end of message. Captures a
+# STRING value as readily as a numeric one (the fired copy of a test's pinned
+# assertEquals literal is a string).
+_EXPECTED_TAG_RE = re.compile(
+    r'(\w*expected\w*)\s*=\s*(.*?)(?=\s+\w+\s*=|$)', re.IGNORECASE)
+
+
+def _ws_norm(s):
+    """Whitespace-normalize for matching: remove ALL whitespace. The fired
+    trace collapses a multi-line assert literal (newlines/indentation gone)
+    while the trusted test literal keeps them, so equality survives only once
+    every whitespace character is stripped from BOTH sides."""
+    return _WS_RE.sub('', str(s or ''))
+
+
+def _is_numeric_literal(s):
+    return bool(_NUMERIC_LITERAL_RE.match(str(s).strip()))
+
+
+def _to_float(s):
+    """Parse a numeric literal/token to float (type suffix + underscores
+    stripped; NaN/Infinity tokens accepted). None on failure."""
+    try:
+        core = str(s).strip().rstrip(_TYPE_SUFFIX).replace('_', '')
+        return float(core)
+    except (TypeError, ValueError):
+        return None
+
+
+def _numeric_is_distinctive(s):
+    """>=4 significant digits after stripping sign, type suffix, exponent,
+    underscores, the decimal point and leading zeros."""
+    core = re.split(r'[eE]', str(s).strip().rstrip(_TYPE_SUFFIX), 1)[0]
+    core = core.lstrip('+-').replace('.', '').replace('_', '').lstrip('0')
+    return len(core) >= 4
+
+
+def _literal_is_distinctive(s):
+    """Shared distinctiveness gate: numeric rule for a numeric literal, string
+    rule (>=8 chars whitespace-normalized) otherwise."""
+    if _is_numeric_literal(s):
+        return _numeric_is_distinctive(s)
+    return len(_ws_norm(s)) >= 8
+
+
+def _quoted_strings(msg):
+    return _QUOTED_RE.findall(msg or '')
+
+
+def expected_is_test_literal(fired_msg, trusted_values):
+    """Spec J.2a flag: does the fired message's EXPECTED-side value match one
+    of the failing test's own assert literals (`trusted_values`), distinctively?
+
+    Expected-side extraction: numbers tagged with any key containing
+    "expected" (case-insensitive, e.g. expected=/expectedX=); for a message
+    carrying NO expected-tag at all, the whole message's quoted strings and
+    numeric literals. A numeric match counts only within the `_close` floor
+    AND when the fired literal is distinctive (>=4 significant digits); a
+    string match only by whitespace-normalized containment (either direction)
+    AND when the shared (shorter) text is distinctive (>=8 chars). Pure."""
+    fired_msg = fired_msg or ''
+    trusted = [str(t) for t in (trusted_values or []) if str(t).strip()]
+    if not fired_msg or not trusted:
+        return False
+    # EXPECTED-side candidate values: the expected-tag values (string OR
+    # numeric); only when the message carries NO expected-tag at all do we
+    # fall back to the whole message's quoted strings and numeric literals.
+    exp_vals = [v for _k, v in _EXPECTED_TAG_RE.findall(fired_msg)]
+    if not exp_vals:
+        exp_vals = _quoted_strings(fired_msg) + _NUM_RE.findall(fired_msg)
+    # Numeric pool from the trusted literals (mine embedded numbers too).
+    trusted_nums = []
+    for t in trusted:
+        for m in _NUM_RE.findall(t):
+            f = _to_float(m)
+            if f is not None:
+                trusted_nums.append(f)
+    for raw in exp_vals:
+        raw = str(raw).strip()
+        if not raw:
+            continue
+        # Numeric match — distinctive literal (>=4 sig digits), `_close` floor.
+        if _is_numeric_literal(raw) and _numeric_is_distinctive(raw):
+            fe = _to_float(raw)
+            if fe is not None:
+                for ft in trusted_nums:
+                    if _vals_match(fe, ft):
+                        return True
+        # String match — whitespace-normalized containment, either direction,
+        # the shared (shorter) text distinctive (>=8 chars).
+        en = _ws_norm(raw)
+        if len(en) >= 8:
+            for t in trusted:
+                tn = _ws_norm(t)
+                if not tn:
+                    continue
+                if en in tn or tn in en:
+                    shorter = en if len(en) <= len(tn) else tn
+                    if len(shorter) >= 8:
+                        return True
+    return False
+
+
+def fired_at_test_input(fired_msg, trigger_literals):
+    """Spec J.2b flag: does the fired message fire AT the failing test's own
+    input seeds? Parse `trigger_literals` (list of strings — numeric and
+    string seeds) and match any DISTINCTIVE one against the fired message's
+    key=value VALUES (`_KV_PAIR_RE`, numeric/NaN/Infinity) or its quoted
+    strings. Numeric: `_vals_match` floor. String: whitespace-normalized
+    containment (either direction, shared text >=8 chars). Pure."""
+    fired_msg = fired_msg or ''
+    lits = [str(x) for x in (trigger_literals or []) if str(x).strip()]
+    if not fired_msg or not lits:
+        return False
+    fired_nums = []
+    for _k, v in _KV_PAIR_RE.findall(fired_msg):
+        f = _to_float(v)
+        if f is not None:
+            fired_nums.append(f)
+    fired_strs = [_ws_norm(q) for q in _quoted_strings(fired_msg)]
+    for lit in lits:
+        if not _literal_is_distinctive(lit):
+            continue
+        if _is_numeric_literal(lit):
+            fl = _to_float(lit)
+            if fl is None:
+                continue
+            for fn in fired_nums:
+                if _vals_match(fl, fn):
+                    return True
+        else:
+            ln = _ws_norm(lit)
+            for fs in fired_strs:
+                if ln and (ln in fs or fs in ln):
+                    shorter = ln if len(ln) <= len(fs) else fs
+                    if len(shorter) >= 8:
+                        return True
+    return False
+
+
 def _excerpt(msg, cap=120):
     """Truncate a fired message to ~`cap` chars for inline quoting in a note."""
     if not msg:

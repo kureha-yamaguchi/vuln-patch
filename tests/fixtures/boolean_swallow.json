@@ -1,0 +1,31 @@
+{
+  "chart26_success_flag": {
+    "provenance": {
+      "run": "pool30_20260724_162730",
+      "case": "11_patch1-Chart-26-Jaid_c",
+      "trace": "runs-archive/runs/pool30_20260724_162730/11_patch1-Chart-26-Jaid_c/trace.md",
+      "harness_block_lines": "2676-2691 (the boolean 'success' swallow inside FuzzHarness.fuzzerTestOneInput, oracle bar3d-null-info)",
+      "note": "Verbatim evidence-destroying block: catch (Exception e) { success = false; } assigns only a literal to 'success', never references e, never rethrows, and a later 'if (!success) throw new FuzzerSecurityIssueLow(...)' conditions the alarm on that variable. boolean_swallow must fire and name the variable 'success'."
+    },
+    "expected_variable": "success",
+    "source": "        BufferedImage image = new BufferedImage(200, 100, BufferedImage.TYPE_INT_RGB);\n        Graphics2D g2 = image.createGraphics();\n        boolean success = false;\n        try {\n            // Lifted directly from the failing test's public API surface: success must become true.\n            chart.draw(g2, new Rectangle2D.Double(0.0, 0.0, 200.0, 100.0), null, null);\n            success = true;\n        } catch (Exception e) {\n            success = false;\n        } finally {\n            g2.dispose();\n        }\n        if (!success) {\n            throw new FuzzerSecurityIssueLow(\"[oracle:bar3d-null-info] semantic mismatch: expected success=true for chart.draw(g2, Rectangle2D.Double(0,0,200,100), null, null)\");\n        }"
+  },
+  "rethrow_with_cause": {
+    "provenance": {
+      "note": "Synthetic negative (no bug provenance). The catch rethrows a wrapping exception that carries the caught exception as its cause, so the exception identity survives and there is no bare-flag swallow. boolean_swallow must be quiet (None)."
+    },
+    "source": "        double actual;\n        try {\n            actual = testStatistic.compute(d1, d2);\n        } catch (Exception e) {\n            throw new RuntimeException(\"[oracle:compute-must-succeed] compute threw on valid input\", e);\n        }\n        if (actual < 0.0) {\n            throw new FuzzerSecurityIssueLow(\"[oracle:non-negative] semantic mismatch: expected>=0 actual=\" + actual);\n        }"
+  },
+  "catch_return_skip": {
+    "provenance": {
+      "note": "Synthetic negative (no bug provenance). Legitimate, mandated input-rejection skip: catch (Exception e) { return; } discards the invalid fuzz input without asserting anything. There is no bare-flag-then-alarm pattern. boolean_swallow must be quiet (None)."
+    },
+    "source": "        int idx;\n        Comparable k;\n        try {\n            ds.addValue(v, row, col);\n            k = ds.getRowKey(0);\n            idx = ds.getRowIndex(k);\n        } catch (Exception e) {\n            return;\n        }\n        if (idx != 0) {\n            throw new FuzzerSecurityIssueLow(\"[oracle:roundtrip] semantic mismatch: expected=0 actual=\" + idx);\n        }"
+  },
+  "flag_not_used_in_alarm": {
+    "provenance": {
+      "note": "Synthetic negative (no bug provenance). The catch assigns a literal to a flag ('ok = false'), but NO later throw/alarm conditions on that flag; the only alarm conditions on an independently computed 'idx'. Since the swallowed flag never gates an alarm, boolean_swallow must be quiet (None)."
+    },
+    "source": "        boolean ok = true;\n        int idx = -1;\n        try {\n            ds.addValue(v, row, col);\n            idx = ds.getRowIndex(ds.getRowKey(0));\n        } catch (Exception e) {\n            ok = false;\n        }\n        if (idx > 5) {\n            throw new FuzzerSecurityIssueLow(\"[oracle:index-bound] semantic mismatch: expected<=5 actual=\" + idx);\n        }"
+  }
+}

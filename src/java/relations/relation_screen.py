@@ -43,8 +43,8 @@ from java.harness.build import HarnessBuilder
 from java.harness.canned_probe import run_canned_probe, EXTREMES_CHECKLIST, SEEDS as _SEEDS
 from llm import record_event
 from java.execution.fuzz_runner import run_jazzer
-from java.parsing.java_source import (library_subclass, negative_modulo_index,
-                         violation_swallowed)
+from java.parsing.java_source import (boolean_swallow, library_subclass,
+                         negative_modulo_index, violation_swallowed)
 # Fire ratio above which a relation is out-of-domain: the buggy build is
 # known-correct on the overwhelming majority of inputs (it passes its whole
 # suite bar the triggers), so a relation violated this often contradicts
@@ -222,6 +222,17 @@ def screen_relations(candidates: List,
             print(f"  [screen] {name}: SELF-SWALLOWED ALARM — "
                   f"{swallow_reason} — dropped")
             _mark(rel, 'dropped', f'self-swallowed alarm: {swallow_reason}')
+            continue
+        # L boolean-swallow lint: a check that catches into a bare flag and
+        # alarms on the flag (catch { ok = false; } ... if (!ok) throw ...)
+        # has destroyed the caught exception's identity — attribution can no
+        # longer tell which exception fired or whether the unpatched build
+        # crashes the same way. Reject before spending a compile.
+        boolswallow = boolean_swallow(getattr(rel, 'check', ''))
+        if boolswallow is not None:
+            print(f"  [screen] {name}: EVIDENCE-DESTROYING ALARM — "
+                  f"{boolswallow} — dropped")
+            _mark(rel, 'dropped', f'boolean-swallow alarm: {boolswallow}')
             continue
         # P2.3 constraint parity: the harness may not subclass a library
         # class to force behaviour. A relation that needs one compiles
