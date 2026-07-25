@@ -341,7 +341,7 @@ mechanism: the check that fired on the buggy build was the LIFTED SEED
 (the reported input/crash), which the overfit special-cased, so the
 patched build passes it; the discriminating generalization was latent
 (P0.4 flags it), stochastic, or on an untouched surface. Full triage +
-plan implications in `semantic-recall-brainstorm.md` (P1.3 + predictions
+plan implications in `docs/plan.md` (P1.3 + predictions
 ledger). Two findings worth flagging here:
 - **The pipeline beats our own certifier probe on witness-only bugs**: 5
   of 7 zero-probe-divergence overfits (Chart-7, Lang-41, Lang-60,
@@ -548,7 +548,7 @@ patch behaviorally wrong vs both dev fix and JDK reference behavior).
 ## 9. Deep-analysis index — bugs with a full workup beyond the probe
 
 Where to find the detailed reasoning and reproducible evidence per bug.
-"Addendum" = `semantic-recall-brainstorm.md` ADDENDUM sections; "UND" =
+"Addendum" = `docs/plan.md` ADDENDUM sections; "UND" =
 `suites/labels/incorrect_labels.md`; VM paths are on hetzner. Run logs for the pipeline
 (not certifier) analyses are the local scratchpad copies of
 `fixconfirm_20260716_023210` / `sem8_v2_20260715_124137`.

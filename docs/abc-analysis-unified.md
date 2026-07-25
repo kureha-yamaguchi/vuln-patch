@@ -2,7 +2,8 @@
 
 > **What this document is.** Two independent deep-dives of the same experiment were written:
 > `abc-flag-experiment-analysis.md` ("**analysis O**", Opus, 2026-07-22) and
-> `abc-analysis-fable.md` ("**analysis F**", Fable, 2026-07-23). This document merges them,
+> `abc-analysis-fable.md` ("**analysis F**", Fable, 2026-07-23) — both deleted 2026-07-26 as
+> fully superseded by this merge (recoverable from git history). This document merges them,
 > settles every point where they *disagree* by going back to the raw run logs and source code
 > (re-checked 2026-07-23, not decided by which write-up sounded more confident), adds a
 > step-by-step audit of whether each stage of the pipeline earns its keep, and says it all in

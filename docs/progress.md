@@ -1,5 +1,11 @@
 # Progress — semantic-bug findability
 
+> **FROZEN 2026-07-26.** Historical record of the June-15→July-15 era only; nothing here
+> is updated anymore. Kept because `suites/DATASET_AUDIT.md` and
+> `src/java/dataset/certify_detectability.py` cite its §4/§8/§9/B1 evidence. For anything
+> current, read `docs/plan.md` and `docs/cycles/`. Note the "Runs on Hetzner" section (§5)
+> predates `run_suite.sh`/`runs-archive/` and no longer describes how runs are stored.
+
 Living record of what's been added, what was tried, what worked/didn't, and
 where the runs + results live on the Hetzner VM.
 

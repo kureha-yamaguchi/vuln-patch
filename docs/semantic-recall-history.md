@@ -996,7 +996,7 @@ mislabels. Two consequences:
 
 ---
 
-# ARCHIVED: full plan text as of 2026-07-18 (pre-restructure), preserved verbatim before the by-station rewrite of semantic-recall-brainstorm.md
+# ARCHIVED: full plan text as of 2026-07-18 (pre-restructure), preserved verbatim before the by-station rewrite of the plan doc (now docs/plan.md)
 
 # Semantic-bug detection — the plan
 

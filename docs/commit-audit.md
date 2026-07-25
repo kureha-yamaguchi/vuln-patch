@@ -1,5 +1,9 @@
 # Commit audit — all 152 commits reviewed (2026-07-19)
 
+> **Scope note (2026-07-26):** covers history through 2026-07-19 only. The cycle-1→4
+> campaign that followed is documented in `docs/cycles/`; a follow-up audit of that
+> period lives in the plan doc's 2026-07-26 candidate ledger (`docs/plan.md`).
+
 Requested question: looking over everything committed so far, what is
 validated progress, what was never individually validated and should be
 checked later, and what is dead weight worth deleting. Sources: the full

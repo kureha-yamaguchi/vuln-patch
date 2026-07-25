@@ -2105,9 +2105,12 @@ addresses.
   considered twice; every wrong "no difference" we ever found came
   from looking at the wrong OUTPUT, never from failing to find the
   right INPUT — P4.2 fixes the actual cause.
-- **Judge majority voting, as measured WITHOUT computed facts**: error
-  rate unmoved at 3× the cost. Superseded by J1: re-measure WITH the
-  facts before concluding anything.
+- **Judge majority voting**: dead in BOTH regimes. Without computed
+  facts (2026-07-15 replay): error rate unmoved at 3× the cost. WITH
+  the full fact stack (2026-07-25, cycle-4a, reverted in ad65fdc):
+  offline replay A/B measured identical over-kill and leak at 3× the
+  cost. The leaky verdicts are wrong for reasons every lens shares;
+  redundancy cannot fix them. Do not propose a third time.
 - **Raw-string comparison of lifted code/text outputs**: fires on
   formatting deltas, hands the judge a legitimate dismissal, and
   buries the content difference the same comparison would have caught
@@ -2121,3 +2124,93 @@ addresses.
   correct sides of Lang-41 / Lang-10) are proven behaviorally
   identical to the real fix in our environment or wrongly labeled —
   there is nothing to catch there.
+
+---
+
+## 2026-07-26 — candidate ledger for cycle 4+ (from the full commit-history audit)
+
+Context: Retro #3 established that run-to-run variance is now the dominant problem —
+identical code swung R 0.29 vs 0.57 on identical legs, and catches ride the "generation
+lottery" (whether a given roll invents the right check at all). This section is the result
+of re-reading every campaign commit and run with that finding in hand: what is confirmed
+dead, one verdict that no longer meets our own evidence standard, and ranked candidates.
+Everything here respects the meta-rule (mechanisms, never prompt advice) and the standing
+user rules (no cross-run pooling; no dataset-shaped fixes).
+
+### Confirmed dead since the rejected-ideas list was last updated
+
+- **The relation-family menu as a diversity source** — built 2026-07-18, demoted the same
+  day by its own coverage test (menu covered ~18% of what free invention produces).
+  Already on the delete list; recorded here so "force each round to pick a different
+  family from a list" is never re-proposed as a variance fix.
+- **Judge majority voting** — now dead in both regimes (entry above updated).
+- **The attribution judge as a veto** — falsefix13: vetoed ~100% of sound catches; the
+  fresh-bug arm C scored 0.29. Off by default with a do-not-re-enable condition; the
+  surviving piece is the mechanical direction-confirmed keep (attr5-validated).
+
+### A kill verdict that no longer meets our own standard
+
+**Focused per-source synthesis** (formula/throws/family/state passes, unioned) produced
+the campaign's best recall evidence: foc5 caught 4/4 by-pass targets, foc15 hit R 0.89,
+and the foc2 iterations made the Math-2 mean-formula relation appear in EVERY roll — the
+exact anti-lottery property cycle 4 wants. It was switched off by the 2026-07-21
+ab_off/ab_on A/B (F1 0.91 vs 0.77, 12 legs, ONE roll per arm). Retro #3 has since banned
+single-roll comparisons: ±4 catches of pure noise on 30 legs is bigger than the gap that
+killed the flag. The kill may still be right (its FPs were real), but the evidence is
+void by our current rules. Re-adjudicate under the paired rule — or cheaper, via the
+invention-rate instrument below — before treating focused synthesis as dead.
+
+Related inconsistency to resolve the same way: the harness-width raise to n=5 (f18ac9a)
+sits in tension with the recorded "blanket increase of harnesses" rejection (zero false
+alarms was measured at n=3), and the width5 suite contains only overfit legs — the
+precision cost of n=5 is currently UNMEASURED. The next width measurement must include
+correct legs.
+
+### Ranked candidates
+
+1. **Trace-mine per-leg invention rates — free, do first.** poolA, poolB, pool30 and
+   width5 are 3–4 independent rolls of the same legs, already archived, and each trace.md
+   records every relation invented. Tabulate per leg: was the known catching shape
+   invented, screened-in, fired, kept? Output: each leg classified reliable /
+   coin-flip / never-invents. This tells cycle 4 where width helps and where only a
+   different mechanism can (J1 did exactly this for the judge; generation has no
+   equivalent yet).
+2. **Generation-replay harness** — the missing cheap instrument, twin of
+   `verifier_replay.py` (whose ledger entry reads "run this before trusting any verifier
+   change"). Builds cached; rerun synthesis+screen only, K rolls per leg; report
+   invention rate of the catching shape. Generation changes then get measured in pennies,
+   and paired 30-leg pools become confirmation-only.
+3. **Re-adjudicate focused synthesis** using instrument 2 (or a paired pool if the
+   instrument slips): does the flag raise invention rates on the coin-flip legs without
+   raising junk-invention on correct legs? The mechanism is already built and flag-gated;
+   this is measurement only.
+4. **P4.1 (did-nothing-patch detector) offline false-flag measurement — its blocker has
+   dissolved.** P4.1 was gated on "measure the false-flag rate over verified-correct
+   patches first"; the 2026-07-21 correct-side certification (3c6b3ff) produced 142
+   confirmed-correct patches — exactly that measurement set. Buggy-build-only, so
+   firewall-clean; ship only at a measured near-zero rate, initially as an escalation
+   trigger per the original spec.
+5. **Cycle-4b conviction confirmation + the silent-leg mirror.** Convict only when an
+   independent second roll of the leg also convicts (kills the accusation lottery; cost
+   per accusation, not per leg). Mirror for recall: re-roll only legs whose first roll
+   produced NO firing at all (cost 1 + fraction-silent). Both are within-verdict re-rolls
+   of one leg with nothing persisted across runs — but confirm that reading against the
+   no-pooling rule with the user before building.
+6. **Small precedented adds:** (a) repair-instead-of-drop for screened relations that die
+   mechanically (compile failure, indiscriminate fire) — R1 compile-repair is the
+   validated precedent (+10 relations, zero false-fire cost), and the poolA Closure-92
+   broken-but-correctly-aimed oracle is the motivating case; (b) sharpen Spec N's
+   convergence gate from "zero non-seed power" to per-observable coverage: mechanically
+   list patch-affectable observables, aim the bounded extra rounds at those with zero
+   surviving relations.
+
+Longer-horizon direction (no cycle slot yet): **verdict-as-decision-table**. Cycle 2d
+already made one fact terminal; the fact-priority rule ranks the rest. A J1-style pass
+over archived verdicts would count how many are fully fact-determined — every such
+verdict can become deterministic code, permanently shrinking the judge's coin-flip
+surface (the Lang-60 flip class).
+
+Process pre-commitment (Retro-#1 lesson, restated because the three costliest wrong turns
+were all measurements that contradicted an already-recorded rule): for items 3–5, write
+the measurement design (paired / offline, success criteria) into this doc BEFORE building
+anything.
