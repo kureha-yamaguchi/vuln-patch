@@ -2397,8 +2397,7 @@ def main():
                                 print(f"      [identical-drop] "
                                       f"setup-divergence: "
                                       f"{(fired or '')[:80]}")
-                                drop_reasons.append((fired, _why))
-                                continue
+                                _fact_notes.append("[defused-drop fact] " + _why + " (KILL-SWITCH: attached as evidence, not dropped)")
                             elif _at_input:
                                 _fact_notes.append(
                                     "[patch-failed-to-fix fact] identical "
@@ -2424,10 +2423,13 @@ def main():
                                         "and the firing does not lie at the "
                                         "test's own inputs — pre-existing "
                                         "surface. " + _fd_why)
-                                    print(f"      [identical-drop] "
-                                          f"family-duty: {(fired or '')[:80]}")
-                                    drop_reasons.append((fired, _why))
-                                    continue
+                                    # KILL-SWITCH (poolA 2026-07-25): catch
+                                    # legs ended missed with DUTY:NO events —
+                                    # defused to a fact per the standing rule.
+                                    print(f"      [identical-drop] family-duty"
+                                          f" DEFUSED: {(fired or '')[:80]}")
+                                    _fact_notes.append(
+                                        "[defused-drop fact] " + _why)
                                 _fact_notes.append(
                                     "[family-duty fact] kv-certified "
                                     "identical observed behaviour on both "
@@ -2537,8 +2539,7 @@ def main():
                                         print(f"      [identical-drop] "
                                               f"setup-divergence (muted): "
                                               f"{(fired or '')[:80]}")
-                                        drop_reasons.append((fired, _why))
-                                        continue
+                                        _fact_notes.append("[defused-drop fact] " + _why + " (KILL-SWITCH: attached as evidence, not dropped)")
                                     elif _at_input:
                                         _fact_notes.append(
                                             "[patch-failed-to-fix fact] "
@@ -2572,11 +2573,15 @@ def main():
                                                 "does not lie at the test's "
                                                 "own inputs — pre-existing "
                                                 "surface. " + _fd_why)
+                                            # KILL-SWITCH: defused (see the
+                                            # same-check site).
                                             print(f"      [identical-drop] "
-                                                  f"family-duty (muted): "
+                                                  f"family-duty (muted) "
+                                                  f"DEFUSED: "
                                                   f"{(fired or '')[:80]}")
-                                            drop_reasons.append((fired, _why))
-                                            continue
+                                            _fact_notes.append(
+                                                "[defused-drop fact] "
+                                                + _why)
                                         _fact_notes.append(
                                             "[family-duty fact] kv-certified "
                                             "identical observed behaviour on "
