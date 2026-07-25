@@ -1,0 +1,40 @@
+# THE FRESH EXAM (prepared 2026-07-25, LAUNCH DELIBERATELY — burn-once):
+# all 12 never-touched dev-side semantic bugs, every certified leg
+# (4 overfit + 28 correct). Run ONCE on the final system after the paired
+# pool score is read. This is the generalization test the whole campaign
+# answers to.
+MODEL="gpt-5.4"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/patch1-Chart-12-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Chart-12-Arja.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Chart-12-Arja.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Chart-20-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Closure-14-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Closure-86-SequenceR.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Lang-26-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-5-ACS.patch"
+  "-o patchfile:/home/code/drr/Patches/patch1-Math-5-CapGen-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-5-JGenProg2015.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-5-Arja.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-5-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-5-SequenceR.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-5-SketchFix.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-5-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-5-SOFix.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-5-ACS.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-5-Elixir.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-5-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-5-HDRepair.patch"
+  "-o patchfile:/home/code/drr/Patches/patch1-Math-20-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-22-Arja.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-35-ACS.patch"
+  "-o patchfile:/home/code/drr/Patches/patch1-Math-56-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-59-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-59-ssFix.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-59-SketchFix.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-59-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-59-SOFix.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-59-Elixir.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-59-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/patch1-Math-93-ACS.patch")
