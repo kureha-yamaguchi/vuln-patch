@@ -1,0 +1,19 @@
+# Cycle-3b validation (2026-07-25): the 9-leg c3val set + the two
+# recall-lottery legs (Chart-7-o, second Math-68-o). Checks: residual-FP legs
+# now carry universal-screen/fire-rate facts; convergence gate fires on
+# toothless rolls; no genuine catch lost. BURNED legs.
+MODEL="gpt-5.4"
+COMMON="-n 3 -m 8 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-70-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-30-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-68-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-73-Arja.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-7-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-68-Arja-plausible.patch"
+)
