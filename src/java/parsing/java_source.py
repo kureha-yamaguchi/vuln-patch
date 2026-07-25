@@ -672,6 +672,54 @@ def oracle_ids_in_text(text: str) -> set:
     return ids
 
 
+# ---------------------------------------------------------------------------
+# Family-novelty steering: the FAMILY STEM of an oracle id.
+#
+# Successive harnesses in a set are supposed to interrogate the root cause
+# from DIFFERENT angles; the observed failure (width5 20260725) is that later
+# harnesses re-skin an EARLIER check under a new id — same observable, new
+# name — which adds no evidence. Two oracle ids belong to the same FAMILY when
+# they differ only by an instance index: the trailing enumerating digits.
+#
+# Stemming rule (deterministic): lowercase the id, split on '-', strip a
+# trailing digit-run from EACH token, drop any token that becomes empty (a
+# pure-number token / a bare '-N' suffix), and rejoin the survivors with '-'
+# in their original order. This collapses id families that differ only by an
+# instance number while keeping genuinely distinct checks distinct:
+#   lifted-after-4   -> lifted-after     (same family as lifted-after-1)
+#   jennrich-param1  -> jennrich-param   (same family as jennrich-param0)
+#   fr-case1-rms     -> fr-case-rms      (mid-token digit-run stripped too)
+#   contains-capacity-> contains-capacity  (no digits: unchanged, distinct
+#                                           from contains-length)
+# It intentionally does NOT drop word tokens like 'lifted'/'oracle'/'check'
+# (those name real, distinct families) — only enumerating digits are noise.
+
+_FAMILY_TRAILING_DIGITS_RE = re.compile(r'\d+$')
+
+
+def oracle_family_stem(oracle_id: str) -> str:
+    """Normalize one oracle id to its FAMILY stem (see the rule above).
+    Deterministic; returns '' for an empty/all-numeric id."""
+    stemmed = []
+    for tok in (oracle_id or '').lower().split('-'):
+        tok = _FAMILY_TRAILING_DIGITS_RE.sub('', tok)
+        if tok:                       # drop pure-number / emptied tokens
+            stemmed.append(tok)
+    return '-'.join(stemmed)
+
+
+def oracle_families(source_or_text: str) -> set:
+    """The set of FAMILY stems of every named oracle in a harness source (or
+    any text carrying `[oracle:<id>]` / `relation <name> violated` alarms).
+    Reuses `oracle_ids_in_text` for extraction; empty stems are dropped."""
+    fams = set()
+    for oid in oracle_ids_in_text(source_or_text):
+        stem = oracle_family_stem(oid)
+        if stem:
+            fams.add(stem)
+    return fams
+
+
 def alarm_ids_missing(source: str) -> Optional[str]:
     """Return a reason string if any alarm throw in `source` has a message
     that carries NO oracle ID (neither `[oracle:<id>]` prefix nor

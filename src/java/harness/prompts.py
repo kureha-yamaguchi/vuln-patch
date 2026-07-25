@@ -27,6 +27,7 @@ class PromptBuilder:
               failure_tests: Optional[List[FailureTest]] = None,
               covered_functions: Optional[List[str]] = None,
               found_signatures: Optional[List[str]] = None,
+              accepted_families: Optional[List[str]] = None,
               crash_input: Optional["CrashInput"] = None,
               bug_kind: str = "crashing",
               semantic_test: Optional[FailureTest] = None,
@@ -94,6 +95,7 @@ class PromptBuilder:
                 all_failure_tests=failure_tests or [],
                 covered_functions=covered_functions,
                 found_signatures=found_signatures,
+                accepted_families=accepted_families,
                 variant_strategy=variant_strategy,
                 verifier_enabled=verifier_enabled,
                 mined_oracles=mined_oracles or [],
@@ -133,6 +135,7 @@ class PromptBuilder:
                 found_signatures or [],
                 strategy=variant_strategy,
                 verifier_enabled=verifier_enabled,
+                accepted_families=accepted_families or [],
             ))
         sections.append(self._metamorphic_block())
         sections.append(self._fdp_reference())
@@ -161,6 +164,7 @@ class PromptBuilder:
                         all_failure_tests: List[FailureTest],
                         covered_functions: Optional[List[str]] = None,
                         found_signatures: Optional[List[str]] = None,
+                        accepted_families: Optional[List[str]] = None,
                         variant_strategy: Optional[str] = None,
                         verifier_enabled: bool = False,
                         mined_oracles: Optional[List] = None,
@@ -230,6 +234,7 @@ class PromptBuilder:
                 found_signatures or [],
                 strategy=variant_strategy,
                 verifier_enabled=verifier_enabled,
+                accepted_families=accepted_families or [],
             ))
         sections.append(self._fdp_reference())
         sections.append(self._skeleton_block(context.package))
@@ -1006,7 +1011,9 @@ class PromptBuilder:
                                 covered: List[str],
                                 signatures: List[str],
                                 strategy: Optional[str] = None,
-                                verifier_enabled: bool = False) -> str:
+                                verifier_enabled: bool = False,
+                                accepted_families: Optional[List[str]] = None
+                                ) -> str:
         """Steer successive harnesses across the root-cause neighbourhood."""
         cap = config.MAX_REACHABLE_IN_PROMPT
         shown = reachable[:cap]
@@ -1056,6 +1063,22 @@ class PromptBuilder:
             parts.append(
                 "First harness: establish the most direct path from the"
                 " fuzz entrypoint through the patched code."
+            )
+        # Family-novelty steering (augments the function-coverage steering
+        # above, does not replace it). The stems are computed mechanically
+        # from the accepted harnesses' [oracle:<id>] tags. A later harness
+        # that only re-skins an already-covered family under a new id is
+        # bounced by the campaign's novelty gate — so the prompt states the
+        # requirement up front. Deliberately name-free and example-free: the
+        # model must invent a family, not copy one.
+        fams = sorted({f for f in (accepted_families or []) if f})
+        if fams:
+            parts.append(
+                "Check FAMILIES already covered by accepted harnesses: {"
+                + ", ".join(fams) + "}. Your harness is REJECTED unless it"
+                " fires at least one check OUTSIDE these families — cover a"
+                " different observable, sibling method, or receiver-state"
+                " axis."
             )
         if signatures:
             # Masked-symptom pressure. Every signature the set has found so

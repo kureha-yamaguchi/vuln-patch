@@ -1,0 +1,29 @@
+# night20 (2026-07-26): overnight wide-harness run — ALL 14 pool overfit legs
+# (recall focus: harness width is a recall lever) + the 6 FP-prone correct
+# legs as the precision stress-guard. -n 7 -m 16 with the family-novelty
+# steering gate (each harness must add an uncovered check family, 2-reject
+# cap fail-open). BURNED legs - mechanism + width evaluation.
+MODEL="gpt-5.4"
+COMMON="-n 7 -m 16 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-50-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-60-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-7-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/SequenceR/Closure/patch1-Closure-92-SequenceR.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/SequenceR/Closure/patch1-Closure-38-SequenceR.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-68-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/ACS/Math/patch1-Math-73-ACS-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-74-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/HDRepair/Math/patch1-Math-82-HDRepair.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Elixir/Math/patch1-Math-104-Elixir-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-30-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-73-Arja.patch"
+)

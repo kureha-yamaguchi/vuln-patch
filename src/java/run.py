@@ -1086,7 +1086,8 @@ def main():
     # masked-symptom bug. One tick per fresh prompt build.
     _STRATEGIES = ['a', 'b', 'c']
 
-    def prompt_factory(covered_functions, found_signatures):
+    def prompt_factory(covered_functions, found_signatures,
+                       accepted_families=None):
         semantic_test = None
         if bug_kind == "semantic" and failure_tests:
             semantic_test = failure_tests[_rr_state["i"] % len(failure_tests)]
@@ -1122,6 +1123,7 @@ def main():
             failure_tests=failure_tests,
             covered_functions=covered_functions,
             found_signatures=found_signatures,
+            accepted_families=accepted_families,
             crash_input=crash_input,
             bug_kind=bug_kind,
             semantic_test=semantic_test,
