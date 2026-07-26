@@ -2337,6 +2337,36 @@ plot-state`, `feasibility-constraints`, `period-months-exact-added-months`) are 
 always **accepted-but-latent** — they never fire. Classification counts: RELIABLE 6,
 COIN-FLIP 4, INVENTS-BUT-NEVER-FIRES 4, NEVER-INVENTS 0, INVENTS-FIRES-JUDGE-KILLS 0.
 
+**CORRECTION (2026-07-26, main-session audit — two claims above are wrong; the traces
+refute them):**
+
+1. **INVENTS-FIRES-JUDGE-KILLS is NOT empty.** `crashed_on_patch` in `result.jsonl` is a
+   POST-JUDGE field, so judge-killed firings are invisible to the tabulation's method
+   ("no trace.md reads needed" is exactly the shortcut that hid them). poolA Lang-60:
+   `[oracle:contains-readonly-capacity]` FIRED on the patched build
+   (`beforeCapacity=32 afterCapacity=0`, trace event [30]) and the judge killed it with
+   the lazy-compaction hypothetical (VERDICT: UNSOUND, ~line 4769) — the exact "pure
+   drift" kill Retro #3 triaged. Retro #3 also records DUTY:NO dismissal events on
+   poolA Math-68 and Chart-19. So those poolA cells are fired-and-killed, not "A", and
+   "the judge never kills a fired overfit trigger" is false for poolA; what IS true is
+   that no kill has been observed since the family-duty defusals (poolB, night20) —
+   i.e. the defusals are what closed this loss mode, and it stays closed only while
+   they hold. Rule going forward: the F-vs-K distinction MUST be read from trace
+   events, never from post-judge jsonl fields.
+2. **"Every TP fired via a lifted/seed oracle" is false.** pool30 Lang-41's kept TP
+   fired a freely-invented overload-agreement RELATION via the P3.2 replay path
+   (0/20000 on buggy → 4259/20000 on patched; trace ~line 2630), consistent with the
+   commit-audit's "P3.2 replay is the biggest recall mechanism". Invented general
+   relations do fire and convict; they under-fire, but "almost always latent"
+   overstates it.
+
+What survives the correction: NEVER-INVENTS = 0 stands; the night20 no-new-frontier
+finding stands; fire-capability remains the DOMINANT bottleneck and the item-4 verdict
+is untouched. But the residual loss modes are two, not one: (a) accepted checks that
+cannot fire (dominant, items 4/5/8), and (b) judge drift on fired checks — historically
+real as recently as poolA, currently suppressed by the defusals, worth one standing
+guard (the verdict-lint idea in the candidate ledger) rather than "not a factor".
+
 **Key question — did night20 (width 7 + gate + cycle-3b directives) invent catching
 shapes on legs the three prior rolls didn't?** No. There is **no leg where all three
 priors were FN and night20 was TP**: every night20 catch (Math-2, Lang-41, Lang-50,
