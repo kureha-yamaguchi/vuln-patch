@@ -2386,6 +2386,34 @@ oracle (`gamma-positive-positive`) that night20 did not. Verdict: **width/divers
 invention, not fires.** The instrument says the next lever is fire-capability (item 4) and
 budget/state-variation (items 5, 8), not more invention.
 
+### NEXT UP (2026-07-26, post items 1–4) — execution order for the working agent
+
+Item 5 is DEAD by its own gate (item 4: check-shape, not reach). The live sequence:
+
+1. **Extend the item-4 fire-capability replay to Closure-38, Lang-63, Math-104**
+   (offline, same method as Chart-19: accepted checks vs overfit build at the
+   certified discriminating inputs). Output: does one structure-from-data fix cover
+   all four never-fire legs, or do they split into classes (exact-tolerance and
+   formatting-compare shapes may differ)? Record per-leg verdicts here.
+2. **Generation-side fix licensed by item 4: fuzz-driven structural state.** Stated
+   generally — receiver/container STRUCTURE (install indices, gaps, sizes, element
+   placement) must be drawn from `data`, not compile-time constants; labels-from-data
+   alone is cosmetic. Mechanical tooth per the meta-rule: screen-side lint — a
+   rejection/state-family check whose receiver construction consumes zero fuzz bytes
+   is flagged/demoted, never silently accepted. Fixtures from the night20 harness
+   sources. Scope set by step 1's class split.
+3. **Item 6 rerun of night20.cases at HEAD.** Pre-committed interpretation: (a) gate
+   valid iff zero vacuous rejections in trace events (PASS/reject activity logged);
+   (b) counts as the width-7 paired read; (c) frontier attribution — any firing on
+   Chart-19/Closure-38/Lang-63/Math-104 is attributable to step 2, since nothing ever
+   fired there in four rolls; pooled F1 is secondary to per-leg fire/invention rates.
+4. **Item 7 milestone (paired 30-leg) only if step 3 moves the fire frontier.**
+   Otherwise it re-measures the known band at ~7M tokens for no decision.
+
+Not bundled: the judge verdict-lint (see the item-3 CORRECTION — drift is suppressed
+by the defusals, not gone) stays queued as a standalone standing guard. fresh12
+remains gated on the user's explicit go.
+
 ### Dials and re-validation (only as licensed by 3–4)
 
 5. **Fuzz-budget raise for accepted checks — only if step 4 says "reach".** And it must
