@@ -144,10 +144,17 @@ def test_verdict_accepts_when_some_family_is_new():
                            {"contains-capacity"}, 0) == "accept"
 
 
-def test_verdict_no_families_at_all_is_bounded_reject():
-    # A harness that carries no families adds none -> reject within budget.
-    assert novelty_verdict(set(), {"contains-capacity"}, 0) == "reject"
+def test_verdict_empty_family_set_always_accepts():
+    # FAIL-OPEN ON EMPTY EXTRACTION (belt and braces): an empty candidate
+    # family set is a parse failure, never redundancy — it can NEVER be a
+    # rejection, regardless of the rejection budget. (This is the direct fix
+    # for night20's six vacuous family-novelty rejections, whose rejected
+    # harnesses all extracted to {}.)
+    assert novelty_verdict(set(), {"contains-capacity"}, 0) == "accept"
+    assert novelty_verdict(set(), {"contains-capacity"}, 1) == "accept"
     assert novelty_verdict(set(), {"contains-capacity"}, 2) == "accept"
+    # No accepted families yet either -> still accept.
+    assert novelty_verdict(set(), set(), 0) == "accept"
 
 
 def test_verdict_custom_max_rejections():

@@ -91,11 +91,23 @@ def novelty_verdict(new_families,
     is exhausted — the campaign must still be able to finish rather than loop
     forever demanding a family the model cannot invent.
 
+    FAIL-OPEN ON EMPTY EXTRACTION (belt and braces): an EMPTY `new_families`
+    set is never redundancy — it means the family extractor could not read the
+    candidate's checks (e.g. a genuinely dynamic oracle id it cannot resolve
+    statically), so there is no evidence of overlap to reject on. Such a
+    candidate is always 'accept'. The campaign gate independently short-circuits
+    empty extraction to a `family-extract-failed` fail-open before ever calling
+    this predicate; this guard makes a vacuous rejection impossible even if a
+    future caller forgets to.
+
       new_families      — family stems of the candidate harness.
       accepted_families — union of family stems over accepted harnesses.
       rejections_so_far — novelty-rejections already spent this leg.
     """
-    families_added = set(new_families) - set(accepted_families)
+    new_families = set(new_families)
+    if not new_families:
+        return 'accept'
+    families_added = new_families - set(accepted_families)
     if families_added:
         return 'accept'
     if rejections_so_far < max_rejections:
@@ -723,7 +735,27 @@ class HarnessCampaign:
             #     open and accepts the redundant harness, so the campaign can
             #     always finish.
             harness_families = oracle_families(source)
-            if accepted_families:
+            families_added = harness_families - accepted_families
+            if accepted_families and not harness_families:
+                # FAIL-OPEN BY CONSTRUCTION: an EMPTY extracted family set is a
+                # parse failure, not redundancy — the gate cannot judge what it
+                # could not read, so it must never reject on it (this is exactly
+                # what produced night20's six vacuous rejections). Log WHY, then
+                # fall through accept-eligible. novelty_verdict independently
+                # returns 'accept' for an empty set; this branch never reaches
+                # it, so a vacuous rejection is impossible on two counts.
+                print("✓ [novelty] family extraction empty — fail-open "
+                      "accept (family-extract-failed)")
+                record_event(
+                    'deterministic', method='harness-attempt',
+                    target=attempt_label,
+                    output='family-extract-failed (empty family set — '
+                           'accepted fail-open; the novelty gate cannot judge '
+                           'checks it could not parse, e.g. a dynamic oracle '
+                           'id)',
+                    detail={'harness_families': [],
+                            'accepted_families': sorted(accepted_families)})
+            elif accepted_families:
                 if (novelty_verdict(harness_families, accepted_families,
                                     novelty_rejections) == 'reject'):
                     novelty_rejections += 1
@@ -752,11 +784,32 @@ class HarnessCampaign:
                         )
                     )
                     continue
-                if not (set(harness_families) - accepted_families):
+                if not families_added:
                     # verdict == 'accept' with no new family: the budget is
                     # spent, so we accept a redundant harness rather than loop.
                     print("[novelty] cap reached — accepting redundant "
                           "harness")
+                    record_event(
+                        'deterministic', method='harness-attempt',
+                        target=attempt_label,
+                        output='novelty-cap fail-open (budget spent — '
+                               'redundant harness admitted so the campaign '
+                               'can finish)',
+                        detail={'harness_families': sorted(harness_families),
+                                'accepted_families': sorted(accepted_families),
+                                'novelty_rejections': novelty_rejections})
+                else:
+                    # passed the novelty gate on real new evidence: record the
+                    # compact pass so every non-trivial gate decision survives
+                    # in the trace, not only the rejections.
+                    print(f"✓ [novelty] adds {len(families_added)} new check "
+                          f"family(ies)")
+                    record_event(
+                        'deterministic', method='harness-attempt',
+                        target=attempt_label,
+                        output='novelty-gate PASS (adds new check families)',
+                        detail={'families_added': sorted(families_added),
+                                'families_added_count': len(families_added)})
 
             # --- accepted ---------------------------------------------
             result.successful_results.append(build)

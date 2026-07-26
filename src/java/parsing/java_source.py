@@ -58,6 +58,28 @@ def match_brace(src: str, open_idx: int) -> int:
     return -1
 
 
+def match_paren(src: str, open_idx: int) -> int:
+    """Index of the ')' closing `src[open_idx]` ('('), skipping string and
+    char literals; -1 if unbalanced or `open_idx` is invalid. The paren twin
+    of `match_brace`."""
+    if open_idx < 0 or open_idx >= len(src) or src[open_idx] != '(':
+        return -1
+    depth, i, n = 0, open_idx, len(src)
+    while i < n:
+        c = src[i]
+        if c in '"\'':
+            i = skip_literal(src, i)
+            continue
+        if c == '(':
+            depth += 1
+        elif c == ')':
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return -1
+
+
 # assertEquals / assertSame / assertArrayEquals call with its raw argument
 # list captured up to the closing paren of the call (greedy enough for literal
 # args; nested calls make the split heuristic bail for that call rather than
@@ -663,12 +685,86 @@ _ALARM_STMT_RE = re.compile(
     r'throw\s+new\s+[\w.]*(?:FuzzerSecurityIssue\w*|RuntimeException)'
     r'\s*\(', re.S)
 
+# The variable/parameter feeding a dynamic alarm template
+# `"[oracle:" + <sink> + "] ..."`. Everything a harness thinks of as an oracle
+# id flows INTO this sink, so recovering the id literals that reach it recovers
+# the id set even though no literal `[oracle:<id>]` is ever written out.
+_DYNAMIC_ORACLE_SINK_RE = re.compile(r'\[oracle:"\s*\+\s*([A-Za-z_]\w*)')
+# A pure id-shaped string literal (an oracle id, never a message: no spaces,
+# no `expected=`/colons). `[-\w]+` is exactly the shape `_ORACLE_ID_RE` accepts.
+_ID_STRING_LITERAL_RE = re.compile(r'^"([-\w]+)"$')
+
+
+def _dynamic_oracle_ids(text: str) -> set:
+    """Oracle IDs a harness supplies to the DYNAMIC alarm template
+    `throw new ...("[oracle:" + <sink> + "] ...")`.
+
+    The literal-`[oracle:<id>]` scanner (`_ORACLE_ID_RE`) finds NOTHING in such
+    a harness because the id is concatenated in at runtime — this was the
+    empty-extraction bug behind night20's six vacuous family-novelty
+    rejections (Lang-50, Chart-19, Math-65). The id string literals are
+    nonetheless present statically wherever they flow into <sink>. Two flows
+    are recovered here, both intraprocedural and convention-driven (they key
+    off the `[oracle:` tagging convention, never off any bug's specifics):
+
+      * assignment       `<sink> = "some-id";`  (Lang-50 shape)
+      * helper parameter `void fail(String <sink>, ...) { ..."[oracle:"+<sink> }`
+                         called `fail("some-id", ...)` — the id-shaped string
+                         literal in <sink>'s argument position at each call
+                         (Chart-19 `fail`, Math-65 `requireApprox`/`assertClose`).
+
+    An id whose value is itself COMPUTED (`"hash-" + i`, a loop counter, a
+    consumed byte) has no static literal and is deliberately NOT recovered:
+    that is a genuinely dynamic id, and the campaign's novelty gate must fail
+    open on it rather than reject (see `novelty_verdict` and the campaign
+    `family-extract-failed` path). Best-effort: fails soft to whatever it can
+    prove, never raises."""
+    src = strip_comments(text or '')
+    sinks = set(_DYNAMIC_ORACLE_SINK_RE.findall(src))
+    if not sinks:
+        return set()
+    ids: set = set()
+    for sink in sinks:
+        esc = re.escape(sink)
+        # flow 1: a string literal assigned directly to the sink variable.
+        ids.update(re.findall(
+            r'(?<![\w.])' + esc + r'\s*=\s*"([-\w]+)"', src))
+        # flow 2: the sink is a formal `String <sink>` parameter of a helper
+        # method; recover the id-shaped literal in that argument position at
+        # every call to the helper.
+        for decl in re.finditer(
+                r'\b(\w+)\s*\(([^(){};]*\bString\s+' + esc + r'\b[^(){};]*)\)',
+                src):
+            method, param_str = decl.group(1), decl.group(2)
+            params = split_top_level_args(param_str)
+            pos = next((k for k, p in enumerate(params)
+                        if p.split()[-1:] == [sink]), -1)
+            if pos < 0:
+                continue
+            for call in re.finditer(r'\b' + re.escape(method) + r'\s*\(', src):
+                open_idx = call.end() - 1
+                close = match_paren(src, open_idx)
+                if close < 0:
+                    continue
+                args = split_top_level_args(src[open_idx + 1:close])
+                if pos < len(args):
+                    m = _ID_STRING_LITERAL_RE.match(args[pos].strip())
+                    if m:
+                        ids.add(m.group(1))
+    return ids
+
 
 def oracle_ids_in_text(text: str) -> set:
     """Every oracle ID mentioned in `text` (harness source OR fuzzer
-    output), under either accepted shape."""
+    output), under any accepted shape:
+      * literal `[oracle:<id>]`             (harness source or resolved output)
+      * `relation <name> violated`          (the synthesis alarm format)
+      * dynamic `"[oracle:" + <sink> + "]"` (id built at runtime — the literals
+        are recovered from the code that feeds <sink>; see
+        `_dynamic_oracle_ids`)."""
     ids = set(_ORACLE_ID_RE.findall(text or ''))
     ids.update(_RELATION_ID_RE.findall(text or ''))
+    ids.update(_dynamic_oracle_ids(text or ''))
     return ids
 
 
