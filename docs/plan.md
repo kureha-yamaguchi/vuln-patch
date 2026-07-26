@@ -2416,6 +2416,50 @@ remains gated on the user's explicit go.
 
 ### Step-1 result: fire-capability of the 3 other dead legs (2026-07-26)
 
+Method note: derived from the night20 traces directly (they already contain the
+patched-build firings + judge verdicts); no VM compile needed. Two probe agents
+died on API connection errors mid-run; the analysis was completed inline by grep.
+
+**The premise "these legs never fire" is FALSE for all three.** In night20, each
+invented a check that FIRED on the patched build with the correct discriminating
+value — and each was then DISMISSED by the judge. So Chart-19 (item 4) is the ONLY
+structure-constant / never-fire leg. The other three are a different problem: the
+judge over-dismisses a genuine firing via a hypothetical-correctness story. The
+four dead legs split into THREE classes, and structure-from-data (step 2) fixes
+only ONE of them:
+
+| leg | fired on patched? | verdict cause | class |
+|---|---|---|---|
+| Chart-19 | NO (discriminating state is a compile-time constant) | never reached judge | **STRUCTURE-CONSTANT** → step-2 structure-from-data |
+| Closure-38 | YES (`x-0` vs `x-0.0`, the exact whitespace/format bug; 12 UNSOUND) | judge: "a correct CodePrinter could legally print `x-0` as the equivalent `x-0.0`" — format-freedom hypothetical | **JUDGE-OVER-DISMISSAL** |
+| Lang-63 | YES (`expected=09 actual=08`, the borrow bug; 6 UNSOUND) | judge: "formatPeriod is timezone/DST-sensitive, a correct impl could differ" — out-of-domain hypothetical | **JUDGE-OVER-DISMISSAL** |
+| Math-104 | YES (P vs 1−Q differ at ~8e-10; 10 UNSOUND) | judge: "iterative/approximate, documented epsilon as loose as 1e-6, so a correct impl may differ" | **SUB-TOLERANCE** (the dismissal is arguably CORRECT — the check IS unsound at that gap) |
+
+**Consequences for the sequence:**
+- **Step 2 (structure-from-data) covers Chart-19 ONLY.** Do not expect it to move
+  Closure-38/Lang-63/Math-104. Its scope is one leg; still worth doing, but sized
+  accordingly.
+- **Closure-38 + Lang-63 are the real recall prize, and they are a JUDGE/EVIDENCE
+  problem, not a generation problem.** The checks already fire with the right
+  answer. The fix is the diff-class evidence (G4: the divergence IS in the failing
+  test's own diff class — whitespace for Closure-38) + trust-domain fencing (G2:
+  Lang-63's check ran at a fixed timezone; the DST hypothetical is outside the
+  check's own input domain). This is the hypothetical-correctness enemy the
+  campaign has fought since day one — "suppressed by defusals, not gone" (item-3
+  CORRECTION), and here it is un-suppressed on two legs. This should likely
+  PRE-EMPT step 2 in priority: two legs vs one, and it's the higher-value class.
+- **Math-104 is likely a genuine trustworthy-recall discount** (sub-floor numeric,
+  the check's own tolerance can't distinguish 8e-10) — do not chase without a
+  sharper discriminating input; accept as a hard leg.
+
+**Revised recommendation:** before step 2, spec a judge-side diff-class/domain-fence
+fix for the JUDGE-OVER-DISMISSAL class (Closure-38 + Lang-63) — bigger prize, and it
+re-opens the oldest open wound with concrete new fixtures (two firing-but-dismissed
+legs). Structure-from-data (Chart-19) and the sub-tolerance accounting (Math-104)
+follow. All three still gate the night20 rerun / milestone as before.
+
+### Step-1 result: fire-capability of the 3 other dead legs (2026-07-26)
+
 Method = item-4 Chart-19 template applied to night20 (`night20_20260725_155442`),
 offline/static: read each leg's ACCEPTED checks + the `replay-on-patched` and
 `patched-fuzz` events + the judge verdicts in trace.md. **No VM compile needed** — the
