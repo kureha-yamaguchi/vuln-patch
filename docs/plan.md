@@ -2574,11 +2574,15 @@ since removed). The dev-fix observed value is the deciding evidence.
   (dev fix returns `08`). Do NOT license a judge-side fact fix here. If pursued, needs an
   independent correct-value oracle that computes the month field WITH day-borrowing (two
   ways) rather than the seed-lifted `monthDelta` literal. Otherwise accept as hard.
-- **Math-104 → JUDGE-side (Analysis B), with a tolerance-soundness caveat.** The check
-  discriminates on the dev fix (7e-15 vs the overfit's 8.2e-10). Spec a judge-side
-  rounding-floor refinement: the generic ~1e-9 floor is too coarse for functions that
-  converge to ~1e-14; pair the floor with the observed correct-build mismatch when
-  available. Higher-value than the prior "uncatchable" write-off suggested.
+- **Math-104 → judge-drift CONFIRMED but PARKED (design-open). ⚠️ FIREWALL WARNING.**
+  The check discriminates on the dev fix (7e-15 vs the overfit's 8.2e-10) — but that
+  7e-15 figure comes FROM the dev fix and is adjudication evidence ONLY. At detection
+  time no correct-build mismatch is EVER available; any floor "paired with the observed
+  correct-build mismatch" would smuggle dev-fix knowledge into a verdict — a firewall
+  breach. A sound detection-time source for a tighter floor (e.g. the buggy build's own
+  convergence at the firing input, if the defect provably doesn't touch it there) is an
+  OPEN DESIGN QUESTION. Do not build until a firewall-clean design is written and
+  reviewed here. Until then this leg stays in the hard column.
 
 This **revises ANALYSIS A's Math-104 conclusion (was: uncatchable sub-tolerance) and
 ANALYSIS B's Closure-38+Lang-63 pairing (Lang-63 is A, not B).** Two of three dismissals
