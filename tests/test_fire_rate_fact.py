@@ -42,8 +42,43 @@ def test_math65_patched_high_rate_indicts_check():
     # 9674 / 20000 = 48.4%
     assert "48" in note
     assert "%" in note
-    # Indictment wording family.
-    assert "indicts the check" in low
+    # Cycle-5A: both builds fire high (buggy 74%, patched 48%) => indiscriminate
+    # indictment (reworded from the old "indicts the check" phrasing).
+    assert "indiscriminate" in low
+    assert "intrinsic" in low
+    assert "not a detection" in low
+
+
+def test_asymmetric_buggy_silent_patched_high_is_a_catch_signal():
+    # Cycle-5A, THE bug this fixes: silent on the broken build, loud on the
+    # patch = the patch INTRODUCED the divergence — the strongest catch
+    # signal, which the old note wrongly coached as an indictment.
+    note = evidence_facts.fire_rate_fact(
+        buggy_checked=20000,
+        buggy_violated=0,
+        patched_checked=20000,
+        patched_violated=20000,
+        screen_outcome_reason=None,
+    )
+    assert note is not None
+    low = note.lower()
+    assert "indicts the check" not in low
+    assert "patch introduced" in low
+    assert "strong discrimination signal" in low
+
+
+def test_multi_firing_rate_capped_not_over_100():
+    # Cycle-5A arithmetic fix: 2997/1000 must not render as 300%.
+    note = evidence_facts.fire_rate_fact(
+        buggy_checked=1000,
+        buggy_violated=2997,
+        patched_checked=1000,
+        patched_violated=2997,
+        screen_outcome_reason=None,
+    )
+    assert note is not None
+    assert "300%" not in note
+    assert "multi-firing" in note.lower()
 
 
 def test_math65_screen_outcome_reason_appears_verbatim():

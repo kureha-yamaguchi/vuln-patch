@@ -829,21 +829,53 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
     Returns the fact block, or None when neither the patched nor the buggy rate
     crosses its threshold (or the counts are missing) — no noise.
     """
+    # Cycle-5A: per-input denominator normalization. A multi-case oracle can
+    # count several firings per input, so `violated` may EXCEED `checked`
+    # (night20 Math-68 printed "2997/1000 = 300%"). Clamp the RATE at 1.0 — a
+    # check that fires on every input is the ceiling; there is no ">100%".
     def _rate(violated, checked):
         if not checked or checked <= 0 or violated is None:
             return None
-        return violated / checked
+        return min(1.0, violated / checked)
 
     p_rate = _rate(patched_violated, patched_checked)
     b_rate = _rate(buggy_violated, buggy_checked)
 
+    # Cycle-5A: TWO-SIDED interpretation. The old note had only the
+    # "patched-high => indicts the check" reading and applied it even to
+    # buggy≈0 / patched-high — the STRONGEST catch signal (silent on the
+    # known-broken build, fires on the patch = the patch introduced the
+    # divergence). That wording coached the judge to discard its best
+    # catches (inventory 2026-07-26). Distinguish the two profiles:
     interp = None
-    if p_rate is not None and p_rate >= MAX_FIRE_RATIO:
-        interp = ("a contract violated by {:.0%} of random valid inputs on "
-                  "the PATCHED build indicts the check, not the patch — real "
-                  "defect discriminators fire rarely and asymmetrically; keep "
-                  "only with a shown contract that makes every one of those "
-                  "inputs a genuine violation.".format(p_rate))
+    both_high = (p_rate is not None and p_rate >= MAX_FIRE_RATIO
+                 and b_rate is not None and b_rate >= MAX_FIRE_RATIO)
+    asymmetric = (p_rate is not None and p_rate >= MAX_FIRE_RATIO
+                  and b_rate is not None and b_rate < MAX_FIRE_RATIO)
+    if both_high:
+        interp = ("fires on a large share of random valid inputs on BOTH "
+                  "builds (buggy {:.0%}, patched {:.0%}) — indiscriminate; "
+                  "the firing is intrinsic to the check/setup construction, "
+                  "not a detection of the defect. Keep only with a shown "
+                  "contract that makes every one of those inputs a genuine "
+                  "violation.".format(b_rate, p_rate))
+    elif asymmetric:
+        interp = ("fires on {:.0%} of random valid inputs on the PATCHED "
+                  "build but only {:.0%} on the buggy build — the check is "
+                  "silent (or near-silent) on the known-broken code and "
+                  "loud on the patch, i.e. the PATCH introduced this "
+                  "divergence. This is a strong discrimination signal, NOT "
+                  "grounds to indict the check; dismiss only with a shown "
+                  "reason the patched-only firings are legitimate.".format(
+                      p_rate, b_rate))
+    elif p_rate is not None and p_rate >= MAX_FIRE_RATIO:
+        # patched-high, buggy rate UNKNOWN (unmeasured) — cannot claim
+        # asymmetry; state the rate without an indictment verdict.
+        interp = ("fires on {:.0%} of random valid inputs on the PATCHED "
+                  "build; the buggy-build rate is unmeasured, so whether "
+                  "this is indiscriminate (check bug) or patch-introduced "
+                  "(a catch) is undetermined — judge on the check's shown "
+                  "contract.".format(p_rate))
     elif b_rate is not None and b_rate >= INTRINSIC_FIRE_RATIO:
         interp = ("fires on essentially every input on the buggy build "
                   "({:.0%}) — the firing is intrinsic to the check/setup "
@@ -852,13 +884,20 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
     if interp is None:
         return None
 
+    def _cnt(violated, checked):
+        # Show raw counts, flag the multi-firing case rather than a >100%.
+        if violated is not None and checked and violated > checked:
+            return "{}/{} (multi-firing; rate capped at 100%)".format(
+                violated, checked)
+        return "{}/{}".format(violated, checked)
+
     parts = []
     if b_rate is not None:
-        parts.append("buggy build {}/{} = {:.0%}".format(
-            buggy_violated, buggy_checked, b_rate))
+        parts.append("buggy build " + _cnt(buggy_violated, buggy_checked)
+                     + " = {:.0%}".format(b_rate))
     if p_rate is not None:
-        parts.append("patched build {}/{} = {:.0%}".format(
-            patched_violated, patched_checked, p_rate))
+        parts.append("patched build " + _cnt(patched_violated, patched_checked)
+                     + " = {:.0%}".format(p_rate))
 
     text = ("[fire-rate fact] " + "; ".join(parts) + " of random valid "
             "inputs. " + interp)
