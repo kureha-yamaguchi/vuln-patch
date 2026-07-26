@@ -2414,6 +2414,73 @@ Not bundled: the judge verdict-lint (see the item-3 CORRECTION — drift is supp
 by the defusals, not gone) stays queued as a standalone standing guard. fresh12
 remains gated on the user's explicit go.
 
+### Step-1 result: fire-capability of the 3 other dead legs (2026-07-26)
+
+Method = item-4 Chart-19 template applied to night20 (`night20_20260725_155442`),
+offline/static: read each leg's ACCEPTED checks + the `replay-on-patched` and
+`patched-fuzz` events + the judge verdicts in trace.md. **No VM compile needed** — the
+traces already record every fire on the overfit build and the judge's soundness ruling,
+which is decisive. The headline finding overturns the prior read: on all three legs the
+discriminating check REACHED AND FIRED on the overfit at (or near) the certified input —
+the miss is NOT reach and NOT structure-from-constants. It is a JUDGE / oracle-soundness
+dismissal, and each leg's sub-mechanism is DISTINCT.
+
+- **Closure-38 — OTHER-SHAPE (judge formatting-latitude dismissal). NOT structure-constant.**
+  Relations `minus_positive_zero_has_no_forced_space` ("x-0") and
+  `minus_positive_integer_has_no_forced_space` ("x-"+n, n from `consumeInt(1,9)`) survived
+  screening as silent-on-buggy tripwires and, on `replay-on-patched` [74]/[75], FIRED
+  (deterministic 2/2, fuzzed 20000/20000) — the overfit emits the spurious "x- 0"/"x- 5".
+  Harnesses also fired on patched ("do- -0", "public - -0"). Every fire was ruled UNSOUND:
+  keyword inputs ("do","public") give parse errors where a correct printer may return "",
+  and for valid "x-"+n the judge held the contract only promises "compact javascript code",
+  so "x- 1"/"x - 1" is a legal rendering — whitespace after '-' is not contract-pinned.
+  Prior read said "compare-time whitespace erasure" — WRONG: harness compares used
+  `replaceAll("\\s+"," ").trim()` (single-space, signal preserved) and the raw relations used
+  exact equals; the signal reached the check and fired. Erasure is at the JUDGE, not compare.
+  A structure-from-data generation fix does nothing here (checks already fire).
+
+- **Lang-63 — OTHER-SHAPE (off-seed oracle-knowledge). NOT structure-constant.**
+  Harnesses drew borrow dates FROM fuzz data (fire evidence: `expected=09 actual=08
+  startYear=1900 endMonthDelta=9 endDay=1` — endDay 1 < startDay 31 = a real field borrow)
+  and FIRED on patched [48 attempt_001, 50 attempt_003]. So reach + data-driven structure
+  are already present — this DISPROVES the prior "possibly STRUCTURE-CONSTANT" guess. Every
+  fire ruled UNSOUND: the seed answer ("09" for Dec-31→Oct-6) was generalized to other
+  borrow dates whose correct months value the harness cannot independently compute, and the
+  judge showed a correct day-borrowing impl legitimately returns "08" there. At the ONE
+  input with a trusted answer (the seed) the plausible overfit passes, so the sound
+  seed-lifted oracle stays quiet. Missing ingredient: an independent oracle for the correct
+  value at borrow inputs off the seed — not more structure variation.
+
+- **Math-104 — OTHER-SHAPE (rounding-floor tolerance). NOT structure-constant.**
+  P+Q=1 complement checks FIRED on patched (attempt_001 `[oracle:default-complement]`:
+  P=0.5150504305 vs 1-Q=0.5150504297, ~8.2e-10, at a=x=78.08; replay [64]/[70] FIRED). The
+  overfit (`Math.sqrt(an)` vs `Math.abs(an)` in the convergence test) diverges by ~6e-11–8e-10.
+  Every complement fire ruled UNSOUND under the judge's explicit ROUNDING FLOOR (~1e-9): a
+  correct iterative impl reproduces that mismatch, so any tolerance tight enough to catch it
+  (1e-12) is unsound. The pinned trusted-value checks at (1,1) that ARE tight-and-sound
+  (tol 1e-13/1e-14) went QUIET — the overfit agrees at (1,1); the divergence lives at other
+  inputs where no exact answer is known. Confirms the prior "tolerance" guess.
+
+**Class split — answer to the key question: NO, one structure-from-data fix does NOT cover
+all four.** It covers exactly ONE — Chart-19 (STRUCTURE-CONSTANT: the null×sparse-hole
+discriminator is a compile-time constant, the check never reaches the divergence). The other
+three are each OTHER-SHAPE and, more sharply, all JUDGE-DISMISSAL cases: the check already
+reaches and fires on the overfit, and the soundness gate correctly kills it because the
+divergence lives in an UNDER-SPECIFIED dimension the contract doesn't pin — formatting
+whitespace (Closure-38), an off-seed value with no independent oracle (Lang-63), sub-1e-9
+numerical error (Math-104). These are three DISTINCT sub-mechanisms, none of them reach- or
+structure-limited.
+
+**Consequence for step 2: it is NOT one fix — it is one fix plus three separate problems.**
+The step-2 structure-from-data generation fix is licensed for Chart-19 ONLY. The other three
+are not addressable generation-side (their checks fire already); they need oracle/judge-side
+work and each differs: Closure-38 wants a content-only canonical comparison the judge accepts
+as sound (or a contract-pinned separator observable); Lang-63 wants an independent
+correct-value oracle for arbitrary borrow dates (recompute months two ways); Math-104 wants a
+sound way to expose a >1e-9 observable (or acceptance that the ~1e-10 overfit is below any
+sound tolerance and is genuinely uncatchable by a value oracle). Do NOT bundle them under
+step 2's structure-from-data banner.
+
 ### Dials and re-validation (only as licensed by 3–4)
 
 5. **Fuzz-budget raise for accepted checks — only if step 4 says "reach".** And it must
