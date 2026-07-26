@@ -2214,3 +2214,90 @@ Process pre-commitment (Retro-#1 lesson, restated because the three costliest wr
 were all measurements that contradicted an already-recorded rule): for items 3–5, write
 the measurement design (paired / offline, success criteria) into this doc BEFORE building
 anything.
+
+---
+
+## 2026-07-26 — immediate action plan (post-night20), in execution order
+
+Handoff plan for the working agent. Evidence base: night20 (8/14 catches — exactly the
+7.7 the three prior rolls predict, so NOT yet an improvement signal), plus a trace audit
+of the novelty gate: **7 family-novelty rejections run-wide, 6 of them vacuous** (the
+rejected harness's extracted family list was EMPTY — the extractor bug — so the gate has
+only done its designed job once so far). Every item below has a done-criterion; nothing
+launches a paired pool until steps 1–4 are done. Standing rules apply throughout: no
+cross-run pooling; certification data may inform OFFLINE diagnosis only, never a
+pipeline input; fresh12 stays gated on the user's explicit go.
+
+### Fixes first (small, evidenced, do immediately)
+
+1. **Fix the family extractor.** A harness whose check families extract as EMPTY must
+   never be rejected for "adding no new family" — empty extraction is a parse failure,
+   not redundancy. Treat empty-extraction as fail-open (accept-eligible, log a
+   `family-extract-failed` event through record_event) and fix the extraction itself
+   (night20 traces hold 6 real failing examples to build fixtures from).
+   *Done when:* unit tests over those 6 archived harness sources extract non-empty
+   families, and a vacuous rejection is impossible by construction.
+2. **Event-log the gate's decisions with the family lists** (if not already fully
+   trace-surviving): every reject must record harness_families + accepted_families so
+   the next audit is grep-able. (night20 already mostly does this — verify, close gaps.)
+
+### Cheap diagnoses before any new machinery (free / pennies; they decide steps 5–6)
+
+3. **Four-roll invention-rate tabulation (candidate-ledger item 1, now with 4 rolls).**
+   pool30, poolA, poolB, night20 share 14 overfit legs. From the traces, tabulate per
+   leg × roll: was a check of the known catching family (a) invented, (b) accepted/
+   screened-in, (c) fired on patched, (d) kept by the judge? Output: one table, legs
+   classified reliable / coin-flip / never-invents / invents-but-never-fires.
+   *Done when:* the table exists in this doc and answers: did night20 (width 7 + gate +
+   cycle-3b directives) invent catching shapes on legs where prior rolls didn't?
+4. **Chart-19 fire-capability replay (offline).** Take night20's accepted Chart-19
+   checks, compile against the PATCHED build, and drive them at the certification's
+   known discriminating inputs — offline analysis only. Question: can ANY accepted
+   check fire on this overfit in principle?
+   - If yes → the miss is reach/budget; step 5 is justified.
+   - If no → the miss is check-shape (e.g. receiver states built deterministically, so
+     fuzz time only varies cosmetic strings); step 5 is pointless for this class and
+     the fix is generation-side (state variation drawn from `data`, not constants).
+   *Done when:* a one-paragraph verdict with the replay evidence is recorded here.
+
+### Dials and re-validation (only as licensed by 3–4)
+
+5. **Fuzz-budget raise for accepted checks — only if step 4 says "reach".** And it must
+   be measured two-sided: the same raised budget runs on correct legs, where every
+   unsound check gets more chances to fire. Measurement: the 6-leg trap set (night20's
+   correct legs) + the 5 catch-legs, same config twice (paired). No blanket adoption on
+   a recall read alone.
+6. **Re-validate the novelty gate now that it actually functions.** After step 1 the
+   gate has effectively never been tested. Cheapest honest test: rerun the night20
+   cases file once (same width, fixed gate) — this also serves as night20's pair, so
+   one run buys both the gate check and the paired read of width-7.
+   *Interpretation rule:* per-leg invention rates from step 3, not the pooled F1, are
+   the primary readout.
+
+### The milestone measurement (after 1–6)
+
+7. **Paired pool on the 30-leg burned set** with whatever config survives steps 5–6.
+   Two rolls, identical config, report both + mean, per the paired rule. This is the
+   number that decides whether the width/diversity direction moved anything. Target to
+   beat honestly: paired mean F1 ≈ 0.49 (poolA/B); catches band 4–8/14.
+
+### Bigger changes queued behind the milestone (specs in the candidate ledger above)
+
+8. **P4.1 did-nothing-patch detector, offline false-flag measurement** over the 142
+   certified-correct patches. Unblocked since 2026-07-21; targets the never-invents /
+   never-fires legs (Chart-19, Closure-38, Lang-63, Math-104 stayed missed in all 4
+   rolls — width demonstrably does not reach them). Escalation-trigger only at first.
+9. **Focused-synthesis re-adjudication** (the void single-roll kill): once step 3's
+   tabulation exists, measure the flag's effect on invention rate per leg (or run its
+   own paired mini-pool). If it raises invention on coin-flip legs without raising
+   junk on trap legs, re-enable.
+10. **Cycle-4b conviction confirmation + silent-leg re-roll** (accusation and
+    generation lotteries; per-accusation / per-silent-leg cost). Confirm the
+    no-pooling reading with the user before building.
+11. **Repair-instead-of-drop for mechanically-dead relations** (R1 precedent) and the
+    **per-observable sharpening of Spec N's convergence gate** — small, precedented,
+    ride along with whichever cycle touches those files next.
+
+Pre-commitment: write the measurement design (what's compared, how many rolls, success
+criterion) into this section BEFORE building items 5, 6, 8, 9. The exam (fresh12)
+launches only on the user's word, after a paired milestone score they accept.
