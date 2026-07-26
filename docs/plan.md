@@ -2588,6 +2588,69 @@ This **revises ANALYSIS A's Math-104 conclusion (was: uncatchable sub-tolerance)
 ANALYSIS B's Closure-38+Lang-63 pairing (Lang-63 is A, not B).** Two of three dismissals
 were judge-drift (Closure-38, Math-104); one (Lang-63) was a correct kill of an unsound check.
 
+### Population inventory result (2026-07-26) → the cycle-5 package
+
+Full data: `docs/judge-verdict-inventory-2026-07-26.md` (228 judge verdicts on fired
+checks across pool30/poolA/poolB/night20/width5; the rows are the replay fixture
+population). Headline findings that supersede the single-leg "diff-class fact" idea:
+
+1. **The FN mechanism is the judge, almost always.** Of 23 FN overfit legs with judged
+   firings, 22 had EVERY verdict UNSOUND. Recall is not lost to missing firings; it is
+   lost at the verdict. (Many kills are CORRECT — bad checks are real — but the kill
+   step is where the decision happens.)
+2. **The cleanest drift-kill signature is mechanical and recurring:** silent-on-buggy
+   ~0/20k + deterministic 2/2 on the failing test's own literals + ~100% patched fire
+   rate, killed by an uncorroborated "a correct implementation could…" hypothetical
+   (inventory §c rows 1–4: Closure-38 ×3 across two runs, Lang-60 width5). In 4 of the
+   6 UNSOUND verdicts carrying this profile the hypothetical overrode it; 1 of 6 was a
+   justified kill (a genuine `!=` check bug), so the rule must require a positive
+   shown-contract/broken-check citation, not auto-keep.
+3. **Two of our own facts miscoach the judge in exactly that profile:** the [fire-rate
+   fact]'s "100% indicts the check" wording (100% on PATCHED with ~0% on buggy is
+   maximal discrimination, not indiscriminateness) and the [trigger-tier fact]'s
+   dismiss-pushing wording. Plus a denominator bug (2997/1000 — normalize per input).
+4. **The precision failure is symmetric:** all 26 SOUND-on-correct verdicts sit in FP
+   legs, and ~8 of them kept a firing DESPITE fires-on-buggy / IDENTICAL-ON-BOTH facts
+   — trusted-lift provenance overriding mechanical facts, the exact inversion of the
+   "mechanical facts outrank provenance" rule; one (night20 Math-30
+   canonical-parity-closed-form) was kept despite the cycle-2d TERMINAL identical fact,
+   proving the terminal rule is not mechanically enforced.
+5. **Step-4b is violated in the wild:** Lang-63 day-shift killed via a DST hypothetical
+   that cannot produce the observed 2-day delta; the pinned-UTC Lang-63 relations killed
+   via calendar latitude their own `UTC_TIME_ZONE` fencing excludes. The Lang-50 locale
+   family is the positive control (pins honored 14/15).
+6. **Verdict variance at check granularity confirmed:** the same chi² relation judged
+   SOUND in three runs and UNSOUND in one on the same evidence shape.
+
+**The cycle-5 package (all population-evidenced, all mechanical):**
+- **5A — fact repairs (cheapest, first):** two-sided fire-rate wording (distinguish
+  "high on both = indiscriminate" from "≈0 buggy / high patched = patch-introduced
+  discrimination"), per-input denominator normalization, trigger-tier wording
+  neutralized to symmetric.
+- **5B — recall-side dismissal lint (step-4b enforcement, mechanical where possible):**
+  (i) pinned-environment fact — syntactically extract what the check source pins
+  (UTC_TIME_ZONE, Locale.setDefault, fixed seeds); a dismissal whose counterexample
+  varies a pinned parameter is void → verdict re-asked with the fact stated;
+  (ii) under the §c drift-kill signature, UNSOUND requires citing a SHOWN contract or a
+  demonstrable check bug — an uncited "could" hypothetical is inadmissible there.
+- **5C — precision-side enforcement (the mirror):** identical-is-terminal enforced
+  MECHANICALLY at every judge site (route through the Spec-J family-duty ladder; no
+  discretionary keep on IDENT), and a SOUND keep on a firing carrying
+  fires-on-buggy/IDENT facts is void unless the family-duty question answers YES —
+  provenance alone cannot override a mechanical fact.
+- **5D — validation gate:** two-sided offline verifier_replay with fixtures drawn from
+  the inventory: §c drift-kills 1–4 must flip to kept; the justified kill (row 6,
+  Lang-50 `!=` bug) must stay dead; the 26 FP keeps must strictly decrease (the ~8
+  provenance-override keeps are the direct targets); the 44 correct dismissals on
+  correct legs must not flip. Ship nothing that fails any leg of this.
+- **Small adjudication rider:** dev-fix replay (offline) of the two pinned-UTC Lang-63
+  relations at their firing inputs — if the dev fix satisfies them, they join the
+  drift-kill fixture set; if it violates them, they stay correctly dead.
+- Chart-19 structure-from-data (step 2) unchanged and disjoint; the night20 rerun and
+  milestone sequence unchanged. The earlier "diff-class fact" framing is RETIRED in
+  favor of 5A–5C: Closure-38's rescue comes from the drift-kill-signature rule, not
+  from whitespace classification.
+
 ### Dials and re-validation (only as licensed by 3–4)
 
 5. **Fuzz-budget raise for accepted checks — only if step 4 says "reach".** And it must

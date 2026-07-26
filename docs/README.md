@@ -26,6 +26,9 @@ and **frozen** (historical evidence; never updated, kept because other files cit
 - **`commit-audit.md`** — full review of the first 152 commits (through 2026-07-19):
   validated / unvalidated / delete lists. Several deletion candidates it names are
   still pending.
+- **`judge-verdict-inventory-2026-07-26.md`** — population inventory of all 228 judge
+  verdicts on fired checks across the five pool-era runs; the fixture source for any
+  judge-side change (cycle-5 package in `plan.md` is derived from it).
 - **`abc-analysis-unified.md`** — the adjudicated analysis of the 3-arm fresh-bug
   experiment (2026-07-21), source of the G1–G5 fix plan. The two independent
   deep-dives it merged were deleted 2026-07-26 (git history has them).
