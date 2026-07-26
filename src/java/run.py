@@ -577,6 +577,79 @@ def _j3_failing_test_block(failure_tests, cap_each=2000):
     return "\n".join(lines)
 
 
+def _guarded_verify(verifier, verify_kwargs, pinned=None,
+                    evidence_profile=None):
+    """Cycle-5B recall-side dismissal lint. Run the soundness judge, and when
+    it returns UNSOUND on a VOID ground, re-ask it ONCE with the void made
+    explicit:
+
+      (i) 5B(i) — the dismissal varies a parameter the check's own source
+          PINS (pinned_parameters); re-ask stating the pin.
+      (ii) 5B(ii) — under the drift-kill signature (`evidence_profile`) the
+          dismissal is an uncited "a correct implementation could..."
+          hypothetical; re-ask demanding a citation.
+
+    FAILS OPEN: the re-ask is a fresh verify call, which itself fails open to
+    KEEP on an LLM error; `reask_verdict_usable` detects that sentinel and, on
+    it, we return the ORIGINAL verdict — so an LLM error can never manufacture
+    a drop OR a keep. Only a genuine re-ask verdict replaces the original."""
+    ok, why = verifier.verify(**verify_kwargs)
+    if ok:
+        return ok, why
+    from java.relations.evidence_facts import (
+        dismissal_invokes_pinned, verdict_needs_citation,
+        pinned_reask_statement, citation_reask_statement,
+        reask_verdict_usable)
+    reask_stmt, tag = None, None
+    if pinned and dismissal_invokes_pinned(why, pinned):
+        reask_stmt, tag = pinned_reask_statement(pinned), "pin-void"
+    elif evidence_profile and verdict_needs_citation(evidence_profile, why):
+        reask_stmt, tag = citation_reask_statement(), "citation-void"
+    if not reask_stmt:
+        return ok, why
+    kw2 = dict(verify_kwargs)
+    kw2['concrete_evidence'] = (
+        (kw2.get('concrete_evidence') or '') + "\n" + reask_stmt)
+    print(f"      [{tag}] verdict void — re-asking once")
+    ok2, why2 = verifier.verify(**kw2)
+    if not reask_verdict_usable(why2):
+        # Re-ask unavailable (LLM error / unparseable) -> keep the ORIGINAL
+        # verdict. Never a manufactured flip.
+        return ok, why
+    return ok2, (f"[{tag} re-ask] " + why2)
+
+
+def _terminal_identical_gate(ok, why, evidence_text, verifier, fired,
+                             failing_block, check_source,
+                             fd_prior=None):
+    """Cycle-5C precision-side mirror. IDENTICAL-ON-BOTH / fires-on-buggy is
+    TERMINAL: a discretionary SOUND keep on a firing carrying that mechanical
+    fact is void UNLESS the Spec-J family-duty question answers YES.
+    Provenance ('lifts the trusted test') alone cannot override it.
+
+    `fd_prior` carries a family-duty result already computed for this firing
+    (True=YES, False=NO, None=not consulted) so we never double-ask.
+
+    FAILS OPEN: family_duty returns (True, ...) on any LLM error, so an error
+    can never manufacture a drop; only an explicit DUTY:NO voids the keep."""
+    if not ok:
+        return ok, why
+    if fd_prior is True:
+        return ok, why
+    from java.relations.evidence_facts import carries_terminal_identical_fact
+    if not carries_terminal_identical_fact(evidence_text):
+        return ok, why
+    if fd_prior is False:
+        fd_ok, fd_why = False, "family duty does not apply (prior review)"
+    else:
+        fd_ok, fd_why = verifier.family_duty(fired, failing_block,
+                                             check_source)
+    if fd_ok:
+        return ok, why
+    return False, ("IDENTICAL/FIRES-ON-BUGGY TERMINAL (family-duty NO): "
+                   + fd_why)
+
+
 def main():
     args = parse_args()
     # Token totals are process-global; start this patch's accounting from
@@ -2177,6 +2250,10 @@ def main():
                     evid = (excerpt if excerpt and fired
                             and fired[:40] in excerpt else None)
                     _fact_notes = []
+                    # Cycle-5C: family-duty result if the identical ladder
+                    # below consults it (True=YES, False=NO, None=not asked),
+                    # so the terminal gate never double-asks.
+                    _fd_consult_result = None
                     from java.parsing.java_source import oracle_ids_in_text as _oids
                     from java.relations.evidence_facts import (
                         semantic_buggy_replay_note, trigger_lift_note,
@@ -2415,6 +2492,7 @@ def main():
                                 _fd_ok, _fd_why = rv.family_duty(
                                     fired,
                                     _j3_failing_test_block(failure_tests), src)
+                                _fd_consult_result = _fd_ok
                                 if not _fd_ok:
                                     _why = (
                                         "IDENTICAL-DISMISSED (family-duty): "
@@ -2562,6 +2640,7 @@ def main():
                                             _j3_failing_test_block(
                                                 failure_tests),
                                             src)
+                                        _fd_consult_result = _fd_ok
                                         if not _fd_ok:
                                             _why = (
                                                 "IDENTICAL-DISMISSED "
@@ -2996,14 +3075,43 @@ def main():
                                 evid = (evid + "\n" + _un) if evid else _un
                     except Exception:
                         pass
+                    # Cycle-5B(i): pinned-environment fact from the harness's
+                    # OWN source (UTC/Locale/seed/size). Attached as a fact and
+                    # used to void a dismissal that varies a pin.
+                    from java.parsing.java_source import (
+                        pinned_parameters as _pinp_s)
+                    from java.relations.evidence_facts import (
+                        pinned_environment_note as _pen_s)
+                    _pinned_s = _pinp_s(src or '')
+                    _pin_note_s = _pen_s(_pinned_s)
+                    if _pin_note_s:
+                        _fact_notes.append(_pin_note_s)
+                        evid = ((evid + "\n" + _pin_note_s)
+                                if evid else _pin_note_s)
+                        print(f"      [pinned-env] pins {sorted(_pinned_s)}")
                     _j3 = _j3_failing_test_block(failure_tests)
                     if _j3:
                         evid = (evid + "\n" + _j3) if evid else _j3
-                    ok, why = rv.verify(src, fired_assertion=fired,
-                                        trusted_values=trusted_values,
-                                        concrete_evidence=evid,
-                                        code_context=('\n\n'.join(class_ctx)
-                                                      if class_ctx else None))
+                    # Cycle-5B: recall-side dismissal lint (void-and-re-ask on a
+                    # pinned-parameter dismissal). No structured drift-kill
+                    # profile on the semantic track, so 5B(ii) is not keyed
+                    # here. Fails open.
+                    ok, why = _guarded_verify(
+                        rv,
+                        dict(harness_source=src, fired_assertion=fired,
+                             trusted_values=trusted_values,
+                             concrete_evidence=evid,
+                             code_context=('\n\n'.join(class_ctx)
+                                           if class_ctx else None)),
+                        pinned=_pinned_s, evidence_profile=None)
+                    # Cycle-5C: IDENTICAL-ON-BOTH / fires-on-buggy is TERMINAL —
+                    # no discretionary SOUND keep on such a firing unless
+                    # family-duty answers YES. Reuse the ladder's family-duty
+                    # result when it already asked; fails open.
+                    ok, why = _terminal_identical_gate(
+                        ok, why, evid, rv, fired,
+                        _j3_failing_test_block(failure_tests), src,
+                        fd_prior=_fd_consult_result)
                     if ok and _fact_notes and getattr(
                             args, 'attribution_judge', False):
                         _att_ok, _att_why = rv.attribute(
@@ -3188,19 +3296,11 @@ def main():
                     # auto-dismissal (fuzzed-tier firings — Math-2's shape
                     # — are untouched).
                     if f.get('tier') == 'trigger':
-                        _evid += (
-                            "\n[trigger-tier fact] this rule fires on the "
-                            "failing test's OWN input literals on THIS "
-                            "patched build — yet the REAL failing test was "
-                            "rerun here and PASSES. A faithful "
-                            "reconstruction of the test's scenario cannot "
-                            "fire where the test itself passes; the usual "
-                            "cause is that the rule rebuilds the scenario "
-                            "WITHOUT the test's setup (source wiring, "
-                            "registered files, locale). Dismiss unless the "
-                            "rule's asserted property is justified by the "
-                            "documented contract INDEPENDENT of the "
-                            "failing test's specific setup.")
+                        # Cycle-5A: trigger-tier wording NEUTRALIZED to
+                        # symmetric — states the fact without a dismiss lean.
+                        from java.relations.evidence_facts import (
+                            trigger_tier_note as _ttn)
+                        _evid += _ttn()
                     else:
                         # Fuzzed-tier comparison fact (the batch3 open
                         # item: this path produced the fpfix6 62-c FP with
@@ -3295,6 +3395,31 @@ def main():
                     if _frfact:
                         _evid += "\n" + _frfact
                         print(f"      [fire-rate] {_frfact[:120]}")
+                    # Cycle-5B(i): pinned-environment fact — what the check's
+                    # OWN source fixes (UTC/Locale/seed/size). Attached as a
+                    # fact here AND used below to void a dismissal that rests
+                    # on varying one of those pins.
+                    from java.parsing.java_source import (
+                        pinned_parameters as _pinp)
+                    from java.relations.evidence_facts import (
+                        pinned_environment_note as _pen)
+                    _pinned = _pinp(getattr(rel, 'check', '') or '')
+                    _pin_note = _pen(_pinned)
+                    if _pin_note:
+                        _evid += "\n" + _pin_note
+                        print(f"      [pinned-env] pins {sorted(_pinned)}")
+                    # Cycle-5B(ii): the drift-kill signature for this firing —
+                    # silent on the buggy build, a deterministic trigger-tier
+                    # replay, and firing on the patched build.
+                    _b_checked, _b_viol = _sstats[0], _sstats[1]
+                    _b_silent = bool(
+                        _b_checked and _b_checked > 0
+                        and (_b_viol or 0) / _b_checked < 0.01)
+                    _ev_profile = {
+                        'buggy_silent': _b_silent,
+                        'deterministic_trigger': f.get('tier') == 'trigger',
+                        'patched_firing': bool(f.get('patched_violated')),
+                    }
                     # everything appended after the base note is a
                     # computed fact — hand the same text to attribution
                     if len(_evid) > len(_rfacts[0]):
@@ -3308,15 +3433,27 @@ def main():
                             + "// valid input: "
                             + (getattr(rel, 'input_spec', '') or '?') + "\n"
                             + (getattr(rel, 'check', '') or ''))
-                    ok, why = _rv2.verify(
-                        _src, fired_assertion=_fired,
-                        trusted_values=_tvals,
-                        concrete_evidence=_evid,
-                        code_context=('\n\n'.join(class_ctx)
-                                      if class_ctx else None))
-                    _attr_skip = (
-                        getattr(rel, 'screen_direction', None)
-                        == 'confirmed')
+                    # Cycle-5B: run the judge through the recall-side dismissal
+                    # lint (void-and-re-ask on a pinned-parameter dismissal or
+                    # an uncited drift-kill hypothetical). Fails open.
+                    ok, why = _guarded_verify(
+                        _rv2,
+                        dict(harness_source=_src, fired_assertion=_fired,
+                             trusted_values=_tvals, concrete_evidence=_evid,
+                             code_context=('\n\n'.join(class_ctx)
+                                           if class_ctx else None)),
+                        pinned=_pinned, evidence_profile=_ev_profile)
+                    _dirconf = (getattr(rel, 'screen_direction', None)
+                                == 'confirmed')
+                    # Cycle-5C: IDENTICAL-ON-BOTH / fires-on-buggy is TERMINAL —
+                    # a SOUND keep on such a firing needs family-duty=YES. Skip
+                    # for a direction-confirmed relation (a mechanical catch:
+                    # it fires on the buggy build at the trigger inputs).
+                    if not _dirconf:
+                        ok, why = _terminal_identical_gate(
+                            ok, why, _evid, _rv2, _fired,
+                            _j3_failing_test_block(failure_tests), _src)
+                    _attr_skip = _dirconf
                     if _attr_skip and getattr(
                             args, 'attribution_judge', False):
                         # MECHANICAL attribution: a direction-confirmed

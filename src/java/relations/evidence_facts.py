@@ -707,6 +707,35 @@ def trigger_lift_note(lifted_names, generic_lift, value_verdict):
 
 
 # ---------------------------------------------------------------------------
+# Cycle-5A — trigger-tier fact, NEUTRALIZED to symmetric. The shipped inline
+# wording ("... Dismiss unless the rule's asserted property is justified by
+# the documented contract INDEPENDENT of the failing test's specific setup")
+# coached the judge to discard its cleanest drift-kill catches (inventory
+# 2026-07-26 §c rows 1-4). This states the mechanical fact WITHOUT a dismiss
+# lean; keep/dismiss is decided by the value comparison + the contract source,
+# not by trigger-tier presence. Wording deliberately avoids any
+# identical-on-both / fires-on-buggy phrase so the 5C terminal detector does
+# not fire on it.
+# ---------------------------------------------------------------------------
+
+def trigger_tier_note():
+    """The neutral, symmetric [trigger-tier fact] block. Pure, no inputs."""
+    return (
+        "\n[trigger-tier fact] this rule fires on the failing test's OWN "
+        "input literals on THIS patched build, and the REAL failing test was "
+        "rerun here and PASSES. This LOCATES the firing at the test's own "
+        "scenario; it is not, by itself, grounds either way. TWO causes are "
+        "equally live: (a) benign — the rule reconstructs the scenario "
+        "WITHOUT the test's setup wiring (source/registered files/locale), so "
+        "it fires where a faithful copy would not; (b) a real catch — the "
+        "patch left the test's own defect intact on an observable the test "
+        "does not itself pin. Decide between them by comparing the fired "
+        "value against what the test pins and by whether the rule's asserted "
+        "property has a documented contract — exactly as for any other "
+        "firing.")
+
+
+# ---------------------------------------------------------------------------
 # Spec G-G3 — muted per-check replay note (the definitive shadowed-replay
 # fact). When a firing's buggy-side replay is shadowed — a DIFFERENT check (or
 # the harness's own oracle before an escaped-crash site) throws first — the
@@ -1001,3 +1030,179 @@ def match_oracle_to_relation(oracle_id, fired_msg, relation_names):
     if len(matched) == 1:
         return next(iter(matched))
     return None
+
+
+# ---------------------------------------------------------------------------
+# Cycle-5B — recall-side dismissal lint (step-4b enforcement). Pure decision
+# predicates + the re-ask/note text. run.py runs the judge, then applies these
+# to VOID-and-re-ask a dismissal that (i) varies a parameter the check pins or
+# (ii) is an uncited hypothetical under the drift-kill signature.
+# ---------------------------------------------------------------------------
+
+# Conservative synonym sets, keyed by pinned_parameters() category. Only
+# categories with a reliable, low-collision vocabulary participate in
+# enforcement; 'size' has none, so a size pin is stated in the note but never
+# voids a verdict (its "synonyms" — length/capacity/size — are far too common
+# in a legitimate WHY to key a void on).
+_PIN_SYNONYMS = {
+    'timezone': ('timezone', 'time zone', 'time-zone', 'dst', 'daylight',
+                 'zoneoffset', 'calendar', 'offset transition',
+                 'across the transition'),
+    'locale': ('locale', 'language-specific', 'country'),
+    'seed': ('random seed', 'rng seed', 'different seed', 'nondetermin',
+             'non-determin', 'unseeded'),
+    'size': (),
+}
+
+
+def pinned_environment_note(pinned):
+    """Cycle-5B(i): the "[pinned-environment fact]" note listing what the
+    check's own source fixes. `pinned` is a pinned_parameters() dict. Returns
+    None when nothing is pinned. Pure."""
+    if not pinned:
+        return None
+    parts = []
+    for cat in sorted(pinned):
+        snip = ", ".join(pinned[cat][:3])
+        parts.append(cat + " (" + snip + ")")
+    return ("[pinned-environment fact] this check's OWN source PINS: "
+            + "; ".join(parts) + ". The harness holds these fixed, so a "
+            "counterexample that varies one of them (a different timezone/DST "
+            "transition, a different locale, a different RNG seed) is "
+            "INADMISSIBLE — it cannot occur under this check. To answer "
+            "UNSOUND, cite a contract the check contradicts or a demonstrable "
+            "check bug that holds with the pinned parameters left fixed.")
+
+
+def dismissal_invokes_pinned(why, pinned):
+    """Cycle-5B(i) predicate: does a dismissal WHY rest on varying a parameter
+    the check PINS? `pinned` is a pinned_parameters() dict (or any iterable of
+    category names). Conservative keyword match against each pinned category's
+    synonyms; categories without synonyms (e.g. 'size') never match. Pure."""
+    if not why or not pinned:
+        return False
+    cats = pinned.keys() if isinstance(pinned, dict) else pinned
+    low = str(why).lower()
+    for cat in cats:
+        for syn in _PIN_SYNONYMS.get(cat, ()):
+            if syn and syn in low:
+                return True
+    return False
+
+
+# Hedge markers = the "a correct implementation could..." shape. Citation
+# markers = a shown contract or a demonstrable check bug. Erring toward NOT
+# voiding (a false void could rescue a genuinely unsound check -> FP), the
+# citation set is deliberately broad: only a clearly UNCITED hypothetical
+# under the drift-kill signature is void.
+_HEDGE_MARKERS = (
+    'could', 'might', 'may ', 'a correct implementation',
+    'a correct printer', 'a correct solver', 'legitimately', 'legal',
+    'not guaranteed', 'is permitted', 'permitted', 'not forbid',
+    "doesn't forbid", 'optional', 'not obliged',
+)
+_CITATION_MARKERS = (
+    'document', 'javadoc', 'contract', '@throws', 'spec', 'specified',
+    'trusted', 'defined as', 'delegat', 'identity', 'reserved', 'keyword',
+    ' != ', '!=', ' == ', 'compares', 'impl computes', 'implementation '
+    'computes', 'shown impl', 'shown body', 'shown code', 'the source shows',
+    'observed', 'formula', 'range', 'per the api', 'per api', 'the api ',
+)
+
+
+def verdict_needs_citation(evidence_profile, why):
+    """Cycle-5B(ii) predicate: under the drift-kill signature {buggy silent +
+    deterministic trigger firing + patched firing}, a UNSOUND verdict must
+    CITE a shown contract or a demonstrable check bug — an uncited "a correct
+    implementation could..." hypothetical is INADMISSIBLE. Returns True when
+    the verdict is VOID (a hedge with no citation, under the signature).
+
+    `evidence_profile` is a mapping/object exposing booleans `buggy_silent`,
+    `deterministic_trigger`, `patched_firing` (missing => False). Pure."""
+    if not why:
+        return False
+
+    def _b(k):
+        if isinstance(evidence_profile, dict):
+            return bool(evidence_profile.get(k))
+        return bool(getattr(evidence_profile, k, False))
+
+    signature = (_b('buggy_silent') and _b('deterministic_trigger')
+                 and _b('patched_firing'))
+    if not signature:
+        return False
+    low = str(why).lower()
+    has_hedge = any(h in low for h in _HEDGE_MARKERS)
+    has_citation = any(c in low for c in _CITATION_MARKERS)
+    return has_hedge and not has_citation
+
+
+# ---------------------------------------------------------------------------
+# Cycle-5C — precision-side mirror: IDENTICAL-ON-BOTH / fires-on-buggy is a
+# TERMINAL mechanical fact. Curated marker set; deliberately excludes the
+# asymmetric fire-rate CATCH wording ("...on the PATCHED build but only X% on
+# the buggy build"), which shares no marker.
+# ---------------------------------------------------------------------------
+
+_TERMINAL_IDENTICAL_MARKERS = (
+    'on both builds',
+    'identical on both',
+    'same check fires on both',
+    'fires-on-buggy',
+    'buggy-scan fact',
+)
+
+
+def carries_terminal_identical_fact(text):
+    """Cycle-5C: does the evidence carry a mechanical IDENTICAL-ON-BOTH /
+    fires-on-buggy fact? Pure substring match over the curated marker set."""
+    if not text:
+        return False
+    low = str(text).lower()
+    return any(m in low for m in _TERMINAL_IDENTICAL_MARKERS)
+
+
+# ---------------------------------------------------------------------------
+# Cycle-5B — re-ask plumbing (fail-open detection + injected statements).
+# ---------------------------------------------------------------------------
+
+def reask_verdict_usable(why):
+    """Cycle-5B: did a re-ask produce a USABLE verdict (not a fail-open
+    sentinel)? RelationVerifier.verify fails OPEN to KEEP on an LLM error /
+    unparseable output; this returns False on those sentinels so the caller
+    keeps the ORIGINAL verdict rather than a manufactured flip. Pure."""
+    if not why:
+        return False
+    low = str(why).lower()
+    for bad in ('verifier error', 'no verdict parsed', 'keeping finding',
+                'unavailable'):
+        if bad in low:
+            return False
+    return True
+
+
+def pinned_reask_statement(pinned):
+    """Cycle-5B(i): the explicit pin statement injected on a pin-void re-ask."""
+    cats = sorted(pinned.keys() if isinstance(pinned, dict) else set(pinned))
+    names = ", ".join(cats) or "environment parameters"
+    return (
+        "[PIN-VOID RE-ASK] Your previous dismissal rested on VARYING a "
+        "parameter this check's own source PINS (" + names + "). The harness "
+        "holds it fixed (e.g. it pins UTC / a fixed Locale / a fixed RNG "
+        "seed), so a counterexample that changes it is INADMISSIBLE — it "
+        "cannot occur under this check. Re-judge WITHOUT relying on variation "
+        "of any pinned parameter: to answer UNSOUND you must cite a contract "
+        "the check contradicts or a demonstrable check bug that holds with "
+        "the pinned parameters left fixed.")
+
+
+def citation_reask_statement():
+    """Cycle-5B(ii): the citation demand injected on a citation-void re-ask."""
+    return (
+        "[CITATION-VOID RE-ASK] This firing has the strong-evidence profile: "
+        "silent on the buggy build, a deterministic replay on the failing "
+        "test's own literals, and firing on the patched build. Under that "
+        "profile an uncited 'a correct implementation could...' hypothetical "
+        "is INADMISSIBLE. To answer UNSOUND you must cite a SHOWN contract "
+        "the check contradicts, or a demonstrable bug in the check itself; "
+        "with neither, the verdict is SOUND.")

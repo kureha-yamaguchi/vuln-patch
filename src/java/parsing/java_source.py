@@ -1116,6 +1116,57 @@ def trigger_seed_literals(method_sources, cap=48):
     return out[:cap]
 
 
+# --- Cycle-5B(i): environment parameters a check syntactically PINS ---------
+# Each category lists the source shapes that fix that parameter. Conservative
+# by construction: a category is reported only on a literal pin (a UTC zone
+# constant, Locale.setDefault / an explicit Locale.<CONST>, a fixed RNG seed,
+# a fixed array size / length), never inferred.
+_PIN_PATTERNS = {
+    'timezone': [
+        re.compile(r'UTC_TIME_ZONE'),
+        re.compile(r'DateTimeZone\s*\.\s*UTC'),
+        re.compile(r'ZoneOffset\s*\.\s*UTC'),
+        re.compile(r'ZoneId\s*\.\s*of\s*\(\s*"[^"]+"\s*\)'),
+        re.compile(r'TimeZone\s*\.\s*getTimeZone\s*\(\s*"[^"]+"\s*\)'),
+        re.compile(r'\bsetTimeZone\s*\('),
+        re.compile(r'\.\s*withZone(?:SameInstant|SameLocal)?\s*\('),
+    ],
+    'locale': [
+        re.compile(r'Locale\s*\.\s*setDefault\s*\('),
+        re.compile(r'Locale\s*\.\s*[A-Z][A-Z_]+'),
+        re.compile(r'new\s+Locale\s*\(\s*"[^"]*"'),
+    ],
+    'seed': [
+        re.compile(r'new\s+Random\s*\(\s*[-+]?\d[\d_]*[Ll]?\s*\)'),
+        re.compile(r'\.\s*setSeed\s*\(\s*[-+]?\d[\d_]*[Ll]?\s*\)'),
+    ],
+    'size': [
+        re.compile(r'new\s+\w+\s*\[\s*\d+\s*\]'),
+        re.compile(r'\.\s*setLength\s*\(\s*\d+\s*\)'),
+    ],
+}
+
+
+def pinned_parameters(check_source):
+    """Cycle-5B(i): syntactically extract the ENVIRONMENT parameters a check
+    FIXES, so a dismissal whose counterexample varies one of them can be
+    flagged inadmissible (the harness holds it fixed, so the counterexample
+    cannot occur).
+
+    Returns a dict ``{category: [matched source snippets]}`` over the
+    categories 'timezone', 'locale', 'seed', 'size'. Empty dict when nothing
+    is pinned. Pure; regex over the given source only; never guesses."""
+    src = strip_comments(check_source or '')
+    out = {}
+    for cat, pats in _PIN_PATTERNS.items():
+        hits = []
+        for pat in pats:
+            hits += [m.group(0).strip() for m in pat.finditer(src)]
+        if hits:
+            out[cat] = sorted(set(hits))[:6]
+    return out
+
+
 _SUFFIX_CHARS = 'LlFfDd'
 _NUMLIKE_RE = re.compile(
     r'^[+-]?\d[\d_]*(?:\.\d+)?(?:[eE][+-]?\d+)?[LlFfDd]?$')
