@@ -43,6 +43,7 @@ from llm import (HarnessGenerator, reset_token_usage, token_usage,
 from java.bug_context.patches import DeprecatedBugError, PatchSelector
 from java.harness.prompts import PromptBuilder
 from java.parsing.java_source import candidate_anchor_literals, expected_assert_literals
+from java.relations.judge_decision import adjudicate
 
 
 def _extract_oracle_msg(output, oid, cap=200):
@@ -575,79 +576,6 @@ def _j3_failing_test_block(failure_tests, cap_each=2000):
             lines.append("On the BUGGY build this test fails with: "
                          + ft.failure_message[:400])
     return "\n".join(lines)
-
-
-def _guarded_verify(verifier, verify_kwargs, pinned=None,
-                    evidence_profile=None):
-    """Cycle-5B recall-side dismissal lint. Run the soundness judge, and when
-    it returns UNSOUND on a VOID ground, re-ask it ONCE with the void made
-    explicit:
-
-      (i) 5B(i) — the dismissal varies a parameter the check's own source
-          PINS (pinned_parameters); re-ask stating the pin.
-      (ii) 5B(ii) — under the drift-kill signature (`evidence_profile`) the
-          dismissal is an uncited "a correct implementation could..."
-          hypothetical; re-ask demanding a citation.
-
-    FAILS OPEN: the re-ask is a fresh verify call, which itself fails open to
-    KEEP on an LLM error; `reask_verdict_usable` detects that sentinel and, on
-    it, we return the ORIGINAL verdict — so an LLM error can never manufacture
-    a drop OR a keep. Only a genuine re-ask verdict replaces the original."""
-    ok, why = verifier.verify(**verify_kwargs)
-    if ok:
-        return ok, why
-    from java.relations.evidence_facts import (
-        dismissal_invokes_pinned, verdict_needs_citation,
-        pinned_reask_statement, citation_reask_statement,
-        reask_verdict_usable)
-    reask_stmt, tag = None, None
-    if pinned and dismissal_invokes_pinned(why, pinned):
-        reask_stmt, tag = pinned_reask_statement(pinned), "pin-void"
-    elif evidence_profile and verdict_needs_citation(evidence_profile, why):
-        reask_stmt, tag = citation_reask_statement(), "citation-void"
-    if not reask_stmt:
-        return ok, why
-    kw2 = dict(verify_kwargs)
-    kw2['concrete_evidence'] = (
-        (kw2.get('concrete_evidence') or '') + "\n" + reask_stmt)
-    print(f"      [{tag}] verdict void — re-asking once")
-    ok2, why2 = verifier.verify(**kw2)
-    if not reask_verdict_usable(why2):
-        # Re-ask unavailable (LLM error / unparseable) -> keep the ORIGINAL
-        # verdict. Never a manufactured flip.
-        return ok, why
-    return ok2, (f"[{tag} re-ask] " + why2)
-
-
-def _terminal_identical_gate(ok, why, evidence_text, verifier, fired,
-                             failing_block, check_source,
-                             fd_prior=None):
-    """Cycle-5C precision-side mirror. IDENTICAL-ON-BOTH / fires-on-buggy is
-    TERMINAL: a discretionary SOUND keep on a firing carrying that mechanical
-    fact is void UNLESS the Spec-J family-duty question answers YES.
-    Provenance ('lifts the trusted test') alone cannot override it.
-
-    `fd_prior` carries a family-duty result already computed for this firing
-    (True=YES, False=NO, None=not consulted) so we never double-ask.
-
-    FAILS OPEN: family_duty returns (True, ...) on any LLM error, so an error
-    can never manufacture a drop; only an explicit DUTY:NO voids the keep."""
-    if not ok:
-        return ok, why
-    if fd_prior is True:
-        return ok, why
-    from java.relations.evidence_facts import carries_terminal_identical_fact
-    if not carries_terminal_identical_fact(evidence_text):
-        return ok, why
-    if fd_prior is False:
-        fd_ok, fd_why = False, "family duty does not apply (prior review)"
-    else:
-        fd_ok, fd_why = verifier.family_duty(fired, failing_block,
-                                             check_source)
-    if fd_ok:
-        return ok, why
-    return False, ("IDENTICAL/FIRES-ON-BUGGY TERMINAL (family-duty NO): "
-                   + fd_why)
 
 
 def main():
@@ -3108,22 +3036,21 @@ def main():
                     # pinned-parameter dismissal). No structured drift-kill
                     # profile on the semantic track, so 5B(ii) is not keyed
                     # here. Fails open.
-                    ok, why = _guarded_verify(
+                    # Cycle-5C (inside adjudicate): IDENTICAL-ON-BOTH /
+                    # fires-on-buggy is TERMINAL — no discretionary SOUND keep
+                    # on such a firing unless family-duty answers YES. Reuse the
+                    # ladder's family-duty result when it already asked; fails
+                    # open. Single shared entrypoint: base verify -> 5B -> 5C.
+                    ok, why = adjudicate(
                         rv,
-                        dict(harness_source=src, fired_assertion=fired,
-                             trusted_values=trusted_values,
-                             concrete_evidence=evid,
-                             code_context=('\n\n'.join(class_ctx)
-                                           if class_ctx else None)),
-                        pinned=_pinned_s, evidence_profile=None)
-                    # Cycle-5C: IDENTICAL-ON-BOTH / fires-on-buggy is TERMINAL —
-                    # no discretionary SOUND keep on such a firing unless
-                    # family-duty answers YES. Reuse the ladder's family-duty
-                    # result when it already asked; fails open.
-                    ok, why = _terminal_identical_gate(
-                        ok, why, evid, rv, fired,
-                        _j3_failing_test_block(failure_tests), src,
-                        fd_prior=_fd_consult_result)
+                        harness_source=src, fired_assertion=fired,
+                        trusted_values=trusted_values,
+                        concrete_evidence=evid,
+                        code_context=('\n\n'.join(class_ctx)
+                                      if class_ctx else None),
+                        pinned_source=_pinned_s, evidence_profile=None,
+                        failing_block=_j3_failing_test_block(failure_tests),
+                        check_source=src, fd_prior=_fd_consult_result)
                     if ok and _fact_notes and getattr(
                             args, 'attribution_judge', False):
                         _att_ok, _att_why = rv.attribute(
@@ -3445,26 +3372,26 @@ def main():
                             + "// valid input: "
                             + (getattr(rel, 'input_spec', '') or '?') + "\n"
                             + (getattr(rel, 'check', '') or ''))
-                    # Cycle-5B: run the judge through the recall-side dismissal
-                    # lint (void-and-re-ask on a pinned-parameter dismissal or
-                    # an uncited drift-kill hypothetical). Fails open.
-                    ok, why = _guarded_verify(
-                        _rv2,
-                        dict(harness_source=_src, fired_assertion=_fired,
-                             trusted_values=_tvals, concrete_evidence=_evid,
-                             code_context=('\n\n'.join(class_ctx)
-                                           if class_ctx else None)),
-                        pinned=_pinned, evidence_profile=_ev_profile)
                     _dirconf = (getattr(rel, 'screen_direction', None)
                                 == 'confirmed')
-                    # Cycle-5C: IDENTICAL-ON-BOTH / fires-on-buggy is TERMINAL —
-                    # a SOUND keep on such a firing needs family-duty=YES. Skip
-                    # for a direction-confirmed relation (a mechanical catch:
-                    # it fires on the buggy build at the trigger inputs).
-                    if not _dirconf:
-                        ok, why = _terminal_identical_gate(
-                            ok, why, _evid, _rv2, _fired,
-                            _j3_failing_test_block(failure_tests), _src)
+                    # Single shared entrypoint: base verify -> 5B recall-side
+                    # dismissal lint (void-and-re-ask on a pinned-parameter
+                    # dismissal or an uncited drift-kill hypothetical) -> 5C
+                    # terminal identical gate (a SOUND keep on an
+                    # IDENTICAL-ON-BOTH / fires-on-buggy firing needs
+                    # family-duty=YES). The 5C gate is skipped for a
+                    # direction-confirmed relation (a mechanical catch: it fires
+                    # on the buggy build at the trigger inputs). Fails open.
+                    ok, why = adjudicate(
+                        _rv2,
+                        harness_source=_src, fired_assertion=_fired,
+                        trusted_values=_tvals, concrete_evidence=_evid,
+                        code_context=('\n\n'.join(class_ctx)
+                                      if class_ctx else None),
+                        pinned_source=_pinned, evidence_profile=_ev_profile,
+                        failing_block=_j3_failing_test_block(failure_tests),
+                        check_source=_src, fd_prior=None,
+                        is_direction_confirmed=_dirconf)
                     _attr_skip = _dirconf
                     if _attr_skip and getattr(
                             args, 'attribution_judge', False):

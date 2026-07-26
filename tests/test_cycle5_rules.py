@@ -197,7 +197,8 @@ def test_pinned_environment_note_none_when_empty():
 # --------------------------------------------------------------------------
 # 5B / 5C — the two fail-open wrapper helpers, driven by a fake verifier
 # --------------------------------------------------------------------------
-from java.run import _guarded_verify, _terminal_identical_gate  # noqa: E402
+from java.relations.judge_decision import (  # noqa: E402
+    _guarded_verify, _terminal_identical_gate)
 
 
 class _FakeVerifier:

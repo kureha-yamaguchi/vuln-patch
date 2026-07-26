@@ -45,6 +45,45 @@ sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents if (p / 
 
 from llm import HarnessGenerator, token_usage, usage_totals  # noqa: E402
 from java.relations.relation_verifier import RelationVerifier  # noqa: E402
+from java.relations.judge_decision import adjudicate  # noqa: E402
+
+
+# --- guard-input reconstruction -------------------------------------------
+# adjudicate runs the FULL shipped decision (base verify -> 5B void-and-re-ask
+# -> 5C terminal identical gate), so the replay must feed it the same guard
+# inputs run.py builds live. run.py derives the 5B(ii) drift-kill signature
+# {buggy_silent, deterministic_trigger, patched_firing} from screen/replay
+# counts it no longer has here; the logged concrete_evidence text carries the
+# same facts as tagged phrases, so reconstruct each from those tags. Where a
+# signal has NO tag, default to the CONSERVATIVE value (False) — it makes the
+# drift signature incomplete, so verdict_needs_citation never fires a
+# citation-void, i.e. the replay never MANUFACTURES a void it cannot justify.
+_PROFILE_TAGS = {
+    # run.py: _b_silent (buggy screen fired on <1% of inputs)
+    'buggy_silent': ('silent on the buggy build',
+                     'fired on 0/', 'never held', 'without firing this check'),
+    # run.py: f.get('tier') == 'trigger' (deterministic trigger-tier replay)
+    'deterministic_trigger': ('deterministic', 'trigger-tier fact',
+                              "test's own input literals"),
+    # run.py: f.get('patched_violated') (the firing itself, on the patched build)
+    'patched_firing': ('on the patched build', 'fires on the patched',
+                       'on this patched build'),
+}
+
+
+def reconstruct_evidence_profile(concrete_evidence):
+    """Rebuild the 5B(ii) drift-kill signature from logged evidence text.
+
+    Returns (profile_dict, missing_signals) where missing_signals is the list
+    of keys that had NO reconstructable tag and were defaulted to False."""
+    low = (concrete_evidence or '').lower()
+    profile, missing = {}, []
+    for key, tags in _PROFILE_TAGS.items():
+        present = any(t in low for t in tags)
+        profile[key] = present
+        if not present:
+            missing.append(key)
+    return profile, missing
 
 
 def parse_args():
@@ -128,17 +167,44 @@ def main():
 
     results_path = out / 'results.jsonl'
     per_case = {}
+    # Track which cases lacked a reconstructable drift-kill signal (defaulted
+    # to the conservative False), so the summary records what the replay could
+    # not reconstruct from logged evidence text.
+    missing_signal_cases = {}
     with open(results_path, 'w', encoding='utf-8') as rf:
         for c in cases:
             keeps = 0
+            evid = (None if args.no_evidence else c.get('concrete_evidence'))
+            ev_profile, missing = reconstruct_evidence_profile(evid)
+            if missing:
+                missing_signal_cases[c['id']] = missing
+            # Per-guard replay input derivation:
+            #  * pinned_source = harness_source — replay has no pinned dict;
+            #    passing the raw source string makes dismissal_invokes_pinned
+            #    conservative (never a pin-void).
+            #  * evidence_profile = reconstructed drift-kill signature (above).
+            #  * failing_block = the case's failing-test text, else '' (no
+            #    dedicated field in the logged cases).
+            #  * check_source = harness_source.
+            #  * fd_prior = None — replay cannot know run.py's ladder state, so
+            #    the 5C terminal gate freshly consults family_duty (the correct
+            #    conservative replay behaviour).
+            failing_block = (c.get('failing_test') or c.get('failing_block')
+                             or '')
             for rep in range(args.repeats):
-                ok, why = rv.verify(
-                    c['harness_source'],
+                ok, why = adjudicate(
+                    rv,
+                    harness_source=c['harness_source'],
                     fired_assertion=c.get('fired_assertion'),
                     trusted_values=(None if args.no_trusted
                                     else c.get('trusted_values')),
-                    concrete_evidence=(None if args.no_evidence
-                                       else c.get('concrete_evidence')),
+                    concrete_evidence=evid,
+                    code_context=c.get('code_context'),
+                    pinned_source=c['harness_source'],
+                    evidence_profile=ev_profile,
+                    failing_block=failing_block,
+                    check_source=c['harness_source'],
+                    fd_prior=None,
                 )
                 keeps += bool(ok)
                 rf.write(json.dumps({
@@ -187,6 +253,15 @@ def main():
         f"{tok['calls']} calls)",
         f"By model: {json.dumps(token_usage())}",
     ]
+    if missing_signal_cases:
+        lines += [
+            "",
+            f"Drift-kill signals not reconstructable from logged evidence "
+            f"(defaulted to conservative False) in "
+            f"{len(missing_signal_cases)}/{len(cases)} cases:",
+        ]
+        for cid, miss in missing_signal_cases.items():
+            lines.append(f"  - {cid}: {', '.join(miss)}")
     (out / 'summary.md').write_text('\n'.join(lines) + '\n')
     print(f"\nsummary: {out / 'summary.md'}")
     print('\n'.join(lines[-6:]))
