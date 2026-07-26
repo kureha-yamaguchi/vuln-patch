@@ -2414,7 +2414,35 @@ Not bundled: the judge verdict-lint (see the item-3 CORRECTION — drift is supp
 by the defusals, not gone) stays queued as a standalone standing guard. fresh12
 remains gated on the user's explicit go.
 
-### Step-1 result: fire-capability of the 3 other dead legs (2026-07-26)
+### ⚠️ STEP-1: TWO CONTRADICTORY ANALYSES BELOW — ADJUDICATION REQUIRED BEFORE ANY SPEC
+
+The two same-titled sections below were committed 40 minutes apart (3c01129 = analysis A,
+3bf1aa5 = analysis B) from the SAME night20 traces and reach OPPOSITE conclusions on the
+decisive question for Closure-38 and Lang-63:
+- **Analysis A (second section below):** the judge dismissals were DEFENSIBLE — the checks
+  assert under-specified dimensions (unpinned whitespace; a seed answer generalized to
+  inputs with no independent oracle — the invented-contract/G5 shape). Fix is
+  ORACLE-side (independent correct-value oracle; contract-pinned observable) or accept.
+- **Analysis B (first section below):** the same dismissals were JUDGE DRIFT killing
+  genuine catches. Fix is JUDGE-side (diff-class fact + pinned-domain fence).
+Neither is adopted. This is analysis-roll variance — the retro-#3 lesson applied to our
+own tooling — and the sampled Lang-63 dismissal text currently leans A (explicit
+invented-generalization wording; at the firing input endDay 1 < startDay 31 forces a
+borrow, so actual=08 may simply be CORRECT).
+
+**Adjudication protocol (offline, minutes per leg, BLOCKING):** for each dismissed
+firing input, run the DEVELOPER FIX at that exact input (offline diagnosis only — never
+a pipeline input):
+1. Dev fix ALSO violates the check → check unsound, judge was right → oracle-side work
+   or accept-as-hard (analysis A wins for that leg).
+2. Dev fix satisfies the check, only the overfit violates → the check discriminates;
+   then compute mechanically whether the divergence is in the failing test's own diff
+   class. If yes → genuine judge-drift kill, judge-side fact fix licensed (analysis B
+   wins for that leg).
+Per-leg answers may split. Record verdicts here; only then spec the winning fix. The
+GO previously discussed in chat is WITHDRAWN pending this adjudication.
+
+### Step-1 result: fire-capability of the 3 other dead legs (2026-07-26) — ANALYSIS B (3bf1aa5: judge-over-dismissal reading)
 
 Method note: derived from the night20 traces directly (they already contain the
 patched-build firings + judge verdicts); no VM compile needed. Two probe agents
@@ -2458,7 +2486,7 @@ re-opens the oldest open wound with concrete new fixtures (two firing-but-dismis
 legs). Structure-from-data (Chart-19) and the sub-tolerance accounting (Math-104)
 follow. All three still gate the night20 rerun / milestone as before.
 
-### Step-1 result: fire-capability of the 3 other dead legs (2026-07-26)
+### Step-1 result: fire-capability of the 3 other dead legs (2026-07-26) — ANALYSIS A (3c01129: dismissals-defensible reading)
 
 Method = item-4 Chart-19 template applied to night20 (`night20_20260725_155442`),
 offline/static: read each leg's ACCEPTED checks + the `replay-on-patched` and
