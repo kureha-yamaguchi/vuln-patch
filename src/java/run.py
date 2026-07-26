@@ -2486,6 +2486,13 @@ def main():
                                     "test does not pin — the root defect "
                                     "survived the patch; this firing is "
                                     "evidence AGAINST the patch.")
+                                # Cycle-5C consistency: this exemption KEEPS the
+                                # firing (patch-failed-to-fix). Record it as a
+                                # family-duty YES so the downstream terminal
+                                # gate honours the keep instead of re-asking
+                                # family_duty and dropping it — the exact Math-2
+                                # kill-switch regression (2026-07-25).
+                                _fd_consult_result = True
                                 print(f"      [patch-failed-to-fix] "
                                       f"at-test-input: {(fired or '')[:80]}")
                             else:
@@ -2631,6 +2638,11 @@ def main():
                                             "— the root defect survived the "
                                             "patch; this firing is evidence "
                                             "AGAINST the patch.")
+                                        # Cycle-5C consistency (see same-check
+                                        # site): exemption keeps -> record
+                                        # family-duty YES so the terminal gate
+                                        # honours it, not the Math-2 regression.
+                                        _fd_consult_result = True
                                         print(f"      [patch-failed-to-fix] "
                                               f"at-test-input (muted): "
                                               f"{(fired or '')[:80]}")
