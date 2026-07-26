@@ -2260,6 +2260,102 @@ pipeline input; fresh12 stays gated on the user's explicit go.
      the fix is generation-side (state variation drawn from `data`, not constants).
    *Done when:* a one-paragraph verdict with the replay evidence is recorded here.
 
+   **VERDICT (2026-07-26 — offline replay, evidence recorded): NO — the accepted null-family
+   checks are STRUCTURALLY INCAPABLE of firing on this overfit; the miss is check-shape, not
+   reach/budget. Step 5 (fuzz-budget raise) is pointless for this class; the fix is
+   generation-side.** The Arja overfit adds one line to `AbstractObjectList.indexOf`: a
+   post-scan-loop `if (object == null) throw new IllegalArgumentException(...)`. So
+   `indexOf(null)` throws ONLY when the scan completes with no early return — i.e. when the
+   axis `ObjectList` has NO null hole (dense/contiguous). With a null hole it returns that
+   index early and never throws. The developer FIX instead guards at the top of
+   `CategoryPlot.getDomainAxisIndex`/`getRangeAxisIndex` (`if (axis==null) throw ...`), so the
+   fix throws for null UNCONDITIONALLY and leaves `indexOf` returning -1. Therefore
+   overfit≠fix (overfit fails to throw) ONLY on SPARSE receivers with a null hole, e.g. after
+   `setDomainAxis(2, …)` which leaves index 1 null. (Note: the item's parenthetical had the
+   direction inverted — the overfit fails-to-throw on SPARSE plots, not dense/fresh; dense is
+   where it accidentally matches the fix.) STATIC: all four accepted harnesses
+   (attempt_003/010/013/015) probe `getRangeAxisIndex(null)`/`getDomainAxisIndex(null)` only on
+   DETERMINISTIC dense receivers — `new CategoryPlot(null, axis, axis, null)` with at most a
+   fixed `setRangeAxis(1,…)`/`setDomainAxis(1,…)` (contiguous, no holes); fuzz `data` feeds only
+   axis-label strings (`consumeAsciiString`), never index placement. The fuzz-controlled sparse
+   `ObjectList`s that ARE built (`consumeInt` slots with gaps, e.g. attempt_010/013) are never
+   probed with `null` — they only call `indexOf`/`getRangeAxisIndex` with non-null objects. The
+   null path and the hole-creating path are disjoint in every harness, so no fuzz input can
+   construct the discriminating (null-probe × sparse-receiver) combination. EMPIRICAL (VM,
+   defects4j Chart-19b + Arja patch = overfit build, vs 19f = fix build; driver reproducing the
+   accepted receivers, `/home/code/scratch/item4/`): on the OVERFIT build every dense accepted
+   receiver THREW IllegalArgumentException (identical to fix → accepted checks read "contract
+   honoured" → no fire); the sparse receivers `setDomainAxis(2,…)`/`setRangeAxis(2,…)` then
+   `getXAxisIndex(null)` COMPLETED returning index 1 (diverges from fix, which throws — verified:
+   the fix build throws IAE on the same sparse call). Secondary missed discriminator: a direct
+   `ObjectList.indexOf(null)` on a no-hole list throws on the overfit but returns -1 on the fix;
+   no accepted objectlist check ever calls `indexOf(null)`. FIX DIRECTION: generation must draw
+   receiver hole-structure from `data` (fuzz the axis install index / leave gaps) AND route the
+   null probe through the fuzzed sparse receiver — not merely vary label strings on a constant
+   fresh plot. Budget raises cannot help because the discriminating state is a compile-time
+   constant in these checks.
+
+### Item-3 result: four-roll invention tabulation (2026-07-26)
+
+Cell = furthest stage reached that roll: **I** invented (catching-family check in
+synthesized relations / harness oracles) · **A** accepted/screened-in (family check
+built into a live harness) · **F** fired on patched · **K** kept by judge (leg TP).
+Source: each leg's `result.jsonl` (`accepted_trigger_details`, `latent_oracles`,
+`relations_not_implemented`, `crashed_on_patch`) + the run `summary.md` outcome. No
+`trace.md` full reads needed — the oracle-id/relation lists in `result.jsonl` carry the
+family signal. Dir map: pool/night `_o` overfit legs (night20 dirs 01–14).
+
+| Leg (catching family) | pool30 | poolA | poolB | night20 | Classification |
+|---|---|---|---|---|---|
+| Math-2 (support-bound/nonnegative) | A | K | K | K | RELIABLE (3/4) |
+| Lang-41 (Class-vs-String sibling-agree) | K | A | K | K | RELIABLE (3/4) |
+| Lang-50 (locale/lifted-format) | K | K | K | K | RELIABLE (4/4) |
+| Lang-60 (contains/readonly capacity) | K | A | K | A | COIN-FLIP (2/4) |
+| Chart-7 (getMaxMiddleIndex/time-period) | A | A | K | K | COIN-FLIP (2/4) |
+| Closure-92 (provide/parent-before-child order) | K | A | A | A | COIN-FLIP (1/4) |
+| Chart-19 (rangeAxisIndex-null indep. of receiver) | A | A | A | A | INVENTS-BUT-NEVER-FIRES |
+| Closure-38 (printer whitespace/format-exact) | A | A | A | A | INVENTS-BUT-NEVER-FIRES |
+| Lang-63 (borrow-path date months observable) | A | A | A | A | INVENTS-BUT-NEVER-FIRES |
+| Math-68 (trusted regression params/RMS) | K | A | K | K | RELIABLE (3/4) |
+| Math-73 (nonbracketing @throws) | K | K | A | K | RELIABLE (3/4) |
+| Math-74 (integrate end-time / evals-count) | A | A | K | K | COIN-FLIP (2/4) |
+| Math-82 (LP feasibility/constraint) | K | K | K | K | RELIABLE (4/4) |
+| Math-104 (regularizedGamma exact-tolerance) | A | A | A | A | INVENTS-BUT-NEVER-FIRES |
+
+**Two structural facts hold in all 56 cells.** (1) *Invention is never the bottleneck.*
+The known catching family was invented **and** screened into a live harness (stage A) in
+**every leg × every roll** — even the four never-caught legs. No cell stalls at I-only or
+below; `NEVER-INVENTS` is empty. (2) *The judge never kills a fired overfit trigger* —
+zero `crashed=True + FN` rows across the four runs — so `INVENTS-FIRES-JUDGE-KILLS` is
+also empty, and F⟺K for these legs. The only axis that separates TP from FN is **whether
+the accepted check fires on the patched build**, and in every TP the firing oracle is a
+**lifted/seed test-derived** oracle (`lifted-*`, `seed-*`, `testMath1021-*`, `math288-*`,
+`jira-lang-281`, `lang295-contains`, `lifted-format3-locale`, …) — i.e. structural luck
+off the known failing test. The *freely-invented general* catching-family relations
+(`mean-formula`, `maxMiddleIndex_matches_*`, `rangeAxisIndex-null-rejected-independent-of-
+plot-state`, `feasibility-constraints`, `period-months-exact-added-months`) are almost
+always **accepted-but-latent** — they never fire. Classification counts: RELIABLE 6,
+COIN-FLIP 4, INVENTS-BUT-NEVER-FIRES 4, NEVER-INVENTS 0, INVENTS-FIRES-JUDGE-KILLS 0.
+
+**Key question — did night20 (width 7 + gate + cycle-3b directives) invent catching
+shapes on legs the three prior rolls didn't?** No. There is **no leg where all three
+priors were FN and night20 was TP**: every night20 catch (Math-2, Lang-41, Lang-50,
+Chart-7, Math-68, Math-73, Math-74, Math-82) was also caught by ≥1 prior roll, and each
+fired through the *same lifted/seed test oracle* the priors used — not a newly-invented
+general relation. Width-7 demonstrably *did* raise invention **breadth** (synth_survivors
+10–14 vs 5–6; richer `latent`/`not_impl` lists), and on **Chart-19** it uniquely invented
+and screened-in the sharpest family match yet — `rangeAxisIndex-null-rejected-independent-
+of-plot-state` / `-on-fresh-plot` (the documented "rejection-independent-of-receiver-
+state" shape), where priors only had a plain null-rejection — **but it stayed latent and
+never fired** (exactly the case item-4's fire-capability replay is built to probe). On the
+other three never-caught legs night20 did **not** advance the frontier: on **Lang-63**
+poolB reached A on the borrow-path observable (`period-months-exact-added-months`) while
+night20's equivalent (`period_months_across_year_end_is_nine`) fell to
+`relations_not_implemented`; on **Math-104** pool30/poolA screened-in a gamma exact-value
+oracle (`gamma-positive-positive`) that night20 did not. Verdict: **width/diversity moved
+invention, not fires.** The instrument says the next lever is fire-capability (item 4) and
+budget/state-variation (items 5, 8), not more invention.
+
 ### Dials and re-validation (only as licensed by 3–4)
 
 5. **Fuzz-budget raise for accepted checks — only if step 4 says "reach".** And it must
