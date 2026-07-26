@@ -2553,6 +2553,37 @@ sound way to expose a >1e-9 observable (or acceptance that the ~1e-10 overfit is
 sound tolerance and is genuinely uncatchable by a value oracle). Do NOT bundle them under
 step 2's structure-from-data banner.
 
+### Step-1 ADJUDICATION result (dev-fix replay, 2026-07-26)
+
+BLOCKING adjudication executed per the protocol above: for each dismissed night20
+firing, the defects4j DEVELOPER FIX (Closure-38f, Lang-63f, Math-104f) was checked out,
+built, and driven at the EXACT dismissed-firing input on the VM (`/home/code/scratch/adjud/`,
+since removed). The dev-fix observed value is the deciding evidence.
+
+| leg | dismissed check (fired on overfit) | firing input | dev-fix value at that input | overfit value | A or B | why |
+|---|---|---|---|---|---|---|
+| Closure-38 | `minus_positive_zero_has_no_forced_space` ("x-0"→"x-0") and `minus_positive_integer_has_no_forced_space` ("x-"+n→"x-"+n); judge [83]/[84]: "a correct printer could print `x-0` as `x-0.0`" / "compact JS could print `x- 1`" | compact-print `x-0`, `x-5`, `x-9` | `x-0`, `x-5`, `x-9` — **no space; SATISFIES the check** | overfit emits spurious `x- 0` / `x- 5` (fired 2/2, 20000/20000) | **B** | Dev fix produces exactly the check's expected value; only the overfit inserts the space. The divergence is whitespace after `-`, which IS the failing test's own diff class (`testMinusNegativeZero`: `x-[ ]-0.0` vs `x-[]-0.0`, a single space). Judge's format-freedom hypothetical is empirically false for the developer's own correct printer. Judge-drift kill of a genuine catch. |
+| Lang-63 | `constructed-month-answer` (formatPeriod "MM", expected 09) | Dec-31-1900 00:00 → Sep-1-1901 00:00 (MONTH idx 8, endDay 1; default TZ) | **`08` — VIOLATES the check** (dev fix returns the same value the overfit did) | `08` (fired, attempt_001/003) | **A** | Dev fix returns `08` at this input: end-day 1 < start-day 31 forces a day-borrow, so a correct impl legitimately yields 8 months, not 9. Seed (Dec-31-2005→Oct-6-2006) correctly returns `09`. The check's expected `09` is an unsound generalization of `monthDelta` that ignores the day-borrow. Check UNSOUND, judge was RIGHT. |
+| Math-104 | `default-complement` (P(a,x) vs 1−Q(a,x), tol 1e-12) | a=x=78.08 | P=0.5150504305333261, 1−Q=0.5150504305333193, **diff=6.77e-15 ≪ 1e-12 — SATISFIES the check** (also a=x=51.21: diff=1.04e-14) | P=…472 vs 1−Q=…297114178, diff=8.2e-10 (fired) | **B** | Dev fix's P and Q agree to ~7e-15, far below the 1e-12 tolerance — the check does NOT fire on the correct build; only the overfit's broken-Q convergence (8.2e-10) trips it. This OVERTURNS both prior "sub-tolerance/rounding-floor" readings: the judge's "a correct impl using DEFAULT_EPSILON≈1e-9 gives 2.6e-10/8.2e-10 mismatch" counterexample is empirically false (dev fix gives 1e-14). The generic 1e-9 rounding-floor doctrine was mis-applied to a function that actually converges to ~1e-14; the 1e-12 tolerance sits correctly between the correct floor and the defect signal. Judge-drift kill. *Caveat:* soundness for EVERY correct impl is not contractually guaranteed (DEFAULT_EPSILON permits looser impls), so this is the most borderline B; the fix should pin the tolerance in the documented ~1e-11–1e-12 band, which the check already does. |
+
+**Split verdict: B, A, B.** Corrected fix direction per leg:
+- **Closure-38 → JUDGE-side (Analysis B).** The check discriminates; spec the diff-class
+  fact (G4: the divergence is whitespace, the failing test's own diff class) so the judge
+  stops dismissing it via format-freedom hypotheticals. Genuine recall prize.
+- **Lang-63 → ORACLE-side / accept-as-hard (Analysis A).** The check is genuinely unsound
+  (dev fix returns `08`). Do NOT license a judge-side fact fix here. If pursued, needs an
+  independent correct-value oracle that computes the month field WITH day-borrowing (two
+  ways) rather than the seed-lifted `monthDelta` literal. Otherwise accept as hard.
+- **Math-104 → JUDGE-side (Analysis B), with a tolerance-soundness caveat.** The check
+  discriminates on the dev fix (7e-15 vs the overfit's 8.2e-10). Spec a judge-side
+  rounding-floor refinement: the generic ~1e-9 floor is too coarse for functions that
+  converge to ~1e-14; pair the floor with the observed correct-build mismatch when
+  available. Higher-value than the prior "uncatchable" write-off suggested.
+
+This **revises ANALYSIS A's Math-104 conclusion (was: uncatchable sub-tolerance) and
+ANALYSIS B's Closure-38+Lang-63 pairing (Lang-63 is A, not B).** Two of three dismissals
+were judge-drift (Closure-38, Math-104); one (Lang-63) was a correct kill of an unsound check.
+
 ### Dials and re-validation (only as licensed by 3–4)
 
 5. **Fuzz-budget raise for accepted checks — only if step 4 says "reach".** And it must
