@@ -46,6 +46,7 @@ sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents if (p / 
 from llm import HarnessGenerator, token_usage, usage_totals  # noqa: E402
 from java.relations.relation_verifier import RelationVerifier  # noqa: E402
 from java.relations.judge_decision import adjudicate  # noqa: E402
+from java.relations.evidence_facts import rate_profile  # noqa: E402
 
 
 # --- guard-input reconstruction -------------------------------------------
@@ -74,6 +75,16 @@ _PROFILE_TAGS = {
 def reconstruct_evidence_profile(concrete_evidence):
     """Rebuild the 5B(ii) drift-kill signature from logged evidence text.
 
+    Cycle-6 PART 1 — TAG FIRST. `buggy_silent` used to be inferred purely by
+    keyword-matching prose, including the prose of the [fire-rate fact] note,
+    which is exactly the branch that note ALREADY knows. When the evidence
+    carries a cycle-6 rate tag, that tag DECIDES this signal and no prose is
+    consulted: `rate-catch-signal` is the only profile that means "silent on
+    the buggy build"; `rate-indiscriminate` and `rate-ambiguous` both mean it
+    is measurably NOT silent, and must override any phrase elsewhere in the
+    blob that reads like silence. Untagged evidence keeps the prose path
+    unchanged.
+
     Returns (profile_dict, missing_signals) where missing_signals is the list
     of keys that had NO reconstructable tag and were defaulted to False."""
     low = (concrete_evidence or '').lower()
@@ -83,6 +94,14 @@ def reconstruct_evidence_profile(concrete_evidence):
         profile[key] = present
         if not present:
             missing.append(key)
+    try:
+        rp = rate_profile(concrete_evidence)
+    except Exception:  # pragma: no cover - defensive; prose result stands
+        rp = None
+    if rp is not None:
+        profile['buggy_silent'] = (rp == 'catch-signal')
+        # A measured answer is not a missing signal, whichever way it went.
+        missing = [k for k in missing if k != 'buggy_silent']
     return profile, missing
 
 

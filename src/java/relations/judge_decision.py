@@ -121,9 +121,167 @@ def _guarded_verify(verifier, verify_kwargs, pinned=None,
     return ok2, (f"[{tag} re-ask] " + why2)
 
 
+def _family_duty_escape(verifier, fired, failing_block, check_source,
+                        fd_state):
+    """The ONE Spec-J family-duty escape, shared by every terminal gate and
+    asked AT MOST ONCE per firing.
+
+    `fd_state` is a mutable dict ``{'value': True|False|None, 'why': str}``
+    carrying a family-duty answer already known for this firing — from run.py's
+    Spec-J ladder (``fd_prior``) or from an earlier gate in the same
+    ``adjudicate`` call. YES means the violated property IS the failing test's
+    own observable, i.e. the patch-failed-to-fix pattern, and the keep stands.
+
+    FAILS OPEN in both directions: ``verifier.family_duty`` already returns
+    ``(True, ...)`` on an LLM error, and an exception escaping it is caught here
+    and read as YES. A transport failure can therefore never manufacture a drop;
+    and because the caller only ever turns a KEEP into a DROP, it can never
+    manufacture a keep either. Returns ``(escape_granted, why)``."""
+    prior = fd_state.get('value')
+    if prior is True:
+        return True, (fd_state.get('why')
+                      or "family duty applies (prior review)")
+    if prior is False:
+        return False, (fd_state.get('why')
+                       or "family duty does not apply (prior review)")
+    try:
+        fd_ok, fd_why = verifier.family_duty(fired, failing_block, check_source)
+    except Exception as e:  # pragma: no cover - defensive
+        print(f"      [family-duty-error] {e} — escape granted (fail-open)")
+        fd_state['value'] = True
+        fd_state['why'] = "family-duty check unavailable (error)"
+        return True, fd_state['why']
+    fd_state['value'] = bool(fd_ok)
+    fd_state['why'] = fd_why
+    return bool(fd_ok), fd_why
+
+
+def _indiscriminate_rate_gate(ok, why, evidence_text, verifier, fired,
+                              failing_block, check_source, fd_state):
+    """Cycle-6 PART 2 — MECHANICAL drop on the indiscriminate profile.
+
+    When a firing's own evidence carries a MEASURED buggy-side fire rate at or
+    above ``INTRINSIC_FIRE_RATIO`` (0.95), the check condemns the KNOWN-BROKEN
+    build on essentially every input. Whatever it is measuring, it is not this
+    patch: it was already true before the patch existed. The SOUND keep is void
+    UNLESS the family-duty question answers YES.
+
+    This is enforcement, not persuasion. night20b (docs/replay/
+    night20b_analysis.md, "Chronic-FP classification") delivered exactly this
+    fact, in the evidence block the judge was shown, on:
+      * Math-73-c ``lifted-seed`` / Closure-62 ``null-source-eol-caret`` —
+        "[fire-rate fact] buggy build 999/1000 = 100% ... intrinsic to the
+        check/setup construction, not a detection of the defect", kept SOUND
+        with ``CITATION: NONE``;
+      * Math-30 ``overflow-boundary-monotone`` — buggy 20000/20000 = 100%,
+        kept SOUND with ``CITATION: NONE`` on a from-first-principles assertion.
+    Five of the eight bad keeps had the clearing fact in hand. So the CODE
+    decides it now.
+
+    Narrower than the reverted 5D rate path in ``terminal_profile``: that one
+    also condemned the two-sided ``TERMINAL_BOTH_FIRE_RATIO`` band and measured
+    net-negative (docs/replay/v5d_iter2_analysis.md). This gate fires ONLY on
+    the intrinsic bar, where the note's own wording already says the firing is
+    structural.
+
+    GUARD: Chart-19's convicting relation also measures buggy 20000/20000 =
+    100%. It must and does survive — via family-duty YES, because it asserts
+    the failing test's OWN observable. The escape is not weakened to force any
+    drop; if a case needs the escape loosened, the rule is wrong.
+
+    FAILS OPEN: no measurement, an unparseable note, or any exception leaves
+    the verdict untouched; the family-duty escape fails open to YES."""
+    if not ok:
+        return ok, why
+    try:
+        from java.relations.evidence_facts import indiscriminate_buggy_rate
+        rate = indiscriminate_buggy_rate(evidence_text)
+    except Exception as e:  # pragma: no cover - defensive
+        print(f"      [6B-rate-parse-error] {e} — verdict unchanged")
+        return ok, why
+    if rate is None:
+        return ok, why
+    fd_ok, fd_why = _family_duty_escape(
+        verifier, fired, failing_block, check_source, fd_state)
+    if fd_ok:
+        return ok, why
+    print(f"      [6B-INDISCRIMINATE-DROP] buggy-side fire rate {rate:.0%} "
+          f">= intrinsic bar, family-duty NO")
+    return False, ("INDISCRIMINATE-RATE TERMINAL [6B-INDISCRIMINATE-DROP] "
+                   "(family-duty NO): this check condemns the KNOWN-BROKEN "
+                   "build on {:.0%} of random valid inputs, so the behaviour "
+                   "it reports pre-dates the patch, and a focused review found "
+                   "the violated property is NOT the failing test's own "
+                   "observable. ".format(rate) + str(fd_why))
+
+
+def _confirmed_fires_on_both_gate(ok, why, evidence_text, verifier, fired,
+                                  failing_block, check_source, fd_state):
+    """Cycle-6 PART 3 — confirmed fires-on-both, resolved by the VALUE
+    comparison before anything is dropped.
+
+    "Fires on both builds" is ambiguous on its own. A replay (the direct
+    same-check buggy replay, or the muted re-replay once the shadowing check is
+    silenced) CONFIRMS the check fires on both; run.py then hands both fired
+    messages to ``compare_fired_values`` (cycle-2b) and the note stamps the
+    answer. This gate reads that answer — never prose:
+
+      * ``different``    -> the PARTIAL-FIX pattern: the patch changed the
+                            behaviour at this input without restoring the
+                            expected value. It is the strongest conviction
+                            evidence the pipeline has (it is what caught
+                            Lang-63) and is NEVER dropped by this rule.
+      * ``identical``    -> genuinely pre-existing: the unpatched build does
+                            the same thing at the same input. Mechanical drop,
+                            with the family-duty escape.
+      * ``not-compared`` -> UNKNOWN. Not a drop. Dropping on unknown is exactly
+                            how the marker bug happened; it is not relocated
+                            into this rule. ``[fact:not-compared]`` therefore
+                            stays in ``_NON_TERMINAL_FACT_TAGS``.
+
+    In practice the ``identical`` case is usually already dropped upstream by
+    the 5C gate; this gate still owns it because 5C resolves its tags
+    deny-first, so a blob carrying a confirmed-identical fact from one site AND
+    an unconfirmed ``not-compared`` from another reads as non-terminal there.
+    The CONFIRMED measurement is the stronger fact and decides here.
+
+    FAILS OPEN: an unreadable blob, a missing confirmation or any exception
+    leaves the verdict untouched; the family-duty escape fails open to YES."""
+    if not ok:
+        return ok, why
+    try:
+        from java.relations.evidence_facts import (
+            confirmed_fires_on_both_verdict)
+        verdict = confirmed_fires_on_both_verdict(evidence_text)
+    except Exception as e:  # pragma: no cover - defensive
+        print(f"      [6C-tag-parse-error] {e} — verdict unchanged")
+        return ok, why
+    if verdict == 'different':
+        print("      [6C-partial-fix-keep] confirmed on both builds with "
+              "DIFFERENT observed values — conviction evidence, never dropped "
+              "here")
+        return ok, why
+    if verdict != 'identical':
+        # 'not-compared' (unknown) or no confirmation at all.
+        return ok, why
+    fd_ok, fd_why = _family_duty_escape(
+        verifier, fired, failing_block, check_source, fd_state)
+    if fd_ok:
+        return ok, why
+    print("      [6C-FIRES-ON-BOTH-DROP] confirmed on both builds with "
+          "IDENTICAL observed values, family-duty NO")
+    return False, ("CONFIRMED-FIRES-ON-BOTH TERMINAL [6C-FIRES-ON-BOTH-DROP] "
+                   "(family-duty NO): a replay confirmed this same check fires "
+                   "on the BUGGY build at this exact input and the two fired "
+                   "messages compare IDENTICAL, so the behaviour is "
+                   "pre-existing, and a focused review found the violated "
+                   "property is NOT the failing test's own observable. "
+                   + str(fd_why))
+
+
 def _terminal_identical_gate(ok, why, evidence_text, verifier, fired,
                              failing_block, check_source,
-                             fd_prior=None):
+                             fd_prior=None, fd_state=None):
     """Cycle-5C precision-side mirror. IDENTICAL-ON-BOTH / fires-on-buggy is
     TERMINAL: a discretionary SOUND keep on a firing carrying that mechanical
     fact is void UNLESS the Spec-J family-duty question answers YES.
@@ -137,22 +295,24 @@ def _terminal_identical_gate(ok, why, evidence_text, verifier, fired,
 
     `fd_prior` carries a family-duty result already computed for this firing
     (True=YES, False=NO, None=not consulted) so we never double-ask.
+    `fd_state` is the cycle-6 shared cache of that same answer; when the caller
+    passes one, the answer this gate learns is reused by the cycle-6 gates
+    instead of asking the judge a second time. `fd_prior` seeds it.
 
     FAILS OPEN: family_duty returns (True, ...) on any LLM error, so an error
     can never manufacture a drop; only an explicit DUTY:NO voids the keep."""
+    if fd_state is None:
+        fd_state = {'value': fd_prior, 'why': None}
     if not ok:
         return ok, why
-    if fd_prior is True:
+    if fd_state.get('value') is True:
         return ok, why
     from java.relations.evidence_facts import terminal_profile
     profile = terminal_profile(evidence_text)
     if not profile:
         return ok, why
-    if fd_prior is False:
-        fd_ok, fd_why = False, "family duty does not apply (prior review)"
-    else:
-        fd_ok, fd_why = verifier.family_duty(fired, failing_block,
-                                             check_source)
+    fd_ok, fd_why = _family_duty_escape(
+        verifier, fired, failing_block, check_source, fd_state)
     if fd_ok:
         return ok, why
     label = ("IDENTICAL/FIRES-ON-BUGGY TERMINAL"
@@ -171,12 +331,21 @@ def adjudicate(verifier, *, harness_source, fired_assertion, trusted_values,
       1. base ``verifier.verify(...)`` on the verify kwargs;
       2. 5B ``_guarded_verify`` void-and-re-ask (pin-void / citation-void),
          keyed by ``pinned_source`` and ``evidence_profile``;
-      3. 5C ``_terminal_identical_gate`` (skipped when the firing is
-         direction-confirmed — a mechanical buggy-build catch), consulting
-         ``fd_prior`` and, only when needed, ``verifier.family_duty``.
+      3. 5C ``_terminal_identical_gate``, then the two cycle-6 mechanical
+         gates — 6B ``_indiscriminate_rate_gate`` (measured buggy-side fire
+         rate at/above the intrinsic bar) and 6C
+         ``_confirmed_fires_on_both_gate`` (a confirmed fires-on-both whose
+         VALUE comparison came back identical). All three are skipped when the
+         firing is direction-confirmed — a mechanical buggy-build catch — and
+         all three share ONE family-duty answer via ``fd_state``, seeded from
+         ``fd_prior``, so ``verifier.family_duty`` is asked at most once per
+         firing.
 
     Returns ``(ok, why)``. Fails open throughout: an LLM error in any step can
-    never manufacture a drop or a keep (see the two helpers' docstrings).
+    never manufacture a drop or a keep (see the helpers' docstrings). Every
+    mechanical drop is logged with its own greppable tag
+    (``[6B-INDISCRIMINATE-DROP]``, ``[6C-FIRES-ON-BOTH-DROP]``) and carries
+    that tag in the returned ``why``.
 
     ``pinned_source`` is passed straight through as the ``pinned`` argument of
     the 5B lint — run.py supplies the ``pinned_parameters()`` dict it already
@@ -191,7 +360,11 @@ def adjudicate(verifier, *, harness_source, fired_assertion, trusted_values,
              code_context=code_context),
         pinned=pinned_source, evidence_profile=evidence_profile)
     if not is_direction_confirmed:
-        ok, why = _terminal_identical_gate(
-            ok, why, concrete_evidence, verifier, fired_assertion,
-            failing_block, check_source, fd_prior=fd_prior)
+        fd_state = {'value': fd_prior, 'why': None}
+        for _gate in (_terminal_identical_gate,
+                      _indiscriminate_rate_gate,
+                      _confirmed_fires_on_both_gate):
+            ok, why = _gate(ok, why, concrete_evidence, verifier,
+                            fired_assertion, failing_block, check_source,
+                            fd_state=fd_state)
     return ok, why

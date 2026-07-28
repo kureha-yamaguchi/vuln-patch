@@ -42,6 +42,39 @@ INTRINSIC_FIRE_RATIO = 0.95
 #     silence. Set at 2%: a handful of hits in 20k inputs is noise, 4k is not.
 SILENT_FIRE_RATIO = 0.02
 
+# ---------------------------------------------------------------------------
+# Cycle-6 machine tags. The full tag registry (and the terminal/non-terminal
+# combination rule) lives further down, next to ``terminal_profile``; these
+# four are declared HERE because the notes that stamp them
+# (``semantic_buggy_replay_note``, ``muted_replay_note``, ``fire_rate_fact``)
+# are defined above that registry.
+#
+# The fire-rate note used to be readable only as PROSE, so every consumer that
+# wanted "which branch did fire_rate_fact take?" had to keyword-match its
+# interpretation sentence. ``fire_rate_fact`` already KNOWS its branch, so it
+# now stamps it:
+#   [fact:rate-catch-signal]   buggy <= SILENT_FIRE_RATIO and patched high —
+#                              silent on the known-broken build, loud on the
+#                              patch: the discrimination signal, a CATCH.
+#   [fact:rate-indiscriminate] both sides high, or buggy >= INTRINSIC_FIRE_RATIO
+#                              — the check condemns the known-broken build
+#                              broadly, so it reports something PRE-EXISTING.
+#   [fact:rate-ambiguous]      the low-but-not-silent gap, and the
+#                              patched-high / buggy-UNMEASURED case: the rates
+#                              decide nothing.
+RATE_CATCH_FACT_TAG = '[fact:rate-catch-signal]'
+RATE_INDISCRIMINATE_FACT_TAG = '[fact:rate-indiscriminate]'
+RATE_AMBIGUOUS_FACT_TAG = '[fact:rate-ambiguous]'
+# Stamped by the two replay notes when a replay MECHANICALLY CONFIRMED that
+# this same check fires on the buggy build too (the direct same-check replay,
+# or the muted re-replay once the shadowing check is silenced). It says only
+# "fires on both" — never what the observed values were. The value question is
+# answered by the tag that rides ALONGSIDE it
+# ([fact:identical-on-both] / [fact:fires-both-different-values] /
+# [fact:not-compared]), which is what ``confirmed_fires_on_both_verdict``
+# reads. Confirmation without a value verdict is NOT a drop.
+CONFIRMED_BOTH_FACT_TAG = '[fact:fires-on-both-confirmed]'
+
 # Oracle-id shapes, reimplemented locally so this module stays dependency
 # light (java.parsing.java_source.oracle_ids_in_text uses the same two
 # regexes). An "[oracle:<id>]" tag or a "relation <name> violated" phrase
@@ -218,7 +251,8 @@ def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
             # decides which wording is licensed; only "identical" earns the
             # identical-on-both-builds claim the MECHANICAL-FACTS rule binds on.
             if value_verdict == "different":
-                return ("[buggy-replay fact] [fact:fires-both-different-values]"
+                return ("[buggy-replay fact] [fact:fires-on-both-confirmed] "
+                        "[fact:fires-both-different-values]"
                         " the SAME check fires on BOTH "
                         "builds but with DIFFERENT observed values (buggy: "
                         + _excerpt(buggy_msg_excerpt) + " vs patched: "
@@ -228,7 +262,8 @@ def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
                         "firing remains evidence against the patch."
                         + (idline or ""))
             if value_verdict == "identical":
-                return ("[buggy-replay fact] [fact:identical-on-both] the "
+                return ("[buggy-replay fact] [fact:fires-on-both-confirmed] "
+                        "[fact:identical-on-both] the "
                         "exact firing input fires the "
                         "SAME check on the BUGGY build with the SAME observed "
                         "values — behaviour at this input is identical on "
@@ -247,7 +282,8 @@ def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
             # unknown: no observed value could be compared — state the
             # fires-on-both fact WITHOUT the "identical" over-claim, and keep
             # the bug's-own-family keep/dismiss guidance.
-            return ("[buggy-replay fact] [fact:not-compared] the exact firing "
+            return ("[buggy-replay fact] [fact:fires-on-both-confirmed] "
+                    "[fact:not-compared] the exact firing "
                     "input fires the "
                     "SAME check on the BUGGY build (observed values were not "
                     "compared, so no identical-value claim is made). The REAL "
@@ -877,7 +913,8 @@ def muted_replay_note(target_ids, muted_ids, status, fired_ids,
         # wording; the DEFAULT ("unknown") never over-claims, so an unthreaded
         # call can never assert identical.
         if value_verdict == "different":
-            return ("[muted-replay fact] [fact:fires-both-different-values] "
+            return ("[muted-replay fact] [fact:fires-on-both-confirmed] "
+                    "[fact:fires-both-different-values] "
                     "with the shadowing check(s) "
                     + ids_txt + " silenced, the SAME check fires on BOTH "
                     "builds but with DIFFERENT observed values (buggy: "
@@ -887,7 +924,8 @@ def muted_replay_note(target_ids, muted_ids, status, fired_ids,
                     "value: the partial-fix pattern; this firing remains "
                     "evidence against the patch.")
         if value_verdict == "identical":
-            return ("[muted-replay fact] [fact:identical-on-both] with the "
+            return ("[muted-replay fact] [fact:fires-on-both-confirmed] "
+                    "[fact:identical-on-both] with the "
                     "shadowing check(s) "
                     + ids_txt + " silenced, THIS check fires on the BUGGY "
                     "build at this exact input with the SAME observed values "
@@ -899,7 +937,8 @@ def muted_replay_note(target_ids, muted_ids, status, fired_ids,
                     "patch-failed-to-fix pattern (the violated property is "
                     "the failing test's own observable, beyond the test's "
                     "own inputs).")
-        return ("[muted-replay fact] [fact:not-compared] with the shadowing "
+        return ("[muted-replay fact] [fact:fires-on-both-confirmed] "
+                "[fact:not-compared] with the shadowing "
                 "check(s) " + ids_txt
                 + " silenced, THIS check fires on the BUGGY build at this "
                 "exact input — the same check fires on both builds (observed "
@@ -947,6 +986,13 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
 
     Returns the fact block, or None when neither the patched nor the buggy rate
     crosses its threshold (or the counts are missing) — no noise.
+
+    Cycle-6 PART 1: the note carries a MACHINE TAG naming the branch this
+    function took (``RATE_CATCH_FACT_TAG`` / ``RATE_INDISCRIMINATE_FACT_TAG`` /
+    ``RATE_AMBIGUOUS_FACT_TAG``) alongside the prose. Consumers that need the
+    profile read the tag (``rate_profile``); the prose is then free to be
+    prose, and the last site that reconstructed a profile by keyword-matching
+    this note's wording is retired.
     """
     # Cycle-5A: per-input denominator normalization. A multi-case oracle can
     # count several firings per input, so `violated` may EXCEED `checked`
@@ -967,6 +1013,7 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
     # divergence). That wording coached the judge to discard its best
     # catches (inventory 2026-07-26). Distinguish the two profiles:
     interp = None
+    tag = None
     both_high = (p_rate is not None and p_rate >= MAX_FIRE_RATIO
                  and b_rate is not None and b_rate >= MAX_FIRE_RATIO)
     # The catch-signal claim asserts the check is SILENT on the known-broken
@@ -983,6 +1030,7 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
                      and b_rate is not None
                      and SILENT_FIRE_RATIO < b_rate < MAX_FIRE_RATIO)
     if both_high:
+        tag = RATE_INDISCRIMINATE_FACT_TAG
         interp = ("fires on a large share of random valid inputs on BOTH "
                   "builds (buggy {:.0%}, patched {:.0%}) — indiscriminate; "
                   "the firing is intrinsic to the check/setup construction, "
@@ -990,6 +1038,7 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
                   "contract that makes every one of those inputs a genuine "
                   "violation.".format(b_rate, p_rate))
     elif asymmetric:
+        tag = RATE_CATCH_FACT_TAG
         interp = ("fires on {:.0%} of random valid inputs on the PATCHED "
                   "build but only {:.0%} on the buggy build — the check is "
                   "silent (or near-silent) on the known-broken code and "
@@ -999,6 +1048,7 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
                   "reason the patched-only firings are legitimate.".format(
                       p_rate, b_rate))
     elif ambiguous_gap:
+        tag = RATE_AMBIGUOUS_FACT_TAG
         interp = ("fires on {:.0%} of random valid inputs on the PATCHED "
                   "build and {:.0%} on the buggy build — the buggy-side rate "
                   "is low but NOT silent, so this is neither a clean "
@@ -1009,12 +1059,14 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
     elif p_rate is not None and p_rate >= MAX_FIRE_RATIO:
         # patched-high, buggy rate UNKNOWN (unmeasured) — cannot claim
         # asymmetry; state the rate without an indictment verdict.
+        tag = RATE_AMBIGUOUS_FACT_TAG
         interp = ("fires on {:.0%} of random valid inputs on the PATCHED "
                   "build; the buggy-build rate is unmeasured, so whether "
                   "this is indiscriminate (check bug) or patch-introduced "
                   "(a catch) is undetermined — judge on the check's shown "
                   "contract.".format(p_rate))
     elif b_rate is not None and b_rate >= INTRINSIC_FIRE_RATIO:
+        tag = RATE_INDISCRIMINATE_FACT_TAG
         interp = ("fires on essentially every input on the buggy build "
                   "({:.0%}) — the firing is intrinsic to the check/setup "
                   "construction, not a detection of the defect.".format(b_rate))
@@ -1038,7 +1090,7 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
                      + " = {:.0%}".format(p_rate))
 
     text = ("[fire-rate fact] " + "; ".join(parts) + " of random valid "
-            "inputs. " + interp)
+            "inputs. " + ((tag + " ") if tag else "") + interp)
     if screen_outcome_reason:
         text += (" Screening demotion reason: "
                  + str(screen_outcome_reason).strip() + ".")
@@ -1508,6 +1560,23 @@ _TERMINAL_IDENTICAL_VETO = (
 #                                      (the partial-fix CONVICTION)
 #   [fact:not-compared]                fires on both, values never compared  -> NOT terminal
 #
+# Cycle-6 adds four more tags, declared at the top of this module because the
+# notes that stamp them are defined above this block. They are deliberately
+# NOT members of the two sets below, so ``terminal_profile`` is unchanged by
+# them; they are read by ``rate_profile`` / ``confirmed_fires_on_both_verdict``
+# and enforced in ``judge_decision``:
+#
+#   [fact:rate-catch-signal]     buggy silent, patched high  (a CATCH)
+#   [fact:rate-indiscriminate]   both high, or buggy >= INTRINSIC_FIRE_RATIO
+#   [fact:rate-ambiguous]        low-but-not-silent, or buggy unmeasured
+#   [fact:fires-on-both-confirmed] a replay MECHANICALLY confirmed the same
+#                                check fires on the buggy build too
+#
+# ``not-compared`` stays in ``_NON_TERMINAL_FACT_TAGS`` permanently: it may
+# only leave when a confirmed fires-on-both has ALSO had its values compared
+# and found identical — and in that case the note stamps
+# ``[fact:identical-on-both]`` instead, so the membership below never changes.
+#
 # The marker+veto path below stays EXACTLY as it was, used only when a text
 # carries none of these tags (older runs, replayed fixtures, notes written
 # elsewhere). Combination rule mirrors the prose path: deny first — any
@@ -1561,11 +1630,37 @@ _FR_PATCHED_RE = re.compile(r'patched build\s+(\d+)\s*/\s*(\d+)', re.I)
 _FIRE_RATE_WINDOW = 400
 
 
-def parse_fire_rate_facts(text):
-    """Parse every "[fire-rate fact]" block in `text` into (buggy_rate,
-    patched_rate) pairs. Each rate is violated/checked clamped at 1.0 (a
-    multi-case oracle can fire more than once per input — same clamp
-    ``fire_rate_fact`` applies), or None when that side is absent/unmeasured.
+# Cycle-6 PART 1: the branch names ``fire_rate_fact`` stamps, and the PROSE
+# fallback for blocks written before the tags existed (older runs, replayed
+# fixtures). Tag first, prose only when no tag is present.
+_RATE_PROFILE_BY_TAG = {
+    'rate-catch-signal': 'catch-signal',
+    'rate-indiscriminate': 'indiscriminate',
+    'rate-ambiguous': 'ambiguous',
+}
+_RATE_PROSE_FALLBACK = (
+    # (profile, distinctive phrases from the shipped pre-tag wording)
+    ('indiscriminate', ('indiscriminate',
+                        'intrinsic to the check/setup construction')),
+    ('ambiguous', ('is low but not silent',
+                   'buggy-build rate is unmeasured')),
+    ('catch-signal', ('silent (or near-silent) on the known-broken code',)),
+)
+# Deny-first ordering when a text carries several blocks/profiles: the reading
+# that REFUSES the catch claim wins, so a mixed blob can never be read as
+# "silent on the buggy build".
+_RATE_PROFILE_PRECEDENCE = ('indiscriminate', 'ambiguous', 'catch-signal')
+
+
+def parse_fire_rate_blocks(text):
+    """Parse every "[fire-rate fact]" block in `text` into
+    ``{'buggy': rate|None, 'patched': rate|None, 'profile': name|None}``.
+
+    Each rate is violated/checked clamped at 1.0 (a multi-case oracle can fire
+    more than once per input — the same clamp ``fire_rate_fact`` applies), or
+    None when that side is absent/unmeasured. ``profile`` is the block's own
+    machine tag (cycle-6) when it carries one, else None — this function does
+    NOT guess a profile from prose; ``rate_profile`` owns the fallback.
     Returns a list; empty when no block parses. Pure."""
     out = []
     if not text:
@@ -1584,10 +1679,106 @@ def parse_fire_rate_facts(text):
                 return None
             return min(1.0, violated / checked)
 
-        out.append((_rate(_FR_BUGGY_RE.search(block)),
-                    _rate(_FR_PATCHED_RE.search(block))))
+        profile = None
+        for name in _RATE_PROFILE_PRECEDENCE:
+            if any(_RATE_PROFILE_BY_TAG.get(t) == name
+                   for t in fact_tags(block)):
+                profile = name
+                break
+        out.append({'buggy': _rate(_FR_BUGGY_RE.search(block)),
+                    'patched': _rate(_FR_PATCHED_RE.search(block)),
+                    'profile': profile})
         start = low.find(_FIRE_RATE_TAG, start + len(_FIRE_RATE_TAG))
     return out
+
+
+def parse_fire_rate_facts(text):
+    """Every "[fire-rate fact]" block in `text` as (buggy_rate, patched_rate)
+    pairs — the rate-only view of ``parse_fire_rate_blocks``. Pure."""
+    return [(b['buggy'], b['patched']) for b in parse_fire_rate_blocks(text)]
+
+
+def rate_profile(text):
+    """Cycle-6 PART 1: which fire-rate branch this evidence carries —
+    ``'catch-signal'``, ``'indiscriminate'``, ``'ambiguous'`` or None.
+
+    TAG-FIRST, exactly as ``terminal_profile`` reads ``[fact:...]`` tags: when
+    any block carries a cycle-6 rate tag, the TAGS decide and no prose is
+    consulted. Only when no block is tagged does the pre-tag prose fallback
+    run. Several blocks (or several readings) resolve deny-first via
+    ``_RATE_PROFILE_PRECEDENCE``, so the catch reading is never inferred from
+    a blob that also reads indiscriminate. Pure."""
+    if not text:
+        return None
+    tagged = [b['profile'] for b in parse_fire_rate_blocks(text)
+              if b['profile']]
+    if tagged:
+        for name in _RATE_PROFILE_PRECEDENCE:
+            if name in tagged:
+                return name
+    # Untagged (pre-cycle-6) text: fall back to the shipped prose.
+    low = str(text).lower()
+    for name in _RATE_PROFILE_PRECEDENCE:
+        for profile, phrases in _RATE_PROSE_FALLBACK:
+            if profile == name and any(p in low for p in phrases):
+                return name
+    return None
+
+
+def indiscriminate_buggy_rate(text):
+    """Cycle-6 PART 2: the MEASURED buggy-side fire rate that condemns the
+    known-broken build on essentially every input, or None.
+
+    Returns the highest buggy rate at/above ``INTRINSIC_FIRE_RATIO`` found in
+    any ``[fire-rate fact]`` block, skipping any block the tag says is the
+    CATCH profile (belt and braces — a catch block's buggy rate is below
+    ``SILENT_FIRE_RATIO`` by construction and can never reach this bar). None
+    when nothing was measured, when the buggy side is unmeasured, or when the
+    rate is below the bar — a missing measurement is never a drop. Pure."""
+    best = None
+    for b in parse_fire_rate_blocks(text):
+        rate = b['buggy']
+        if rate is None or rate < INTRINSIC_FIRE_RATIO:
+            continue
+        if b['profile'] == 'catch-signal':
+            continue
+        if best is None or rate > best:
+            best = rate
+    return best
+
+
+def confirmed_fires_on_both_verdict(text):
+    """Cycle-6 PART 3: for evidence carrying the mechanical
+    ``[fact:fires-on-both-confirmed]`` tag, what the VALUE comparison
+    (``compare_fired_values``, cycle-2b) said about the two fired messages:
+
+      * ``'different'``    — the partial-fix pattern (what caught Lang-63).
+                             The strongest conviction evidence there is;
+                             KEEP-leaning, never a drop.
+      * ``'identical'``    — genuinely pre-existing behaviour.
+      * ``'not-compared'`` — the messages could not be compared. UNKNOWN, not
+                             "identical": dropping on unknown is precisely the
+                             marker bug, so it is never a drop.
+      * ``None``           — no confirmation, or a confirmation with no value
+                             verdict attached. Nothing to decide.
+
+    Precedence when a blob's sites disagree: ``different`` > ``identical`` >
+    ``not-compared``. ``different`` is a positive contrary measurement and wins
+    over everything — nothing may drop a partial fix. ``identical`` outranks
+    ``not-compared`` because the latter is the ABSENCE of a comparison, not a
+    contrary one: one site failing to extract a message cannot erase another
+    site's successful byte/kv comparison. ``not-compared`` alone stays UNKNOWN
+    and is never a drop. Pure — no prose is consulted anywhere."""
+    tags = fact_tags(text)
+    if 'fires-on-both-confirmed' not in tags:
+        return None
+    if 'fires-both-different-values' in tags:
+        return 'different'
+    if 'identical-on-both' in tags:
+        return 'identical'
+    if 'not-compared' in tags:
+        return 'not-compared'
+    return None
 
 
 def fire_rate_is_terminal(buggy_rate, patched_rate):
