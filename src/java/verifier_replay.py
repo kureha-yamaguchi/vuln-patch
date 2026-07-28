@@ -16,6 +16,9 @@ Input: a JSONL file, one case per line:
     "fired_assertion": "java.lang.RuntimeException: metamorphic ...",
     "trusted_values":  ["2.5", "0/1"],         # optional
     "concrete_evidence": "== Java Exception ...",  # optional crash block
+    "failing_test":    "[REAL FAILING TEST ...]",  # the bug's trigger test,
+                                                   # verbatim; family_duty is
+                                                   # unanswerable without it
     "label":           "overfitting" | "correct", # ground truth of the PATCH
     "note":            "free text"              # optional
   }
@@ -208,8 +211,16 @@ def main():
             #    passing the raw source string makes dismissal_invokes_pinned
             #    conservative (never a pin-void).
             #  * evidence_profile = reconstructed drift-kill signature (above).
-            #  * failing_block = the case's failing-test text, else '' (no
-            #    dedicated field in the logged cases).
+            #  * failing_block = the case's `failing_test` — the REAL FAILING
+            #    TEST block run.py renders via _j3_failing_test_block, recovered
+            #    verbatim from the leg's trace (scripts/backfill_failing_test.py).
+            #    family_duty's whole question is "does this check assert the
+            #    FAILING TEST's own observable?", so with '' here the escape can
+            #    essentially never answer YES and every family-duty-escaped rule
+            #    gets measured with its escape disabled — the harness artifact
+            #    that invalidated the v6 gate's cost side. A case whose trace
+            #    genuinely has no block still carries '' (fails to the strict
+            #    side), but tests/test_fixture_fidelity.py pins that to zero.
             #  * check_source = harness_source.
             #  * fd_prior = the value RECONSTRUCTED from the original run's
             #    trace (scripts/reconstruct_fd_prior.py) — what run.py's Spec-J

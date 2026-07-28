@@ -39,9 +39,16 @@ the false-fact bug we fixed in the pipeline itself this morning.
   untouched rows flip between draws) and is not attributable to these rules.
 
 ## Required before any verdict on 6B
-1. **Fix the fixture**: extract each case's failing-test block from its原 trace (it is present —
-   run.py renders `_j3_failing_test_block` into the judge prompt, so it is recoverable verbatim)
-   and add it to all 228 cases. Without it, no family-duty-escaped rule can ever be measured.
+1. ~~**Fix the fixture**~~ **DONE (2026-07-28)**: extract each case's failing-test block from its
+   trace (it is present — run.py renders `_j3_failing_test_block` into the judge prompt, so it is
+   recoverable verbatim) and add it to all 228 cases. Without it, no family-duty-escaped rule can
+   ever be measured.
+   `scripts/backfill_failing_test.py` recovers the block per LEG from
+   `runs-archive/runs/<run>_*/<leg>/trace.md` (two independent renderings agree: the family-duty
+   prompt's `<failing_test>` tags and the tail of the judge prompt's `<evidence>`). **228/228 cases
+   now carry a non-empty `failing_test`; 0 legs lack a block.** Rows 32/33/122/133 all carry a real
+   test body (row 122 = `BrentSolverTest::testBadEndpoints`, the very Math-73 trigger test its
+   relation mirrors). `tests/test_fixture_fidelity.py` pins this so the artifact cannot come back.
 2. **Point the gate at the repo fixture, not the scratch copy.** This run used the stale
    pre-reclassification VM copy (143 rows; contested rows 21/80 still scored). Process fix: sync
    the fixture from the repo at launch, never rely on an earlier `scp`.

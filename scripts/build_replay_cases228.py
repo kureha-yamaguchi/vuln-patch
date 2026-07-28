@@ -9,7 +9,7 @@ trusted values, code context):
 
 Output: one JSONL case per reconstructable judge firing, carrying the fields
 src/java/verifier_replay.py load_cases() needs (harness_source + fired_assertion +
-concrete_evidence + trusted_values + code_context as available) PLUS a derived GOLD
+concrete_evidence + trusted_values + code_context + failing_test as available) PLUS a derived GOLD
 verdict and provenance (run, leg, oracle id, inventory row number).
 
 GOLD DERIVATION (from the inventory's own analysis + the plan.md §5D validation gate and
@@ -159,6 +159,17 @@ def extract_block(text, start, end):
     evidence = between("<evidence>\n", "\n</evidence>")
     code_ctx = between("<codebase_context>\n", "\n</codebase_context>")
 
+    # The REAL FAILING TEST block (run.py:_j3_failing_test_block) is appended
+    # LAST to the evidence blob, so it is the tail of <evidence> from the first
+    # `[REAL FAILING TEST ` marker onward. family_duty is unanswerable without
+    # it, so it gets its own field rather than being buried in the evidence
+    # prose (see scripts/backfill_failing_test.py for the full rationale).
+    failing = None
+    if evidence:
+        fi = evidence.find("[REAL FAILING TEST ")
+        if fi >= 0:
+            failing = evidence[fi:].strip() or None
+
     fired = None
     marker = "The assertion that ACTUALLY fired on the patched code is:"
     mi = block.find(marker)
@@ -192,7 +203,8 @@ def extract_block(text, start, end):
         verdict = vm.group(1)
 
     return {"harness": harness, "fired": fired, "evidence": evidence,
-            "code_ctx": code_ctx, "trusted": trusted, "verdict": verdict}
+            "code_ctx": code_ctx, "trusted": trusted, "verdict": verdict,
+            "failing": failing}
 
 
 def block_check_identity(fired, harness):
@@ -361,6 +373,9 @@ def main():
                     case["trusted_values"] = b["trusted"]
                 if b["code_ctx"]:
                     case["code_context"] = b["code_ctx"]
+                # ALWAYS present (possibly ''): verifier_replay must be able to
+                # tell "no failing test in this trace" from "field forgotten".
+                case["failing_test"] = b["failing"] or ""
                 cases.append(case)
 
     out_path = REPO / "tests" / "fixtures" / "cases228.jsonl"
@@ -389,9 +404,11 @@ def main():
     with_ev = sum(1 for c in cases if "concrete_evidence" in c)
     with_tv = sum(1 for c in cases if "trusted_values" in c)
     with_cc = sum(1 for c in cases if "code_context" in c)
+    with_ft = sum(1 for c in cases if c.get("failing_test"))
     print(f"cases w/ concrete_evidence: {with_ev}")
     print(f"cases w/ trusted_values:    {with_tv}")
     print(f"cases w/ code_context:      {with_cc}")
+    print(f"cases w/ failing_test:      {with_ft}")
     print("skip detail (first 30):")
     for s in skips[:30]:
         print("   ", s)
