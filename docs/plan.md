@@ -2402,6 +2402,16 @@ Item 5 is DEAD by its own gate (item 4: check-shape, not reach). The live sequen
    rejection/state-family check whose receiver construction consumes zero fuzz bytes
    is flagged/demoted, never silently accepted. Fixtures from the night20 harness
    sources. Scope set by step 1's class split.
+   **DONE (2026-07-28).** Part A: `STANDING STRATEGY — STRUCTURE FROM DATA` in
+   relation_synth._INSTRUCTIONS, next to REJECTION INDEPENDENCE (dataset-neutral,
+   asserted by test). Part B: `java_source.constant_receiver_state(check)` — flags
+   only when the property is receiver-state-dependent AND zero consume* value
+   reaches an index/count/loop bound/construction-gating branch; wired into
+   `screen_relations` as a DEMOTION (`screen_demotion` suffix appended to
+   `screen_note` by `_set_note`), never a drop. Archive-wide 5.3% of checks
+   (161/3047), concentrated in the container/rejection legs; both ACCEPTED
+   Chart-19 checks flag, the same leg's `setRangeAxis(consumeInt(0,3), …)`
+   candidate does not. tests/test_structure_from_data.py (19, offline).
 3. **Item 6 rerun of night20.cases at HEAD.** Pre-committed interpretation: (a) gate
    valid iff zero vacuous rejections in trace events (PASS/reject activity logged);
    (b) counts as the width-7 paired read; (c) frontier attribution — any firing on

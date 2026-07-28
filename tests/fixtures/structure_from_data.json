@@ -1,0 +1,31 @@
+{
+ "_source": "checks copied verbatim from archived night20_20260725_155442 traces",
+ "constant_structure": [
+  {
+   "leg": "07_patch1-Chart-19-Arja-plausible_o",
+   "name": "rangeAxisIndex-null-rejected-on-fresh-plot",
+   "note": "ACCEPTED into the harness; container built with literal install indices, only label strings drawn from data",
+   "check": "CategoryPlot plot = new CategoryPlot(null, new CategoryAxis(\"X\" + data.consumeAsciiString(4)), new NumberAxis(\"Y\" + data.consumeAsciiString(4)), null);\nboolean violated = false;\nString outcome = \"\";\ntry {\n    plot.getRangeAxisIndex(null);\n    violated = true;\n    outcome = \"completed normally\";\n}\ncatch (IllegalArgumentException ok) {\n    // contract honoured\n}\ncatch (Throwable t) {\n    violated = true;\n    outcome = \"wrong exception \" + t.getClass().getName();\n}\nif (violated) {\n    throw new RuntimeException(\"relation rangeAxisIndex-null-rejected-on-fresh-plot violated: \" + outcome);\n}"
+  },
+  {
+   "leg": "07_patch1-Chart-19-Arja-plausible_o",
+   "name": "rangeAxisIndex-null-rejected-independent-of-plot-state",
+   "note": "ACCEPTED into the harness; container built with literal install indices, only label strings drawn from data",
+   "check": "CategoryPlot plot1 = new CategoryPlot(null, new CategoryAxis(\"X1\"), new NumberAxis(\"Y1\"), null);\nCategoryPlot plot2 = new CategoryPlot(null, new CategoryAxis(\"X2\"), new NumberAxis(\"Y2\"), null);\ntry {\n    plot2.setRangeAxis(1, new NumberAxis(\"Y3\" + data.consumeAsciiString(3)));\n}\ncatch (Exception e) {\n    return;\n}\nboolean violated = false;\nString outcome = \"\";\ntry {\n    plot1.getRangeAxisIndex(null);\n    violated = true;\n    outcome = \"fresh plot completed normally\";\n}\ncatch (IllegalArgumentException ok) {\n    // expected\n}\ncatch (Throwable t) {\n    violated = true;\n    outcome = \"fresh plot wrong exception \" + t.getClass().getName();\n}\nif (!violated) {\n    try {\n        plot2.getRangeAxisIndex(null);\n        violated = true;\n        outcome = \"mutated plot completed normally\";\n    }\n    catch (IllegalArgumentException ok) {\n        // expected\n    }\n    catch (Throwable t) {\n        violated = true;\n        outcome = \"mutated plot wrong exception \" + t.getClass().getName();\n    }\n}\nif (violated) {\n    throw new RuntimeException(\"relation rangeAxisIndex-null-rejected-independent-of-plot-state violated: \" + outcome);\n}"
+  }
+ ],
+ "structure_from_data": [
+  {
+   "leg": "07_patch1-Chart-19-Arja-plausible_o",
+   "name": "setRangeAxis-getRangeAxisIndex-roundtrip",
+   "note": "same leg, same API: the install index comes from data.consumeInt(0, 3)",
+   "check": "int idx = data.consumeInt(0, 3);\nCategoryPlot plot = new CategoryPlot(null, new CategoryAxis(\"X\"), new NumberAxis(\"Y0\"), null);\nNumberAxis axis = new NumberAxis(\"Y\" + data.consumeAsciiString(6));\nint found;\ntry {\n    plot.setRangeAxis(idx, axis);\n    found = plot.getRangeAxisIndex(axis);\n}\ncatch (Exception e) {\n    return;\n}\nif (found != idx) {\n    throw new RuntimeException(\"relation setRangeAxis-getRangeAxisIndex-roundtrip violated: expected \" + idx + \" but got \" + found);\n}"
+  },
+  {
+   "leg": "05_patch1-Chart-7-Arja-plausible_o",
+   "name": "zero_length_periods_maxMiddle_agrees_with_maxEnd",
+   "note": "element count is a data.consumeInt(1, 5) loop bound",
+   "check": "int n = data.consumeInt(1, 5);\nlong base = data.consumeLong();\norg.jfree.data.time.TimePeriodValues s; int a; int b;\ntry {\n    s = new org.jfree.data.time.TimePeriodValues(\"S\");\n    for (int i = 0; i < n; i++) {\n        long t = base + i;\n        s.add(new org.jfree.data.time.SimpleTimePeriod(t, t), (double) i);\n    }\n    a = s.getMaxMiddleIndex();\n    b = s.getMaxEndIndex();\n} catch (Exception e) { return; }\nif (a != b) throw new RuntimeException(\"relation zero_length_periods_maxMiddle_agrees_with_maxEnd violated: \" + a + \" vs \" + b);"
+  }
+ ]
+}

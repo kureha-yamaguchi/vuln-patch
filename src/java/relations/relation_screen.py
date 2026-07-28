@@ -43,8 +43,9 @@ from java.harness.build import HarnessBuilder
 from java.harness.canned_probe import run_canned_probe, EXTREMES_CHECKLIST, SEEDS as _SEEDS
 from llm import record_event
 from java.execution.fuzz_runner import run_jazzer
-from java.parsing.java_source import (boolean_swallow, library_subclass,
-                         negative_modulo_index, violation_swallowed)
+from java.parsing.java_source import (boolean_swallow, constant_receiver_state,
+                         library_subclass, negative_modulo_index,
+                         violation_swallowed)
 # Fire ratio above which a relation is out-of-domain: the buggy build is
 # known-correct on the overwhelming majority of inputs (it passes its whole
 # suite bar the triggers), so a relation violated this often contradicts
@@ -278,6 +279,17 @@ def screen_relations(candidates: List,
                      target=getattr(r, 'name', '?'), output=outcome,
                      reason=reason)
 
+    def _set_note(r, note):
+        """Record the screen note, appending any DEMOTION suffix the static
+        lints attached to this candidate (they run before the measurement
+        that decides the note, and must survive it)."""
+        demotion = getattr(r, 'screen_demotion', '') or ''
+        try:
+            r.screen_note = note + demotion
+        except Exception:
+            pass
+        return note + demotion
+
     for i, rel in enumerate(candidates):
         name = getattr(rel, 'name', f'relation{i}')
         # Format gate: the counting harness recognises a violation ONLY by
@@ -336,6 +348,29 @@ def screen_relations(candidates: List,
                   f"dropped")
             _mark(rel, 'dropped', f'negative-modulo index bug: {negmod}')
             continue
+        # Structure-from-data lint: a receiver-state check (rejection /
+        # index / lookup / size) whose container is built entirely from
+        # compile-time constants can only ever exercise ONE shape, so a
+        # patch that misbehaves at a different shape is unreachable for it.
+        # DEMOTED, not dropped — the check may still be perfectly sound and
+        # may still catch a different defect; a drop would delete
+        # correct-but-narrow checks. Recording it in the screen note makes
+        # the structural blind spot visible to the convergence gate and to
+        # the downstream steering instead of leaving it silent.
+        conststate = constant_receiver_state(getattr(rel, 'check', ''))
+        if conststate is not None:
+            print(f"  [screen] {name}: CONSTANT RECEIVER STATE — "
+                  f"{conststate} — DEMOTED (kept, structural blind spot "
+                  f"recorded)")
+            try:
+                rel.screen_demotion = (' | CONSTANT-RECEIVER-STATE '
+                                       '(structural blind spot): '
+                                       + conststate)
+            except Exception:
+                pass
+            record_event('deterministic', method='screen',
+                         target=name, output='demoted',
+                         reason=f'constant receiver state: {conststate}')
         cls = f'RelScreen{i}'
         src = _screen_harness_source(package, imports or [], cls,
                                      getattr(rel, 'check', ''))
@@ -512,10 +547,7 @@ def screen_relations(candidates: List,
                     f"domain the trigger corpus never reaches — replay-only,"
                     f" never prompt-injected; treat a patched-build firing "
                     f"with scepticism about direction")
-            try:
-                rel.screen_note = note
-            except Exception:
-                pass
+            note = _set_note(rel, note)
             print(f"  [screen] {name}: {note}")
             high_ratio.append(rel)
             continue
@@ -530,10 +562,7 @@ def screen_relations(candidates: List,
             note = (f"DIRECTION-CONFIRMED: fires on the failing test's own "
                     f"inputs (buggy violates the pinned behaviour there); "
                     f"{violated}/{checked} on random inputs{flag}")
-            try:
-                rel.screen_note = note
-            except Exception:
-                pass
+            note = _set_note(rel, note)
             print(f"  [screen] {name}: KEPT (direction-confirmed){flag} — "
                   f"{note}")
             (confirmed_flaky if not deterministic
@@ -548,10 +577,7 @@ def screen_relations(candidates: List,
                     f"inputs — ABOVE the {MAX_FIRE_RATIO:.0%} cap and NOT "
                     f"direction-confirmed on the trigger inputs; kept "
                     f"provisionally, treat with suspicion{flag}")
-            try:
-                rel.screen_note = note
-            except Exception:
-                pass
+            note = _set_note(rel, note)
             print(f"  [screen] {name}: RATIO-CAP — {note}")
             high_ratio.append(rel)
             continue
@@ -559,10 +585,7 @@ def screen_relations(candidates: List,
                 f"buggy build" + (" (selective — consistent with the "
                                   "defect region)" if violated else
                                   " (silent on the buggy build)") + flag)
-        try:
-            rel.screen_note = note
-        except Exception:
-            pass
+        note = _set_note(rel, note)
         print(f"  [screen] {name}: KEPT — {note}")
         (selective if violated else silent).append(rel)
     # Ranking (best first): direction-confirmed & deterministic, then

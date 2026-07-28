@@ -1212,3 +1212,292 @@ def literal_variations(literals, cap=48):
         if len(out) >= cap:
             break
     return out[:cap]
+
+
+# ---------------------------------------------------------------------------
+# Structure-from-data lint: a receiver-state check whose container is built
+# entirely from compile-time constants.
+#
+# A check whose PROPERTY depends on the receiver/container state (a rejection
+# contract, an index/lookup contract, a size/emptiness contract) can only
+# discriminate a relocated or conditional guard if the fuzzer actually reaches
+# the container states where that guard misbehaves. Fuzzing the labels/values
+# INSIDE a fixed structure is cosmetic: every run builds the same shape — same
+# element count, same indices, no gaps — so a patch that only misbehaves for a
+# different shape is never exercised, and the check is silent by construction
+# on both builds.
+#
+# The lint reports (never drops — see relation_screen) when BOTH hold:
+#   (1) the check probes a receiver-state property, and
+#   (2) NO fuzz-derived value reaches an index, a count, a loop bound, or a
+#       construction-governing condition.
+# It is deliberately CONSERVATIVE on (2): any consume* value reaching a
+# structural position at all silences the lint.
+
+# (1) method names whose answer depends on what the container holds.
+_STATE_PROBE_SUBSTRINGS = (
+    'index', 'contains', 'remove', 'size', 'isempty', 'lookup',
+    'elementat', 'firstkey', 'lastkey', 'keyset', 'iterator',
+)
+# Container-ish types: for these, a plain get/put/add IS a lookup/mutation.
+_CONTAINER_TYPE_SUBSTRINGS = (
+    'list', 'map', 'set', 'collection', 'vector', 'deque', 'queue',
+    'array', 'table', 'dataset', 'series', 'stack',
+)
+# Read-side only: `add`/`put` MUTATE the container, they do not probe it —
+# treating them as probes would name the wrong call in every reason string.
+_CONTAINER_METHODS = frozenset({
+    'get', 'remove', 'contains', 'containskey', 'containsvalue',
+    'indexof', 'size', 'isempty', 'elementat', 'firstkey', 'lastkey',
+})
+# Exception types that mean "the receiver rejected this lookup/argument".
+_REJECTION_EXC_SUBSTRINGS = (
+    'IllegalArgumentException', 'IndexOutOfBoundsException',
+    'NoSuchElementException', 'NullPointerException',
+    'IllegalStateException', 'UnknownKeyException',
+    'NotFoundException', 'UnsupportedOperationException',
+)
+
+# (2) fuzz that can move STRUCTURE: only integral draws can be an index, a
+# count or a loop bound. String/float draws are labels and values.
+_NUMERIC_CONSUME_RE = re.compile(
+    r'\.\s*consume(?:Int|Long|Short|Byte|Char)s?\b')
+_BOOL_CONSUME_RE = re.compile(r'\.\s*consumeBoolean\s*\(')
+_ANY_CONSUME_RE = re.compile(r'\.\s*consume(\w*)\s*\(')
+_NUM_DECL_RE = re.compile(
+    r'\b(?:int|long|short|byte|Integer|Long|Short|Byte)\s+'
+    r'(\w+)\s*=\s*([^;]*);')
+_GENERIC = r'(?:\s*<[^<>;{}]*>)?'
+_NEW_LOCAL_RE = re.compile(
+    r'\b(\w+)\s*=\s*new\s+([\w.]+)' + _GENERIC + r'\s*\(')
+_NEW_ARRAY_RE = re.compile(r'\bnew\s+[\w.]+\s*\[([^\]]*)\]')
+_LOOP_HEAD_RE = re.compile(r'\b(?:for|while)\s*\(')
+_MUTATOR_PREFIXES = ('add', 'set', 'put', 'insert', 'install', 'register',
+                     'push', 'remove', 'append', 'map')
+
+
+def _numeric_taint(src):
+    """Identifiers holding an integral value derived from `data.consume*`."""
+    tainted = set()
+    for _ in range(4):                       # cheap fixpoint
+        grew = False
+        for m in _NUM_DECL_RE.finditer(src):
+            var, rhs = m.group(1), m.group(2)
+            if var in tainted:
+                continue
+            if _NUMERIC_CONSUME_RE.search(rhs) or any(
+                    re.search(r'\b%s\b' % re.escape(t), rhs) for t in tainted):
+                tainted.add(var)
+                grew = True
+        if not grew:
+            break
+    return tainted
+
+
+_SEQ_DECL_RE = re.compile(r'\b(\w+)\s*=\s*([^;]*);')
+
+
+def _sequence_taint(src):
+    """Identifiers holding a DRAWN sequence (`String s =
+    data.consumeAsciiString(...)`, a consumed byte array). Such a value
+    carries its own length, so a container built from it has a fuzz-derived
+    size. A draw wrapped in a `new T(...)` is excluded: that is an ELEMENT
+    built around a drawn label, not a sequence of elements."""
+    tainted = set()
+    for m in _SEQ_DECL_RE.finditer(src):
+        rhs = m.group(2)
+        if 'new ' in rhs:
+            continue
+        if _ANY_CONSUME_RE.search(rhs):
+            tainted.add(m.group(1))
+    return tainted
+
+
+_NESTED_NEW_RE = re.compile(r'\bnew\s+[\w.]+' + _GENERIC + r'\s*\(')
+
+
+def _strip_nested_new(arg: str) -> str:
+    """Remove `new T(...)` sub-expressions from one argument. What is left is
+    the part of the argument the CALLER wrote — an index, a count, a key, a
+    reference. Fuzz buried inside a nested constructor decorates the ELEMENT
+    being installed (a label, a value), never the container's shape."""
+    out, i, n = [], 0, len(arg or '')
+    while i < n:
+        m = _NESTED_NEW_RE.search(arg, i)
+        if not m:
+            out.append(arg[i:])
+            break
+        out.append(arg[i:m.start()])
+        close = match_paren(arg, m.end() - 1)
+        i = (close + 1) if close > 0 else n
+    return ''.join(out)
+
+
+def _top_level_args(src: str, open_paren: int):
+    """Top-level arguments of the call whose '(' is at `open_paren`, each with
+    nested `new T(...)` sub-expressions removed. [] when unparseable."""
+    close = match_paren(src, open_paren)
+    if close < 0:
+        return []
+    return [_strip_nested_new(a)
+            for a in split_top_level_args(src[open_paren + 1:close])]
+
+
+def _has_structural_fuzz(src, tainted, probed=None, drawn=()):
+    """(bool, note) — does any fuzz-derived value reach a position that
+    decides the container's SHAPE (loop bound, count, index, capacity, the
+    contents it is built from, or a branch that governs construction)?
+    `probed` is the receiver whose state the check asserts on."""
+
+    def numeric_fuzzy(text):
+        """An integral draw — the only kind that can BE an index or count."""
+        if _NUMERIC_CONSUME_RE.search(text or ''):
+            return True
+        return any(re.search(r'\b%s\b' % re.escape(t), text or '')
+                   for t in tainted)
+
+    def any_fuzzy(text):
+        if _ANY_CONSUME_RE.search(text or '') or numeric_fuzzy(text):
+            return True
+        return any(re.search(r'\b%s\b' % re.escape(d), text or '')
+                   for d in drawn)
+
+    # S0 a fuzz-derived LENGTH argument to a draw (consumeAsciiString(
+    # consumeInt(0, 32))) makes the drawn sequence's own size fuzz-derived.
+    for m in _ANY_CONSUME_RE.finditer(src):
+        close = match_paren(src, m.end() - 1)
+        if close > 0 and numeric_fuzzy(src[m.end():close]):
+            return True, 'a fuzz-derived draw length'
+    # S1 loop bounds / updates
+    for m in _LOOP_HEAD_RE.finditer(src):
+        close = match_paren(src, m.end() - 1)
+        if close < 0:
+            continue
+        if numeric_fuzzy(src[m.end():close]):
+            return True, 'a fuzz-derived loop bound'
+    # S2 array sizing
+    for m in _NEW_ARRAY_RE.finditer(src):
+        if numeric_fuzzy(m.group(1)):
+            return True, 'a fuzz-derived array length'
+    # S3 structural mutator calls: an INDEX/COUNT written by the caller. A
+    # fuzzed label or value nested inside the installed element does not
+    # count — that is the cosmetic variation this lint exists to catch.
+    for m in re.finditer(r'\b(\w+)\s*\.\s*(\w+)\s*\(', src):
+        if not m.group(2).lower().startswith(_MUTATOR_PREFIXES):
+            continue
+        for arg in _top_level_args(src, m.end() - 1):
+            if numeric_fuzzy(arg):
+                return True, (f'a fuzz-derived index/count in '
+                              f'`{m.group(1)}.{m.group(2)}(...)`')
+    # S4 the PROBED container is itself CONSTRUCTED from fuzzed data — a
+    # drawn string/array becomes its contents AND its size. Restricted to the
+    # probed receiver on purpose: a fuzzed string handed to some other
+    # constructor is the label of an ELEMENT, which leaves the shape fixed.
+    for m in _NEW_LOCAL_RE.finditer(src):
+        if probed is not None and m.group(1) != probed:
+            continue
+        for arg in _top_level_args(src, m.end() - 1):
+            if any_fuzzy(arg):
+                return True, (f'fuzz-derived contents passed to '
+                              f'`new {m.group(2)}(...)`')
+    # S5 a fuzzed branch may gate whether an element is installed at all
+    if _BOOL_CONSUME_RE.search(src):
+        return True, 'a fuzzed boolean that can gate construction'
+    return False, ''
+
+
+def _constructed_locals(src):
+    """{var: type} for locals assigned a `new T(...)` in this check."""
+    out = {}
+    for m in _NEW_LOCAL_RE.finditer(src):
+        out.setdefault(m.group(1), m.group(2).split('.')[-1])
+    return out
+
+
+def _receiver_state_probe(src, built):
+    """(receiver, call_text) for the first receiver-state-dependent probe on
+    a locally constructed container; (None, None) when there is none."""
+    for m in re.finditer(r'\b(\w+)\s*\.\s*(\w+)\s*\(', src):
+        recv, meth = m.group(1), m.group(2)
+        if recv not in built:
+            continue
+        low = meth.lower()
+        if any(s in low for s in _STATE_PROBE_SUBSTRINGS):
+            return recv, f'{recv}.{meth}(...)'
+        tlow = built[recv].lower()
+        if low in _CONTAINER_METHODS and any(
+                c in tlow for c in _CONTAINER_TYPE_SUBSTRINGS):
+            return recv, f'{recv}.{meth}(...)'
+    # A throws-expectation on a lookup: the probed call sits in a try whose
+    # catch names a rejection exception — the property is "this receiver
+    # rejects this probe", which a relocated guard can make state-dependent.
+    for open_idx, close_idx, catches in _try_blocks(src):
+        if not any(any(e in params for e in _REJECTION_EXC_SUBSTRINGS)
+                   for params, _body in catches):
+            continue
+        body = src[open_idx + 1:close_idx]
+        for m in re.finditer(r'\b(\w+)\s*\.\s*(\w+)\s*\(', body):
+            if m.group(1) in built:
+                return m.group(1), f'{m.group(1)}.{m.group(2)}(...)'
+    return None, None
+
+
+def _constant_structure_evidence(src, built, tainted):
+    """Short list of the construction sites whose shape is all literals."""
+    sites = []
+    for m in re.finditer(r'\b(\w+)\s*\.\s*(\w+)\s*\(', src):
+        if m.group(1) not in built:
+            continue
+        if not m.group(2).lower().startswith(_MUTATOR_PREFIXES):
+            continue
+        close = match_paren(src, m.end() - 1)
+        args = src[m.end():close] if close > 0 else ''
+        args = ' '.join(args.split())
+        if len(args) > 40:
+            args = args[:40] + '…'
+        sites.append(f'`{m.group(1)}.{m.group(2)}({args})`')
+    for var, typ in built.items():
+        sites.append(f'`{var} = new {typ}(...)`')
+    return sites[:4]
+
+
+def constant_receiver_state(check_source: str):
+    """Return a reason string when `check_source` asserts a RECEIVER-STATE
+    property (rejection / index / lookup / size / emptiness) on a container
+    whose STRUCTURE is entirely compile-time constant — no fuzz-derived
+    value reaches an index, a count, a loop bound, or a branch that governs
+    construction. None when either condition fails.
+
+    Conservative by design: if ANY `data.consume*` value reaches a structural
+    position, the check can vary the container's shape and is not flagged,
+    whatever else it does."""
+    src = strip_comments(check_source or '')
+    if not src.strip():
+        return None
+    built = _constructed_locals(src)
+    if not built:
+        return None
+    recv, call = _receiver_state_probe(src, built)
+    if recv is None:
+        return None                          # condition (1) fails
+    tainted = _numeric_taint(src)
+    structural, _why = _has_structural_fuzz(src, tainted, probed=recv,
+                                            drawn=_sequence_taint(src))
+    if structural:
+        return None                          # condition (2) fails
+    draws = sorted({f'consume{m.group(1)}'
+                    for m in _ANY_CONSUME_RE.finditer(src)})
+    drawn = (', '.join(f'data.{d}()' for d in draws) if draws
+             else 'no fuzz draws at all')
+    sites = _constant_structure_evidence(src, built, tainted)
+    return (f'receiver-state probe `{call}` runs against a container whose '
+            f'STRUCTURE is compile-time constant: ' + ', '.join(sites) +
+            f' — every element count, index and position is a literal. The '
+            f'check draws {drawn}, none of which reaches an index, a count, '
+            f'a loop bound, or a branch that governs construction, so every '
+            f'fuzz iteration rebuilds the SAME shape. A patch that only '
+            f'misbehaves for a different shape (a gap/hole, an empty or '
+            f'larger container, an element installed at a different index) '
+            f'is never exercised. Draw the structure from `data`: the number '
+            f'of elements, the indices they are installed at, whether the '
+            f'container is empty, and whether it is freshly built or mutated.')
