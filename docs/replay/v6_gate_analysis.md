@@ -55,3 +55,38 @@ the false-fact bug we fixed in the pipeline itself this morning.
 3. Re-run the gate. Only then is 6B's cost side measurable.
 
 **Do NOT revert 6B on this run.** Its measured cost is an artifact of the harness, not the rule.
+
+---
+
+## ADDENDUM (2026-07-28, before gate2 results) — scope of the defect, and a correction
+
+**1. This flaw was in EVERY replay measurement, not just this run.** The family-duty escape has
+been consulted during replays since it was introduced, and it was asked with an EMPTY failing-test
+block every single time. So the suspect set is not just gate1's four catch-kills: **every
+"escape answered NO" event in every earlier gate run was asked blind**, including the parts of the
+cycle-5 closing numbers that leaned on it (`docs/replay/CYCLE5-CLOSE.md`). Those specific numbers
+should not be cited going forward without re-measurement.
+
+Explicitly UNAFFECTED — these never depended on the test block, and stand: the terminal-marker
+veto, the negated-citation fix, the diverted-replay false-fact fix, the 5A silence-threshold fix,
+and the compliance measurement (100% CITATION-line emission).
+
+**2. CORRECTION to this document's own claim.** Above, I wrote that 6B's six chronic drops "did
+not need the escape, so the artifact does not touch them." **That is wrong.** A 6B drop occurs
+precisely when the escape answers NO — so with an empty test block, "NO" was artificially easy,
+and the benefit side was measured under the same defect as the cost side. Neither side of gate1
+is trustworthy.
+
+**3. Pre-committed reading of gate2** (written BEFORE its results are known):
+- **Catches kept + Math-73-c dropped + most chronic drops hold** → ship 6B/6C; proceed to the
+  plumbing item and the second 20-leg run.
+- **Catches kept but some chronic drops vanish (Closure-62 is the likely one — its failing test
+  pins the caret line in the error output, i.e. the very formatting those checks probe)** → still
+  ship. That is the escape being HONEST, not the rule regressing, and it would place Closure-62 in
+  the same family as Closure-38: checks in the right neighbourhood of the test's own behaviour
+  that overreach into what the test does not pin. Those accusations then return to the
+  delivery/plumbing bucket, where two of them already sit.
+  **The wrong response would be to weaken the escape to force the drops back** — that is the
+  tuning trap the stop-loss exists to prevent, and it is ruled out in advance here.
+- **Catches still killed with real test blocks in place** → the rate signal cannot be automated
+  safely; revert 6B as its predecessor was reverted.
