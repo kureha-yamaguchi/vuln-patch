@@ -133,11 +133,31 @@ def classify_differential_replay(patched_sig, buggy_status, buggy_sig):
 # screening DIRECTION-CONFIRMED fact from screening inputs to this firing).
 # ---------------------------------------------------------------------------
 
+_DIVERTED_NOTE = (
+    " on the buggy build execution at this exact input was DIVERTED before "
+    "this check was evaluated: something threw and the harness's own "
+    "`catch (...) { return; }` swallowed it, so the run returned early and "
+    "NEVER REACHED this check. The replay therefore says NOTHING about "
+    "whether the check would fire on the buggy build — no attribution in "
+    "either direction. In particular the absence of a firing here is NOT "
+    "evidence the patch caused anything. Judge on soundness alone, "
+    "sceptically.")
+
+_DIVERSION_UNKNOWN_NOTE = (
+    " the buggy build did not fire this check on this exact input, but "
+    "whether execution actually REACHED the check could not be determined "
+    "(the harness swallows exceptions in its own `catch (...) { return; }` "
+    "and the diversion probe was unavailable) — no attribution fact; judge "
+    "on soundness alone, sceptically. Do NOT read the quiet run as evidence "
+    "against the patch.")
+
+
 def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
                                bt_all, bt_defect, esc_type, idline="",
                                value_verdict="unknown",
                                buggy_msg_excerpt=None,
-                               patched_msg_excerpt=None):
+                               patched_msg_excerpt=None,
+                               diverted=None):
     """Build the "[buggy-replay fact]" note for one semantic-leg firing.
 
     `breplay_status` in {"crashed", "clean", "error", "unavailable"}; the old
@@ -150,6 +170,19 @@ def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
     pre-assembled exception-identity fragment appended only to the
     same-check / no-defect branch (its data needs the raw replay output and
     so is built by the caller).
+
+    `diverted` (cycle-6) is the mechanical answer to "did the buggy replay
+    actually REACH this check?": True = a swallow-return catch fired and the
+    run returned early, False = it did not, None = unknown. It gates the
+    quiet-run branch ONLY, and it gates it hard: the "buggy build ran this
+    input clean WITHOUT firing this check, so the patch INTRODUCED the
+    violation" existence-proof claim requires diverted is False. With True the
+    note states the diversion and attributes nothing; with the default None it
+    falls back to the conservative unavailable wording. An unthreaded caller
+    therefore cannot manufacture the false fact that convicted the night20b
+    Chart-26 correct patch (execution threw inside `axis.draw`, the harness's
+    `catch (Exception e) { return; }` swallowed it, and the never-evaluated
+    check was reported as "ran clean").
 
     Returns the note text, or None when there is nothing to say.
     """
@@ -262,6 +295,13 @@ def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
                     "buggy-side evidence behind it is the classic "
                     "false-positive shape — keep only with a shown contract "
                     "the observed value contradicts.")
+        # Cycle-6: the quiet run is an existence proof ONLY if execution
+        # actually reached the check. A swallowed exception that returned
+        # early looks identical from outside and reverses the meaning.
+        if diverted is True:
+            return "[buggy-replay fact]" + _DIVERTED_NOTE
+        if diverted is None:
+            return "[buggy-replay fact]" + _DIVERSION_UNKNOWN_NOTE
         return ("[buggy-replay fact] the buggy build handles this exact "
                 "input cleanly WITHOUT firing this check — the patch "
                 "INTRODUCED the violation here, and the buggy build is an "
@@ -303,6 +343,27 @@ def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
                     "defect input. Judge whether the new exception is a "
                     "documented, acceptable rejection or nonsense wearing an "
                     "exception type.")
+        # Cycle-6: same gate as the fired-check branch above — "the buggy
+        # build handled it" is only true if the buggy build ran the code at
+        # all, and a swallowed exception that returned early did not.
+        if diverted is True:
+            return ("[buggy-replay fact] on the buggy build execution at this "
+                    "exact input was DIVERTED before " + esc_type + " could "
+                    "arise: something threw and the harness's own "
+                    "`catch (...) { return; }` swallowed it, so the run "
+                    "returned early and NEVER REACHED this site. The replay "
+                    "says NOTHING about whether the buggy build raises this "
+                    "exception — no attribution in either direction. Judge on "
+                    "soundness alone, sceptically.")
+        if diverted is None:
+            return ("[buggy-replay fact] the buggy build did not raise "
+                    + esc_type + " on this exact input, but whether execution "
+                    "actually REACHED that site could not be determined (the "
+                    "harness swallows exceptions in its own "
+                    "`catch (...) { return; }` and the diversion probe was "
+                    "unavailable) — no attribution fact; judge on soundness "
+                    "alone, sceptically. Do NOT read the quiet run as evidence "
+                    "against the patch.")
         return ("[buggy-replay fact] the buggy build handles this exact "
                 "input WITHOUT raising " + esc_type + " — the patch "
                 "INTRODUCED this exception here. On an input the harness "
@@ -750,7 +811,8 @@ def trigger_tier_note():
 
 def muted_replay_note(target_ids, muted_ids, status, fired_ids,
                       esc_type, bt_all, value_verdict="unknown",
-                      buggy_msg_excerpt=None, patched_msg_excerpt=None):
+                      buggy_msg_excerpt=None, patched_msg_excerpt=None,
+                      diverted=None):
     """Word the outcome of ONE muted re-replay on the buggy build.
 
     The shadowing checks `muted_ids` were mechanically silenced and the exact
@@ -772,7 +834,13 @@ def muted_replay_note(target_ids, muted_ids, status, fired_ids,
         identical-on-both-builds ONLY when value_verdict=="identical".
       * target quiet + a CLEAN run -> the existence-proof family: the buggy
         build runs this exact input without the violation; the patch
-        introduced it.
+        introduced it — but ONLY when `diverted` is False. `diverted` (cycle-6,
+        True/False/None) says whether one of the harness's own
+        `catch (...) { return; }` swallows fired on this input: True means
+        execution returned early and never reached the check, so the note
+        states the diversion and attributes nothing; the default None yields
+        the conservative unavailable wording. An unthreaded caller can never
+        emit the introduced claim.
       * status error/mute_failed -> a one-line note that a muted re-replay was
         attempted and unavailable (the caller appends it to the cycle-1 UNKNOWN
         note, which stands unchanged).
@@ -834,6 +902,17 @@ def muted_replay_note(target_ids, muted_ids, status, fired_ids,
                 "made); judge the check's soundness on the shown contract.")
 
     if status == "clean":
+        # Cycle-6: identical gate to semantic_buggy_replay_note's quiet-run
+        # branch. This is the exact site that convicted the night20b Chart-26
+        # correct patch: the muted replay threw inside axis.draw, the
+        # harness's own `catch (Exception e) { return; }` swallowed it and
+        # returned, and "no firing" was reported as "ran clean".
+        if diverted is True:
+            return ("[muted-replay fact] with the shadowing check(s) "
+                    + ids_txt + " silenced," + _DIVERTED_NOTE)
+        if diverted is None:
+            return ("[muted-replay fact] with the shadowing check(s) "
+                    + ids_txt + " silenced," + _DIVERSION_UNKNOWN_NOTE)
         return ("[muted-replay fact] with the shadowing check(s) " + ids_txt
                 + " silenced, the buggy build runs this exact input WITHOUT "
                 "firing this check — the patch introduced the violation here.")

@@ -27,6 +27,11 @@ An ALARM throw — the only kind ever touched — is one where any of:
 Library rethrows (`throw ex;`) and input-rejection throws
 (`throw new IllegalArgumentException("bad input")`) carry no such marker and
 are NEVER modified.
+
+`instrument_diversion` (cycle-6) is the second transform here. It answers a
+different but equally load-bearing question: did the replayed input actually
+REACH the check, or did the harness's own `catch (...) { return; }` swallow an
+exception and return early? See its docstring.
 """
 import re
 
@@ -46,6 +51,17 @@ _CLASS_DECL_RE = re.compile(r'\b(?:class|interface|enum)\s+[A-Za-z_$][\w$]*')
 
 def _is_ident_char(ch: str) -> bool:
     return ch.isalnum() or ch == '_' or ch == '$'
+
+
+def _kw_at(src: str, i: int, kw: str) -> bool:
+    """True when the keyword `kw` starts at `src[i]` on identifier
+    boundaries (so `returnValue` never reads as `return`)."""
+    if not src.startswith(kw, i):
+        return False
+    if i > 0 and _is_ident_char(src[i - 1]):
+        return False
+    j = i + len(kw)
+    return j >= len(src) or not _is_ident_char(src[j])
 
 
 def _string_end(src: str, i: int) -> int:
@@ -365,6 +381,242 @@ def instrument_for_counting(java_source: str, target_id: str):
             edits.append((start, semi + 1, '; /* muted:%s */' % cid))
     edits.append((class_open + 1, class_open + 1, _COUNT_FIELDS))
     edits.append((fuzz_body_open + 1, fuzz_body_open + 1, _COUNT_INCR))
+
+    result = java_source
+    for start, end, replacement in sorted(edits, key=lambda e: e[0],
+                                          reverse=True):
+        result = result[:start] + replacement + result[end:]
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Diversion instrumentation (cycle-6): make a SWALLOWED exception observable.
+#
+# A harness that wraps its call in `try { ... } catch (Exception e) { return; }`
+# ends the input's run early when the library throws — the checks BELOW that
+# catch are never evaluated. A replay of such an input reports "no oracle fired
+# / ran clean", which the note builders used to word as "the buggy build runs
+# this exact input WITHOUT firing this check — the patch INTRODUCED the
+# violation". That is a FALSE fact whenever the run was diverted: the check was
+# never reached, so the replay says nothing either way. It convicted the
+# night20b Chart-26 correct patch.
+#
+# The fix is to make the diversion OBSERVABLE: a static `__vpSkipped` counter,
+# incremented (and printed) at the top of every swallow-return catch body, plus
+# a shutdown hook that prints the final count — so an uneventful run reports
+# `skipped=0` and the "clean" reading is earned rather than assumed.
+# ---------------------------------------------------------------------------
+
+# Same `[relscreen]` stats-line protocol as the counting wrapper above, so the
+# parsing lives in one place. The key is `skipped=` and the line never carries
+# `checked=`, so relation_screen._STATS_RE cannot match it (no cross-talk).
+_SKIP_FIELDS = (
+    '\n    static long __vpSkipped = 0;'
+    '\n    static {'
+    '\n        Runtime.getRuntime().addShutdownHook(new Thread(() ->'
+    '\n            System.err.println("[relscreen] skipped=" + __vpSkipped)));'
+    '\n    }')
+# Injected immediately after a swallow-return catch's `{`. It prints as well as
+# counts so the fact survives a run that never reaches the shutdown hook.
+_SKIP_INCR = (' __vpSkipped++;'
+              ' System.err.println("[relscreen] skipped=" + __vpSkipped);')
+_SKIPPED_RE = re.compile(r'\[relscreen\]\s+skipped=(\d+)')
+
+
+def parse_skipped(output):
+    """The LAST `[relscreen] skipped=N` count in `output`, or None when the
+    instrumented line never appeared (run never started, JVM halted before the
+    hook, or the variant was not instrumented). None means UNKNOWN and callers
+    must degrade to "diversion unavailable" — never to "ran clean"."""
+    if not output:
+        return None
+    last = None
+    for m in _SKIPPED_RE.finditer(output):
+        last = m.group(1)
+    if last is None:
+        return None
+    try:
+        return int(last)
+    except ValueError:
+        return None
+
+
+def _match_paren(src: str, open_idx: int) -> int:
+    """Index of the `)` closing `src[open_idx]` ('('), or -1. Comment- and
+    literal-aware, like `_match_brace`."""
+    n = len(src)
+    depth = 0
+    i = open_idx
+    while i < n:
+        c = src[i]
+        if c == '/' and i + 1 < n and src[i + 1] == '/':
+            j = src.find('\n', i)
+            i = n if j < 0 else j
+            continue
+        if c == '/' and i + 1 < n and src[i + 1] == '*':
+            j = src.find('*/', i + 2)
+            i = n if j < 0 else j + 2
+            continue
+        if c == '"':
+            i = _string_end(src, i)
+            continue
+        if c == "'":
+            i = _char_end(src, i)
+            continue
+        if c == '(':
+            depth += 1
+        elif c == ')':
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return -1
+
+
+def _skip_ws_and_comments(src: str, i: int) -> int:
+    """First index at or after `i` that is neither whitespace nor comment."""
+    n = len(src)
+    while i < n:
+        c = src[i]
+        if c.isspace():
+            i += 1
+            continue
+        if c == '/' and i + 1 < n and src[i + 1] == '/':
+            j = src.find('\n', i)
+            i = n if j < 0 else j
+            continue
+        if c == '/' and i + 1 < n and src[i + 1] == '*':
+            j = src.find('*/', i + 2)
+            i = n if j < 0 else j + 2
+            continue
+        break
+    return i
+
+
+def find_catch_blocks(src: str):
+    """Every `catch (...) { ... }` in `src`, as `(kw_start, body_open,
+    body_close)` index triples. The walk is string/char/comment aware (the same
+    scanners `mute_oracles` uses), so a `catch` inside a literal or a comment is
+    never picked up and a brace inside a string never skews the match."""
+    out = []
+    n = len(src)
+    i = 0
+    while i < n:
+        c = src[i]
+        if c == '/' and i + 1 < n and src[i + 1] == '/':
+            j = src.find('\n', i)
+            i = n if j < 0 else j
+            continue
+        if c == '/' and i + 1 < n and src[i + 1] == '*':
+            j = src.find('*/', i + 2)
+            i = n if j < 0 else j + 2
+            continue
+        if c == '"':
+            i = _string_end(src, i)
+            continue
+        if c == "'":
+            i = _char_end(src, i)
+            continue
+        if c == 'c' and _kw_at(src, i, 'catch'):
+            j = _skip_ws_and_comments(src, i + len('catch'))
+            if j < n and src[j] == '(':
+                close_p = _match_paren(src, j)
+                if close_p > 0:
+                    k = _skip_ws_and_comments(src, close_p + 1)
+                    if k < n and src[k] == '{':
+                        close_b = _match_brace(src, k)
+                        if close_b > 0:
+                            out.append((i, k, close_b))
+                            # Nested catches inside this body are found by
+                            # continuing the walk from just past the `{`.
+                            i = k + 1
+                            continue
+            i += len('catch')
+            continue
+        i += 1
+    return out
+
+
+def _has_bare_return(body: str) -> bool:
+    """True when `body` contains a `return;` (no value) statement, scanning
+    outside strings, chars and comments."""
+    n = len(body)
+    i = 0
+    while i < n:
+        c = body[i]
+        if c == '/' and i + 1 < n and body[i + 1] == '/':
+            j = body.find('\n', i)
+            i = n if j < 0 else j
+            continue
+        if c == '/' and i + 1 < n and body[i + 1] == '*':
+            j = body.find('*/', i + 2)
+            i = n if j < 0 else j + 2
+            continue
+        if c == '"':
+            i = _string_end(body, i)
+            continue
+        if c == "'":
+            i = _char_end(body, i)
+            continue
+        if c == 'r' and _kw_at(body, i, 'return'):
+            j = _skip_ws_and_comments(body, i + len('return'))
+            if j < n and body[j] == ';':
+                return True
+            i += len('return')
+            continue
+        i += 1
+    return False
+
+
+def is_swallow_catch(body: str) -> bool:
+    """True when a catch body SWALLOWS: it returns early and never throws.
+
+    Deliberately conservative — a body containing ANY `throw` (a library
+    rethrow `throw e;`, a wrapped rethrow, or the harness's own
+    `[oracle:...]` / `FuzzerSecurityIssue` alarm) is NEVER treated as a
+    swallow, because such a catch does not silently divert the run: it ends it
+    visibly, and the replay already sees that."""
+    if _find_throw_statements(body):
+        return False
+    return _has_bare_return(body)
+
+
+def instrument_diversion(java_source: str):
+    """Return `java_source` rewritten so a SWALLOWED exception is observable,
+    or None when the harness cannot be instrumented (caller must then report
+    diversion as UNKNOWN — never as "ran clean").
+
+    The transform, all mechanical and literal-aware:
+
+      * every `catch (...) { ... }` whose body contains a bare `return;` and NO
+        `throw` at all gets `__vpSkipped++;` plus an immediate
+        `[relscreen] skipped=N` print injected right after its `{`;
+      * catches that RETHROW (`throw e;`) and the harness's own alarm catches
+        (`throw new FuzzerSecurityIssue...`) are left untouched — they are not
+        silent diversions;
+      * a `static long __vpSkipped` field and a shutdown hook printing the same
+        `[relscreen] skipped=N` line are injected on the class declaring
+        fuzzerTestOneInput, so a run with NO diversion still reports
+        `skipped=0` (the difference between "did not divert" and "we could not
+        tell", which is the whole point of the fix).
+
+    Returns None if fuzzerTestOneInput or its enclosing class brace cannot be
+    located. The class name is kept, so the result is drop-in for
+    HarnessBuilder.build. Pure: no I/O, no mutation of inputs."""
+    if not java_source:
+        return None
+
+    entry = _ENTRYPOINT_RE.search(java_source)
+    if not entry:
+        return None
+    class_open = _class_open_brace_enclosing(java_source, entry.start())
+    if class_open < 0:
+        return None
+
+    edits = [(class_open + 1, class_open + 1, _SKIP_FIELDS)]
+    for _kw, body_open, body_close in find_catch_blocks(java_source):
+        if is_swallow_catch(java_source[body_open + 1:body_close]):
+            edits.append((body_open + 1, body_open + 1, _SKIP_INCR))
 
     result = java_source
     for start, end, replacement in sorted(edits, key=lambda e: e[0],

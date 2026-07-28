@@ -1890,13 +1890,15 @@ def main():
                     # clean muted run is the INTRODUCED family. Bounded to one
                     # muted re-replay; any failure leaves SHADOWED intact.
                     try:
-                        _mstatus, _mfired, _mout = _fr.replay_input_muted(
+                        (_mstatus, _mfired, _mout,
+                         _mdiverted) = _fr.replay_input_muted(
                             r.harness_path, r.class_name, buggy_cp,
                             r.artifact_path, mute_all=True,
                             builder=builder, buggy_dir=selection.buggy_dir)
                         _msig = crash_signature(_mout or '')
                         print(f"  [muted-replay] status={_mstatus} "
-                              f"sig={_msig or 'none'}")
+                              f"sig={_msig or 'none'} "
+                              f"diverted={_mdiverted}")
                         if _mstatus == "crashed" and _msig == patched_sig \
                                 and '@' in (_msig or ''):
                             print(f"  ~ shadowed->pre-existing: crash site "
@@ -1912,12 +1914,29 @@ def main():
                                     "the crash pre-exists, it was hidden "
                                     "behind the harness's alarms. "))
                         elif _mstatus == "clean":
-                            attribution_notes[id(r)] += (
-                                " Muted re-replay: with the harness's own "
-                                "checks silenced, the buggy build runs this "
-                                "exact input cleanly — the crash does NOT "
-                                "pre-exist behind the shadow; the patch "
-                                "introduced it here.")
+                            # Cycle-6: "clean" is only exculpatory-for-buggy
+                            # when execution actually REACHED the crash site.
+                            # A swallow-return catch that fired returned early
+                            # and proves nothing; unknown is treated the same.
+                            if _mdiverted is False:
+                                attribution_notes[id(r)] += (
+                                    " Muted re-replay: with the harness's own "
+                                    "checks silenced, the buggy build runs "
+                                    "this exact input cleanly — the crash does "
+                                    "NOT pre-exist behind the shadow; the "
+                                    "patch introduced it here.")
+                            else:
+                                attribution_notes[id(r)] += (
+                                    " Muted re-replay: the buggy build did not "
+                                    "crash on this exact input, but execution "
+                                    "there was diverted (or possibly diverted "
+                                    "— it could not be determined) by an "
+                                    "exception the harness's own "
+                                    "`catch (...) { return; }` swallowed, so "
+                                    "the run may never have REACHED this crash "
+                                    "site. No attribution either way; do NOT "
+                                    "read the quiet run as evidence the patch "
+                                    "introduced the crash.")
                         # error / mute_failed: leave SHADOWED unchanged.
                     except Exception as _mexc:
                         print(f"  [muted-replay] unavailable ({_mexc}) — "
@@ -2208,15 +2227,27 @@ def main():
                         if _m_esc:
                             _esc_type = _m_esc.group(1).rsplit('.', 1)[-1]
                     _breplay_ids, _breplay_out = None, ''
+                    # Cycle-6: _breplay_diverted is True/False/None — whether
+                    # one of the harness's OWN `catch (...) { return; }`
+                    # swallows fired on this input, i.e. whether the buggy run
+                    # even reached the check. Without it a swallowed exception
+                    # reads as "ran clean" and manufactures the
+                    # patch-INTRODUCED-it claim against a correct patch
+                    # (night20b Chart-26). None = unknown, which the note
+                    # builders treat as conservatively as an errored replay.
+                    _breplay_diverted = None
                     if ((_fired_ids or _esc_type)
                             and getattr(r, 'artifact_path', None)):
                         if buggy_cp is None:
                             buggy_cp = builder.test_classpath(
                                 selection.buggy_dir)
                         (_breplay_ids,
-                         _breplay_out) = fr.replay_input_report(
+                         _breplay_out,
+                         _breplay_diverted) = fr.replay_input_report(
                             r.harness_path, r.class_name, buggy_cp,
-                            r.artifact_path)
+                            r.artifact_path,
+                            builder=builder,
+                            buggy_dir=selection.buggy_dir)
                     from java.execution.fuzz_runner import (
                         exception_types_in_output as _etio)
                     _bt_all = (_etio(_breplay_out)
@@ -2354,7 +2385,8 @@ def main():
                             _bt_all, _bt_defect, _esc_type, _idline,
                             value_verdict=_value_verdict,
                             buggy_msg_excerpt=_buggy_excerpt,
-                            patched_msg_excerpt=_patched_excerpt)
+                            patched_msg_excerpt=_patched_excerpt,
+                            diverted=_breplay_diverted)
                         if _fired_ids:
                             print(f"      [buggy-replay] fact attached "
                                   f"(same-check={bool(_fired_ids & (_breplay_ids or set()))}, "
@@ -2471,7 +2503,8 @@ def main():
                             and not _bt_defect)
                         if _shadowed:
                             try:
-                                (_ms, _mf, _mo) = fr.replay_input_muted(
+                                (_ms, _mf, _mo,
+                                 _mdiv) = fr.replay_input_muted(
                                     r.harness_path, r.class_name, buggy_cp,
                                     r.artifact_path, mute_ids=_breplay_ids,
                                     builder=builder,
@@ -2480,7 +2513,8 @@ def main():
                                     exception_types_in_output as _etio2)
                                 _mbt = _etio2(_mo) if _mo else set()
                                 print(f"      [muted-replay] status={_ms} "
-                                      f"fired={sorted(_mf or set())}")
+                                      f"fired={sorted(_mf or set())} "
+                                      f"diverted={_mdiv}")
                                 from java.relations.evidence_facts import (
                                     muted_replay_note as _mrn)
                                 # Spec I: compare the target check's observed
@@ -2509,7 +2543,8 @@ def main():
                                               _mf, _esc_type, _mbt,
                                               value_verdict=_mvv,
                                               buggy_msg_excerpt=_mbe,
-                                              patched_msg_excerpt=_mpe)
+                                              patched_msg_excerpt=_mpe,
+                                              diverted=_mdiv)
                                 if _mnote:
                                     _breplay_note = (
                                         (_breplay_note or '') + " " + _mnote)

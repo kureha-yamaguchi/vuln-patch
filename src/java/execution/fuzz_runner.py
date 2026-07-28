@@ -1307,26 +1307,109 @@ class FuzzRunner:
             timeout_seconds)
         return sig, cause
 
+    def _build_diversion_variant(self,
+                                 source: str,
+                                 builder,
+                                 project_dir: str,
+                                 src_path: str,
+                                 subdir_leaf: str):
+        """Compile a DIVERSION-INSTRUMENTED copy of `source` (see
+        `oracle_mute.instrument_diversion`) under `<project_dir>/fuzz/...`.
+
+        Returns the BuildResult, or None when the transform does not apply or
+        the variant does not compile. Every failure path returns None so the
+        caller degrades to "diversion unknown" — never to "ran clean"."""
+        if builder is None or project_dir is None or not source:
+            return None
+        try:
+            from java.execution.oracle_mute import instrument_diversion
+            instrumented = instrument_diversion(source)
+        except Exception as exc:
+            print(f"  (diversion transform raised: {exc})")
+            return None
+        if not instrumented:
+            return None
+        harness_dir = os.path.dirname(os.path.abspath(src_path))
+        fuzz_root = os.path.join(os.path.abspath(project_dir), 'fuzz')
+        rel = os.path.relpath(harness_dir, fuzz_root)
+        if rel.startswith('..') or os.path.isabs(rel):
+            rel = os.path.basename(os.path.normpath(harness_dir)) or 'harness'
+        try:
+            build_result = builder.build(instrumented, project_dir,
+                                         os.path.join(rel, subdir_leaf))
+        except Exception as exc:
+            print(f"  (diversion variant build raised: {exc})")
+            return None
+        if not build_result.compiled:
+            return None
+        return build_result
+
     def replay_input_report(self,
                             harness_path: str,
                             class_name: str,
                             project_cp: str,
                             input_file: str,
-                            timeout_seconds: int = 30
-                            ) -> Tuple[Optional[set], str]:
+                            timeout_seconds: int = 30,
+                            builder=None,
+                            buggy_dir: str = None
+                            ) -> Tuple[Optional[set], str, Optional[bool]]:
         """Replay ONE persisted input and return (fired_oracle_ids,
-        full_output). ids None = the replay itself ERRORED (caller must
-        ABSTAIN — never a substitute for 'ran clean'); empty set = ran
+        full_output, diverted). ids None = the replay itself ERRORED (caller
+        must ABSTAIN — never a substitute for 'ran clean'); empty set = ran
         clean. The full output is returned so the caller can look for
         exception types anywhere in the run's crash reports
         (exception_types_in_output) — the headline signature alone
         misses a defect exception the harness fences and rethrows under
-        its own alarm type."""
+        its own alarm type.
+
+        `diverted` (cycle-6) answers the question a bare replay cannot: did
+        execution actually REACH the checks, or did one of the harness's own
+        `catch (...) { return; }` swallows fire and return early?
+
+          * True  — a swallow-return catch fired on this input, so anything
+            BELOW it was never evaluated. "No oracle fired" means nothing.
+          * False — no swallow fired; the run really did reach the checks.
+          * None  — unknown (no `builder`/`buggy_dir` given, the harness could
+            not be instrumented, the variant did not compile, or the stats
+            line never appeared). Callers must treat None as unknown and must
+            NOT emit the "ran clean, so the patch introduced it" claim.
+
+        When `builder` and `buggy_dir` are supplied the instrumented variant is
+        what actually runs (it is behaviourally identical bar the counters), so
+        the diversion fact costs one extra javac and no extra Jazzer run. Any
+        failure falls back to replaying the ORIGINAL harness with
+        diverted=None — never worse than before."""
+        from java.execution.oracle_mute import parse_skipped
+
+        run_class, run_dir = class_name, os.path.dirname(harness_path)
+        instrumented = False
+        if builder is not None and buggy_dir is not None:
+            src_path = harness_path
+            if os.path.isdir(harness_path):
+                javas = glob.glob(os.path.join(harness_path, '*.java'))
+                src_path = javas[0] if javas else None
+            source = None
+            if src_path:
+                try:
+                    with open(src_path, encoding='utf-8',
+                              errors='replace') as fh:
+                        source = fh.read()
+                except OSError as exc:
+                    print(f"  (diversion probe: could not read harness "
+                          f"source: {exc})")
+            if source:
+                br = self._build_diversion_variant(
+                    source, builder, buggy_dir, src_path, 'diverted_0')
+                if br is not None:
+                    run_class = br.class_name
+                    run_dir = os.path.dirname(br.harness_path)
+                    instrumented = True
+
         try:
             outcome = run_jazzer(
                 jazzer_standalone_jar=self.jazzer_standalone_jar,
-                target_class=class_name,
-                harness_dir=os.path.dirname(harness_path),
+                target_class=run_class,
+                harness_dir=run_dir,
                 project_cp=project_cp,
                 timeout_seconds=timeout_seconds,
                 expected_exceptions=self.expected_exceptions,
@@ -1335,12 +1418,17 @@ class FuzzRunner:
             )
         except Exception as exc:
             print(f"  (single-input replay failed: {exc})")
-            return None, ''
+            return None, '', None
         out = outcome.combined_output
+        diverted = None
+        if instrumented:
+            skipped = parse_skipped(out)
+            if skipped is not None:
+                diverted = skipped > 0
         if not outcome.triggered:
-            return set(), out
+            return set(), out, diverted
         from java.parsing.java_source import oracle_ids_in_text
-        return oracle_ids_in_text(out), out
+        return oracle_ids_in_text(out), out, diverted
 
     def replay_input_muted(self,
                            harness_path: str,
@@ -1352,9 +1440,9 @@ class FuzzRunner:
                            builder=None,
                            buggy_dir: str = None,
                            timeout_seconds: int = 30
-                           ) -> Tuple[str, Optional[set], str]:
+                           ) -> Tuple[str, Optional[set], str, Optional[bool]]:
         """Replay ONE input against a MUTED build of the harness and report
-        `(status, fired_ids, output)`.
+        `(status, fired_ids, output, diverted)`.
 
         Silencing the harness's shadowing alarm throws (`oracle_mute`) and
         re-replaying the SAME input computes the per-input fact a raw replay
@@ -1377,15 +1465,27 @@ class FuzzRunner:
             `fired_ids` None; the caller keeps its pre-existing
             UNKNOWN/SHADOWED fact unchanged — never worse than today.
 
+        `diverted` (cycle-6) is True/False/None exactly as in
+        `replay_input_report`: True when one of the harness's own
+        `catch (...) { return; }` swallows fired on this input (so execution
+        never reached the checks below it and a quiet run proves nothing),
+        False when none did, None when unknown. The diversion counters are
+        folded into the SAME muted variant, so the fact is free; if the
+        combined transform fails to compile, the plain muted variant is built
+        instead and `diverted` degrades to None — the muted replay itself is
+        never lost.
+
         `builder` must be a HarnessBuilder; the muted variant is compiled
         against `buggy_dir` (the project dir the caller wants — the buggy
         build for a shadowed-fact check) via `builder.build`, which writes
         under `<buggy_dir>/fuzz/<subdir>`. `output` is Jazzer's combined
         stdout+stderr (empty when compile/setup failed)."""
         if builder is None or buggy_dir is None:
-            return "mute_failed", None, ''
+            return "mute_failed", None, '', None
 
-        from java.execution.oracle_mute import mute_oracles
+        from java.execution.oracle_mute import (mute_oracles,
+                                                instrument_diversion,
+                                                parse_skipped)
 
         # harness_path is the .java in the run.py flow (BuildResult.harness_path);
         # tolerate a directory too and pick the harness .java inside it.
@@ -1393,14 +1493,14 @@ class FuzzRunner:
         if os.path.isdir(harness_path):
             javas = [p for p in glob.glob(os.path.join(harness_path, '*.java'))]
             if not javas:
-                return "mute_failed", None, ''
+                return "mute_failed", None, '', None
             src_path = javas[0]
         try:
             with open(src_path, encoding='utf-8', errors='replace') as fh:
                 source = fh.read()
         except OSError as exc:
             print(f"  (muted replay: could not read harness source: {exc})")
-            return "mute_failed", None, ''
+            return "mute_failed", None, '', None
 
         muted_source = mute_oracles(source, mute_ids=mute_ids,
                                     mute_all=mute_all)
@@ -1416,16 +1516,40 @@ class FuzzRunner:
             rel = os.path.basename(os.path.normpath(harness_dir)) or 'harness'
         output_subdir = os.path.join(rel, 'muted_0')
 
+        # Cycle-6: fold the diversion counters into the SAME variant so the
+        # swallow fact costs nothing extra. Strictly fail-open — if the
+        # combined source does not compile we fall back to the plain muted
+        # variant and report diversion as unknown, so this can never cost us
+        # the muted replay itself.
+        build_result = None
+        instrumented = False
         try:
-            build_result = builder.build(muted_source, buggy_dir,
-                                         output_subdir)
+            combined = instrument_diversion(muted_source)
         except Exception as exc:
-            print(f"  (muted variant build raised: {exc})")
-            return "mute_failed", None, ''
-        if not build_result.compiled:
-            # Expected sometimes: silencing a guaranteed throw can break
-            # definite-return analysis. Caller keeps its cycle-1 fact.
-            return "mute_failed", None, ''
+            print(f"  (diversion transform raised: {exc})")
+            combined = None
+        if combined:
+            try:
+                _br = builder.build(combined, buggy_dir,
+                                    os.path.join(rel, 'muted_div_0'))
+            except Exception as exc:
+                print(f"  (muted+diversion variant build raised: {exc})")
+                _br = None
+            if _br is not None and _br.compiled:
+                build_result = _br
+                instrumented = True
+
+        if build_result is None:
+            try:
+                build_result = builder.build(muted_source, buggy_dir,
+                                             output_subdir)
+            except Exception as exc:
+                print(f"  (muted variant build raised: {exc})")
+                return "mute_failed", None, '', None
+            if not build_result.compiled:
+                # Expected sometimes: silencing a guaranteed throw can break
+                # definite-return analysis. Caller keeps its cycle-1 fact.
+                return "mute_failed", None, '', None
 
         try:
             outcome = run_jazzer(
@@ -1440,15 +1564,20 @@ class FuzzRunner:
             )
         except Exception as exc:
             print(f"  (muted single-input replay failed: {exc})")
-            return "error", None, ''
+            return "error", None, '', None
 
         out = outcome.combined_output
+        diverted = None
+        if instrumented:
+            skipped = parse_skipped(out)
+            if skipped is not None:
+                diverted = skipped > 0
         if outcome.triggered:
             from java.parsing.java_source import oracle_ids_in_text
-            return "crashed", oracle_ids_in_text(out), out
+            return "crashed", oracle_ids_in_text(out), out, diverted
         if outcome.timed_out or outcome.returncode != 0:
-            return "error", None, out
-        return "clean", set(), out
+            return "error", None, out, diverted
+        return "clean", set(), out, diverted
 
 
 def _print_fuzz_result(r: FuzzRunResult) -> None:

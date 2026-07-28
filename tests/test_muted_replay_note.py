@@ -73,6 +73,12 @@ def test_target_fires_default_verdict_makes_no_identical_claim():
 
 
 def test_target_quiet_clean_says_without_firing_introduced():
+    # Cycle-6: the existence-proof claim now requires the mechanical fact that
+    # execution was NOT diverted (no swallow-return catch fired), i.e.
+    # diverted=False. Without it a swallowed exception that returned early
+    # reads as "ran clean" — the night20b Chart-26 false fact. The legitimate
+    # non-diverted case, pinned here, keeps its wording verbatim; the
+    # True/None branches are covered in tests/test_diverted_replay.py.
     note = evidence_facts.muted_replay_note(
         target_ids=_TARGET,
         muted_ids=_SHADOW,
@@ -80,6 +86,7 @@ def test_target_quiet_clean_says_without_firing_introduced():
         fired_ids=set(),
         esc_type=None,
         bt_all=[],
+        diverted=False,
     )
     assert note is not None
     low = note.lower()
