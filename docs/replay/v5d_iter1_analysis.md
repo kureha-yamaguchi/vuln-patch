@@ -88,3 +88,34 @@ fidelity fix (reconstructed fd_prior) → targeted re-rolls of the ~32 disputed 
 (majority-of-3 per disputed row, ~⅓ the cost of a blanket repeats=2) → one change-set with
 the 5B semantics completion + rate-based 5C extension → subset re-run = iteration 2.
 Nothing with the new judge runs on the VM pipeline until the gate passes.
+
+---
+
+## CORRECTION (2026-07-28): the fd_prior artifact hypothesis was WRONG
+
+The fidelity investigation (commit 808ead5) reconstructed `fd_prior` from the original runs and
+found **zero of the 6 rows were an fd_prior artifact**. Section (1) above is superseded:
+- rows 99, 138 are relation-replay firings, where production itself passes `fd_prior=None`;
+- rows 32, 89 carry "observed values were not compared, so no identical-value claim is made";
+- rows 33, 94 carry "the SAME check fires on BOTH builds but with DIFFERENT observed values …
+  the partial-fix pattern; this firing remains evidence against the patch".
+So the J-ladder never armed for any of them — `_value_verdict` was never `"identical"`.
+
+**The real cause — a live PRODUCTION bug, not a replay bug.** `_TERMINAL_IDENTICAL_MARKERS`
+contained the bare substring `'on both builds'` (and `'same check fires on both'`), which
+matches both note families above — including the partial-fix note whose own text says the
+firing **convicts** the patch. The 5C terminal gate therefore voided keeps on catches whose
+evidence was evidence *against* the patch. Fixed by a deny-first veto
+(`_TERMINAL_IDENTICAL_VETO`) plus tightened affirmative markers; regression test
+`tests/test_terminal_marker_veto.py`. The measured fires-on-both RATE path is unaffected by
+the veto (a denial of the textual claim must not suppress an independent measurement).
+
+Process note: the fd_prior hypothesis was stated in chat with confidence before the
+reconstruction existed, and the committed decomposition inherited it. Both the earlier verbal
+"3 artifact rows" (scorer said 6) and this hypothesis were corrected only because the artifact
+and the reconstruction were committed and re-checked. Interpretation ahead of evidence, twice.
+
+**Iteration-2 expectation, restated honestly:** the over-kill fix is the marker veto (not
+fd_prior); genuine over-kill to watch is Closure-38 rows 21/80 (targeted by the 5B completion)
+and the Lang-60 rows 136/197/200 (single-draw, re-roll to separate noise). Leak side is
+targeted by the rate-based 5C extension.

@@ -1158,11 +1158,28 @@ def verdict_needs_citation(evidence_profile, why):
 # ---------------------------------------------------------------------------
 
 _TERMINAL_IDENTICAL_MARKERS = (
-    'on both builds',
     'identical on both',
-    'same check fires on both',
+    'with the same observed values',
     'fires-on-buggy',
     'buggy-scan fact',
+)
+
+# A note may SAY "on both builds" while explicitly DENYING the identical-value
+# claim — the 5C-cycle notes have two such forms, and both are the opposite of
+# terminal:
+#   * the partial-fix note ("DIFFERENT observed values … this firing remains
+#     evidence AGAINST the patch") — a CONVICTION, not a dismissal;
+#   * the unknown note ("observed values were not compared, so no
+#     identical-value claim is made") — no fact either way.
+# The old bare 'on both builds' / 'same check fires on both' markers matched
+# both, so the terminal gate dropped catches whose own evidence convicted the
+# patch (fixture rows 32/33/89/94, iteration 1). Deny-first, then affirm.
+_TERMINAL_IDENTICAL_VETO = (
+    'different observed values',
+    'no identical-value claim',
+    'were not compared',
+    'partial-fix pattern',
+    'remains evidence against the patch',
 )
 
 # --- 5D: the MEASURED fires-on-both profile --------------------------------
@@ -1261,7 +1278,11 @@ def terminal_profile(text):
     if not text:
         return None
     low = str(text).lower()
-    if any(m in low for m in _TERMINAL_IDENTICAL_MARKERS):
+    # Deny first: a note that explicitly refuses the identical-value claim (or
+    # asserts the opposite — the partial-fix conviction) is never terminal on
+    # the textual path, whatever other phrasing it contains.
+    denied = any(v in low for v in _TERMINAL_IDENTICAL_VETO)
+    if not denied and any(m in low for m in _TERMINAL_IDENTICAL_MARKERS):
         return 'identical-on-both'
     if carries_terminal_fire_rate_fact(text):
         return 'fires-on-both-rate'
