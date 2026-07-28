@@ -259,3 +259,64 @@ Two qualifications:
 - **Zero teeth where it was aimed.** Chart-19 — the class the lint was written for — produced no
   demotion at all. The Chart-19 recovery is entirely PART A (the generation directive); PART B (the
   screen-side lint) contributed nothing to it on this roll.
+
+---
+
+## CORRECTIONS to this document (2026-07-28, from the attribution pass)
+
+1. **"One constant-structure check on the same leg was demoted" (Chart-19) — WRONG.** Chart-19
+   had **zero** demotions. My grep counted the phrase "structural blind spot" appearing in the
+   DIRECTIVE'S OWN PROMPT TEXT (the directive ends "...is reported as a structural blind spot"),
+   not a lint event. Verified: the single hit in that trace is inside the injected instruction
+   block. Chart-19's recovery is entirely the generation directive (PART A); the lint contributed
+   nothing there — on the very class it was written for.
+2. **The Chart-19 catch also REQUIRED the rate-5C revert.** Its convicting relation carries
+   `[fire-rate fact] buggy build 20000/20000 = 100%`, above INTRINSIC_FIRE_RATIO (0.95) — the
+   reverted rate path would have dropped it. So the revert is load-bearing for the campaign's
+   headline recall gain, not merely a neutral rollback.
+3. **The same revert also cost a false accusation.** Math-73-Arja_c's `endpoint-min-return` FP
+   carries `buggy 999/1000 = 100% … intrinsic to the check/setup construction` — delivered, and
+   ignored by the judge. The reverted path would have dropped it. One revert bought Chart-19 and
+   paid for Math-73-c; that is the honest ledger of that decision, and it argues the rate signal
+   is real but belongs in a **mechanical** drop with a family-duty escape, not in the judge's
+   discretion.
+
+## NEW BUG found by the attribution pass (Chart-26) — a false fact, dangerous direction
+
+Chart-26's FP evidence carries this delivered fact:
+
+> "the buggy build runs this exact input WITHOUT firing this check — the patch introduced the
+> violation here"
+
+**It is false.** The buggy build *threw inside `axis.draw`* and the exception was swallowed by the
+harness's `catch (Exception e) { return; }`. The muted-replay cannot distinguish "the check did
+not fire" from "execution never reached the check because it was skipped" — so it reported a
+skip as a clean run and manufactured evidence AGAINST a correct patch.
+
+This is the same failure shape as the cycle-2 Closure-70 inverted replay fact (a shadowed replay
+read as exculpatory), in a new place, and it fails in the dangerous direction. It belongs at the
+top of cycle 6 alongside delivery.
+
+## Lint assessment (its first live run)
+
+7 demotions across 4 of 20 legs, 226 screened relations (~3%) — not over-aggressive, no leg fully
+demoted. But two real qualifications: **4 of 7 fired on `BrentSolver`/`SinFunction`**, which are
+not containers at all (the receiver-state detector is too broad outside collection-like types),
+and it produced **zero** demotions on Chart-19. On this evidence the lint is currently
+decorative: it has not yet been shown to change any outcome, and it mis-targets more often than
+it targets. Keep (it is fail-soft and cheap) but do not credit it, and narrow the detector.
+
+## Revised attribution of the recall gain
+
+- **Chart-19 — ATTRIBUTED** to structure-from-data + the rate revert. The full chain closes:
+  item-4 proved constants made the discriminating state unreachable; the directive made install
+  indices fuzz-derived (`consumeInt(1,4)`); all four patched firings occurred on the populated
+  (sparse) receiver; night20's literal-index version was dense and missed everything.
+- **Lang-63 — ATTRIBUTED** to the directive's fresh-vs-mutated clause: the receiver is now built
+  clone-and-mutate from fuzz deltas, whereas night20 set fields absolutely and the judge
+  dismissed it via a day-borrow counterexample that absolute setting admits.
+- **Closure-92 — SYNTHESIS LUCK, not credited.** Its convicting check hard-codes
+  `repeat('a',45)`/`repeat('b',46)`, i.e. cosmetic label fuzzing — the opposite of the directive
+  — and its citation was equally available in the prior roll.
+
+So of the three never-before-caught legs, **two are mechanism-attributed and one is luck.**
