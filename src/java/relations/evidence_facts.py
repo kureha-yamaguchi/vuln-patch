@@ -1265,8 +1265,17 @@ def citation_line_status(why_or_raw):
         return ('missing', None)
     if rest.upper().startswith('NONE'):
         return ('none', None)
-    q = _DQUOTED_RE.search(rest)
-    body = (q.group(1) if q else rest).strip().strip(_QUOTE_CHARS).strip()
+    # Strip the OUTERMOST quote pair, never the first inner one. Citations are
+    # usually source lines and source lines contain quotes
+    # (`assertEquals("x-0", print(n));`); taking the first "..." span truncated
+    # them at the inner quote, so a legitimate grounded citation read as
+    # ungrounded and VOIDED a sound dismissal (over-keeping).
+    body = rest
+    if len(body) >= 2 and body[0] in _QUOTE_CHARS and body[-1] in _QUOTE_CHARS:
+        body = body[1:-1]
+    # A model that escapes the inner quotes ("assertEquals(\"x-0\"…") must
+    # still match the raw source text.
+    body = body.replace('\\"', '"').replace("\\'", "'").strip()
     if not body or _PLACEHOLDER_RE.match(body):
         return ('missing', None)
     return ('quoted', body)

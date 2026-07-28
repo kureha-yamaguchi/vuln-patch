@@ -390,3 +390,35 @@ def test_note_builders_stamp_the_fact_tag(build, verdict, tag, expected):
     note = build(verdict)
     assert tag in fact_tags(note)
     assert terminal_profile(note) == expected
+
+
+# --- regression: citations containing quotes ------------------------------
+# Citations are usually SOURCE LINES, and source lines contain quotes
+# (`assertEquals("x-0", print(n));`). Taking the FIRST "..." span truncated
+# them at the inner quote, so a legitimate grounded citation read as
+# ungrounded and VOIDED a sound dismissal (over-keeping).
+_CTX_WITH_QUOTES = (
+    'public String toSource(){} assertEquals("x-0", print(n)); '
+    'if (la != lb) throw new AssertionError();'
+)
+
+
+def test_citation_with_inner_quotes_is_parsed_whole_and_grounds():
+    from java.relations.evidence_facts import (parse_citation_line,
+                                               citation_is_grounded)
+    for raw in (
+        'CITATION: "assertEquals("x-0", print(n));"',        # raw inner quotes
+        'CITATION: "assertEquals(\\"x-0\\", print(n));"',    # escaped inner
+        'CITATION: assertEquals("x-0", print(n));',          # no outer quotes
+    ):
+        cite = parse_citation_line(raw)
+        assert cite == 'assertEquals("x-0", print(n));', raw
+        assert citation_is_grounded(cite, _CTX_WITH_QUOTES) is True, raw
+
+
+def test_simple_quoted_citation_unaffected():
+    from java.relations.evidence_facts import (parse_citation_line,
+                                               citation_is_grounded)
+    cite = parse_citation_line('CITATION: "if (la != lb) throw"')
+    assert cite == 'if (la != lb) throw'
+    assert citation_is_grounded(cite, _CTX_WITH_QUOTES) is True
