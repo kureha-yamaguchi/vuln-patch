@@ -1121,6 +1121,31 @@ _CITATION_MARKERS = (
 # rounding/tolerance citation: the dismissal is pointing at a measured floor.
 _TOLERANCE_MAGNITUDE_RE = re.compile(r'\d(?:\.\d+)?\s*[eE]-\d+')
 
+# NEGATED citations are the opposite of a citation. Iteration 2 (2026-07-28)
+# found 5B never firing on its own targets because the bare-substring matcher
+# above counted these as citations:
+#   * "an UNdocumented exact-printing contract"  -> 'document' matched INSIDE
+#     the negating prefix;
+#   * "is NOT CONTRADICTED BY ANY shown contract or trusted test" -> a
+#     statement that NO citation exists, matched as 'contract' + 'trusted';
+#   * "the trusted test ONLY REQUIRES x, NOT y" -> the trusted source is being
+#     cited AGAINST the check.
+# Same failure shape as the 5C terminal-marker bug: a substring read in the
+# opposite sense. Strip these spans BEFORE looking for citation markers.
+# Each alternative consumes the negating phrase AND the citation noun it
+# governs, bounded to the clause (stops at , . ;) so it cannot swallow a
+# genuine citation in a later clause.
+_NEGATED_CITATION_RE = re.compile(
+    r'\bundocumented\b[^,.;]{0,60}'
+    r'|\b(?:is\s+)?not\s+(?:contradicted|supported|pinned|required|documented'
+    r'|specified)\b[^,.;]{0,80}'
+    r'|\bno\s+(?:shown\s+)?(?:contract|documentation|javadoc|trusted|spec)'
+    r'\w*[^,.;]{0,60}'
+    r'|\b(?:trusted\s+test|contract|javadoc|documentation|spec)\w*\s+only\s+'
+    r'(?:requires|pins|covers|guarantees)\b[^,.;]{0,80}'
+    r'|\bdoes\s+not\s+(?:document|specify|pin|require)\w*[^,.;]{0,60}',
+    re.I)
+
 
 def verdict_needs_citation(evidence_profile, why):
     """Cycle-5B(ii) predicate: under the drift-kill signature {buggy silent +
@@ -1145,8 +1170,11 @@ def verdict_needs_citation(evidence_profile, why):
         return False
     low = str(why).lower()
     has_hedge = any(h in low for h in _HEDGE_MARKERS)
-    has_citation = (any(c in low for c in _CITATION_MARKERS)
-                    or _TOLERANCE_MAGNITUDE_RE.search(low) is not None)
+    # Blank out NEGATED-citation spans first, so "undocumented" / "not
+    # contradicted by any shown contract" cannot be read as citations.
+    cite_text = _NEGATED_CITATION_RE.sub(' ', low)
+    has_citation = (any(c in cite_text for c in _CITATION_MARKERS)
+                    or _TOLERANCE_MAGNITUDE_RE.search(cite_text) is not None)
     return has_hedge and not has_citation
 
 

@@ -66,3 +66,56 @@ def test_veto_does_not_block_the_rate_path():
     blob = PARTIAL_FIX + "\n[fire-rate fact] buggy build 19000/20000 = 95%; " \
                          "patched build 9000/20000 = 45% of random valid inputs."
     assert terminal_profile(blob) == 'fires-on-both-rate'
+
+
+# --- 5B citation detector: negated citations are not citations -------------
+# Iteration 2 (2026-07-28) found 5B never firing on its own targets: the
+# citation matcher counted 'document' INSIDE "undocumented", and counted
+# "not contradicted by any shown contract or trusted test" as a citation.
+# Same failure shape as the terminal-marker bug above.
+from java.relations.evidence_facts import verdict_needs_citation
+
+_SIG = {'buggy_silent': True, 'deterministic_trigger': True,
+        'patched_firing': True}
+
+ROW21 = (
+    "The fired check asserts an undocumented exact-printing contract for "
+    "`x-0`, but a correct `CodePrinter` could legitimately choose a "
+    "conservative compact form like `x- 0` after binary minus, and the "
+    "trusted test only requires the space for negative zero, not for "
+    "positive zero."
+)
+
+
+def test_undocumented_is_not_a_citation():
+    assert verdict_needs_citation(_SIG, ROW21) is True
+
+
+def test_no_shown_contract_is_not_a_citation():
+    why = ("A correct printer could emit a separator; this is not "
+           "contradicted by any shown contract or trusted test.")
+    assert verdict_needs_citation(_SIG, why) is True
+
+
+def test_genuine_citations_still_stand():
+    # The two signature-complete gold=DISMISS guards must NOT be voided.
+    lang50 = ("check requires la != lb — Locale object identity; "
+              "equal-but-distinct instances legal (real check bug)")
+    math74 = ("fp time-reversibility is only accurate to 8.7e-7 for this "
+              "adaptive method; the check demands bit-exact equality")
+    javadoc = ("the javadoc documents this method may return any value in "
+               "the range, so the check demands more than the contract")
+    for why in (lang50, math74, javadoc):
+        assert verdict_needs_citation(_SIG, why) is False
+
+
+def test_negation_strip_cannot_swallow_a_later_clause():
+    # A negated span is clause-bounded: a genuine citation after the comma
+    # must still register (so the dismissal stands).
+    why = ("this is an undocumented contract, but the javadoc specifies the "
+           "tolerance is 1e-6 and the check demands exact equality")
+    assert verdict_needs_citation(_SIG, why) is False
+
+
+def test_without_the_signature_nothing_is_voided():
+    assert verdict_needs_citation({}, ROW21) is False

@@ -57,3 +57,45 @@ under-tuned"), the correct move is NOT iteration 3 with adjusted thresholds.
    fire rates, the rates must reach the firings' evidence — the same fix shape as one-door.
    That is a separate, evidenced piece of work, and it should be measured on the fixture
    (offline, free) BEFORE any further judge-rule change.
+
+---
+
+## ADDENDUM (2026-07-28): why 5B had "no visible effect" — a third instance of the same bug
+
+Diagnosed offline, no tokens spent. The iteration-2 run recorded **zero** `citation-void` and
+**zero** `5B-INADMISSIBLE` events across all 143 cases, so 5B never fired at all. Chain:
+
+1. **Not a threading gap.** `evidence_profile` IS passed into `adjudicate` (verifier_replay.py
+   line 216), and the drift-kill signature reconstructs on 10 subset rows — including BOTH 5B
+   targets (rows 21 and 80, `sig_full=True`, no missing signals). So unlike the fd_prior case,
+   the rule was properly armed.
+2. **The citation detector accepted negations as citations.** The judge's actual iteration-2
+   dismissals (from `results.jsonl`):
+   - row 21: *"…asserts an **undocumented** exact-printing contract … the **trusted test only
+     requires** the space for negative zero, not for positive zero."*
+   - row 80: *"…is **not contradicted by any** shown contract or trusted test…"*
+   Bare-substring matching counted `'document'` (inside "**un**documented"), `'contract'`, and
+   `'trusted'` as citations — in spans whose plain meaning is that NO citation exists. With
+   `has_citation` true, `verdict_needs_citation` returned False and the re-ask never happened.
+
+**This is the same failure shape as the 5C terminal-marker bug fixed hours earlier**: a bare
+substring matcher reading text that means the opposite. Third instance of the pattern in this
+cycle (one-door delivery, terminal markers, citation markers).
+
+**Fixed:** `_NEGATED_CITATION_RE` strips negated-citation spans (clause-bounded, so a genuine
+citation in a later clause still registers) before citation matching. Regression tests in
+`tests/test_terminal_marker_veto.py`. Verified: row 21 now voids; the three guard shapes
+(Lang-50 `!=` bug, Math-74 tolerance floor, javadoc-cited) all still stand; without the full
+signature nothing is voided. 243 tests green.
+
+**Left UNFIXED deliberately — a judgment call, not a bug.** Row 80 still does not void because
+`'observed'` survives, in *"matches the **observed** patched output pattern"* — the judge saying
+its hypothetical is consistent with what was seen, not citing an authority. Whether `'observed'`
+belongs in `_CITATION_MARKERS` at all is a marker-quality decision with blast radius on other
+rows; I stopped rather than take a third tuning pass at a keyword matcher.
+
+**Standing conclusion unchanged:** the recurring defect is *rules keyed on text/facts that are
+absent, undelivered, or read in the opposite sense*. Keyword-matching the judge's prose to
+decide whether it cited something is inherently fragile — worth a design discussion before more
+patches. The iteration-2 recommendation (revert rate-based 5C; keep the veto; treat the leak
+class as a delivery problem) is unaffected by this addendum and still awaits a decision.
