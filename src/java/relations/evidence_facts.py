@@ -1107,7 +1107,19 @@ _CITATION_MARKERS = (
     ' != ', '!=', ' == ', 'compares', 'impl computes', 'implementation '
     'computes', 'shown impl', 'shown body', 'shown code', 'the source shows',
     'observed', 'formula', 'range', 'per the api', 'per api', 'the api ',
+    # Rounding / tolerance-floor citations (5D). A dismissal that names the
+    # numeric floor it rests on ("only accurate to 1e-6", "fp round-off",
+    # "bit-exact ==") is citing a demonstrable check bug — the check asserts
+    # more precision than the API promises — not hypothesising about what a
+    # correct implementation "could" do.
+    'tolerance', 'accuracy', 'accurate to', 'rounding', 'round-off',
+    'roundoff', 'ulp', 'floating-point', 'floating point', 'fp ',
+    'epsilon', 'precision', 'underflow', 'bit-exact', 'bit exact',
 )
+
+# A quantified magnitude ("8.7e-7", "1E-8", "1e-6") is itself a
+# rounding/tolerance citation: the dismissal is pointing at a measured floor.
+_TOLERANCE_MAGNITUDE_RE = re.compile(r'\d(?:\.\d+)?\s*[eE]-\d+')
 
 
 def verdict_needs_citation(evidence_profile, why):
@@ -1133,7 +1145,8 @@ def verdict_needs_citation(evidence_profile, why):
         return False
     low = str(why).lower()
     has_hedge = any(h in low for h in _HEDGE_MARKERS)
-    has_citation = any(c in low for c in _CITATION_MARKERS)
+    has_citation = (any(c in low for c in _CITATION_MARKERS)
+                    or _TOLERANCE_MAGNITUDE_RE.search(low) is not None)
     return has_hedge and not has_citation
 
 
@@ -1152,14 +1165,114 @@ _TERMINAL_IDENTICAL_MARKERS = (
     'buggy-scan fact',
 )
 
+# --- 5D: the MEASURED fires-on-both profile --------------------------------
+# The textual markers above only catch the byte-comparison form of the fact
+# ("identical on both builds"). The SAME fact can arrive as measured RATES in
+# a "[fire-rate fact]" block: a check that condemns the KNOWN-BROKEN build on a
+# large share of random valid inputs is reporting something PRE-EXISTING, not
+# the patch's defect — terminal for exactly the same reason, with the same
+# family-duty escape.
+#
+# Bars, both derived from the two shipped constants (no new calibration):
+#   * buggy >= INTRINSIC_FIRE_RATIO (0.95) — the module already calls this
+#     "intrinsic to the check/setup construction, not a detection of the
+#     defect"; it stands alone, whether or not the patched side was measured.
+#   * TERMINAL_BOTH_FIRE_RATIO — the buggy-side bar for the two-sided case,
+#     midway between the indiscriminate cap (MAX_FIRE_RATIO) and the intrinsic
+#     ceiling (INTRINSIC_FIRE_RATIO). "Genuinely high": the check must condemn
+#     a clear MAJORITY of random valid inputs on the broken build, not merely
+#     clear the 20% indiscriminate cap — and the patched side must ALSO be at
+#     or above that cap, i.e. it really does fire on BOTH builds.
+# The 5A asymmetric CATCH profile (buggy LOW / patched high) can reach neither
+# bar by construction: its buggy rate is below MAX_FIRE_RATIO, which is below
+# both TERMINAL_BOTH_FIRE_RATIO and INTRINSIC_FIRE_RATIO.
+TERMINAL_BOTH_FIRE_RATIO = (MAX_FIRE_RATIO + INTRINSIC_FIRE_RATIO) / 2.0
+
+_FIRE_RATE_TAG = '[fire-rate fact]'
+_FR_BUGGY_RE = re.compile(r'buggy build\s+(\d+)\s*/\s*(\d+)', re.I)
+_FR_PATCHED_RE = re.compile(r'patched build\s+(\d+)\s*/\s*(\d+)', re.I)
+# A fire-rate block is one sentence-run; bound the window so a later, unrelated
+# "patched build n/m" phrase elsewhere in the evidence cannot be absorbed.
+_FIRE_RATE_WINDOW = 400
+
+
+def parse_fire_rate_facts(text):
+    """Parse every "[fire-rate fact]" block in `text` into (buggy_rate,
+    patched_rate) pairs. Each rate is violated/checked clamped at 1.0 (a
+    multi-case oracle can fire more than once per input — same clamp
+    ``fire_rate_fact`` applies), or None when that side is absent/unmeasured.
+    Returns a list; empty when no block parses. Pure."""
+    out = []
+    if not text:
+        return out
+    s = str(text)
+    low = s.lower()
+    start = low.find(_FIRE_RATE_TAG)
+    while start != -1:
+        block = s[start:start + _FIRE_RATE_WINDOW]
+
+        def _rate(m):
+            if not m:
+                return None
+            violated, checked = int(m.group(1)), int(m.group(2))
+            if checked <= 0:
+                return None
+            return min(1.0, violated / checked)
+
+        out.append((_rate(_FR_BUGGY_RE.search(block)),
+                    _rate(_FR_PATCHED_RE.search(block))))
+        start = low.find(_FIRE_RATE_TAG, start + len(_FIRE_RATE_TAG))
+    return out
+
+
+def fire_rate_is_terminal(buggy_rate, patched_rate):
+    """Cycle-5D: is this MEASURED rate pair the terminal fires-on-both/
+    pre-existing profile? Pure, rate-only — no bug, leg or oracle name is
+    consulted anywhere.
+
+      * buggy >= INTRINSIC_FIRE_RATIO                       -> terminal
+      * buggy >= TERMINAL_BOTH_FIRE_RATIO and patched >= MAX_FIRE_RATIO
+                                                            -> terminal
+      * anything else (notably the 5A asymmetric CATCH profile, buggy LOW /
+        patched high, and any unmeasured buggy side)        -> NOT terminal
+    """
+    if buggy_rate is None:
+        return False
+    if buggy_rate >= INTRINSIC_FIRE_RATIO:
+        return True
+    return (buggy_rate >= TERMINAL_BOTH_FIRE_RATIO
+            and patched_rate is not None
+            and patched_rate >= MAX_FIRE_RATIO)
+
+
+def carries_terminal_fire_rate_fact(text):
+    """Cycle-5D: does the evidence carry a [fire-rate fact] whose MEASURED
+    rates match the terminal fires-on-both / pre-existing profile? Pure."""
+    return any(fire_rate_is_terminal(b, p) for b, p in
+               parse_fire_rate_facts(text))
+
+
+def terminal_profile(text):
+    """Cycle-5C/5D: which terminal profile (if any) the evidence carries.
+
+    Returns ``'identical-on-both'`` (textual byte-comparison fact),
+    ``'fires-on-both-rate'`` (measured high buggy-side fire rate) or None.
+    The textual profile wins when both are present. Pure."""
+    if not text:
+        return None
+    low = str(text).lower()
+    if any(m in low for m in _TERMINAL_IDENTICAL_MARKERS):
+        return 'identical-on-both'
+    if carries_terminal_fire_rate_fact(text):
+        return 'fires-on-both-rate'
+    return None
+
 
 def carries_terminal_identical_fact(text):
-    """Cycle-5C: does the evidence carry a mechanical IDENTICAL-ON-BOTH /
-    fires-on-buggy fact? Pure substring match over the curated marker set."""
-    if not text:
-        return False
-    low = str(text).lower()
-    return any(m in low for m in _TERMINAL_IDENTICAL_MARKERS)
+    """Cycle-5C: does the evidence carry a mechanical terminal fact — the
+    textual IDENTICAL-ON-BOTH / fires-on-buggy marker set, or (5D) a
+    [fire-rate fact] measuring the same thing as rates? Pure."""
+    return terminal_profile(text) is not None
 
 
 # ---------------------------------------------------------------------------
