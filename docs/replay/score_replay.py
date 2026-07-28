@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """Score a verifier_replay summary.md against the fixture's gold labels.
 
-Reproduces the iteration-1 numbers: over-kill (gold=SOUND dropped) and leak
-(gold=UNSOUND kept), plus the IDENT annotation that separates the fd_prior
-gate-fidelity artifact from genuine over-kill.
+Over-kill (gold=SOUND dropped) and leak (gold=UNSOUND kept), split by whether
+the dropped firing carried an identical-on-both fact (the 5C terminal gate's
+trigger).
 
-  python3 runs-archive/replay/score_replay.py <summary.md> [fixture.jsonl]
+Rows in the summary's ``## unresolved-ladder`` section are NOT scored: their
+Spec-J rung could not be reconstructed from the original run's trace, so their
+fd_prior is a guess (see scripts/reconstruct_fd_prior.py). They are counted and
+listed separately.
+
+  python3 docs/replay/score_replay.py <summary.md> [fixture.jsonl]
 """
 import json
 import re
@@ -23,37 +28,43 @@ def main():
         c = json.loads(line)
         by_row[c['provenance'].get('inventory_row')] = c
 
-    rows = []
+    rows, unresolved = [], []
     pat = re.compile(r'\| (\S+) \| (\w+) \| (\d)/1 \| \[[^\]]*row (\d+)\] '
                      r'gold=(\S+) class=(\S+(?: \(\S+\))?) legoutcome=(\w+)')
+    in_unresolved = False
     for line in open(summary):
+        if line.startswith('## unresolved-ladder'):
+            in_unresolved = True
         m = pat.match(line)
         if not m:
             continue
         case, label, kept, row, gold, cls, out = m.groups()
         fx = by_row.get(int(row), {})
         ev = (fx.get('concrete_evidence') or '').lower()
-        rows.append(dict(case=case, label=label, kept=int(kept), row=int(row),
-                         gold=gold, cls=cls, out=out,
-                         ident=any(k in ev for k in IDENT_MARKERS)))
+        rec = dict(case=case, label=label, kept=int(kept), row=int(row),
+                   gold=gold, cls=cls, out=out,
+                   ident=any(k in ev for k in IDENT_MARKERS))
+        (unresolved if in_unresolved else rows).append(rec)
 
     sound = [r for r in rows if r['gold'] == 'SOUND']
     unsound = [r for r in rows if r['gold'] == 'UNSOUND']
     overkill = [r for r in sound if not r['kept']]
     leak = [r for r in unsound if r['kept']]
-    # fd_prior artifact: production's J-ladder keeps IDENT-carrying catches via
-    # the trigger-input exemption (fd_prior=True); replay passes None, so 5C
-    # freshly asks family_duty and drops them. Not a regression — a gate bug.
+    # 5C terminal-gate drops: the firing carried an identical-on-both fact, so
+    # the gate voided the keep unless family-duty said YES. With fd_prior now
+    # reconstructed per case, these are the gate's own decisions, not a replay
+    # fidelity artifact.
     artifact = [r for r in overkill if r['ident']]
     genuine = [r for r in overkill if not r['ident']]
 
     print(f"scored rows: {len(rows)}  (SOUND {len(sound)} / UNSOUND {len(unsound)})")
+    print(f"unresolved-ladder rows (not scored): {len(unresolved)}")
     print(f"over-kill (gold SOUND dropped): {len(overkill)}")
-    print(f"  - fd_prior gate artifact (IDENT-carrying): {len(artifact)}")
-    print(f"  - genuine over-kill:                       {len(genuine)}")
+    print(f"  - 5C terminal-gate drop (IDENT-carrying): {len(artifact)}")
+    print(f"  - genuine over-kill:                     {len(genuine)}")
     print(f"leak (gold UNSOUND kept): {len(leak)}"
           f"  [on correct legs: {sum(1 for r in leak if r['label'] == 'correct')}]")
-    for title, group in (("FD_PRIOR ARTIFACT", artifact),
+    for title, group in (("5C TERMINAL-GATE DROPS", artifact),
                          ("GENUINE OVER-KILL", genuine),
                          ("LEAKS", leak)):
         print(f"\n=== {title} ===")

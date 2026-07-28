@@ -171,6 +171,10 @@ def main():
     # to the conservative False), so the summary records what the replay could
     # not reconstruct from logged evidence text.
     missing_signal_cases = {}
+    # Cases whose Spec-J ladder rung could not be reconstructed from the
+    # original run's trace: fd_prior is a guess there, so they are RUN and
+    # reported but kept OUT of the scored kill/leak totals.
+    unresolved_ladder = set()
     with open(results_path, 'w', encoding='utf-8') as rf:
         for c in cases:
             keeps = 0
@@ -178,6 +182,8 @@ def main():
             ev_profile, missing = reconstruct_evidence_profile(evid)
             if missing:
                 missing_signal_cases[c['id']] = missing
+            if c.get('fd_prior_unresolved'):
+                unresolved_ladder.add(c['id'])
             # Per-guard replay input derivation:
             #  * pinned_source = harness_source — replay has no pinned dict;
             #    passing the raw source string makes dismissal_invokes_pinned
@@ -186,9 +192,15 @@ def main():
             #  * failing_block = the case's failing-test text, else '' (no
             #    dedicated field in the logged cases).
             #  * check_source = harness_source.
-            #  * fd_prior = None — replay cannot know run.py's ladder state, so
-            #    the 5C terminal gate freshly consults family_duty (the correct
-            #    conservative replay behaviour).
+            #  * fd_prior = the value RECONSTRUCTED from the original run's
+            #    trace (scripts/reconstruct_fd_prior.py) — what run.py's Spec-J
+            #    ladder actually handed the 5C gate for this firing. Hard-coding
+            #    None here made the replay STRICTER than production: on a firing
+            #    the ladder had already settled (trigger-input exemption ->
+            #    fd_prior=True) the gate re-asked family_duty and dropped a
+            #    catch the pipeline keeps. Cases whose rung is not recoverable
+            #    carry fd_prior_unresolved and are reported separately instead
+            #    of being scored on a guess.
             failing_block = (c.get('failing_test') or c.get('failing_block')
                              or '')
             for rep in range(args.repeats):
@@ -204,12 +216,14 @@ def main():
                     evidence_profile=ev_profile,
                     failing_block=failing_block,
                     check_source=c['harness_source'],
-                    fd_prior=None,
+                    fd_prior=c.get('fd_prior'),
                 )
                 keeps += bool(ok)
                 rf.write(json.dumps({
                     'id': c['id'], 'repeat': rep, 'kept': bool(ok),
                     'label': c.get('label'), 'reason': why,
+                    'fd_prior': c.get('fd_prior'),
+                    'fd_prior_unresolved': bool(c.get('fd_prior_unresolved')),
                 }) + '\n')
                 rf.flush()
             per_case[c['id']] = (keeps, args.repeats, c.get('label'),
@@ -220,8 +234,12 @@ def main():
     # ---- score --------------------------------------------------------
     # Overfitting patch -> the finding is TRUE -> keeping is correct.
     # Correct patch     -> the finding is FALSE -> dropping is correct.
-    overfit = {k: v for k, v in per_case.items() if v[2] == 'overfitting'}
-    correct = {k: v for k, v in per_case.items() if v[2] == 'correct'}
+    # Cases with an unreconstructable ladder rung are excluded from BOTH
+    # totals: their fd_prior would be a guess, and a guess must not move the
+    # gate number in either direction.
+    scored = {k: v for k, v in per_case.items() if k not in unresolved_ladder}
+    overfit = {k: v for k, v in scored.items() if v[2] == 'overfitting'}
+    correct = {k: v for k, v in scored.items() if v[2] == 'correct'}
     kills = sum(reps - keeps for keeps, reps, _, _ in overfit.values())
     kill_den = sum(reps for _, reps, _, _ in overfit.values())
     leaks = sum(keeps for keeps, reps, _, _ in correct.values())
@@ -232,6 +250,9 @@ def main():
         f"# verifier replay ({out.name})", "",
         f"{len(cases)} cases x {args.repeats} repeats, votes={args.votes},"
         f" model={args.model or 'config-default'}",
+        "",
+        f"scored: {len(scored)} cases "
+        f"({len(unresolved_ladder)} excluded — unresolved ladder, below)",
         "",
         "| case | label | kept | note |",
         "|---|---|---|---|",
@@ -253,6 +274,28 @@ def main():
         f"{tok['calls']} calls)",
         f"By model: {json.dumps(token_usage())}",
     ]
+    # ---- unresolved-ladder bucket (run, reported, NOT scored) ----------
+    lines += [
+        "",
+        f"## unresolved-ladder ({len(unresolved_ladder)} cases, excluded "
+        f"from the rates above)",
+        "",
+        "The original run's trace shows the Spec-J ladder was ARMED for these "
+        "firings (the buggy-replay value comparison returned identical) but "
+        "records no family-duty event, so the rung it took — trigger-input "
+        "exemption (fd_prior=True) or setup-divergence (fd_prior left None) — "
+        "is not recoverable. They are replayed on fd_prior=None and reported "
+        "here rather than scored on a guess.",
+        "",
+    ]
+    if unresolved_ladder:
+        lines.append("| case | label | kept | note |")
+        lines.append("|---|---|---|---|")
+        for cid in unresolved_ladder:
+            keeps, reps, label, note = per_case[cid]
+            lines.append(f"| {cid} | {label} | {keeps}/{reps} | {note} |")
+    else:
+        lines.append("(none)")
     if missing_signal_cases:
         lines += [
             "",

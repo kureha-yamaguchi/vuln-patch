@@ -54,6 +54,35 @@ terminal logic as identical-on-both, measured by rate instead of byte-comparison
 ~15 of 21 leaks in scope mechanically. This makes the fd_prior fidelity fix doubly
 load-bearing.
 
+## Addendum (2026-07-28) — the reconstruction refutes decomposition item (1)
+
+`scripts/reconstruct_fd_prior.py` recovered, per case, what run.py's Spec-J
+ladder actually handed the 5C gate in the original run, from that run's trace.
+The fix shipped (`fd_prior` is now a fixture field and `verifier_replay.py`
+passes it), but the six rows above are **not** fd_prior artifacts:
+
+* **Rows 99, 138** are relation-replay firings. run.py's relation judge site
+  passes `fd_prior=None` itself (that track has no ladder), so the replay's None
+  was already exactly what production does. Row 99's own evidence records
+  "NOT direction-confirmed", so the gate is not skipped there either.
+* **Rows 32, 33, 89, 94** are semantic firings whose recorded buggy-replay note
+  says the values were **not** identical — rows 32/89 "observed values were not
+  compared, so no identical-value claim is made", rows 33/94 "with DIFFERENT
+  observed values ... the partial-fix pattern; this firing remains evidence
+  against the patch". `_value_verdict` was therefore never `"identical"`, the
+  ladder never armed, and production's `fd_prior` for those firings was None.
+
+What actually drops those four is a different bug, present in production too:
+`carries_terminal_identical_fact` matches the bare substring `on both builds`,
+so it fires the 5C terminal gate on notes that explicitly deny an identical-value
+claim — including the DIFFERENT-values note that says the firing still convicts
+the patch. The terminal detector needs the value verdict as a fact, not a
+substring. That, not fd_prior, is the over-kill lead for iteration 2.
+
+Secondary gap of the same family, left unfixed and unmeasured: the replay also
+hard-codes `is_direction_confirmed=False`, while run.py skips 5C entirely for a
+direction-confirmed relation (3 fixture cases, 1 of them IDENT-carrying).
+
 ## Sequence (agreed)
 fidelity fix (reconstructed fd_prior) → targeted re-rolls of the ~32 disputed rows only
 (majority-of-3 per disputed row, ~⅓ the cost of a blanket repeats=2) → one change-set with
