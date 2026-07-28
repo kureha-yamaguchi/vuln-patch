@@ -180,7 +180,8 @@ def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
             # decides which wording is licensed; only "identical" earns the
             # identical-on-both-builds claim the MECHANICAL-FACTS rule binds on.
             if value_verdict == "different":
-                return ("[buggy-replay fact] the SAME check fires on BOTH "
+                return ("[buggy-replay fact] [fact:fires-both-different-values]"
+                        " the SAME check fires on BOTH "
                         "builds but with DIFFERENT observed values (buggy: "
                         + _excerpt(buggy_msg_excerpt) + " vs patched: "
                         + _excerpt(patched_msg_excerpt) + ") — the patch "
@@ -189,7 +190,8 @@ def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
                         "firing remains evidence against the patch."
                         + (idline or ""))
             if value_verdict == "identical":
-                return ("[buggy-replay fact] the exact firing input fires the "
+                return ("[buggy-replay fact] [fact:identical-on-both] the "
+                        "exact firing input fires the "
                         "SAME check on the BUGGY build with the SAME observed "
                         "values — behaviour at this input is identical on "
                         "both builds; the patch did not cause or preserve "
@@ -207,7 +209,8 @@ def semantic_buggy_replay_note(fired_ids, breplay_status, breplay_ids,
             # unknown: no observed value could be compared — state the
             # fires-on-both fact WITHOUT the "identical" over-claim, and keep
             # the bug's-own-family keep/dismiss guidance.
-            return ("[buggy-replay fact] the exact firing input fires the "
+            return ("[buggy-replay fact] [fact:not-compared] the exact firing "
+                    "input fires the "
                     "SAME check on the BUGGY build (observed values were not "
                     "compared, so no identical-value claim is made). The REAL "
                     "failing test was rerun on this patched build and PASSES, "
@@ -801,7 +804,8 @@ def muted_replay_note(target_ids, muted_ids, status, fired_ids,
         # wording; the DEFAULT ("unknown") never over-claims, so an unthreaded
         # call can never assert identical.
         if value_verdict == "different":
-            return ("[muted-replay fact] with the shadowing check(s) "
+            return ("[muted-replay fact] [fact:fires-both-different-values] "
+                    "with the shadowing check(s) "
                     + ids_txt + " silenced, the SAME check fires on BOTH "
                     "builds but with DIFFERENT observed values (buggy: "
                     + _excerpt(buggy_msg_excerpt) + " vs patched: "
@@ -810,7 +814,8 @@ def muted_replay_note(target_ids, muted_ids, status, fired_ids,
                     "value: the partial-fix pattern; this firing remains "
                     "evidence against the patch.")
         if value_verdict == "identical":
-            return ("[muted-replay fact] with the shadowing check(s) "
+            return ("[muted-replay fact] [fact:identical-on-both] with the "
+                    "shadowing check(s) "
                     + ids_txt + " silenced, THIS check fires on the BUGGY "
                     "build at this exact input with the SAME observed values "
                     "— behaviour is identical on both builds; the patch did "
@@ -821,7 +826,8 @@ def muted_replay_note(target_ids, muted_ids, status, fired_ids,
                     "patch-failed-to-fix pattern (the violated property is "
                     "the failing test's own observable, beyond the test's "
                     "own inputs).")
-        return ("[muted-replay fact] with the shadowing check(s) " + ids_txt
+        return ("[muted-replay fact] [fact:not-compared] with the shadowing "
+                "check(s) " + ids_txt
                 + " silenced, THIS check fires on the BUGGY build at this "
                 "exact input — the same check fires on both builds (observed "
                 "values were not compared, so no identical-value claim is "
@@ -1147,6 +1153,21 @@ _NEGATED_CITATION_RE = re.compile(
     re.I)
 
 
+def has_drift_kill_signature(evidence_profile):
+    """The 5B drift-kill signature: {buggy silent + deterministic trigger
+    firing + patched firing}. `evidence_profile` is a mapping/object exposing
+    booleans `buggy_silent`, `deterministic_trigger`, `patched_firing`
+    (missing => False). Pure."""
+
+    def _b(k):
+        if isinstance(evidence_profile, dict):
+            return bool(evidence_profile.get(k))
+        return bool(getattr(evidence_profile, k, False))
+
+    return (_b('buggy_silent') and _b('deterministic_trigger')
+            and _b('patched_firing'))
+
+
 def verdict_needs_citation(evidence_profile, why):
     """Cycle-5B(ii) predicate: under the drift-kill signature {buggy silent +
     deterministic trigger firing + patched firing}, a UNSOUND verdict must
@@ -1154,19 +1175,16 @@ def verdict_needs_citation(evidence_profile, why):
     implementation could..." hypothetical is INADMISSIBLE. Returns True when
     the verdict is VOID (a hedge with no citation, under the signature).
 
-    `evidence_profile` is a mapping/object exposing booleans `buggy_silent`,
-    `deterministic_trigger`, `patched_firing` (missing => False). Pure."""
+    KEYWORD PATH — SUPERSEDED. Cycle-5 iteration 3 replaced this prose matcher
+    with the STRUCTURAL check (`citation_void_decision`: the judge must emit a
+    verbatim CITATION line, and we verify it literally against the material it
+    was shown). This function survives as the FALLBACK for the one case the
+    structural check cannot decide — a missing/garbled CITATION line, i.e.
+    answer-format noncompliance — and for callers that predate the format.
+    Pure."""
     if not why:
         return False
-
-    def _b(k):
-        if isinstance(evidence_profile, dict):
-            return bool(evidence_profile.get(k))
-        return bool(getattr(evidence_profile, k, False))
-
-    signature = (_b('buggy_silent') and _b('deterministic_trigger')
-                 and _b('patched_firing'))
-    if not signature:
+    if not has_drift_kill_signature(evidence_profile):
         return False
     low = str(why).lower()
     has_hedge = any(h in low for h in _HEDGE_MARKERS)
@@ -1176,6 +1194,155 @@ def verdict_needs_citation(evidence_profile, why):
     has_citation = (any(c in cite_text for c in _CITATION_MARKERS)
                     or _TOLERANCE_MAGNITUDE_RE.search(cite_text) is not None)
     return has_hedge and not has_citation
+
+
+# ---------------------------------------------------------------------------
+# Cycle-5 iteration 3, PART A — STRUCTURAL citations: demand the quote, not
+# the vibe.
+#
+# Keyword-matching the judge's prose to decide whether it CITED something has
+# now failed three times in this cycle (the one-door delivery gap, the 5C
+# terminal markers matching notes that DENY the identical claim, and the 5B
+# markers matching 'document' inside "UNdocumented" and "not contradicted by
+# any shown contract"). Substrings cannot do semantics.
+#
+# The replacement asks the judge for a THIRD answer line —
+#     CITATION: "<verbatim quote from the shown material>"  |  NONE
+# — and then checks it MECHANICALLY: normalise (lowercase, collapse
+# whitespace) and test literal containment in the material the judge was
+# actually shown. No interpretation is involved: either those characters were
+# on the page or they were not.
+# ---------------------------------------------------------------------------
+
+# Line-bounded so a quote that runs past the end of the line is truncated
+# rather than swallowing the rest of the answer (a truncated prefix of a real
+# quote is still a literal substring of the context, so truncation is safe).
+_CITATION_LINE_RE = re.compile(r'^[^\S\n]*CITATION[^\S\n]*:(.*)$', re.I | re.M)
+# Straight and typographic double quotes only — single quotes are ambiguous
+# with apostrophes ("the object's field") and would mis-slice a real citation.
+_DQUOTED_RE = re.compile(r'["“]([^"”]+)["”]')
+_QUOTE_CHARS = '"“”‘’\'` '
+# A left-over answer-format placeholder is not a citation.
+_PLACEHOLDER_RE = re.compile(r'^<.*>$|^\.+$|^n/?a$', re.I)
+
+
+def _cite_norm(s):
+    """Normalise for literal comparison: lowercase, whitespace collapsed."""
+    return re.sub(r'\s+', ' ', str(s or '')).strip().lower()
+
+
+def _context_blobs(contexts):
+    """Flatten the caller's context arguments into comparable strings."""
+    for ctx in contexts or ():
+        if ctx is None:
+            continue
+        if isinstance(ctx, (list, tuple, set, frozenset)):
+            yield " ".join(str(x) for x in ctx if x is not None)
+        else:
+            yield str(ctx)
+
+
+def citation_line_status(why_or_raw):
+    """Classify the answer's CITATION line. Returns ``(status, citation)``:
+
+      * ``('quoted', <text>)``  — a citation was supplied;
+      * ``('none', None)``      — the judge explicitly answered ``NONE``;
+      * ``('missing', None)``   — no CITATION line, or one that is empty /
+        an unfilled placeholder (answer-format NONCOMPLIANCE, which must
+        never by itself void a verdict — see ``citation_void_decision``).
+
+    The LAST CITATION line wins, so a re-ask answer appended after an earlier
+    one is read. Pure."""
+    if not why_or_raw:
+        return ('missing', None)
+    last = None
+    for m in _CITATION_LINE_RE.finditer(str(why_or_raw)):
+        last = m
+    if last is None:
+        return ('missing', None)
+    rest = (last.group(1) or '').strip()
+    if not rest:
+        return ('missing', None)
+    if rest.upper().startswith('NONE'):
+        return ('none', None)
+    q = _DQUOTED_RE.search(rest)
+    body = (q.group(1) if q else rest).strip().strip(_QUOTE_CHARS).strip()
+    if not body or _PLACEHOLDER_RE.match(body):
+        return ('missing', None)
+    return ('quoted', body)
+
+
+def parse_citation_line(why_or_raw):
+    """The verbatim text the judge put on its ``CITATION:`` line, or None when
+    it answered ``NONE`` / omitted the line / left a placeholder. Pure."""
+    status, citation = citation_line_status(why_or_raw)
+    return citation if status == 'quoted' else None
+
+
+def citation_is_grounded(citation, *contexts):
+    """Mechanical ground-truth check: is `citation` LITERALLY present in the
+    material the judge was shown?
+
+    True iff the citation, normalised (lowercased, whitespace collapsed), is a
+    substring of at least one normalised context (harness source, code
+    context, concrete evidence, trusted values — each may be a string or an
+    iterable of values). A paraphrase or an invented quote is not a substring,
+    so it is not grounded. No interpretation, no keywords. Pure."""
+    needle = _cite_norm(citation)
+    if not needle:
+        return False
+    return any(needle in _cite_norm(blob) for blob in _context_blobs(contexts))
+
+
+def strip_citation_line(text):
+    """`text` with any ``CITATION:`` line removed, so the legacy keyword
+    detectors judge the WHY sentence alone (a quoted citation may contain
+    words those detectors key on). Pure."""
+    if not text:
+        return text
+    return _CITATION_LINE_RE.sub('', str(text)).strip()
+
+
+def citation_void_decision(evidence_profile, why, contexts=()):
+    """Cycle-5 iteration 3: is this UNSOUND verdict CITATION-VOID?
+
+    Returns ``(void, event)``; `event` is a stable, greppable label naming the
+    path taken. Order:
+
+      1. off the drift-kill signature            -> (False, 'not-signature')
+      2. ``CITATION: NONE``                      -> (True,  'citation-declared-none')
+      3. a quoted citation, no context to check against
+         -> FAIL-SAFE fallback to the keyword path ('citation-uncheckable-*')
+      4. a quoted citation LITERALLY present in the shown material
+                                                 -> (False, 'citation-grounded')
+      5. a quoted citation absent from it        -> (True,  'citation-ungrounded')
+      6. missing/garbled CITATION line (answer-format noncompliance)
+         -> FAIL-SAFE fallback to the keyword path
+            ('citation-format-noncompliant-keyword-void' / '-keyword-ok')
+
+    FAIL-SAFE: format noncompliance NEVER voids a verdict by itself; it can
+    only reach the pre-existing keyword decision. Pure."""
+    if not why:
+        return (False, 'no-verdict-text')
+    if not has_drift_kill_signature(evidence_profile):
+        return (False, 'not-signature')
+    status, citation = citation_line_status(why)
+    if status == 'none':
+        return (True, 'citation-declared-none')
+    if status == 'quoted':
+        if not any(_cite_norm(blob) for blob in _context_blobs(contexts)):
+            # Nothing was supplied to check against — we cannot establish
+            # ungroundedness, so we must not claim it.
+            void = verdict_needs_citation(evidence_profile,
+                                          strip_citation_line(why))
+            return (void, 'citation-uncheckable-no-context-keyword-'
+                          + ('void' if void else 'ok'))
+        if citation_is_grounded(citation, *contexts):
+            return (False, 'citation-grounded')
+        return (True, 'citation-ungrounded')
+    void = verdict_needs_citation(evidence_profile, strip_citation_line(why))
+    return (void, 'citation-format-noncompliant-keyword-'
+                  + ('void' if void else 'ok'))
 
 
 # ---------------------------------------------------------------------------
@@ -1209,6 +1376,47 @@ _TERMINAL_IDENTICAL_VETO = (
     'partial-fix pattern',
     'remains evidence against the patch',
 )
+
+# ---------------------------------------------------------------------------
+# Cycle-5 iteration 3, PART B — carry the fact as a FACT.
+#
+# The marker/veto lists above try to recover, from prose, a fact the note
+# builder KNEW when it wrote the note. That is the same substring-does-
+# semantics mistake as the citation matcher, and it produced the same class of
+# bug (a note that says "on both builds" while DENYING the identical claim was
+# read as terminal, killing catches).
+#
+# So each note now stamps a machine-readable tag INSIDE its own text at
+# emission, and ``terminal_profile`` keys on the TAG. The prose is then free to
+# say whatever reads best.
+#
+#   [fact:identical-on-both]           same check, SAME observed values      -> TERMINAL
+#   [fact:fires-on-buggy-scan]         buggy keep-going scan saw this oracle -> TERMINAL
+#   [fact:fires-both-different-values] same check, DIFFERENT values          -> NOT terminal
+#                                      (the partial-fix CONVICTION)
+#   [fact:not-compared]                fires on both, values never compared  -> NOT terminal
+#
+# The marker+veto path below stays EXACTLY as it was, used only when a text
+# carries none of these tags (older runs, replayed fixtures, notes written
+# elsewhere). Combination rule mirrors the prose path: deny first — any
+# non-terminal tag wins over any terminal tag in the same blob.
+# ---------------------------------------------------------------------------
+
+_FACT_TAG_RE = re.compile(r'\[fact:([a-z0-9][a-z0-9-]*)\]', re.I)
+
+TERMINAL_FACT_TAG = '[fact:identical-on-both]'
+BUGGY_SCAN_FACT_TAG = '[fact:fires-on-buggy-scan]'
+DIFFERENT_VALUES_FACT_TAG = '[fact:fires-both-different-values]'
+NOT_COMPARED_FACT_TAG = '[fact:not-compared]'
+
+_TERMINAL_FACT_TAGS = frozenset({'identical-on-both', 'fires-on-buggy-scan'})
+_NON_TERMINAL_FACT_TAGS = frozenset({'fires-both-different-values',
+                                     'not-compared'})
+
+
+def fact_tags(text):
+    """Every ``[fact:<name>]`` tag in `text`, lowercased, as a set. Pure."""
+    return {t.lower() for t in _FACT_TAG_RE.findall(str(text or ''))}
 
 # --- 5D: the MEASURED fires-on-both profile --------------------------------
 # The textual markers above only catch the byte-comparison form of the fact
@@ -1302,9 +1510,19 @@ def terminal_profile(text):
 
     Returns ``'identical-on-both'`` (textual byte-comparison fact),
     ``'fires-on-both-rate'`` (measured high buggy-side fire rate) or None.
-    The textual profile wins when both are present. Pure."""
+    The textual profile wins when both are present. Pure.
+
+    TAG-FIRST (cycle-5 iteration 3): when the evidence carries any recognised
+    ``[fact:...]`` tag, the tags DECIDE — deny first, exactly as the prose path
+    does — and the surrounding wording is ignored. The marker+veto path below
+    runs only for untagged text (older or replayed evidence)."""
     if not text:
         return None
+    tags = fact_tags(text)
+    if tags & (_TERMINAL_FACT_TAGS | _NON_TERMINAL_FACT_TAGS):
+        if tags & _NON_TERMINAL_FACT_TAGS:
+            return None
+        return 'identical-on-both'
     low = str(text).lower()
     # Deny first: a note that explicitly refuses the identical-value claim (or
     # asserts the opposite — the partial-fix conviction) is never terminal on

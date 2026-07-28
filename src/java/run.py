@@ -2920,7 +2920,12 @@ def main():
                                                    or "no exception type")
                                     + ")" for _oid, _ty in _scan_hits.items())
                                 _one_door_notes.append(
-                                    "[buggy-scan fact] the acceptance-time "
+                                    # cycle-5 iter-3: the tag carries the fact
+                                    # itself, so terminal_profile no longer has
+                                    # to recover it from this prose.
+                                    "[buggy-scan fact] "
+                                    "[fact:fires-on-buggy-scan] "
+                                    "the acceptance-time "
                                     "buggy keep-going scan recorded this "
                                     "oracle firing on the BUGGY build: "
                                     + _hit_txt + " — the same check fires on "

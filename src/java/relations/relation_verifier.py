@@ -200,10 +200,24 @@ _GUIDANCE = (
     " ==, an absolute tolerance, or a tolerance below 1e-9-relative. The"
     " real defect you are backstopping diverges by a LARGE amount (a sign"
     " flip, a value multiples off), never by a last-digit epsilon.\n\n"
-    "Answer on two lines EXACTLY:\n"
+    "CITATION LINE — QUOTE, DO NOT PARAPHRASE: when your verdict is"
+    " UNSOUND, the CITATION line must hold a passage copied EXACTLY,"
+    " character for character, from the material shown to you above — the"
+    " harness source, the code context, the concrete evidence, or the"
+    " trusted values — that supports the dismissal: a documented contract"
+    " the assertion contradicts, a shown implementation detail, or the"
+    " line of the check whose comparison is demonstrably broken. Copy it"
+    " verbatim; do not summarise, re-word, or reconstruct it from memory,"
+    " and never invent one — a passage that is not present word for word"
+    " in what you were shown counts as no citation at all. If your"
+    " dismissal rests on a hypothetical (what some correct implementation"
+    " could do) rather than on something SHOWN, answer CITATION: NONE."
+    " For a SOUND verdict, CITATION: NONE is fine.\n\n"
+    "Answer on three lines EXACTLY:\n"
     "VERDICT: SOUND | UNSOUND\n"
     "WHY: <one sentence — for UNSOUND, it must contain the surviving"
-    " counterexample>"
+    " counterexample>\n"
+    "CITATION: \"<verbatim quote from the shown material>\" | NONE"
 )
 
 # Ensemble lenses for votes > 1: each vote reviews the same finding from a
@@ -567,16 +581,27 @@ class RelationVerifier:
     def _parse(out: str) -> Tuple[bool, str]:
         text = out.strip()
         why = ""
+        citation = ""
         for line in text.splitlines():
             s = line.strip()
             if s.upper().startswith("WHY:"):
                 why = s[4:].strip()
+            elif s.upper().startswith("CITATION:"):
+                # Carried through VERBATIM, on its own line, so the caller can
+                # check the quote against the material actually shown
+                # (evidence_facts.citation_void_decision). Only the answer
+                # format knows the citation; (ok, why) is the only channel out.
+                citation = s
+
+        def _out(ok: bool, reason: str) -> Tuple[bool, str]:
+            return ok, (reason + "\n" + citation if citation else reason)
+
         upper = text.upper()
         # Only drop on an explicit UNSOUND verdict; anything else keeps it.
         if "VERDICT:" in upper:
             verdict = upper.split("VERDICT:", 1)[1].lstrip()
             if verdict.startswith("UNSOUND"):
-                return False, why or "oracle judged unsound"
-            return True, why or "oracle judged sound"
+                return _out(False, why or "oracle judged unsound")
+            return _out(True, why or "oracle judged sound")
         # No parseable verdict -> keep (fail open).
-        return True, why or "no verdict parsed; keeping finding"
+        return _out(True, why or "no verdict parsed; keeping finding")
