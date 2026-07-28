@@ -1439,7 +1439,8 @@ class FuzzRunner:
                            mute_all: bool = False,
                            builder=None,
                            buggy_dir: str = None,
-                           timeout_seconds: int = 30
+                           timeout_seconds: int = 30,
+                           variant_tag: str = "0"
                            ) -> Tuple[str, Optional[set], str, Optional[bool]]:
         """Replay ONE input against a MUTED build of the harness and report
         `(status, fired_ids, output, diverted)`.
@@ -1514,7 +1515,10 @@ class FuzzRunner:
         rel = os.path.relpath(harness_dir, fuzz_root)
         if rel.startswith('..') or os.path.isabs(rel):
             rel = os.path.basename(os.path.normpath(harness_dir)) or 'harness'
-        output_subdir = os.path.join(rel, 'muted_0')
+        # `variant_tag` keeps one build directory per muted PASS (cycle-6 item
+        # 4: the mute set grows across passes, so each pass compiles a
+        # different source and must not overwrite the previous pass's build).
+        output_subdir = os.path.join(rel, 'muted_%s' % variant_tag)
 
         # Cycle-6: fold the diversion counters into the SAME variant so the
         # swallow fact costs nothing extra. Strictly fail-open — if the
@@ -1531,7 +1535,8 @@ class FuzzRunner:
         if combined:
             try:
                 _br = builder.build(combined, buggy_dir,
-                                    os.path.join(rel, 'muted_div_0'))
+                                    os.path.join(rel,
+                                                 'muted_div_%s' % variant_tag))
             except Exception as exc:
                 print(f"  (muted+diversion variant build raised: {exc})")
                 _br = None
@@ -1578,6 +1583,137 @@ class FuzzRunner:
         if outcome.timed_out or outcome.returncode != 0:
             return "error", None, out, diverted
         return "clean", set(), out, diverted
+
+
+# ---------------------------------------------------------------------------
+# Cycle-6 item 4, PART A — iterate the mute set instead of giving up after one
+# pass.
+#
+# `replay_input_muted` answers "does THIS check fire on the buggy build at this
+# exact input?" by silencing the shadowing check(s) and replaying. When the
+# muted run crashes at yet ANOTHER sibling alarm the target still never got to
+# speak, and a single bounded pass gives up with the honest UNKNOWN wording
+# (night20b: Closure-62 `end-of-line-caret`, Math-65 `chiSquare-inversely-…`
+# shadowed by `circle-dense-errors-0` — both measurements NEVER COLLECTED).
+# That sibling is simply a NEW shadow: add it to the mute set and replay again.
+#
+# Strictly bounded (each pass costs a Jazzer run): at most
+# `MAX_EXTRA_MUTED_PASSES` passes beyond the first, and iteration also stops
+# early the moment the mute set stops growing or a pass errors. Exhausting the
+# passes returns the last result unchanged, which yields the current UNKNOWN
+# wording — never a fabricated fact.
+# ---------------------------------------------------------------------------
+
+MAX_EXTRA_MUTED_PASSES = 3
+
+# Greppable prefix for the per-pass audit line (see `iterate_muted_replay`).
+MUTED_PASS_LOG_PREFIX = "[muted-replay pass]"
+
+
+def _muted_target_spoke(target_ids, esc_type, fired_ids, output) -> bool:
+    """Did the TARGET firing reproduce on this muted pass?
+
+    Same rule `muted_replay_note` applies when it words the result: an oracle
+    firing is identified by id; an ESCAPED exception (no oracle id) by its
+    exception type appearing among the run's observed types."""
+    target_ids = set(target_ids or ())
+    fired_ids = set(fired_ids or ())
+    if target_ids:
+        return bool(target_ids & fired_ids)
+    if esc_type:
+        try:
+            return esc_type in exception_types_in_output(output or '')
+        except Exception:
+            return False
+    return False
+
+
+def iterate_muted_replay(replay_fn, target_ids, mute_ids, esc_type=None,
+                         max_extra_passes: int = MAX_EXTRA_MUTED_PASSES,
+                         log=None):
+    """Replay one input against progressively larger mute sets.
+
+    `replay_fn(mute_ids, pass_index)` must run ONE muted replay and return
+    `replay_input_muted`'s 4-tuple `(status, fired_ids, output, diverted)`;
+    `pass_index` is 1-based and exists so the caller can give each pass its own
+    build directory.
+
+    Iteration rule — after a pass whose status is "crashed" and in which the
+    target stayed quiet, every fired id that is not already muted is a NEW
+    shadow: it is added to the mute set and the input is replayed again.
+    Iteration stops on the FIRST of:
+
+      * the target fired (question answered),
+      * the run completed clean (question answered — the existence proof),
+      * status "error"/"mute_failed", or `replay_fn` raising (nothing learned;
+        the caller's UNKNOWN wording stands),
+      * no new shadow id — the mute set stopped growing, so another pass would
+        replay exactly the same build,
+      * `max_extra_passes` passes beyond the first have been spent.
+
+    Returns `(status, fired_ids, output, diverted, mute_ids_final, passes)`.
+    The first four are exactly what `replay_input_muted` returned on the LAST
+    pass, so `muted_replay_note`'s semantics are untouched — only the answer
+    becomes reachable; `mute_ids_final` is the mute set that produced them (the
+    set the note should name as silenced) and `passes` the number of Jazzer
+    replays spent.
+
+    Never fabricates: a bound hit returns the last real result, and every exit
+    is one of `replay_input_muted`'s own statuses."""
+    emit = log or print
+    mute_set = set(mute_ids or ())
+    target_ids = set(target_ids or ())
+    try:
+        max_extra_passes = max(0, int(max_extra_passes))
+    except (TypeError, ValueError):
+        max_extra_passes = 0
+    passes = 0
+
+    def _line(pass_no, status, fired, diverted, outcome):
+        emit("      %s pass=%d/%d mute_set_size=%d muted=%s status=%s "
+             "fired=%s diverted=%s -> %s"
+             % (MUTED_PASS_LOG_PREFIX, pass_no, max_extra_passes + 1,
+                len(mute_set), ",".join(sorted(mute_set)) or "-", status,
+                sorted(fired or ()) if fired is not None else "unknown",
+                diverted, outcome))
+
+    while True:
+        passes += 1
+        try:
+            status, fired, out, diverted = replay_fn(set(mute_set), passes)
+        except Exception as exc:
+            _line(passes, "raised(%s)" % type(exc).__name__, None, None,
+                  "stop: pass raised, UNKNOWN kept")
+            return "error", None, '', None, set(mute_set), passes
+        fired = set(fired) if fired is not None else None
+
+        if status in ("error", "mute_failed"):
+            _line(passes, status, fired, diverted,
+                  "stop: replay unavailable, UNKNOWN kept")
+            return status, fired, out, diverted, set(mute_set), passes
+        if status == "clean":
+            _line(passes, status, fired, diverted,
+                  "stop: ran to completion (answered)")
+            return status, fired, out, diverted, set(mute_set), passes
+        if _muted_target_spoke(target_ids, esc_type, fired, out):
+            _line(passes, status, fired, diverted,
+                  "stop: target fired (answered)")
+            return status, fired, out, diverted, set(mute_set), passes
+
+        new_shadows = (fired or set()) - mute_set
+        if not new_shadows:
+            _line(passes, status, fired, diverted,
+                  "stop: mute set stopped growing, UNKNOWN kept")
+            return status, fired, out, diverted, set(mute_set), passes
+        if passes - 1 >= max_extra_passes:
+            _line(passes, status, fired, diverted,
+                  "stop: pass bound reached (%d extra), UNKNOWN kept"
+                  % max_extra_passes)
+            return status, fired, out, diverted, set(mute_set), passes
+        _line(passes, status, fired, diverted,
+              "continue: new shadow(s) %s added to the mute set"
+              % ",".join(sorted(new_shadows)))
+        mute_set |= new_shadows
 
 
 def _print_fuzz_result(r: FuzzRunResult) -> None:

@@ -2081,6 +2081,13 @@ def main():
                 _universal_facts: dict = {}   # oracle id -> [fact notes]
                 _universal_measured = 0
                 _universal_cap_printed = False
+                # Cycle-6 item 4 PART B: per-leg record of the KNOWN buggy-side
+                # rate per oracle id (oracle id -> (checked, violated)), from
+                # whichever measurement produced it — the matched relation's
+                # buggy screen or the universal screen. A known rate must reach
+                # the judge on the harness track no matter which structural
+                # branch measured it.
+                _buggy_rate_counts: dict = {}
                 # Collect EVERY oracle that fires on the patched code, not
                 # just the first Jazzer surfaced — a multi-oracle harness
                 # can fire via a sound oracle on one input and an unsound
@@ -2493,28 +2500,50 @@ def main():
                         # per-input question "does THIS check fire on buggy?"
                         # is unanswered and semantic_buggy_replay_note returned
                         # the honest UNKNOWN wording. Silence the shadowing
-                        # check(s) and replay this exact input ONCE to compute
-                        # the missing fact, then append it. Bounded to one
-                        # muted re-replay; any failure leaves the cycle-1 note
-                        # intact.
+                        # check(s) and replay this exact input to compute the
+                        # missing fact, then append it.
+                        #
+                        # Cycle-6 item 4 PART A: when the muted run crashes at
+                        # yet ANOTHER sibling alarm the target still never got
+                        # to speak — that sibling is a NEW shadow. Iterate:
+                        # add it to the mute set and replay again, bounded to
+                        # MAX_EXTRA_MUTED_PASSES passes beyond the first and
+                        # stopping early when the mute set stops growing or a
+                        # pass errors (each pass costs a Jazzer run; crashing
+                        # legs get the single pass they had). Any failure
+                        # leaves the cycle-1 UNKNOWN note intact.
                         _shadowed = bool(
                             _fired_ids and (_breplay_ids or set())
                             and not (_fired_ids & (_breplay_ids or set()))
                             and not _bt_defect)
                         if _shadowed:
                             try:
-                                (_ms, _mf, _mo,
-                                 _mdiv) = fr.replay_input_muted(
-                                    r.harness_path, r.class_name, buggy_cp,
-                                    r.artifact_path, mute_ids=_breplay_ids,
-                                    builder=builder,
-                                    buggy_dir=selection.buggy_dir)
                                 from java.execution.fuzz_runner import (
-                                    exception_types_in_output as _etio2)
+                                    exception_types_in_output as _etio2,
+                                    iterate_muted_replay as _imr)
+
+                                def _muted_pass(_mute_ids, _pass_no,
+                                                _r=r, _cp=buggy_cp):
+                                    return fr.replay_input_muted(
+                                        _r.harness_path, _r.class_name, _cp,
+                                        _r.artifact_path,
+                                        mute_ids=set(_mute_ids),
+                                        builder=builder,
+                                        buggy_dir=selection.buggy_dir,
+                                        variant_tag=str(_pass_no - 1))
+
+                                (_ms, _mf, _mo, _mdiv,
+                                 _mmuted, _mpasses) = _imr(
+                                    _muted_pass, _fired_ids, _breplay_ids,
+                                    esc_type=_esc_type,
+                                    max_extra_passes=(
+                                        0 if bug_kind == 'crashing' else 3))
                                 _mbt = _etio2(_mo) if _mo else set()
                                 print(f"      [muted-replay] status={_ms} "
                                       f"fired={sorted(_mf or set())} "
-                                      f"diverted={_mdiv}")
+                                      f"diverted={_mdiv} "
+                                      f"passes={_mpasses} "
+                                      f"muted={sorted(_mmuted)}")
                                 from java.relations.evidence_facts import (
                                     muted_replay_note as _mrn)
                                 # Spec I: compare the target check's observed
@@ -2539,7 +2568,11 @@ def main():
                                         _mpe = fired
                                 except Exception:
                                     _mvv = "unknown"
-                                _mnote = _mrn(_fired_ids, _breplay_ids, _ms,
+                                # Name the FINAL mute set (PART A may have
+                                # grown it across passes); the note's semantics
+                                # are unchanged — it just lists every check
+                                # that had to be silenced.
+                                _mnote = _mrn(_fired_ids, _mmuted, _ms,
                                               _mf, _esc_type, _mbt,
                                               value_verdict=_mvv,
                                               buggy_msg_excerpt=_mbe,
@@ -2870,6 +2903,16 @@ def main():
                     # this oracle (data already computed at acceptance; no new
                     # executions). Fail-open: any error attaches nothing.
                     _one_door_matched = False
+                    # Cycle-6 item 4 PART B: did a fire-rate fact actually
+                    # reach this firing's evidence, and were buggy-side counts
+                    # known at all? A match that measured nothing must NOT
+                    # suppress the universal screen (Math-65 harness track:
+                    # matched=True gated the screen off), and a known rate must
+                    # be delivered even when the one-door block attached
+                    # nothing else.
+                    _rate_fact_attached = False
+                    _one_door_patched_counts = (None, None)
+                    _one_door_demote = ''
                     # Always-on entry diagnostic (BEFORE the try/except, so a
                     # NameError here can never be swallowed): proves this block
                     # ran and shows the exact gate values, so it can never again
@@ -2929,6 +2972,17 @@ def main():
                                     _pc_k, _pv_k, _demote_k)
                                 if _frfact_k:
                                     _one_door_notes.append(_frfact_k)
+                                    _rate_fact_attached = True
+                                # PART B: remember the buggy-side counts this
+                                # match KNOWS (and the patched counts / demote
+                                # reason it used), so the delivery step below
+                                # can state a known rate the structure would
+                                # otherwise drop.
+                                _one_door_patched_counts = (_pc_k, _pv_k)
+                                _one_door_demote = _demote_k
+                                if _sstats_k[0]:
+                                    _buggy_rate_counts.setdefault(
+                                        _oid_k, (_sstats_k[0], _sstats_k[1]))
                                 if _sreason_k:
                                     _one_door_notes.append(
                                         "[screen-decision fact] this harness "
@@ -2990,16 +3044,35 @@ def main():
                     # NameError here can never be swallowed): proves this block
                     # ran and shows the exact gate values, so it can never again
                     # be silently inert.
+                    #
+                    # Cycle-6 item 4 PART B: the gate is now "no buggy-side
+                    # rate is KNOWN for this oracle", not "no one-door match".
+                    # A match whose relation carried no buggy screen counts
+                    # used to suppress the screen and deliver nothing (the
+                    # Math-65 harness track); a match that DID measure still
+                    # costs no extra Jazzer runs, because its counts are known
+                    # and are delivered by the step below.
+                    _rate_known = (
+                        bool(_fired_ids)
+                        and sorted(_fired_ids)[0] in _buggy_rate_counts)
                     print(f"      [universal-screen] considering oracle "
                           f"'{_oid_dbg}' matched={_one_door_matched} "
+                          f"rate_known={_rate_known} "
                           f"(fired_ids={bool(_fired_ids)}, "
                           f"jazzer={bool(jazzer_standalone_jar)})")
                     record_event('deterministic', method='universal_screen_entry',
                                  target=str(_oid_dbg),
-                                 output=f'matched={_one_door_matched}')
+                                 output=(f'matched={_one_door_matched} '
+                                         f'rate_known={_rate_known}'))
                     try:
-                        if (_fired_ids and not _one_door_matched
-                                and jazzer_standalone_jar):
+                        # The per-leg CACHE still re-attaches on a repeat
+                        # firing of an already-measured oracle (a known rate
+                        # only suppresses a NEW measurement, never the facts
+                        # this leg already paid for).
+                        if (_fired_ids and jazzer_standalone_jar
+                                and (not _rate_known
+                                     or sorted(_fired_ids)[0]
+                                     in _universal_facts)):
                             _oid_u = sorted(_fired_ids)[0]
                             if _oid_u in _universal_facts:
                                 _u_notes = _universal_facts[_oid_u]
@@ -3041,6 +3114,13 @@ def main():
                                               "measured oracle '" + _oid_u
                                               + "': violated=" + str(_vu)
                                               + "/" + str(_cu))
+                                        # PART B: the screen KNOWS this rate
+                                        # now — record it so the delivery step
+                                        # below can state it whatever this
+                                        # block does with it.
+                                        if _cu:
+                                            _buggy_rate_counts.setdefault(
+                                                _oid_u, (_cu, _vu))
                                         from java.relations.evidence_facts \
                                             import (fire_rate_fact as _frf_u,
                                                     never_held_fact as _nhf_u)
@@ -3053,6 +3133,41 @@ def main():
                             for _un in _u_notes:
                                 _fact_notes.append(_un)
                                 evid = (evid + "\n" + _un) if evid else _un
+                                if _un.startswith("[fire-rate fact]"):
+                                    _rate_fact_attached = True
+                    except Exception:
+                        pass
+                    # Cycle-6 item 4 PART B — unconditional delivery of a KNOWN
+                    # buggy-side rate to the harness track. Whichever branch
+                    # measured it (matched relation's buggy screen, or the
+                    # universal screen), a rate that IS known must reach the
+                    # judging evidence: it must never be dropped because the
+                    # patched-side counts do not exist yet, or because a
+                    # one-door match routed around the block that would have
+                    # stated it. No new threshold and no new wording —
+                    # fire_rate_fact's own branches decide, and a None (the
+                    # rate is genuinely unremarkable) correctly attaches
+                    # nothing. Fail-open.
+                    try:
+                        _oid_b = (sorted(_fired_ids)[0] if _fired_ids else None)
+                        _bc_b = _buggy_rate_counts.get(_oid_b)
+                        if _bc_b and not _rate_fact_attached:
+                            from java.relations.evidence_facts import (
+                                fire_rate_fact as _frf_b)
+                            _fr_b = _frf_b(_bc_b[0], _bc_b[1],
+                                           _one_door_patched_counts[0],
+                                           _one_door_patched_counts[1],
+                                           _one_door_demote)
+                            _dlv = ('attached' if _fr_b
+                                    else 'none (rate unremarkable)')
+                            print(f"      [buggy-rate delivery] oracle "
+                                  f"'{_oid_b}' buggy={_bc_b[1]}/{_bc_b[0]} "
+                                  f"patched={_one_door_patched_counts} "
+                                  f"note={_dlv}")
+                            if _fr_b:
+                                _fact_notes.append(_fr_b)
+                                evid = (evid + "\n" + _fr_b) if evid else _fr_b
+                                _rate_fact_attached = True
                     except Exception:
                         pass
                     # Cycle-5B(i): pinned-environment fact from the harness's
