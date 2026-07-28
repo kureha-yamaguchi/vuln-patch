@@ -1312,8 +1312,15 @@ def terminal_profile(text):
     denied = any(v in low for v in _TERMINAL_IDENTICAL_VETO)
     if not denied and any(m in low for m in _TERMINAL_IDENTICAL_MARKERS):
         return 'identical-on-both'
-    if carries_terminal_fire_rate_fact(text):
-        return 'fires-on-both-rate'
+    # REVERTED 2026-07-28 (iteration-2 evidence, docs/replay/v5d_iter2_analysis.md):
+    # the rate-based terminal path was measured NET-NEGATIVE — it dropped 4
+    # confirmed catches (fixture rows 66/103/122/133, all `fires-on-both-rate`)
+    # and gained ~0 leaks, because of the 16 leak rows only 3 carry a
+    # [fire-rate fact] at all and only 1 was rate-terminal. The rates it reasons
+    # about live in the inventory, not in the evidence the judge is shown — a
+    # DELIVERY problem (cycle 6), not a judging rule. `fire_rate_is_terminal` /
+    # `carries_terminal_fire_rate_fact` are retained (tested, pure) for when the
+    # facts are actually delivered; they are simply not consulted here.
     return None
 
 

@@ -60,12 +60,16 @@ def test_buggy_scan_fact_still_terminal():
     assert carries_terminal_identical_fact(note) is True
 
 
-def test_veto_does_not_block_the_rate_path():
-    # A denial of the TEXTUAL claim must not suppress an independent measured
-    # fires-on-both rate fact in the same evidence blob.
-    blob = PARTIAL_FIX + "\n[fire-rate fact] buggy build 19000/20000 = 95%; " \
-                         "patched build 9000/20000 = 45% of random valid inputs."
-    assert terminal_profile(blob) == 'fires-on-both-rate'
+def test_rate_path_is_reverted_not_terminal():
+    # REVERTED 2026-07-28: the rate-based terminal path is no longer consulted
+    # (iteration-2 evidence: it dropped 4 confirmed catches and gained ~0
+    # leaks — the rates live in the inventory, not in delivered evidence).
+    # A blob carrying ONLY a fire-rate fact must now be non-terminal.
+    blob = ("[fire-rate fact] buggy build 19000/20000 = 95%; patched build "
+            "9000/20000 = 45% of random valid inputs.")
+    assert terminal_profile(blob) is None
+    # ...and a denial of the textual claim stays non-terminal too.
+    assert terminal_profile(PARTIAL_FIX + "\n" + blob) is None
 
 
 # --- 5B citation detector: negated citations are not citations -------------

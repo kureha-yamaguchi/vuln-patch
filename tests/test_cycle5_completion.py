@@ -16,6 +16,18 @@ Two changes, both pure/offline (a stubbed verifier, no JVM, no LLM, no tokens):
 import pytest
 
 from java.relations import evidence_facts as ef
+import pytest
+
+_RATE_REVERTED = pytest.mark.skip(
+    reason="rate-based 5C terminal path REVERTED 2026-07-28 (iteration-2 "
+           "evidence: net-negative — dropped 4 confirmed catches, gained ~0 "
+           "leaks; the rates live in the inventory, not in delivered "
+           "evidence). The pure helpers fire_rate_is_terminal / "
+           "parse_fire_rate_facts keep their own unit tests; these assert the "
+           "WIRING, which is intentionally gone. Re-enable with the delivery "
+           "fix in cycle 6.")
+
+
 from java.relations.judge_decision import (
     _guarded_verify, _terminal_identical_gate, adjudicate)
 
@@ -216,6 +228,7 @@ def test_terminal_bar_sits_between_the_two_shipped_constants():
     assert ef.TERMINAL_BOTH_FIRE_RATIO < ef.INTRINSIC_FIRE_RATIO
 
 
+@_RATE_REVERTED
 def test_terminal_profile_labels():
     assert ef.terminal_profile("identical on both builds") == \
         'identical-on-both'
@@ -231,6 +244,7 @@ def test_real_asymmetric_fire_rate_fact_is_not_terminal():
     assert ef.carries_terminal_identical_fact(note) is False
 
 
+@_RATE_REVERTED
 def test_real_both_high_fire_rate_fact_is_terminal():
     note = ef.fire_rate_fact(20000, 19000, 20000, 9000, "")
     assert note and "BOTH" in note
@@ -248,6 +262,7 @@ _ASYMMETRIC = _fr(600, 20000, 18000, 20000)      # buggy 3%, patched 90%
 
 
 @pytest.mark.parametrize("evidence", [_BOTH_HIGH, _MAJORITY_BOTH])
+@_RATE_REVERTED
 def test_5d_rate_terminal_voids_keep_on_family_duty_no(evidence):
     v = _StubVerifier([], fd_results=[(False, "unrelated observable")])
     ok, why = _terminal_identical_gate(
@@ -258,6 +273,7 @@ def test_5d_rate_terminal_voids_keep_on_family_duty_no(evidence):
 
 
 @pytest.mark.parametrize("evidence", [_BOTH_HIGH, _MAJORITY_BOTH])
+@_RATE_REVERTED
 def test_5d_rate_terminal_survives_on_family_duty_yes(evidence):
     v = _StubVerifier([], fd_results=[(True, "the test's own observable")])
     ok, why = _terminal_identical_gate(
@@ -290,6 +306,7 @@ def test_5d_rate_gate_fails_open_on_family_duty_error():
     assert ok is True and why == "kept"
 
 
+@_RATE_REVERTED
 def test_5d_rate_gate_through_adjudicate():
     v = _StubVerifier([(True, "oracle judged sound")],
                       fd_results=[(False, "unrelated observable")])
