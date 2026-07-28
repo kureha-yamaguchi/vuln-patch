@@ -36,6 +36,11 @@ import re
 #     (fires on essentially every input), not a detection of the defect.
 MAX_FIRE_RATIO = 0.20
 INTRINSIC_FIRE_RATIO = 0.95
+#   SILENT_FIRE_RATIO — the bar for calling a check SILENT on the buggy build.
+#     The catch-signal reading ("silent on the known-broken code, loud on the
+#     patch") is only true near zero; 'under the 20% indiscriminate cap' is NOT
+#     silence. Set at 2%: a handful of hits in 20k inputs is noise, 4k is not.
+SILENT_FIRE_RATIO = 0.02
 
 # Oracle-id shapes, reimplemented locally so this module stays dependency
 # light (java.parsing.java_source.oracle_ids_in_text uses the same two
@@ -964,8 +969,19 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
     interp = None
     both_high = (p_rate is not None and p_rate >= MAX_FIRE_RATIO
                  and b_rate is not None and b_rate >= MAX_FIRE_RATIO)
+    # The catch-signal claim asserts the check is SILENT on the known-broken
+    # build. That requires a genuinely near-zero buggy rate — NOT merely "under
+    # the indiscriminate cap". The first version used `b_rate < MAX_FIRE_RATIO`
+    # (0.20) and so told the judge a check firing on 19.8% of buggy inputs was
+    # "silent (or near-silent)", converting a false premise into a PRO-KEEP
+    # instruction — it contributed to a chronic false accusation (Math-65,
+    # night20b, classified 2026-07-28). Between SILENT and the cap the evidence
+    # is genuinely ambiguous, so say so instead of asserting either reading.
     asymmetric = (p_rate is not None and p_rate >= MAX_FIRE_RATIO
-                  and b_rate is not None and b_rate < MAX_FIRE_RATIO)
+                  and b_rate is not None and b_rate <= SILENT_FIRE_RATIO)
+    ambiguous_gap = (p_rate is not None and p_rate >= MAX_FIRE_RATIO
+                     and b_rate is not None
+                     and SILENT_FIRE_RATIO < b_rate < MAX_FIRE_RATIO)
     if both_high:
         interp = ("fires on a large share of random valid inputs on BOTH "
                   "builds (buggy {:.0%}, patched {:.0%}) — indiscriminate; "
@@ -981,6 +997,14 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
                   "divergence. This is a strong discrimination signal, NOT "
                   "grounds to indict the check; dismiss only with a shown "
                   "reason the patched-only firings are legitimate.".format(
+                      p_rate, b_rate))
+    elif ambiguous_gap:
+        interp = ("fires on {:.0%} of random valid inputs on the PATCHED "
+                  "build and {:.0%} on the buggy build — the buggy-side rate "
+                  "is low but NOT silent, so this is neither a clean "
+                  "patch-introduced discrimination signal nor an "
+                  "indiscriminate check. The rates alone decide nothing "
+                  "here; judge on the check's shown contract.".format(
                       p_rate, b_rate))
     elif p_rate is not None and p_rate >= MAX_FIRE_RATIO:
         # patched-high, buggy rate UNKNOWN (unmeasured) — cannot claim

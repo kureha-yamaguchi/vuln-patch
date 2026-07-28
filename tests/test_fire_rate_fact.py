@@ -145,3 +145,30 @@ def test_all_none_returns_none():
         screen_outcome_reason=None,
     )
     assert note is None
+
+
+def test_low_but_not_silent_buggy_rate_is_not_a_catch_signal():
+    """Regression (Math-65, night20b): a 19.8% buggy rate was described as
+    'silent (or near-silent)' and converted into a PRO-KEEP instruction,
+    contributing to a chronic false accusation. 'Under the indiscriminate cap'
+    is not silence; between SILENT_FIRE_RATIO and MAX_FIRE_RATIO the rates
+    decide nothing."""
+    note = evidence_facts.fire_rate_fact(
+        buggy_checked=20000, buggy_violated=3953,      # 19.8%
+        patched_checked=20000, patched_violated=20000,  # 100%
+        screen_outcome_reason=None)
+    assert note is not None
+    low = note.lower()
+    assert 'silent' not in low or 'not silent' in low
+    assert 'strong discrimination signal' not in low
+    assert 'decide nothing' in low or 'neither' in low
+
+
+def test_genuinely_silent_buggy_rate_still_reads_as_a_catch_signal():
+    note = evidence_facts.fire_rate_fact(
+        buggy_checked=20000, buggy_violated=10,        # 0.05%
+        patched_checked=20000, patched_violated=18000,  # 90%
+        screen_outcome_reason=None)
+    low = (note or '').lower()
+    assert 'strong discrimination signal' in low
+    assert 'patch introduced' in low
