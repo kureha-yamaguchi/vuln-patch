@@ -320,3 +320,161 @@ it targets. Keep (it is fail-soft and cheap) but do not credit it, and narrow th
   — and its citation was equally available in the prior roll.
 
 So of the three never-before-caught legs, **two are mechanism-attributed and one is luck.**
+
+### Chronic-FP classification (2026-07-28, night20b)
+
+Per-firing triage of the three chronic false accusations: dirs `16_patch1-Closure-62-Jaid_c`,
+`18_patch1-Math-30-CapGen_c`, `19_patch1-Math-65-CapGen_c` — all CORRECT patches, all convicted.
+Eight firings survived triage as `VERDICT: SOUND` across the three legs; every quote below is from
+the run's own `trace.md`.
+
+#### Leg 16 — Closure-62 (4 convicting firings: 1× (a), 3× (b))
+
+**(a) `end-of-line-caret`** (call [96], verdict L12523). Evidence block carries **only**
+`[buggy-replay fact]`, and it says the question is unanswered:
+
+> "[buggy-replay fact] on this exact input a DIFFERENT check fired first on the buggy build
+> (lifted-test), so whether THIS check fires there is UNKNOWN — the replay is shadowed, not
+> confirming."
+
+Missing: `[fire-rate fact]`, `[buggy-scan fact]`, `[universal-screen fact]`, `[muted-replay fact]`,
+`[screen-decision fact]`, any `[fact:` tag. `one_door_entry` matched=**False** (so no screen-decision
+/ one-door fire-rate path); `universal_screen_entry` matched=False means the universal screen *did*
+run and attached nothing — fail-open, no diagnostic. And the muted re-replay produced no note at
+all: `muted_replay_note` returns `None` when the target stayed quiet but the muted run crashed at
+*another* sibling oracle, and the re-replay is "**bounded to one muted re-replay**"
+(`src/java/run.py:2496`). Verdict `CITATION: NONE`.
+
+**(b) `lifted-seed`** (verdict L13174). The clearing fact was delivered:
+
+> "[buggy-replay fact] [fact:not-compared] the exact firing input fires the SAME check on the BUGGY
+> build … [screen-decision fact] … whose screening decision was: silent on buggy (tripwire)."
+
+Judge: `SOUND … a correct implementation cannot legitimately return the observed output`,
+`CITATION: NONE`. Nothing mechanical stopped it: `[fact:not-compared]` is in
+`_NON_TERMINAL_FACT_TAGS`, so `terminal_profile()` returns `None` by construction.
+
+**(b) `null-source-eol-caret`** (verdict L21336). Delivered:
+
+> "[fire-rate fact] buggy build 999/1000 = 100% of random valid inputs. fires on essentially every
+> input on the buggy build (100%) — the firing is intrinsic to the check/setup construction, not a
+> detection of the defect."
+
+Judge: `SOUND … the trusted tests pin exactly that boundary behavior`, `CITATION: NONE`.
+100% ≥ `INTRINSIC_FIRE_RATIO` (0.95) — `fire_rate_is_terminal` would drop this, but the rate path is
+not consulted (reverted 2026-07-28).
+
+**(b) relation-replay track** (call [149], verdict L21889). Delivered:
+
+> "[replay comparison fact] this relation fired on 5% of fuzzed inputs on the BUGGY build at
+> screening and was NOT direction-confirmed there … it fires on BOTH builds away from the trigger,
+> so the patch did not change the behaviour it measures. … (b) it has no documented source (an
+> invented plausibility) … pre-existing surface: DISMISS."
+
+Judge: `SOUND`, `CITATION: NONE` — i.e. no documented source shown, which is that fact's own
+branch (b) DISMISS condition, and it kept anyway.
+
+#### Leg 18 — Math-30 (2 convicting firings: 2× (b))
+
+**(b) `overflow-boundary-monotone`** (call [66], verdict L4977). This is the *best-instrumented*
+evidence block in the three legs — `[latent oracle]`, `[buggy-replay fact]`, `[muted-replay fact]`,
+`[fire-rate fact]`, `[screen-decision fact]`, `[fact:not-compared]` all present. Two independent
+clearing facts:
+
+> "[muted-replay fact] [fact:not-compared] with the shadowing check(s) lifted-big-data-set silenced,
+> THIS check fires on the BUGGY build at this exact input — the same check fires on both builds"
+
+> "[fire-rate fact] buggy build 20000/20000 = 100% … intrinsic to the check/setup construction, not
+> a detection of the defect."
+
+Judge: `SOUND — For the specific completed calls … a correct Mann-Whitney asymptotic p-value
+implementation must compute a finite value with z=-sqrt(3/(2n+1)) … returning NaN … cannot be
+correct behavior`, `CITATION: NONE`. A pure from-first-principles assertion, no grounding, both
+mechanical facts overridden. Nothing was missing; nothing mechanical fired
+(`not-compared` = non-terminal, rate path reverted).
+
+**(b) relation-replay track** (call [79], verdict L5443). Delivered:
+
+> "[fire-rate fact] buggy build 712/1385 = 51%; patched build 1384/1384 = 100% … indiscriminate;
+> the firing is intrinsic to the check/setup construction … **Keep only with a shown contract that
+> makes every one of those inputs a genuine violation.**"
+
+Judge: `SOUND`, `CITATION: NONE`. The fact stated its own keep-condition and the judge kept without
+meeting it.
+
+#### Leg 19 — Math-65 (2 convicting firings: 1× (a), 1× (c))
+
+**(a) `chiSquare-inversely-scales-with-uniform-weight-factor`, harness track** (call [81], verdict
+L10821). Present: `[buggy-replay fact]` (shadowed by `circle-dense-errors-0`, "UNKNOWN") and
+`[screen-decision fact] … kept: direction-confirmed`. Missing: `[fire-rate fact]`,
+`[muted-replay fact]`, `[buggy-scan fact]`, `[universal-screen fact]`, every `[fact:` tag.
+Three concrete reasons, all mechanical:
+1. `one_door_entry` matched=**True**, so the universal-screen path is gated off
+   (`if _fired_ids and not _one_door_matched …`, `run.py:2999`).
+2. The one-door path called `fire_rate_fact` with buggy 3953/20000 = **19.8%** and patched counts
+   `None` — the replay pass runs *later* in `main` (`run.py:2910` comment) — so no branch matched
+   (0.198 < `MAX_FIRE_RATIO` 0.20 and < `INTRINSIC_FIRE_RATIO`) and it returned `None`.
+3. This leg has **zero** `[muted-replay fact]` anywhere in the trace: same single-pass muted-replay
+   limitation as Closure-62.
+
+Overlay: the SAME relation was judged `UNSOUND` twice in the same run (L11921, L13443) citing
+`"chiSquare += residual * residual / residualsWeights[i];"`, so the soundness evidence was in front
+of the judge and sufficient — 2 SOUND / 2 UNSOUND on one relation, i.e. the 5/10-flip variance.
+
+**(c) relation-replay track** (call [97], verdict L12713). A delivered fact is factually wrong:
+
+> "[fire-rate fact] buggy build 3953/20000 = 20%; patched build 20000/20000 = 100% … the check is
+> **silent (or near-silent) on the known-broken code** and loud on the patch, i.e. the PATCH
+> introduced this divergence. This is a strong discrimination signal, NOT grounds to indict the
+> check."
+
+19.8% — roughly one in five random valid inputs on the known-broken build — is neither silent nor
+near-silent. The `asymmetric` branch of `fire_rate_fact` fires on *any* buggy rate below
+`MAX_FIRE_RATIO` (0.20) and asserts silence, then converts that into an explicit pro-keep
+instruction. Same shape as the Chart-26 false fact, different site. **c34b8f9 does not fix this** —
+that commit only touches the diverted-replay "ran clean" claim in `muted_replay_note`.
+
+#### The concrete missing measurement, per leg (input to item 4)
+
+- **Closure-62 / `end-of-line-caret`:** does this check fire on the **buggy** build at this exact
+  input? Delivered as `[muted-replay fact]` on the **harness/one-door** track. Requires the muted
+  re-replay to *iterate*: mute the shadowing set; if the muted run still crashes at another sibling,
+  add it to the mute set and repeat until the target fires or the run completes. Today it is one
+  bounded pass and returns `None` on "crashed elsewhere". (Its same-family sibling
+  `null-source-eol-caret` already measured buggy 999/1000 = 100%, so the answer is near-certain.)
+- **Math-30:** nothing is missing. Both convicting firings already carry the clearing fact.
+- **Math-65 / harness track:** (i) the same iterated muted buggy re-replay for
+  `chiSquare-inversely-scales-…` shadowed by `circle-dense-errors-0`; (ii) plumb the buggy screen
+  rate to the one-door track **unconditionally** — 3953/20000 on the known-broken build is an
+  indictment in its own right, but `fire_rate_fact` emits nothing below 0.20.
+- **Math-65 / replay track:** not a delivery item — a correctness fix. Gate the "silent (or
+  near-silent)" wording on a genuine near-zero buggy rate; state rates neutrally in between.
+
+#### Dominant classification and what it scopes item 4 to
+
+**Tally of the 8 convicting firings: (a) 2 · (b) 5 · (c) 1.** Dominant = **(b) COLLECTED BUT
+IGNORED**, and the two (a)s are the *weaker* half of the evidence — in both, a same-family sibling
+firing in the same leg already carried the fact.
+
+Every (b) shares one signature: `CITATION: NONE` plus a from-first-principles "no correct
+implementation could…" argument, over the top of a delivered mechanical fact that states the
+opposite. Math-30's `overflow-boundary-monotone` is the proof case: it has the richest evidence
+block of any firing in the three legs — muted-replay fires-on-both **and** buggy 100% fire rate —
+and it still convicted a correct patch.
+
+**Item 4 is therefore NOT delivery.** More facts will not move these legs; the facts are already
+there and are being argued past. Item 4 must be **mechanical enforcement**:
+- the item-3 rate rule as a **drop**, not a note: buggy ≥ `INTRINSIC_FIRE_RATIO` ⇒ dropped with the
+  family-duty escape (this alone kills Closure-62 `null-source-eol-caret` at 100% and Math-30
+  `overflow-boundary-monotone` at 100%);
+- a **terminal-style drop for the fires-on-both profile**, i.e. promote `[fact:not-compared]`
+  out of `_NON_TERMINAL_FACT_TAGS` when the muted replay confirms the target fires on the buggy
+  build (this kills Closure-62 `lifted-seed` and Math-30 `overflow-boundary-monotone`);
+- enforce `CITATION: NONE` + "keep only with a shown contract" as a **mechanical** conjunction
+  rather than prose the judge may decline (Math-30 replay track, Closure-62 replay track).
+
+Plumbing (the iterated muted re-replay, and the unconditional buggy-rate delivery to the one-door
+track) is a **secondary** item, worth ~2 of 8 firings, and both Math-65 harness-track and
+Closure-62 `end-of-line-caret` would still need the mechanical drop above to convert the fact into
+a dismissal once delivered. The single (c) is a third, independent correctness fix in
+`fire_rate_fact`'s `asymmetric` branch.
