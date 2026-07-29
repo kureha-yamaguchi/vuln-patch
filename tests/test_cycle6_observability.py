@@ -178,7 +178,7 @@ def test_6b_records_considered_and_decided_when_it_drops(events):
     ok, why = _adjudicate(v, _INDISCRIMINATE)
     assert ok is False and "[6B-INDISCRIMINATE-DROP]" in why
     considered = one(events, 'cycle6_6B_indiscriminate_considered')
-    assert considered['output'].startswith('rate=0.99')
+    assert considered['output'].startswith('at-or-above-bar · rate=0.99')
     assert one(events, 'cycle6_6B_indiscriminate_decided')['output'] == 'dropped'
 
 
@@ -190,28 +190,55 @@ def test_6b_records_the_family_duty_escape_as_its_decision(events):
     assert one(events, 'cycle6_6B_indiscriminate_decided')['output'] == 'escaped'
 
 
-def test_6b_records_that_it_ran_and_found_no_rate(events):
-    """THE point of this file: a quiet 6B must still be visible."""
+def test_6b_records_that_it_ran_and_the_rate_was_healthy(events):
+    """THE point of this file: a quiet 6B must still be visible.
+
+    Renamed from ``..._found_no_rate``. On this evidence the rate IS measured —
+    it is the catch profile, buggy side near zero — and the old label said
+    "rate=None / no rate found", which reads as a missing measurement. That
+    misreading is the whole reason for item 1, and it was pinned by a test
+    asserting the wrong words."""
     v = _StubVerifier()
     ok, _ = _adjudicate(v, _CATCH)
     assert ok is True
-    assert one(events,
-               'cycle6_6B_indiscriminate_considered')['output'] == 'rate=None'
+    considered = one(events, 'cycle6_6B_indiscriminate_considered')['output']
+    assert considered.startswith('below-bar · rate=')
+    assert 'rate=None' not in considered
     decided = one(events, 'cycle6_6B_indiscriminate_decided')
-    assert decided['output'] == 'not-applicable'
-    assert 'no rate found' in decided['reason']
+    assert decided['output'] == 'not-applicable · below-bar'
+    # It must say the check discriminates, NOT that nothing was measured.
+    assert 'discriminates' in decided['reason']
+    assert 'never measured' not in decided['reason']
 
 
-def test_6b_records_a_not_applicable_when_the_verdict_is_already_unsound(
+def test_6b_records_no_measurement_distinctly_from_a_healthy_rate(events):
+    """The state the old label was mistaken FOR must be reachable and distinct
+    from the state it actually usually meant."""
+    v = _StubVerifier()
+    _adjudicate(v, "no facts here at all")
+    considered = one(events, 'cycle6_6B_indiscriminate_considered')['output']
+    assert considered == 'no-measurement · rate=None'
+    decided = one(events, 'cycle6_6B_indiscriminate_decided')
+    assert decided['output'] == 'not-applicable · no-measurement'
+    assert 'never measured' in decided['reason']
+
+
+def test_6b_records_a_not_applicable_when_the_alarm_was_already_discarded(
         events):
+    """Renamed from ``..._when_the_verdict_is_already_unsound``. In this file
+    `ok` is the status of the FIRING: ok=False means the alarm was already
+    explained away, NOT that the patch is unsound. The old label said
+    "already UNSOUND", which reads as the opposite."""
     v = _StubVerifier(verify_results=[(False, "judge says unsound")])
     ok, _ = _indiscriminate_rate_gate(
         False, "judge says unsound", _INDISCRIMINATE, v, "fired", "block",
         "src", {'value': None, 'why': None})
     assert ok is False
-    assert one(events, 'cycle6_6B_indiscriminate_considered')
-    assert one(events,
-               'cycle6_6B_indiscriminate_decided')['output'] == 'not-applicable'
+    assert one(events, 'cycle6_6B_indiscriminate_considered')['output'] == \
+        'alarm-already-discarded'
+    decided = one(events, 'cycle6_6B_indiscriminate_decided')
+    assert decided['output'] == 'not-applicable · alarm-already-discarded'
+    assert 'no standing alarm' in decided['reason']
 
 
 # ---------------------------------------------------------------------------
@@ -220,7 +247,10 @@ def test_6b_records_a_not_applicable_when_the_verdict_is_already_unsound(
 @pytest.mark.parametrize("verdict,expect_output,expect_decision", [
     ("identical", 'verdict=identical', 'dropped'),
     ("different", 'verdict=different', 'kept'),
-    ("unknown", 'verdict=not-compared', 'not-applicable'),
+    # "we compared and could not tell" is now distinct from "there was nothing
+    # to compare" — see test_6c_records_none_when_there_is_no_confirmation.
+    ("unknown", 'verdict=not-compared',
+     'not-applicable · values-not-comparable'),
 ])
 def test_6c_records_the_resolved_value_verdict_and_its_decision(
         events, verdict, expect_output, expect_decision):
@@ -252,13 +282,15 @@ def test_6c_records_a_live_drop_through_adjudicate(events):
 
 
 def test_6c_records_none_when_there_is_no_confirmation_at_all(events):
-    """Ran, saw nothing — and says so."""
+    """Ran, saw nothing — and says so, in words distinct from "compared and
+    could not tell"."""
     v = _StubVerifier()
     _adjudicate(v, "no facts here at all")
     assert one(events,
                'cycle6_6C_fires_on_both_considered')['output'] == 'verdict=none'
-    assert one(events,
-               'cycle6_6C_fires_on_both_decided')['output'] == 'not-applicable'
+    decided = one(events, 'cycle6_6C_fires_on_both_decided')
+    assert decided['output'] == 'not-applicable · no-fires-on-both-confirmation'
+    assert 'nothing to compare' in decided['reason']
 
 
 def test_6c_records_the_family_duty_escape(events):

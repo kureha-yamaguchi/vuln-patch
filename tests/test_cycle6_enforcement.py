@@ -253,6 +253,67 @@ def test_indiscriminate_drop_never_flips_a_dismissal_into_a_keep():
 
 
 # ---------------------------------------------------------------------------
+# ITEM 1 — the rate label used to mean five different things at once.
+# ``indiscriminate_buggy_rate`` returned a bare None for four distinct
+# situations and the trace reported all four as "no rate found", which reads as
+# "we never measured" when the commonest case is the opposite. These tests pin
+# each situation to its own name, and pin the drop decision to be UNCHANGED.
+# ---------------------------------------------------------------------------
+_RATE_CASES = [
+    ("no-measurement", "", None),
+    ("no-measurement", "no rates here", None),
+    ("buggy-side-unmeasured", ef.fire_rate_fact(None, None, 20000, 18000, ""),
+     None),
+    ("below-bar", _UNDER_BAR, 0.90),
+    ("at-or-above-bar", _MATH73C, 0.999),
+    ("at-or-above-bar", _HUNDRED_PCT, 1.0),
+    # Hand-built, NOT via fire_rate_fact: a real catch-signal block has a buggy
+    # rate below SILENT_FIRE_RATIO by construction, so it can never reach the
+    # intrinsic bar. This pins the belt-and-braces branch that the original
+    # function also carried for a combination the fact-builder cannot emit.
+    ("catch-profile-skipped",
+     "[fire-rate fact] buggy build 20000/20000 = 100%; patched build "
+     "200/20000 = 1% of random valid inputs. [fact:rate-catch-signal]",
+     1.0),
+]
+
+
+@pytest.mark.parametrize("state,evidence,rate", _RATE_CASES)
+def test_rate_diagnosis_names_which_situation_it_saw(state, evidence, rate):
+    d = ef.indiscriminate_rate_diagnosis(evidence)
+    assert d['state'] == state, f"{state} misreported as {d['state']}"
+    assert d['state'] in ef.RATE_STATES
+    if rate is None:
+        assert d['rate'] is None
+    else:
+        assert d['rate'] == pytest.approx(rate, abs=1e-3)
+    # The detail is what a human reads in the trace; it must not be empty and
+    # must never claim nothing was measured when something was.
+    assert d['detail']
+    if d['rate'] is not None:
+        assert 'never measured' not in d['detail']
+
+
+@pytest.mark.parametrize("state,evidence,rate", _RATE_CASES)
+def test_rate_diagnosis_does_not_change_the_drop_decision(state, evidence,
+                                                          rate):
+    """The whole fix is observability. drop_rate must equal what the old
+    single-purpose function returned, for every situation."""
+    d = ef.indiscriminate_rate_diagnosis(evidence)
+    assert d['drop_rate'] == ef.indiscriminate_buggy_rate(evidence)
+    assert (d['drop_rate'] is not None) == (state == 'at-or-above-bar')
+
+
+def test_below_bar_is_reported_as_measured_and_healthy():
+    """The case that caused the misreading: measured, fine, and the old label
+    said "no rate found". A reader must be able to tell this from a miss."""
+    d = ef.indiscriminate_rate_diagnosis(_UNDER_BAR)
+    assert d['state'] == 'below-bar'
+    assert d['rate'] == pytest.approx(0.90, abs=1e-3)
+    assert 'below' in d['detail'] and 'discriminates' in d['detail']
+
+
+# ---------------------------------------------------------------------------
 # PART 3 — confirmed fires-on-both, resolved by the value comparison
 # ---------------------------------------------------------------------------
 def _muted(value_verdict):
@@ -404,7 +465,12 @@ def test_verify_transport_error_is_passed_through_unchanged():
 
 
 def test_rate_gate_returns_the_original_verdict_on_a_parse_error(monkeypatch):
-    monkeypatch.setattr(ef, 'indiscriminate_buggy_rate',
+    # Patches indiscriminate_rate_diagnosis, which is what the gate now calls.
+    # It used to patch indiscriminate_buggy_rate; when the gate moved to the
+    # diagnosis function this test silently stopped exercising the fail-open
+    # path and started asserting on a live family-duty call instead. Patch the
+    # function the gate actually calls, or the fail-open guard is untested.
+    monkeypatch.setattr(ef, 'indiscriminate_rate_diagnosis',
                         lambda t: (_ for _ in ()).throw(ValueError("boom")))
     v = _StubVerifier(fd_results=[])
     ok, why = _indiscriminate_rate_gate(

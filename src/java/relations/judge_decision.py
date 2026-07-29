@@ -264,15 +264,28 @@ def _indiscriminate_rate_gate(ok, why, evidence_text, verifier, fired,
     "6B ran and found no rate" is now distinguishable from "6B never ran"."""
     tgt = _target_of(fired)
     if not ok:
+        # LABEL FIX (item 1, the 7th instance of this defect shape). These two
+        # events used to read "verdict already UNSOUND before this gate" and
+        # "nothing to drop (already UNSOUND)". In this file `ok` is the status
+        # of the FIRING, not of the patch: ok=True means the alarm STANDS as
+        # evidence against the patch, ok=False means it was already explained
+        # away. So "already UNSOUND" meant "the alarm is already discarded" —
+        # but every reader parses it as "the patch is unsound", the opposite
+        # sense, which is how it got misread twice in one day. Verified against
+        # 16 legs of final30A/B with unambiguous outcomes: 16 agree, 0 disagree.
         _ev('cycle6_6B_indiscriminate_considered', target=tgt,
-            output='rate=not-parsed',
-            reason='verdict already UNSOUND before this gate')
+            output='alarm-already-discarded',
+            reason='this alarm was already explained away upstream of the '
+                   'gate; 6B only ever discards a STANDING alarm, so there is '
+                   'nothing here for it to act on')
         _ev('cycle6_6B_indiscriminate_decided', target=tgt,
-            output='not-applicable', reason='nothing to drop (already UNSOUND)')
+            output='not-applicable · alarm-already-discarded',
+            reason='no standing alarm to discard — verdict unchanged')
         return ok, why
     try:
-        from java.relations.evidence_facts import indiscriminate_buggy_rate
-        rate = indiscriminate_buggy_rate(evidence_text)
+        from java.relations.evidence_facts import indiscriminate_rate_diagnosis
+        diag = indiscriminate_rate_diagnosis(evidence_text)
+        rate = diag['drop_rate']
     except Exception as e:  # pragma: no cover - defensive
         print(f"      [6B-rate-parse-error] {e} — verdict unchanged")
         _ev('cycle6_6B_indiscriminate_considered', target=tgt,
@@ -282,15 +295,17 @@ def _indiscriminate_rate_gate(ok, why, evidence_text, verifier, fired,
             output='not-applicable',
             reason='rate parse raised — verdict unchanged (fail-open)')
         return ok, why
+    # The state is reported on BOTH events, and the measured rate is reported
+    # even when no drop follows. "not-applicable" alone used to cover five
+    # different situations — including the healthy one where the check works.
+    seen = ('rate=None' if diag['rate'] is None
+            else f"rate={diag['rate']:.4f}")
     _ev('cycle6_6B_indiscriminate_considered', target=tgt,
-        output=('rate=None' if rate is None else f'rate={rate:.4f}'),
-        reason=('no measured buggy-side rate at/above the intrinsic bar in '
-                'this firing\'s evidence'
-                if rate is None else
-                'measured buggy-side fire rate is at/above the intrinsic bar'))
+        output=f"{diag['state']} · {seen}", reason=diag['detail'])
     if rate is None:
         _ev('cycle6_6B_indiscriminate_decided', target=tgt,
-            output='not-applicable', reason='no rate found — verdict unchanged')
+            output=f"not-applicable · {diag['state']}",
+            reason=f"{diag['detail']} — verdict unchanged")
         return ok, why
     fd_ok, fd_why = _family_duty_escape(
         verifier, fired, failing_block, check_source, fd_state)
@@ -351,11 +366,15 @@ def _confirmed_fires_on_both_gate(ok, why, evidence_text, verifier, fired,
     gate actually saw."""
     tgt = _target_of(fired)
     if not ok:
+        # Same label fix as 6B — see the note there. `ok` is the firing's
+        # status, not the patch's.
         _ev('cycle6_6C_fires_on_both_considered', target=tgt,
-            output='verdict=not-resolved',
-            reason='verdict already UNSOUND before this gate')
+            output='alarm-already-discarded',
+            reason='this alarm was already explained away upstream of the '
+                   'gate; 6C only ever acts on a STANDING alarm')
         _ev('cycle6_6C_fires_on_both_decided', target=tgt,
-            output='not-applicable', reason='nothing to drop (already UNSOUND)')
+            output='not-applicable · alarm-already-discarded',
+            reason='no standing alarm to discard — verdict unchanged')
         return ok, why
     try:
         from java.relations.evidence_facts import (
@@ -381,11 +400,21 @@ def _confirmed_fires_on_both_gate(ok, why, evidence_text, verifier, fired,
                                   'values — conviction evidence, never dropped')
         return ok, why
     if verdict != 'identical':
-        # 'not-compared' (unknown) or no confirmation at all.
+        # LABEL FIX (item 1): these are two different situations and the old
+        # single 'not-applicable' hid which one happened. 'not-compared' means a
+        # fires-on-both confirmation exists but the observed values could not be
+        # compared; None means there was no confirmation to compare at all. Only
+        # the second means "this gate had nothing to look at".
+        state = ('values-not-comparable' if verdict == 'not-compared'
+                 else 'no-fires-on-both-confirmation')
         _ev('cycle6_6C_fires_on_both_decided', target=tgt,
-            output='not-applicable',
-            reason='no confirmed identical comparison (unknown is never a '
-                   'drop) — verdict unchanged')
+            output=f'not-applicable · {state}',
+            reason=('a fires-on-both confirmation exists but its observed '
+                    'values could not be compared, and unknown is never a '
+                    'drop — verdict unchanged'
+                    if verdict == 'not-compared' else
+                    'no fires-on-both confirmation appears in this evidence, '
+                    'so there was nothing to compare — verdict unchanged'))
         return ok, why
     fd_ok, fd_why = _family_duty_escape(
         verifier, fired, failing_block, check_source, fd_state)

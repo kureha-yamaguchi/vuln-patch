@@ -1748,6 +1748,82 @@ def rate_profile(text):
     return None
 
 
+#: The distinct situations ``indiscriminate_rate_diagnosis`` tells apart. The
+#: old ``indiscriminate_buggy_rate`` collapsed the first FOUR of these into a
+#: bare None, and the 6B audit event reported all of them as "no rate found".
+#: That reads as "we never measured" when the commonest case is the opposite —
+#: we measured, and the number was healthy. A whole paired-run analysis was
+#: nearly published off that misreading; see docs/replay/FINAL30-PAIRED.md.
+RATE_STATES = ('no-measurement', 'buggy-side-unmeasured', 'below-bar',
+               'catch-profile-skipped', 'at-or-above-bar')
+
+
+def indiscriminate_rate_diagnosis(text):
+    """Why 6B can or cannot call a firing indiscriminate — the full reason, not
+    just the number.
+
+    Returns ``{'state', 'rate', 'drop_rate', 'detail'}``:
+
+    * ``state`` — one of ``RATE_STATES``.
+    * ``rate`` — the highest buggy-side rate actually measured, or None if none
+      was. Reported for EVERY state that has one, including the states where no
+      drop follows; that is the whole point of this function.
+    * ``drop_rate`` — the rate 6B would drop on, or None. Exactly the old
+      return value, so behaviour is unchanged by construction.
+    * ``detail`` — one plain sentence naming what was seen.
+
+    The states, in the order they are tested:
+
+    ``no-measurement``        no ``[fire-rate fact]`` block in the evidence.
+    ``buggy-side-unmeasured`` blocks present, none reporting a buggy-side rate.
+    ``at-or-above-bar``       a non-catch block at/above ``INTRINSIC_FIRE_RATIO``
+                              — the firing is structural; this is the drop.
+    ``catch-profile-skipped`` the only high rates sit in CATCH-tagged blocks,
+                              which 6B never drops on.
+    ``below-bar``             measured, and below the bar. The HEALTHY case: the
+                              check tells the two builds apart.
+
+    Pure — no I/O, no LLM."""
+    blocks = parse_fire_rate_blocks(text)
+    if not blocks:
+        return {'state': 'no-measurement', 'rate': None, 'drop_rate': None,
+                'detail': 'no [fire-rate fact] block appears in this evidence '
+                          '— the fire rate was never measured'}
+    measured = [b for b in blocks if b['buggy'] is not None]
+    if not measured:
+        return {'state': 'buggy-side-unmeasured', 'rate': None,
+                'drop_rate': None,
+                'detail': f'{len(blocks)} fire-rate block(s) present but none '
+                          f'reports a buggy-side rate'}
+    highest = max(b['buggy'] for b in measured)
+    drop = None
+    for b in measured:
+        rate = b['buggy']
+        if rate < INTRINSIC_FIRE_RATIO or b['profile'] == 'catch-signal':
+            continue
+        if drop is None or rate > drop:
+            drop = rate
+    if drop is not None:
+        return {'state': 'at-or-above-bar', 'rate': highest, 'drop_rate': drop,
+                'detail': f'buggy-side fire rate {drop:.1%} is at/above the '
+                          f'{INTRINSIC_FIRE_RATIO:.0%} intrinsic bar — this '
+                          f'check condemns the known-broken build on '
+                          f'essentially every input'}
+    catch_high = [b['buggy'] for b in measured
+                  if b['profile'] == 'catch-signal'
+                  and b['buggy'] >= INTRINSIC_FIRE_RATIO]
+    if catch_high:
+        return {'state': 'catch-profile-skipped', 'rate': highest,
+                'drop_rate': None,
+                'detail': f'highest buggy-side rate {max(catch_high):.1%} is '
+                          f'at/above the bar but sits in a CATCH-tagged block, '
+                          f'which 6B never drops on'}
+    return {'state': 'below-bar', 'rate': highest, 'drop_rate': None,
+            'detail': f'highest buggy-side rate {highest:.1%} is below the '
+                      f'{INTRINSIC_FIRE_RATIO:.0%} intrinsic bar — measured, '
+                      f'and the check discriminates between the builds'}
+
+
 def indiscriminate_buggy_rate(text):
     """Cycle-6 PART 2: the MEASURED buggy-side fire rate that condemns the
     known-broken build on essentially every input, or None.
@@ -1757,17 +1833,11 @@ def indiscriminate_buggy_rate(text):
     CATCH profile (belt and braces — a catch block's buggy rate is below
     ``SILENT_FIRE_RATIO`` by construction and can never reach this bar). None
     when nothing was measured, when the buggy side is unmeasured, or when the
-    rate is below the bar — a missing measurement is never a drop. Pure."""
-    best = None
-    for b in parse_fire_rate_blocks(text):
-        rate = b['buggy']
-        if rate is None or rate < INTRINSIC_FIRE_RATIO:
-            continue
-        if b['profile'] == 'catch-signal':
-            continue
-        if best is None or rate > best:
-            best = rate
-    return best
+    rate is below the bar — a missing measurement is never a drop.
+
+    Thin wrapper over ``indiscriminate_rate_diagnosis`` so the drop decision
+    and the explanation of it can never drift apart. Pure."""
+    return indiscriminate_rate_diagnosis(text)['drop_rate']
 
 
 def confirmed_fires_on_both_verdict(text):
