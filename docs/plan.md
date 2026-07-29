@@ -2829,3 +2829,38 @@ replay population. Every 7C/7D/7E change: fixture replay + one-leg smoke with ev
 checked live, BEFORE any suite. Next paired 30-leg only after the full batch lands.
 Success bar for cycle 7, pre-committed: paired mean > 0.685 with FP count < 5 in at
 least one roll and no new-FP legs; stop-loss: 3 iterations per lever, then park.
+
+## Cycle-7 pre-build diagnostics (both free, both design-changing)
+
+**Vote precondition for within-run answer reuse — CLEAR.**
+A diverse-lens ensemble exists (`relation_verifier.py`, `for i in range(self.votes)`,
+strict-majority-UNSOUND to drop, ties fail open) but `RELATION_VERIFIER_VOTES`
+defaults to 1 and no archived leg shows a multi-lens verdict. There is no
+ensemble to collapse, so reuse is safe. Design constraint carried forward: key the
+cache on the FULL prompt including the lens suffix, so that if voting is ever
+switched on, different lenses remain different cache entries by construction.
+
+**Placement audit — NEGATIVE, and that is the useful answer.**
+Prompted by Math-65, where the decisive code line sat once at char 27,051 of a
+59,830-char prompt. Audited all 230 archived judge prompts for where each computed
+fact physically sits relative to the firing.
+
+Result: every fact that is actually delivered goes into the `<evidence>` block,
+which sits at a median of **15%** of the prompt — before the `<codebase_context>`
+dump, adjacent to the firing. Placement of computed facts is correct and needs no
+change.
+
+The first cut of this audit appeared to show three fact types landing at 85% of
+the prompt, after the dump. That was an artifact: the guidance boilerplate (which
+follows the dump) mentions those tag names. Delivered-vs-boilerplate counts:
+trigger-test lift 13 delivered / 183 boilerplate; differential 6 / 190;
+buggy-replay 113 / 83. The 13 independently matches item 2a's count of delivered
+lift notes.
+
+Consequence for the Math-65 fix: it is a targeted addition, not a repair of a
+systemic placement bug. The code line belongs in the code dump; what is missing is
+a fact block that also states it. Duplicate it into `<evidence>`, leave the dump
+untouched. Do NOT re-engineer the assembly order — it is already right.
+
+Also observed, not yet investigated: 34 of 230 judge prompts carry no
+`<evidence>` block at all. May simply mean no fact applied. Parked.
