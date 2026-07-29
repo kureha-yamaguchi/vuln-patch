@@ -1,0 +1,14 @@
+# Pre-flight smokes (2026-07-29) — the two cycle-6 mechanisms never observed
+# live, each on its motivating case. Width 5 to match the planned measurement.
+#  * Chart-26 CORRECT: the diverted-replay fix (swallowed exception read as
+#    "ran clean"). Expect: no "patch introduced this" claim, the DIVERTED
+#    wording + event present, ideally the accusation flips to clean.
+#  * Lang-63 OVERFIT: 6C's protection rule (fires-on-both with DIFFERENT
+#    values = evidence against the patch, never dropped). Has never fired
+#    anywhere. Doubles as roll 3 for a bug currently 1-for-2.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+)
