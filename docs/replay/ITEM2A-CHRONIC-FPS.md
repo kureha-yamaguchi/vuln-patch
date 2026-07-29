@@ -84,10 +84,31 @@ These are five different situations and they do not all have the same fix:
   provenance. Resolving these would mean evaluating Java expressions. Not
   recommended.
 * **10 cases — values extracted, but non-numeric**, and the comparison only
-  understands numbers. Small but genuinely wasted: one sample has pinned values
+  understands numbers. One sample has pinned values
   `['ClassUtils','Map.Entry','String[]',…]` against an alarm about short class
-  names agreeing. A string comparison would resolve it. All 10 are gold=SOUND,
-  so fixing this can only help precision.
+  names agreeing. A string comparison would resolve it.
+
+  > **CORRECTED — this bullet licensed a fix that was built and then rejected.**
+  > It originally ended "All 10 are gold=SOUND, so fixing this can only help
+  > precision", and the plain-English summary rendered that as "all 10 are good
+  > fixes". Both were wrong.
+  >
+  > Verified against the fixture: all 10 rows are the **same leg** —
+  > `patch1-Lang-41-Arja-plausible_o`, a **fake** patch, label `overfitting`,
+  > gold=SOUND on all ten. So the population is ten firings of one bug (n=1 leg),
+  > and every one is a finding that should be **kept**.
+  >
+  > The error was reading `gold=SOUND` as "good fix". `gold` describes the
+  > soundness of the **check**, not the correctness of the **patch**, and the two
+  > run opposite — a sound check on a fake patch is a legitimate catch. Per
+  > `score_replay.py`: "over-kill (gold=SOUND dropped)", i.e. gold=SOUND means
+  > keep.
+  >
+  > So there was never precision upside here. Making these rows comparable
+  > creates dismissal pressure on a leg whose findings are correct. Measured
+  > alone, the fix produced exactly one dismissal instruction across all 228
+  > records and it was the wrong one. Not shipped — see the NOT SHIPPED note in
+  > `evidence_facts.py`.
 
 ## What this licenses under item 7
 
@@ -98,13 +119,24 @@ cases with no LLM spend:
    largest addressable slice (~69 cases, 34%). Stated generally: an assertion is
    any call whose name begins `assert` (plus a configurable set), not only
    `assertEquals`.
-2. **Compare non-numeric values** as well as numbers (~10 cases, all correct
-   patches). Exact token equality is enough; no inference.
+2. ~~**Compare non-numeric values** as well as numbers (~10 cases, all correct
+   patches). Exact token equality is enough; no inference.~~
+   **WITHDRAWN — built, measured alone, rejected.** The "all correct patches"
+   description was false: all 10 rows are one *fake* patch
+   (`patch1-Lang-41-Arja-plausible_o`) whose findings should be kept. Measured
+   in isolation it produced one dismissal instruction across all 228 records,
+   and that one was wrong. See the correction above and the NOT SHIPPED note in
+   `evidence_facts.py`.
 
-Neither makes the dismissal rule fire more often *than it should* — both simply
-make the comparison able to return a verdict where a verdict genuinely exists.
-Whether the alarm is then dismissed still depends on the values actually
-matching.
+Item 1 makes the dismissal rule fire more often only where a verdict genuinely
+exists; whether the alarm is then dismissed still depends on the values actually
+matching. Measured alone, it fires the dismissal instruction once, correctly,
+with zero wrong firings, and moves extraction-empty from 204 to 173.
+
+**Process note.** These two were licensed by the same paragraph and would have
+shipped as one change. Bundled, they measure 2 right / 1 wrong and look like a
+net win. Separated, item 1 is 1/0 and item 2 is 0/1. Per-item measurement before
+shipping is now the standing rule for the rest of the batch.
 
 Expected effect, stated honestly: this makes an unreachable branch reachable for
 roughly a third of cases. It does **not** follow that a third of false

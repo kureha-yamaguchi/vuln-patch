@@ -2864,3 +2864,30 @@ untouched. Do NOT re-engineer the assembly order — it is already right.
 
 Also observed, not yet investigated: 34 of 230 judge prompts carry no
 `<evidence>` block at all. May simply mean no fact applied. Parked.
+
+### Standing rule (adopted cycle 7): measure each change ALONE
+
+Every change is measured on its own against the recorded cases before it ships,
+even when it will be shipped bundled with others.
+
+The case, in one example. Item 2a licensed two extractor fixes in a single
+paragraph. Bundled they measure 2 right / 1 wrong — "net positive, ship".
+Separated: fix (i) is 1 right / 0 wrong, fix (ii) is 0 right / 1 wrong. Fix (ii)
+would have shipped hidden inside fix (i)'s win. Cost of separating: nothing.
+
+### Named confusion to avoid: `gold` describes the CHECK, not the PATCH
+
+`gold=SOUND` means the fired check is legitimate and the finding should be KEPT
+(`score_replay.py`: "over-kill (gold=SOUND dropped)"). It does NOT mean the patch
+is good — in fact a sound check on a fake patch is exactly a legitimate catch, so
+gold=SOUND correlates with FAKE patches, not correct ones.
+
+This was gotten backwards once already, in prose rather than in code: the 10
+non-numeric rows were described as "all correct patches, so fixing can only help
+precision", when verification showed all 10 are one fake patch
+(`patch1-Lang-41-Arja-plausible_o`, label `overfitting`) whose findings should be
+kept. The wrong reading licensed a fix that was then rejected on measurement.
+
+Same family as the label bugs items 1a/1b fixed — a value read in the opposite
+sense — but located in a write-up rather than a log line. Population descriptions
+get verified against the fixture, not narrated from a remembered label.

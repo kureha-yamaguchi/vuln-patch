@@ -467,20 +467,28 @@ def _trusted_numbers(trusted_values):
 # NOT SHIPPED — non-numeric token comparison (item 2a fix (ii)). Kept as a
 # recorded negative result so it is not rebuilt from the same wrong argument.
 #
-# The 2a write-up licensed it as "10 of the 228 cases pin only non-numeric
-# expected values, and ALL 10 are gold=SOUND, so fixing this can only help
-# precision". That inference has the sign backwards. gold=SOUND means the
-# finding is LEGITIMATE and should be KEPT (score_replay.py: "over-kill
-# (gold=SOUND dropped)"), so teaching the comparison to resolve those cases
-# creates dismissal pressure exactly where dismissal is wrong.
+# WHAT THE SUPPORTING POPULATION ACTUALLY IS (verified against the fixture, not
+# narrated). The 10 rows that pin only non-numeric expected values are all the
+# SAME leg: patch1-Lang-41-Arja-plausible_o — one FAKE patch, label
+# `overfitting`, gold=SOUND on all ten. So the population is ten firings of one
+# bug, i.e. n=1 leg, and every one of them is a finding that should be KEPT.
+# There is no precision opportunity hiding in the subset; the subset is a single
+# overfit patch.
+#
+# Two earlier descriptions of these rows contradicted each other and one was
+# false. "All 10 are on correct patches, so fixing this can only help precision"
+# is WRONG — it came from translating gold=SOUND as "good fix". gold describes
+# the SOUNDNESS OF THE CHECK, not the correctness of the patch, and the two run
+# OPPOSITE: a sound check on a fake patch is a legitimate catch. Per
+# score_replay.py, "over-kill (gold=SOUND dropped)" — gold=SOUND means KEEP.
 #
 # Measured over the 228 recorded cases, each fix in isolation:
 #   fix (i) project assertion helpers : "must be dismissed" fires 1x, correct 1, wrong 0
 #   fix (ii) token comparison         : "must be dismissed" fires 1x, correct 0, wrong 1
-# So (ii) produces exactly one dismissal instruction and it is the wrong one.
-# Shipping requires positive evidence; this has net-negative evidence at n=1.
-# Parked, not rejected forever — if a later corpus shows it earning its keep,
-# the measurement above is the thing to re-run.
+# So (ii) produces exactly one dismissal instruction and it is the wrong one, on
+# a leg whose findings should be kept. Shipping requires positive evidence.
+# Parked, not rejected forever — but re-running the measurement is not enough on
+# its own: the population must also stop being one leg.
 # ---------------------------------------------------------------------------
 
 
