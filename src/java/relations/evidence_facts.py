@@ -463,6 +463,27 @@ def _trusted_numbers(trusted_values):
     return out
 
 
+# ---------------------------------------------------------------------------
+# NOT SHIPPED — non-numeric token comparison (item 2a fix (ii)). Kept as a
+# recorded negative result so it is not rebuilt from the same wrong argument.
+#
+# The 2a write-up licensed it as "10 of the 228 cases pin only non-numeric
+# expected values, and ALL 10 are gold=SOUND, so fixing this can only help
+# precision". That inference has the sign backwards. gold=SOUND means the
+# finding is LEGITIMATE and should be KEPT (score_replay.py: "over-kill
+# (gold=SOUND dropped)"), so teaching the comparison to resolve those cases
+# creates dismissal pressure exactly where dismissal is wrong.
+#
+# Measured over the 228 recorded cases, each fix in isolation:
+#   fix (i) project assertion helpers : "must be dismissed" fires 1x, correct 1, wrong 0
+#   fix (ii) token comparison         : "must be dismissed" fires 1x, correct 0, wrong 1
+# So (ii) produces exactly one dismissal instruction and it is the wrong one.
+# Shipping requires positive evidence; this has net-negative evidence at n=1.
+# Parked, not rejected forever — if a later corpus shows it earning its keep,
+# the measurement above is the thing to re-run.
+# ---------------------------------------------------------------------------
+
+
 def fired_value_vs_trusted(fired_msg, trusted_values):
     """Mechanically compare the fired message's observed value against the
     values the trigger test itself pins.
@@ -472,6 +493,8 @@ def fired_value_vs_trusted(fired_msg, trusted_values):
         rounding floor.
       * "differs"  — numeric values are present on BOTH sides but none match.
       * "unknown"  — no numeric values are extractable on one or both sides.
+
+    Numeric only, deliberately — see the NOT SHIPPED note above.
     """
     fired_nums = _fired_numbers(fired_msg)
     trusted_nums = _trusted_numbers(trusted_values)

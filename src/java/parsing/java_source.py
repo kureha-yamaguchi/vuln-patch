@@ -86,6 +86,34 @@ def match_paren(src: str, open_idx: int) -> int:
 # mis-split).
 ASSERT_EQ_RE = re.compile(
     r'\bassert(?:Equals|Same|ArrayEquals)\s*\(([^;]*?)\)\s*;')
+# Cycle-7 (item 2a): projects define their OWN equality-assertion helpers, and a
+# hard-coded list of the three JUnit names walks straight past them. Measured on
+# the 228 recorded cases, `expected_assert_literals` returned nothing for 204
+# (89%), which silently disabled the only rule permitted to dismiss a firing as
+# "this just replays the test's own scenario" — see
+# docs/replay/ITEM2A-CHRONIC-FPS.md.
+#
+# Of those 204: 55 used a project helper with no JUnit assert anywhere in the
+# test, and 14 used `assertPrint`. This pattern matches ANY call whose name
+# begins with `assert` (plus `check`/`verify` prefixes, the other common
+# convention) and which takes at least two arguments — the same
+# expected-value-first convention JUnit uses.
+#
+# Deliberately NOT matched: single-argument asserts (assertTrue/assertNull pin no
+# expected value, 69 of the 204 — no extractor change can help those, they need a
+# different mechanism entirely). The generic shape is checked LAST so the three
+# JUnit names keep their exact existing behaviour.
+# NOTE on the argument pattern: a semicolon is allowed INSIDE a double-quoted
+# string. `ASSERT_EQ_RE` uses a plain `[^;]*?`, which cannot cross a semicolon at
+# all — so an assertion whose expected literal itself contains one is missed
+# entirely. That is not hypothetical: the project helper this fix exists to catch
+# pins printed source code, and printed statements end in `;`
+# (`assertPrint("x- -0.0;", parsed)`). Matching only outside-string semicolons
+# costs nothing and recovers exactly those. ASSERT_EQ_RE is left untouched so the
+# JUnit path keeps byte-identical behaviour.
+PROJECT_ASSERT_RE = re.compile(
+    r'\b(?:assert|check|verify|expect)[A-Za-z0-9_]*\s*'
+    r'\(((?:[^;"]|"(?:[^"\\]|\\.)*")*)\)\s*;')
 # A literal argument: quoted string, char, number (int/float/exp, optional
 # f/d/L suffix), or boolean.
 LITERAL_ARG_RE = re.compile(
@@ -277,19 +305,29 @@ def expected_assert_literals(method_source: str) -> List[str]:
     Non-literal expected args (locals, computed) are skipped — only a
     hard-coded literal is trustworthy provenance. Trivial literals (shorter
     than 3 characters, e.g. 0 / 1 / -1) are dropped: as substrings of a
-    fired message they match spuriously."""
+    fired message they match spuriously.
+
+    Cycle-7 (item 2a): after the three JUnit names are tried, PROJECT_ASSERT_RE
+    picks up project-defined equality helpers (`assertPrint`, `checkFoo`, …)
+    under the same expected-value-first convention and the same literal-only
+    rule. The JUnit pass runs FIRST and unchanged, so nothing that worked
+    before can regress; the generic pass only ever ADDS literals from calls the
+    old regex did not match at all. Single-argument asserts still yield nothing,
+    by design — they pin no expected value."""
     out: List[str] = []
-    for m in ASSERT_EQ_RE.finditer(method_source or ''):
-        args = split_top_level_args(m.group(1))
+    seen_spans: List[tuple] = []
+
+    def _harvest(match) -> None:
+        args = split_top_level_args(match.group(1))
         if len(args) < 2:
-            continue
+            return
         cand = args[0]
         if (len(args) >= 3 and args[0].startswith('"')
                 and not args[1].startswith('"')):
             # message-first overload: assertEquals("msg", expected, actual)
             cand = args[1]
         if not LITERAL_ARG_RE.match(cand):
-            continue
+            return
         literal = cand[1:-1] if cand.startswith(('"', "'")) else cand
         # Strip a numeric suffix so the literal matches the value as a fired
         # message would print it (2.5f -> 2.5).
@@ -298,6 +336,17 @@ def expected_assert_literals(method_source: str) -> List[str]:
             literal = literal[:-1]
         if len(literal) >= 3 and literal not in out:
             out.append(literal)
+
+    src = method_source or ''
+    for m in ASSERT_EQ_RE.finditer(src):
+        seen_spans.append(m.span())
+        _harvest(m)
+    for m in PROJECT_ASSERT_RE.finditer(src):
+        # Skip anything the JUnit pass already consumed, so the exact existing
+        # behaviour on assertEquals/Same/ArrayEquals is preserved byte for byte.
+        if any(s <= m.start() < e for s, e in seen_spans):
+            continue
+        _harvest(m)
     return out
 
 
