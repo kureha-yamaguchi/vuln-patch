@@ -2736,3 +2736,27 @@ by itself retract the two-roll result.
 
 **Pre-flight gates (must pass before launch):** the two never-observed mechanisms confirmed live —
 the diverted-replay fix on Chart-26-correct, and 6C's different-values protection on Lang-63.
+
+---
+
+## 2026-07-29 — Lang-63 three-roll decomposition (pre-milestone diagnosis, traces only)
+
+Question: why is Lang-63 1-for-3? Read all three rolls' traces (night20b won / night20c
+missed / preflight2 smoke missed). The two misses have DIFFERENT causes:
+
+| roll | month-family check invented? | construction | fired on patched? | outcome |
+|---|---|---|---|---|
+| night20b | yes (`constructed-known-months`) | clone-and-shift, fuzz deltas, independent expected value | YES (actual=-9) | TP |
+| night20c | yes (`constructed-months` + 2 siblings, 7 harnesses) | clone-and-shift, fuzz deltas | NO — armed but silent all run | FN |
+| preflight2 smoke | NO — zero month-family ids in 5 harnesses | absolute set() only | nothing fired | FN |
+
+So Lang-63 is not simply "reach-limited": it loses to BOTH lotteries stacked —
+invention (the family isn't always proposed) AND reach (when armed, firing depends on
+drawing a discriminating borrow combination). Residuals entry for the milestone:
+**expected miss in both rolls; catch = pleasant surprise, not signal.** Cycle-7 shape:
+this needs either (a) generation-side family persistence per leg (careful: within-run
+only, no cross-run pooling) or (b) seeded borrow-shaped date deltas in the corpus
+(mechanical, general: end-day < start-day combinations) — NOT judge work; no verdict
+was ever wrong here.
+
+No pipeline changes made; diagnosis only, per the hard-stop rule.
