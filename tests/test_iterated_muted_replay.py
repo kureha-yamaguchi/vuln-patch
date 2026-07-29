@@ -278,7 +278,13 @@ def test_buggy_rate_delivery_is_wired_into_the_harness_track():
         os.path.abspath(__file__))), "src", "java", "run.py")
     with open(run_py) as fh:
         source = fh.read()
-    assert "not _rate_known" in source
+    # Cycle-6 item 6: the decide-and-measure body moved into
+    # `_universal_screen_step`, which is handed this firing's `_rate_known` and
+    # skips on it (`tests/test_universal_screen_delivery.py` pins that
+    # behaviour, and that the question is per-ORACLE). The gate is still the
+    # KNOWN rate, never the one-door match.
+    assert "_universal_screen_step(" in source
+    assert "_oid_u, src, _rate_known, _universal_facts" in source
     assert "not _one_door_matched" not in source   # the old suppressing gate
     assert "[buggy-rate delivery]" in source
     assert "_buggy_rate_counts" in source

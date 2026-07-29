@@ -574,6 +574,122 @@ def _cycle6_ev(method, target=None, output=None, reason=None):
         pass
 
 
+def _rate_absent(oid, reason):
+    """Cycle-6 item 6 — record that this firing reaches judging with NO
+    buggy-side fire rate in its evidence, and WHY.
+
+    smoke30 (docs/replay/smoke30_analysis.md) turned on a firing whose 6B event
+    read "no rate found — verdict unchanged" with nothing anywhere saying why
+    the rate was missing; the analysis then guessed wrong about the cause twice.
+    Every path that ends with no rate in the evidence now says so here, so the
+    absence is never again something that has to be inferred. Never raises."""
+    _cycle6_ev('cycle6_rate_absent', target=oid, output='no-rate',
+               reason=reason)
+
+
+# Spec M (cycle-3b): per-leg ceiling on how many oracles the universal screen
+# will MEASURE. Each measurement is a full instrument + compile + counting-fuzz
+# round, so the budget is spent only on oracles that actually reach the
+# measuring path (a cached, already-known or unmeasurable oracle costs none).
+_UNIVERSAL_SCREEN_CAP = 8
+
+
+def _universal_screen_step(oid, source, rate_known, cache, measured,
+                           instrument, compile_variant, count_violations,
+                           cap=_UNIVERSAL_SCREEN_CAP):
+    """Spec M / cycle-6 item 6 — measure ONE fired oracle's buggy-side fire
+    rate, recording on EVERY path what it decided and why.
+
+    Pure orchestration: the three injected callables do the work —
+    ``instrument(source, oid) -> str|None`` (the counting transform),
+    ``compile_variant(instrumented) -> build|None`` (None = did not compile)
+    and ``count_violations(build) -> (checked, violated)|None`` (None = the
+    counting run produced no counts). Extracted from ``main`` so each failure
+    path is testable offline and so it can never again fail SILENTLY: before
+    this, a missing target id, a non-compiling variant and a countless run all
+    looked identical from the outside (nothing attached, no event).
+
+    Returns ``(notes, measured, counts, outcome)`` where ``outcome`` is one of
+    ``skipped`` / ``cached`` / ``capped`` / ``not-instrumented`` /
+    ``compile-failed`` / ``no-counts`` / ``measured`` / ``raised``.
+
+    FAILS OPEN throughout: any failure — including an exception from any
+    injected callable — returns no notes and no counts, and never raises. A
+    measurement failure must never manufacture a fact in either direction.
+
+    The "already known" gate is per-ORACLE by construction: this function is
+    told about exactly one ``oid`` and consults ``cache`` under that key only,
+    so one oracle's known rate can never suppress another's measurement."""
+    def _done(outcome, reason, notes=(), counts=None, new_measured=None):
+        _cycle6_ev('cycle6_universal_screen_decided', target=oid,
+                   output=outcome, reason=reason)
+        return (list(notes),
+                measured if new_measured is None else new_measured,
+                counts, outcome)
+    try:
+        if oid is None:
+            return _done('skipped', 'this firing named no oracle id — '
+                                    'nothing to measure')
+        if oid in cache:
+            return _done('cached',
+                         'already measured this oracle in this leg — '
+                         're-attaching %d fact(s), no new measurement'
+                         % len(cache[oid] or []),
+                         notes=cache[oid] or [])
+        if rate_known:
+            return _done('skipped',
+                         'a buggy-side rate is already known for THIS '
+                         'oracle — no new measurement needed')
+        if measured >= cap:
+            return _done('capped',
+                         'per-leg cap of %d measured oracles is spent — '
+                         "fired oracle '%s' was NOT measured and reaches "
+                         'judging with no rate' % (cap, oid))
+        instrumented = instrument(source, oid)
+        if not instrumented:
+            cache[oid] = []
+            return _done('not-instrumented',
+                         "no counting variant could be built for oracle "
+                         "'%s' (target id or entrypoint not found) — "
+                         'nothing measured (fail-open)' % oid)
+        # The budget is spent here, at the first real measurement cost.
+        measured += 1
+        build = compile_variant(instrumented)
+        if not build:
+            cache[oid] = []
+            return _done('compile-failed',
+                         'the instrumented counting variant did not '
+                         'compile — nothing measured (fail-open)',
+                         new_measured=measured)
+        stats = count_violations(build)
+        if not stats:
+            cache[oid] = []
+            return _done('no-counts',
+                         'the counting run produced no [relscreen] counts — '
+                         'nothing measured (fail-open)',
+                         new_measured=measured)
+        checked, violated = stats
+        from java.relations.evidence_facts import (
+            fire_rate_fact as _frf_u, never_held_fact as _nhf_u)
+        notes = []
+        _fru = _frf_u(checked, violated, None, None, '')
+        if _fru:
+            notes.append(_fru)
+        if violated == checked and checked > 0:
+            notes.append(_nhf_u(checked))
+        cache[oid] = notes
+        return _done('measured',
+                     'buggy-side counts violated=%s/%s' % (violated, checked),
+                     notes=notes,
+                     counts=((checked, violated) if checked else None),
+                     new_measured=measured)
+    except Exception as exc:
+        return _done('raised',
+                     'universal screen raised (%s: %s) — nothing measured, '
+                     'nothing attached (fail-open)'
+                     % (type(exc).__name__, exc))
+
+
 def _deliver_buggy_rate(fired_ids, buggy_rate_counts, rate_fact_attached,
                         patched_counts, demote):
     """Cycle-6 item 4 PART B — unconditional delivery of a KNOWN buggy-side
@@ -606,6 +722,12 @@ def _deliver_buggy_rate(fired_ids, buggy_rate_counts, rate_fact_attached,
         if not counts:
             _cycle6_ev('cycle6_buggy_rate_decided', target=oid,
                        output='none', reason='no known rate to deliver')
+            _rate_absent(oid,
+                         'no buggy-side counts exist for this oracle — '
+                         'neither a matched relation\'s screen nor the '
+                         'universal screen produced any (see the '
+                         'cycle6_universal_screen_decided event for which '
+                         'path declined)')
             return None
         if rate_fact_attached:
             _cycle6_ev('cycle6_buggy_rate_decided', target=oid,
@@ -624,10 +746,18 @@ def _deliver_buggy_rate(fired_ids, buggy_rate_counts, rate_fact_attached,
                    output=('attached' if note else 'none'),
                    reason='buggy=%s/%s patched=%s -> %s'
                           % (counts[1], counts[0], patched_counts, _dlv))
+        if not note:
+            _rate_absent(oid,
+                         'a buggy-side rate IS known (%s/%s) but '
+                         'fire_rate_fact produced no statement for it, so '
+                         'this firing reaches judging with no rate'
+                         % (counts[1], counts[0]))
         return note
     except Exception as exc:
         _cycle6_ev('cycle6_buggy_rate_decided', target=oid, output='none',
                    reason='delivery raised (%s: %s) — nothing attached '
+                          '(fail-open)' % (type(exc).__name__, exc))
+        _rate_absent(oid, 'rate delivery raised (%s: %s) — nothing attached '
                           '(fail-open)' % (type(exc).__name__, exc))
         return None
 
@@ -2150,11 +2280,12 @@ def main():
                 except OSError:
                     continue
                 # Spec M: per-leg cache of universal-screen results, keyed by
-                # oracle id (so repeat firings of the same oracle never
-                # re-measure), plus a per-leg cap of 8 MEASURED oracles.
+                # ORACLE id (so repeat firings of the same oracle never
+                # re-measure, and one oracle's result never suppresses
+                # another's measurement), plus the per-leg
+                # `_UNIVERSAL_SCREEN_CAP` on MEASURED oracles.
                 _universal_facts: dict = {}   # oracle id -> [fact notes]
                 _universal_measured = 0
-                _universal_cap_printed = False
                 # Cycle-6 item 4 PART B: per-leg record of the KNOWN buggy-side
                 # rate per oracle id (oracle id -> (checked, violated)), from
                 # whichever measurement produced it — the matched relation's
@@ -3139,78 +3270,89 @@ def main():
                                  output=(f'matched={_one_door_matched} '
                                          f'rate_known={_rate_known}'))
                     try:
-                        # The per-leg CACHE still re-attaches on a repeat
-                        # firing of an already-measured oracle (a known rate
-                        # only suppresses a NEW measurement, never the facts
-                        # this leg already paid for).
-                        if (_fired_ids and jazzer_standalone_jar
-                                and (not _rate_known
-                                     or sorted(_fired_ids)[0]
-                                     in _universal_facts)):
-                            _oid_u = sorted(_fired_ids)[0]
-                            if _oid_u in _universal_facts:
-                                _u_notes = _universal_facts[_oid_u]
-                            elif _universal_measured >= 8:
-                                _u_notes = []
-                                if not _universal_cap_printed:
-                                    print("      [universal-screen] cap: 8 "
-                                          "oracles already measured this leg "
-                                          "— skipping further screens")
-                                    _universal_cap_printed = True
-                            else:
-                                _u_notes = []
+                        # Cycle-6 item 6: the whole decide-and-measure body now
+                        # lives in `_universal_screen_step`, which records
+                        # `cycle6_universal_screen_decided` on EVERY path
+                        # (skipped / cached / capped / not-instrumented /
+                        # compile-failed / no-counts / measured / raised). The
+                        # per-leg CACHE still re-attaches on a repeat firing of
+                        # an already-measured oracle (a known rate only
+                        # suppresses a NEW measurement, never the facts this
+                        # leg already paid for).
+                        _oid_u = sorted(_fired_ids)[0] if _fired_ids else None
+                        if _oid_u is None or not jazzer_standalone_jar:
+                            _cycle6_ev(
+                                'cycle6_universal_screen_decided',
+                                target=_oid_u, output='skipped',
+                                reason=('this firing named no oracle id — '
+                                        'nothing to measure' if _oid_u is None
+                                        else 'no Jazzer standalone jar — the '
+                                             'counting run cannot be executed '
+                                             '(fail-open)'))
+                        else:
+                            # The build subdir index is claimed here (outside
+                            # the step) so it stays globally unique across legs
+                            # whatever the step decides to do.
+                            _idx_u = _universal_seq
+                            _universal_seq += 1
+
+                            def _u_instrument(_s, _o):
                                 from java.execution.oracle_mute import (
                                     instrument_for_counting as _ifc)
-                                _instr_u = _ifc(src, _oid_u)
-                                if _instr_u:
-                                    from java.relations.relation_screen import (
-                                        _run_counting_fuzz as _rcf)
-                                    _idx_u = _universal_seq
-                                    _universal_seq += 1
-                                    _universal_measured += 1
-                                    _stats_u = None
-                                    try:
-                                        _build_u = builder.build(
-                                            _instr_u, selection.buggy_dir,
-                                            output_subdir=f'uscreen_{_idx_u}')
-                                        if _build_u and _build_u.compiled:
-                                            _stats_u = _rcf(
-                                                _build_u, builder,
-                                                selection.buggy_dir,
-                                                jazzer_standalone_jar,
-                                                jazzer_api_jar,
-                                                args.screen_runs, 45)
-                                    except Exception:
-                                        _stats_u = None
-                                    if _stats_u:
-                                        _cu, _vu = _stats_u
-                                        print("      [universal-screen] "
-                                              "measured oracle '" + _oid_u
-                                              + "': violated=" + str(_vu)
-                                              + "/" + str(_cu))
-                                        # PART B: the screen KNOWS this rate
-                                        # now — record it so the delivery step
-                                        # below can state it whatever this
-                                        # block does with it.
-                                        if _cu:
-                                            _buggy_rate_counts.setdefault(
-                                                _oid_u, (_cu, _vu))
-                                        from java.relations.evidence_facts \
-                                            import (fire_rate_fact as _frf_u,
-                                                    never_held_fact as _nhf_u)
-                                        _fru = _frf_u(_cu, _vu, None, None, '')
-                                        if _fru:
-                                            _u_notes.append(_fru)
-                                        if _vu == _cu and _cu > 0:
-                                            _u_notes.append(_nhf_u(_cu))
-                                _universal_facts[_oid_u] = _u_notes
+                                return _ifc(_s, _o)
+
+                            def _u_compile(_instr, _idx=_idx_u):
+                                _b = builder.build(
+                                    _instr, selection.buggy_dir,
+                                    output_subdir=f'uscreen_{_idx}')
+                                return _b if (_b and _b.compiled) else None
+
+                            def _u_count(_build):
+                                from java.relations.relation_screen import (
+                                    _run_counting_fuzz as _rcf)
+                                return _rcf(_build, builder,
+                                            selection.buggy_dir,
+                                            jazzer_standalone_jar,
+                                            jazzer_api_jar,
+                                            args.screen_runs, 45)
+
+                            (_u_notes, _universal_measured, _u_counts,
+                             _u_outcome) = _universal_screen_step(
+                                _oid_u, src, _rate_known, _universal_facts,
+                                _universal_measured, _u_instrument,
+                                _u_compile, _u_count)
+                            if _u_outcome == 'measured':
+                                print("      [universal-screen] measured "
+                                      "oracle '" + _oid_u + "': violated="
+                                      + str(_u_counts[1] if _u_counts else '?')
+                                      + "/"
+                                      + str(_u_counts[0] if _u_counts
+                                            else '?'))
+                            elif _u_outcome == 'capped':
+                                print("      [universal-screen] cap: "
+                                      + str(_UNIVERSAL_SCREEN_CAP)
+                                      + " oracles already measured this leg "
+                                      "— skipped oracle '" + _oid_u + "'")
+                            # PART B: the screen KNOWS this rate now — record
+                            # it so the delivery step below can state it
+                            # whatever this block does with it.
+                            if _u_counts:
+                                _buggy_rate_counts.setdefault(_oid_u,
+                                                              _u_counts)
                             for _un in _u_notes:
                                 _fact_notes.append(_un)
                                 evid = (evid + "\n" + _un) if evid else _un
                                 if _un.startswith("[fire-rate fact]"):
                                     _rate_fact_attached = True
-                    except Exception:
-                        pass
+                    except Exception as _uexc:
+                        _cycle6_ev('cycle6_universal_screen_decided',
+                                   target=(sorted(_fired_ids)[0]
+                                           if _fired_ids else None),
+                                   output='raised',
+                                   reason='universal-screen call site raised '
+                                          '(%s: %s) — nothing attached '
+                                          '(fail-open)'
+                                          % (type(_uexc).__name__, _uexc))
                     # Cycle-6 item 4 PART B — unconditional delivery of a KNOWN
                     # buggy-side rate to the harness track (see
                     # `_deliver_buggy_rate`: whichever branch measured it, a

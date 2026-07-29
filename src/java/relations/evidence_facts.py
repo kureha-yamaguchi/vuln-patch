@@ -1070,6 +1070,29 @@ def fire_rate_fact(buggy_checked, buggy_violated, patched_checked,
         interp = ("fires on essentially every input on the buggy build "
                   "({:.0%}) — the firing is intrinsic to the check/setup "
                   "construction, not a detection of the defect.".format(b_rate))
+    elif (p_rate is None and b_rate is not None
+          and b_rate >= MAX_FIRE_RATIO):
+        # Cycle-6 item 6 (smoke30): the MIRROR of the patched-high /
+        # buggy-unknown branch above — buggy rate MEASURED and above the
+        # indiscriminate cap, patched side not measured yet. Without this
+        # branch the whole measurement was DISCARDED: Math-30's surviving
+        # `u-complement-small` firing had a KNOWN buggy rate of 18420/20000 =
+        # 92% and reached the judge carrying no rate at all, after which 6B
+        # correctly reported "no rate found — verdict unchanged". No new
+        # threshold (MAX_FIRE_RATIO is the shipped indiscriminate cap) and no
+        # verdict: state what was measured and say the reading is undetermined,
+        # exactly as the patched-side mirror does. Decision-neutral by
+        # construction — 6B needs INTRINSIC_FIRE_RATIO (taken by the branch
+        # above) and the 5D two-sided bar needs a patched rate, so this branch
+        # can reach neither.
+        tag = RATE_AMBIGUOUS_FACT_TAG
+        interp = ("fires on {:.0%} of random valid inputs on the BUGGY "
+                  "build; the patched-build rate is unmeasured, so how much "
+                  "of this firing the patch is responsible for is "
+                  "undetermined — what IS measured is that the known-broken "
+                  "build already violates this claim on {:.0%} of random "
+                  "valid inputs. Judge on the check's shown "
+                  "contract.".format(b_rate, b_rate))
 
     if interp is None:
         return None
