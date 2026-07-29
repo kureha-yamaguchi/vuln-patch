@@ -1,0 +1,12 @@
+# Cycle-6 smoke test (2026-07-29): ONE case, Math-30's correct patch — the
+# false accusation that 6B demonstrably dropped in the offline gate but that
+# SURVIVED in night20c. Two hypotheses to discriminate, now that every cycle-6
+# decision leaves a permanent event:
+#   (i)  6B never ran live      -> cycle6_gates_entry / 6B_considered absent
+#   (ii) no buggy rate delivered -> cycle6_buggy_rate_considered rate_known=False
+# Cost ~250k vs 10M for the official measurement.
+MODEL="gpt-5.4"
+COMMON="-n 7 -m 16 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-30-CapGen.patch"
+)
