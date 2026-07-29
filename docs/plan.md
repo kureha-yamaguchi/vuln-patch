@@ -2702,3 +2702,37 @@ population). Headline findings that supersede the single-leg "diff-class fact" i
 Pre-commitment: write the measurement design (what's compared, how many rolls, success
 criterion) into this section BEFORE building items 5, 6, 8, 9. The exam (fresh12)
 launches only on the user's word, after a paired milestone score they accept.
+
+## 2026-07-29 — PRE-COMMITMENT for the 30-leg measurement (written BEFORE launch)
+
+Binding reading rules, fixed in advance so nothing is re-litigated after the numbers land.
+
+**Config (Decision 1): width 5, not 7.** The baseline to beat — paired mean F1 ≈ 0.49 from the
+July-25 poolA/poolB pair — was measured at width 5, so 5 makes the comparison clean and roughly
+halves the cost (~7M vs ~13M). *Caveat recorded in advance:* Chart-19's two-roll win happened at
+width 7. Its mechanism (fuzz-derived container structure) does not depend on harness count, but
+**if Chart-19 misses at width 5 that is a config note, not a mechanism failure** — and it does not
+by itself retract the two-roll result.
+
+**Protocol (Decision 2):**
+1. **Both rolls at the SAME commit, zero code changes between them.** If roll 1 looks bad, it
+   still stands — no peeking and fixing. Any change invalidates the pair and restarts it.
+2. **Report both scores plus the mean, verbatim** from the summary line. No arithmetic on
+   remembered baselines (four counts have drifted that way this week).
+3. **Compare per-leg against the archived pool tables**, not just totals — the totals sit inside
+   a measured ±2-leg variance band (5 of 10 untouched replay rows flip between identical draws).
+4. **Named expected residuals — pre-declared so they are not re-argued afterwards:**
+   - **Math-30** false accusation: EXPECTED to persist. Characterised as a judging residual
+     (`docs/replay/smoke30b_analysis.md`); the rate reaches the judge and it convicts anyway.
+     Not evidence of a plumbing regression.
+   - **Closure-38, Math-104**: EXPECTED misses (hard column — unpinned formatting; sub-noise
+     precision floor).
+   - **Lang-60, Lang-63**: known coin-flips. Lang-63 is 1-for-2 and gets a third data point from
+     today's pre-flight smoke.
+   - **Math-73-c**: still convicting as of night20c; not yet characterised.
+5. **Success is not a single number.** The measurement's value is that it is *attributable*: all
+   six cycle-6 mechanisms now emit permanent considered/decided events, so any movement can be
+   traced to a mechanism or explicitly marked unexplained.
+
+**Pre-flight gates (must pass before launch):** the two never-observed mechanisms confirmed live —
+the diverted-replay fix on Chart-26-correct, and 6C's different-values protection on Lang-63.
