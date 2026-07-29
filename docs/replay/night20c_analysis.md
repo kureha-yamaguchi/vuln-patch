@@ -53,3 +53,36 @@ Confounded and not directly comparable: night20b and night20c differ in BOTH cod
 ±3-leg swing sits inside this pipeline's measured verdict variance (5 of 10 untouched rows flip
 between identical draws). The precision gain is in the right direction and the direction the
 cycle-6 work targeted, but attribution needs the observability fix before it can be claimed.
+
+---
+
+## ADDENDUM (2026-07-29) — two corrections to the reading above
+
+**1. The suspicion is stronger than "we cannot tell."** The two surviving false accusations are
+**Math-30 and Math-73-c** — exactly the two cases 6B was built to eliminate, and exactly the two it
+demonstrably dropped in the offline gate (`v6_gate2`). Their survival in the live run narrows the
+explanation to two possibilities, both bad:
+  (i) 6B never ran in production, or
+  (ii) the measurements it keys on (a known buggy-side fire rate) were never produced for those
+       firings live.
+So this is not merely an observability gap — it is positive evidence that **at least one cycle-6
+mechanism was inert in production**. That is the **third** occurrence of this exact trap (Spec M
+inert; 5B firing zero times; now this), and the first time it was caught *before* the spend rather
+than after.
+
+**2. The structure-from-data scorecard is one proven, one coin-flip — not "recall fell".**
+Chart-19 and Lang-63 were the two first-ever catches credited to that fix in night20b.
+**Chart-19 held in both rolls** (proven, mechanism-attributed, clears the two-roll bar).
+**Lang-63 died in roll two** — so it FAILS the two-roll bar and reverts to coin-flip status.
+Tracking it as an open item rather than folding it into an aggregate: the fix has one confirmed
+win and one unstable case, and Lang-63's cause was already the weaker of the two attributions
+(the fresh-vs-mutated clause, not the install-index mechanism that Chart-19's catch turned on).
+
+## Revised next steps
+1. Logging fix (route cycle-6 decisions through `record_event`) — small, offline.
+2. **Then a single-case smoke run BEFORE the 30-leg measurement**: Math-30's correct patch alone
+   (~250k tokens). If 6B works live, that accusation should drop AND its decision event should now
+   appear in the permanent record. If it does not, we have found the inert mechanism for ~1/40th
+   the cost of the official measurement. With two of six mechanisms under active suspicion, this
+   is cheap insurance.
+3. Only then the 30-leg set twice (~10M).
