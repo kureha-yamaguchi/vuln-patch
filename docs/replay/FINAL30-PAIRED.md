@@ -116,6 +116,39 @@ problem — it is a **rule-diversity** problem. The lever is more *varied* rules
 not more harnesses per rule and not more judge persuasion. That is a general statement:
 it names no bug and no dataset.
 
+### Correction, added after counting all the rules (not just Math-73's)
+
+The paragraph above generalises from one leg where the 6C gate happened to fire. Counting
+every rule that reached the gates across both rolls says something weaker and different,
+so the paragraph above should be read as a hypothesis from a single case, not a result.
+
+161 rule-firings reached the gates. 6B dropped 13 of them; 6C kept 6. The other ~90%
+came back `not-applicable`, split two ways: 84 "nothing to drop (already UNSOUND)" and
+64 "no rate found — verdict unchanged". **35 of the 40 legs that had rules at all had
+zero rules the 6C gate confirmed as discriminating** — including legs we caught in both
+rolls (Math-74, Closure-92, Chart-7, Lang-41, Lang-50). So the catches are mostly *not*
+coming from gate-confirmed discriminating rules; they are coming from the judge's own
+reading of evidence that passed through the gates untouched.
+
+I started to write that up as "40% of gate calls are blind for want of a computed
+number." That is wrong, and checking the source is what caught it.
+`indiscriminate_buggy_rate` returns `None` for three different situations — nothing was
+measured, the buggy side alone was unmeasured, and **the rate was measured and sits
+healthily below the bar**. The third is the good case: it is what a discriminating rule
+looks like. The event text "no rate found" reads as if it were the first.
+
+So the honest finding here is not a mechanism failure. It is that **the trace cannot
+distinguish "we never measured" from "we measured and it was fine"**, and its wording
+points at the wrong one. That is the same class of defect that has bitten this project
+repeatedly — a rule or a readout keyed on text that is absent, undelivered, or read in
+the opposite sense — and it is why the "40% blind" claim above got as far as a draft.
+
+What this changes about priorities: the gates are working as designed and touch a small,
+deliberate slice of the evidence. Before any effort goes into rule diversity, the
+`not-applicable` bucket needs to be split into its three real cases in the trace.
+Until then we cannot tell whether rule invention is actually the bottleneck — the
+evidence I used to claim it was cannot support the claim.
+
 ## Where this leaves the pipeline
 
 Fixed and confirmed: the judge now receives mechanically computed facts and the cycle-6
@@ -124,10 +157,16 @@ false-fact bug that fabricated evidence against correct patches is gone from bot
 
 Still open, in priority order:
 
-1. **Rule diversity** — the newly-located cause of ~4 legs of recall swing.
+1. **Split the `not-applicable` bucket** in the trace into its three real cases
+   (never measured / buggy side unmeasured / measured and below the bar). Cheap,
+   observability-only, and it is the prerequisite for trusting any statement about
+   where recall is lost — including mine above.
 2. **The chronic three** (Closure-62, Math-30, Math-65) — 3 of the 5 standing false
-   accusations, unmoved by cycle 6.
-3. **Run-to-run variance at 27%** — bounds how finely anything can be measured from
+   accusations, unmoved by cycle 6. Closure-62 carried 4 rules in both rolls with none
+   classified either way, so it is being decided entirely outside the gates.
+3. **Rule diversity** — the Math-73 hypothesis. Demoted below item 1 because the
+   evidence offered for it does not yet support it.
+4. **Run-to-run variance at 27%** — bounds how finely anything can be measured from
    here. Future comparisons need paired runs, not single ones.
 
 ## Holdout status
