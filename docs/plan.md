@@ -2760,3 +2760,72 @@ only, no cross-run pooling) or (b) seeded borrow-shaped date deltas in the corpu
 was ever wrong here.
 
 No pipeline changes made; diagnosis only, per the hard-stop rule.
+
+---
+
+## 2026-07-29 — CYCLE 7 PLAN (post-milestone; fresh12 deliberately parked by user)
+
+Evidence base: final30A/B pair (mean F1 0.685 vs 0.49; recall moved, precision did not),
+the correction commit c300a8e (rule-diversity claim retracted; the 3-way `None`
+conflation found), the per-leg pair table, and all prior ledgers. Ordering principle
+unchanged: observability → free forensics → mechanical levers gated by fixture replay →
+one measurement. No judge-prompt tuning (measured dead), no fresh12.
+
+### 7A — Observability completion (BLOCKS EVERYTHING; ~a day; zero risk)
+Split `indiscriminate_buggy_rate`'s `None` into its three real cases in trace events
+(never-measured / measured-below-bar-healthy / parse-failed). Then a one-pass audit for
+any OTHER readout keyed on absent-or-ambiguous text (this is defect class #6 now: same
+shape six times). Done when: every gate decision in a trace names which of its input
+facts existed and what they said.
+
+### 7B — Pair forensics (free; traces + live events already on disk; each output
+feeds exactly one lever below)
+1. **Chronic-FP event chains** (Closure-62 ×2, Math-30 ×2, Math-65 ×2): for each
+   surviving accusation, walk the now-live event chain — measured rates, duty answers,
+   J-ladder rungs consulted — and name the one place the intended machinery stopped.
+   Watch specifically: did the setup-divergence rung (J-ladder a) ever run for
+   Closure-62? Its checks rebuild the test scenario and the real test passes — that
+   rung was built for exactly this shape.
+2. **New-FP alarms**: Math-39-c (roll A, historically ALWAYS clean), Lang-60-c and
+   Math-73-c (roll B). Were any kept via a cycle-6 path (6C keep / 5B-inadmissible /
+   citation re-ask)? A yes = first regression evidence against cycle-6 → that path
+   gets a fixture row and a fix before anything else ships. A no = variance, recorded.
+3. **Closure-38 roll-B catch autopsy**: what fired and what kept it? If the keep rests
+   on unpinned-formatting latitude, it is a precision-first violation that happened to
+   land on a fake — flag the check shape, do NOT celebrate it.
+4. **Chart-19 width autopsy**: was the winning relation family proposed at -m 12 and
+   starved, or never proposed? Distinguishes relation-budget (-m) from harness-count
+   (-n) dependency. Feeds 7D-1.
+5. **Roll-A recall losses** (Lang-60, Math-73-o): invention / reach / judging split,
+   same method as the Lang-63 three-roll decomposition.
+
+### 7C — Variance lever (mechanical, small, high leverage)
+**Within-run verdict memoization**: identical (check identity, fact profile) inside one
+leg gets ONE judge verdict, reused — never re-rolled. Fixture: the Math-65 leg where
+the same relation got 2×SOUND and 2×UNSOUND in a single run. This is subtraction (fewer
+coin flips), not judging harder; no cross-run state (pooling rule untouched). Gate:
+228-fixture replay + the pair's new rows.
+
+### 7D — Recall levers (each gated by its 7B output; all general-shaped)
+1. **Relation-budget experiment** (cheap, decisive): the 5-catch-leg suite at -m 12 vs
+   -m 16, invention-rate readout per leg (not pooled F1). If -m is what Chart-19 needs,
+   raise the standard -m — that is a measured config change, not tuning.
+2. **Silent-leg re-roll**: a leg whose patched-build run produced ZERO firings gets ONE
+   extra generation round (bounded, within-run). Attacks the invention lottery at its
+   cheapest point; expected cost ≈ 1 extra round × silent fraction.
+3. **Structural corpus seeding**: general boundary-crossing shapes (end<start, empty,
+   hole-at-k, size-1) as seed inputs — the Lang-63 reach half; statement-test general.
+
+### 7E — Precision levers (STRICTLY gated by 7B-1 findings; Math-30 stays a named
+residual unless 7B-1 shows its machinery stopped somewhere fixable)
+Anticipated shapes (build only what 7B-1 evidences): un-stopped J-ladder rung for
+Closure-62; a mechanically-computed implementation-definition fact for Math-65 (the
+shown impl line IS the contract source the honest verdicts cited — deliver it as a
+fact instead of hoping the judge reads it). The absence-argument gap stays parked.
+
+### 7F — Measurement discipline
+Fixture grows: add the pair's judged firings (with gold from the pair analyses) to the
+replay population. Every 7C/7D/7E change: fixture replay + one-leg smoke with events
+checked live, BEFORE any suite. Next paired 30-leg only after the full batch lands.
+Success bar for cycle 7, pre-committed: paired mean > 0.685 with FP count < 5 in at
+least one roll and no new-FP legs; stop-loss: 3 iterations per lever, then park.
