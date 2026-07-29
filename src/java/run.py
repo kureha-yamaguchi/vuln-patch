@@ -558,6 +558,80 @@ def _write_trace_md(path, bug, label, events, outcome=None):
 
 
 
+def _cycle6_ev(method, target=None, output=None, reason=None):
+    """Record one cycle-6 audit event. Never raises into the pipeline.
+
+    Imported INSIDE the call (rather than using the module-level
+    `record_event`) so the recorder can be stubbed for tests and so a broken
+    recorder can never take a leg down."""
+    try:
+        from llm import record_event as _re
+        _re('deterministic', method=method,
+            target=('' if target is None else str(target)),
+            output=('' if output is None else str(output)),
+            reason=('' if reason is None else str(reason)))
+    except Exception:  # pragma: no cover - defensive
+        pass
+
+
+def _deliver_buggy_rate(fired_ids, buggy_rate_counts, rate_fact_attached,
+                        patched_counts, demote):
+    """Cycle-6 item 4 PART B — unconditional delivery of a KNOWN buggy-side
+    rate to the harness track. Returns the `[fire-rate fact]` note to attach,
+    or None when there is nothing to deliver.
+
+    Whichever branch measured it (the matched relation's buggy screen, or the
+    universal screen), a rate that IS known must reach the judging evidence: it
+    must never be dropped because the patched-side counts do not exist yet, or
+    because a one-door match routed around the block that would have stated it.
+    No new threshold and no new wording — `fire_rate_fact`'s own branches
+    decide, and a None (the rate is genuinely unremarkable) correctly attaches
+    nothing.
+
+    AUDIT: emits `cycle6_buggy_rate_considered` (was a known rate found for
+    this firing's oracle) and `cycle6_buggy_rate_decided` (attached /
+    none-unremarkable / skipped). 6B keys on exactly this fact, so a trace that
+    shows 6B finding no rate can now be traced back to whether one was ever
+    delivered. Fail-open: any error delivers nothing and never raises."""
+    oid = None
+    try:
+        oid = (sorted(fired_ids)[0] if fired_ids else None)
+        counts = (buggy_rate_counts or {}).get(oid)
+        _cycle6_ev('cycle6_buggy_rate_considered', target=oid,
+                   output=('rate_known=%s' % bool(counts)),
+                   reason=('known buggy-side counts violated=%s/%s'
+                           % (counts[1], counts[0]) if counts else
+                           'no buggy-side counts were measured for this '
+                           'oracle'))
+        if not counts:
+            _cycle6_ev('cycle6_buggy_rate_decided', target=oid,
+                       output='none', reason='no known rate to deliver')
+            return None
+        if rate_fact_attached:
+            _cycle6_ev('cycle6_buggy_rate_decided', target=oid,
+                       output='skipped',
+                       reason='a [fire-rate fact] was already attached '
+                              'upstream')
+            return None
+        from java.relations.evidence_facts import fire_rate_fact as _frf_b
+        note = _frf_b(counts[0], counts[1], patched_counts[0],
+                      patched_counts[1], demote)
+        _dlv = 'attached' if note else 'none (rate unremarkable)'
+        print(f"      [buggy-rate delivery] oracle "
+              f"'{oid}' buggy={counts[1]}/{counts[0]} "
+              f"patched={patched_counts} note={_dlv}")
+        _cycle6_ev('cycle6_buggy_rate_decided', target=oid,
+                   output=('attached' if note else 'none'),
+                   reason='buggy=%s/%s patched=%s -> %s'
+                          % (counts[1], counts[0], patched_counts, _dlv))
+        return note
+    except Exception as exc:
+        _cycle6_ev('cycle6_buggy_rate_decided', target=oid, output='none',
+                   reason='delivery raised (%s: %s) — nothing attached '
+                          '(fail-open)' % (type(exc).__name__, exc))
+        return None
+
+
 def _j3_failing_test_block(failure_tests, cap_each=2000):
     """J3: the trigger test's own source + its real failure message, for
     the judge's evidence. Trust source #1 — in the Closure-62 backwards
@@ -3138,38 +3212,18 @@ def main():
                     except Exception:
                         pass
                     # Cycle-6 item 4 PART B — unconditional delivery of a KNOWN
-                    # buggy-side rate to the harness track. Whichever branch
-                    # measured it (matched relation's buggy screen, or the
-                    # universal screen), a rate that IS known must reach the
-                    # judging evidence: it must never be dropped because the
-                    # patched-side counts do not exist yet, or because a
-                    # one-door match routed around the block that would have
-                    # stated it. No new threshold and no new wording —
-                    # fire_rate_fact's own branches decide, and a None (the
-                    # rate is genuinely unremarkable) correctly attaches
-                    # nothing. Fail-open.
-                    try:
-                        _oid_b = (sorted(_fired_ids)[0] if _fired_ids else None)
-                        _bc_b = _buggy_rate_counts.get(_oid_b)
-                        if _bc_b and not _rate_fact_attached:
-                            from java.relations.evidence_facts import (
-                                fire_rate_fact as _frf_b)
-                            _fr_b = _frf_b(_bc_b[0], _bc_b[1],
-                                           _one_door_patched_counts[0],
-                                           _one_door_patched_counts[1],
-                                           _one_door_demote)
-                            _dlv = ('attached' if _fr_b
-                                    else 'none (rate unremarkable)')
-                            print(f"      [buggy-rate delivery] oracle "
-                                  f"'{_oid_b}' buggy={_bc_b[1]}/{_bc_b[0]} "
-                                  f"patched={_one_door_patched_counts} "
-                                  f"note={_dlv}")
-                            if _fr_b:
-                                _fact_notes.append(_fr_b)
-                                evid = (evid + "\n" + _fr_b) if evid else _fr_b
-                                _rate_fact_attached = True
-                    except Exception:
-                        pass
+                    # buggy-side rate to the harness track (see
+                    # `_deliver_buggy_rate`: whichever branch measured it, a
+                    # rate that IS known must reach the judging evidence, and
+                    # 6B keys on exactly this fact). Fail-open; it records both
+                    # what it found and what it did.
+                    _fr_b = _deliver_buggy_rate(
+                        _fired_ids, _buggy_rate_counts, _rate_fact_attached,
+                        _one_door_patched_counts, _one_door_demote)
+                    if _fr_b:
+                        _fact_notes.append(_fr_b)
+                        evid = (evid + "\n" + _fr_b) if evid else _fr_b
+                        _rate_fact_attached = True
                     # Cycle-5B(i): pinned-environment fact from the harness's
                     # OWN source (UTC/Locale/seed/size). Attached as a fact and
                     # used to void a dismissal that varies a pin.

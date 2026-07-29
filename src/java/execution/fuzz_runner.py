@@ -39,6 +39,32 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import config
 
 
+# ---------------------------------------------------------------------------
+# Permanent audit trail for the cycle-6 replay instrumentation.
+#
+# `run_suite.sh` deletes `run.log` on a SUCCESSFUL leg, so the `print`
+# diagnostics below cannot reach `trace.md` (which is built purely from
+# `record_event`; see docs/replay/night20c_analysis.md). Every cycle-6 replay
+# decision therefore also emits a recorded event — one where it is CONSIDERED,
+# one where it DECIDES — so a green run can prove whether the diversion probe
+# and the iterated muted replay actually ran. Prints stay: they are the record
+# on a FAILED leg, where run.log survives.
+#
+# Fail-silent by construction: never raises into a replay.
+# ---------------------------------------------------------------------------
+
+def _ev(method, target=None, output=None, reason=None):
+    """Record one cycle-6 audit event. Never raises."""
+    try:
+        from llm import record_event
+        record_event('deterministic', method=method,
+                     target=('' if target is None else str(target)),
+                     output=('' if output is None else str(output)),
+                     reason=('' if reason is None else str(reason)))
+    except Exception:  # pragma: no cover - defensive
+        pass
+
+
 @dataclass
 class JazzerOutcome:
     """Raw result of running Jazzer once against some classpath."""
@@ -1404,6 +1430,16 @@ class FuzzRunner:
                     run_class = br.class_name
                     run_dir = os.path.dirname(br.harness_path)
                     instrumented = True
+        # AUDIT (cycle-6): did the diversion transform actually get applied on
+        # this replay? A trace with no `diverted` claim is otherwise ambiguous
+        # between "no swallow fired" and "the probe never ran".
+        _ev('cycle6_diversion_considered', target=class_name,
+            output=f'instrumented={instrumented}',
+            reason=('report-replay; diversion variant compiled and is what '
+                    'runs' if instrumented else
+                    'report-replay; NOT instrumented (no builder/buggy_dir, '
+                    'unreadable source, or the variant did not compile) — '
+                    'diverted will be None'))
 
         try:
             outcome = run_jazzer(
@@ -1418,6 +1454,10 @@ class FuzzRunner:
             )
         except Exception as exc:
             print(f"  (single-input replay failed: {exc})")
+            _ev('cycle6_diversion_decided', target=class_name,
+                output='diverted=None',
+                reason=f'report-replay raised ({type(exc).__name__}: {exc}) — '
+                       f'nothing measured')
             return None, '', None
         out = outcome.combined_output
         diverted = None
@@ -1425,6 +1465,11 @@ class FuzzRunner:
             skipped = parse_skipped(out)
             if skipped is not None:
                 diverted = skipped > 0
+        _ev('cycle6_diversion_decided', target=class_name,
+            output=f'diverted={diverted}',
+            reason=('report-replay; swallow-return counters read from the run'
+                    if instrumented else
+                    'report-replay; not instrumented — diversion UNKNOWN'))
         if not outcome.triggered:
             return set(), out, diverted
         from java.parsing.java_source import oracle_ids_in_text
@@ -1543,6 +1588,16 @@ class FuzzRunner:
             if _br is not None and _br.compiled:
                 build_result = _br
                 instrumented = True
+        # AUDIT (cycle-6): whether the muted variant is ALSO carrying the
+        # diversion counters. Survives a green leg; the print does not.
+        _ev('cycle6_diversion_considered', target=class_name,
+            output=f'instrumented={instrumented}',
+            reason=('muted-replay pass %s; muted+diversion variant compiled '
+                    'and is what runs' % variant_tag if instrumented else
+                    'muted-replay pass %s; diversion transform unavailable or '
+                    'the combined variant did not compile — falling back to '
+                    'the plain muted variant, diverted will be None'
+                    % variant_tag))
 
         if build_result is None:
             try:
@@ -1550,10 +1605,17 @@ class FuzzRunner:
                                              output_subdir)
             except Exception as exc:
                 print(f"  (muted variant build raised: {exc})")
+                _ev('cycle6_diversion_decided', target=class_name,
+                    output='diverted=None',
+                    reason=f'muted variant build raised '
+                           f'({type(exc).__name__}) — nothing measured')
                 return "mute_failed", None, '', None
             if not build_result.compiled:
                 # Expected sometimes: silencing a guaranteed throw can break
                 # definite-return analysis. Caller keeps its cycle-1 fact.
+                _ev('cycle6_diversion_decided', target=class_name,
+                    output='diverted=None',
+                    reason='muted variant did not compile — nothing measured')
                 return "mute_failed", None, '', None
 
         try:
@@ -1569,6 +1631,10 @@ class FuzzRunner:
             )
         except Exception as exc:
             print(f"  (muted single-input replay failed: {exc})")
+            _ev('cycle6_diversion_decided', target=class_name,
+                output='diverted=None',
+                reason=f'muted replay raised ({type(exc).__name__}: {exc}) — '
+                       f'nothing measured')
             return "error", None, '', None
 
         out = outcome.combined_output
@@ -1577,6 +1643,12 @@ class FuzzRunner:
             skipped = parse_skipped(out)
             if skipped is not None:
                 diverted = skipped > 0
+        _ev('cycle6_diversion_decided', target=class_name,
+            output=f'diverted={diverted}',
+            reason=('muted-replay pass %s; swallow-return counters read from '
+                    'the run' % variant_tag if instrumented else
+                    'muted-replay pass %s; not instrumented — diversion '
+                    'UNKNOWN' % variant_tag))
         if outcome.triggered:
             from java.parsing.java_source import oracle_ids_in_text
             return "crashed", oracle_ids_in_text(out), out, diverted
@@ -1659,7 +1731,14 @@ def iterate_muted_replay(replay_fn, target_ids, mute_ids, esc_type=None,
     replays spent.
 
     Never fabricates: a bound hit returns the last real result, and every exit
-    is one of `replay_input_muted`'s own statuses."""
+    is one of `replay_input_muted`'s own statuses.
+
+    AUDIT (cycle-6 observability): the per-pass line was print-only, so it died
+    with `run.log` on every successful leg. It is now ALSO recorded —
+    `cycle6_muted_replay_considered` once on entry, `cycle6_muted_replay_pass`
+    once per pass (mute-set size + the pass's stop/continue reason), and
+    `cycle6_muted_replay_decided` on the single exit — so a green trace.md
+    shows how many Jazzer replays this actually spent and why it stopped."""
     emit = log or print
     mute_set = set(mute_ids or ())
     target_ids = set(target_ids or ())
@@ -1668,6 +1747,12 @@ def iterate_muted_replay(replay_fn, target_ids, mute_ids, esc_type=None,
     except (TypeError, ValueError):
         max_extra_passes = 0
     passes = 0
+    _tgt = ",".join(sorted(target_ids)) or (esc_type or 'firing')
+    _ev('cycle6_muted_replay_considered', target=_tgt,
+        output='mute_set_size=%d' % len(mute_set),
+        reason='iterating the muted re-replay; up to %d pass(es), starting '
+               'mute set %s' % (max_extra_passes + 1,
+                                ",".join(sorted(mute_set)) or "-"))
 
     def _line(pass_no, status, fired, diverted, outcome):
         emit("      %s pass=%d/%d mute_set_size=%d muted=%s status=%s "
@@ -1676,40 +1761,59 @@ def iterate_muted_replay(replay_fn, target_ids, mute_ids, esc_type=None,
                 len(mute_set), ",".join(sorted(mute_set)) or "-", status,
                 sorted(fired or ()) if fired is not None else "unknown",
                 diverted, outcome))
+        _ev('cycle6_muted_replay_pass', target=_tgt,
+            output='pass=%d/%d mute_set_size=%d status=%s diverted=%s'
+                   % (pass_no, max_extra_passes + 1, len(mute_set), status,
+                      diverted),
+            reason='muted=%s fired=%s -> %s'
+                   % (",".join(sorted(mute_set)) or "-",
+                      sorted(fired or ()) if fired is not None else "unknown",
+                      outcome))
+
+    def _done(status, fired, out, diverted, outcome):
+        """Single exit: log the pass, record the decision, return the tuple."""
+        _line(passes, status, fired, diverted, outcome)
+        _ev('cycle6_muted_replay_decided', target=_tgt,
+            output='status=%s passes=%d mute_set_size=%d diverted=%s'
+                   % (status, passes, len(mute_set), diverted),
+            reason=outcome)
+        return status, fired, out, diverted, set(mute_set), passes
 
     while True:
         passes += 1
         try:
             status, fired, out, diverted = replay_fn(set(mute_set), passes)
         except Exception as exc:
+            # The pass label says `raised(...)`, but the RETURNED status is
+            # "error" exactly as before — behaviour unchanged.
             _line(passes, "raised(%s)" % type(exc).__name__, None, None,
                   "stop: pass raised, UNKNOWN kept")
+            _ev('cycle6_muted_replay_decided', target=_tgt,
+                output='status=error passes=%d mute_set_size=%d diverted=None'
+                       % (passes, len(mute_set)),
+                reason='stop: pass raised (%s: %s), UNKNOWN kept'
+                       % (type(exc).__name__, exc))
             return "error", None, '', None, set(mute_set), passes
         fired = set(fired) if fired is not None else None
 
         if status in ("error", "mute_failed"):
-            _line(passes, status, fired, diverted,
-                  "stop: replay unavailable, UNKNOWN kept")
-            return status, fired, out, diverted, set(mute_set), passes
+            return _done(status, fired, out, diverted,
+                         "stop: replay unavailable, UNKNOWN kept")
         if status == "clean":
-            _line(passes, status, fired, diverted,
-                  "stop: ran to completion (answered)")
-            return status, fired, out, diverted, set(mute_set), passes
+            return _done(status, fired, out, diverted,
+                         "stop: ran to completion (answered)")
         if _muted_target_spoke(target_ids, esc_type, fired, out):
-            _line(passes, status, fired, diverted,
-                  "stop: target fired (answered)")
-            return status, fired, out, diverted, set(mute_set), passes
+            return _done(status, fired, out, diverted,
+                         "stop: target fired (answered)")
 
         new_shadows = (fired or set()) - mute_set
         if not new_shadows:
-            _line(passes, status, fired, diverted,
-                  "stop: mute set stopped growing, UNKNOWN kept")
-            return status, fired, out, diverted, set(mute_set), passes
+            return _done(status, fired, out, diverted,
+                         "stop: mute set stopped growing, UNKNOWN kept")
         if passes - 1 >= max_extra_passes:
-            _line(passes, status, fired, diverted,
-                  "stop: pass bound reached (%d extra), UNKNOWN kept"
-                  % max_extra_passes)
-            return status, fired, out, diverted, set(mute_set), passes
+            return _done(status, fired, out, diverted,
+                         "stop: pass bound reached (%d extra), UNKNOWN kept"
+                         % max_extra_passes)
         _line(passes, status, fired, diverted,
               "continue: new shadow(s) %s added to the mute set"
               % ",".join(sorted(new_shadows)))

@@ -18,6 +18,50 @@ guard bodies moved here verbatim as internal helpers (``_guarded_verify``,
 ``_terminal_identical_gate``) so run.py's verdicts are byte-identical and the
 fail-open behaviour is preserved unchanged.
 """
+import re
+
+
+# ---------------------------------------------------------------------------
+# Permanent audit trail for the cycle-6 decisions.
+#
+# `run_suite.sh` DELETES `run.log` on a successful leg, so a `print` diagnostic
+# cannot survive a green run: `trace.md` is built ONLY from `record_event`
+# output (llm.get_events -> run.py::_write_trace_md). night20c therefore could
+# not tell "6B ran and found nothing" from "6B never ran" — see
+# docs/replay/night20c_analysis.md. Every cycle-6 decision below emits TWO
+# events: one where it is CONSIDERED (proving the code path executed at all)
+# and one where it DECIDES. The prints are kept: they are still useful on a
+# FAILED leg, where run.log survives.
+#
+# Never raises into the pipeline: `record_event` already swallows its own
+# errors, and the import + call are wrapped again here so a stubbed or broken
+# recorder can never turn a judge decision into an exception.
+# ---------------------------------------------------------------------------
+
+def _ev(method, target=None, output=None, reason=None):
+    """Record one cycle-6 audit event. Fail-silent by construction."""
+    try:
+        from llm import record_event
+        record_event('deterministic', method=method,
+                     target=('' if target is None else str(target)),
+                     output=('' if output is None else str(output)),
+                     reason=('' if reason is None else str(reason)))
+    except Exception:  # pragma: no cover - defensive
+        pass
+
+
+def _target_of(fired):
+    """A short, stable label for the firing under judgement: its oracle id when
+    the fired message carries one, else the message's first line."""
+    try:
+        text = str(fired or '')
+        m = re.search(r"\[oracle:([^\]]+)\]", text)
+        if m:
+            return m.group(1)
+        first = next((ln.strip() for ln in text.splitlines() if ln.strip()), '')
+        return first[:60] or 'firing'
+    except Exception:  # pragma: no cover - defensive
+        return 'firing'
 
 
 def _guarded_verify(verifier, verify_kwargs, pinned=None,
@@ -136,23 +180,44 @@ def _family_duty_escape(verifier, fired, failing_block, check_source,
     ``(True, ...)`` on an LLM error, and an exception escaping it is caught here
     and read as YES. A transport failure can therefore never manufacture a drop;
     and because the caller only ever turns a KEEP into a DROP, it can never
-    manufacture a keep either. Returns ``(escape_granted, why)``."""
+    manufacture a keep either. Returns ``(escape_granted, why)``.
+
+    AUDIT: emits ``cycle6_family_duty_considered`` (was the judge asked, or was
+    a prior answer reused) and ``cycle6_family_duty_decided`` (YES/NO and where
+    the answer came from) so a green leg's trace.md shows how many times the
+    family-duty question was actually put to the judge."""
+    tgt = _target_of(fired)
     prior = fd_state.get('value')
     if prior is True:
+        _ev('cycle6_family_duty_considered', target=tgt, output='prior=True',
+            reason='skipped: fd_prior already known (not asking the judge)')
+        _ev('cycle6_family_duty_decided', target=tgt, output='YES',
+            reason='source=prior')
         return True, (fd_state.get('why')
                       or "family duty applies (prior review)")
     if prior is False:
+        _ev('cycle6_family_duty_considered', target=tgt, output='prior=False',
+            reason='skipped: fd_prior already known (not asking the judge)')
+        _ev('cycle6_family_duty_decided', target=tgt, output='NO',
+            reason='source=prior')
         return False, (fd_state.get('why')
                        or "family duty does not apply (prior review)")
+    _ev('cycle6_family_duty_considered', target=tgt, output='prior=None',
+        reason='asking verifier.family_duty (no prior answer for this firing)')
     try:
         fd_ok, fd_why = verifier.family_duty(fired, failing_block, check_source)
     except Exception as e:  # pragma: no cover - defensive
         print(f"      [family-duty-error] {e} — escape granted (fail-open)")
         fd_state['value'] = True
         fd_state['why'] = "family-duty check unavailable (error)"
+        _ev('cycle6_family_duty_decided', target=tgt, output='YES',
+            reason=f'source=error fail-open ({type(e).__name__}: {e})')
         return True, fd_state['why']
     fd_state['value'] = bool(fd_ok)
     fd_state['why'] = fd_why
+    _ev('cycle6_family_duty_decided', target=tgt,
+        output=('YES' if fd_ok else 'NO'),
+        reason='source=asked; ' + str(fd_why)[:300])
     return bool(fd_ok), fd_why
 
 
@@ -190,23 +255,54 @@ def _indiscriminate_rate_gate(ok, why, evidence_text, verifier, fired,
     drop; if a case needs the escape loosened, the rule is wrong.
 
     FAILS OPEN: no measurement, an unparseable note, or any exception leaves
-    the verdict untouched; the family-duty escape fails open to YES."""
+    the verdict untouched; the family-duty escape fails open to YES.
+
+    AUDIT: emits ``cycle6_6B_indiscriminate_considered`` (with the parsed
+    buggy-side rate, or ``rate=None`` when the evidence carried no usable
+    measurement) and ``cycle6_6B_indiscriminate_decided`` (dropped /
+    escaped-by-family-duty-YES / not-applicable). Both survive a green leg, so
+    "6B ran and found no rate" is now distinguishable from "6B never ran"."""
+    tgt = _target_of(fired)
     if not ok:
+        _ev('cycle6_6B_indiscriminate_considered', target=tgt,
+            output='rate=not-parsed',
+            reason='verdict already UNSOUND before this gate')
+        _ev('cycle6_6B_indiscriminate_decided', target=tgt,
+            output='not-applicable', reason='nothing to drop (already UNSOUND)')
         return ok, why
     try:
         from java.relations.evidence_facts import indiscriminate_buggy_rate
         rate = indiscriminate_buggy_rate(evidence_text)
     except Exception as e:  # pragma: no cover - defensive
         print(f"      [6B-rate-parse-error] {e} — verdict unchanged")
+        _ev('cycle6_6B_indiscriminate_considered', target=tgt,
+            output='rate=parse-error',
+            reason=f'{type(e).__name__}: {e}')
+        _ev('cycle6_6B_indiscriminate_decided', target=tgt,
+            output='not-applicable',
+            reason='rate parse raised — verdict unchanged (fail-open)')
         return ok, why
+    _ev('cycle6_6B_indiscriminate_considered', target=tgt,
+        output=('rate=None' if rate is None else f'rate={rate:.4f}'),
+        reason=('no measured buggy-side rate at/above the intrinsic bar in '
+                'this firing\'s evidence'
+                if rate is None else
+                'measured buggy-side fire rate is at/above the intrinsic bar'))
     if rate is None:
+        _ev('cycle6_6B_indiscriminate_decided', target=tgt,
+            output='not-applicable', reason='no rate found — verdict unchanged')
         return ok, why
     fd_ok, fd_why = _family_duty_escape(
         verifier, fired, failing_block, check_source, fd_state)
     if fd_ok:
+        _ev('cycle6_6B_indiscriminate_decided', target=tgt,
+            output='escaped', reason='family-duty YES: ' + str(fd_why)[:300])
         return ok, why
     print(f"      [6B-INDISCRIMINATE-DROP] buggy-side fire rate {rate:.0%} "
           f">= intrinsic bar, family-duty NO")
+    _ev('cycle6_6B_indiscriminate_decided', target=tgt, output='dropped',
+        reason=f'6B-INDISCRIMINATE-DROP: buggy rate {rate:.0%} >= intrinsic '
+               f'bar and family-duty NO')
     return False, ("INDISCRIMINATE-RATE TERMINAL [6B-INDISCRIMINATE-DROP] "
                    "(family-duty NO): this check condemns the KNOWN-BROKEN "
                    "build on {:.0%} of random valid inputs, so the behaviour "
@@ -246,8 +342,20 @@ def _confirmed_fires_on_both_gate(ok, why, evidence_text, verifier, fired,
     The CONFIRMED measurement is the stronger fact and decides here.
 
     FAILS OPEN: an unreadable blob, a missing confirmation or any exception
-    leaves the verdict untouched; the family-duty escape fails open to YES."""
+    leaves the verdict untouched; the family-duty escape fails open to YES.
+
+    AUDIT: emits ``cycle6_6C_fires_on_both_considered`` carrying the RESOLVED
+    value verdict (``different`` / ``identical`` / ``not-compared`` / ``none``)
+    and ``cycle6_6C_fires_on_both_decided`` (dropped / escaped / kept-partial-
+    fix / not-applicable), so a green leg records which of the four inputs this
+    gate actually saw."""
+    tgt = _target_of(fired)
     if not ok:
+        _ev('cycle6_6C_fires_on_both_considered', target=tgt,
+            output='verdict=not-resolved',
+            reason='verdict already UNSOUND before this gate')
+        _ev('cycle6_6C_fires_on_both_decided', target=tgt,
+            output='not-applicable', reason='nothing to drop (already UNSOUND)')
         return ok, why
     try:
         from java.relations.evidence_facts import (
@@ -255,21 +363,41 @@ def _confirmed_fires_on_both_gate(ok, why, evidence_text, verifier, fired,
         verdict = confirmed_fires_on_both_verdict(evidence_text)
     except Exception as e:  # pragma: no cover - defensive
         print(f"      [6C-tag-parse-error] {e} — verdict unchanged")
+        _ev('cycle6_6C_fires_on_both_considered', target=tgt,
+            output='verdict=parse-error', reason=f'{type(e).__name__}: {e}')
+        _ev('cycle6_6C_fires_on_both_decided', target=tgt,
+            output='not-applicable',
+            reason='tag parse raised — verdict unchanged (fail-open)')
         return ok, why
+    _ev('cycle6_6C_fires_on_both_considered', target=tgt,
+        output='verdict=' + ('none' if verdict is None else str(verdict)),
+        reason='resolved value comparison for the confirmed fires-on-both tag')
     if verdict == 'different':
         print("      [6C-partial-fix-keep] confirmed on both builds with "
               "DIFFERENT observed values — conviction evidence, never dropped "
               "here")
+        _ev('cycle6_6C_fires_on_both_decided', target=tgt,
+            output='kept', reason='6C-partial-fix-keep: DIFFERENT observed '
+                                  'values — conviction evidence, never dropped')
         return ok, why
     if verdict != 'identical':
         # 'not-compared' (unknown) or no confirmation at all.
+        _ev('cycle6_6C_fires_on_both_decided', target=tgt,
+            output='not-applicable',
+            reason='no confirmed identical comparison (unknown is never a '
+                   'drop) — verdict unchanged')
         return ok, why
     fd_ok, fd_why = _family_duty_escape(
         verifier, fired, failing_block, check_source, fd_state)
     if fd_ok:
+        _ev('cycle6_6C_fires_on_both_decided', target=tgt, output='escaped',
+            reason='family-duty YES: ' + str(fd_why)[:300])
         return ok, why
     print("      [6C-FIRES-ON-BOTH-DROP] confirmed on both builds with "
           "IDENTICAL observed values, family-duty NO")
+    _ev('cycle6_6C_fires_on_both_decided', target=tgt, output='dropped',
+        reason='6C-FIRES-ON-BOTH-DROP: confirmed on both builds with IDENTICAL '
+               'observed values and family-duty NO')
     return False, ("CONFIRMED-FIRES-ON-BOTH TERMINAL [6C-FIRES-ON-BOTH-DROP] "
                    "(family-duty NO): a replay confirmed this same check fires "
                    "on the BUGGY build at this exact input and the two fired "
@@ -359,6 +487,17 @@ def adjudicate(verifier, *, harness_source, fired_assertion, trusted_values,
              trusted_values=trusted_values, concrete_evidence=concrete_evidence,
              code_context=code_context),
         pinned=pinned_source, evidence_profile=evidence_profile)
+    # Always-on entry event: the ONE place that says whether the terminal gate
+    # ladder ran at all for this firing. Without it a trace with no 6B/6C event
+    # is ambiguous between "direction-confirmed, gates deliberately skipped"
+    # and "this code never executed".
+    _ev('cycle6_gates_entry', target=_target_of(fired_assertion),
+        output=('skipped' if is_direction_confirmed else 'running'),
+        reason=('direction-confirmed firing (mechanical buggy-build catch) — '
+                '5C/6B/6C all skipped by design'
+                if is_direction_confirmed else
+                f'running 5C -> 6B -> 6C; base verdict ok={bool(ok)}, '
+                f'fd_prior={fd_prior}'))
     if not is_direction_confirmed:
         fd_state = {'value': fd_prior, 'why': None}
         for _gate in (_terminal_identical_gate,
