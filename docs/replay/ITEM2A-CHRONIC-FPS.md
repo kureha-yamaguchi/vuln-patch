@@ -121,12 +121,24 @@ cases with no LLM spend:
    `assertEquals`.
 2. ~~**Compare non-numeric values** as well as numbers (~10 cases, all correct
    patches). Exact token equality is enough; no inference.~~
-   **WITHDRAWN — built, measured alone, rejected.** The "all correct patches"
-   description was false: all 10 rows are one *fake* patch
-   (`patch1-Lang-41-Arja-plausible_o`) whose findings should be kept. Measured
-   in isolation it produced one dismissal instruction across all 228 records,
-   and that one was wrong. See the correction above and the NOT SHIPPED note in
-   `evidence_facts.py`.
+   **WITHDRAWN — built, measured twice, deferred.** The "all correct patches"
+   description was false: pre-fix-(i), all 10 rows were one *fake* patch
+   (`patch1-Lang-41-Arja-plausible_o`) whose findings should be kept, and
+   measured in isolation the fix produced one dismissal instruction and it was
+   the wrong one.
+
+   Then fix (i) shipped and **changed this fix's population**: 10 rows on one leg
+   became 27 rows across three (Lang-60 fake 15, Lang-41 fake 10, Lang-60 correct
+   2 — 21 keep-finding, 6 on a correct patch). So a precision opportunity does now
+   exist here, which the original population did not contain. Re-measured as a
+   single change on top of shipped HEAD: the dismissal instruction goes 1 correct
+   / 0 wrong to 2 correct / 1 wrong (a wash), and 37 rows move to "do not
+   exonerate on test-passage" — 21 good, 16 bad.
+
+   Deferred rather than rejected: a wash on the decisive instruction with a
+   marginal *recall*-leaning side effect, in a precision-motivated batch where it
+   would confound attribution, and at 21/16 well inside the measured 27%
+   run-to-run variance. See the NOT SHIPPED note in `evidence_facts.py`.
 
 Item 1 makes the dismissal rule fire more often only where a verdict genuinely
 exists; whether the alarm is then dismissed still depends on the values actually

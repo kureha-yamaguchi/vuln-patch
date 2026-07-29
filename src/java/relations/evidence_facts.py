@@ -482,13 +482,32 @@ def _trusted_numbers(trusted_values):
 # OPPOSITE: a sound check on a fake patch is a legitimate catch. Per
 # score_replay.py, "over-kill (gold=SOUND dropped)" — gold=SOUND means KEEP.
 #
-# Measured over the 228 recorded cases, each fix in isolation:
-#   fix (i) project assertion helpers : "must be dismissed" fires 1x, correct 1, wrong 0
-#   fix (ii) token comparison         : "must be dismissed" fires 1x, correct 0, wrong 1
-# So (ii) produces exactly one dismissal instruction and it is the wrong one, on
-# a leg whose findings should be kept. Shipping requires positive evidence.
-# Parked, not rejected forever — but re-running the measurement is not enough on
-# its own: the population must also stop being one leg.
+# MEASURED TWICE, because fix (i) changed this fix's population.
+#
+# Against the pre-fix-(i) baseline, in isolation:
+#   fix (i) project assertion helpers : dismissal fires 1x — correct 1, wrong 0
+#   fix (ii) token comparison         : dismissal fires 1x — correct 0, wrong 1
+#
+# But fix (i) shipped, and it enlarged this fix's population from 10 rows on ONE
+# fake patch to 27 rows across THREE legs (Lang-60 fake 15, Lang-41 fake 10,
+# Lang-60 correct 2) — 21 keep-finding, 6 correct-patch rows. So (ii) had to be
+# re-measured as a single change on top of shipped HEAD:
+#
+#   dismissal instruction : correct 1 -> 2, wrong 0 -> 1   (adds one of each: a wash)
+#   37 rows move unknown -> differs ("do not exonerate on test-passage"):
+#       21 keep-finding    GOOD, protects a legitimate finding
+#       16 otherwise       BAD, makes a correct dismissal harder
+#
+# STILL NOT SHIPPED, but for a different and better reason than first recorded.
+# It is not harmful; it is a wash on the decisive instruction with a marginal,
+# RECALL-leaning side effect. This batch is precision-motivated, so shipping it
+# would confound the paired measurement — a precision change could not be
+# attributed. And at 21/16 on a 228-row corpus the effect is well inside the
+# measured 27% run-to-run variance.
+#
+# Park condition: revisit when there is a recall-motivated batch to attribute it
+# in, or when the corpus is large enough for 21/16 to mean something. Re-run the
+# two measurements above, not just one.
 # ---------------------------------------------------------------------------
 
 

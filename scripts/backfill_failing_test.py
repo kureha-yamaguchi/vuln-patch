@@ -121,8 +121,8 @@ def leg_blocks():
 def in_subset(case):
     """The filter cases_subset150.jsonl has always used."""
     prov = case.get('provenance') or {}
-    return (case.get('gold') == 'SOUND'
-            or (case.get('gold') == 'UNSOUND'
+    return (case.get('gold') in ('keep-finding', 'SOUND')
+            or (case.get('gold') in ('dismiss-finding', 'UNSOUND')
                 and prov.get('leg_label') == 'c'))
 
 

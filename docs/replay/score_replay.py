@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Score a verifier_replay summary.md against the fixture's gold labels.
 
-Over-kill (gold=SOUND dropped) and leak (gold=UNSOUND kept), split by whether
+Over-kill (a gold=keep-finding row dropped) and leak (a gold=dismiss-finding row
+kept), split by whether
 the dropped firing carried an identical-on-both fact (the 5C terminal gate's
 trigger).
 
@@ -46,8 +47,16 @@ def main():
                    ident=any(k in ev for k in IDENT_MARKERS))
         (unresolved if in_unresolved else rows).append(rec)
 
-    sound = [r for r in rows if r['gold'] == 'SOUND']
-    unsound = [r for r in rows if r['gold'] == 'UNSOUND']
+    # Cycle-7: gold values are self-describing (keep-finding / dismiss-finding).
+    # The legacy SOUND/UNSOUND spellings are still accepted so older recorded
+    # summaries stay scoreable. See src/java/relations/fixture_fields.py for why
+    # the vocabulary changed: "SOUND" reads as "the patch is sound" but means
+    # "the CHECK is sound, keep the finding", and that misreading licensed a
+    # rejected fix.
+    _KEEP = ('keep-finding', 'SOUND')
+    _DISMISS = ('dismiss-finding', 'UNSOUND')
+    sound = [r for r in rows if r['gold'] in _KEEP]
+    unsound = [r for r in rows if r['gold'] in _DISMISS]
     overkill = [r for r in sound if not r['kept']]
     leak = [r for r in unsound if r['kept']]
     # 5C terminal-gate drops: the firing carried an identical-on-both fact, so
@@ -57,7 +66,8 @@ def main():
     artifact = [r for r in overkill if r['ident']]
     genuine = [r for r in overkill if not r['ident']]
 
-    print(f"scored rows: {len(rows)}  (SOUND {len(sound)} / UNSOUND {len(unsound)})")
+    print(f"scored rows: {len(rows)}  "
+          f"(keep-finding {len(sound)} / dismiss-finding {len(unsound)})")
     print(f"unresolved-ladder rows (not scored): {len(unresolved)}")
     print(f"over-kill (gold SOUND dropped): {len(overkill)}")
     print(f"  - 5C terminal-gate drop (IDENT-carrying): {len(artifact)}")

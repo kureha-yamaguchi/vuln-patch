@@ -217,8 +217,8 @@ def main():
             (unresolved_rows if unres else resolved_rows).append(row)
             out = json.dumps(c, ensure_ascii=False) + '\n'
             fout.write(out)
-            if (c['gold'] == 'SOUND'
-                    or (c['gold'] == 'UNSOUND' and p.get('leg_label') == 'c')):
+            if (c['gold'] in ('keep-finding', 'SOUND')
+                    or (c['gold'] in ('dismiss-finding', 'UNSOUND') and p.get('leg_label') == 'c')):
                 fsub.write(out)
 
     if args.dry_run:

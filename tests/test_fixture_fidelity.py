@@ -114,8 +114,8 @@ def test_subset_population_is_unchanged_by_the_backfill():
         prov = case['provenance']
         rows.append(prov['inventory_row'])
         ids.append(case['id'])
-        assert (case['gold'] == 'SOUND'
-                or (case['gold'] == 'UNSOUND'
+        assert (case['gold'] in ('keep-finding', 'SOUND')
+                or (case['gold'] in ('dismiss-finding', 'UNSOUND')
                     and prov.get('leg_label') == 'c')), (
             f"{case['id']}: does not satisfy the subset filter")
     assert len(rows) == SUBSET_ROWS, f"subset is {len(rows)} rows"
@@ -128,8 +128,8 @@ def test_subset_population_is_unchanged_by_the_backfill():
 
 def test_subset_is_exactly_the_filtered_full_fixture():
     expected = [c['id'] for c in _stream(FULL)
-                if c['gold'] == 'SOUND'
-                or (c['gold'] == 'UNSOUND'
+                if c['gold'] in ('keep-finding', 'SOUND')
+                or (c['gold'] in ('dismiss-finding', 'UNSOUND')
                     and (c['provenance'] or {}).get('leg_label') == 'c')]
     actual = [c['id'] for c in _stream(SUBSET)]
     assert actual == expected

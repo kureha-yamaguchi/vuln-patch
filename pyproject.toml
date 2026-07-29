@@ -16,3 +16,21 @@ dependencies = [
 introspector = [
     "fuzz-introspector>=0.1.10",
 ]
+
+[tool.pytest.ini_options]
+# Cycle-7: pin what bare `pytest` collects, and settle a recurring phantom.
+#
+# A stable 8-test gap was read three times as a cross-machine discrepancy. It was
+# never an environment difference — it is invocation scope. Bare `pytest`
+# collects 503; `pytest tests/` collects 495; the 8 are
+# src/oss_fuzz/tests/test_offline.py, which lives outside tests/ and so is only
+# picked up when no path argument is given. 495 + 8 = 503.
+#
+# NOTE: an explicit path argument OVERRIDES testpaths (pytest's documented
+# behaviour), so `pytest tests/` still collects 495 and that is correct — it is a
+# deliberate narrowing, not a discrepancy.
+#
+# CONVENTION: report test counts from bare `pytest`, which is now pinned to both
+# roots. A count that differs from bare `pytest` on another machine is then a
+# real difference worth investigating, not this.
+testpaths = ["tests", "src/oss_fuzz/tests"]
