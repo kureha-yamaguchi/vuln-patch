@@ -3304,3 +3304,62 @@ in its chain, on **the patched artefact judging itself**.
 touch it?** If the answer involves the patched source, the patched arithmetic, or
 the patched output, the mechanism will void genuine catches and the guard set will
 prove it.
+
+## Repair-in-place: measured (repairA/repairB, 9 legs x 2 rolls, git dcf681c)
+
+Both rolls, rescored after a label error in the suite file (my `-c` for all nine
+cases; the right patches ran, only the scoring label was wrong — verified the
+label reaches only record-writing, never detection):
+
+    Roll A:  TP=3 FN=1 FP=3 TN=2   P=0.50 R=0.75
+    Roll B:  TP=3 FN=1 FP=3 TN=2   P=0.50 R=0.75
+
+### Outcome-neutral — no result depended on a repaired harness
+
+Attempt-tag attribution over all 15 legs with firings, both rolls:
+**`ONLY-REPAIRED` is false on every one.** Every repaired harness that fired had
+an unrepaired co-firer, so no catch required repair and none is attributable to it.
+
+Roll A's Chart-19 is the sharpest case: the firing harness was `attempt_007`; the
+repaired attempts were 4, 8, 9, 10. Zero overlap. An earlier claim in this
+conversation called that catch strong circumstantial evidence for repair — it was
+wrong, and the attempt-tag grep is what refuted it.
+
+**Tripwire result: repair caused no false accusation either.** Math-39, the one
+accuser with a worsening history, fired from attempts 3/8/11 (roll A) and 2/6
+(roll B) against repaired attempts 4/5/7/12 and 3/4 — no overlap in either roll.
+
+**Scope of the null claim:** it proves no outcome *depended* on a repaired
+harness. It cannot prove what would have happened without repair, because repair
+changes the sequence — an early repaired acceptance fills a slot, so later attempts
+are never generated.
+
+### Cost-negative — the benefit the outcome measure does not capture
+
+Attempts-to-target per leg, same 9 legs, baseline pair vs this pair:
+
+    mean 14.8 -> 12.5   (-2.3 attempts per leg; 8 of 9 legs improved)
+
+Each attempt is an LLM call, so harness recovery buys **the same outcomes for
+fewer calls**. Attribution caveat: this build also carries the alarm-ID gate
+correction (14 previously mis-rejected harnesses now accepted), which pushes the
+same direction. The -2.3 belongs to the harness-recovery work as a whole, not to
+repair alone.
+
+**Package line: outcome-neutral, cost-negative.**
+
+### Chart-19's flip is still unexplained, but narrowed
+
+It was missed in both baseline rolls and caught in both pricing rolls. Not repair
+(above). Not the alarm-ID gate correction either — both firing harnesses
+(roll A `attempt_007`, roll B `attempt_002`) pass the OLD buggy detector as well
+as the new one, tested directly against the archive. Remaining candidates: suite
+composition, or variance. Recorded as open rather than attached to the nearest
+available cause.
+
+### Watch list addition
+
+**Math-39** — historically clean, one variance accusation in the big pair, now
+accused in both pricing rolls. Cleared of repair involvement, so it is judge
+lottery on a leg that raises alarms; but 2-for-2 after a clean history earns a
+named place beside the three chronics pending an event-chain read.
