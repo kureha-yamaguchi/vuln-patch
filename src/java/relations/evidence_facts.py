@@ -873,6 +873,177 @@ def trigger_lift_note(lifted_names, generic_lift, value_verdict):
 # not fire on it.
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Cycle-7 (Math-65) — the DISPUTED COMPUTATION fact.
+#
+# Failure class this addresses: evidence that is delivered but LOST. Not missing,
+# not misread — present exactly once, in the middle of a ~60k-character prompt,
+# where finding it is chance.
+#
+# Math-65's whole dispute is one formula. The code computes
+# `residual*residual / weight`; the harness's check recomputes it as
+# `weight * residual*residual`. Every reviewer that quoted the code's actual line
+# dismissed the alarm correctly (3 of 3). Every reviewer that accused cited
+# NOTHING and appealed to a remembered javadoc, asserting the inverse (4 of 4).
+#
+# The line was already in the prompt — citations are checked for literal
+# presence, so the dismissals quoting it prove that. It sat at character 27,051
+# of 59,830, inside the partial class skeleton.
+#
+# So the fix is PLACEMENT, not delivery, and it DUPLICATES rather than moves:
+# the skeleton is left untouched (other things depend on it) and the method's own
+# body is restated as a fact beside the firing. A placement audit over all 230
+# archived judge prompts confirmed the evidence block is already adjacent to the
+# firing (median 15% of the prompt), so this is a targeted addition and NOT a
+# repair of the assembly order.
+#
+# Generality: the trigger is "the fired message names a method, and that method's
+# real body is present in the shown source". No bug-specific content, no project
+# names, no formula knowledge.
+# ---------------------------------------------------------------------------
+
+#: A skeleton body that was elided rather than shown. The code-context builder
+#: replaces untouched bodies with these, so they carry no computation to quote.
+_ELIDED_BODY_RE = re.compile(r'^[\s{}…\.]*$')
+
+#: Cap on a quoted body. A runaway method would bloat the prompt and push the
+#: rest of the evidence down — the exact failure this fact exists to fix.
+_MAX_QUOTED_BODY = 900
+
+#: Method names too generic to be worth quoting even when they match.
+_UNINTERESTING_METHODS = frozenset({
+    'toString', 'hashCode', 'equals', 'clone', 'compareTo', 'iterator',
+    'get', 'set', 'size', 'length', 'valueOf', 'main', 'run',
+})
+
+_METHOD_CALL_RE = re.compile(r'\b([a-z][A-Za-z0-9_]{2,})\s*\(')
+
+#: Identifier-ish words in a firing, including the pieces of a snake_case
+#: relation name. Needed because a firing often names the disputed quantity
+#: WITHOUT calling it: "relation chiSquare_matches_weighted_residual_sum
+#: violated" references getChiSquare() but contains no `(`.
+_WORD_RE = re.compile(r'[A-Za-z][A-Za-z0-9]{3,}')
+
+#: Accessor prefixes to strip when matching a firing's word against a method
+#: name, so `chiSquare` finds `getChiSquare`.
+_ACCESSOR_PREFIXES = ('get', 'is', 'has', 'compute', 'calculate')
+
+
+def _defined_methods(source):
+    """Names of methods that have a REAL (non-elided) body in ``source``."""
+    out = []
+    for m in re.finditer(r'\b([a-zA-Z_][A-Za-z0-9_]*)\s*\([^)]*\)\s*\{',
+                         str(source or '')):
+        name = m.group(1)
+        if name not in out and name not in _UNINTERESTING_METHODS:
+            out.append(name)
+    return out
+
+
+def _methods_named_by(fired_msg, code_context):
+    """Methods the firing refers to, by call syntax OR by name.
+
+    Call syntax is exact. Name matching is deliberately narrow: a word in the
+    firing must equal the method name, or equal it with an accessor prefix
+    stripped (`chiSquare` -> `getChiSquare`), case-insensitively. A substring
+    match would fire on almost everything, so it is not used."""
+    names, seen = [], set()
+    for name in _METHOD_CALL_RE.findall(str(fired_msg or '')):
+        if name not in _UNINTERESTING_METHODS and name not in seen:
+            seen.add(name)
+            names.append(name)
+    words = {w.lower() for w in _WORD_RE.findall(str(fired_msg or ''))}
+    if not words:
+        return names
+    for method in _defined_methods(code_context):
+        if method in seen:
+            continue
+        low = method.lower()
+        candidates = {low}
+        for pre in _ACCESSOR_PREFIXES:
+            if low.startswith(pre) and len(low) > len(pre) + 2:
+                candidates.add(low[len(pre):])
+        if candidates & words:
+            seen.add(method)
+            names.append(method)
+    return names
+
+
+def _method_body(source, name):
+    """The verbatim body of ``name`` in ``source``, or None.
+
+    None when the method is absent, when its body was elided to ``{ … }``, or
+    when it is longer than the quoting cap. Brace-matched, so a nested block does
+    not truncate the body early. Pure."""
+    if not source or not name:
+        return None
+    for m in re.finditer(r'\b' + re.escape(name) + r'\s*\([^)]*\)\s*\{',
+                         str(source)):
+        start = m.end() - 1           # at the opening brace
+        depth, i, n = 0, start, len(source)
+        while i < n:
+            if source[i] == '{':
+                depth += 1
+            elif source[i] == '}':
+                depth -= 1
+                if depth == 0:
+                    break
+            i += 1
+        else:
+            continue                  # unbalanced — do not guess
+        body = source[start:i + 1]
+        if _ELIDED_BODY_RE.match(body):
+            continue                  # `{ … }` — nothing shown to quote
+        if len(body) > _MAX_QUOTED_BODY:
+            continue
+        return (source[m.start():start] + body).strip()
+    return None
+
+
+def disputed_computation_fact(fired_msg, code_context):
+    """Restate, verbatim, the shown source of any method the firing NAMES.
+
+    Returns the fact text, or None when the firing names no method whose real
+    body is shown. Quotes at most three methods, longest-named first, so the
+    block stays small.
+
+    This adds no interpretation whatsoever: it locates code the reviewer was
+    already given and repeats it next to the firing. Whether the check is sound
+    is still entirely the reviewer's call. Pure — no I/O, no LLM."""
+    if not fired_msg or not code_context:
+        return None
+    names = _methods_named_by(fired_msg, code_context)
+    quoted = []
+    for name in sorted(names, key=len, reverse=True):
+        body = _method_body(code_context, name)
+        if body:
+            quoted.append((name, body))
+        if len(quoted) == 3:
+            break
+    if not quoted:
+        return None
+    parts = ["\n[disputed-computation fact] the firing names "
+             + ("this method" if len(quoted) == 1 else "these methods")
+             + ". Its source is copied verbatim below from the class skeleton "
+               "already shown to you — repeated here, next to the firing, "
+               "because in the full skeleton it appears once and is easy to "
+               "miss. Nothing here is new evidence and nothing here is an "
+               "instruction.\n"
+               "This cuts BOTH ways and is not, by itself, grounds either way. "
+               "If the check recomputes a quantity this code also computes, "
+               "read what the code actually does rather than what the "
+               "documentation appears to promise — the two can disagree, and "
+               "the code is what runs. But a check that computes something "
+               "DIFFERENT from this method is not thereby unsound: it may be "
+               "asserting a property that generalises beyond this method, which "
+               "is a legitimate catch. Decide on the shown source and the "
+               "contract, exactly as for any other firing."]
+    for name, body in quoted:
+        parts.append("\n--- " + name + " (as shown in the patched class) ---\n"
+                     + body)
+    return "\n".join(parts)
+
+
 def trigger_tier_note():
     """The neutral, symmetric [trigger-tier fact] block. Pure, no inputs."""
     return (

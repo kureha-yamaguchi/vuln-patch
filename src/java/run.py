@@ -3372,7 +3372,8 @@ def main():
                     from java.parsing.java_source import (
                         pinned_parameters as _pinp_s)
                     from java.relations.evidence_facts import (
-                        pinned_environment_note as _pen_s)
+                        pinned_environment_note as _pen_s,
+                        disputed_computation_fact)
                     _pinned_s = _pinp_s(src or '')
                     _pin_note_s = _pen_s(_pinned_s)
                     if _pin_note_s:
@@ -3392,6 +3393,20 @@ def main():
                     # on such a firing unless family-duty answers YES. Reuse the
                     # ladder's family-duty result when it already asked; fails
                     # open. Single shared entrypoint: base verify -> 5B -> 5C.
+                    # Cycle-7 (Math-65): repeat the shown source of any
+                    # method this firing NAMES, beside the firing. The line that
+                    # settles such a dispute is already in the skeleton — it sat
+                    # once at char 27,051 of a 59,830-char prompt, and every
+                    # reviewer that quoted it decided correctly while every one
+                    # that missed it asserted the inverse from memory. Duplicates,
+                    # never moves: the skeleton below is untouched.
+                    _dc = disputed_computation_fact(
+                        fired, '\n\n'.join(class_ctx) if class_ctx else None)
+                    if _dc:
+                        print("      [disputed-computation] repeating shown "
+                              "source of the method(s) this firing names")
+                        _fact_notes.append(_dc)
+                        evid = (evid + "\n" + _dc) if evid else _dc
                     ok, why = adjudicate(
                         rv,
                         harness_source=src, fired_assertion=fired,
@@ -3692,7 +3707,8 @@ def main():
                     from java.parsing.java_source import (
                         pinned_parameters as _pinp)
                     from java.relations.evidence_facts import (
-                        pinned_environment_note as _pen)
+                        pinned_environment_note as _pen,
+                        disputed_computation_fact)
                     _pinned = _pinp(getattr(rel, 'check', '') or '')
                     _pin_note = _pen(_pinned)
                     if _pin_note:
@@ -3733,6 +3749,14 @@ def main():
                     # family-duty=YES). The 5C gate is skipped for a
                     # direction-confirmed relation (a mechanical catch: it fires
                     # on the buggy build at the trigger inputs). Fails open.
+                    # Cycle-7 (Math-65) — same fact at the second judge
+                    # site, so one-door fact parity holds.
+                    _dc2 = disputed_computation_fact(
+                        _fired, '\n\n'.join(class_ctx) if class_ctx else None)
+                    if _dc2:
+                        print("      [disputed-computation] repeating shown "
+                              "source of the method(s) this firing names")
+                        _evid = (_evid + "\n" + _dc2) if _evid else _dc2
                     ok, why = adjudicate(
                         _rv2,
                         harness_source=_src, fired_assertion=_fired,
