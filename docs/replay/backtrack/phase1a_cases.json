@@ -1,0 +1,195 @@
+[
+ {
+  "bug": "Closure-62",
+  "kind": "chronic",
+  "pair_outcome": "FP/FP",
+  "accusing_checks": [
+   {
+    "roll": "A",
+    "check": "?",
+    "claim": "The fired check asserts the exact output for the trusted seed case from `LightweightMessageFormatterTest::testFormatErrorSpaceEndOfLine1`, and no correct implementation can both complete and return th",
+    "citation": "NONE"
+   },
+   {
+    "roll": "A",
+    "check": "formatError_header_contains_location_level_and_description",
+    "claim": "For completed calls with non-null sourceName and lineNumber > 0, the formatter\u2019s documented/implemented header is exactly `sourceName + \":\" + lineNumber + \": \" + level + \" - \" + description + \"\\n\"`, a",
+    "citation": "NONE"
+   },
+   {
+    "roll": "B",
+    "check": "?",
+    "claim": "This check asserts the exact behavior pinned by the project's trusted regression test for the same API scenario\u2014`formatError` on source `\"if (foo\"` with line 6 char 7 must include the source line and",
+    "citation": "NONE"
+   },
+   {
+    "roll": "B",
+    "check": "?",
+    "claim": "This check asserts the exact output for `formatError` on the same concrete end-of-line case pinned by the trusted failing test, and any correct implementation that completes (exceptions are skipped) m",
+    "citation": "NONE"
+   }
+  ]
+ },
+ {
+  "bug": "Math-30",
+  "kind": "chronic",
+  "pair_outcome": "FP/FP",
+  "accusing_checks": [
+   {
+    "roll": "A",
+    "check": "?",
+    "claim": "Because the harness skips any implementation that throws, this check only flags completed calls, and for these canonical equal-sized interleaved samples a correct `mannWhitneyUTest` asymptotic p-value",
+    "citation": "NONE"
+   },
+   {
+    "roll": "A",
+    "check": "?",
+    "claim": "For these constructed inputs every x is strictly less than every y, so a correct completed Mann-Whitney test has Umin = 0 for both sizes and must return a finite two-sided p-value that does not increa",
+    "citation": "NONE"
+   },
+   {
+    "roll": "A",
+    "check": "asymptotic_pvalue_formula_midpoint",
+    "claim": "The fired check claims that when `Umin` is set to the midpoint `((double) n1) * ((double) n2) / 2.0`, a completed call to `calculateAsymptoticPValue` must return 1, and no surviving counterexample exp",
+    "citation": "NONE"
+   },
+   {
+    "roll": "B",
+    "check": "largeSamplesPValueIsFiniteProbability",
+    "claim": "The harness skips exceptions and only flags completed calls, and for these valid finite non-empty samples a correct `mannWhitneyUTest` returning an \u201cobserved significance level\u201d / \u201cp-value\u201d cannot leg",
+    "citation": "NONE"
+   },
+   {
+    "roll": "B",
+    "check": "pValueSymmetricUnderSampleSwap",
+    "claim": "For any correct implementation of this API that completes on these non-empty finite samples, swapping the two samples must leave the two-sided Mann-Whitney p-value unchanged because it depends on the",
+    "citation": "NONE"
+   },
+   {
+    "roll": "B",
+    "check": "pValueAlwaysInUnitInterval",
+    "claim": "For the harness\u2019s valid finite non-empty inputs, `mannWhitneyUTest` is documented to return an \u201cobserved significance level (p-value)\u201d, and no correct implementation that completes rather than throwin",
+    "citation": "NONE"
+   }
+  ]
+ },
+ {
+  "bug": "Math-65",
+  "kind": "chronic",
+  "pair_outcome": "FP/FP",
+  "accusing_checks": [
+   {
+    "roll": "A",
+    "check": "?",
+    "claim": "The fired check is a same-object consistency check justified directly by the documented formulas for `getRMS()` and `getChiSquare()`, and with all weights fixed to 2.0 a correct implementation that co",
+    "citation": "NONE"
+   },
+   {
+    "roll": "A",
+    "check": "?",
+    "claim": "The fired check is a same-object consistency assertion that `getChiSquare()` must equal \u03a3 weight[i]\u00b7residual[i]^2 for the optimized residuals, and the class javadoc explicitly defines chi-square using",
+    "citation": "NONE"
+   },
+   {
+    "roll": "A",
+    "check": "?",
+    "claim": "After `optimize` completes, `getChiSquare()` is documented as the chi-square/weighted-residual criterion and `VectorialPointValuePair.getValueRef()` is the objective value at the returned point, so a",
+    "citation": "NONE"
+   },
+   {
+    "roll": "A",
+    "check": "chiSquare_matches_weighted_residual_sum",
+    "claim": "The fired check is a direct contract/formula check\u2014after a successful optimize call, a correct implementation of `getChiSquare()` for these positive finite weights and residuals must equal the recompu",
+    "citation": "NONE"
+   },
+   {
+    "roll": "B",
+    "check": "chiSquare_matches_documented_weight_reciprocal_formula",
+    "claim": "For the valid positive-weight inputs that the harness installs, the fired check exactly matches the documented contract of `getChiSquare()` and any correct implementation that completes on those field",
+    "citation": "NONE"
+   }
+  ]
+ },
+ {
+  "bug": "Math-39",
+  "kind": "variance",
+  "pair_outcome": "FP(A)/TN(B)",
+  "accusing_checks": [
+   {
+    "roll": "A",
+    "check": "?",
+    "claim": "This check asserts that during a completed integration call, the solver must not evaluate the ODE derivative at times outside the requested integration interval, and the observed call at t=-1.01 for i",
+    "citation": "NONE"
+   },
+   {
+    "roll": "A",
+    "check": "?",
+    "claim": "The fired check asserts that during successful integration to target `end`, this Dormand\u2013Prince implementation must not evaluate derivatives at times above `FastMath.nextAfter(end, Double.POSITIVE_INF",
+    "citation": "NONE"
+   },
+   {
+    "roll": "A",
+    "check": "integrate-sets-final-time-to-target",
+    "claim": "The fired check asserts that after `integrate(ode, target)` returns normally, the stateful ODE's recorded time must be exactly the requested target time, and no correct implementation should complete",
+    "citation": "NONE"
+   },
+   {
+    "roll": "A",
+    "check": "zero-derivative-forward-backward-identity",
+    "claim": "Given the harness skips exceptions, the only question is whether a correct completed integration of the identically zero ODE could legitimately finish with a changed state or not end exactly at the re",
+    "citation": "NONE"
+   }
+  ]
+ },
+ {
+  "bug": "Lang-60",
+  "kind": "variance",
+  "pair_outcome": "TN(A)/FP(B)",
+  "accusing_checks": [
+   {
+    "roll": "B",
+    "check": "contains_ignores_inactive_capacity",
+    "claim": "The fired check asserts that after constructing a StrBuilder from an ASCII string and enlarging capacity without changing length, `contains('\\u0000')` must remain false because unused buffer slots are",
+    "citation": "NONE"
+   },
+   {
+    "roll": "B",
+    "check": "indexOf_char_not_past_size",
+    "claim": "The fired check asserts that for a StrBuilder built from an ASCII string with no '\\u0000', `indexOf('\\u0000', start)` must return `-1` rather than report a match in unused buffer capacity, and no corr",
+    "citation": "NONE"
+   }
+  ]
+ },
+ {
+  "bug": "Math-73",
+  "kind": "variance",
+  "pair_outcome": "TN(A)/FP(B)",
+  "accusing_checks": [
+   {
+    "roll": "B",
+    "check": "endpoint_root_returns_endpoint",
+    "claim": "For the completed call `solve(f, min, max, initial)` on `f(x)=x-min`, the only zero in the interval is exactly `min`, so any correct implementation that returns normally must return (within tolerance)",
+    "citation": "NONE"
+   }
+  ]
+ },
+ {
+  "bug": "Chart-26",
+  "kind": "variance",
+  "pair_outcome": "FP(A)/TN(B)",
+  "accusing_checks": [
+   {
+    "roll": "A",
+    "check": "?",
+    "claim": "After `drawLabel()` completed and added an `AxisLabelEntity`, a correct implementation cannot legitimately produce an axis-label entity whose `getAxis()` is `null` or a different object, because this",
+    "citation": "\"entities.add(new AxisLabelEntity(this, hotspot, \\"
+   },
+   {
+    "roll": "B",
+    "check": "?",
+    "claim": "The harness only reaches this check after `drawLabel()` completed and added an `AxisLabelEntity`, and the shown implementation constructs that entity directly from `this`, `this.labelToolTip`, and `th",
+    "citation": "NONE"
+   }
+  ]
+ }
+]
