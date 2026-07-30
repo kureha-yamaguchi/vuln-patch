@@ -7,16 +7,29 @@ WHY THIS EXISTS
 Two defects, both of which cost real work in cycle 7, and both of which this
 module makes structurally impossible.
 
-**1. Reading a field that is not there.** ``case.get('trusted_values')`` returned
-``None`` for all 228 rows because that field does not exist on these records. The
-``None``s were read as "the value is empty", a plausible-looking 89% statistic was
-computed from nothing, and it was minutes from being published. The same shape had
-already invalidated an earlier replay measurement, where every row's failing-test
-block turned out to be empty.
+**1. ``.get()`` returning ``None`` does not tell you WHY.** It conflates at least
+three different situations, and they call for opposite responses:
 
-``.get()`` on a typo or a renamed field is silent, and silence here produces a
-*number*, not an error — which is the worst possible failure mode, because a
-number gets believed. ``field()`` raises instead.
+* the field is absent because it was omitted when empty (legitimate — the
+  fixture stores ``trusted_values`` only on the 24 of 228 rows that have any),
+* the field is absent because the name is misspelled or was renamed (a bug),
+* the field is present and genuinely empty.
+
+This is not hypothetical, and the cost was not one wrong number but a *sequence*
+of them. A measurement of "``trusted_values`` is empty on 204 of 228 rows (89%)"
+was computed with ``.get()``. It was then retracted on the belief that the field
+did not exist at all — a belief formed by inspecting one row's keys. It was then
+re-derived a third way, agreed at 204, and that agreement was written up as a
+suspicious coincidence. Only a direct check settled it: the key is present on
+exactly the 24 rows that have values, so **the original 89% was right the whole
+time** and the retraction was the error.
+
+Every step of that was avoidable. ``.get()`` gave a plausible number with no
+signal about which of the three situations produced it, so there was nothing to
+check the number against except intuition — and intuition flip-flopped twice.
+``field()`` raises, and an intentional fallback has to be spelled out as
+``default=``, which makes "absent is fine here" a visible decision instead of an
+invisible assumption.
 
 **2. A value whose name means the opposite of how it reads.** The gold verdict was
 recorded as ``SOUND``/``UNSOUND``. ``SOUND`` naturally parses as "the patch is

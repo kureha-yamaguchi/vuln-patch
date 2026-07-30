@@ -2891,3 +2891,32 @@ kept. The wrong reading licensed a fix that was then rejected on measurement.
 Same family as the label bugs items 1a/1b fixed — a value read in the opposite
 sense — but located in a write-up rather than a log line. Population descriptions
 get verified against the fixture, not narrated from a remembered label.
+
+## Item 3 (within-run answer reuse) — NOT BUILT. Premise not supported.
+
+Measured before building, per the standing rule.
+
+**In production, identical questions never recur.** Across the ENTIRE archive —
+103 runs, 1,616 judge calls — byte-identical judge prompts repeat **0 times**. A
+cache keyed on the prompt would never hit once. Restricting to the two paired
+runs: 230 calls, 196 of them soundness questions, and the same fired assertion is
+re-judged only 4 times (all pairs), never with an identical prompt, with 1 verdict
+disagreement between them.
+
+**Where the premise came from.** `verifier_replay.py:236` runs
+`for rep in range(args.repeats)` (default 3) calling `adjudicate` with *identical*
+arguments. That is the stability-measurement tool asking the same question N times
+on purpose, and it is the only place identical prompts occur. Caching there would
+not fix instability — it would erase the measurement, returning the first answer N
+times and reporting perfect stability.
+
+So the change is a no-op in production and destructive in the one place its
+trigger condition is met.
+
+**The variance it was meant to address is elsewhere.** Item 2b already located it:
+Lang-60's correct patch had every pre-reviewer station identical across the two
+rolls, then 0 judge calls in one and 2 in the other. The 8-of-30 flip rate comes
+from *which alarms get raised*, not from the same alarm being judged twice.
+
+Not built. Revisit only if a production run is ever observed re-issuing an
+identical prompt.

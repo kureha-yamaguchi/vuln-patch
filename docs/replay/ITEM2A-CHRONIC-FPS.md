@@ -172,15 +172,24 @@ been traced step by step yet:
 
 Both stay open.
 
-## A correction, recorded because it nearly shipped
+## A correction, and then a correction of the correction
 
-While measuring the above I first reported that trusted values were empty in 89%
-of cases by reading a `trusted_values` field on the fixture rows. **That field
-does not exist in the fixture.** Every row returned `None`, so the number
-described nothing. It is the same artifact that invalidated earlier replay
-measurements when the failing-test block turned out to be empty in every row.
+The 89% above was first measured by reading a `trusted_values` field with
+`.get()`. I retracted it, believing the field did not exist on these records at
+all — a belief formed by inspecting a single row's keys. I re-derived the number
+a different way (running the production extractor over the recorded
+`failing_test` text), got 204 again, and wrote that agreement up as a suspicious
+coincidence.
 
-The 89% figure in this document is a different measurement: the production
-extractor run over the recorded `failing_test` text, a field that does exist.
-It happens to land on the same number, which is exactly the kind of coincidence
-that would have let the invalid version pass unnoticed.
+A direct check settles it: **the key is present on exactly the 24 rows that have
+values**, and omitted on the other 204 because it is empty. Those 24 are precisely
+the rows where extraction yields something. So the two measurements were reading
+the same fact by two routes, the agreement was not a coincidence, and **the
+original 89% was correct**. The retraction was the mistake.
+
+Nothing downstream changes: 204 of 228, 89%, and every conclusion drawn from it
+stands. What changes is the lesson. The problem was never that the number was
+wrong — it was that `.get()` returning `None` gave no way to distinguish "omitted
+because empty" from "misspelled" from "genuinely empty", so there was nothing to
+check it against but intuition, and intuition reversed twice. That is what
+`fixture_fields.field()` now makes impossible.
