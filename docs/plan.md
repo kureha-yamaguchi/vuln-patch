@@ -3217,3 +3217,25 @@ structurally could not: four defects** — a global-replace corruption, double-t
 oracle IDs, an alarm-constructor arity error, and this scope bug. Clearing a
 detector and producing valid Java are different properties, and only one of them
 is checkable without a compiler.
+
+## STANDING RULE: source transforms validate against the compiler, not detectors
+
+Any change that rewrites generated source validates against the VM compiler
+(`javac` with the real `jazzer-api` jar), not against the project's detectors
+alone. **Clearing a detector and producing valid Java are different properties,
+and only one of them is checkable without a compiler.**
+
+Earned over two validation rounds, four defect classes the detectors could not
+see and that would each have shipped on offline evidence alone:
+
+1. a global `str.replace` that corrupted a literal in the wrong location;
+2. oracle IDs tagged a second time when already named at runtime;
+3. a cause appended to an alarm constructor that already had two arguments;
+4. a holder declared in a scope the alarm could not reach — because `rfind('try')`
+   matched substrings inside words, and because the alarm is often in a different
+   method from the catch entirely.
+
+The gate also produced one false alarm of its own (a hand-written stub declaring
+FuzzerSecurityIssueLow as extending Error rather than RuntimeException), so the
+companion rule holds: when a measurement disagrees with the code, suspect the
+measurement's own scaffolding first.
