@@ -179,3 +179,41 @@ def test_boolean_swallow_is_deliberately_not_repaired_yet():
     _fixed, applied, remaining = repair_harness(src)
     assert 'boolean-swallow' not in applied
     assert 'boolean-swallow' in remaining
+
+
+# --- integration: the campaign applies it, and marks it -------------------
+
+def test_campaign_applies_repair_before_the_structural_gates():
+    """The repair must run BEFORE the gates, so a repairable harness is
+    accepted instead of spending an LLM repair turn on it."""
+    import inspect
+    from java.harness import campaign
+    src = inspect.getsource(campaign.HarnessCampaign.run)
+    repair_at = src.find('repair_harness')
+    gate0_at = src.find('violation_swallowed(source)')
+    assert repair_at != -1, 'repair is not wired into the campaign'
+    assert gate0_at != -1
+    assert repair_at < gate0_at, 'repair must run before gate 0'
+
+
+def test_every_repaired_harness_is_marked_in_the_trace():
+    """Required so an accusation on a previously-silent leg is attributable to
+    a repaired harness with one grep — the observability that makes bundling
+    this into a precision batch defensible."""
+    import inspect
+    from java.harness import campaign
+    src = inspect.getsource(campaign.HarnessCampaign.run)
+    seg = src[src.find('repair_harness'):src.find('violation_swallowed(source)')]
+    assert "method='harness-repair'" in seg
+    assert 'REPAIRED' in seg
+
+
+def test_a_repair_failure_never_blocks_the_build():
+    """Fail-open: an exception inside the repair must leave the original source
+    untouched and let the gates run, exactly as before."""
+    import inspect
+    from java.harness import campaign
+    src = inspect.getsource(campaign.HarnessCampaign.run)
+    seg = src[src.find('from java.harness.repair'):]
+    assert 'except Exception' in seg[:400]
+    assert '_repaired, _applied, _remaining = source, [], []' in seg[:600]

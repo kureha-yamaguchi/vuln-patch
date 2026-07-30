@@ -466,6 +466,42 @@ class HarnessCampaign:
 
             source = self.builder.extract_source(raw)
 
+            # --- cycle-7: mechanical repair BEFORE the structural gates ----
+            # 71% of rejections in the paired runs were a small family of
+            # structural defects the gates below already detect and locate
+            # precisely, and the attempt was then discarded. Chart-19's winning
+            # rule family died exactly here — proposed in both rolls, never
+            # reaching a reviewer. Repair what is mechanically repairable first;
+            # anything left still faces every gate unchanged.
+            #
+            # This does NOT widen the harness set on a leg that reaches its
+            # target: the campaign loop stops at `target_successes`, so an
+            # earlier acceptance displaces a later fresh attempt rather than
+            # adding to it. It adds harnesses only on legs that exhaust
+            # `max_attempts` short of the target — 11 of 60 legs in the paired
+            # runs, split 6 fake / 5 correct.
+            #
+            # EVERY repaired harness is marked in the trace, so any accusation
+            # on a previously-silent leg can be attributed to a repaired
+            # harness with one grep.
+            try:
+                from java.harness.repair import repair_harness
+                _repaired, _applied, _remaining = repair_harness(source)
+            except Exception as _e:  # pragma: no cover - never block a build
+                _repaired, _applied, _remaining = source, [], []
+            if _applied and _repaired != source:
+                source = _repaired
+                print(f"  [harness-repair] applied {_applied}"
+                      + (f"; still failing {_remaining}" if _remaining else ""))
+                record_event(
+                    'deterministic', method='harness-repair',
+                    target=attempt_label,
+                    output='REPAIRED: ' + ', '.join(_applied),
+                    detail={'applied': _applied,
+                            'still_failing': _remaining},
+                    reason='mechanically repaired before the structural gates '
+                           '— this harness would otherwise have been discarded')
+
             result.raw_responses.append(raw)
 
             # NB: the empty/near-empty-response case is now caught by the

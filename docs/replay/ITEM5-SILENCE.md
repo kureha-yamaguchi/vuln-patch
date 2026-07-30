@@ -95,7 +95,39 @@ The correct-patch exposure is roughly double the fake-patch opportunity, and the
 improved by the precision work already shipped. *p* cannot be measured offline —
 it needs a run.
 
-**This is a decision, not a conclusion.** The options:
+### CORRECTED: repair fills within the budget, it does not widen
+
+The cost model above assumed repaired harnesses are pure ADDITIONS. Reading the
+campaign loop settles it — they are mostly substitutions:
+
+```
+while (result.achieved_successes < self.target_successes
+       and result.attempts < self.max_attempts ...)
+```
+
+The campaign stops the moment it reaches its target (5). So on a leg that reaches
+the cap, converting an early rejection into an acceptance makes the campaign
+finish sooner and the later fresh attempts are never generated — the same five
+slots, filled by different harnesses.
+
+Measured over the paired runs: **49 of 60 legs reached the 5-harness target.**
+Only **11 fell short**, and those split **6 fake / 5 correct** — nearly balanced,
+against the 11-correct-to-1-fake exposure the wrong model predicted. Of the 11
+silent correct legs, only **2** are below target; the other 9 see substitution.
+
+And the short list contains **Chart-19's fake leg in BOTH rolls** (3 and 4
+accepted), so repair adds harnesses exactly where the motivating case was starved.
+
+**Decision: ship it into the pair.** The volume risk largely evaporates; what
+remains is a composition change on capped legs, which is symmetric — a different
+harness could as easily be quieter as louder. The residual addition exposure is 5
+correct legs, priced by the PASS tier's zero-new-accusations clause.
+
+**Requirement, now implemented:** every repaired harness emits a
+`harness-repair` trace event naming the repairs applied, so an accusation on a
+previously-silent leg is attributable to a repaired harness with one grep.
+
+### The options considered, kept for the record
 
 1. **Ship it into the pair as planned.** The two-tier bar already prices the risk:
    the PASS tier requires zero accusations on historically clean cases, which is
