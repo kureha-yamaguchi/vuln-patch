@@ -3078,3 +3078,56 @@ licenses different futures, so the verdict is recorded per item:
 A deferral is a third thing again: *fix (ii) is a measured wash whose numbers
 expire when its dependencies move* — which they already did once, when fix (i)
 shipped and changed its population from 10 rows on one leg to 27 across three.
+
+# ===========================================================================
+# PRE-COMMITMENT, SECOND REFRESH — after the pre-pair smoke
+# ===========================================================================
+
+The smoke (`smoke7_20260730_104806`, ~500k) invalidated BOTH precision claims in
+the first refresh. Corrected here before the pair, not after.
+
+## Math-65 is reclassified: expected-fixed -> NAMED RESIDUAL
+
+The disputed-computation fact was **delivered — 4 times — and ignored.** The
+accusing verdict still asserted `getChiSquare()` must equal "the sum of squared
+residuals times the supplied weights" (the inverse of what the code does), with
+`CITATION: NONE`, while that method's own source sat verbatim beside the firing.
+
+Placement was the hypothesis. It is now measured wrong. One roll is not proof, so
+the fact block STAYS — it is symmetric, costless, and may help at the margin
+across rolls — but the claim can no longer be "plausible 5 -> 3".
+
+**Math-65 joins Math-30 as a named residual.**
+
+### Filed as the second data point on the 2b research question
+
+Item 2b established that accusations face no evidence requirement (90% uncited vs
+6% of dismissals; the prompt says "For a SOUND verdict, CITATION: NONE is fine").
+This smoke adds: **even adjacent, verbatim, contradicting source code does not
+bind an accusation.** Better delivery is not the answer, and neither is better
+placement — the placement audit already showed facts sit adjacent to the firing at
+a median 15% of the prompt.
+
+Whatever eventually fixes the accusation side will be ENFORCEMENT, not delivery —
+the same shape cycle 6 already proved on the dismissal side, where persuasion was
+exhausted after three prompt rewordings and the decision had to move into code.
+That is a cycle-8 design problem, not a this-week patch.
+
+## Revised expected effects
+
+* **Precision: 5 -> 4**, resting entirely on Closure-62 via the literal-
+  concatenation fold. Residuals: **Math-30 and Math-65**.
+* **Recall: repair-in-place**, now VERIFIED LIVE — repaired harnesses compiled and
+  reached acceptance in production (3 repair events on Closure-62, 1 on Math-65,
+  both legs reaching 5 accepted). The compilation assumption is retired.
+* **Tripwire unchanged**: any accusation on a previously-silent leg is greped for
+  the `harness-repair` marker before being attributed to anything else.
+* **Bar unchanged** (two tiers).
+
+## Runbook change, earned
+
+**Smoke before pair is now permanent.** ~500k caught, in one run: an inert
+mechanism (the dismissal rule still 0-for-2), a structurally unreachable claim
+(fix (i) could never reach Closure-62), a failed hypothesis (placement did not
+bind the accusation), and a live repair bug (double-tagged oracle IDs). Every one
+of those would have silently corrupted the interpretation of the 7M measurement.
