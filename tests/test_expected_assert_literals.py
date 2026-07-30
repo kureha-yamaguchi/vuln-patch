@@ -128,3 +128,57 @@ def test_non_numeric_comparison_is_deliberately_not_shipped():
     assert fired_value_vs_trusted(
         'relation shortClassName_agree violated: got ClassUtils',
         ['ClassUtils', 'Map.Entry']) == 'unknown'
+
+
+# --- literal-concatenation folding (cycle-7 smoke finding) ----------------
+
+def test_a_chain_of_string_literals_is_folded():
+    """Closure-62's shape. A chain of string literals is a COMPILE-TIME CONSTANT
+    in Java, so folding it is a correctness fix, not a loosening.
+
+    The batch's stated precision claim was aimed at Closure-62 and was
+    structurally unreachable without this: its expected value is a multi-line
+    concatenation, so the extractor skipped it and the dismissal rule aimed at
+    that leg could never fire. Only a live smoke surfaced it."""
+    src = ('assertEquals("first line\\n" +\n'
+           '    "second line\\n" +\n'
+           '    "third\\n", actual);')
+    got = EAL(src)
+    assert len(got) == 1
+    assert got[0] == 'first line\\nsecond line\\nthird\\n'
+
+
+def test_concatenation_inherits_the_known_message_first_limitation():
+    """NOT a new defect — the same limitation pinned above. When both the
+    message and the expected value are strings, the message-first heuristic
+    cannot tell them apart and takes the MESSAGE, concatenation or not.
+
+    Pinned so the behaviour is known rather than assumed. Fixing it changes
+    existing behaviour and needs its own measurement over the 228 records."""
+    src = 'assertEquals("a message", "exp-part-one" + "-part-two", actual);'
+    assert EAL(src) == ['a message']
+
+
+def test_concatenation_folds_in_the_two_argument_form():
+    """The form that actually matters — Closure-62's — has no message argument."""
+    src = 'assertEquals("exp-part-one" + "-part-two", actual);'
+    assert EAL(src) == ['exp-part-one-part-two']
+
+
+def test_a_computed_operand_is_still_skipped():
+    """The deliberate skip on genuinely computed expected values must survive —
+    folding applies ONLY when every operand is a plain string literal."""
+    assert EAL('assertEquals(compute(x) + "suffix", actual);') == []
+    assert EAL('assertEquals("prefix" + variable, actual);') == []
+    assert EAL('assertEquals("prefix" + 42, actual);') == []
+
+
+def test_a_single_literal_is_not_treated_as_a_concatenation():
+    assert EAL('assertEquals("just-one", actual);') == ['just-one']
+
+
+def test_folding_preserves_escapes_verbatim():
+    """The folded value is compared against fired messages by literal presence,
+    so it must not be normalised."""
+    got = EAL(r'assertEquals("a\tb" + "\nc", actual);')
+    assert got == [r'a\tb\nc']

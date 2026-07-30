@@ -217,3 +217,19 @@ def test_a_repair_failure_never_blocks_the_build():
     seg = src[src.find('from java.harness.repair'):]
     assert 'except Exception' in seg[:400]
     assert '_repaired, _applied, _remaining = source, [], []' in seg[:600]
+
+
+def test_an_alarm_named_through_a_variable_is_left_alone():
+    """Cycle-7 smoke finding: a THIRD already-named form. The tag lives in a
+    variable, so neither the literal check nor the dynamic-ID regex sees it, and
+    the repair prepended a redundant fallback — producing
+    "[oracle:unnamed-check] [oracle:circle-err2-0]" and polluting the IDs that
+    screening keys on."""
+    src = f"""public class FuzzHarness {{
+      static void check(boolean bad) {{
+        String oracleId = "[oracle:circle-err2-0]";
+        if (bad) throw new {ALARM}(oracleId + " semantic mismatch: errors[0]");
+      }}
+    }}"""
+    assert repair_missing_alarm_id(src) == src
+    assert 'unnamed-check' not in repair_missing_alarm_id(src)

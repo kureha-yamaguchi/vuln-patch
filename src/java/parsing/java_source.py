@@ -285,6 +285,50 @@ def candidate_anchor_literals(method_source: str,
     return [q[1:-1] for q in quoted if len(q) >= 2]
 
 
+#: A chain of string literals joined by `+` and nothing else:
+#: `"a" + "b" + "c"`. In Java this is a COMPILE-TIME CONSTANT, so folding it is a
+#: correctness fix to the extractor, not a loosening of the deliberate skip on
+#: genuinely computed expected values — those still return None here.
+#:
+#: Found by the cycle-7 pre-pair smoke. Closure-62's failing test pins its
+#: expected value as a multi-line concatenation, so the extractor skipped it and
+#: the dismissal rule aimed at that very leg could never fire. The batch's stated
+#: precision claim was structurally unreachable, and only a live run surfaced it.
+_STRING_LITERAL_RE = re.compile(r'"(?:[^"\\]|\\.)*"')
+
+
+def _fold_string_literal_concat(arg: str):
+    """The concatenated value of a `"a" + "b"` chain, or None.
+
+    None whenever ANY operand is not a plain string literal — a method call, a
+    variable, a number — so a genuinely computed expression is never folded and
+    never becomes a trusted value. Pure."""
+    if arg is None:
+        return None
+    text = arg.strip()
+    if '+' not in text or not text.startswith('"'):
+        return None
+    parts, pos = [], 0
+    while pos < len(text):
+        m = _STRING_LITERAL_RE.match(text, pos)
+        if not m:
+            return None                    # operand is not a string literal
+        parts.append(m.group(0)[1:-1])
+        pos = m.end()
+        while pos < len(text) and text[pos].isspace():
+            pos += 1
+        if pos >= len(text):
+            break
+        if text[pos] != '+':
+            return None                    # something other than concatenation
+        pos += 1
+        while pos < len(text) and text[pos].isspace():
+            pos += 1
+    if len(parts) < 2:
+        return None
+    return ''.join(parts)
+
+
 def expected_assert_literals(method_source: str) -> List[str]:
     """EXPECTED-value literals from the test's equality assertions.
 
@@ -326,6 +370,11 @@ def expected_assert_literals(method_source: str) -> List[str]:
                 and not args[1].startswith('"')):
             # message-first overload: assertEquals("msg", expected, actual)
             cand = args[1]
+        folded = _fold_string_literal_concat(cand)
+        if folded is not None:
+            if len(folded) >= 3 and folded not in out:
+                out.append(folded)
+            return
         if not LITERAL_ARG_RE.match(cand):
             return
         literal = cand[1:-1] if cand.startswith(('"', "'")) else cand

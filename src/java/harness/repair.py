@@ -111,6 +111,18 @@ def repair_swallowed_alarm(source):
     return out
 
 
+
+def _names_an_oracle_id_variable(args, source):
+    """True when an identifier in ``args`` is assigned a literal carrying an
+    `[oracle:` tag anywhere in ``source`` — i.e. the alarm IS named, at runtime,
+    through a variable. Pure."""
+    for ident in set(re.findall(r'[A-Za-z_]\w*', args or '')):
+        if re.search(r'\b' + re.escape(ident) + r'\s*=\s*"[^"]*\[oracle:',
+                     source or ''):
+            return True
+    return False
+
+
 def repair_missing_alarm_id(source, oracle_id=None):
     """Give every unnamed alarm an oracle ID taken from the harness's own
     `// relation: <name>` header, so the ID describes the check rather than
@@ -143,6 +155,15 @@ def repair_missing_alarm_id(source, oracle_id=None):
             continue
         if '[oracle:' in args or _DYNAMIC_ORACLE_ID_RE.search(args):
             continue                      # already named, or named at runtime
+        # A THIRD already-named form, found live by the cycle-7 smoke: the tag
+        # is held in a variable — `throw new FuzzerSecurityIssueLow(oracleId +
+        # " semantic mismatch: " + what)` where oracleId = "[oracle:circle-err2-0]".
+        # Neither guard above sees it, so the repair prepended a redundant
+        # fallback and produced "[oracle:unnamed-check] [oracle:circle-err2-0]",
+        # polluting the very IDs screening keys on. Resolve identifiers in the
+        # argument against their assignments in the source.
+        if _names_an_oracle_id_variable(args, src):
+            continue
         # No keyword guard: constructing a FuzzerSecurityIssue* IS the alarm
         # signal. An earlier version tested the args for 'violation' and missed
         # `FuzzerSecurityIssueLow(monotonicityViolation)` because the match was
