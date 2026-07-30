@@ -3131,3 +3131,60 @@ mechanism (the dismissal rule still 0-for-2), a structurally unreachable claim
 (fix (i) could never reach Closure-62), a failed hypothesis (placement did not
 bind the accusation), and a live repair bug (double-tagged oracle IDs). Every one
 of those would have silently corrupted the interpretation of the 7M measurement.
+
+## Closure-62 is a THIRD residual — the dismissal rule was never the right tool
+
+The re-smoke (`resmoke_c62_20260730_113508`) plus an offline check settles this,
+and it invalidates the second refresh's precision claim as well.
+
+**The fold worked.** Trusted values now extract and reach the judge: 4 TRUSTED
+blocks in the re-smoke against 0 in the first smoke. Extraction-empty over the 228
+records went 173 -> 161. That fix is good and stays.
+
+**But extraction was never the binding constraint.** With the fold, Closure-62's
+12 recorded rows still compare as `unknown`, and they still do WITH fix (ii)'s
+token comparison added. Zero of them reach `matches`, which is the only verdict
+that licenses a dismissal.
+
+The reason is principled, not incidental:
+
+```
+test pins  : 'javascript/complex.js:1: ERROR - error description here\n
+              assert (1;\n          ^\n'          <- spaces and newlines
+alarm says : 'lhs=javascript/complex.js:1:ERROR-errordescriptionhere'
+                                                  <- whitespace stripped
+```
+
+The harness normalises whitespace before comparing, so the fired value is a
+whitespace-stripped derivative of the pinned value. They match on content and
+differ only in whitespace — **and Closure-62's defect IS a whitespace defect**
+(the caret position at end-of-line, and the spaces preceding it).
+
+So a comparison loose enough to call these equal would dismiss a whitespace alarm
+by ignoring whitespace. The value-matching mechanism cannot clear this leg without
+being wrong for the wrong reason.
+
+**Closure-62 joins Math-30 and Math-65 as a named residual. The batch's expected
+precision movement is 5 -> 5.**
+
+### What this costs the pair, stated plainly
+
+The batch now has **no working precision lever**. Shipped and effective:
+repair-in-place (recall, verified live) and the observability work. Shipped and
+measured ineffective on their targets: the disputed-computation fact (delivered,
+ignored) and the extractor fixes (extraction improved, but extraction was not the
+constraint).
+
+A pair run now measures repair-in-place against an unchanged precision baseline.
+That is a legitimate thing to measure — the recall lever is real and its risk is
+pre-registered — but it is NOT the precision-batch measurement the two-tier bar
+was written for, and the PASS tier's "zero accusations on historically clean
+cases" clause becomes the only precision content in it.
+
+### The three residuals now share one shape
+
+Math-30: universal-property checks in a degenerate regime. Math-65: an accusation
+that ignores the contradicting source. Closure-62: an accusation whose value the
+dismissal machinery cannot legitimately match. **All three are accusations that no
+delivered fact can dislodge** — which is the cycle-8 enforcement question, now
+with three data points rather than two.
