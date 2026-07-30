@@ -1,0 +1,538 @@
+[
+ {
+  "bug": "Math-2",
+  "roll": "A",
+  "check": "hypergeom-mean-formula",
+  "claim": "The fired check asserts the documented contract that for any successfully constructed hypergeometric distribution, `getNumericalMean()` must equal `n",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-82",
+  "roll": "A",
+  "check": "?",
+  "claim": "This check asserts that for a successfully solved linear program, adding an exact duplicate of an existing constraint cannot change the optimum value",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-82",
+  "roll": "A",
+  "check": "constraint_order_invariant_on_tied_mrt_case",
+  "claim": "The fired check asserts that `optimize` must return the same optimal objective value for the same linear program with constraints merely reordered, an",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-82",
+  "roll": "A",
+  "check": "constraint-order-does-not-change-optimum-on-ratio-tie",
+  "claim": "The fired check asserts that two runs solving the same linear program with only the order of identical constraints permuted must return the same optim",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Chart-7",
+  "roll": "A",
+  "check": "?",
+  "claim": "The fired check asserts that for a successfully constructed two-item series, `getMaxMiddleIndex()` must return the index of the item whose own `TimePe",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Chart-7",
+  "roll": "A",
+  "check": "?",
+  "claim": "This check builds two valid periods with strictly ordered midpoints (`m1 = base + 900` and `m0 = base + 500`, so `m1 > m0` for all harness inputs), th",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Chart-7",
+  "roll": "A",
+  "check": "maxMiddleIndex_matches_independent_midpoint_argmax",
+  "claim": "For this fixed two-item series, the middle times are unambiguously `base+500` and `base+900`, so any correct implementation of \u201cgetMaxMiddleIndex()\u201d m",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Chart-7",
+  "roll": "A",
+  "check": "maxMiddleIndex_matches_computed_argmax_middle",
+  "claim": "For the constructed valid two-element series, the second period always has a strictly larger middle time than the first, and a correct implementation",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Chart-7",
+  "roll": "A",
+  "check": "maxMiddleNotMaxEndWhenTheyDiffer",
+  "claim": "For these valid non-overflowing inputs, a correct implementation of \u201cReturns the index of the time period with the maximum middle milliseconds.\u201d must",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-50",
+  "roll": "A",
+  "check": "?",
+  "claim": "The fired check asserts that for `getDateInstance(style, utc, locale)`, formatting must match the JDK date pattern that this method itself derives via",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-50",
+  "roll": "A",
+  "check": "?",
+  "claim": "This check asserts that when `FastDateFormat.getDateTimeInstance(dateStyle, timeStyle, utc, locale)` completes, it must format the same instant the sa",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-50",
+  "roll": "A",
+  "check": "dateInstance_default_overload_matches_explicit_default_local",
+  "claim": "The fired check asserts that when `Locale.setDefault(chosen)` is in force, `FastDateFormat.getDateInstance(style)` and `FastDateFormat.getDateInstance",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-50",
+  "roll": "A",
+  "check": "dateInstance_noarg_agrees_with_explicit_default_locale",
+  "claim": "The fired check asserts that after temporarily setting the JVM default to `chosen`, `getDateInstance(style)` must agree with `getDateInstance(style, c",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-68",
+  "roll": "A",
+  "check": "?",
+  "claim": "This check asserts that for the exact Freudenstein-Roth seed cases from the trusted regression test, `getRMS()` must equal the test-pinned expected RM",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-68",
+  "roll": "A",
+  "check": "?",
+  "claim": "The fired check asserts that a successful optimize() on the specific Jennrich-Sampson seed case (m=10, start [0.3,0.4]) must return the trusted MINPAC",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-60",
+  "roll": "A",
+  "check": "?",
+  "claim": "The fired check asserts that `contains(char)`\u2014documented as a boolean query\u2014must not complete by changing the builder\u2019s observable capacity, and no sh",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-74",
+  "roll": "A",
+  "check": "backward_constant_ode_reaches_requested_time",
+  "claim": "The fired check asserts that for a valid 1D zero-derivative ODE integrated backward with no user events, a successful `integrate` call must finish at",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-74",
+  "roll": "A",
+  "check": "forward_constant_ode_reaches_requested_time",
+  "claim": "The fired check asserts that a successful Adams-Moulton integration of the constant ODE `y' = 0` from `t0` to later `t` with no user events must finis",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-74",
+  "roll": "A",
+  "check": "split_vs_whole_constant_ode",
+  "claim": "For the harness\u2019s pinned zero-derivative 1D ODE, any correct completed integration must keep the state constant and, with no user events and the integ",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-74",
+  "roll": "A",
+  "check": "integrate_reaches_requested_end_time",
+  "claim": "The fired check asserts that for a successful `integrate(eq, t0, y0, t, y)` call with valid dimensions and no user event handlers, the returned stop t",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Closure-92",
+  "roll": "A",
+  "check": "swapIndependentChildModules_preservesPrefixOrder",
+  "claim": "The fired check asserts the same core contract as the trusted regression test\u2014that for valid independent provides, prefix namespaces are emitted in sh",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Closure-92",
+  "roll": "A",
+  "check": "independentModules_parentPrefixesAppearBeforeChildProvide",
+  "claim": "For this input shape, a correct implementation of this Closure pass must materialize the missing prefix namespaces in shortest-to-longest dependency o",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-41",
+  "roll": "A",
+  "check": "shortClassName_class_string_overload_agree",
+  "claim": "For every non-null `Class<?>` input the `Class` overload is specified and shown to compute its result by calling the `String` overload on `cls.getName",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-41",
+  "roll": "A",
+  "check": "packageName_class_string_overload_agree",
+  "claim": "For every non-null `Class<?>` this check is exactly the API\u2019s own overload relation\u2014`getPackageName(Class<?> cls)` is specified and shown to compute `",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-41",
+  "roll": "A",
+  "check": "shortClassName_class_matches_string_overload_for_array_jvm_n",
+  "claim": "The fired check is a direct consistency property mandated by this API shape\u2014`getShortClassName(Class<?> cls)` is specified and shown to compute its re",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-41",
+  "roll": "A",
+  "check": "packageName_class_matches_string_overload",
+  "claim": "The fired check is a direct consistency property that the API itself specifies and implements\u2014`getPackageName(Class<?>)` delegates to `getPackageName(",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-73",
+  "roll": "B",
+  "check": "?",
+  "claim": "The fired check asserts that after a successful solve, `getFunctionValue()` must match the actual value of the same function at `getResult()`, and on",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-73",
+  "roll": "B",
+  "check": "fourArg_nonBracketing_negativeInitial_mustThrow",
+  "claim": "For the harness\u2019s generated inputs, `min < initial < max` and `f(x)=x-shift` with positive `shift` make `f(min)`, `f(initial)`, and `f(max)` all stric",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-2",
+  "roll": "B",
+  "check": "hypergeom_mean_formula",
+  "claim": "The fired check asserts the documented contract that for every successfully constructed hypergeometric distribution, `getNumericalMean()` must equal `",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-2",
+  "roll": "B",
+  "check": "hypergeometricMeanFormula",
+  "claim": "The fired check asserts the documented contract that for every valid hypergeometric distribution, `getNumericalMean()` must equal `n * m / N`, and wit",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Chart-7",
+  "roll": "B",
+  "check": "?",
+  "claim": "The fired check asserts that for two successfully added periods where item 1\u2019s middle time is strictly greater than item 0\u2019s, `getMaxMiddleIndex()` mu",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Chart-7",
+  "roll": "B",
+  "check": "?",
+  "claim": "The firing is an uncaught `IndexOutOfBoundsException` from `clone()` on a valid `TimePeriodValues` built entirely from non-null periods with `start <=",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Chart-7",
+  "roll": "B",
+  "check": "?",
+  "claim": "The fired check asserts that for this constructed series the item with the greatest middle millisecond must be the second distinguished period (index",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Chart-7",
+  "roll": "B",
+  "check": "maxMiddleIndex_matches_largest_middle_not_largest_end",
+  "claim": "For the constructed valid two-period series, the second period unambiguously has the larger middle millisecond while the first has the larger end mill",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Chart-7",
+  "roll": "B",
+  "check": "maxMiddleIndex_matches_independent_midpoint_argmax",
+  "claim": "The fired check directly enforces the documented contract that `getMaxMiddleIndex()` return the index of the period with the largest middle millisecon",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-50",
+  "roll": "B",
+  "check": "?",
+  "claim": "The fired check asserts that `getDateInstance(style)` under a pinned default locale must agree with `getDateInstance(style, thatSameLocale)` in stored",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-50",
+  "roll": "B",
+  "check": "?",
+  "claim": "The fired check asserts that `FastDateFormat.getDateInstance(style)` must, when it completes, use the JDK\u2019s localized date-only pattern for that style",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-50",
+  "roll": "B",
+  "check": "?",
+  "claim": "The fired check asserts that `getDateInstance(FULL)` under default `Locale.US` must produce the same date-only localized pattern as the JDK date insta",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-50",
+  "roll": "B",
+  "check": "?",
+  "claim": "This check asserts that `getDateInstance(style, tz)` uses the current default locale when `locale` is omitted, and with the observed completed run ret",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-50",
+  "roll": "B",
+  "check": "dateInstance_tracks_current_default_locale",
+  "claim": "The fired check asserts a documented and test-pinned contract\u2014that `getDateInstance(style)` uses the current default locale\u2014so after `Locale.setDefaul",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-50",
+  "roll": "B",
+  "check": "dateInstance_default_overload_agrees_with_explicit_default_l",
+  "claim": "The fired check asserts that for a valid date style, `getDateInstance(style)` and `getDateInstance(style, Locale.getDefault())` must produce a formatt",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-50",
+  "roll": "B",
+  "check": "dateInstance_default_overload_agreement",
+  "claim": "The fired check asserts that after setting the default locale to `def`, `getDateInstance(style)` and `getDateInstance(style, Locale.getDefault())` mus",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-68",
+  "roll": "B",
+  "check": "?",
+  "claim": "This check claims that for the fixed Jennrich-Sampson seed input `{0.3, 0.4}` under the class\u2019s own MINPACK-based optimizer setup, the second optimize",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-68",
+  "roll": "B",
+  "check": "?",
+  "claim": "This check asserts that for the pinned Jennrich-Sampson problem (`m=10`, start `[0.3, 0.4]`) a successful optimization must return the trusted MINPACK",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-68",
+  "roll": "B",
+  "check": "?",
+  "claim": "The fired check asserts that for the hard-coded Freudenstein-Roth seed `{ 0.5, -2.0 }`, a successful `LevenbergMarquardtOptimizer` run must report the",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Closure-38",
+  "roll": "B",
+  "check": "minus-negative-zero-canonical-spacing",
+  "claim": "This check asserts the trusted test-pinned contract that compact-printing the AST for `x- -0` must produce the canonical output `x- -0.0;`, and becaus",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Closure-38",
+  "roll": "B",
+  "check": "minus_negative_zero_compact_exact",
+  "claim": "For the completed call on the pinned input `x- -0`, the oracle asserts the exact behavior required by the trusted regression test, and no surviving co",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-74",
+  "roll": "B",
+  "check": "?",
+  "claim": "This fired check asserts that for the fixed quintic ODE and fixed integrator parameters with `nSteps = 4`, a correct implementation must complete with",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-74",
+  "roll": "B",
+  "check": "integrate_reaches_requested_end_without_events",
+  "claim": "For these valid finite inputs with no user event handlers, a correct `integrate` that completes normally should return the actual stop time at the req",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-74",
+  "roll": "B",
+  "check": "aliasing_y_and_y0_does_not_change_solution",
+  "claim": "The fired check asserts that for a valid zero-derivative ODE, calling `integrate` with `y0` and `y` aliased versus separate must complete to the same",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-74",
+  "roll": "B",
+  "check": "integrate_reaches_requested_end_time",
+  "claim": "The fired check asserts that for a normal completion with no user event handlers, `integrate(..., t, ...)` must return the requested final time `t`, a",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Math-74",
+  "roll": "B",
+  "check": "returned_stop_time_matches_direction",
+  "claim": "For a successful `integrate(eq, t0, y0, t, y)` with no user event handlers, a correct implementation must stop on the integration path between `t0` an",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Closure-92",
+  "roll": "B",
+  "check": "?",
+  "claim": "The fired check asserts the same seed scenario as the trusted regression test\u2014three modules providing `apps`, `apps.foo.bar.B`, and `apps.foo.bar.C` m",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Closure-92",
+  "roll": "B",
+  "check": "nestedProvidePrefixesAppearInParentBeforeChildOrder",
+  "claim": "The fired check asserts the generic contract that processed `goog.provide` prefixes in independent modules must appear in shortest-to-longest order be",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Closure-92",
+  "roll": "B",
+  "check": "addingSiblingLeafDoesNotMoveSharedPrefixesAfterLeaves",
+  "claim": "The fired check asserts that for valid non-throwing `goog.provide` inputs with one or two sibling descendant provides, the compiler must emit shared p",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Closure-92",
+  "roll": "B",
+  "check": "provideProcessingRemovesProvideCalls",
+  "claim": "The fired check asserts that when closure processing successfully completes on valid `goog.provide(...)` inputs, the emitted source must not still con",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Closure-92",
+  "roll": "B",
+  "check": "allRegisteredPrefixesForSingleNestedProvideExist",
+  "claim": "The fired check asserts that compiling a module containing only `goog.provide(fullNestedName)` must emit namespace initializations for every prefix fr",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-41",
+  "roll": "B",
+  "check": "?",
+  "claim": "The fired check asserts that for any chosen class `C`, `getShortClassName(C)` must equal `getShortClassName(C.getName())`, and for this exact input (`",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-41",
+  "roll": "B",
+  "check": "?",
+  "claim": "The fired check is a direct consistency property mandated by the API itself\u2014`getShortClassName(Class<?> cls)` is specified/implemented to return `getS",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-41",
+  "roll": "B",
+  "check": "shortClassName_classStringOverload_agree_onJvmName",
+  "claim": "For every non-null `Class<?> cls` that completes, the API\u2019s own documented and shown implementation of `getShortClassName(Class<?>)` is to delegate to",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-41",
+  "roll": "B",
+  "check": "packageName_classStringOverload_agree_onJvmName",
+  "claim": "The fired check asserts that for a chosen class `cls`, `ClassUtils.getPackageName(cls)` must equal `ClassUtils.getPackageName(cls.getName())`, and thi",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-41",
+  "roll": "B",
+  "check": "shortClassName_class_matches_string_overload_on_jvm_name",
+  "claim": "For every non-null `Class<?> cls`, the documented and shown implementation contract of `getShortClassName(Class<?>)` is exactly to delegate to `getSho",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-41",
+  "roll": "B",
+  "check": "packageName_class_matches_string_overload_on_jvm_name",
+  "claim": "For every non-null `Class<?>` input this check only requires the two overloads to agree on the same class name string `cls.getName()`, and both the do",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-63",
+  "roll": "B",
+  "check": "?",
+  "claim": "The fired check claims that for a completed `formatPeriod(startMillis, endMillis, \"MM\", true, GMT)` call with `startMillis <= endMillis`, the rendered",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-63",
+  "roll": "B",
+  "check": "?",
+  "claim": "The fired check asserts that for a completed call on a valid forward period (`spanDays >= 0`, `end = start + spanDays * 86_400_000L`) with pattern `\"M",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-63",
+  "roll": "B",
+  "check": "month_format_for_forward_period_is_not_negative",
+  "claim": "For completed calls with `startMillis <= endMillis`, a correct `formatPeriod(..., \"MM\", true, GMT)` should render the month field as a zero-padded num",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ },
+ {
+  "bug": "Lang-63",
+  "roll": "B",
+  "check": "month-field-for-forward-period-is-two-digits-not-negative",
+  "claim": "For completed non-throwing calls on forward intervals, a correct implementation of `formatPeriod(..., \"MM\", true, tz)` cannot legitimately return a no",
+  "true_label": "genuine catch (fake patch)",
+  "answer_key": "NONE"
+ }
+]
