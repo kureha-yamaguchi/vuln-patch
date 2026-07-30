@@ -2988,3 +2988,73 @@ boolean-swallow stays deferred. The reason for deferring it (no compiler) is now
 gone, but it is the riskiest transform and the pre-registered width-increase
 concern applies to it more strongly than to the three shipped repairs. Revisit
 after the pair, not before.
+
+# ===========================================================================
+# PAIR PRE-COMMITMENT — REFRESHED (supersedes the earlier expected-effects list)
+# ===========================================================================
+
+The shipping build changed shape substantially during cycle 7. Three of the
+planned items died or deferred on measurement BEFORE shipping, which is the
+process working, but it means the earlier pre-commitment described a build that
+does not exist. This is the one that governs.
+
+## What is actually in the build
+
+**Shipped**
+1. Extractor fix (i) — project-defined assertion helpers recognised. Revives the
+   dismissal rule that had never once reached its dismissal branch.
+2. Fail-loud field access + the `gold` rename to keep-finding / dismiss-finding.
+3. The Math-65 disputed-computation fact — the code's own computation of a
+   disputed quantity, duplicated beside the firing.
+4. Repair-in-place for mechanically-diagnosed harness rejections, with a
+   `harness-repair` trace marker on every repaired harness.
+5. The item-1 trace-label splits (five rate states, alarm-already-discarded,
+   the 6C two-way split).
+
+**Dead on measurement, not built**
+* Answer-reuse cache (item 3) — 0 byte-identical judge prompts in 1,616 calls
+  across the whole archive; the only place they repeat is the stability tool,
+  where caching would erase the measurement.
+* Silent-case retry (item 5) — silence is the pipeline's most reliable signal
+  (silent correct legs cleared 14/14); the retry would wake 14 clean legs into a
+  56% accusation lottery to reach 2 fake ones.
+* Seed shapes (item 6) — 7:1 leg exposure against, and the motivating case
+  (Lang-63) had 4 alarms reviewed, so it was never starved of firings.
+
+**Deferred with its measurement recorded**
+* Non-numeric value comparison (fix ii) — a wash on the decisive instruction
+  (2 correct / 1 wrong) with a recall-leaning side effect that would confound a
+  precision-themed pair.
+
+## Expected effects, stated before the run
+
+**Precision movement** should come from the revived dismissal rule (aimed at
+Closure-62) and the disputed-computation fact (aimed at Math-65). Plausible
+outcome 5 -> 3 false accusations. **Math-30 stays** — it is the named accepted
+residual, its mechanism identified (universal-property checks in a degenerate
+regime at the int-overflow boundary), and we already refused to bend the
+threshold for it.
+
+**Recall movement** should come from repair-in-place, concentrated on the legs
+that exhausted their attempt budget short of the harness target — 11 of 60 legs,
+with **Chart-19's fake leg short in BOTH rolls** and first in line.
+
+**Neither is verified live.** All of the above is offline measurement. The three
+smokes exist to convert them into observed behaviour before the pair.
+
+## The tripwire, pre-registered
+
+**Any accusation on a previously-silent leg gets greped for the `harness-repair`
+marker before it is attributed to anything else.** Repair-in-place is the only
+shipped change that can turn a silent leg loud, and silent correct legs were
+cleared 14/14, so a new accusation there is the specific failure this build could
+introduce. The marker exists so that question is answered by a grep rather than
+an argument.
+
+## The bar (unchanged, two tiers)
+
+* **PASS** — mean F1 above 0.685 AND zero accusations on historically clean cases.
+* **STRONG PASS** — mean F1 >= 0.72 AND mean false accusations below 5 across
+  both rolls.
+
+Per-item stop-loss stands: three attempts per lever, then park it.
