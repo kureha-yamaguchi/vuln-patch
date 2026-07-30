@@ -82,6 +82,22 @@ Failing (2) kills it regardless of (1). Passing (1) and (2) while failing (3)
 means the question works but is over-eager, and needs the answer verified
 mechanically before use.
 
+## ONE SHOT — pre-committed before running
+
+The surviving phrasing was chosen while looking at the seven cases whose answers
+we already know. So: **one run, no phrasing iteration afterward.** Two phrasings
+already died offline; this one gets exactly one attempt against the criteria fixed
+above.
+
+If it misses, that is the answer. Re-rolling the question until it passes would be
+tuning a prompt against seven known cases — the overfitting trap wearing a fresh
+coat of paint, and this project's oldest standing rule forbids it.
+
+Its expected value is sound at reduced odds precisely *because* it runs last:
+success gives cycle 8 a mechanism candidate (still needing guards, a smoke and a
+build); failure closes the ceiling question over the corpses of every alternative,
+which is the strongest-evidenced negative this project will have produced.
+
 ## Standing caveat
 
 Seven of these cases have answers we already know, so a positive result is

@@ -3277,3 +3277,30 @@ affect, the failing test's own pins) are label-independent authorities.
 
 The guard set is now the standing safety test for every precision mechanism, and
 it is cheap: assembling it cost one query.
+
+### The admissible-authority list (the positive half of the rule)
+
+This pipeline has exactly **three** label-independent authorities — sources of
+truth the defect cannot touch, and therefore the only things a mechanism may
+treat as the standard of correctness:
+
+1. **The failing test's pinned expectations.** The test predates the patch and
+   states what correct behaviour is for its own inputs. Strongest.
+2. **The buggy build's behaviour on observables the defect does not touch.** The
+   incumbent semantics of everything the bug leaves alone. Requires the
+   family-duty boundary: on the failing test's OWN observable the buggy build is
+   authoritative for nothing, and a mechanism must abstain.
+3. **The documentation.** Largely patch-invariant, and measured present in 228/228
+   fixture rows — but also measured *ambiguous* where it matters most (Math-65's
+   javadoc reads naively as the formula the accusers asserted). Weakest of the
+   three; usable as corroboration, not as a sole basis.
+
+Every mechanism that has shipped and worked anchors on one of these: family-duty
+on (1), the indiscriminate-rate gate and the fires-on-both gate on (2), the
+trigger-lift dismissal on (1). Every design killed this cycle anchored, somewhere
+in its chain, on **the patched artefact judging itself**.
+
+**Design-review question, from now on: what is your authority, and can the defect
+touch it?** If the answer involves the patched source, the patched arithmetic, or
+the patched output, the mechanism will void genuine catches and the guard set will
+prove it.
