@@ -2920,3 +2920,36 @@ from *which alarms get raised*, not from the same alarm being judged twice.
 
 Not built. Revisit only if a production run is ever observed re-issuing an
 identical prompt.
+
+## Pre-registered for the pair: repair-in-place is a width increase in disguise
+
+Recorded BEFORE the paired measurement so that a precision dip, if one comes, is
+attributed to the right cause instead of surprising us afterwards.
+
+Repair-in-place is filed as a recall lever, but mechanically it raises effective
+harness width. Roughly 4 rejections per case at a 36% full-clear rate is about
+one extra accepted harness per case — **and that applies to correct patches
+exactly as much as to fake ones.** Every additional alarm raised against a correct
+patch is another chance to be wrongly accused. That is the same argument that was
+used against blanket width raises, and it applies here whether or not the extra
+harnesses are individually good.
+
+Two things genuinely mitigate it, and neither makes it disappear:
+
+* a repaired harness still passes every detector the gate applies, so it is not
+  a lower-quality harness — it is a harness that was thrown away for a fixable
+  structural defect;
+* the precision machinery is stronger than when width was last raised (the
+  revived dismissal rule, the disputed-computation fact, the cycle-6 gates now
+  actually firing).
+
+**Honest expectation: a recall gain with a possible precision tax.** The two-tier
+bar already prices this — the PASS tier requires *zero accusations on historically
+clean cases*, which is precisely the clause that fails if the extra alarms start
+convicting good patches.
+
+If the pair shows recall up and false accusations up, that is this effect, not a
+regression in the precision work, and the response is to gate repair-in-place on
+the fake-patch side only if that can be done without the pipeline knowing the
+label — which it cannot. So the real response would be to accept the trade or
+raise the repair's acceptance bar.
