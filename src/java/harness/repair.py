@@ -205,7 +205,25 @@ def repair_rethrow_without_cause(source):
                 continue
             args = body[call_open + 1:call_end]
             if var in re.findall(r'\b\w+\b', args):
-                continue                  # cause already passed
+                continue                  # this catch's variable already passed
+            # The alarm constructors are (), (String), (Throwable) and
+            # (String, Throwable) — never more. A call that already has two
+            # arguments is full, and appending a cause produces a signature that
+            # does not exist. Found by the real-API compile check: one harness
+            # already passed a DIFFERENT variable named `cause`, so the
+            # variable-name guard above did not fire and the result was
+            # FuzzerSecurityIssueLow(String, Throwable, InvocationTargetException).
+            depth = 0
+            top_level_commas = 0
+            for ch in args:
+                if ch in '([{':
+                    depth += 1
+                elif ch in ')]}':
+                    depth -= 1
+                elif ch == ',' and depth == 0:
+                    top_level_commas += 1
+            if top_level_commas >= 1:
+                continue                  # already (String, Throwable)
             new_args = args.rstrip() + ', ' + var
             new_body = body[:call_open + 1] + new_args + body[call_end:]
             out = out.replace(body, new_body, 1)
