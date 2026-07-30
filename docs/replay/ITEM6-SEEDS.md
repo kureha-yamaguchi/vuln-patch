@@ -90,8 +90,10 @@ everywhere.
 
 ## Not built
 
-Recorded rather than parked, like item 5: the premise is measurably false for its
-own motivating case, and the exposure runs the wrong way by a factor of seven.
+Recorded rather than parked, like item 5 — but for a different reason than item 5.
+Item 5's premise was measurably FALSE. Item 6's premise is TRUE and its benefit is
+real; it loses on price. The exposure runs the wrong way by a factor of seven, with
+no budget ceiling absorbing the additions.
 
 If the seed idea is ever revisited, the precondition is not a better seed list —
 it is a way to make a firing on a correct patch cost less than 56%. That is the
