@@ -49,7 +49,7 @@ project classpath. Compilation is confirmed by the live smoke, not here.
 import re
 
 from java.parsing.java_source import (
-    alarm_ids_missing, boolean_swallow, rethrow_without_cause, strip_comments,
+    _DYNAMIC_ORACLE_ID_RE, alarm_ids_missing, boolean_swallow, rethrow_without_cause, strip_comments,
     violation_swallowed)
 
 #: The four detectors this module repairs against, in the order applied. Each is
@@ -114,65 +114,74 @@ def repair_swallowed_alarm(source):
 def repair_missing_alarm_id(source, oracle_id=None):
     """Give every unnamed alarm an oracle ID taken from the harness's own
     `// relation: <name>` header, so the ID describes the check rather than
-    inventing a claim about it. Falls back to a stable generic id."""
+    inventing a claim about it.
+
+    SPAN-BASED, deliberately. The first implementation used
+    ``out.replace(literal, tagged, 1)``, which replaces the first occurrence in
+    the WHOLE FILE — not necessarily the one in the alarm being repaired. On one
+    archived harness that landed the tag after a closing quote and produced
+    invalid Java. Detector-clearance could not see it; the compile comparison
+    could. Each alarm is now edited inside its own parenthesised span.
+
+    Alarms whose ID is built at runtime (`"[oracle:" + id + "]"`) are skipped
+    using the SAME regex the detector uses to call them already-named, so the
+    repair and the gate cannot disagree about what counts as named."""
     src = source or ''
     if oracle_id is None:
         m = re.search(r'//\s*relation:\s*([A-Za-z0-9_\-]+)', src)
         oracle_id = m.group(1) if m else 'unnamed-check'
-    tag = f'[oracle:{oracle_id}] '
-    stripped = strip_comments(src)
+    tag = '[oracle:%s] ' % oracle_id
 
-    def _needs_id(stmt):
-        if not any(k in stmt for k in
-                   ('violated', 'violation', 'semantic mismatch',
-                    'FuzzerSecurityIssue')):
-            return False
-        return '[oracle:' not in stmt
-
-    out = src
-    for m in re.finditer(r'\bthrow\b[^;]{0,400}?"', stripped):
-        end = stripped.find(';', m.end())
-        stmt = stripped[m.start():end if end > 0 else m.end()]
-        if not _needs_id(stmt):
+    pieces, last = [], 0
+    for cm in re.finditer(r'new\s+[\w.]*FuzzerSecurityIssue\w*\s*\(', src):
+        call_open = cm.end() - 1
+        call_end = _block_end_paren(src, call_open)
+        if call_end < 0:
             continue
-        # Locate the first string literal of this throw in the ORIGINAL source
-        # and prefix it. Matching on the literal keeps comment offsets irrelevant.
-        lit = re.search(r'"([^"\\]*(?:\\.[^"\\]*)*)"', stmt)
-        if not lit:
+        args = src[call_open + 1:call_end]
+        if not args.strip():
             continue
-        original = '"' + lit.group(1) + '"'
-        if original not in out:
-            continue
-        if lit.group(1).startswith('[oracle:'):
-            continue
-        out = out.replace(original, '"' + tag + lit.group(1) + '"', 1)
-
-    # Alarms whose message is a VARIABLE rather than a literal —
-    # `throw new FuzzerSecurityIssueLow(violation);` — which is 25 of the 39
-    # unnamed alarms in the archived corpus. Prefix at the construction site so
-    # the variable's own content is preserved verbatim after the tag.
-    def _tag_variable_message(text):
-        res = text
-        for cm in re.finditer(
-                r'new\s+[\w.]*FuzzerSecurityIssue\w*\s*\(', text):
-            call_open = cm.end() - 1
-            call_end = _block_end_paren(text, call_open)
-            if call_end < 0:
+        if '[oracle:' in args or _DYNAMIC_ORACLE_ID_RE.search(args):
+            continue                      # already named, or named at runtime
+        # No keyword guard: constructing a FuzzerSecurityIssue* IS the alarm
+        # signal. An earlier version tested the args for 'violation' and missed
+        # `FuzzerSecurityIssueLow(monotonicityViolation)` because the match was
+        # case-sensitive — 25 repairs lost to a capital V.
+        first = args.lstrip()
+        pad = len(args) - len(first)
+        if first.startswith('"'):
+            close = 1
+            while close < len(first):
+                if first[close] == '\\':
+                    close += 2
+                    continue
+                if first[close] == '"':
+                    break
+                close += 1
+            else:
                 continue
-            args = text[call_open + 1:call_end]
-            first = args.split(',')[0].strip()
-            if not re.fullmatch(r'[A-Za-z_]\w*', first):
-                continue                  # literal or expression: handled above
-            if tag in args:
-                continue                  # idempotent
-            new_args = args.replace(first, f'"{tag}" + {first}', 1)
-            whole = text[cm.start():call_end + 1]
-            fixed = (text[cm.start():call_open + 1] + new_args
-                     + text[call_end:call_end + 1])
-            res = res.replace(whole, fixed, 1)
-        return res
-
-    return _tag_variable_message(out)
+            new_args = (args[:pad] + '"' + tag + first[1:close + 1]
+                        + first[close + 1:])
+        elif re.match(r'[A-Za-z_]\w*', first):
+            # A non-literal message expression: `msgVar`, or
+            # `oracleId + " ... "`. Prepending a literal is always valid Java
+            # (string concatenation is defined for every type), so the only risk
+            # is SEMANTIC: turning the (Throwable) cause constructor into the
+            # (String) message one and dropping the cause. So skip when the sole
+            # argument is a caught-exception variable.
+            ident = re.match(r'[A-Za-z_]\w*', first).group(0)
+            sole = first.strip() == ident
+            if sole and re.search(r'catch\s*\([^)]*\b' + re.escape(ident)
+                                  + r'\s*\)', src):
+                continue
+            new_args = (args[:pad] + '"' + tag + '" + ' + first)
+        else:
+            continue
+        pieces.append(src[last:call_open + 1])
+        pieces.append(new_args)
+        last = call_end
+    pieces.append(src[last:])
+    return ''.join(pieces)
 
 
 def repair_rethrow_without_cause(source):
