@@ -914,6 +914,28 @@ def oracle_families(source_or_text: str) -> set:
     return fams
 
 
+def _alarm_id_held_in_variable(stmt: str, source: str) -> bool:
+    """True when an identifier used in `stmt` is assigned a literal carrying an
+    `[oracle:` tag elsewhere in `source`.
+
+    A THIRD already-named form, alongside a literal prefix and the
+    `"[oracle:" + id` template: `String oracleId = "[oracle:circle-err2-0]";
+    ... throw new FuzzerSecurityIssueLow(oracleId + " semantic mismatch: ...")`.
+    At runtime that message DOES start with the tag, so acceptance can tell
+    which check earned its place — the gate's actual requirement is met.
+
+    Found because the repair module had to special-case it: the gate was
+    rejecting 14 archived harnesses whose alarms were properly identifiable,
+    and the repair (correctly declining to double-tag them) could not rescue
+    them. Gate and repair must agree on what "named" means.
+    """
+    for ident in set(re.findall(r'[A-Za-z_]\w*', stmt or '')):
+        if re.search(r'\b' + re.escape(ident) + r'\s*=\s*"[^"]*\[oracle:',
+                     source or ''):
+            return True
+    return False
+
+
 def alarm_ids_missing(source: str) -> Optional[str]:
     """Return a reason string if any alarm throw in `source` has a message
     that carries NO oracle ID (neither `[oracle:<id>]` prefix nor
@@ -931,6 +953,8 @@ def alarm_ids_missing(source: str) -> Optional[str]:
             continue                       # not an alarm (plain rethrow)
         if _DYNAMIC_ORACLE_ID_RE.search(stmt):
             continue                       # ID built at runtime — named
+        if _alarm_id_held_in_variable(stmt, src):
+            continue                       # ID held in a variable — also named
         if not oracle_ids_in_text(stmt):
             line = src[:m.start()].count('\n') + 1
             snippet = ' '.join(stmt.split())[:120]

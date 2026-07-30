@@ -59,6 +59,7 @@ _ALARM_TYPE = 'com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow'
 
 #: Marker so a repaired region is recognisable and idempotent.
 _MARK = '/*__vpRepair*/'
+_MARK_CAUSE = '/*__vpCause*/'
 
 _CATCH_RE = re.compile(
     r'catch\s*\(\s*(?:final\s+)?([\w.]+(?:\s*\|\s*[\w.]+)*)\s+(\w+)\s*\)\s*\{')
@@ -264,12 +265,96 @@ def _block_end_paren(src, open_idx):
     return -1
 
 
+
+def repair_boolean_swallow(source):
+    """Preserve the caught exception's identity and attach it to the alarm.
+
+    The largest rejection bucket (77 of 240 in the paired runs). The defect: a
+    catch records only a bare literal flag, an alarm is later raised on that
+    flag, and whatever actually crashed is flattened into `false` — so the
+    attribution guards can no longer ask which exception fired or whether the
+    unpatched build crashes the same way.
+
+    Two coordinated edits, which is why this was deferred until a compiler was
+    available:
+      1. declare a holder immediately before the `try`, in the same block;
+      2. capture the exception in the catch body (`__vpCause = e;`);
+      3. attach it as the alarm's cause where the flag drives the alarm.
+
+    NOTE ON HONESTY: step 2 alone would clear the detector, because a
+    non-literal assignment makes the catch stop matching the bare-flag shape.
+    That would game the acceptance test without preserving anything, so the
+    repair is only applied when step 3 also succeeds — the exception must
+    actually REACH the alarm, which is the value the detector is protecting.
+    """
+    src = source or ''
+    if _MARK_CAUSE in src:
+        return src                        # idempotent
+    from java.parsing.java_source import boolean_swallow, strip_comments
+    if not boolean_swallow(src):
+        return src
+    m = _CATCH_RE.search(src)
+    holder = '__vpCause'
+    out = src
+    changed = False
+    for cm in list(_CATCH_RE.finditer(src)):
+        var = cm.group(2)
+        body_open = cm.end() - 1
+        end = _block_end(src, body_open)
+        if end < 0:
+            continue
+        body = src[body_open + 1:end]
+        if 'throw' in body or re.search(r'\breturn\b', body):
+            continue                      # rethrows or skips: not the shape
+        # locate the try this catch belongs to, and the statement start before it
+        tpos = src.rfind('try', 0, cm.start())
+        if tpos < 0:
+            continue
+        line_start = src.rfind('\n', 0, tpos) + 1
+        indent = re.match(r'[ \t]*', src[line_start:]).group(0)
+        decl = f'{indent}{_MARK_CAUSE} Throwable {holder} = null;\n'
+        # 3: the alarm must be reachable and have room for a cause
+        alarm = None
+        for am in re.finditer(r'new\s+[\w.]*FuzzerSecurityIssue\w*\s*\(', src):
+            if am.start() < end:
+                continue                  # inside/behind the catch, not after
+            ao = am.end() - 1
+            ae = _block_end_paren(src, ao)
+            if ae < 0:
+                continue
+            args = src[ao + 1:ae]
+            depth = 0
+            commas = 0
+            for ch in args:
+                if ch in '([{':
+                    depth += 1
+                elif ch in ')]}':
+                    depth -= 1
+                elif ch == ',' and depth == 0:
+                    commas += 1
+            if commas >= 1:
+                continue                  # already (String, Throwable)
+            alarm = (ao, ae, args)
+            break
+        if alarm is None:
+            continue                      # cannot attach — leave untouched
+        ao, ae, args = alarm
+        new = (src[:line_start] + decl + src[line_start:body_open + 1]
+               + f' {holder} = {var};' + src[body_open + 1:ao + 1]
+               + args + ', ' + holder + src[ae:])
+        out = new
+        changed = True
+        break
+    return out if changed else src
+
+
 #: (name, detector, repair) — applied in order, each gated on its own detector.
 REPAIRS = (
     ('swallowed-alarm', violation_swallowed, repair_swallowed_alarm),
     ('missing-alarm-id', alarm_ids_missing, repair_missing_alarm_id),
     ('rethrow-without-cause', rethrow_without_cause,
      repair_rethrow_without_cause),
+    ('boolean-swallow', boolean_swallow, repair_boolean_swallow),
 )
 
 #: Detectors consulted to prove a repair introduced nothing new.

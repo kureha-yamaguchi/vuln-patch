@@ -158,27 +158,48 @@ def test_repair_never_introduces_a_defect_the_source_did_not_have():
             'repair introduced a defect the original did not have'
 
 
-def test_boolean_swallow_is_deliberately_not_repaired_yet():
-    """77 of the corpus carry it — the largest single bucket — but repairing it
-    needs a two-site transform (capture the exception, attach it as the cause),
-    and there is no compiler available offline to verify the result. Deferred
-    until the live smoke confirms the three shipped repairs compile.
+def test_boolean_swallow_is_repaired_by_a_two_site_transform():
+    """The largest rejection bucket (77 of 240). Deferred until a compiler was
+    available to verify the output, then built and compile-validated on the VM.
 
-    Pinned so the gap is a recorded decision rather than an oversight."""
-    src = f"""
-    public class FuzzHarness {{
-        // relation: flagged
-        public static void fuzzerTestOneInput(FuzzedDataProvider d) {{
-            boolean threw = false;
-            try {{ d.consumeInt(); }} catch (Exception e) {{ threw = true; }}
-            if (threw) throw new {ALARM}("[oracle:flagged] relation violated");
-        }}
-    }}
-    """
+    The transform is two coordinated edits: declare a holder before the try,
+    capture the exception in the catch, and attach it as the alarm's cause.
+
+    HONESTY GUARD: capturing alone would clear the detector, because a
+    non-literal assignment stops the catch matching the bare-flag shape. That
+    would game the acceptance test while preserving nothing. So the repair only
+    applies when the cause actually REACHES an alarm — which is the value the
+    detector protects."""
+    src = f"""public class FuzzHarness {{
+      // relation: flagged
+      public static void f(FuzzedDataProvider d) {{
+        boolean threw = false;
+        try {{ d.consumeInt(); }} catch (Exception e) {{ threw = true; }}
+        if (threw) throw new {ALARM}("[oracle:flagged] relation violated");
+      }}
+    }}"""
     assert boolean_swallow(src)
-    _fixed, applied, remaining = repair_harness(src)
+    fixed, applied, remaining = repair_harness(src)
+    assert 'boolean-swallow' in applied
+    assert 'boolean-swallow' not in remaining
+    # the exception is captured AND delivered to the alarm
+    assert '__vpCause = e;' in fixed
+    assert '__vpCause)' in fixed
+
+
+def test_boolean_swallow_repair_is_skipped_when_no_alarm_can_take_the_cause():
+    """If the cause cannot reach an alarm, the repair must decline rather than
+    clear the detector by capturing into a variable nobody reads."""
+    src = f"""public class FuzzHarness {{
+      public static void f(FuzzedDataProvider d) {{
+        boolean threw = false;
+        try {{ d.consumeInt(); }} catch (Exception e) {{ threw = true; }}
+        if (threw) throw new {ALARM}("[oracle:x] relation violated", other);
+      }}
+    }}"""
+    fixed, applied, _ = repair_harness(src)
     assert 'boolean-swallow' not in applied
-    assert 'boolean-swallow' in remaining
+    assert fixed == src
 
 
 # --- integration: the campaign applies it, and marks it -------------------
