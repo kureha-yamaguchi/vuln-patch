@@ -114,5 +114,13 @@ which is what killed Lang-63 in preflight2 and what item 2e found behind Math-73
 roll-A miss (the roll invented a non-discriminating rule; the other roll invented
 a discriminating one).
 
+**Its price, named in advance so its measurement is designed before its argument
+is made: slot competition.** A persisted family occupies proposal slots that would
+otherwise explore new families, so within a leg it trades exploration for
+consistency. The number its future measurement must produce is therefore **how
+often persistence crowds out a family that would have caught something** — not
+merely whether persistence raises the catch rate on the legs it targets. It also
+inherits the within-run-only boundary it already respects (no cross-run pooling).
+
 Not built, not measured, and NOT smuggled into this cycle. Recorded as the
 successor idea with a better prior than the one being killed.

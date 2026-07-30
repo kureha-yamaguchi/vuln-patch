@@ -3058,3 +3058,23 @@ an argument.
   both rolls.
 
 Per-item stop-loss stands: three attempts per lever, then park it.
+
+## Two kinds of death (taxonomy — keep permanently)
+
+Cycle 7 killed three items, and they did NOT die the same way. The distinction
+licenses different futures, so the verdict is recorded per item:
+
+* **Premise false** — the item's stated reason for existing is contradicted by
+  measurement. It does not come back. *Item 5 (silent-case retry): "a silent run
+  learned nothing" is inverted; silent correct legs were cleared 14/14, so silence
+  is the pipeline's most reliable signal.* *Item 3 (answer-reuse): 0 byte-identical
+  judge prompts in 1,616 calls across the whole archive.*
+* **Premise true, price fatal** — the benefit is real and measured; the cost is
+  worse. It CAN return if the price changes. *Item 6 (seed shapes): genuinely
+  fixes the armed-but-silent mode — one of the three modes Lang-63 has shown
+  across five rolls — but at 7:1 leg exposure with no budget ceiling absorbing the
+  additions. Returns if a firing on a correct patch ever costs less than 56%.*
+
+A deferral is a third thing again: *fix (ii) is a measured wash whose numbers
+expire when its dependencies move* — which they already did once, when fix (i)
+shipped and changed its population from 10 rows on one leg to 27 across three.
