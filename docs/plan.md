@@ -2953,3 +2953,38 @@ regression in the precision work, and the response is to gate repair-in-place on
 the fake-patch side only if that can be done without the pipeline knowing the
 label — which it cannot. So the real response would be to accept the trade or
 raise the repair's acceptance bar.
+
+## Repair-in-place: offline validation complete
+
+Two independent gates, both green.
+
+**Detector clearance** (the project's own gate functions, over 235 archived
+rejected harnesses recovered from the two paired runs):
+
+    swallowed-alarm         65 present -> 65 cleared
+    missing-alarm-id        39 present -> 27 cleared
+    rethrow-without-cause    7 present ->  5 cleared
+    boolean-swallow         77 present ->  0 (deferred)
+  fully cleared: 84 of 235   regressions: 0
+
+**Compilation** (javac against the real jazzer-api-0.22.1 jar on the VM, 96
+original/repaired pairs): 0 repaired harnesses with more errors than their
+original, 0 error strings appearing only after repair.
+
+The compile gate found three defects that detector-clearance was structurally
+incapable of seeing, all of which would otherwise have shipped into the pair:
+a global str.replace that corrupted a literal in the wrong location; runtime-built
+oracle IDs being tagged a second time; and a cause appended to an alarm
+constructor that already had two arguments.
+
+It also produced one false alarm of its own: 110 "incompatible types" errors that
+came from a hand-written stub declaring FuzzerSecurityIssueLow as extending Error.
+The real class extends RuntimeException. Lesson recorded because it recurred all
+week: **when a measurement disagrees with the code, suspect the measurement's own
+scaffolding first** — every wrong reading this cycle came from a proxy we built
+(a stub, a regex, a field name), never from the code under test.
+
+boolean-swallow stays deferred. The reason for deferring it (no compiler) is now
+gone, but it is the riskiest transform and the pre-registered width-increase
+concern applies to it more strongly than to the three shipped repairs. Revisit
+after the pair, not before.
