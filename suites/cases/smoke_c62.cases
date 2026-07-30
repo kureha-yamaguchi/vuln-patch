@@ -1,0 +1,18 @@
+# Cycle-7 RE-SMOKE (2026-07-30): ONE case, Closure-62's correct patch.
+#
+# The first smoke showed the dismissal rule still 0-for-2 (both lift notes
+# "undetermined", no trusted values extracted at all) because Closure-62's
+# expected value is a multi-line string-literal concatenation, which the
+# extractor skipped. That is now folded (compile-time constant, not a computed
+# value).
+#
+# THE question, read by events not verdict: does the trigger-lift note finally
+# reach its "matches -> must be dismissed" branch?
+#   want: "[trigger-test lift]" delivered AND "must be dismissed" present
+#   want: value-vs-trusted=matches
+# The verdict is a bonus — at a 27% flip rate one roll proves neither direction.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
+)
