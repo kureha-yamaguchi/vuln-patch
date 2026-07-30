@@ -80,9 +80,50 @@ out of 7. A gate cannot do case-specific reasoning; that is what the model is fo
 
 The honest cycle-8 question is no longer "what fact should we collect" but
 "what changes the reviewer's behaviour when the refuting fact is already in front
-of it" — and the one thing this project has repeatedly shown works there is
-moving the decision out of the reviewer and into code. Which the separating-fact
-study says we cannot do generically.
+of it".
 
-That tension is the finding. It should be resolved before more precision work is
-funded, not during it.
+## CORRECTION: "model-capability limit" was too strong
+
+That phrase overreached, and the refutation is in this project's own data. On
+Math-65, the SAME model on the SAME evidence both quotes the deciding formula and
+ignores it — 2 dismissals quote `residualsWeights[i]` verbatim, 4 accusations
+cite NONE. A capability limit does not vary run to run on identical input. What
+varies is **engagement**: whether the question gets asked at all, while the
+reviewer weighs everything else at once and accusations require no citation.
+
+That is a task-structure gap, and this project has already closed one of those:
+the CITATION line turned dismissal grounding from prose into a structured,
+mechanically-verifiable output, at 100% compliance. The equivalent move on the
+accusation side has never been tried.
+
+## But the narrow-contradiction design addresses only HALF the population
+
+Before that experiment is funded, one measurement, because it changes the success
+criteria. Not every accusation fails by contradicting the shown source:
+
+| case | checks | is the deciding fact a premise-vs-source contradiction? |
+|---|---|---|
+| Lang-60 | 2 | **yes** — "only the active prefix is searchable" vs `contains()` scanning the raw buffer |
+| Math-39 | 4 | likely — depends on the step logic being shown |
+| Math-73 | 1 | likely — depends on the tolerance javadoc being shown |
+| Math-65 | 5 | **4 yes, 1 no** — one accusation states the CORRECT formula and accuses anyway |
+| Chart-26 | 2 | **no** — the premise AGREES with the source; the error is which entity the harness retrieved |
+| Math-30 | 6 | **no** — a universal property, contradicted by nothing in the source |
+| Closure-62 | 4 | **no** — the deciding fact is the harness's own normalisation |
+
+**~11 of 24 could plausibly be voided by the narrow question; ~13 would correctly
+answer NONE and leave the accusation standing.**
+
+The Math-65 roll-B verdict is the instructive one: *"any correct implementation
+must return the sum of `residuals[i] * residuals[i] / residualsWeights[i]`"* —
+correct formula, divide not multiply — followed by an accusation that the patched
+build deviates from it. Nothing in the source contradicts that premise. The error
+is downstream, in what the reviewer believed the build returned.
+
+So the experiment is still worth running, and its criteria should be set against
+~11 rather than 24. A result of "voids 8 of 11 contradiction-class accusations and
+answers NONE on all genuine catches" would be a strong success; measured against
+24 the same result would look like a failure.
+
+That tension is the finding, and it should be resolved before more precision work
+is funded, not during it — with the experiment as the resolution step.
