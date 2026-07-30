@@ -51,11 +51,30 @@ A Closure-38-SequenceR_o        armed= 5  alarms reviewed=0   <- genuinely silen
 B Lang-60-Arja-plausible_o      armed= 7  alarms reviewed=0   <- genuinely silent
 ```
 
-**The motivating case does not support the item.** Lang-63's fake leg had 5 armed
-checks and **4 alarms reviewed**. It was not starved of firings — its alarms fired
-and were dismissed. Item 5's classification already said so: Lang-63's miss was
-"invented, triggered, judged, dismissed", not "never triggered". Seeds address a
-problem that leg did not have.
+**The motivating case, stated accurately.** In the pair, Lang-63's fake leg had 5
+armed checks and **4 alarms reviewed** in roll A (all dismissed) and 7 in roll B
+(caught). In neither pair roll was it starved of firings.
+
+But the pair is not the whole record, and an earlier draft of this note wrongly
+concluded "seeds address a problem that leg did not have". The committed
+three-roll decomposition (`a75012d`) shows Lang-63 failing a DIFFERENT way in each
+roll:
+
+| roll | family invented? | fired? | outcome |
+|---|---|---|---|
+| night20b | yes | yes | caught |
+| night20c | yes | **armed but silent all run** | missed |
+| preflight2 | **never proposed** | nothing fired | missed |
+| pair roll A | yes | fired 4x, all dismissed | missed |
+| pair roll B | yes | fired 7x | caught |
+
+So across five rolls Lang-63 has displayed every failure mode the pipeline has.
+**Seeds genuinely address one of them** — night20c's armed-but-silent roll — and
+that decomposition's own cycle-7 suggestion was exactly this item. The benefit is
+real; it is one mode out of three on the leg's history, and zero out of two in the
+pair.
+
+The kill therefore rests on the COST, not on absence of benefit.
 
 So the real trade is: seeds could wake at most **2** missed-fake legs, while
 risking **14** silent correct legs at 56%. That is 7:1 against on the count that
@@ -78,3 +97,20 @@ If the seed idea is ever revisited, the precondition is not a better seed list �
 it is a way to make a firing on a correct patch cost less than 56%. That is the
 accusation-side research question already parked from item 2b, and it gates this
 item too.
+
+## The sibling option that survives this argument
+
+The same decomposition offered a second cycle-7 shape for Lang-63: **generation-
+side family persistence per leg** — when a check family is invented once in a run,
+keep proposing it (within-run only; no cross-run pooling).
+
+That does NOT have the cost profile that kills seeds. Seeds make existing checks
+fire more often, which is what buys tickets in the 56% lottery. Persistence makes
+the same family get *proposed* more consistently; on a correct leg, persisting a
+family that does not fire changes nothing. It targets the invention lottery —
+which is what killed Lang-63 in preflight2 and what item 2e found behind Math-73's
+roll-A miss (the roll invented a non-discriminating rule; the other roll invented
+a discriminating one).
+
+Not built, not measured, and NOT smuggled into this cycle. Recorded as the
+successor idea with a better prior than the one being killed.
