@@ -1,0 +1,43 @@
+# Cycle-7 pre-pair smoke (prepared 2026-07-30). TWO cases, covering all THREE
+# checks — smokes 2 and 3 collapse because Math-65's correct patch is also the
+# richest repair leg in the archive (8 rejections, 6 fully cleared, both shipped
+# repair types).
+#
+# Everything in this build was validated OFFLINE. These cases convert three
+# claims into observed live behaviour on the exact build that will run the pair.
+#
+# CASE 1 — Closure-62's correct patch.
+#   Claim: extractor fix (i) revives the dismissal rule that had never once
+#   reached its dismissal branch (13 deliveries, 13 "undetermined", 0 dismiss).
+#   Want: the trigger-lift note reaching its "matches -> must be dismissed"
+#   branch, and ideally the leg coming out TN. Closure-62 was accused in BOTH
+#   rolls of the pair, so a clean verdict here is the batch's main precision
+#   claim showing up live.
+#   Watch: "[trigger-test lift]" delivered with "must be dismissed"; leg verdict.
+#
+# CASE 2 — Math-65's correct patch. Covers two claims at once.
+#   (a) The disputed-computation fact: offline it fires on 11 of 12 Math-65 rows
+#       carrying the decisive formula line verbatim. Want it delivered live, and
+#       the reviewer no longer asserting the inverse formula from memory.
+#       Watch: "[disputed-computation fact]" in the judge prompt; whether an
+#       accusing verdict still cites NONE while claiming weight*residual^2.
+#   (b) Repair-in-place hitting the compiler and the acceptance flow for real.
+#       Offline: 0 compile regressions over 96 pairs against the real jazzer jar,
+#       but never run through the live builder.
+#       Watch: "harness-repair" events; that repaired harnesses then COMPILE and
+#       reach acceptance rather than being rejected downstream.
+#
+# TRIPWIRE (pre-registered in plan.md): both of these are correct patches that
+# have been accused before. If either is accused here, grep the trace for the
+# `harness-repair` marker BEFORE attributing the accusation to anything else —
+# repair-in-place is the only shipped change that can turn a quiet leg loud.
+#
+# CONFIG NOTE: -n 5 -m 12 deliberately matches the paired measurement, so this
+# is end-to-end verification of the exact shipping build, not a different one.
+# Cost ~500k total, against ~7M for the pair.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+)
