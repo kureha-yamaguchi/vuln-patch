@@ -69,14 +69,16 @@ out of 7. A gate cannot do case-specific reasoning; that is what the model is fo
 
 1. **Bucket (b) is the only buildable menu**, and it is two items — see Phase 3.
    Neither addresses the 5 bucket-(a) cases.
-2. **The bucket-(a) five are a model-capability limit, not a missing-evidence
-   limit.** The evidence is present, adjacent, and sometimes quoted. Better
-   delivery has now failed three times (the disputed-computation fact, the
-   placement audit, Chart-26's own citation).
-3. **The measured precision ceiling on this trap set is therefore ~5 false
-   accusations under the current architecture** — not because of the firewall,
-   but because 5 of 7 need the reviewer to weigh shown source against a plausible
-   claim, and it does not.
+2. ~~**The bucket-(a) five are a model-capability limit, not a missing-evidence
+   limit.**~~ **SUPERSEDED — see the correction below.** The evidence is present,
+   adjacent, and sometimes quoted, and better delivery has failed three times
+   (the disputed-computation fact, the placement audit, Chart-26's own citation).
+   But "capability limit" does not survive the data: the same model on the same
+   evidence both quotes the deciding line and ignores it.
+3. **The measured precision ceiling on this trap set is ~5 false accusations
+   under the CURRENT TASK STRUCTURE** — not because of the firewall, and not
+   because the model cannot do it, but because nothing requires the question to be
+   asked.
 
 The honest cycle-8 question is no longer "what fact should we collect" but
 "what changes the reviewer's behaviour when the refuting fact is already in front
