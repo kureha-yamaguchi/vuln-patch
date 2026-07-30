@@ -275,28 +275,28 @@ def repair_boolean_swallow(source):
     attribution guards can no longer ask which exception fired or whether the
     unpatched build crashes the same way.
 
-    Two coordinated edits, which is why this was deferred until a compiler was
-    available:
-      1. declare a holder immediately before the `try`, in the same block;
-      2. capture the exception in the catch body (`__vpCause = e;`);
-      3. attach it as the alarm's cause where the flag drives the alarm.
+    Two coordinated edits:
+      1. a CLASS-LEVEL holder, so it is in scope wherever the alarm lives;
+      2. capture in the catch body, and attach as the alarm's cause.
 
-    NOTE ON HONESTY: step 2 alone would clear the detector, because a
-    non-literal assignment makes the catch stop matching the bare-flag shape.
-    That would game the acceptance test without preserving anything, so the
-    repair is only applied when step 3 also succeeds — the exception must
-    actually REACH the alarm, which is the value the detector is protecting.
+    The holder is a static field rather than a local because the compile check
+    showed the alarm is frequently in a DIFFERENT METHOD from the catch (one
+    archived harness catches at line 38 and alarms at line 138), which no local
+    declaration can bridge. Jazzer drives one input at a time, so a single
+    static holder is sound here.
+
+    HONESTY GUARD: capturing alone would clear the detector, because a
+    non-literal assignment stops the catch matching the bare-flag shape. That
+    would game the acceptance test while preserving nothing, so the repair is
+    applied only when the cause actually REACHES an alarm.
     """
     src = source or ''
     if _MARK_CAUSE in src:
         return src                        # idempotent
-    from java.parsing.java_source import boolean_swallow, strip_comments
+    from java.parsing.java_source import boolean_swallow
     if not boolean_swallow(src):
         return src
-    m = _CATCH_RE.search(src)
     holder = '__vpCause'
-    out = src
-    changed = False
     for cm in list(_CATCH_RE.finditer(src)):
         var = cm.group(2)
         body_open = cm.end() - 1
@@ -306,25 +306,17 @@ def repair_boolean_swallow(source):
         body = src[body_open + 1:end]
         if 'throw' in body or re.search(r'\breturn\b', body):
             continue                      # rethrows or skips: not the shape
-        # locate the try this catch belongs to, and the statement start before it
-        tpos = src.rfind('try', 0, cm.start())
-        if tpos < 0:
-            continue
-        line_start = src.rfind('\n', 0, tpos) + 1
-        indent = re.match(r'[ \t]*', src[line_start:]).group(0)
-        decl = f'{indent}{_MARK_CAUSE} Throwable {holder} = null;\n'
-        # 3: the alarm must be reachable and have room for a cause
+        # find an alarm AFTER this catch with room for a cause
         alarm = None
         for am in re.finditer(r'new\s+[\w.]*FuzzerSecurityIssue\w*\s*\(', src):
             if am.start() < end:
-                continue                  # inside/behind the catch, not after
+                continue
             ao = am.end() - 1
             ae = _block_end_paren(src, ao)
             if ae < 0:
                 continue
             args = src[ao + 1:ae]
-            depth = 0
-            commas = 0
+            depth = commas = 0
             for ch in args:
                 if ch in '([{':
                     depth += 1
@@ -332,20 +324,25 @@ def repair_boolean_swallow(source):
                     depth -= 1
                 elif ch == ',' and depth == 0:
                     commas += 1
-            if commas >= 1:
-                continue                  # already (String, Throwable)
+            if commas >= 1 or not args.strip():
+                continue                  # already has a cause, or no message
             alarm = (ao, ae, args)
             break
         if alarm is None:
             continue                      # cannot attach — leave untouched
+        # class-level holder: insert after the harness class's opening brace
+        cls = re.search(r'\bclass\s+\w+[^{]*\{', src)
+        if not cls:
+            continue
+        ins = cls.end()
+        decl = (f'\n    {_MARK_CAUSE} private static Throwable {holder} '
+                f'= null;\n')
         ao, ae, args = alarm
-        new = (src[:line_start] + decl + src[line_start:body_open + 1]
+        out = (src[:ins] + decl + src[ins:body_open + 1]
                + f' {holder} = {var};' + src[body_open + 1:ao + 1]
                + args + ', ' + holder + src[ae:])
-        out = new
-        changed = True
-        break
-    return out if changed else src
+        return out
+    return src
 
 
 #: (name, detector, repair) — applied in order, each gated on its own detector.

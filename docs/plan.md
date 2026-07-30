@@ -3188,3 +3188,32 @@ that ignores the contradicting source. Closure-62: an accusation whose value the
 dismissal machinery cannot legitimately match. **All three are accusations that no
 delivered fact can dislodge** — which is the cycle-8 enforcement question, now
 with three data points rather than two.
+
+## Boolean-swallow repair: VALIDATED and shipped
+
+The largest rejection bucket (77 of 240), deferred only for want of a compiler.
+
+    boolean-swallow          77 present -> 32 cleared
+    swallowed-alarm          65 present -> 65 cleared
+    missing-alarm-id         25 present -> 13 cleared
+    rethrow-without-cause     7 present ->  5 cleared
+  fully cleared: 101 of 235 (was 84)   detector regressions: 0
+  compile (real jazzer jar, 111 pairs): 0 with more errors, 0 new error strings
+
+The compile gate caught two defects in this transform that detector-clearance
+could not, both in the same submission:
+
+1. `rfind('try')` matched the substring inside words like `geometry` and `entry`,
+   so the holder declaration landed in an unrelated block that had already closed.
+2. More fundamentally, the alarm is frequently in a DIFFERENT METHOD from the
+   catch — one archived harness catches at line 38 and alarms at line 138 — which
+   no local declaration can bridge. The design was wrong independently of (1).
+
+Both resolved by making the holder a class-level static field, in scope wherever
+the alarm lives. Jazzer drives one input at a time, so a single holder is sound.
+
+**Running tally of what the compile gate has caught that offline detector-clearance
+structurally could not: four defects** — a global-replace corruption, double-tagged
+oracle IDs, an alarm-constructor arity error, and this scope bug. Clearing a
+detector and producing valid Java are different properties, and only one of them
+is checkable without a compiler.
