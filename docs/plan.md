@@ -3239,3 +3239,41 @@ The gate also produced one false alarm of its own (a hand-written stub declaring
 FuzzerSecurityIssueLow as extending Error rather than RuntimeException), so the
 companion rule holds: when a measurement disagrees with the code, suspect the
 measurement's own scaffolding first.
+
+## STANDING RULE: build the guard population before the mechanism
+
+Before designing any precision mechanism, assemble the population it must NOT
+fire on, and use it as the design's first test — not its last.
+
+Track record in one cycle, all before a token was spent:
+
+1. **"Does the shown source contradict the check's premise?"** — killed. On a
+   suspect patch the shown source has no authority; it may be the bug. So "source
+   disagrees with premise" is the *definition of a genuine catch*, and the
+   question would void the 67 guards.
+2. **"Does the JAVADOC contradict the premise?"** — killed. Docs are largely
+   patch-invariant and present in 228/228 rows, which is why it looked sound, but
+   Math-65's javadoc ("variances are the reciprocal of the weights") reads
+   naively as the MULTIPLY form the accusers asserted. The honest dismissals
+   relied on the code, not the docs.
+3. **Naive arbitration** (evaluate candidate formulas against the observed value)
+   — reordered. Anchoring on the patched build's arithmetic has the same
+   label-dependence one level down: on a fake patch the observed value matches the
+   buggy formula, so arbitration would void genuine catches. Buggy-anchored
+   arbitration fixes the authority model.
+4. **Buggy-anchored arbitration** — cost re-estimated upward twice. The values it
+   needs are captured **0 times in 1,452 buggy-side steps**, so it is a probing
+   change, not plumbing. And the "it pays for itself by shrinking 6C's
+   not-compared bucket" argument fails on measurement: that bucket is **3 of 161
+   (2%)**; 6C's real distribution is 60% alarm-already-discarded and 34% no
+   confirmation at all.
+
+**The generalisable principle behind all four: code-as-authority is
+label-dependent evidence.** Any mechanism that treats the patched artefact — its
+source, its arithmetic, its output — as the standard of correctness will void
+genuine catches, because on a fake patch that artefact IS the defect. Only
+artefacts the defect cannot touch (the buggy build for quantities it does not
+affect, the failing test's own pins) are label-independent authorities.
+
+The guard set is now the standing safety test for every precision mechanism, and
+it is cheap: assembling it cost one query.
