@@ -22,6 +22,10 @@ and **frozen** (historical evidence; never updated, kept because other files cit
 
 ## Frozen — reference only
 
+- **`early-analysis-2026-07-04.md`** — the oldest layer: the June-29 critique notes
+  and the per-run readthrough, merged and frozen (moved out of `src/java/`
+  2026-07-31). Covers the era before `progress.md` starts; several of its claims are
+  now false and the banner lists them.
 - **`progress.md`** — the June-15→July-15 era record (pre-overhaul through the A1–A7
   batch and B1 mislabel probe). Frozen; cited by `suites/DATASET_AUDIT.md` and the
   certifier's docstrings.
