@@ -240,10 +240,11 @@ These were risks on paper; the trace settles them. Re-open only with new evidenc
    a harness accepted on an escaping `NumberFormatException` — which is the documented,
    correct behaviour of `createNumber` on a malformed string, i.e. a check that would
    fire on the developer fix too. The same leak mechanism is already on record as the
-   cause of Lang-27's historical FALSE accusation on its correct patch. So the gap
-   cuts both ways and deserves its own design pass; a defect-family-aware version of
-   the filter (drop leaks of exceptions that are NOT the failing test's recorded type
-   and reproduce on buggy) is the obvious shape, and needs the usual guard set.
+   cause of Lang-27's historical FALSE accusation on its correct patch. Recorded as an
+   observation only — no filter is proposed here. Any future work on it must start
+   from §3a: differential machinery on a crashing leg inverts, so the semantic
+   filter cannot simply be un-gated, and nothing should be built on this without its
+   own evidence and guard set.
 
 ### 4d. Two risks withdrawn after reading the code (unchanged from the first draft)
 
