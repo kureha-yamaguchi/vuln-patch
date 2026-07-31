@@ -9,7 +9,14 @@ Short version: the crashing path was never *rewritten*, but it is not untouched
 either. Roughly half the pipeline is shared, several shared components were
 substantially reworked, and **no crashing-bug suite has been run since 2026-07-16** —
 which predates every one of those changes. Nothing here is a known defect. It is an
-unmeasured surface with four specific places worth a cheap check.
+unmeasured surface with five specific places worth a cheap check.
+
+**Verification note.** Every code claim below (gate locations, line numbers, which
+module is kind-aware, constant values, emitted log keys) was re-checked against the
+source on 2026-07-31, after an earlier draft of this document stated the opposite of
+the truth about differential replay (§3a) and cited three wrong line numbers.
+Measured numbers taken from prior runs are marked where they were not independently
+re-derived. If you find a discrepancy, trust the code and correct this file.
 
 ---
 
@@ -47,7 +54,7 @@ crashing run — no risk, but also no benefit from any work done on them:
 | `test_oracle_miner` (mined sibling oracles) | `run.py:1062` | Off by default anyway. |
 | Semantic class-context assembly | `run.py:1008` | Extra context for value-comparison checks. |
 | Lifted-assertion path + trigger-test-lift note | `run.py:1297/1315` | Lifting the failing test's `assertEquals` expectations. Meaningless without expected values. |
-| Identical-drop ladder + `relation_verifier.family_duty()` | `run.py:1487/1975/2972` | "Is this the failing test's own observable?" — the escape hatch for the precision gates. |
+| Identical-drop ladder (`expected_is_test_literal` / `fired_at_test_input`, `IDENTICAL-DISMISSED` reasons) + `relation_verifier.family_duty()` | `run.py:2614` (`bug_kind != 'crashing'`), calls at `2671`/`2851` | "Is this the failing test's own observable?" — the escape hatch for the precision gates. |
 
 Conversely, crashing-only paths exist too: the trigger-gate handling at `run.py:1034`
 and `1567`, and expected-exception matching at `2486`.
@@ -55,7 +62,10 @@ and `1567`, and expected-exception matching at `2486`.
 **Consequence worth stating plainly:** most of the machinery that drives the semantic
 score — synthesized relations, screening statistics, fire-rate evidence — produces
 *nothing* on a crashing leg. A crashing run is a much thinner pipeline: context →
-harness generation → fuzz → differential replay → judge.
+harness generation (accepted only if it crashes the buggy build) → fuzz the patched
+build → buggy-side replay of the firing input → the defect-family dismissal
+(`run.py:2486`) → judge. Note this does NOT include the differential-replay
+classifier — see §3a.
 
 ---
 
@@ -63,8 +73,10 @@ harness generation → fuzz → differential replay → judge.
 
 "Shared" = the code executes for both kinds. Reworked-this-month items are flagged.
 
-**`harness/campaign.py` — harness generation and acceptance.** One bug-kind reference
-in the whole module, so crashing legs run the identical loop: generate, compile,
+**`harness/campaign.py` — harness generation and acceptance.** Contains **no
+`bug_kind` reference at all** (verified by grep; the single "semantic" hit is a word
+inside a prompt string at line 579), so it is entirely kind-agnostic and crashing legs
+run the identical loop: generate, compile,
 require a crash on the buggy build, then the acceptance gates — the self-swallow lint,
 the alarm-ID requirement, gate 0b (a caught-and-rethrown crash must carry its cause),
 and the family-novelty steering. *Reworked:* the novelty gate (new in July, plus a
@@ -77,7 +89,9 @@ a swallowing catch; alarm constructed without an `[oracle:]` tag; alarm raised i
 catch without attaching the caught exception as cause. Measured offline: 101 of 235
 archived rejected harnesses fully cleared, 0 compile regressions over 111 pairs.
 Measured live: outcome-neutral on the 9-leg pricing pair, −2.3 generation attempts per
-leg. **All validation data came from semantic runs.**
+leg. (Those figures are as reported in `docs/replay/` and the commit messages; the
+per-leg attribution was independently re-checked, the offline counts were not.)
+**All validation data came from semantic runs.**
 
 **`execution/oracle_mute.py` — `mute_oracles` and `instrument_diversion`.** Muting
 silences alarm throws so a shadowed replay can be re-run; the diversion counter
@@ -100,7 +114,9 @@ understand about crashing-bug verdicts.
 production judge sites and the offline replay tool now go through one function: run
 `relation_verifier.verify()`, then apply deterministic overrides — a re-ask lint when
 a dismissal cites nothing or contradicts something the check itself pins; an automatic
-drop when the buggy-side fire rate is ≥95% (escape: `family_duty`); a terminal drop
+drop when the buggy-side fire rate reaches `INTRINSIC_FIRE_RATIO` (0.95, in
+`evidence_facts.py:38`; the indiscriminate cap `MAX_FIRE_RATIO` is 0.20), escape via
+`_family_duty_escape` in `judge_decision.py:168`; a terminal drop
 when a replay confirmed the check fires on both builds with *identical* values, with
 an explicit keep when the values *differ*.
 
@@ -165,9 +181,14 @@ constant feeding evidence construction, sitting in code that changed repeatedly.
 crash branch has not been exercised since the changes around it landed.
 
 **(5) `instrument_diversion` stderr output on crash-output parsing.** The transform is
-behaviour-preserving (a counter plus a `System.err` line) and skips rethrowing and
-alarm-throwing catches. The only question is whether an extra stderr line can disturb
-crash-signature parsing, which scans Jazzer output.
+behaviour-preserving (a counter plus `System.err.println("[relscreen] skipped=" + …)`,
+`oracle_mute.py:417`) and skips rethrowing and alarm-throwing catches. Two things to
+check rather than assume: whether an extra stderr line can disturb `crash_signature()`
+/ `cause_signature()`, which scan the same Jazzer output; and that the `[relscreen]`
+prefix is shared with the screening counter line (`checked=`/`violated=`,
+`oracle_mute.py:256`) while the keys differ — the parsers key on `skipped=` vs
+`checked=`, so they should not collide, but that separation is deliberate and worth
+preserving if either line is ever edited.
 
 ### Two risks I initially assumed and then withdrew after reading the code
 
