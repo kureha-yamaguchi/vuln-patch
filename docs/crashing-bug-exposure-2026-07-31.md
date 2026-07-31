@@ -9,7 +9,11 @@ Short version: the crashing path was never *rewritten*, but it is not untouched
 either. Roughly half the pipeline is shared, several shared components were
 substantially reworked, and **no crashing-bug suite has been run since 2026-07-16** —
 which predates every one of those changes. Nothing here is a known defect. It is an
-unmeasured surface with five specific places worth a cheap check.
+unmeasured surface. As of 2026-07-31 one crashing leg has been run through the
+current build (§4): three risks are now CONFIRMED SAFE, three remain open, and the
+trace surfaced two things reading code had missed — a pipeline-wide observability
+gap (since fixed) and an unfiltered generic-exception-leak path unique to crashing
+legs.
 
 **Verification note.** Every code claim below (gate locations, line numbers, which
 module is kind-aware, constant values, emitted log keys) was re-checked against the
@@ -168,69 +172,124 @@ tries to separate "the bug's own crash family, still crashing" (a catch) from
 `expected_exceptions` list built at `run.py:1567` from the failing tests' exception
 types is what defines the defect family.
 
-## 4. Where interference is plausible — and why that is not the same as "shared"
+## 4. Where interference is plausible — updated with live evidence (crashtrace1)
 
 Interference risk is a *subset* of shared code. Shared is a fact (it runs); risk is a
-property (it assumes something that only holds for semantic legs). Ranked:
+property (it assumes something that only holds for semantic legs). On 2026-07-31 a
+single crashing leg was run through the current build specifically to test these
+claims — `runs-archive/runs/crashtrace1_20260731_141054/` (Lang-27 DeepRepair, one
+overfit leg, standard config *including* the semantic flags). Each entry below now
+carries what that run actually showed.
 
-**(1) The crashing-only defect-family dismissal (`run.py:2486`) — the crash path's
-own verdict mechanism, sitting in heavily-reworked code.** This is the crashing
-counterpart to differential replay (see §3a): it dismisses a finding when the exact
-firing input, replayed on the buggy build, fires the same check or raises the same
-exception type there *and* no defect-family type is present. It reads
-`_breplay_ids`, `_bt_all`, `_bt_defect` and `_esc_type` — all produced by the
-buggy-replay and muted-replay machinery that was rewritten this month. The dismissal
-logic itself is crash-specific and old; its *inputs* are new. Unexercised since 07-16.
+### 4a. CONFIRMED SAFE — no interference, observed live
 
-**(2) The terminal identical gate inside `adjudicate()`.** It reads fires-on-both facts
-out of the evidence text. Crashing legs *do* produce differential-replay facts, so
-unlike the rate gate this is not obviously inert. If it were ever to fire on a crash
-leg, its escape hatch (`family_duty`) is semantic-only and could not rescue the
-finding. Needs a pinned invariant, not an assumption.
+These were risks on paper; the trace settles them. Re-open only with new evidence.
 
-**(3) The intrinsic-rate drop inside `adjudicate()`.** Reads `[fire-rate fact]` blocks,
-which are produced by relation screening — skipped on crashing legs — so it *should*
-always be a no-op there. Same argument as (2): probably inert, unproven, and with a
-semantic-only escape hatch.
+1. **The semantic gates hold under the semantic flags.** The run was launched with
+   `--synthesize_relations` and `--replay_relations_on_patched`; the trace contains
+   **zero** synthesis, screening, screening-survivor or replay-on-patched events. The
+   flags are genuine no-ops on a crashing leg. (Event types present: harness-attempt,
+   patched-fuzz, corpus-seed, test-context, failing-tests-found, analysis,
+   harness-repair, cycle6_diversion_*.)
+2. **`harness/repair.py` on crash-shaped harnesses.** Fired once
+   (`attempt_008`, swallowed-alarm repair, `still_failing: []`); the repaired harness
+   compiled and was accepted. No crash-signature disturbance observed. Combined with
+   the earlier code reading (the guard rethrows only `FuzzerSecurityIssueLow`, leaving
+   every other exception caught as before), this risk is closed.
+3. **`instrument_diversion` on crash output.** Ran three times
+   (`cycle6_diversion_considered: instrumented=True` → `cycle6_diversion_decided:
+   diverted=False`) and crash signatures were still extracted normally for acceptance.
+   The `[relscreen] skipped=` line did not disturb `crash_signature()`.
 
-**(4) `run.py:2407`: `_real_test_passes = (bug_kind != 'crashing')`.** A kind-dependent
-constant feeding evidence construction, sitting in code that changed repeatedly. The
-crash branch has not been exercised since the changes around it landed.
+### 4b. STILL OPEN — ranked, with what the trace did and did not show
 
-**(5) `instrument_diversion` stderr output on crash-output parsing.** The transform is
-behaviour-preserving (a counter plus `System.err.println("[relscreen] skipped=" + …)`,
-`oracle_mute.py:417`) and skips rethrowing and alarm-throwing catches. Two things to
-check rather than assume: whether an extra stderr line can disturb `crash_signature()`
-/ `cause_signature()`, which scan the same Jazzer output; and that the `[relscreen]`
-prefix is shared with the screening counter line (`checked=`/`violated=`,
-`oracle_mute.py:256`) while the keys differ — the parsers key on `skipped=` vs
-`checked=`, so they should not collide, but that separation is deliberate and worth
-preserving if either line is ever edited.
+1. **The crashing-only defect-family dismissal (`run.py:2486`) — top risk, and the
+   trace could not even observe it.** Two harnesses fired on the patched build
+   (`[oracle:equiv-sci-int]`, `[oracle:simple-decimal-float-choice]`), the judge was
+   called **zero** times, and the leg recorded `crashed_on_patch: false` — so a
+   mechanical drop decided the verdict and left no record. The most likely path is
+   this dismissal (both firings are metamorphic checks on observables unrelated to the
+   SIOOBE defect, so a buggy-side replay would show the same check firing with no
+   defect-family type present — exactly its condition), but that is **inference, not
+   observation**. The observability fix shipped the same day (`drop_finding` /
+   `flag_overfitting`, commit 6599404) makes a rerun answer this directly. Until then
+   the crashing path's decisive step remains unverified against its own inputs, which
+   were all reworked in July.
+2. **`_real_test_passes = (bug_kind != 'crashing')` (`run.py:2407`).** Unexercised
+   still — the trace cannot show a hard-coded value's effect. Unchanged risk.
+3. **The terminal-identical and intrinsic-rate gates in `adjudicate()`.** No gate
+   events appear in the trace, which is *consistent* with inertness but proves
+   little: the judge was never called, so the gates never had an opportunity. Weak
+   evidence; the pinned unit tests (§6) are still the right closure.
 
-### Two risks I initially assumed and then withdrew after reading the code
+### 4c. NEW — found by the trace, not visible from reading code
 
-- **`repair_swallowed_alarm` was not a crash-detection risk.** It inserts
-  `if (e instanceof FuzzerSecurityIssueLow) throw (FuzzerSecurityIssueLow) e;` at the
-  top of broad catch bodies — it rethrows *only our own alarm class*. A genuine
-  `IndexOutOfBoundsException` from a crashing bug is still caught exactly as before.
-  Behaviour for the crash signal is unchanged.
-- **`repair_rethrow_without_cause` is aligned with the crashing design, not against it.**
-  It attaches the caught exception as the alarm's cause — which is precisely what
-  campaign gate 0b already requires (`campaign.py:538`, "caught-crash re-throws must
-  carry a cause") and what `cause_signature()` exists to read: its docstring states
-  that a harness catching a library crash and rethrowing it as our own alarm type
-  *hides* the crash from the headline signature, and the attached cause is what
-  preserves its identity for attribution. The repair implements the standing
-  requirement. Residual note only: nothing has verified this on real crash-leg
-  harnesses.
+4. **Outcome decisions were print-only pipeline-wide (FIXED 2026-07-31).** Nine sites
+   changed a finding's outcome by direct assignment with only a `print`; **six of the
+   nine are not kind-gated**, so this was never a crashing-bug-specific gap — it
+   simply bit crashing legs hardest, because their verdict is mechanical and leaves no
+   judge transcript to reconstruct from. Fixed structurally: all mutations now route
+   through `drop_finding()` / `flag_overfitting()`, which emit `outcome-drop` /
+   `outcome-flag` events with a site tag, and `tests/test_outcome_events.py` fails the
+   build if a new direct site appears.
+5. **Generic-exception leaks are unfiltered on the crashing path — a real gap.** The
+   differential attribution that drops a generic JDK exception reproducing identically
+   on the buggy build is semantic-only (§3a), and for good reason on the *defect's own*
+   exception. But it also means a harness that lets a **legitimate** exception escape
+   is never filtered on a crashing leg. Evidence: July-16's Lang-27 "catch" came from
+   a harness accepted on an escaping `NumberFormatException` — which is the documented,
+   correct behaviour of `createNumber` on a malformed string, i.e. a check that would
+   fire on the developer fix too. The same leak mechanism is already on record as the
+   cause of Lang-27's historical FALSE accusation on its correct patch. So the gap
+   cuts both ways and deserves its own design pass; a defect-family-aware version of
+   the filter (drop leaks of exceptions that are NOT the failing test's recorded type
+   and reproduce on buggy) is the obvious shape, and needs the usual guard set.
 
----
+### 4d. Two risks withdrawn after reading the code (unchanged from the first draft)
+
+- `repair_swallowed_alarm` rethrows **only** our own alarm class; a genuine
+  `IndexOutOfBoundsException` is still caught exactly as before.
+- `repair_rethrow_without_cause` implements what campaign gate 0b already requires
+  (`campaign.py:538`) and what `cause_signature()` exists to read — it is aligned with
+  the crashing design, not against it. Now also observed harmless live (4a.2).
+
+## 4e. Where there should be NO interference at all — and why
+
+Stated positively, so a reader knows where *not* to look. Each line names the reason
+the crashing path is structurally insulated, not merely "probably fine".
+
+| Area | Why no interference is possible |
+|---|---|
+| Relation synthesis, screening, patched-side replay, screening-survivor accounting | Never executes: gated `bug_kind == "semantic"` at `run.py:1150`. Confirmed live — zero such events in crashtrace1 despite the flags being passed. |
+| The lifted-assertion oracle and the trigger-test-lift note | Gated at `run.py:1297/1315`. Requires an `assertEquals` expected value, which a crash-shaped failing test does not provide. |
+| The identical-drop ladder (`expected_is_test_literal` / `fired_at_test_input`) and `family_duty()` | Gated `bug_kind != 'crashing'` at `run.py:2614`; the `family_duty` calls at 2671/2851 sit inside it. |
+| Mined sibling-test oracles | Gated at `run.py:1062` **and** off by default (`--mined_oracles`). |
+| `classify_differential_replay()` | Gated at `run.py:1975` (§3a) — deliberately, since its verdict would invert on a crashing leg. |
+| The fire-rate facts and the intrinsic-rate drop | Their inputs are relation-screening statistics, which are never produced for a crashing leg — so the parse finds nothing. (Belt-and-braces only: pin with the unit test in §6, since "no input" is an argument, not an assertion.) |
+| The whole judge prompt-shaping apparatus — citation lint, pinned-parameter re-ask, disputed-computation fact | Only reachable from a judge call on a fired oracle. Crashing legs *can* reach it, but only for harness-invented alarms, never for the crash-reproduction path itself, which is decided mechanically before any LLM call. |
+| Cycle-5/6/7 fixture work — `cases228.jsonl`, the 67-catch guard set, `verifier_replay` | Offline artefacts built from semantic runs; they never execute in a pipeline run of either kind. |
+
+The practical reading: if a crashing-bug result looks wrong, the semantic machinery is
+not the place to look. Look at harness generation and acceptance, the buggy-side
+replay, the defect-family dismissal, and — until the crash-side filter exists —
+whether a legitimate escaping exception was scored as a finding.
 
 ## 5. Measurement status
 
-- **Last crashing measurement:** `crashcheck` (2026-07-16, 14 legs, archived at
+- **Last crashing SUITE:** `crashcheck` (2026-07-16, 14 legs, archived at
   `runs-archive/runs/crashcheck_20260716_012430/`), **TP=6 FN=1 FP=1 TN=6 · P=0.86
-  R=0.86 F1=0.86**. Predates all seven cycles.
+  R=0.86 F1=0.86**. Predates all seven cycles. **Treat this baseline as SOFT**: its
+  Lang-27 TP came from a harness accepted on an escaping `NumberFormatException`, the
+  documented-correct behaviour of the method under test (see 4c.5), so at least one of
+  the six catches is likely spurious. Do not treat 0.86/0.86 as a bar to restore
+  without re-adjudicating the individual catches.
+- **Single-leg trace (2026-07-31):** `runs-archive/runs/crashtrace1_20260731_141054/`
+  — Lang-27 DeepRepair at current standard config. Scored FN. Diagnosis: the three
+  harnesses probing the real defect (SIOOBE) were clean on the patched build in BOTH
+  runs — the patch fixes that path — and the July TP came from an NFE-leak harness
+  shape that this roll simply did not generate. So the July→now change is most likely
+  the disappearance of a spurious mechanism, not a lost capability; it is not evidence
+  of a regression in the reworked machinery.
 - **Suite file:** `suites/crash14.cases` was deleted in the 07-21 suites cleanup
   (commit `db38bd5`) as a spent one-off; recoverable from git history, or
   reconstructable from the archived run's leg list.
