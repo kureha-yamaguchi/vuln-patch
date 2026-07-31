@@ -293,25 +293,26 @@ pins, buggy build off-defect, docs — never the patched artifact judging itself
 measure each change alone; verbatim numbers from bare pytest; raw results committed
 before interpretation. fresh12: LOCKED, only on the user's literal phrase.
 
-### 8.1 Judge-model swap experiment (gpt-5) — FIRST; needs user go-phrase
+### 8.1 Judge-model swap experiment (gpt-5.5 replacing the incumbent gpt-5.4) — FIRST; needs user go-phrase
 **Target:** the judge LLM behind `relation_verifier.verify()` (and `family_duty`).
 **Failure mode:** the ~5-accusation ceiling — specifically the 5 evidence-present-but-
 ignored accusations and the 22% wrong-void behavior. Question: model quirk or
 task-architecture?
 **Steps:**
-1. Pre-launch: confirm the gpt-5 deployment exists and answers (one probe call);
+1. Pre-launch: confirm the gpt-5.5 deployment exists and answers (one probe call);
    verify `reask_verdict_usable()` recognizes THIS deployment's error/sentinel strings
    (a silently fail-open judge is the July-15 bug; add its error format to the
    sentinel list if absent). Commit this check before spending.
 2. Part A: `verifier_replay.py --cases tests/fixtures/cases228.jsonl` (plus the 67-row
-   guard fixture) with the judge model set to gpt-5, votes=1, repeats=1. Same prompts,
+   guard fixture) with the judge model set to gpt-5.5 (incumbent judge: gpt-5.4), votes=1, repeats=1. Same prompts,
    zero prompt edits.
 3. Part B: the frozen narrow contradiction question (exact phrasing from the failed
    engagement experiment — do NOT reword) over the same 24 accusing checks + 67 guards,
-   model gpt-5.
+   model gpt-5.5.
 4. Commit raw outputs BEFORE scoring (both parts).
 **Read-out (pre-registered):** per-case flips vs the incumbent's recorded verdicts, not
-totals — gpt-5 is expected WORSE overall; that is not the signal. Decision table:
+totals — gpt-5.5 is newer than the incumbent gpt-5.4, so aggregate movement in
+either direction is plausible; the aggregate is NOT the signal either way. Decision table:
 same failure shape (ignores Math-65's adjacent source; plausible-irrelevant quotes;
 guard voids) → ceiling is architectural; record and close the model question. Different
 shape (engages on any of the 5 ignored-evidence cases) → model-dependence shown; opens
@@ -438,7 +439,7 @@ history preserves everything. NOTE: `test_oracle_miner.py` stays until after fre
 per the audit's original condition.
 
 ### Sequencing and gates
-Today: 8.1 (on user's phrase: "Run the judge-model swap experiment with gpt-5, parts A
+Today: 8.1 (on user's phrase: "Run the judge-model swap experiment with gpt-5.5, parts A
 and B as pre-registered") + 8.6 + 8.7 + 8.8. This week: 8.2 and 8.9 design docs; 8.4;
 8.5 when convenient. 8.3 after 8.1/8.2 outcomes. Then: assemble the cycle-8 batch →
 smoke on final build → the full 30-leg pair (~7M, user's word) against the 8.10 bar →
