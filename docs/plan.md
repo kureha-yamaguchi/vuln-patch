@@ -438,6 +438,24 @@ flags removed in f2ea4a8 — running them dies at startup).
 history preserves everything. NOTE: `test_oracle_miner.py` stays until after fresh12
 per the audit's original condition.
 
+### 8.12 Crashing-bug exposure checks — free parts now, rerun before the next pair
+**Target:** shared components crashing legs run through — `classify_differential_replay`
+(their core verdict input), the terminal-identical and intrinsic-rate gates in
+`adjudicate()`, `harness/repair.py`, `instrument_diversion`.
+**Failure mode:** no crashing suite has run since 2026-07-16 (crashcheck: P=0.86
+R=0.86), which predates all seven cycles; shared code was reworked under them with
+semantic-only validation data. Full analysis:
+`docs/crashing-bug-exposure-2026-07-31.md`.
+**Steps:** (a) unit tests pinning gate inertness on crash-leg evidence and
+cause-signature preservation through `repair_rethrow_without_cause` (free);
+(b) run `repair_harness()` over harnesses recovered from the archived crashcheck run
+and compile-check on the VM (free); (c) reconstruct `suites/crash14.cases` (deleted in
+db38bd5, in git history) and rerun once (~1–2M), comparing PER LEG against the 07-16
+result — 14 legs, ~7 points per leg, so aggregates mislead. Note the crashing pool is
+largely uncertified, so weak per-leg differences are not evidence.
+**Gate:** (a) and (b) before the cycle-8 batch closes; (c) before the next full 30-leg
+pair is described as the pipeline's official state.
+
 ### Sequencing and gates
 Today: 8.1 (on user's phrase: "Run the judge-model swap experiment with gpt-5.5, parts A
 and B as pre-registered") + 8.6 + 8.7 + 8.8. This week: 8.2 and 8.9 design docs; 8.4;

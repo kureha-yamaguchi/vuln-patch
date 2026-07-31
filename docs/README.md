@@ -28,6 +28,9 @@ and **frozen** (historical evidence; never updated, kept because other files cit
 - **`commit-audit.md`** — full review of the first 152 commits (through 2026-07-19):
   validated / unvalidated / delete lists. Several deletion candidates it names are
   still pending.
+- **`crashing-bug-exposure-2026-07-31.md`** — what the semantic-bug cycles changed
+  under the crashing-bug path: shared vs semantic-only components, four unmeasured
+  risks, and the recommended checks. Hand this to anyone picking up crashing bugs.
 - **`judge-verdict-inventory-2026-07-26.md`** — population inventory of all 228 judge
   verdicts on fired checks across the five pool-era runs; the fixture source for any
   judge-side change (cycle-5 package in `plan.md` is derived from it).
