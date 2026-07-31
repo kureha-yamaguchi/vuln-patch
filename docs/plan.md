@@ -318,6 +318,11 @@ shape (engages on any of the 5 ignored-evidence cases) → model-dependence show
 (a) re-test on any future stronger model, (b) cross-model agreement as a NEW candidate
 (different from same-model voting, which is dead: same model = same blind spots ×3).
 **Cost:** ~1.5–2.5M, API-only, no VM. One shot per part, no iteration.
+**Throughput:** add retry/backoff on rate limits — the engagement experiment lost
+25 of 91 calls to throttling; denominators must be complete this time.
+**Follow-on note:** if part A shows model-dependence, the dormant model-escalation
+config (`config.py`, unused in every measured run per the commit audit) is the natural
+wiring point for a per-role model choice — do not build it speculatively.
 
 ### 8.2 Reimplementation-as-evidence — design study ONLY (no build) — free
 **Target:** a NEW evidence generator in the execution layer (peer of
@@ -342,6 +347,11 @@ questioning.
    only defense; state it.)
 4. Dependencies: needs 8.3 (buggy-side observed values). Price: LLM cost per disputed
    observable, screen cost, expected reach (count applicable rows in cases228).
+5. Prior art to read first (plan-history.md PART 1, station TO-DOs): the P4.2 "split
+   certifier probe" spec — model constructs scenarios, FIXED code enumerates and
+   prints every observable — and the certifier's divergence-kind classifier
+   (value_ulp / exception_generic_latent WEAK kinds). The reference-implementation
+   generator should reuse that architecture rather than reinvent it.
 **Done when:** the design doc exists with guard-set test plan and priced reach; user
 decides build/no-build on it.
 
@@ -373,9 +383,11 @@ on cases228 (no verdict may flip except via newly-possible legitimate matches).
 **Target:** the `-m` relation-synthesis cap in suite COMMON flags.
 **Failure mode:** Chart-19 caught twice at -m 16, missed twice at -m 12; its winning
 family was proposed-then-died (2d), so the budget may starve it at standard config.
-**Steps:** width5 catch-leg suite (5 legs), one roll each at -m 12 and -m 16, same
-commit; read INVENTION RATES of known winning families per leg from traces (not pooled
-scores). If -m 16 materially raises invention, adopt it as standard and record the
+**Steps:** the width5 catch-leg suite EXTENDED with the Chart-19 and Lang-63 overfit
+legs (7 legs total — the unmodified suite omits the experiment's own motivating case),
+one roll each at -m 12 and -m 16, same commit; read INVENTION RATES of known winning
+families per leg from traces (not pooled scores). Side benefit: two more Chart-19
+rolls inform the open composition-vs-variance question at zero extra cost. If -m 16 materially raises invention, adopt it as standard and record the
 config change; if not, Chart-19's fragility attributes to variance/composition and
 stays open.
 
@@ -415,6 +427,15 @@ zero accusations on historically clean legs; the old <5 strong tier retired with
 pointer to the ceiling evidence), residuals (Closure-62, Math-30, Math-65 + Math-39
 pending 8.6), Chart-19 recorded honestly open (two causes eliminated: not repair, not
 the gate correction).
+
+### 8.11 (optional) Repo housekeeping from the commit audit — anytime, zero risk
+**Target:** dead modules the 2026-07-19 commit audit marked for deletion, still
+pending: `variation_menu.py` + `variation_menu.json`, `input_kind.py`,
+`context_study.py`, `suites/rulegen_B.cases` + `rulegen_P.cases` (reference argparse
+flags removed in f2ea4a8 — running them dies at startup).
+**Failure mode:** none — inert code that makes every repo-wide grep noisier. Git
+history preserves everything. NOTE: `test_oracle_miner.py` stays until after fresh12
+per the audit's original condition.
 
 ### Sequencing and gates
 Today: 8.1 (on user's phrase: "Run the judge-model swap experiment with gpt-5, parts A
