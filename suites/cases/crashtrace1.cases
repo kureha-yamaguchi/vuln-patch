@@ -1,0 +1,20 @@
+# Crashing-bug pipeline trace (2026-07-31) — ONE overfit leg, current standard
+# config INCLUDING the semantic flags, deliberately: the point is to observe
+# where a crashing bug branches in today's code and to verify the semantic-only
+# gates no-op rather than to score anything.
+#
+# Leg: Lang-27 DeepRepair (overfit) — a crashing bug with long history in this
+# project; was TP in the 2026-07-16 crashcheck run.
+#
+# What to read in trace.md afterwards:
+#   1. "bug kind: crashing" and which stations then run/skip
+#   2. zero synthesized relations / zero screening events (semantic gate holds)
+#   3. acceptance requires a crash on the buggy build
+#   4. whether the defect-family dismissal (run.py:2486) is reached
+#   5. whether repair-in-place, diversion instrumentation, or the adjudicate
+#      gates emit any events on this path
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-o Lang 27 DeepRepair"
+)
