@@ -10,9 +10,13 @@ nothing else in docs/ covers this period. It is kept for that reason alone.
 
 **Read as history, not as a description of the pipeline.** Several claims were true
 in early July and are false now, e.g.:
-- "Differential fuzzing … **not implemented**" — it is now central: buggy-build
-  replay of the exact firing input, muted re-replay, and the crashing path's
-  defect-family dismissal all depend on it.
+- "Differential fuzzing … not implemented — there is no differential code in the
+  tree." The second half is outdated, the first half still stands, and the two must
+  not be conflated (see the terminology note in
+  `docs/crashing-bug-exposure-2026-07-31.md` §0). Differential *fuzzing* — fuzz both
+  builds independently and diff their outputs — is still not implemented for either
+  bug kind. Differential *replay* — re-run one exact firing input on the buggy build
+  — very much is, and is not kind-gated (`run.py:2456`).
 - The FP=6/10 and F1=0.55 figures describe a pipeline with no relation synthesis,
   no screening, no judge, and no computed evidence facts. Current state:
   `docs/plan.md` (CURRENT STATE section).

@@ -20,6 +20,23 @@ re-derived. If you find a discrepancy, trust the code and correct this file.
 
 ---
 
+## 0. Terminology: three different things are called "differential"
+
+This ambiguity caused two wrong claims in earlier drafts of this document. Keep them
+apart:
+
+| Name | What it is | Kind-gated? |
+|---|---|---|
+| **Differential fuzzing** | Fuzz both builds independently and diff their outputs. | **Not implemented at all**, for either kind. Named in the original write-up; never built. |
+| **Differential replay** | Re-run one exact firing input on the buggy build and see what happens (`fuzz_runner.replay_input_report`, called at `run.py:2456`). | **No gate — runs for BOTH kinds.** Its outputs (`_breplay_ids`, `_bt_all`, `_bt_defect`) are what the crashing defect-family dismissal at `run.py:2486` consumes. |
+| **`classify_differential_replay()`** | An *attribution classifier* over a replay result: INTRODUCED / PREEXISTING / SHADOWED / ABSTAIN (`evidence_facts.py:109`, called at `run.py:2072`). | **SEMANTIC ONLY** (gate at `run.py:1975`) — see §3a for why running it on a crashing leg would flip catches into misses. |
+
+So "crashing bugs don't use differential replay" is **false** — they do, and depend on
+it. "Crashing bugs don't use the differential-replay *classifier*" is **true**, by
+design. And "the pipeline does differential fuzzing" is false for everything.
+
+---
+
 ## 1. Why the two bug kinds diverge inside the pipeline
 
 Everything below follows from one difference.
