@@ -22,9 +22,6 @@ and **frozen** (historical evidence; never updated, kept because other files cit
 
 ## Frozen — reference only
 
-- **`semantic-recall-history.md`** — the July-16 failure-analysis write-up plus the
-  full pre-restructure plan text (archived verbatim when the plan was rewritten
-  by-station on 2026-07-18). The forensic per-bug case histories live here.
 - **`progress.md`** — the June-15→July-15 era record (pre-overhaul through the A1–A7
   batch and B1 mislabel probe). Frozen; cited by `suites/DATASET_AUDIT.md` and the
   certifier's docstrings.

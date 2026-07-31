@@ -4,7 +4,7 @@ Restructured 2026-07-18: ground rules first, finished work as a list by
 pipeline station, current scoreboard, then remaining work by station
 ordered by impact-vs-risk, rejected ideas at the bottom. The full
 pre-restructure text (with the long per-phase case histories) is
-preserved verbatim at the end of `semantic-recall-history.md`.
+preserved verbatim in `plan-history.md` (PART 0).
 Companion docs: `suites/DATASET_AUDIT.md` (inventory + verdicts),
 `suites/labels/incorrect_labels.md` (exclusion evidence),
 `suites/pinned_tasks.jsonl` (the verified task set),
