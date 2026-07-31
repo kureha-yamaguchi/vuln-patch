@@ -3363,3 +3363,150 @@ available cause.
 accused in both pricing rolls. Cleared of repair involvement, so it is judge
 lottery on a leg that raises alarms; but 2-for-2 after a clean history earns a
 named place beside the three chronics pending an event-chain read.
+
+---
+
+## 2026-07-31 — CYCLE 8 EXECUTION PLAN (self-contained handoff)
+
+Context in one paragraph: the cycle-7 close measured a precision ceiling — ~5 false
+accusations on the trap set survive every delivery-side fix, because the judge needs no
+evidence to accuse (measured 90% uncited) and three interventions failed (adjacent
+verbatim source ignored; citation-requirement simulation costs 60 catches for 23 saves;
+the isolated contradiction question voided 22% of genuine catches). Recall is at 8/14
+stable with the gaps mapped. Repair-in-place shipped: outcome-neutral, cost-negative
+(−2.3 attempts/leg). Standing rules apply to every item below: statement test (nothing
+bug-shaped in any requirement); guard set BEFORE mechanism (the 67 kept genuine catches
+are the standing safety population); label-independent authorities only (failing test's
+pins, buggy build off-defect, docs — never the patched artifact judging itself);
+measure each change alone; verbatim numbers from bare pytest; raw results committed
+before interpretation. fresh12: LOCKED, only on the user's literal phrase.
+
+### 8.1 Judge-model swap experiment (gpt-5) — FIRST; needs user go-phrase
+**Target:** the judge LLM behind `relation_verifier.verify()` (and `family_duty`).
+**Failure mode:** the ~5-accusation ceiling — specifically the 5 evidence-present-but-
+ignored accusations and the 22% wrong-void behavior. Question: model quirk or
+task-architecture?
+**Steps:**
+1. Pre-launch: confirm the gpt-5 deployment exists and answers (one probe call);
+   verify `reask_verdict_usable()` recognizes THIS deployment's error/sentinel strings
+   (a silently fail-open judge is the July-15 bug; add its error format to the
+   sentinel list if absent). Commit this check before spending.
+2. Part A: `verifier_replay.py --cases tests/fixtures/cases228.jsonl` (plus the 67-row
+   guard fixture) with the judge model set to gpt-5, votes=1, repeats=1. Same prompts,
+   zero prompt edits.
+3. Part B: the frozen narrow contradiction question (exact phrasing from the failed
+   engagement experiment — do NOT reword) over the same 24 accusing checks + 67 guards,
+   model gpt-5.
+4. Commit raw outputs BEFORE scoring (both parts).
+**Read-out (pre-registered):** per-case flips vs the incumbent's recorded verdicts, not
+totals — gpt-5 is expected WORSE overall; that is not the signal. Decision table:
+same failure shape (ignores Math-65's adjacent source; plausible-irrelevant quotes;
+guard voids) → ceiling is architectural; record and close the model question. Different
+shape (engages on any of the 5 ignored-evidence cases) → model-dependence shown; opens
+(a) re-test on any future stronger model, (b) cross-model agreement as a NEW candidate
+(different from same-model voting, which is dead: same model = same blind spots ×3).
+**Cost:** ~1.5–2.5M, API-only, no VM. One shot per part, no iteration.
+
+### 8.2 Reimplementation-as-evidence — design study ONLY (no build) — free
+**Target:** a NEW evidence generator in the execution layer (peer of
+`relation_screen.py`), output threaded into evidence assembly in `run.py` as a computed
+fact.
+**Failure mode:** accusations resting on misremembered contracts (Math-65 class):
+disputes about what correct behavior IS, which survived delivery, placement, and
+questioning.
+**Design to write (one doc, committed):**
+1. Mechanism: for a disputed observable (detected the way `disputed_computation_fact`
+   already detects recomputations), generate an independent implementation FROM THE
+   DOCUMENTATION (never from patched source); run it on the same inputs.
+2. The authority screen (MANDATORY, this is the whole design): validate the reference
+   implementation against the BUGGY build on observables the defect does not touch
+   (family-duty boundary decides "does not touch"). Disagreement there → discard the
+   reference, emit nothing. Only a buggy-validated reference may generate the fact
+   "patched output disagrees with a doc-derived reference that matches the incumbent
+   semantics elsewhere."
+3. The mirror canary as a spec'd test: fake patch + correct check — the reference must
+   side WITH the check, not the patched code. (Same-model risk: the generator may
+   misremember the same javadoc the accusers misremember — the buggy screen is the
+   only defense; state it.)
+4. Dependencies: needs 8.3 (buggy-side observed values). Price: LLM cost per disputed
+   observable, screen cost, expected reach (count applicable rows in cases228).
+**Done when:** the design doc exists with guard-set test plan and priced reach; user
+decides build/no-build on it.
+
+### 8.3 Buggy-value collector — build AFTER 8.1/8.2 confirm direction — small
+**Target:** `fuzz_runner.py` replay functions (`replay_input_report`,
+`replay_input_muted`) and the recorded facts they emit.
+**Failure mode:** 0 of 1,452 recorded buggy-side steps carry an observed VALUE (only
+fired/counts) — makes 8.2 untestable and forces 6C's values-not-compared abstentions.
+**Steps:** capture the fired message's key=value observations on buggy-side replays
+(the values are printed only when a check fires there; silent-on-buggy stays valueless,
+which fails SAFE — arbitration abstains); thread into the recorded fact via
+`record_event`; extend `compare_fired_values` consumption where applicable. Offline
+tests from archived raw outputs where any exist; otherwise fixture-built. Validation
+rides the next live run passively — no dedicated run.
+
+### 8.4 Raw-value recording — independent, small, ships with any batch
+**Target:** check-writing instructions in the harness codegen prompts (`prompts.py`):
+any check that normalizes text before comparing MUST also print the pre-normalization
+value in its fired message (compare normalized, RECORD raw).
+**Failure mode:** the setup-divergence dismissal rung in `run.py` is structurally dead
+for the ~17% of checks that normalize — their reported values can never equal the
+test's literal (why Closure-62 was unreachable). General rule being implemented:
+transformations for comparison must not destroy the original.
+**Validation:** prompt-compliance smoke on ~20 generations (do fired messages carry
+both forms?), then the rung's extractor extended to read the raw field; measured alone
+on cases228 (no verdict may flip except via newly-possible legitimate matches).
+
+### 8.5 Relation-budget experiment (-m 12 vs -m 16) — cheap, anytime (~1M)
+**Target:** the `-m` relation-synthesis cap in suite COMMON flags.
+**Failure mode:** Chart-19 caught twice at -m 16, missed twice at -m 12; its winning
+family was proposed-then-died (2d), so the budget may starve it at standard config.
+**Steps:** width5 catch-leg suite (5 legs), one roll each at -m 12 and -m 16, same
+commit; read INVENTION RATES of known winning families per leg from traces (not pooled
+scores). If -m 16 materially raises invention, adopt it as standard and record the
+config change; if not, Chart-19's fragility attributes to variance/composition and
+stays open.
+
+### 8.6 Math-39 event-chain read — free, BEFORE any next measurement
+**Target:** archived pricing-pair traces, both Math-39 accusing verdicts' full evidence
+chains (facts delivered, gates consulted, judge WHY/CITATION).
+**Failure mode:** an unexplained NEW repeat accuser (2-for-2 after clean history;
+repair ruled out by attempt-tag grep). Outcome: either a named mechanism (joins the
+chronic list / licenses a fix) or documented judge-lottery (watch list entry closed).
+
+### 8.7 Marker-field fix — small, ships with next build
+**Target:** `campaign.py` acceptance bookkeeping + the `harness-repair` trace event.
+**Failure mode:** repair attribution needed attempt-tag archaeology this week; record
+per accepted harness whether it came from a repaired attempt (and which repairs), so
+attribution is one field lookup. Include repaired-source reconstructability note (the
+transform is deterministic over the recorded pre-repair output).
+
+### 8.8 Suite-file label check — ten lines, ships with next build
+**Target:** `run_suite.sh` case-file loading.
+**Failure mode:** the -c-on-fakes typo class (happened once; firewall held, full
+rescore required). Assert each case's label matches `suites/pinned_tasks.jsonl`;
+refuse to launch on mismatch.
+
+### 8.9 Family-persistence design note — paper only, LAST of design items
+**Target:** `relation_synth.py` round structure + harness generation loop in
+`campaign.py`.
+**Failure mode:** the invention lottery — check families proposed but landing in
+`relations_not_implemented` (Lang-63's winning family in one roll), absent next roll.
+**Must price:** slot competition (persisted families crowd out new ones) and the
+interaction with the novelty gate (which steers AWAY from covered families — these two
+must not fight). Run-local only; nothing crosses runs.
+
+### 8.10 Pair pre-commitment upkeep — free, continuous
+**Target:** this plan's measurement protocol section.
+Keep current: re-scoped bar (PASS = paired mean > 0.685 AND ≤5 accusations per roll AND
+zero accusations on historically clean legs; the old <5 strong tier retired with a
+pointer to the ceiling evidence), residuals (Closure-62, Math-30, Math-65 + Math-39
+pending 8.6), Chart-19 recorded honestly open (two causes eliminated: not repair, not
+the gate correction).
+
+### Sequencing and gates
+Today: 8.1 (on user's phrase: "Run the judge-model swap experiment with gpt-5, parts A
+and B as pre-registered") + 8.6 + 8.7 + 8.8. This week: 8.2 and 8.9 design docs; 8.4;
+8.5 when convenient. 8.3 after 8.1/8.2 outcomes. Then: assemble the cycle-8 batch →
+smoke on final build → the full 30-leg pair (~7M, user's word) against the 8.10 bar →
+fresh12 decision (user's literal phrase only).
