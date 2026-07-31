@@ -782,6 +782,37 @@ def _j3_failing_test_block(failure_tests, cap_each=2000):
     return "\n".join(lines)
 
 
+# --- outcome mutations: ONE evented path -----------------------------------
+# Every change to a finding's outcome (drop it, or flag the patch) goes through
+# these two helpers. Before 2026-07-31 there were nine direct mutation sites,
+# all print-only — and run_suite.sh deletes run.log on success, so a run's
+# decisive step was unknowable from its archived trace.md. That bit hardest on
+# CRASHING legs, whose verdict is purely mechanical and therefore leaves no
+# judge transcript to reconstruct from (crashtrace1: two patched-build firings,
+# crashed_on_patch=false, zero recorded reason).
+#
+# Do not write `r.triggered = False` or set crashed_on_patch directly;
+# tests/test_outcome_events.py fails the build if a new site appears.
+def drop_finding(r, site, reason, **detail):
+    """Drop one finding, recording WHY into trace.md. `site` names the rule."""
+    r.triggered = False
+    print(f"  \u2717 [{site}] dropped: {reason}")
+    record_event('deterministic', method='outcome-drop',
+                 target=getattr(r, 'harness_path', None) or getattr(
+                     r, 'attempt_label', '?'),
+                 output=f'DROPPED by {site}',
+                 detail={'site': site, 'reason': reason, **detail})
+
+
+def flag_overfitting(record_extras, site, reason, **detail):
+    """Set the positive verdict, recording WHY. Never writes False."""
+    record_extras['crashed_on_patch'] = True
+    print(f"  \u2713 [{site}] flagged overfitting: {reason}")
+    record_event('deterministic', method='outcome-flag',
+                 target=site, output='FLAGGED overfitting',
+                 detail={'site': site, 'reason': reason, **detail})
+
+
 def main():
     args = parse_args()
     # Token totals are process-global; start this patch's accounting from
@@ -2046,10 +2077,11 @@ def main():
                           f"non-generic oracles also fire: "
                           f"{non_generic[0][:80]}")
                     return
-                r.triggered = False
-                print(f"  [attribution] dropped: {patched_sig} reproduces "
-                      f"on buggy build (pre-existing, not patch-caused): "
-                      f"{r.harness_path}")
+                drop_finding(
+                    r, 'differential-preexisting',
+                    f"{patched_sig} reproduces on the buggy build "
+                    f"(pre-existing surface, not patch-caused)",
+                    patched_sig=patched_sig)
 
             for r in generic_hits:
                 out = (r.stdout or '') + '\n' + (r.stderr or '')
@@ -2191,11 +2223,12 @@ def main():
                 # on buggy (e.g. the bug's own NPE) is the TP pattern and
                 # must survive: that is exactly Chart-26's overfit side.
                 if patched_cause in (buggy_sig, buggy_cause):
-                    r.triggered = False
-                    print(f"  [attribution] dropped LAUNDERED firing: "
-                          f"harness alarm wraps {patched_cause}, which "
-                          f"reproduces on the buggy build (pre-existing "
-                          f"library surface): {r.harness_path}")
+                    drop_finding(
+                        r, 'differential-laundered',
+                        f"harness alarm wraps {patched_cause}, which "
+                        f"reproduces on the buggy build (pre-existing "
+                        f"library surface)",
+                        patched_cause=patched_cause)
                 else:
                     attribution_notes[id(r)] = (
                         f"laundering check: alarm wraps generic cause "
@@ -3448,12 +3481,15 @@ def main():
                     _kept_findings.append(
                         (r, _oids(kept_reason[0] or ''), kept_reason[0]))
                 else:
-                    print(f"  ✗ dropped (all {len(drop_reasons)} fired "
-                          f"oracles unsound): {r.harness_path}")
                     for fired, why in drop_reasons:
                         print(f"      fired: {fired}")
                         print(f"        {why}")
-                    r.triggered = False  # no longer counts as a finding
+                    drop_finding(
+                        r, 'all-fired-oracles-unsound',
+                        f"all {len(drop_reasons)} fired oracle(s) dismissed",
+                        reasons=[{'fired': (f or '')[:200],
+                                  'why': (w or '')[:400]}
+                                 for f, w in drop_reasons])
             # P4.3 ("one decision per crash, not per firing"): the same
             # check judged UNSOUND on one firing and kept on another is a
             # contradiction — the messages differ, the oracle doesn't. On
@@ -3469,13 +3505,13 @@ def main():
                     or _r.harness_path in _unsound_scope.get(k, ())}
                 if _clash and _r.triggered:
                     _oid = sorted(_clash)[0]
-                    print(f"  ✗ reconciled (dismissal wins): oracle "
-                          f"{_oid} was judged unsound on another firing "
-                          f"of the same check — dropping the kept "
-                          f"finding {_r.harness_path}")
-                    print(f"      unsound because: "
-                          f"{_unsound_oracle_ids[_oid]}")
-                    _r.triggered = False
+                    drop_finding(
+                        _r, 'dismissal-wins-reconciliation',
+                        f"oracle {_oid} was judged unsound on another "
+                        f"firing of the same check",
+                        oracle_id=_oid,
+                        unsound_because=(_unsound_oracle_ids[_oid]
+                                         or '')[:400])
 
     # 7d) P3.2 replay: execute every screened relation (own-leg only —
     #     pooling removed 2026-07-19, user rule)
@@ -3808,10 +3844,11 @@ def main():
                     # extras are applied to the record LAST, so this
                     # overrides the harness-derived False. Only ever set
                     # on conviction — never write False here.
-                    record_extras['crashed_on_patch'] = True
-                    print(f"  [replay] verdict: {len(_kept_replays)} "
-                          "verifier-kept relation conviction(s) — patch "
-                          "flagged as overfitting")
+                    flag_overfitting(
+                        record_extras, 'relation-replay-conviction',
+                        f"{len(_kept_replays)} verifier-kept relation "
+                        f"conviction(s)",
+                        kept=[k['name'] for k in _kept_replays])
         except Exception as exc:
             print(f"  [replay] failed ({exc}) — replay contributes nothing "
                   "this run")
