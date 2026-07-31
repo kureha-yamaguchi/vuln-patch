@@ -5,11 +5,16 @@ and **frozen** (historical evidence; never updated, kept because other files cit
 
 ## Living
 
-- **`plan.md`** — THE plan doc (formerly `semantic-recall-brainstorm.md`, renamed
-  2026-07-26 because it long ago stopped being a brainstorm). Ground rules, finished
-  work by pipeline station, current scoreboard, remaining work ranked by
-  impact-vs-risk, rejected ideas, and the dated candidate ledgers at the end. When a
-  commit message says "plan doc", it means this file.
+- **`plan.md`** — THE plan doc, restructured 2026-07-31 to live content only: the
+  problem + pipeline stations, ground rules, the standing rulebook, current state,
+  the rejected-ideas ledger, the current measurement protocol, parked pointers, and
+  the active cycle's execution plan. When a commit message says "plan doc", it means
+  this file. Everything it accumulated before the restructure is in `plan-history.md`.
+- **`plan-history.md`** — frozen: the by-station era (07-18→20, incl. full P4.1/P4.2
+  specs and all batch results) and the cycle era (07-26→30, pre-commitments,
+  adjudications, kill records), moved verbatim out of plan.md.
+- **`replay/`** — per-measurement analysis + raw-result docs (gates, iterations,
+  night20b/c, smokes), committed raw-before-scoring.
 - **`cycles/`** — the improvement-campaign log, one file per cycle (specs + outcome)
   plus the numbered retrospectives. The standing retro protocol is defined at the
   bottom of `RETRO1-2026-07-25.md`. Current state of play: `RETRO3-2026-07-25.md`

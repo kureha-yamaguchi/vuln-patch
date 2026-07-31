@@ -212,7 +212,7 @@ def parse_args():
                              "was measured with replay accidentally OFF in "
                              "both ablation arms and is retracted — see the "
                              "CORRECTION section in "
-                             "docs/plan.md.")
+                             "docs/plan-history.md.")
     parser.add_argument("--replay_relations_on_patched", action="store_true",
                         help="P3.2 replay: execute every screened relation "
                              "(own-leg only; pooling removed 2026-07-19) directly "
