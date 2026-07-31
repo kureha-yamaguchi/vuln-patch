@@ -439,9 +439,12 @@ history preserves everything. NOTE: `test_oracle_miner.py` stays until after fre
 per the audit's original condition.
 
 ### 8.12 Crashing-bug exposure checks — free parts now, rerun before the next pair
-**Target:** shared components crashing legs run through — `classify_differential_replay`
-(their core verdict input), the terminal-identical and intrinsic-rate gates in
-`adjudicate()`, `harness/repair.py`, `instrument_diversion`.
+**Target:** shared components crashing legs run through — the crashing-only
+defect-family dismissal at `run.py:2486` and the buggy/muted-replay machinery feeding
+it, the terminal-identical and intrinsic-rate gates in `adjudicate()`,
+`harness/repair.py`, `instrument_diversion`. (NOTE: `classify_differential_replay` is
+semantic-ONLY by design — for a crashing bug the same-crash-on-buggy pattern is the
+TP condition, see the exposure doc §3a.)
 **Failure mode:** no crashing suite has run since 2026-07-16 (crashcheck: P=0.86
 R=0.86), which predates all seven cycles; shared code was reworked under them with
 semantic-only validation data. Full analysis:

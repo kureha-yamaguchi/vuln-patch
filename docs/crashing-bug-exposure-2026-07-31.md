@@ -90,13 +90,11 @@ fire". *Reworked heavily.*
 `crash_signature` (exception type + first project frame) and `cause_signature` (root
 of the `Caused by:` chain). *Replay reworked; signature functions unchanged.*
 
-**`relations/evidence_facts.py` — computed facts.** Includes
-`classify_differential_replay()`, which is the crashing path's core judgement input:
-replay the exact crashing input on the buggy build and classify INTRODUCED /
-PREEXISTING / SHADOWED / ABSTAIN. *Reworked repeatedly* — the SHADOWED/ABSTAIN states,
-the muted re-replay upgrade, and gating of its "buggy ran this cleanly → the patch
-introduced it" wording on the new diversion signal (that wording was demonstrably
-fabricating evidence against a correct patch before the fix).
+**`relations/evidence_facts.py` — computed facts.** Shared in general, with one
+important exception: **`classify_differential_replay()` is SEMANTIC-ONLY** and is
+deliberately not run for crashing bugs (gate at `run.py:1975`). See §3a — this is a
+design decision, not an oversight, and it is the single most important thing to
+understand about crashing-bug verdicts.
 
 **`relations/judge_decision.py` — `adjudicate()` (NEW as a shared entrypoint).** Both
 production judge sites and the offline replay tool now go through one function: run
@@ -108,17 +106,48 @@ an explicit keep when the values *differ*.
 
 ---
 
+### 3a. The one thing to get right: crashing bugs do NOT use differential replay
+
+It is natural to assume the differential replay — "replay the crashing input on the
+buggy build; if it crashes there too, the crash is pre-existing and not the patch's
+fault" — is the crashing path's core check. **It is the opposite: it is gated
+`bug_kind == "semantic"` and must never run on a crashing leg.** The reasoning is
+spelled out at `run.py:1952-1974` and is worth internalising:
+
+- Every accepted harness reproduces the crash on the buggy build **by construction** —
+  that is the acceptance gate for a crashing bug.
+- An overfitting patch that fails to fix the defect therefore crashes on the patched
+  build with the **same signature** as on the buggy build.
+- So "the same crash reproduces on the buggy build" is precisely the **true-positive
+  condition** for a crashing bug. A differential-replay check would read that exact
+  pattern as "pre-existing surface" and flip every genuine catch into a miss.
+
+On semantic legs the same fact means the opposite thing: our alarm firing identically
+on both builds means the alarm is describing behaviour the patch never changed, so the
+finding is not evidence about the patch. Same measurement, inverted meaning — which is
+why the gate exists.
+
+What crashing legs use instead: the **defect-family dismissal** at `run.py:2486`. It
+dismisses a finding only when the replayed input reproduces the same check or the same
+exception type on buggy **and** no defect-family exception type is present — i.e. it
+tries to separate "the bug's own crash family, still crashing" (a catch) from
+"unrelated pre-existing crash surface the fuzzer stumbled into" (noise). The
+`expected_exceptions` list built at `run.py:1567` from the failing tests' exception
+types is what defines the defect family.
+
 ## 4. Where interference is plausible — and why that is not the same as "shared"
 
 Interference risk is a *subset* of shared code. Shared is a fact (it runs); risk is a
 property (it assumes something that only holds for semantic legs). Ranked:
 
-**(1) `classify_differential_replay()` — the crashing path's core, rewritten, unmeasured.**
-This decides whether a crash on the patched build is the patch's fault. Every change
-to it this month was motivated, tested and validated on semantic-leg fixtures. Its
-crash-leg behaviour is unexercised since 07-16. This is the highest-value thing to
-re-verify, not because a defect is suspected but because it is the component that most
-directly determines crashing-bug verdicts.
+**(1) The crashing-only defect-family dismissal (`run.py:2486`) — the crash path's
+own verdict mechanism, sitting in heavily-reworked code.** This is the crashing
+counterpart to differential replay (see §3a): it dismisses a finding when the exact
+firing input, replayed on the buggy build, fires the same check or raises the same
+exception type there *and* no defect-family type is present. It reads
+`_breplay_ids`, `_bt_all`, `_bt_defect` and `_esc_type` — all produced by the
+buggy-replay and muted-replay machinery that was rewritten this month. The dismissal
+logic itself is crash-specific and old; its *inputs* are new. Unexercised since 07-16.
 
 **(2) The terminal identical gate inside `adjudicate()`.** It reads fires-on-both facts
 out of the evidence text. Crashing legs *do* produce differential-replay facts, so
@@ -202,8 +231,10 @@ to open a new work front.
 
 The July cycles were semantic-bug work, but they landed in shared code: harness
 generation and acceptance, the repair-in-place transforms, the muted/diverted replay
-machinery, the differential-replay classifier that crashing bugs depend on most, and
-the new single judge entrypoint with its deterministic override gates. Crashing legs
+machinery whose outputs feed the crashing path's own defect-family dismissal, and the
+new single judge entrypoint with its deterministic override gates. Note that the
+differential-replay classifier is semantic-only by design (§3a) — for a crashing bug,
+"the same crash reproduces on buggy" is the catch condition, not a refutation. Crashing legs
 skip the entire relation-synthesis engine and the lifted-assertion path, so much of the
 semantic scoreboard does not apply to them. Two of the shared changes I initially
 flagged as risky turned out to be safe or actively aligned with the crashing design
