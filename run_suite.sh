@@ -47,6 +47,7 @@ if [ -n "$CASES_FILE" ]; then
   CASES_FILE="$(cd "$(dirname "$CASES_FILE")" && pwd)/$(basename "$CASES_FILE")"
 fi
 
+
 source /home/code/vpenv.sh
 cd /home/code/experiments-vuln-patch/src
 
@@ -74,6 +75,57 @@ if [ -n "$CASES_FILE" ]; then
   # (Provenance lives in config.json — MODEL, COMMON and the case list — so no
   # separate cases.sourced copy is written.)
 fi
+
+# --- 8.8 label sanity check (cycle 8) --------------------------------------
+# A `-c` flag on a Doverfitting patch (or vice versa) runs the RIGHT patch with
+# the WRONG label: the firewall holds and the run is valid, but every score is
+# wrong and the whole suite needs rescoring. That happened once, in the cycle-7
+# repair-pricing pair — nine cases written `-c`, four of them fakes. Caught only
+# because TP=0 looked absurd.
+#
+# The flag must agree with the patch's own side. Authority is the patch PATH
+# (Dcorrect/ vs Doverfitting/), cross-checked against suites/pinned_tasks.jsonl
+# where the patch is pinned. Refuse to launch on any mismatch — a suite that
+# cannot be scored should never spend tokens.
+PINNED="$(cd "$(dirname "$0")" && pwd)/suites/pinned_tasks.jsonl"
+label_mismatch=0
+for spec in "${CASES[@]}"; do
+  set -- $spec; f=$1
+  [[ "$2" == patchfile:* ]] || continue
+  path="${2#patchfile:}"
+  case "$path" in
+    */Dcorrect/*)      side=correct ;;
+    */Doverfitting/*)  side=overfit ;;
+    *)                 side=unknown ;;
+  esac
+  want=$([ "$f" = "-c" ] && echo correct || echo overfit)
+  if [ "$side" != unknown ] && [ "$side" != "$want" ]; then
+    echo "LABEL MISMATCH: flag $f says $want, but the patch path says $side"
+    echo "                $path"
+    label_mismatch=1
+  fi
+  if [ -f "$PINNED" ] && [ "$side" != unknown ]; then
+    base=$(basename "$path")
+    pin=$(grep -F "\"patch_file\": \"$base\"" "$PINNED" | head -1)
+    if [ -n "$pin" ]; then
+      pinside=$(printf '%s' "$pin" | sed -n 's/.*"side": "\([a-z]*\)".*/\1/p')
+      # pinned_tasks uses correct/overfitting; normalise to the same vocabulary
+      case "$pinside" in overfitting) pinside=overfit ;; esac
+      if [ -n "$pinside" ] && [ "$pinside" != "$want" ]; then
+        echo "LABEL MISMATCH vs pinned_tasks: flag $f says $want, pin says $pinside"
+        echo "                $base"
+        label_mismatch=1
+      fi
+    fi
+  fi
+done
+if [ "$label_mismatch" != 0 ]; then
+  echo ""
+  echo "REFUSING TO LAUNCH — fix the case flags first."
+  echo "A mislabeled suite runs the right patches and scores them wrong."
+  exit 2
+fi
+# ---------------------------------------------------------------------------
 # ---------------------------------------------------------
 
 # VERSION is stamped by push-to-vm.sh from the Mac-side git state (rsync
@@ -129,6 +181,7 @@ run_one() {
 # patch file is skipped HERE so it never enters the worklist (can't dangle a
 # job or a rundir). Worklist is TAB-separated: idx, tag, flag, patchfile.
 WORKLIST="$ROOT/.worklist.tsv"; : > "$WORKLIST"
+
 idx=0
 for spec in "${CASES[@]}"; do
   set -- $spec; flag=$1
