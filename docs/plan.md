@@ -457,6 +457,21 @@ tighter than the implementation's own documented epsilon) does NOT bundle into t
 prompt change — it would widen the compliance-smoke surface and violate
 measure-one-change. Noted here as a design candidate for a later batch; its payoff
 is wasted-firing reduction only (no current verdict flips on it, per 8.18).
+**Prompt half DONE (6cfb5c9, 2026-08-01):** fired messages now carry named keys
+`expectedNormalized= actualNormalized= expectedRaw= actualRaw=` — named, never
+positional (the consumer is the setup-divergence extractor, where a wrong-field
+read is rule-15's family in a component whose failure mode is "the rung stays dead
+and nobody notices"). Raw keys emit ONLY when normalization happened, so absence
+means no-normalization, never forgot-to-record. Four tests pin the change,
+including that the normalize INSTRUCTION is untouched — 8.4 adds recording and
+must not relax the comparison. 577 passed, 7 skipped.
+**Still owed:** the 20-generation compliance smoke (compliance, not correctness,
+is what a prompt change can fail); the extractor extension; cases228 measured
+ALONE — and since this rung pushes toward dismissal, the 67-row genuine-catch
+guard is the one that applies: a raw-value match that voids a genuine catch fails
+the change. Honest expectation on record: this makes a dead rung LIVE; it promises
+no verdict movement (Closure-62 needs the fired value to actually match a pinned
+value — recording only makes the comparison possible).
 
 ### 8.5 Relation-budget experiment (-m 12 vs -m 16) — cheap, anytime (~1M)
 **Target:** the `-m` relation-synthesis cap in suite COMMON flags.
