@@ -254,12 +254,12 @@ category before it ships.
   **Hard column:** Closure-38, Math-104. **Coin-flips:** Lang-60,
   Math-68, Math-73, Closure-92. **Multi-mode:** Lang-63 (all three failure modes on
   record).
-- **Miss stations (8.14, 2026-08-01):** across the three current-config runs, 8 of
-  14 misses reach a judge and are dismissed; 5 build but never fire; 0 die at
-  harness construction. The judge is simultaneously the largest recall class
-  (over-dismissal) and the capped precision component (under-dismissal) — opposite
-  directions, so no single strictness knob fixes both; the lever must be
-  evidence-shaped or architectural.
+- **Miss stations (8.14, 2026-08-01, corrected counts):** across the three
+  current-config runs, 10 of 14 misses reach a judge and are dismissed (both
+  tracks counted); 3 build but never fire; 0 die at harness construction. The
+  judge is simultaneously the largest recall class (over-dismissal) and the capped
+  precision component (under-dismissal) — opposite directions, so no single
+  strictness knob fixes both; the lever must be evidence-shaped or architectural.
 - **Honestly open:** Chart-19's missed-twice→caught-twice flip in the pricing pair —
   not repair (attempt-tag grep), not the gate correction (old detector passes both
   firing harnesses); remaining candidates composition/variance.
@@ -529,19 +529,20 @@ fired / fired but judge-dismissed — with the trace line. One table, committed 
 before interpretation. Feeds the 8.5 read-out (including its focused-synthesis arm
 decision) and the 8.17 build/no-build gate.
 **Outcome (`docs/replay/backtrack/8.14-MISS-LEDGER.md`, raw table committed first —
-DONE 2026-08-01):** 14 missed leg-instances: fired-all-dismissed 6,
-built-never-fired 5, fired-mixed 2, fired-never-judged 1, died-at-construction 0.
-The dominant miss station is the JUDGE: 8 of 14 misses reach a judge and are
-dismissed — recall lost to OVER-dismissal, the mirror of the precision ceiling's
-under-dismissal. Same component, opposite directions: no single strictness knob can
-fix both. This replicates the cycle-5 inventory finding (22 of 23 FN legs
-all-UNSOUND) under current config. Stated limitation: the ledger is LEG-level and
-cannot see "never invented" (it would hide inside the 5 built-never-fired legs);
-the two known winning-family fates on record ARE invention-shaped (Chart-19's
-family died at harness construction per 2d; Lang-63's is a roll lottery per
-a75012d). Open reconciliation: two rows carry judged=1 with fired=0
-(replay-track?) — pin the `fired` column's definition; reclassifying them only
-grows the judge class.
+DONE 2026-08-01, CORRECTED same day after a column bug: the fired column had
+counted only harness-track events; the table is now split by track):** 14 missed
+leg-instances: fired-ALL-dismissed 8, built-never-fired 3, fired-mixed 2,
+fired-never-judged 1, died-at-construction 0. The dominant miss station is the
+JUDGE: **10 of 14** misses reach a judge and are dismissed (wholly or partly) —
+recall lost to OVER-dismissal, the mirror of the precision ceiling's
+under-dismissal; the reach class (3) is smaller than the judge class by more than
+3×. Same component, opposite directions: no single strictness knob can fix both.
+This replicates the cycle-5 inventory finding (22 of 23 FN legs all-UNSOUND) under
+current config. Stated limitation: the ledger is LEG-level and cannot see "never
+invented" (it would hide inside the built-never-fired legs); the two known
+winning-family fates on record ARE invention-shaped (Chart-19's family died at
+harness construction per 2d; Lang-63's is a roll lottery per a75012d) — so the
+invention items are DEFERRED to 8.14b, not killed.
 **Follow-up 8.14b (free, REQUIRED):** per-missed-leg winning-family fate read — was
 a decisive family proposed, screened, built, fired? 8.14b, not 8.14, now gates
 8.5's third arm and 8.17.
@@ -619,7 +620,10 @@ and the class is honestly closed.
 ~zero cost on the correctly-dismissed firings of correct legs BEFORE anything else
 is measured — the two-directions finding makes this the sharpest guard rule in the
 plan: the same component is failing both ways, so a fix for one direction is
-presumed to damage the other until measured.
+presumed to damage the other until measured. That guard population does NOT exist
+yet as a fixture (the 67-row set is genuine catches, not correct dismissals) —
+building it is 8.18's FIRST step, before any classification is interpreted
+(standing rule 2).
 
 ### Execution ladder (replaces the sequencing paragraph, 2026-08-01)
 
