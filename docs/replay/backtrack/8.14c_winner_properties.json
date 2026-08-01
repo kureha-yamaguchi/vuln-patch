@@ -1,0 +1,166 @@
+{
+ "Chart-19": [
+  {
+   "roll": "night20c",
+   "name": "categoryplot_getRangeAxisIndex_null_rejected_independent_of_",
+   "holds_because": "The failing test gives the required behavior for CategoryPlot#getRangeAxisIndex: passing null must throw IllegalArgumentException, and this rejection should not depend on whether extra range axes have",
+   "fired": "relation categoryplot_getRangeAxisIndex_null_rejected_independent_of_ violated [replay-on-patched, fuzzed tier]"
+  }
+ ],
+ "Closure-38": [
+  {
+   "roll": "final30B",
+   "name": "minus-negative-zero-canonical-spacing",
+   "holds_because": "CodeConsumer's number-printing logic explicitly says spacing is required to prevent misparsing after a preceding '-' token, and the failing test fixes the required observable for negative zero: compac",
+   "fired": "relation minus-negative-zero-canonical-spacing violated [replay-on-patched, trigger tier]"
+  },
+  {
+   "roll": "final30B",
+   "name": "minus_negative_zero_compact_exact",
+   "holds_because": "Compact JavaScript printing must emit valid code that preserves the parsed program; when a binary minus is followed by a negative numeric literal, a separating space is required to avoid misparsing `x",
+   "fired": "relation minus_negative_zero_compact_exact violated [replay-on-patched, trigger tier]"
+  }
+ ],
+ "Lang-63": [
+  {
+   "roll": "final30B",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:nonnegative-month-field] semantic mismatch: forward period rendered non-digit month component=-9 start=27"
+  },
+  {
+   "roll": "final30B",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:non-negative-months] relation month_format_for_forward_period_is_not_negative violated: out=-81"
+  },
+  {
+   "roll": "final30B",
+   "name": "month_format_for_forward_period_is_not_negative",
+   "holds_because": "formatPeriod formats a forward time gap into duration elements. For a valid forward period (startMillis <= endMillis), the rendered month element for pattern \"MM\" must be a numeric, non-negative compo",
+   "fired": "relation month_format_for_forward_period_is_not_negative violated [replay-on-patched, fuzzed tier]"
+  },
+  {
+   "roll": "final30B",
+   "name": "month-field-for-forward-period-is-two-digits-not-negative",
+   "holds_because": "Pattern character 'M' denotes the months duration element; for a valid forward time gap and pattern \"MM\" with zero-padding enabled, the rendered months field must be a two-digit numeric field rather t",
+   "fired": "relation month-field-for-forward-period-is-two-digits-not-negative violated [replay-on-patched, fuzzed tier]"
+  }
+ ],
+ "Math-73": [
+  {
+   "roll": "final30B",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:functionValue-matches-result] consistency violation: reported f(result)=0.0 but recomputed=4.753515680281"
+  },
+  {
+   "roll": "final30B",
+   "name": "fourArg_nonBracketing_negativeInitial_mustThrow",
+   "holds_because": "Javadoc of solve(UnivariateRealFunction, double, double, double): it throws IllegalArgumentException if the values of the function at the three points have the same sign.",
+   "fired": "relation fourArg_nonBracketing_negativeInitial_mustThrow violated [replay-on-patched, trigger tier]"
+  },
+  {
+   "roll": "night20c",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:negative-same-sign-reject] semantic mismatch: expected IllegalArgumentException for solve(sin,-0.002,-0.0"
+  },
+  {
+   "roll": "night20c",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:zero-boundary-same-sign-reject] expected IllegalArgumentException for non-bracketing initial==0 but call "
+  },
+  {
+   "roll": "night20c",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:first-endpoint-root-return] semantic mismatch: expected first endpoint 3.141592653589793 but solver retur"
+  }
+ ],
+ "Lang-60": [
+  {
+   "roll": "final30A",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:contains-readonly-capacity] post-condition violation: contains(char) changed capacity from 33 to 1 on vis"
+  }
+ ],
+ "Closure-92": [
+  {
+   "roll": "final30A",
+   "name": "swapIndependentChildModules_preservesPrefixOrder",
+   "holds_because": "The pass states that goog.provides are processed in a deterministic order; swapping independent modules that provide two siblings must not change the required prefix-namespace ordering root before roo",
+   "fired": "relation swapIndependentChildModules_preservesPrefixOrder violated [replay-on-patched, fuzzed tier]"
+  },
+  {
+   "roll": "final30A",
+   "name": "independentModules_parentPrefixesAppearBeforeChildProvide",
+   "holds_because": "When replacing goog.provide calls, the pass must create any needed prefix namespaces in dependency order, so for a provided namespace with dots the generated declaration for its immediate parent names",
+   "fired": "relation independentModules_parentPrefixesAppearBeforeChildProvide violated [replay-on-patched, fuzzed tier]"
+  },
+  {
+   "roll": "final30B",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:seed-testProvideInIndependentModules4] semantic mismatch: expected=varapps={};apps.foo={};apps.foo.bar={}"
+  },
+  {
+   "roll": "final30B",
+   "name": "nestedProvidePrefixesAppearInParentBeforeChildOrder",
+   "holds_because": "For processed goog.provide calls, prefix namespaces must be registered in order from shortest to longest, and replacing provides must create namespace declarations consistent with that hierarchy. In t",
+   "fired": "relation nestedProvidePrefixesAppearInParentBeforeChildOrder violated [replay-on-patched, trigger tier]"
+  },
+  {
+   "roll": "final30B",
+   "name": "addingSiblingLeafDoesNotMoveSharedPrefixesAfterLeaves",
+   "holds_because": "Adding another provided descendant may add another leaf declaration, but shared prefix namespaces still must be registered shortest-to-longest and remain before all descendant leaves.",
+   "fired": "relation addingSiblingLeafDoesNotMoveSharedPrefixesAfterLeaves violated [replay-on-patched, fuzzed tier]"
+  },
+  {
+   "roll": "final30B",
+   "name": "provideProcessingRemovesProvideCalls",
+   "holds_because": "Class contract: it replaces goog.provide calls and removes goog.require calls. Therefore a correctly processed output must not still contain raw goog.provide(...) calls.",
+   "fired": "relation provideProcessingRemovesProvideCalls violated [replay-on-patched, fuzzed tier]"
+  },
+  {
+   "roll": "final30B",
+   "name": "allRegisteredPrefixesForSingleNestedProvideExist",
+   "holds_because": "registerAnyProvidedPrefixes states that the prefix namespaces for a provided namespace must be registered in order from shortest to longest.",
+   "fired": "relation allRegisteredPrefixesForSingleNestedProvideExist violated [replay-on-patched, fuzzed tier]"
+  }
+ ],
+ "Math-68": [
+  {
+   "roll": "final30A",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:seed-rms] semantic mismatch: expectedRms=6.9988751744895 actualRms=4.948952106749988"
+  },
+  {
+   "roll": "final30A",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:jennrich-seed-x1] semantic mismatch: expected 0.257829976764542 but was 0.25781765926522887"
+  },
+  {
+   "roll": "final30B",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:jennrich-param1] semantic mismatch: expected=0.257829976764542 actual=0.25781765926522127"
+  },
+  {
+   "roll": "final30B",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:js-param1] semantic mismatch: expected second Jennrich-Sampson parameter 0.257829976764542 but was 0.2578"
+  },
+  {
+   "roll": "final30B",
+   "name": null,
+   "holds_because": null,
+   "fired": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:fr-seed1-rms] semantic mismatch: seed1 RMS expected=6.99887517584575 actual=4.948952097518722"
+  }
+ ]
+}
