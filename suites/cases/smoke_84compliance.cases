@@ -1,0 +1,29 @@
+# 8.4 compliance smoke (2026-08-01). TWO legs, ~300-500k, ~25 generations.
+#
+# THE ONE QUESTION: do generated checks that normalize before comparing now ALSO
+# emit the pre-normalization values under the named keys
+#   expectedNormalized= actualNormalized= expectedRaw= actualRaw=
+# A prompt change can only fail by non-compliance, so compliance IS the result.
+#
+# LEG CHOICE: both are formatter/printer bugs, i.e. exactly the population the
+# normalize instruction targets (code or formatted text). A leg whose checks are
+# numeric would exercise nothing — the Raw keys are conditional on normalizing.
+#   Closure-62 — LightweightMessageFormatter, the case that motivated 8.4
+#   Closure-38 — CodePrinter/CodeConsumer, printed-source comparisons
+#
+# SECOND PURPOSE, per the revised sequence: this run's harnesses are the ONLY
+# corpus in which the raw-vs-pinned comparison can be validated at all. 0 of 228
+# archived cases carry a Raw key and none can — the field did not exist when they
+# were recorded. So this is not a formality; it is the data.
+#
+# WHAT IT CANNOT DO: 25 generations over two legs is not a guard population. The
+# dismiss-pushing risk of the comparison is live-only and belongs to the next
+# full suite, read per-event. No "guard passed" claim may rest on this run.
+#
+# Config matches the pair (-n 5 -m 12).
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/SequenceR/Closure/patch1-Closure-38-SequenceR.patch"
+)
