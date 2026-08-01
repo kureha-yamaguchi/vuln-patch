@@ -452,6 +452,11 @@ transformations for comparison must not destroy the original.
 **Validation:** prompt-compliance smoke on ~20 generations (do fired messages carry
 both forms?), then the rung's extractor extended to read the raw field; measured alone
 on cases228 (no verdict may flip except via newly-possible legitimate matches).
+**Scope decision (2026-08-01):** the Math-104 tolerance-hygiene line (no check
+tighter than the implementation's own documented epsilon) does NOT bundle into this
+prompt change — it would widen the compliance-smoke surface and violate
+measure-one-change. Noted here as a design candidate for a later batch; its payoff
+is wasted-firing reduction only (no current verdict flips on it, per 8.18).
 
 ### 8.5 Relation-budget experiment (-m 12 vs -m 16) — cheap, anytime (~1M)
 **Target:** the `-m` relation-synthesis cap in suite COMMON flags.
@@ -843,12 +848,14 @@ reason (f37f7f3 — no corpus exists; runs after 8.12(c), from its output).
 struck from the rung; the smoke verifies it live instead. Standing rule 15
 (guard inputs must exist) promoted out of this rung's lessons and landed
 twice within the rung. The rung closes on the 2-leg smoke.
-**CHECK (smoke-before-pair rule):** one 2-leg smoke (~300–500k) on the batch
-build. Pass = a deliberately mislabeled cases file refuses to launch; the
-repair marker appears on a repaired-accepted harness; the five-state rate
-split is observed on the LIVE path (states appearing per the legs' actual
-evidence — no assumption from cycle-7 tests); zero verdict changes vs the
-same legs' previous smoke.
+**CHECK (smoke-before-pair rule, amended 2026-08-01):** one 2-leg smoke
+(~300–500k) on the batch build. The mislabel criterion CANNOT be tested by a
+live run — a refusing launch produces no run to inspect; 8.8's evidence is
+the committed offline both-directions test (exit 2 each way), and the gate
+claims no more than that. The smoke tests three things: the repair marker
+live on a repaired-accepted harness; the five-state rate split observed on
+the LIVE path; zero verdict changes vs the smoke7 baseline (Closure-62 TN,
+Math-65 FP). Authorized 2026-08-01.
 
 **RUNG 3 — the one licensed precision fix (small code + one prompt rule).**
 8.4 raw-value recording (compare normalized, RECORD raw; ~17% of harnesses).
