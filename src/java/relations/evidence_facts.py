@@ -511,6 +511,138 @@ def _trusted_numbers(trusted_values):
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# 8.4 — RAW-vs-PINNED comparison. The consumer the raw recording was built for.
+#
+# The setup-divergence rung asks one question: does the fired value equal a
+# value the failing test itself pins? For ~17% of accepted harnesses the check
+# normalizes before comparing (the prompt requires it for code/formatted text),
+# so the only value the alarm used to report was a normalized derivative. It can
+# never equal the test's raw literal, so the rung was structurally dead for
+# exactly those checks. 8.4's prompt change + gate 0c2 make the pre-normalization
+# value available; this is what reads it.
+#
+# THIS IS NOT A REVIVAL OF FIX (ii). Fix (ii) compared arbitrary tokens on any
+# evidence and measured a wash. This compares ONE designated field against the
+# literals the test pins, exactly. Narrower, better-grounded, separately measured.
+# ---------------------------------------------------------------------------
+
+# The named keys 8.4's message format defines. Parsing stops at any of them, so
+# a raw value containing spaces (`x- -0.0`) is captured whole.
+_RAW_KEYS = ('expectedNormalized', 'actualNormalized', 'expectedRaw', 'actualRaw')
+_NEXT_KEY_RE = re.compile(r'\s(?:' + '|'.join(_RAW_KEYS) + r')=')
+# Any ` name=` token. Real alarms append their own metadata keys after the raw
+# pair (`actualRaw=x--0.0 parseErrorCount=0` was observed in the compliance
+# smoke), so stopping only at the four 8.4 keys over-captures the metadata into
+# the value. Stopping at ANY key risks the opposite, because a raw value that is
+# source code may legitimately contain ` x=1` — so where the stop key is not one
+# of the four known ones, the capture is marked AMBIGUOUS rather than trusted.
+_ANY_KEY_RE = re.compile(r'\s([A-Za-z_]\w*)=')
+
+_JAVA_ESCAPES = {'n': '\n', 't': '\t', 'r': '\r', 'b': '\b', 'f': '\f',
+                 '"': '"', "'": "'", '\\': '\\', '0': '\0'}
+
+
+def _decode_java_literal(text):
+    """A Java source literal's escapes decoded into the value it denotes.
+
+    This is the ONE transformation the comparison applies, and it is applied to
+    the PINNED side only. It is decoding, not normalization: `\\n` in test source
+    and a newline in a runtime string are the same character, written two ways.
+    Nothing is collapsed, trimmed, or discarded — which is the whole point, since
+    the checks this serves are the ones whose defects ARE whitespace defects.
+    Unknown escapes are left verbatim rather than guessed at."""
+    if not text or '\\' not in text:
+        return text or ''
+    out, i = [], 0
+    while i < len(text):
+        c = text[i]
+        if c != '\\' or i + 1 >= len(text):
+            out.append(c)
+            i += 1
+            continue
+        nxt = text[i + 1]
+        if nxt == 'u' and re.match(r'[0-9a-fA-F]{4}', text[i + 2:i + 6] or ''):
+            out.append(chr(int(text[i + 2:i + 6], 16)))
+            i += 6
+        elif nxt in _JAVA_ESCAPES:
+            out.append(_JAVA_ESCAPES[nxt])
+            i += 2
+        else:
+            out.append(c)          # not an escape we recognise: leave it alone
+            i += 1
+    return ''.join(out)
+
+
+def _captured_raw_observed(fired_msg):
+    """The `actualRaw=` value from a fired message, or None.
+
+    OBSERVED ONLY, deliberately. `expectedRaw=` is the check's own reference
+    value, and for a lifted test that reference is frequently DERIVED from the
+    very literal we are comparing against — so comparing it would match by
+    construction and dismiss every lifted firing. That is the same trap
+    `_observed_numbers` was narrowed to avoid (a shared expected= reference
+    making two different observations compare identical), reached from the
+    string side instead of the numeric one.
+
+    Returns (value, ambiguous). `ambiguous` is True when the value's end could
+    not be established with confidence — see `_ANY_KEY_RE`.
+    """
+    if not fired_msg:
+        return None, False
+    at = fired_msg.find('actualRaw=')
+    if at < 0:
+        return None, False
+    start = at + len('actualRaw=')
+    nxt = _ANY_KEY_RE.search(fired_msg, start)
+    if nxt is None:
+        return fired_msg[start:], False           # runs to the end: clean
+    value = fired_msg[start:nxt.start()]
+    known = nxt.group(1) in _RAW_KEYS
+    return value, not known
+
+
+def raw_value_vs_pinned(fired_msg, trusted_values):
+    """Compare a check's PRE-NORMALIZATION observed value against the literals
+    the failing test pins. Returns "matches" / "differs" / "unknown".
+
+    Exact equality, no tolerance and no trimming. The rounding floor that the
+    numeric comparison rightly applies has no analogue here: these are strings
+    whose differences ARE the finding.
+
+    THE ASYMMETRY THIS IS BUILT AROUND. "matches" is the only verdict that
+    licenses a dismissal, so every uncertainty in this function must resolve
+    away from it:
+
+      * absent key            -> "unknown"  (so the whole comparison is inert on
+                                 any record predating 8.4 — 0 of 228 archived
+                                 rows carry the key, and none can)
+      * mis-captured value    -> cannot be "matches", because "matches" requires
+                                 exact equality and a mis-capture is not equal
+                                 to anything. Over- and under-capture are both
+                                 fail-safe in the dismissal direction.
+      * multi-line raw value  -> "matches" if it exactly equals a pinned literal
+                                 (a real hit is a real hit), otherwise
+                                 "unknown", NOT "differs" — a value that may
+                                 have swallowed a following line does not
+                                 support the positive claim "differs from every
+                                 value the test pins".
+
+    The cost of that asymmetry is missed dismissals, which is the direction the
+    rung should fail in: the population it acts on is findings that would
+    otherwise be kept.
+    """
+    raw, ambiguous = _captured_raw_observed(fired_msg)
+    if raw is None or not trusted_values:
+        return "unknown"
+    pinned = [_decode_java_literal(str(v)) for v in trusted_values]
+    if any(raw == p for p in pinned):
+        return "matches"
+    if ambiguous or '\n' in raw or '\r' in raw:
+        return "unknown"           # capture not trustworthy: claim nothing
+    return "differs"
+
+
 def fired_value_vs_trusted(fired_msg, trusted_values):
     """Mechanically compare the fired message's observed value against the
     values the trigger test itself pins.
@@ -522,7 +654,20 @@ def fired_value_vs_trusted(fired_msg, trusted_values):
       * "unknown"  — no numeric values are extractable on one or both sides.
 
     Numeric only, deliberately — see the NOT SHIPPED note above.
+
+    8.4: when the alarm carries a pre-normalization `actualRaw=` value, the RAW
+    comparison decides and the numeric scrape is not consulted. Precedence, not
+    preference: on a normalizing check the numbers in the message are incidental
+    to formatted text (line numbers, offsets, column markers) and can collide
+    with numbers inside the pinned literal by coincidence — a coincidence that
+    would license a dismissal. The raw comparison asks the rung's actual
+    question against the actual values, exactly. When there is no raw value the
+    behaviour is byte-identical to before, which is why this is inert on every
+    record written before 8.4 shipped.
     """
+    raw_verdict = raw_value_vs_pinned(fired_msg, trusted_values)
+    if raw_verdict != "unknown":
+        return raw_verdict
     fired_nums = _fired_numbers(fired_msg)
     trusted_nums = _trusted_numbers(trusted_values)
     if not fired_nums or not trusted_nums:
