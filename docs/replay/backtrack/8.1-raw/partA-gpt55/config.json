@@ -1,0 +1,9 @@
+{
+  "cases_file": "/home/code/experiments-vuln-patch/tests/fixtures/cases228.jsonl",
+  "n_cases": 228,
+  "repeats": 1,
+  "votes": 1,
+  "model": "gpt-5.5",
+  "no_evidence": false,
+  "no_trusted": false
+}
