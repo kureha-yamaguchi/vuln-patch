@@ -1,0 +1,240 @@
+[
+ {
+  "run": "final30A",
+  "bug": "Chart-19",
+  "grounded": false,
+  "why": "A correct implementation can grow the list to `target` with earlier unset slots still `null`, so after `list.set(target, null)` the documented/implemented `indexOf(null)` may legitimately return the first earlier null slot (for example 0) rather than `target`,",
+  "cite": "if (this.objects[index] == object) {\\n                return (index);\\"
+ },
+ {
+  "run": "final30A",
+  "bug": "Lang-63",
+  "grounded": false,
+  "why": "A correct implementation can format an exact 0-month period as the full ISO extended pattern `P0Y0M0DT0H0M0.000S` rather than the harness\u2019s invented compact form `P0M`, so this check falsely fires on correct behavior. CITATION: \" public static final String ISO",
+  "cite": "    public static final String ISO_EXTENDED_FORMAT_PATTERN = \\\"'P'yyyy"
+ },
+ {
+  "run": "final30A",
+  "bug": "Lang-63",
+  "grounded": false,
+  "why": "`formatPeriod` is a calendar-period API (as shown by the trusted month-based test), so a correct implementation could legitimately compute the UTC interval from `0L` to `durationMillis` using hidden year/month components and then print only requested `d/H/m/s/",
+  "cite": "String result = DurationFormatUtils.formatPeriod(cal.getTime().getTime"
+ },
+ {
+  "run": "final30A",
+  "bug": "Lang-63",
+  "grounded": true,
+  "why": "A correct implementation could legally have `formatPeriod(0L, 31*24*60*60*1000L, \"d\", true, UTC)` format the calendar period between Jan 1 and Feb 1 as a day-field remainder (e.g. `0`) rather than the total elapsed days (`31`), because the shown contract only ",
+  "cite": "     * <p>Formats the time gap as a string, using the specified format"
+ },
+ {
+  "run": "final30A",
+  "bug": "Math-73",
+  "grounded": true,
+  "why": "This finding is pre-existing surface rather than patch-specific evidence, because the exact same endpoint-root-overload-equivalence check also fires on the buggy build while the real failing test concerns only missing IllegalArgumentException on non-bracketing",
+  "cite": "[buggy-replay fact] [fact:fires-on-both-confirmed] [fact:not-compared]"
+ },
+ {
+  "run": "final30A",
+  "bug": "Math-104",
+  "grounded": true,
+  "why": "A correct implementation that computes `regularizedGammaP` and `regularizedGammaQ` with ordinary double-precision numerical error could return the observed finite values at `a=19.219, x=19.219`, whose sum differs from 1 by only about `5.4e-11` and therefore tr",
+  "cite": "double tol = 5e-12;"
+ },
+ {
+  "run": "final30A",
+  "bug": "Math-104",
+  "grounded": true,
+  "why": "A correct implementation of these iterative double-valued methods can legitimately return separately rounded approximations for `P` and `Q` whose sum differs from 1 by about `5.4e-11` at `a=19.219, x=19.219`, so this `5e-12` tolerance is too strict and the obs",
+  "cite": "    private static final double DEFAULT_EPSILON = 10e-9;"
+ },
+ {
+  "run": "final30A",
+  "bug": "Math-104",
+  "grounded": false,
+  "why": "A correct floating-point implementation of these iterative regularized-gamma routines can legitimately complete on valid positive inputs with a tiny rounding overshoot such as `p = 1.0000000000000002` or `q = -2e-16` (especially along the `1.0 - ...` path), an",
+  "cite": "NONE"
+ },
+ {
+  "run": "final30B",
+  "bug": "Chart-19",
+  "grounded": false,
+  "why": "A correct implementation matching the shown `AbstractObjectList` semantics can do `set(8, null)` by expanding the list so slots `0..7` are still `null`, and then `indexOf(null)` correctly returns the first matching null at index 0, exactly as observed. CITATIO",
+  "cite": "        for (int index = 0; index < this.size; index++) {\\n           "
+ },
+ {
+  "run": "final30B",
+  "bug": "Chart-19",
+  "grounded": false,
+  "why": "A correct implementation that grows the list with intervening `null` slots when `set(8, null)` is called will legitimately have `null` at index 0 as well, so `indexOf(null)` can correctly return the first such slot `0` rather than the just-written index `8`, e",
+  "cite": "        for (int index = 0; index < this.size; index++) {\\n           "
+ },
+ {
+  "run": "final30B",
+  "bug": "Chart-19",
+  "grounded": true,
+  "why": "A correct growable ObjectList can legally complete `set(idx, null)` by expanding the list up to `idx` with earlier slots also null, so for any `idx > 0` `indexOf(null)` may correctly return the first such null (for example 0) rather than the just-written posit",
+  "cite": "[fact:rate-indiscriminate] fires on a large share of random valid inpu"
+ },
+ {
+  "run": "final30B",
+  "bug": "Math-104",
+  "grounded": true,
+  "why": "A correct implementation matching the shown API can legitimately make `regularizedGammaP(a, x)` use `DEFAULT_EPSILON = 10e-9` while the harness compares it to `regularizedGammaP(a, x, 10e-15, Integer.MAX_VALUE)`, so for inputs like the observed `a=22.413, x=22",
+  "cite": "    private static final double DEFAULT_EPSILON = 10e-9;"
+ },
+ {
+  "run": "final30B",
+  "bug": "Math-104",
+  "grounded": true,
+  "why": "A correct implementation can legitimately return slightly different `regularizedGammaQ(a,x)` and `regularizedGammaQ(a,x,10e-15,Integer.MAX_VALUE)` values because the 2-arg overload uses the class default epsilon (`10e-9`), so this check falsely fires on ordina",
+  "cite": "    private static final double DEFAULT_EPSILON = 10e-9;"
+ },
+ {
+  "run": "final30B",
+  "bug": "Math-104",
+  "grounded": true,
+  "why": "A correct implementation of this API can return different values here because `regularizedGammaP(a, x)` delegates to the 4-arg overload with `DEFAULT_EPSILON`, and the shown class defines that default as `10e-9` while the fired check compares it against an exp",
+  "cite": "    private static final double DEFAULT_EPSILON = 10e-9;"
+ },
+ {
+  "run": "final30B",
+  "bug": "Math-104",
+  "grounded": true,
+  "why": "A correct implementation that computes the API\u2019s actual mathematical result for `regularizedGammaP(2.0, 1.0, 0.6199698003, 50)`\u2014namely \\(P(2,1)=1-2/e\\), independent of this large epsilon except for convergence control\u2014would complete and still fail this asserti",
+  "cite": "     * Returns the regularized gamma function P(a, x)."
+ },
+ {
+  "run": "final30B",
+  "bug": "Math-104",
+  "grounded": true,
+  "why": "A correct implementation of `regularizedGammaP(2.0, 1.0, 0.6199698003, 50)` may legitimately return the actual regularized gamma value (about 0.264241), not the harness\u2019s invented internal-loop artifact `0.5 / e`, so this assertion would fire on correct code t",
+  "cite": "     * Returns the regularized gamma function P(a, x)."
+ },
+ {
+  "run": "final30B",
+  "bug": "Math-104",
+  "grounded": true,
+  "why": "A correct implementation of these iterative overloads can legitimately complete with `epsilon = 1e-6` and return approximate `P` and `Q` values whose sum differs from 1 by around 1e-6, so this 1e-9 complement check can fire on correct results just as the high ",
+  "cite": "double epsilon = Math.pow(10.0, -data.consumeInt(6, 12));"
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-92",
+  "grounded": true,
+  "why": "A correct implementation could legitimately complete and emit module0 with an optional trailing semicolon (`var apps={};apps.foo={};apps.foo.bar={};`), and this check would still fire because it demands one exact source string with no final `;`, which is exact",
+  "cite": "expected module0=varapps={};apps.foo={};apps.foo.bar={} actual=varapps"
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-92",
+  "grounded": true,
+  "why": "The fired check requires module 0 to match a literal without a trailing semicolon, but a correct implementation can complete and produce the observed `varapps={};apps.foo={};apps.foo.bar={};` with an optional final semicolon, so this exact assertion falsely fl",
+  "cite": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:seed-"
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-92",
+  "grounded": false,
+  "why": "The fired check hard-codes one exact pretty-printed source string, but a correct implementation can complete and produce the same module/provide semantics with an optional trailing final semicolon\u2014exactly the observed `actual=...apps.foo.bar.C={};` versus expe",
+  "cite": "Expected: var apps={};apps.foo={};apps.foo.bar={};apps.foo.bar.B={};ap"
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-92",
+  "grounded": true,
+  "why": "A correct implementation can legitimately pretty-print the same provided namespaces with an extra trailing semicolon, and this exact firing observed only `expected=...apps.foo.bar.C={}` versus `actual=...apps.foo.bar.C={};`, so the assertion mistakes formattin",
+  "cite": "expected=varapps={};apps.foo={};apps.foo.bar={};apps.foo.bar.B={};apps"
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-92",
+  "grounded": true,
+  "why": "The exact same input and exact same observed mismatch fire on the unpatched buggy build too, while the real regression test passes on the patched build, so this assertion is overfitting this harness setup rather than a contract that distinguishes correct from ",
+  "cite": "[buggy-replay fact] [fact:fires-on-both-confirmed] [fact:identical-on-"
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-92",
+  "grounded": true,
+  "why": "On the exact lifted seed `apps` / `apps.foo.bar.B` / `apps.foo.bar.C`, a correct implementation can complete and return `var apps={};apps.foo={};apps.foo.bar={};apps.foo.bar.B={};apps.foo.bar.C={};`, but this check still fires because the harness\u2019s fixed expec",
+  "cite": "var apps = {};apps.foo = {};apps.foo.bar = {}\" + \"apps.foo.bar.B = {};"
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-92",
+  "grounded": true,
+  "why": "A correct implementation could legitimately complete without producing a `VAR` namespace replacement on this harness\u2019s synthetic, miswired internal state\u2014e.g. because the harness sets `explicitNode` to a bare `EXPR_RESULT(NAME)` instead of a real provide call ",
+  "cite": "[fact:rate-indiscriminate] fires on a large share of random valid inpu"
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-38",
+  "grounded": false,
+  "why": "A correct implementation can complete and print the NAME node\u2019s arbitrary string verbatim, so with a fuzzed `varName` like `x--` the output legitimately contains `\"--\"` inside the identifier (`output=x-- - -157553`) even though the subtraction/negative-literal",
+  "cite": "            if (fuzzPrinted.contains(\\\"--\\\")) {"
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-38",
+  "grounded": false,
+  "why": "A correct implementation can complete on this concrete AST with the invalid-but-accepted name string `x--` and print `x-- - -157553`, where the only `\"--\"` comes from the variable name rather than the subtraction/negative-literal boundary, so `fuzzPrinted.cont",
+  "cite": "if (fuzzPrinted.contains(\\\"--\\\")) {"
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-38",
+  "grounded": true,
+  "why": "A correct `CodePrinter` implementation could legally emit semantically equivalent compact code with an optional space here\u2014e.g. print `x- 0` for `x - 0`\u2014because the shown API only promises compact JavaScript output, not the exact canonical literal `x-0`, so th",
+  "cite": "CodePrinter prints out js code in either pretty format or compact form"
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-38",
+  "grounded": true,
+  "why": "A correct compact printer could still complete on this AST and emit a semantically equivalent spaced form such as `1 - 0` (or `1- 0`) because the shown trusted contract only requires a separator for minus followed by a negative numeral, not that all other whit",
+  "cite": "The separator described in CodeConsumer's addNumber comment is specifi"
+ },
+ {
+  "run": "night20c",
+  "bug": "Lang-63",
+  "grounded": false,
+  "why": "A correct implementation can legitimately disagree on formats like `\"HH\"` alone\u2014for example at `durationMillis = DateUtils.MILLIS_PER_DAY`, `formatDuration` may report total elapsed hours (`\"24\"`) while `formatPeriod(0L, durationMillis, \"HH\", pad, UTC)` may re",
+  "cite": "String[] formats = new String[] {\\\"d\\\", \\\"HH\\\", \\\"mm\\\", \\\"ss\\\", \\\"SSS\\"
+ },
+ {
+  "run": "night20c",
+  "bug": "Math-68",
+  "grounded": true,
+  "why": "This fixed-literal RMS check is not a trustworthy bug oracle for the patch because the exact same input and same observed RMS mismatch also occurs on the unpatched build, so this firing is a pre-existing surface rather than evidence about the patch. CITATION: ",
+  "cite": "[buggy-replay fact] [fact:fires-on-both-confirmed] [fact:identical-on-"
+ },
+ {
+  "run": "night20c",
+  "bug": "Math-68",
+  "grounded": true,
+  "why": "The fired check hard-codes that for the specific seed-0 start `{0.5, -2.0}` a successful optimization must return exactly `6.99887517584575` RMS, but the exact same input produces the exact same mismatch on the unpatched buggy build too, so this firing is pre-",
+  "cite": "[buggy-replay fact] [fact:fires-on-both-confirmed] [fact:identical-on-"
+ },
+ {
+  "run": "night20c",
+  "bug": "Math-68",
+  "grounded": true,
+  "why": "A correct Levenberg-Marquardt implementation may legitimately stop at an approximate minimizer under its convergence/max-iteration rules and return a point/value with small but nonzero residual on this exact-fit problem, so this 1e-9 exactness oracle can fire ",
+  "cite": "* @param parRelativeTolerance desired relative error"
+ },
+ {
+  "run": "night20c",
+  "bug": "Math-68",
+  "grounded": true,
+  "why": "A correct iterative Levenberg-Marquardt implementation can legitimately terminate at different approximate results for different valid start points under its convergence checker/tolerances even on this linear problem, because the API shown does not guarantee s",
+  "cite": "[replay comparison fact] this relation fired on 1% of fuzzed inputs on"
+ },
+ {
+  "run": "night20c",
+  "bug": "Math-68",
+  "grounded": true,
+  "why": "The patched build itself is a surviving counterexample: it completes this harness and fires, yet \u201cthe REAL failing test was rerun here and PASSES,\u201d so a correct implementation for the trusted Jennrich-Sampson scenario can still violate this harness because the",
+  "cite": "[trigger-tier fact] this rule fires on the failing test's OWN input li"
+ }
+]
