@@ -1,0 +1,639 @@
+[
+ {
+  "roll": "final30A",
+  "bug": "Math-65",
+  "population": "false-accusation",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-65",
+  "population": "false-accusation",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-65",
+  "population": "false-accusation",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-65",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-2",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-82",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-82",
+  "population": "genuine-catch",
+  "tier": "1 failing-test pins",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-82",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Closure-62",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Closure-62",
+  "population": "false-accusation",
+  "tier": "1 failing-test pins",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Chart-26",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Chart-7",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Chart-7",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Chart-7",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Chart-7",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Chart-7",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Lang-50",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Lang-50",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Lang-50",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Lang-50",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-68",
+  "population": "genuine-catch",
+  "tier": "1 failing-test pins",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-68",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Lang-60",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-74",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-74",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-74",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-74",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-39",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-39",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-39",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-39",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Closure-92",
+  "population": "genuine-catch",
+  "tier": "1 failing-test pins",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Closure-92",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Lang-41",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": true
+ },
+ {
+  "roll": "final30A",
+  "bug": "Lang-41",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Lang-41",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Lang-41",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-30",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-30",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30A",
+  "bug": "Math-30",
+  "population": "false-accusation",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-73",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-73",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-65",
+  "population": "false-accusation",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-2",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-2",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-60",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-60",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Closure-62",
+  "population": "false-accusation",
+  "tier": "1 failing-test pins",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Closure-62",
+  "population": "false-accusation",
+  "tier": "1 failing-test pins",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Chart-26",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Chart-7",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Chart-7",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": true
+ },
+ {
+  "roll": "final30B",
+  "bug": "Chart-7",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Chart-7",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Chart-7",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-50",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-50",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-50",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-50",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-50",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-50",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-50",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-68",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-68",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-68",
+  "population": "genuine-catch",
+  "tier": "1 failing-test pins",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-73",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Closure-38",
+  "population": "genuine-catch",
+  "tier": "1 failing-test pins",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Closure-38",
+  "population": "genuine-catch",
+  "tier": "1 failing-test pins",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-74",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-74",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-74",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-74",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-74",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Closure-92",
+  "population": "genuine-catch",
+  "tier": "1 failing-test pins",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Closure-92",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Closure-92",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Closure-92",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": true
+ },
+ {
+  "roll": "final30B",
+  "bug": "Closure-92",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-41",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-41",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": true
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-41",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": true
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-41",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-41",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-41",
+  "population": "genuine-catch",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-63",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-63",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-63",
+  "population": "genuine-catch",
+  "tier": "1 failing-test pins",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Lang-63",
+  "population": "genuine-catch",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-30",
+  "population": "false-accusation",
+  "tier": "3 documentation",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-30",
+  "population": "false-accusation",
+  "tier": "4 model memory / unattributed",
+  "cited": false
+ },
+ {
+  "roll": "final30B",
+  "bug": "Math-30",
+  "population": "false-accusation",
+  "tier": "3 documentation",
+  "cited": false
+ }
+]
