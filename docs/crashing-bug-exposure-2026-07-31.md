@@ -154,17 +154,29 @@ Stated positively, so a reader knows where *not* to look.
 |---|---|
 | Relation synthesis, screening, patched-side replay | Never executes (gated). Confirmed live. |
 | Lifted-assertion oracle and its note | Gated; needs an `assertEquals` expected value a crash-shaped test does not provide. |
-| Identical-drop ladder, `family_duty()` | Gated `bug_kind != 'crashing'`. |
+| Identical-drop ladder in `run.py` | Gated `bug_kind != 'crashing'`. **But see the correction below this table** — the gates inside `adjudicate()` are a different code path and are NOT gated. |
 | Mined sibling-test oracles | Gated *and* off by default. |
 | `classify_differential_replay()` | Gated — see §2. |
-| Fire-rate facts and the intrinsic-rate drop | Their inputs are relation-screening statistics, never produced for a crashing leg. (An argument, not an assertion — pin it, §5.) |
+| Fire-rate facts and the intrinsic-rate drop (6B) | Their inputs are relation-screening statistics, never produced for a crashing leg. **PINNED 2026-08-01 (8.12a):** with no rate block 6B is inert and never consults family-duty ✓. |
 | Judge prompt-shaping: citation lint, pinned-parameter re-ask, disputed-computation fact | Only reachable from a judge call on a fired alarm; the crash-reproduction path is decided mechanically before any LLM call. |
 | Cycle-5/6/7 fixture work — `cases228.jsonl`, the 67-catch guard set, `verifier_replay` | Offline artefacts; they never execute in a pipeline run of either kind. |
 
-**Practical reading:** if a crashing result looks wrong, the semantic machinery is not
-where to look. Look at harness generation and acceptance, the buggy-side replay, the
-defect-family dismissal, and whether a legitimate escaping exception was scored as a
-finding.
+**Correction (2026-08-01, from the 8.12(a) pins — trust the code):** the
+`adjudicate()` gates in `judge_decision.py` carry **no `bug_kind` reference**, and
+the semantic guard in `run.py` does not enclose either `adjudicate()` call site —
+crash legs DO reach the 6B/6C gates. The polarity inverts there: fires-on-both is
+the semantic indiscriminate-drop condition but the crashing CATCH condition (§2).
+Pinned behaviour on a crash-shaped identical-exception note: 6C with family-duty NO
+drops the crash catch; duty YES spares it; duty error fails open ✓; 6B without a
+rate block is inert ✓ (and would drop if a rate block ever appeared). **Crash-catch
+safety therefore rests entirely on family-duty answering YES on crash legs — a
+judge answer, not a guarantee.** The §5 rerun must read the 6C/duty events per leg.
+
+**Practical reading:** if a crashing result looks wrong, the semantic machinery is
+mostly not where to look — with one exception now confirmed real: the `adjudicate()`
+gates. Look at harness generation and acceptance, the buggy-side replay, the
+defect-family dismissal, the 6C/family-duty events, and whether a legitimate
+escaping exception was scored as a finding.
 
 ---
 

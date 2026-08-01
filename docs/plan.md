@@ -249,7 +249,11 @@ category before it ships.
     assert placed before CASES was sourced (8.8, caught pre-ship). Every one dies
     to the same one-line check: assert the input population is non-empty and
     well-formed before trusting any pass. Applied prospectively to 8.12(b)'s
-    recovered-corpus check the same day it was promoted (2026-08-01).
+    recovered-corpus check the same day it was promoted (2026-08-01). Caught its
+    next instance within hours: an 8.12(a) test stub declared `family_duty(**kw)`
+    against a positional call — every invocation threw, took the fail-open path,
+    and three tests passed while testing nothing; found by checking assertion
+    directions, not pass counts.
 
 ## CURRENT STATE (2026-07-31)
 
@@ -559,6 +563,17 @@ result — 14 legs, ~7 points per leg, so aggregates mislead. Note the crashing 
 largely uncertified, so weak per-leg differences are not evidence.
 **Gate:** (a) and (b) before the cycle-8 batch closes; (c) before the next full 30-leg
 pair is described as the pipeline's official state.
+**8.12(a) outcome (9ef2ec9 — DONE 2026-08-01): risk 3 upgraded from "unobserved"
+to CONFIRMED REAL.** `judge_decision.py` has no `bug_kind` reference and the
+semantic guard does not enclose either `adjudicate()` call site — crash legs reach
+the 6B/6C gates, where the polarity inverts (fires-on-both = semantic drop
+condition = crashing CATCH condition). Pinned: 6C duty-NO drops a crash catch,
+duty-YES spares, duty-error fails open ✓; 6B inert without a rate block ✓, drops
+with one. Crash-catch safety rests entirely on family-duty answering YES — a judge
+answer, not a guarantee; now documented, and the exposure doc corrected. 8.12(c)'s
+per-leg rerun must read the 6C/duty events on every crash leg.
+`repair_rethrow_without_cause` withdrawn as a risk BY TEST (attaches the cause,
+never strips one). 573 passed, 7 skipped.
 
 ### 8.13 Split the `not-applicable` gate bucket — small, ships with next build
 **Target:** the trace events around `indiscriminate_buggy_rate()` / the 6B/6C gate
