@@ -128,16 +128,25 @@ def ask(gen, case):
 
 
 def main():
+    # 8.1 part B re-runs this EXACT question under a different judge model.
+    # Model and output path are argv-configurable so the re-run cannot
+    # overwrite the incumbent's recorded results; the question, the populations
+    # and the grounding check are untouched by design ("do NOT reword").
+    model = sys.argv[1] if len(sys.argv) > 1 else None
+    out_path = (sys.argv[2] if len(sys.argv) > 2
+                else 'docs/replay/backtrack/engagement_results.json')
     cases = collect()
     print(f"collected {len(cases)} kept-alarm cases "
           f"({sum(1 for c in cases if c['population']=='false-accusation')} "
           f"false-accusation / "
           f"{sum(1 for c in cases if c['population']=='guard')} guard)",
           flush=True)
-    gen = HarnessGenerator(temperature=0.0, top_p=1.0)
+    print(f"model: {model or 'config-default'} -> {out_path}", flush=True)
+    gen = (HarnessGenerator(model=model, temperature=0.0, top_p=1.0)
+           if model else HarnessGenerator(temperature=0.0, top_p=1.0))
     with ThreadPoolExecutor(max_workers=6) as ex:
         results = list(ex.map(lambda c: ask(gen, c), cases))
-    with open('docs/replay/backtrack/engagement_results.json', 'w') as f:
+    with open(out_path, 'w') as f:
         json.dump(results, f, indent=1)
 
     def tally(pop):
