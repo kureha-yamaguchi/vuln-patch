@@ -558,7 +558,26 @@ REAL archived compliant harness (silent as generated, objects when its Raw keys
 are stripped — the population-that-can-fire corollary). Remaining: the
 raw-vs-pinned comparison, shipping at best as observably-inert-on-old-data plus
 mechanism-correct-on-new-data — neither is a safety claim; the real guard is the
-next full suite read per-event.**
+next full suite read per-event.
+→ **8.4 COMPLETE (4fa3d03, 2026-08-01): prompt · gate 0c2 · comparison. 610
+passed, 7 skipped.** Measured exactly as pre-scoped: claim 1, zero verdict
+changes across all 333 archived rows (cases228 + 38 dismissals + 67 catches; 0
+rows carry actualRaw=, inert by construction); claim 2, mechanism-correct on the
+smoke's 5 real alarms — where it found a LATENT FALSE DISMISSAL: two alarms move
+matches→differs because the numeric comparator's rounding floor called the
+message's -0.0 a match for the 0 inside pinned `x- -0`, while the raw strings
+differ by exactly Closure-38's separator-space defect. A coincidence of digits
+stood ready to void a genuine catch. Limit checked, not assumed: zero lift notes
+reached that leg's judge, so no dismissal was actually lost — latent, closed,
+not inflated. This closes cycle-1's FIRST recorded residual
+("fired_value_vs_trusted can false-match"), observed live for the first time.
+Parser hardening from real alarms: trailing metadata keys after the raw pair
+would have been captured into the value by a spec-derived parser (synthetic
+tests would all have passed); an unknown stop key now marks the capture DOUBTFUL
+rather than trusted — ambiguity degrades confidence, never resolves silently.
+**BATCH ASSEMBLED: 8.4 (all three parts) + 8.7 + 8.8 + 8.12(a) pins, one build.
+Status: observably-inert-on-old-data + mechanism-correct-on-new-data; the real
+guard is the next live suite read per-event.**
 
 ### 8.5 Relation-budget experiment (-m 12 vs -m 16) — cheap, anytime (~1M)
 **Target:** the `-m` relation-synthesis cap in suite COMMON flags.
@@ -978,6 +997,12 @@ confirming 8.4 is aimed at the actual gap. Origin of standing rule 16.
 Then the extractor extension measured ALONE on cases228: no verdict may flip
 except via newly-possible legitimate matches; Closure-62's rows are the named
 target (today all `unknown`; success = any move to `matches`/`differs`).
+*RUNG 3 COMPLETE (2026-08-01):* 8.4 done in three parts (see item) — 100%
+compliance (after striking a truncation-artifact 38%), gate 0c2 wired and
+pinned, comparison measured under pre-scoped claims (333 archived rows, 0
+changes; latent false dismissal found and closed on new data). Batch
+assembled: 8.4 + 8.7 + 8.8 + 8.12(a). The board holds one card: 8.1 on the
+user's phrase.
 
 **RUNG 4 — paid experiments, cheapest information per token first.**
 1. 8.1 judge swap + REQUIRED noise floor (~2–3M total; launches only on the
