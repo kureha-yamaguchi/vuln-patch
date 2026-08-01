@@ -224,7 +224,11 @@ category before it ships.
 7. **Raw results committed before interpretation. Verbatim numbers from bare pytest.
    Populations verified against fixtures, never narrated from memory.**
 8. **Record raw, compare processed.** Comparison transforms must not destroy the
-   original value (the whitespace lesson; cycle-8 item 8.4 implements it).
+   original value (the whitespace lesson; cycle-8 item 8.4 implements it). Same
+   principle for MEASUREMENT inputs (2026-08-01): a truncated record is a display
+   transform of the original — measuring over it deflates counts for late-message
+   content (the struck 38% compliance figure). Tools reading records must refuse
+   to answer on truncation, never undercount; measure at source where possible.
 9. **Vocabulary that can't be read backwards.** gold = keep-finding / dismiss-finding.
    Fixture access via field() raises MissingField — never .get() on fixtures.
 10. **Every mechanism decision emits a trace event.** Print-only diagnostics are
@@ -512,24 +516,28 @@ rung's verdict surface is trusted. Until then the comparison ships as
 observably-inert-on-old-data — a regression claim, never a safety one. cases228
 regression only. Honest expectation unchanged: this makes a dead rung LIVE; it
 promises no verdict movement.
-**Compliance smoke result (c84_20260801_174840 — 2026-08-01): mechanism PROVEN,
-compliance FAILED.** Among 25 real fired alarms (first count was contaminated by
-prompt/template text — caught, same family as the verdict-template inflation):
-5 compliant / 8 normalized-without-raw / 1 raw-only / 11 non-normalizing =
-**38% among eligible — not buildable.** But one alarm proved the whole thesis
-live: `expectedNormalized=x--0.0 actualNormalized=x--0.0` identical while
-`expectedRaw=x- -0.0 actualRaw=x--0.0` differ — the raw record preserved exactly
-the Closure-38 separator-space defect that normalization erased.
-**Iteration 2 authorized (2026-08-01), MECHANIZED per the meta-rule (instructions
-lose to mechanisms):** (a) Raw keys become part of the REQUIRED message format —
-omission is malformed, not optional; (b) an acceptance-side lint enforces it
-mechanically — `*Normalized=` without matching `*Raw=` (and the inverse) is
-detectable from key names alone, the alarm-ID gate's pattern; validate the lint
-OFFLINE on the smoke's 25 archived alarms first (8 violations + 1 raw-only are
-its test population). With enforcement, absence-of-Raw is trustworthy by
-construction. **Bar: ≥90% compliance among eligible in ONE re-smoke; below it,
-8.4 PARKS until after 8.1 (park condition: this result + the bar). Measurement
-rule 7 applies — no third iteration on this evidence.**
+**Compliance smoke result (c84_20260801_174840 — 2026-08-01, CORRECTED same
+day): mechanism PROVEN, compliance 100%.** A first read reported 38% — STRUCK: it
+was a truncation artifact. 12 of 24 fired-alarm records are visibly truncated
+(ending in …), and the count read the alarm's RECORD instead of the alarm itself,
+scoring any alarm whose Raw keys fell past the truncation point as
+non-compliant. Measured at source level, which truncation cannot affect: 46 of 46
+alarms reporting a Normalized value also report both Raw keys; the acceptance
+lint agrees independently (0 violations across all 18 recovered harnesses, 0
+false flags). The thesis demonstration stands: `expectedNormalized=x--0.0
+actualNormalized=x--0.0` identical while `expectedRaw=x- -0.0 actualRaw=x--0.0`
+differ — the raw record preserved exactly the Closure-38 separator-space defect
+normalization erased.
+**Iteration-2 authorization WITHDRAWN UNUSED** (no re-smoke, no ~400k). The lint
+still ships — not to fix compliance but so absence-of-Raw is trustworthy BY
+CONSTRUCTION for the extractor's three-state read, independent of any one roll's
+rate. Remaining 8.4 work: the raw-vs-pinned comparison (claims stay scoped per
+population as above). Correction carried forward: any measurement over
+fired-alarm RECORDS is unreliable for late-message content — the record is a
+truncated copy, the inverse of the four contamination inflations;
+`count_in_fired_alarms_only` gains a truncation guard that REFUSES to answer on
+ellipsis-terminated records rather than undercounting (rule 8's principle: a
+display transform must not silently stand in for the original).
 
 ### 8.5 Relation-budget experiment (-m 12 vs -m 16) — cheap, anytime (~1M)
 **Target:** the `-m` relation-synthesis cap in suite COMMON flags.
