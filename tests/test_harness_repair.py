@@ -254,3 +254,38 @@ def test_an_alarm_named_through_a_variable_is_left_alone():
     }}"""
     assert repair_missing_alarm_id(src) == src
     assert 'unnamed-check' not in repair_missing_alarm_id(src)
+
+
+# --- 8.7: acceptance records whether the harness came from a repair --------
+
+def test_acceptance_event_records_repair_provenance():
+    """Turns three greps into one lookup.
+
+    Attributing Chart-19's catch in the cycle-7 pricing pair required
+    cross-referencing repair events against patched-fuzz attempt tags by hand.
+    The acceptance record now carries it directly."""
+    import inspect
+    from java.harness import campaign
+    src = inspect.getsource(campaign.HarnessCampaign.run)
+    acc = src[src.find("# --- accepted ---"):]
+    assert "'from_repaired_attempt'" in acc
+    assert "'repairs_applied'" in acc
+    assert 'FROM REPAIRED ATTEMPT' in acc
+
+
+def test_repaired_attempts_map_is_run_local():
+    """Nothing crosses runs — the standing no-pooling rule."""
+    import inspect
+    from java.harness import campaign
+    src = inspect.getsource(campaign.HarnessCampaign.run)
+    assert '_repaired_attempts: dict = {}' in src, \
+        'the map must be initialised inside run(), not on the instance'
+
+
+def test_acceptance_notes_the_repaired_source_is_reconstructable():
+    """The transform is deterministic over the recorded pre-repair output, so
+    the trace need not store the repaired source twice."""
+    import inspect
+    from java.harness import campaign
+    src = inspect.getsource(campaign.HarnessCampaign.run)
+    assert "'repaired_source_reconstructable': True" in src

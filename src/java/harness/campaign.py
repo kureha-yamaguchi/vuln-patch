@@ -411,6 +411,9 @@ class HarnessCampaign:
         # configured.
         escalated = self.escalation_generator is None or self.escalate_after <= 0
         attempts_at_last_accept = 0
+        # 8.7: attempt_label -> the repairs applied to it, for acceptance
+        # attribution. Run-local; nothing crosses runs.
+        _repaired_attempts: dict = {}
 
         while (result.achieved_successes < self.target_successes
                and result.attempts < self.max_attempts
@@ -491,6 +494,10 @@ class HarnessCampaign:
                 _repaired, _applied, _remaining = source, [], []
             if _applied and _repaired != source:
                 source = _repaired
+                # 8.7: remember it, so ACCEPTANCE can say so directly. Without
+                # this, attributing a catch to repair took attempt-tag
+                # archaeology across three greps (the cycle-7 pricing analysis).
+                _repaired_attempts[attempt_label] = list(_applied)
                 print(f"  [harness-repair] applied {_applied}"
                       + (f"; still failing {_remaining}" if _remaining else ""))
                 record_event(
@@ -851,9 +858,20 @@ class HarnessCampaign:
             result.successful_results.append(build)
             result.achieved_successes += 1
             attempts_at_last_accept = result.attempts
+            _rep_for_this = _repaired_attempts.get(attempt_label)
             record_event('deterministic', method='harness-attempt',
                          target=attempt_label,
-                         output='ACCEPTED (compiles + crashes the buggy build)',
+                         output=('ACCEPTED (compiles + crashes the buggy build)'
+                                 + (' [FROM REPAIRED ATTEMPT: '
+                                    + ', '.join(_rep_for_this) + ']'
+                                    if _rep_for_this else '')),
+                         detail={'from_repaired_attempt': bool(_rep_for_this),
+                                 'repairs_applied': _rep_for_this or [],
+                                 # The transform is deterministic over the
+                                 # recorded pre-repair generation output, so the
+                                 # repaired source is reconstructable from the
+                                 # trace without storing it twice.
+                                 'repaired_source_reconstructable': True},
                          trigger=(exception_headline(
                              verification.stdout + '\n' + verification.stderr)
                              if verification else ''))
