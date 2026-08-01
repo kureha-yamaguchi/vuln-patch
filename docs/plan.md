@@ -257,6 +257,15 @@ category before it ships.
     against a positional call — every invocation threw, took the fail-open path,
     and three tests passed while testing nothing; found by checking assertion
     directions, not pass counts.
+16. **A zero-delta criterion is only meaningful against a baseline differing by
+    exactly the change under test.** Otherwise it measures accumulated drift and
+    reports it as regression — the mirror of rule 15: there a check passes while
+    testing nothing, here one fails while testing something else. Corollary of
+    rule 3 (measurements expire) applied to GATE CRITERIA: before writing "zero
+    changes vs baseline X", verify X differs from the build under test by only
+    the change the gate exists to check. Origin: the rung-2 smoke's criterion 4
+    (2026-08-01) — its baseline predated three verdict-affecting cycle-7 commits,
+    and Closure-62's flip was drift inside the measured 27%, not a rung-2 defect.
 
 ## CURRENT STATE (2026-07-31)
 
@@ -871,6 +880,19 @@ claims no more than that. The smoke tests three things: the repair marker
 live on a repaired-accepted harness; the five-state rate split observed on
 the LIVE path; zero verdict changes vs the smoke7 baseline (Closure-62 TN,
 Math-65 FP). Authorized 2026-08-01.
+**RUNG 2 CLOSED (0768e86, 2026-08-01): passes on the two live criteria.**
+Repair marker live at first exercise (7 markers, 10 detail fields; includes
+boolean-swallow's FIRST live firing after offline-only validation). Rate
+states live (4 distinct states in 2 legs; the 2 absent are defensive
+branches). Criterion 1 offline-verified as pre-narrowed. Criterion 4
+WITHDRAWN as ill-posed: the smoke7 baseline (f307dd9) differs from this
+build by THREE verdict-affecting changes, so "zero verdict changes" measured
+accumulated drift, not the rung — Closure-62's TN→FP sits at 3 FP / 2 TN
+across five observations, inside the 27% variance, with the concatenation
+fold confirmed active (5 TRUSTED blocks vs 0 in smoke7). Bonus confirmation:
+the fold delivers trusted values yet reaches ZERO dismissals — the fired
+value is normalized and cannot match the raw literal — independently
+confirming 8.4 is aimed at the actual gap. Origin of standing rule 16.
 
 **RUNG 3 — the one licensed precision fix (small code + one prompt rule).**
 8.4 raw-value recording (compare normalized, RECORD raw; ~17% of harnesses).
