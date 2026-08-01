@@ -1,0 +1,508 @@
+{
+ "final30A/Chart-19": [
+  {
+   "name": "objectlist-indexof-null-roundtrip",
+   "contract": "AbstractObjectList documents that get(index) returns \"the object at the specified index\" and indexOf(object) returns \"the index of the specified object, or -1 if the obje"
+  },
+  {
+   "name": "objectlist-indexof-does-not-mutate-state",
+   "contract": "indexOf is documented only as a lookup (\"Returns the index of the specified object, or -1 if the object is not in the list.\") and therefore must not change the list's obs"
+  },
+  {
+   "name": "objectlist-clone-is-shallow-and-equal",
+   "contract": "AbstractObjectList states: \"Clones the list of objects. The objects in the list are not cloned, so this method makes a 'shallow' copy of the list.\" Therefore the clone mu"
+  },
+  {
+   "name": "categoryaxis-constructor-defaults",
+   "contract": "The visible constructor for CategoryAxis initializes documented defaults: lowerMargin and upperMargin to DEFAULT_AXIS_MARGIN, categoryMargin to DEFAULT_CATEGORY_MARGIN, m"
+  },
+  {
+   "name": "numberaxis-constructor-defaults",
+   "contract": "The visible NumberAxis constructor initializes documented defaults: autoRangeIncludesZero to DEFAULT_AUTO_RANGE_INCLUDES_ZERO, autoRangeStickyZero to DEFAULT_AUTO_RANGE_S"
+  },
+  {
+   "name": "categoryplot-range-axis-index-roundtrip",
+   "contract": "The failing test fixes the intended observable behavior of CategoryPlot: the constructor-installed range axis has index 0, a newly set range axis at slot k is found at k,"
+  },
+  {
+   "name": "objectlist-null-indexof-finds-first-null-slot",
+   "contract": "AbstractObjectList.indexOf(Object) is documented to return the index of the specified object, or -1 if the object is not in the list; since set(int, Object) explicitly pe"
+  },
+  {
+   "name": "objectlist-clone-preserves-indexof",
+   "contract": "AbstractObjectList.clone() is documented as a shallow copy of the list of object references, so any lookup by indexOf(Object) for the same object reference must give the "
+  },
+  {
+   "name": "objectlist-indexof-is-read-only",
+   "contract": "indexOf(Object) is a query ('Returns the index...') and therefore must not mutate list state; a read-only call must leave size() and hashCode() unchanged."
+  },
+  {
+   "name": "categoryplot-setrangeaxis-roundtrip-index",
+   "contract": "The failing test establishes the required behavior of CategoryPlot.getRangeAxisIndex with setRangeAxis: the axis installed at slot k must be reported at index k, and the "
+  },
+  {
+   "name": "categoryplot-distinct-axis-not-found-even-same-label",
+   "contract": "The failing test fixes CategoryPlot.getRangeAxisIndex behavior for a distinct NumberAxis instance with the same label as an installed axis: it must return -1 for the dist"
+  },
+  {
+   "name": "numberaxis-constructor-default-flags",
+   "contract": "NumberAxis(String) visibly initializes autoRangeIncludesZero to DEFAULT_AUTO_RANGE_INCLUDES_ZERO, autoRangeStickyZero to DEFAULT_AUTO_RANGE_STICKY_ZERO, numberFormatOverr"
+  },
+  {
+   "name": "objectlist_null_stored_index",
+   "contract": "AbstractObjectList#set permits null (\"object (<code>null</code> permitted)\") and AbstractObjectList#indexOf \"Returns the index of the specified object, or -1 if the objec"
+  },
+  {
+   "name": "objectlist_absent_object_is_minus_one",
+   "contract": "AbstractObjectList#indexOf \"Returns the index of the specified object, or -1 if the object is not in the list.\""
+  },
+  {
+   "name": "objectlist_set_get_index_agree",
+   "contract": "AbstractObjectList#get returns \"the object at the specified index, if there is one\"; set stores an object at an index; indexOf returns the index of the specified object w"
+  },
+  {
+   "name": "objectlist_indexof_is_non_mutating",
+   "contract": "indexOf is a read-only query (\"Returns the index...\"); calling it must not mutate observable list state. The observable state available here is size() and hashCode()."
+  },
+  {
+   "name": "categoryplot_installed_range_axis_index",
+   "contract": "A range axis installed into a CategoryPlot at a given slot must be found at that slot by getRangeAxisIndex; this is the observable lookup behavior exercised by the truste"
+  },
+  {
+   "name": "categoryplot_uninstalled_axis_is_minus_one",
+   "contract": "For CategoryPlot's range-axis lookup, an axis object that is not installed in the plot must not be reported as present; the trusted failing test fixes this observable as "
+  }
+ ],
+ "final30A/Closure-38": [
+  {
+   "name": "minus-negative-zero-needs-separator",
+   "contract": "CodeConsumer.addNumber explicitly states it must prevent misparsing of `x- -4` as `x--4` when the previous emitted character is `'-'`; the failing test further pins that "
+  },
+  {
+   "name": "minus-negative-integer-never-forms-decrement-token",
+   "contract": "The visible comment on CodeConsumer.addNumber says the printer must insert separation after a preceding `'-'` to avoid misparsing a subtraction of a negative literal as `"
+  },
+  {
+   "name": "line-threshold-does-not-affect-short-minus-negative-zero",
+   "contract": "CodePrinter documents `lineLengthThreshold` as the length after which it may force a newline when possible. For a very short one-line compact output below both thresholds"
+  },
+  {
+   "name": "negative-zero-and-negative-one-share-required-separator-shape",
+   "contract": "From the same anti-misparse rule in CodeConsumer.addNumber, whenever a negative number literal is printed immediately after a binary minus, the emitted code must include "
+  },
+  {
+   "name": "sub_negative_zero_keeps_separator_space",
+   "contract": "CodeConsumer.addNumber states it must prevent misparsing of `x- -4` as `x--4` when a number is emitted after a previous `-`; the failing test fixes the required observabl"
+  },
+  {
+   "name": "sub_negative_integer_keeps_separator_space",
+   "contract": "CodeConsumer.addNumber documents that when a negative number is emitted after a previous `-`, a space is required to avoid misparsing `x- -4` as `x--4`."
+  },
+  {
+   "name": "printed_length_matches_estimated_cost_for_negative_zero_subtraction",
+   "contract": "InlineCostEstimator `getCost(Node root)` is documented to determine the size of the JS code for the node, while CodePrinter builds that JS code; therefore for the same AS"
+  },
+  {
+   "name": "printed_length_matches_estimated_cost_for_negative_integer_subtraction",
+   "contract": "InlineCostEstimator is documented to determine the size of the JS snippet represented by a node; that size must agree with the compact source emitted by CodePrinter for t"
+  }
+ ],
+ "final30A/Lang-63": [
+  {
+   "name": "period_months_dec31_to_oct6_next_year_is_09",
+   "contract": "In DurationFormatUtils, pattern token 'M' denotes the months element of the formatted time gap; for formatPeriod(startMillis, endMillis, \"MM\"), a correct implementation m"
+  },
+  {
+   "name": "formatPeriod_overloads_agree_on_default_timezone_and_padding",
+   "contract": "The same-name overloads formatPeriod(long,long,String) and formatPeriod(long,long,String,boolean,TimeZone) are documented to agree where their docs match; the 3-argument "
+  },
+  {
+   "name": "formatDuration_overloads_agree_when_pad_true",
+   "contract": "The same-name overloads formatDuration(long,String) and formatDuration(long,String,boolean) are documented to agree where their docs match; the 2-argument form pads with "
+  },
+  {
+   "name": "duration_and_period_agree_for_days_and_lower_in_utc",
+   "contract": "formatDuration and formatPeriod are both documented to format using the days and lower fields of the format pattern; therefore, for patterns containing only d/H/m/s/S, fo"
+  },
+  {
+   "name": "zero_length_period_has_zero_months",
+   "contract": "Pattern token 'M' denotes the months element of the formatted time gap, and the 3-argument formatPeriod overload pads with zeros; therefore a zero-length gap formatted as"
+  },
+  {
+   "name": "formatPeriod_MM_jiraLang281_example",
+   "contract": "The pattern language defines 'M' as the months duration element, and the failing test pins the correct observable for this valid input: formatPeriod on 2005-12-31 00:00:0"
+  },
+  {
+   "name": "formatPeriod_overloads_agree_default_timezone",
+   "contract": "The 3-argument formatPeriod overload formats using the specified format with optional zero padding omitted; the 5-argument overload adds explicit padWithZeros and timezon"
+  },
+  {
+   "name": "formatDuration_overloads_agree_pad_true",
+   "contract": "The 2-argument formatDuration overload is documented as formatting using the specified format and padding with zeros; therefore it must agree with the 3-argument overload"
+  },
+  {
+   "name": "formatDurationISO_starts_with_P",
+   "contract": "formatDurationISO is documented to use the ISO8601 period format, with examples such as P7D6TH5M4.321S; thus every successful result must begin with the ISO period introd"
+  },
+  {
+   "name": "formatPeriodISO_starts_with_P",
+   "contract": "formatPeriodISO is documented to use the ISO8601 period format; therefore every successful result must begin with 'P'."
+  },
+  {
+   "name": "DateUtils_isSameInstant_reflexive_on_Date",
+   "contract": "DateUtils.isSameInstant(Date, Date) is documented to compare the long millisecond time of the two objects; comparing a Date to itself must therefore return true."
+  }
+ ],
+ "final30A/Math-73": [
+  {
+   "name": "positive-initial-agrees-with-bracketing-overload",
+   "contract": "The 4-argument solver finds a zero in the given interval with an initial guess; the 2-argument solver finds a zero in the given interval. For a valid interval where the i"
+  },
+  {
+   "name": "same-sign-three-points-must-throw",
+   "contract": "The javadoc for solve(UnivariateRealFunction, double, double, double) states: 'Throws IllegalArgumentException if the values of the function at the three points have the "
+  },
+  {
+   "name": "deprecated-and-explicit-initial-overloads-agree-on-rejection",
+   "contract": "The deprecated solve(double min, double max, double initial) delegates to solve(f, min, max, initial). For equivalent inputs, these same-name overloads must exhibit the s"
+  },
+  {
+   "name": "same-sign-endpoints-must-throw-two-arg",
+   "contract": "The javadoc for solve(UnivariateRealFunction, double, double) states: 'Requires that the values of the function at the endpoints have opposite signs. An IllegalArgumentEx"
+  },
+  {
+   "name": "two-arg-solution-stays-inside-interval",
+   "contract": "UnivariateRealSolver implementations 'will search for only one zero in the given interval'; the returned value is 'the value where the function is zero'. For a correct im"
+  },
+  {
+   "name": "positiveInitialAcceptedWhenItBracketsWithMin",
+   "contract": "For solve(UnivariateRealFunction f, double min, double max, double initial): it throws IllegalArgumentException only if the values of the function at the three points hav"
+  },
+  {
+   "name": "threeArgRejectsSameSignTriple",
+   "contract": "The 4-argument solve method documents: Throws IllegalArgumentException if the values of the function at the three points have the same sign."
+  },
+  {
+   "name": "twoArgRejectsNonBracketingEndpoints",
+   "contract": "The 2-argument solve method documents: Requires that the values of the function at the endpoints have opposite signs; an IllegalArgumentException is thrown if this is not"
+  },
+  {
+   "name": "deprecatedStoredFunctionOverloadAgrees4Arg",
+   "contract": "The same-name overloads solve(double min, double max, double initial) and solve(UnivariateRealFunction f, double min, double max, double initial) are documented siblings "
+  },
+  {
+   "name": "deprecatedStoredFunctionOverloadAgrees2Arg",
+   "contract": "The same-name overloads solve(double min, double max) and solve(UnivariateRealFunction f, double min, double max) are documented siblings for the same operation; with the"
+  },
+  {
+   "name": "getResultMatchesReturnedRoot",
+   "contract": "UnivariateRealSolverImpl stores 'the last computed root' in result, and getResult() returns the last computed root after a successful solve."
+  }
+ ],
+ "final30B/Lang-60": [
+  {
+   "name": "contains-char-ignores-deleted-tail",
+   "contract": "StrBuilder.contains(char) checks whether the builder contains the specified char; only the builder's current contents count, not unused buffer capacity."
+  },
+  {
+   "name": "contains-char-agrees-with-indexof-char",
+   "contract": "For a character search on the same builder, contains(char) and indexOf(char) express the same presence test: contains is true exactly when indexOf is not -1. The failing "
+  },
+  {
+   "name": "contains-char-agrees-with-one-char-string",
+   "contract": "The overloads contains(char) and contains(String) are documented as sibling searches over the same builder contents; for a one-character string, they must report the same"
+  },
+  {
+   "name": "contains-char-agrees-with-char-matcher",
+   "contract": "The overloads contains(char) and contains(StrMatcher) are documented as sibling searches; with StrMatcher.charMatcher(ch), they must report the same presence of that char"
+  },
+  {
+   "name": "size-equals-length",
+   "contract": "StrBuilder.size() is documented as the same as length()."
+  },
+  {
+   "name": "isempty-matches-zero-length",
+   "contract": "StrBuilder.isEmpty() is documented as the same as checking length() == 0."
+  },
+  {
+   "name": "contains_char_ignores_spare_capacity",
+   "contract": "StrBuilder.contains(char) \"Checks if the string builder contains the specified char\" and returns true iff the builder contains that character. Extra buffer capacity is no"
+  },
+  {
+   "name": "contains_char_matches_single_char_string_overload",
+   "contract": "The overloads contains(char) and contains(String) both check whether the builder contains the queried text; for a one-character string, they must agree on the same logica"
+  },
+  {
+   "name": "contains_char_matches_char_matcher_overload",
+   "contract": "The overloads contains(char) and contains(StrMatcher) are documented as sibling searches over the same builder contents; using StrMatcher.charMatcher(ch) expresses the sa"
+  },
+  {
+   "name": "contains_char_agrees_with_indexOf_char",
+   "contract": "A character is contained in the builder exactly when its index lookup is not -1; this is the observable agreement exercised by the failing test for StrBuilder."
+  },
+  {
+   "name": "clear_makes_builder_empty_for_contains",
+   "contract": "clear() is documented as the same as setLength(0), and isEmpty() is documented as equivalent to length()==0; therefore after clear(), the builder has no contents, so cont"
+  },
+  {
+   "name": "size_equals_length",
+   "contract": "The javadoc states that size() \"is the same as length()\"."
+  }
+ ],
+ "final30B/Chart-19": [
+  {
+   "name": "objectlist-indexof-null-finds-stored-null",
+   "contract": "AbstractObjectList#set says the object argument is \"<code>null</code> permitted\", and AbstractObjectList#indexOf says it returns \"the index of the specified object, or -1"
+  },
+  {
+   "name": "objectlist-set-then-indexof-same-reference",
+   "contract": "AbstractObjectList#set stores an object reference at an index, and indexOf returns the index of the specified object or -1 if absent. So after storing a non-null referenc"
+  },
+  {
+   "name": "objectlist-indexof-is-read-only",
+   "contract": "indexOf is documented only as a lookup (\"Returns the index of the specified object, or -1 if the object is not in the list.\"). A correct implementation must not mutate th"
+  },
+  {
+   "name": "numberaxis-constructor-default-flags",
+   "contract": "NumberAxis documents DEFAULT_AUTO_RANGE_INCLUDES_ZERO as the default for autoRangeIncludesZero and DEFAULT_AUTO_RANGE_STICKY_ZERO as the default for autoRangeStickyZero; "
+  },
+  {
+   "name": "categoryaxis-constructor-default-margins",
+   "contract": "CategoryAxis documents DEFAULT_AXIS_MARGIN as the default used for both lowerMargin and upperMargin, and DEFAULT_CATEGORY_MARGIN as the default categoryMargin; its constr"
+  },
+  {
+   "name": "objectlist-clone-preserves-indexof-results",
+   "contract": "AbstractObjectList#clone says it makes a shallow copy of the list of objects. Therefore the clone contains the same object references in the same positions, so indexOf fo"
+  },
+  {
+   "name": "objectlist-indexof-null-absent-is-minus1",
+   "contract": "AbstractObjectList.indexOf(Object): \"Returns the index of the specified object, or -1 if the object is not in the list.\" Combined with set(...), where null is permitted, "
+  },
+  {
+   "name": "objectlist-indexof-does-not-mutate-state",
+   "contract": "AbstractObjectList.indexOf(Object) is a lookup method (\"Returns the index...\") and therefore must not mutate list state. The observable state available here is size() and"
+  },
+  {
+   "name": "categoryplot-rangeaxis-roundtrip-same-reference",
+   "contract": "The failing test establishes the expected observable of CategoryPlot.getRangeAxisIndex(...): after setRangeAxis(i, axis), querying getRangeAxisIndex(axis) returns that in"
+  },
+  {
+   "name": "categoryplot-uninstalled-distinct-rangeaxis-is-minus1",
+   "contract": "The trusted failing test fixes this behavior: CategoryPlot.getRangeAxisIndex(rangeAxis) returns -1 for a distinct NumberAxis instance that has not been installed in the p"
+  },
+  {
+   "name": "categoryplot-rangeaxisindex-null-throws-iae",
+   "contract": "The trusted failing test establishes that CategoryPlot.getRangeAxisIndex(null) must throw IllegalArgumentException."
+  }
+ ],
+ "night20c/Lang-60": [
+  {
+   "name": "contains_ignores_deleted_suffix_chars",
+   "contract": "StrBuilder 'contains' is documented as 'whether the builder contains a char'; it must answer based on the builder's current contents, not unused buffer space."
+  },
+  {
+   "name": "contains_char_agrees_with_single_char_string",
+   "contract": "The same-name overloads contains(char) and contains(String) are documented to check whether the builder contains the specified char or string; for a one-character string "
+  },
+  {
+   "name": "contains_char_agrees_with_char_matcher",
+   "contract": "The same-name overloads contains(char) and contains(StrMatcher) are documented to test whether the builder contains the requested character or a matcher hit; using StrMat"
+  },
+  {
+   "name": "contains_does_not_change_visible_contents",
+   "contract": "contains is documented as a check ('Checks if the string builder contains the specified char'); as a query, it must not alter the builder's visible contents or length."
+  },
+  {
+   "name": "size_equals_length",
+   "contract": "The javadoc states that size() 'is the same as length()'."
+  },
+  {
+   "name": "clear_equivalent_to_setLength_zero",
+   "contract": "The javadoc for clear() says it 'is the same as setLength(int) called with zero'."
+  },
+  {
+   "name": "contains-char-ignores-spare-capacity",
+   "contract": "StrBuilder.contains(char) checks whether the builder contains the specified char; the builder's content is its current length, not any unused extra capacity in the intern"
+  },
+  {
+   "name": "contains-char-agrees-single-char-string",
+   "contract": "The same-name overloads contains(char) and contains(String) must agree on equivalent one-character queries."
+  },
+  {
+   "name": "contains-char-agrees-char-matcher",
+   "contract": "The same-name overloads contains(char) and contains(StrMatcher) must agree when the matcher is StrMatcher.charMatcher(ch), which represents the same character query."
+  },
+  {
+   "name": "clear-equivalent-setLength-zero",
+   "contract": "The javadoc states clear() is the same as setLength(int) called with zero."
+  },
+  {
+   "name": "length-size-isEmpty-consistency",
+   "contract": "The javadoc states size() is the same as length(), and isEmpty() is the same as checking length()==0."
+  }
+ ],
+ "night20c/Closure-92": [
+  {
+   "name": "longestProvidedPrefixPrecedesGrandchildNamespace",
+   "contract": "When replacing goog.provide calls, namespace declarations for provided prefixes must be emitted in prefix order; for a dotted namespace created in a common module, the de"
+  },
+  {
+   "name": "singleDotNamespaceFollowsRootPrefix",
+   "contract": "When replacing goog.provide calls for a namespace with exactly one dot in the independent-modules case, the created declaration must be placed after its parent prefix dec"
+  },
+  {
+   "name": "baseGoogCaseKeepsCandidateDefinition",
+   "contract": "Visible code invariant of replace(): the base case ('goog') must not be touched; when firstNode is null, replacementNode is exactly the candidateDefinition."
+  },
+  {
+   "name": "independent_dotted_provide_follows_parent_namespace",
+   "contract": "In replace(), when a provided namespace contains a dot and must be moved to a common module, the declaration is added after the parent namespace's replacement node; this "
+  },
+  {
+   "name": "verifyArgument_overloads_agree_on_string_literals",
+   "contract": "The no-desiredType overload verifies that a method call has exactly one argument and that it is a string literal; the desiredType overload verifies the same shape for any"
+  },
+  {
+   "name": "verifyProvide_matches_string_argument_check_for_simple_valid_names",
+   "contract": "verifyProvide verifies the same one-argument string-literal precondition as verifyArgument and additionally checks that the string contents are valid JS tokens. For a sim"
+  },
+  {
+   "name": "non_string_arguments_fail_both_argument_checkers",
+   "contract": "verifyArgument(methodName,arg) requires the sole argument to be a string literal, and verifyArgument(methodName,arg,Token.STRING) requires the same desired type. For a no"
+  },
+  {
+   "name": "duplicate_name_assignment_is_rewritten_to_var_namespace",
+   "contract": "In replace(), when there is both a candidate definition and an explicit provide, and the candidate definition is an expression assigning to a NAME, the assignment is conv"
+  }
+ ],
+ "night20c/Closure-38": [
+  {
+   "name": "minus_negative_zero_needs_separator",
+   "contract": "CodeConsumer.addNumber explicitly states that a space must be inserted to prevent misparsing of `x- -4` as `x--4` when a negative number follows a preceding `-`; the fail"
+  },
+  {
+   "name": "minus_negative_small_integer_needs_separator",
+   "contract": "Per the comment in CodeConsumer.addNumber, when a negative number is emitted immediately after a preceding `-`, the printer must insert a separating space so the output i"
+  },
+  {
+   "name": "short_output_ignores_line_threshold",
+   "contract": "CodePrinter's lineLengthThreshold only forces newlines after a line exceeds the threshold when possible; for a short compact expression well below both thresholds, changi"
+  },
+  {
+   "name": "negative_zero_prints_distinctly",
+   "contract": "The failing test comment states negative zero must be distinguishable from positive zero; therefore printing a NUMBER node for negative zero must preserve that distinctio"
+  },
+  {
+   "name": "positive_and_negative_zero_do_not_collapse",
+   "contract": "Because negative zero must be distinguishable from positive zero, printing NUMBER nodes for `0.0` and `-0.0` must yield different source strings."
+  },
+  {
+   "name": "compact_sub_negative_zero_needs_separator",
+   "contract": "CodeConsumer's own comment on addNumber states a space must be inserted to prevent misparsing of `x- -4` as `x--4`; therefore, when compact-printing a subtraction whose r"
+  },
+  {
+   "name": "compact_sub_positive_number_has_no_extra_separator",
+   "contract": "The separator described in CodeConsumer's addNumber comment is specifically to avoid misparsing when a minus operator is immediately followed by a negative numeral. For a"
+  },
+  {
+   "name": "negative_zero_prints_distinct_from_positive_zero",
+   "contract": "The failing test states that negative zero must remain distinguishable from positive zero in printed code; a correct printer therefore cannot emit the same compact source"
+  },
+  {
+   "name": "line_threshold_irrelevant_for_short_compact_output",
+   "contract": "CodePrinter documents `lineLengthThreshold` as the length after which it forces a newline when possible. For a short compact output well below both thresholds, changing t"
+  }
+ ],
+ "night20c/Lang-63": [
+  {
+   "name": "formatPeriod_mm_regression_crossYear_monthBorrow",
+   "contract": "DurationFormatUtils.formatPeriod formats the time gap using the specified pattern tokens, where 'M' is the months element; for the known valid period from 2005-12-31 00:0"
+  },
+  {
+   "name": "formatPeriod_overload_agreement_defaultTzPadTrue",
+   "contract": "The 3-argument formatPeriod overload is documented as formatting the time gap using the specified format, with optional padding and a timezone-specifying overload also av"
+  },
+  {
+   "name": "formatDuration_overload_agreement_padTrue",
+   "contract": "The 2-argument formatDuration overload is documented as formatting the duration using the specified format and padding with zeros; it must agree with the 3-argument overl"
+  },
+  {
+   "name": "formatPeriod_sameInstant_zeroMonths",
+   "contract": "formatPeriod formats the time gap between startMillis and endMillis; when the two instants are equal, every duration element in the formatted result is zero, so the month"
+  },
+  {
+   "name": "formatPeriod_orderedPeriod_monthField_notNegative",
+   "contract": "formatPeriod formats a time gap; for a valid ordered period with endMillis >= startMillis, the formatted months element represented by token 'M' is a non-negative compone"
+  },
+  {
+   "name": "period_month_boundary_dec31_to_oct06_is_09",
+   "contract": "DurationFormatUtils.formatPeriod formats the elapsed time gap according to the pattern language, where token 'M' denotes months; for the documented valid period from 2005"
+  },
+  {
+   "name": "formatPeriod_overloads_agree_with_default_timezone_and_padding",
+   "contract": "The 3-argument overload of formatPeriod is documented as formatting the time gap using the specified format with optional padding omitted from the signature; the sibling "
+  },
+  {
+   "name": "formatDuration_overloads_agree_on_same_duration",
+   "contract": "The 2-argument overload of formatDuration is documented as formatting with the specified format and padding with zeros; the sibling 3-argument overload exposes the padWit"
+  },
+  {
+   "name": "duration_and_period_agree_for_day_and_lower_fields_in_utc",
+   "contract": "formatDuration and formatPeriod are both documented to format using the days and lower fields for these patterns; when the format contains only d/H/m/s/S tokens and the p"
+  },
+  {
+   "name": "month_only_period_under_100_months_is_decimal_not_signed",
+   "contract": "In the pattern language, 'M' is the months element. For a valid nonnegative period shorter than 100 months, formatting with pattern \"MM\" and padWithZeros=true must yield "
+  }
+ ],
+ "night20c/Math-68": [
+  {
+   "name": "linear-least-squares-start-independence",
+   "contract": "LevenbergMarquardtOptimizer solves a least squares problem; for a fixed exact linear identity problem with a unique minimizer, different valid start points must converge "
+  },
+  {
+   "name": "linear-exact-fit-has-zero-rms-and-target-point",
+   "contract": "LevenbergMarquardtOptimizer solves a least squares problem; for the exact identity problem f(p) = p with target y and positive weights, the unique minimizer is p = y, the"
+  },
+  {
+   "name": "vpair-copying-constructor-defensive-copy",
+   "contract": "VectorialPointValuePair(double[] point, double[] value) documents that the built instance stores a copy of the arrays; later mutations of the caller arrays must not affec"
+  },
+  {
+   "name": "vpair-getters-return-copies",
+   "contract": "VectorialPointValuePair.getPoint() and getValue() document that they return a copy of the stored arrays, so mutating one returned array must not affect later results from"
+  },
+  {
+   "name": "vpair-copying-overloads-agree",
+   "contract": "VectorialPointValuePair(point, value) and VectorialPointValuePair(point, value, true) both document copying semantics, so for the same inputs they must expose equal store"
+  },
+  {
+   "name": "vpair-reference-constructor-exposes-original-arrays",
+   "contract": "VectorialPointValuePair(point, value, false) documents that the arrays are referenced rather than copied, so subsequent mutations of the original arrays must be visible t"
+  },
+  {
+   "name": "minpack-jennrich-known-minimum",
+   "contract": "The failing test gives ground truth for this exact valid optimization problem: with the Minpack Jennrich-Sampson setup and optimizer tolerances used there, a correct impl"
+  },
+  {
+   "name": "rms-chi-square-formula",
+   "contract": "AbstractLeastSquaresOptimizer documents: if `c` is the minimized criterion and `n` is the number of measurements, then `getRMS()` is `sqrt(c/n)`. Since `getChiSquare()` e"
+  },
+  {
+   "name": "pair-constructor-copies-point",
+   "contract": "VectorialPointValuePair says its constructor stores a copy of the input point array, not the passed array itself."
+  },
+  {
+   "name": "pair-constructor-copies-value",
+   "contract": "VectorialPointValuePair says its constructor stores a copy of the input value array, not the passed array itself."
+  },
+  {
+   "name": "getPoint-returns-copy-not-live-array",
+   "contract": "VectorialPointValuePair documents `getPoint()` returns a copy of the stored point, while `getPointRef()` returns the internal array reference."
+  },
+  {
+   "name": "getValue-returns-copy-not-live-array",
+   "contract": "VectorialPointValuePair documents `getValue()` returns a copy of the stored objective value, while `getValueRef()` returns the internal array reference."
+  }
+ ]
+}
