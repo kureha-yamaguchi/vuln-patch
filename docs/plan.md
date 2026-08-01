@@ -256,7 +256,12 @@ category before it ships.
     next instance within hours: an 8.12(a) test stub declared `family_duty(**kw)`
     against a positional call — every invocation threw, took the fail-open path,
     and three tests passed while testing nothing; found by checking assertion
-    directions, not pass counts.
+    directions, not pass counts. Fifth instance (2026-08-01): 8.4's planned
+    67-row guard measurement — archived rows cannot carry the new Raw keys, so
+    the dismiss-pushing comparison would no-op on all 67 and the guard would
+    pass unexercised; claims re-scoped per population. Corollary applied since:
+    choose the test population so the mechanism CAN fire (the compliance smoke's
+    formatter legs), rather than accepting whatever ran.
 16. **A zero-delta criterion is only meaningful against a baseline differing by
     exactly the change under test.** Otherwise it measures accumulated drift and
     reports it as regression — the mirror of rule 15: there a check passes while
@@ -493,9 +498,18 @@ the 67-row guard.
 and none CAN (the field postdates every archived case). cases228 is demoted to
 regression-only; the compliance smoke's output is the ONLY corpus in which the
 extractor can be validated — load-bearing, not a formality.
-**Revised sequence:** compliance smoke (~20 generations, authorized 2026-08-01)
-→ build the raw-vs-pinned comparison → validate on the smoke's output against
-the 67-row genuine-catch guard (the rung pushes toward dismissal) → cases228 as
+**Revised sequence:** compliance smoke (~20 generations, authorized 2026-08-01;
+launched as c84_20260801_174840 at 298d9d9, formatter/printer legs CHOSEN so the
+conditional Raw keys can actually appear — a numeric leg would exercise nothing
+and produce a clean, meaningless zero) → build the raw-vs-pinned comparison →
+validate, with claims SCOPED PER POPULATION (2026-08-01, after the step-3 guard
+claim was caught vacuous — archived rows cannot carry Raw keys, so the comparison
+no-ops on all 67 and the guard would pass unexercised; fifth rule-15 instance):
+archived 67-row guard = REGRESSION ONLY (does not fire where Raw is absent);
+compliance-smoke output = keys emitted + first actionable inputs, NOT a guard
+population; the NEXT LIVE SUITE = the real guard, read per-event before the
+rung's verdict surface is trusted. Until then the comparison ships as
+observably-inert-on-old-data — a regression claim, never a safety one. cases228
 regression only. Honest expectation unchanged: this makes a dead rung LIVE; it
 promises no verdict movement.
 
