@@ -852,6 +852,97 @@ def _dynamic_oracle_ids(text: str) -> set:
     return ids
 
 
+#: Keys 8.4 requires a normalizing check to emit. Named, never positional.
+_RAW_KEYS = ('expectedRaw=', 'actualRaw=')
+_NORM_KEYS = ('expectedNormalized=', 'actualNormalized=')
+
+#: Whitespace/case normalisation applied before comparing. Deliberately narrow:
+#: these are the shapes the codegen prompt actually instructs.
+_NORMALIZES_RE = re.compile(
+    r'replaceAll\s*\(\s*"\\\\s\+"|\.trim\s*\(\s*\)|toLowerCase\s*\(\s*\)'
+    r'|replace\s*\(\s*"\s+"\s*,')
+
+
+class TruncatedRecord(ValueError):
+    """A fired-alarm record ends mid-message, so counting inside it undercounts.
+
+    Raised rather than returning a number, because a silent undercount is
+    indistinguishable from a real absence — which is exactly how 38% got
+    reported as 8.4's compliance rate when the true rate was 100%.
+    """
+
+
+def count_in_fired_alarms_only(text: str, needle: str,
+                               on_truncation: str = 'raise') -> int:
+    """Count `needle` ONLY inside actual fired-alarm messages.
+
+    THE RECORD IS NOT THE THING, in both directions — cycle 8 met each:
+
+    * **Inflation** (4 instances): counting text that merely MENTIONS the needle
+      — the judge prompt's own `VERDICT: SOUND | UNSOUND` format line, the
+      codegen prompt naming `expectedRaw=`, the Java source constructing a
+      message. This function's alarm-scoping fixes that direction: an alarm
+      message is text following a thrown `FuzzerSecurityIssue*` in a RUNTIME
+      record, never the `throw new ...` source that builds it.
+    * **Deflation** (1 instance): counting inside a record the harness
+      TRUNCATED. 12 of 24 alarm records in `c84_20260801_174840` end in an
+      ellipsis, and content after the cut was scored absent — producing 38%
+      where source-level counting showed 100%.
+
+    So this refuses to answer on a truncated record rather than undercount.
+    Pass ``on_truncation='count'`` only when the caller has established that the
+    needle cannot appear late in the message.
+    """
+    if not text or not needle:
+        return 0
+    n = 0
+    for m in re.finditer(r'FuzzerSecurityIssue\w*: (\[oracle:[^\n]{0,600})',
+                         str(text)):
+        rec = m.group(1)
+        if on_truncation == 'raise' and rec.rstrip().endswith(('\u2026', '...')):
+            raise TruncatedRecord(
+                'a fired-alarm record is truncated, so counting inside it '
+                'undercounts. Measure at SOURCE level instead (the harness '
+                'text, which is not truncated), or pass on_truncation="count" '
+                'if the needle cannot appear late in the message.')
+        n += rec.count(needle)
+    return n
+
+
+def normalized_without_raw(source: str) -> Optional[str]:
+    """Reason string if a check normalises before comparing but its alarm does
+    not record the pre-normalisation values; None otherwise.
+
+    8.4's mechanisation. A transformation applied for comparison must not destroy
+    the original: the setup-divergence rung asks whether the reported value equals
+    a value the failing test PINS, and the test pins the raw form. A message
+    carrying only the normalised form can never match, so that rung is dead for
+    the check — silently.
+
+    Prompt instruction alone reached 38% compliance (5 of 13 eligible alarms in
+    c84_20260801_174840), which is not a dependency an extractor can be built on.
+    This makes omission mechanically visible instead.
+    """
+    src = strip_comments(source or '')
+    if not _NORMALIZES_RE.search(src):
+        return None                       # nothing normalised — nothing owed
+    for m in _ALARM_STMT_RE.finditer(src):
+        end = src.find(';', m.end())
+        stmt = src[m.start():end if end > 0 else m.end() + 600]
+        if not any(k in stmt for k in _NORM_KEYS):
+            continue                      # this alarm reports no normalised form
+        if all(k in stmt for k in _RAW_KEYS):
+            continue                      # compliant
+        line = src[:m.start()].count('\n') + 1
+        return (f'the alarm near line {line} reports a NORMALISED value but not '
+                f'the pre-normalisation one. Add `expectedRaw=` and `actualRaw=` '
+                f'to its message: the failing test pins the RAW form, so a '
+                f'normalised-only message can never match it and the '
+                f'setup-divergence check is dead for this alarm. Compare '
+                f'normalised, RECORD raw.')
+    return None
+
+
 def oracle_ids_in_text(text: str) -> set:
     """Every oracle ID mentioned in `text` (harness source OR fuzzer
     output), under any accepted shape:
