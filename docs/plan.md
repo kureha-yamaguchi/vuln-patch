@@ -333,7 +333,10 @@ RETIRED — see the ceiling evidence above and in plan-history.md.
 - Math-104 floor refinement — firewall warning applies (the 7e-15 is adjudication
   evidence, never a detection input).
 - Fix (ii) non-numeric comparison — deferred, park condition recorded with both
-  measurements.
+  measurements. NOTE (2026-08-01): 8.4's raw-vs-pinned comparison is DISTINCT and
+  does not unpark this — fix (ii) compared arbitrary tokens on any evidence
+  (measured a wash); 8.4's comparison asks only raw-output-vs-test-pinned-literal,
+  guard-measured on its own. The park condition here stands.
 - Absence-argument detector (judge quotes text to prove what it doesn't say).
 
 ---
@@ -474,13 +477,27 @@ and nobody notices"). Raw keys emit ONLY when normalization happened, so absence
 means no-normalization, never forgot-to-record. Four tests pin the change,
 including that the normalize INSTRUCTION is untouched — 8.4 adds recording and
 must not relax the comparison. 577 passed, 7 skipped.
-**Still owed:** the 20-generation compliance smoke (compliance, not correctness,
-is what a prompt change can fail); the extractor extension; cases228 measured
-ALONE — and since this rung pushes toward dismissal, the 67-row genuine-catch
-guard is the one that applies: a raw-value match that voids a genuine catch fails
-the change. Honest expectation on record: this makes a dead rung LIVE; it promises
-no verdict movement (Closure-62 needs the fired value to actually match a pinned
-value — recording only makes the comparison possible).
+**Still owed — sequence REVISED 2026-08-01 after testing the intended consumer
+(two dependencies the design missed):**
+(1) The rung cannot read what 8.4 produces: normalizing checks are by definition
+over strings, and `fired_value_vs_trusted` is NUMERIC-only — verified on
+Closure-62's exact shape with full Raw keys, `_fired_numbers` returns `[]`,
+verdict stays `unknown`. Extending the extractor alone would ship a no-op (the
+fourth mechanism this cycle caught inert BEFORE shipping). What is needed is a
+raw-vs-pinned comparison. **This is NOT fix (ii) revived** — fix (ii) compared
+arbitrary tokens on any evidence and measured a wash; this compares the raw
+output against the literal the test pins, the rung's exact question, answerable
+exactly. It is a new mechanism increment and needs its own measurement against
+the 67-row guard.
+(2) cases228 cannot validate the extractor half: 0 of 228 rows carry a Raw= key
+and none CAN (the field postdates every archived case). cases228 is demoted to
+regression-only; the compliance smoke's output is the ONLY corpus in which the
+extractor can be validated — load-bearing, not a formality.
+**Revised sequence:** compliance smoke (~20 generations, authorized 2026-08-01)
+→ build the raw-vs-pinned comparison → validate on the smoke's output against
+the 67-row genuine-catch guard (the rung pushes toward dismissal) → cases228 as
+regression only. Honest expectation unchanged: this makes a dead rung LIVE; it
+promises no verdict movement.
 
 ### 8.5 Relation-budget experiment (-m 12 vs -m 16) — cheap, anytime (~1M)
 **Target:** the `-m` relation-synthesis cap in suite COMMON flags.
