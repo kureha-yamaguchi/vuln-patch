@@ -1,0 +1,157 @@
+[
+ {
+  "run": "final30A",
+  "bug": "Chart-19",
+  "n_winner_families": 1,
+  "winner_sample": [
+   "categoryplot_getRangeAxisIndex_null_rejected_independent_of_"
+  ],
+  "proposed_in_missed_roll": 18,
+  "winner_family_present": false,
+  "evidence": ""
+ },
+ {
+  "run": "final30A",
+  "bug": "Closure-38",
+  "n_winner_families": 2,
+  "winner_sample": [
+   "minus-negative-zero-canonical-spacing",
+   "minus_negative_zero_compact_exact"
+  ],
+  "proposed_in_missed_roll": 8,
+  "winner_family_present": true,
+  "evidence": ""
+ },
+ {
+  "run": "final30A",
+  "bug": "Lang-63",
+  "n_winner_families": 4,
+  "winner_sample": [
+   "jira-lang-281",
+   "jira281-lifted"
+  ],
+  "proposed_in_missed_roll": 11,
+  "winner_family_present": true,
+  "evidence": ""
+ },
+ {
+  "run": "final30A",
+  "bug": "Math-73",
+  "n_winner_families": 5,
+  "winner_sample": [
+   "absolute-accuracy-roundtrip",
+   "fourArg_nonBracketing_negativeInitial_mustThrow"
+  ],
+  "proposed_in_missed_roll": 11,
+  "winner_family_present": true,
+  "evidence": ""
+ },
+ {
+  "run": "final30A",
+  "bug": "Math-104",
+  "n_winner_families": 0,
+  "winner_sample": [],
+  "proposed_in_missed_roll": 12,
+  "winner_family_present": false,
+  "evidence": "no TP roll exists"
+ },
+ {
+  "run": "final30B",
+  "bug": "Lang-60",
+  "n_winner_families": 1,
+  "winner_sample": [
+   "lang295-contains"
+  ],
+  "proposed_in_missed_roll": 12,
+  "winner_family_present": false,
+  "evidence": ""
+ },
+ {
+  "run": "final30B",
+  "bug": "Chart-19",
+  "n_winner_families": 1,
+  "winner_sample": [
+   "categoryplot_getRangeAxisIndex_null_rejected_independent_of_"
+  ],
+  "proposed_in_missed_roll": 11,
+  "winner_family_present": true,
+  "evidence": ""
+ },
+ {
+  "run": "final30B",
+  "bug": "Math-104",
+  "n_winner_families": 0,
+  "winner_sample": [],
+  "proposed_in_missed_roll": 10,
+  "winner_family_present": false,
+  "evidence": "no TP roll exists"
+ },
+ {
+  "run": "night20c",
+  "bug": "Lang-60",
+  "n_winner_families": 1,
+  "winner_sample": [
+   "lang295-contains"
+  ],
+  "proposed_in_missed_roll": 11,
+  "winner_family_present": false,
+  "evidence": ""
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-92",
+  "n_winner_families": 7,
+  "winner_sample": [
+   "addingSiblingLeafDoesNotMoveSharedPrefixesAfterLeaves",
+   "allRegisteredPrefixesForSingleNestedProvideExist"
+  ],
+  "proposed_in_missed_roll": 8,
+  "winner_family_present": false,
+  "evidence": ""
+ },
+ {
+  "run": "night20c",
+  "bug": "Closure-38",
+  "n_winner_families": 2,
+  "winner_sample": [
+   "minus-negative-zero-canonical-spacing",
+   "minus_negative_zero_compact_exact"
+  ],
+  "proposed_in_missed_roll": 9,
+  "winner_family_present": true,
+  "evidence": ""
+ },
+ {
+  "run": "night20c",
+  "bug": "Lang-63",
+  "n_winner_families": 4,
+  "winner_sample": [
+   "jira-lang-281",
+   "jira281-lifted"
+  ],
+  "proposed_in_missed_roll": 10,
+  "winner_family_present": true,
+  "evidence": ""
+ },
+ {
+  "run": "night20c",
+  "bug": "Math-68",
+  "n_winner_families": 5,
+  "winner_sample": [
+   "fr-iterations-stable-1",
+   "jennrich-param0"
+  ],
+  "proposed_in_missed_roll": 12,
+  "winner_family_present": false,
+  "evidence": ""
+ },
+ {
+  "run": "night20c",
+  "bug": "Math-104",
+  "n_winner_families": 0,
+  "winner_sample": [],
+  "proposed_in_missed_roll": 11,
+  "winner_family_present": false,
+  "evidence": "no TP roll exists"
+ }
+]
