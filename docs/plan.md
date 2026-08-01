@@ -512,6 +512,24 @@ rung's verdict surface is trusted. Until then the comparison ships as
 observably-inert-on-old-data — a regression claim, never a safety one. cases228
 regression only. Honest expectation unchanged: this makes a dead rung LIVE; it
 promises no verdict movement.
+**Compliance smoke result (c84_20260801_174840 — 2026-08-01): mechanism PROVEN,
+compliance FAILED.** Among 25 real fired alarms (first count was contaminated by
+prompt/template text — caught, same family as the verdict-template inflation):
+5 compliant / 8 normalized-without-raw / 1 raw-only / 11 non-normalizing =
+**38% among eligible — not buildable.** But one alarm proved the whole thesis
+live: `expectedNormalized=x--0.0 actualNormalized=x--0.0` identical while
+`expectedRaw=x- -0.0 actualRaw=x--0.0` differ — the raw record preserved exactly
+the Closure-38 separator-space defect that normalization erased.
+**Iteration 2 authorized (2026-08-01), MECHANIZED per the meta-rule (instructions
+lose to mechanisms):** (a) Raw keys become part of the REQUIRED message format —
+omission is malformed, not optional; (b) an acceptance-side lint enforces it
+mechanically — `*Normalized=` without matching `*Raw=` (and the inverse) is
+detectable from key names alone, the alarm-ID gate's pattern; validate the lint
+OFFLINE on the smoke's 25 archived alarms first (8 violations + 1 raw-only are
+its test population). With enforcement, absence-of-Raw is trustworthy by
+construction. **Bar: ≥90% compliance among eligible in ONE re-smoke; below it,
+8.4 PARKS until after 8.1 (park condition: this result + the bar). Measurement
+rule 7 applies — no third iteration on this evidence.**
 
 ### 8.5 Relation-budget experiment (-m 12 vs -m 16) — cheap, anytime (~1M)
 **Target:** the `-m` relation-synthesis cap in suite COMMON flags.
