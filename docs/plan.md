@@ -555,12 +555,69 @@ feeds the screen, never bypasses it, and survivors compete for the same
 with 8.9 (both are anti-lottery mechanisms — never measured together). Build only
 if 8.14 shows never-invented / invented-but-died is a material miss class.
 
-### Sequencing and gates
-Today: 8.1 (on user's phrase: "Run the judge-model swap experiment with gpt-5.5, parts A
-and B as pre-registered") + 8.6 + 8.7 + 8.8 + 8.14 (free, and it gates two other
-items). This week: 8.2 and 8.9 design docs; 8.4; 8.5 when convenient (with its 8.14-
-gated third arm decision); 8.13 ships with the next build alongside 8.7/8.8; 8.15
-offline after 8.14. 8.3 after 8.1/8.2 outcomes. 8.16 and 8.17 design notes after 8.2,
-informed by 8.14's ledger. Then: assemble the cycle-8 batch → smoke on final build →
-the full 30-leg pair (~7M, user's word) against the 8.10 bar → fresh12 decision
-(user's literal phrase only).
+### Execution ladder (replaces the sequencing paragraph, 2026-08-01)
+
+Ordered by effort-vs-expected-effect: free information first (it re-ranks
+everything below it), then tiny code that protects every later measurement, then
+the one licensed precision fix, then paid experiments, then gated designs and
+builds. Honest expectation-setting for the ordering: precision is ceiling-capped
+(~5) under the current architecture, so the biggest expected SCORE movement is
+recall-side (rungs 1 and 4); the biggest RISK reduction is measurement-side
+(rung 2). Each rung ends with the check that says whether its method is good —
+nothing below a rung runs until its check is read.
+
+**RUNG 1 — free reads, zero code (today, ~0 tokens).**
+8.6 Math-39 event chains · 8.14 miss ledger · 8.15 authority-tier study.
+Why first: each produces a committed table that re-orders the rungs below —
+8.14 gates 8.5's third arm and 8.17; 8.15 either licenses the only free
+precision candidate or closes it; 8.6 settles the historically-clean-leg list
+the PASS bar depends on.
+**CHECK:** tables committed raw before interpretation; 8.14 names the dominant
+miss station; 8.15 is read against BOTH populations (a tier that voids guard
+catches fails).
+
+**RUNG 2 — tiny code that protects every later measurement (one mini-batch;
+~10–50 lines each; no behavior change on semantic legs).**
+8.8 label assert · 8.7 repair marker field · 8.13 bucket split · 8.12(a)(b)
+crash-gate inertness pins + offline repair compile check.
+**CHECK (smoke-before-pair rule):** one 2-leg smoke (~300–500k) on the batch
+build. Pass = a deliberately mislabeled cases file refuses to launch; the
+repair marker appears on a repaired-accepted harness; all three bucket reasons
+appear in the trace; zero verdict changes vs the same legs' previous smoke.
+
+**RUNG 3 — the one licensed precision fix (small code + one prompt rule).**
+8.4 raw-value recording (compare normalized, RECORD raw; ~17% of harnesses).
+**CHECK:** 20-generation compliance smoke — do fired messages carry both forms?
+Then the extractor extension measured ALONE on cases228: no verdict may flip
+except via newly-possible legitimate matches; Closure-62's rows are the named
+target (today all `unknown`; success = any move to `matches`/`differs`).
+
+**RUNG 4 — paid experiments, cheapest information per token first.**
+1. 8.1 judge swap + REQUIRED noise floor (~2–3M total; launches only on the
+   user's phrase) — the biggest open question: is the ceiling the architecture
+   or the model? Read-out pre-registered (per-case flips vs the floor).
+2. 8.5 relation budget −m 12 vs −m 16, plus the 8.14-gated focused-synthesis
+   third arm (~1–1.5M) — the cheapest recall-lever test.
+   **CHECK:** invention rates of known winning families per leg, from traces,
+   never pooled scores; two-roll rule for any claimed flip.
+3. 8.12(c) crash14 rerun (~1–2M) — **CHECK:** per-leg vs the 07-16 baseline
+   (P=0.86 R=0.86); runs before the next pair is called the official state.
+
+**RUNG 5 — design docs, free, written only after the rungs above have
+reported (their content depends on it).**
+8.2 (after 8.1; cites 8.14/8.15 where relevant) · 8.9 · 8.16 and 8.17 (only
+for the miss classes 8.14 shows are material).
+**CHECK:** every doc carries a guard-set test plan and priced reach; user
+decides build/no-build per doc — a design doc with no guard plan is returned,
+not built.
+
+**RUNG 6 — gated builds.**
+8.3 buggy-value collector (after 8.1/8.2 confirm direction); validation rides
+the next live run passively — no dedicated run.
+
+**Anytime:** 8.11 housekeeping (zero risk) · 8.10 pre-commitment upkeep
+(continuous).
+
+**FINAL GATE (unchanged):** assemble the cycle-8 batch → smoke on the final
+build → the full 30-leg pair (~7M, user's word) against the 8.10 bar →
+fresh12 decision (user's literal phrase only).
