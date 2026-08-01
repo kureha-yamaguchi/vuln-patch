@@ -786,3 +786,29 @@ the next live run passively — no dedicated run.
 **FINAL GATE (unchanged):** assemble the cycle-8 batch → smoke on the final
 build → the full 30-leg pair (~7M, user's word) against the 8.10 bar →
 fresh12 decision (user's literal phrase only).
+
+## The two guard populations (permanent, versioned, population-pinned)
+
+Standing rule 2 (*guard set before mechanism*) is only mechanically enforceable if
+the populations are frozen assets. Both now are, pinned by
+`tests/test_guard_fixtures.py`.
+
+| guard | rows | what it holds | guards against |
+|---|---|---|---|
+| genuine catches | 67 | kept alarms on legs that ended as real catches | any **dismiss-pushing** mechanism — voiding these destroys recall |
+| correct dismissals | 38 | dismissed alarms on CORRECT-patch legs | any **keep-pushing** mechanism — overturning these manufactures false accusations |
+
+`tests/fixtures/correct_dismissals.jsonl` — 38 rows across 10 bugs and both rolls
+of the final30 pair. Definition: on a correct patch the alarm IS a false alarm, so
+the dismissal was unambiguously right. 35 of 38 carry a citation.
+
+**Why the second guard had to exist:** 8.14 measured the judge as *both* the
+largest recall class (over-dismissal, ~10 of 14 misses) and the capped precision
+component (under-dismissal). The 67-row set cannot guard a keep-pushing fix — it
+holds keeps. Every future keep-pushing proposal (8.18's output, 8.2's
+dismissal-grounding scope note, anything 8.1 licenses, any drift-kill fix) is
+**presumed to damage precision until measured against this fixture**.
+
+Population pins carry the fix-(ii) lesson: if a count moves, studies built on it
+are re-run, not inherited — fix (ii)'s numbers expired when its population went
+from 10 rows on one leg to 27 across three.
