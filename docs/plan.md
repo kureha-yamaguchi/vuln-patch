@@ -261,7 +261,10 @@ category before it ships.
   the property) but its scope does not extend to the firing; the deciding fact was
   delivered on every chain and read as corroboration. (8.6 fully closed 2026-08-01:
   final30A shows the same mechanism — three rolls, nine accusations, one mechanism.)
-  **Hard column:** Closure-38, Math-104. **Coin-flips:** Lang-60,
+  **Hard column:** Closure-38; Math-104 (CHARACTERIZED 2026-08-01 by 8.18: merited
+  near-tolerance dismissals — harness comparisons at 10e-15 against the
+  implementation's DEFAULT_EPSILON 10e-9; unwinnable at current tolerance; parked
+  floor question). **Coin-flips:** Lang-60,
   Math-68, Math-73, Closure-92. **Multi-mode:** Lang-63 (all three failure modes on
   record).
 - **Miss stations (8.14 + 8.14b, 2026-08-01, corrected counts):** across the three
@@ -272,8 +275,14 @@ category before it ships.
   confirmed never-proposed, ≤4 with every ambiguous row against, vs the judge
   class at up to 10; the invented-vs-too-weak boundary is not archivally
   drawable, so invention levers gate on live A/Bs only. The classes OVERLAP and
-  their levers are disjoint. The judge is simultaneously the largest recall class
-  (over-dismissal) and the capped
+  their levers are disjoint. 8.18 then closed the loop (2026-08-01): 94% of the
+  judge's miss-side dismissals are CORRECT — grounded refutations, wrong-family
+  checks, near-tolerance — with ungrounded hypotheticals at 2 of 34. **Every
+  recall station is now measured and no large addressable class exists**: the
+  misses are distributed across small causes, and the binding recall constraint
+  is CHECK SHARPNESS at stations 2–4 (checks that fire but deserve dismissal) —
+  the exact boundary 8.14c showed is not archivally drawable. The judge is
+  simultaneously the recall station where misses become visible and the capped
   precision component (under-dismissal) — opposite directions, so no single
   strictness knob fixes both; the lever must be evidence-shaped or architectural.
 - **Honestly open:** Chart-19's missed-twice→caught-twice flip in the pricing pair —
@@ -706,6 +715,20 @@ presumed to damage the other until measured. That guard population does NOT exis
 yet as a fixture (the 67-row set is genuine catches, not correct dismissals) —
 building it is 8.18's FIRST step, before any classification is interpreted
 (standing rule 2).
+**Outcome (`docs/replay/backtrack/8.18-RESULT.md`, categories frozen first in
+c677a36 — DONE 2026-08-01, CLOSED NEGATIVE):** 34 dismissals classified: grounded
+refutation 20 · wrong-family (couldn't convict anyway) 5 · near-tolerance 6 ·
+setup divergence 1 · **ungrounded hypothetical 2 (6%) — the only lever category,
+below the pre-registered bar.** The dominant miss STATION is not a dominant miss
+CAUSE: in 94% of dismissals the judge is correctly dismissing something that
+should not convict (several refutations cite fires-on-both — the cycle-6
+machinery working as designed). Guard question moot — nothing licensed to test
+against the 38 rows. Math-104 SETTLED: nine dismissals, grounded-refutation and
+near-tolerance, none ungrounded, repeatedly citing DEFAULT_EPSILON = 10e-9
+against the harness's 10e-15 comparison — a harness defect, not a judge failure;
+its class is merited near-tolerance dismissal, joining the parked tolerance-floor
+question; step-1's borderline-B prior is confirmed-as-near-tolerance, and the
+judge lever does not cover it.
 
 ### Execution ladder (replaces the sequencing paragraph, 2026-08-01)
 
@@ -735,9 +758,18 @@ invention gate), 8.14c DONE (invention is the MINOR station: 1 confirmed,
 to live A/Bs, deprioritized below the judge thread; A/B-undetectability
 priced in 3d7414e), 8.15 DONE (CLOSED NEGATIVE on tier and scope — the
 ceiling's third independent negative dimension; one re-ask licensed if 8.3
-ships). Remaining: **8.18** (guard fixture FIRST — the last rung-1 item that
-can still find a lever, aimed at the dominant judge class; also decides
-Math-104), then the rung-1 check.
+ships), 8.18 DONE (CLOSED NEGATIVE: 94% of miss-side dismissals are correct
+judgment; ungrounded hypotheticals 2 of 34; Math-104 settled as merited
+near-tolerance; the correct-dismissals guard built as a permanent asset on
+the way).
+**RUNG 1 COMPLETE (2026-08-01). Check: PASSED** — every table committed raw
+before interpretation, both pre-commitments honored (frozen properties,
+frozen categories), one retraction executed same-day, both guard
+populations tested. Net result: every recall station measured, no large
+addressable class; the precision ceiling triple-confirmed; every cheap
+alternative to 8.1 is now measured dead — 8.1 is the single largest open
+question and rung 4's case for it is at maximum strength. Proceed to
+RUNG 2.
 
 **RUNG 2 — tiny code that protects every later measurement (one mini-batch;
 ~10–50 lines each; no behavior change on semantic legs).**
