@@ -476,11 +476,18 @@ per accepted harness whether it came from a repaired attempt (and which repairs)
 attribution is one field lookup. Include repaired-source reconstructability note (the
 transform is deterministic over the recorded pre-repair output).
 
-### 8.8 Suite-file label check — ten lines, ships with next build
+### 8.8 Suite-file label check — DONE 2026-08-01 (fd67182)
 **Target:** `run_suite.sh` case-file loading.
 **Failure mode:** the -c-on-fakes typo class (happened once; firewall held, full
 rescore required). Assert each case's label matches `suites/pinned_tasks.jsonl`;
 refuse to launch on mismatch.
+**Outcome:** shipped — refuses on BOTH mismatch directions (flag-vs-patch-path and
+flag-vs-pinned-tasks), correct labels pass. Placement lesson recorded: the check
+sits immediately after `source "$CASES_FILE"` with an ordering assertion — the
+first placement refused only after creating run state, the second ran before
+CASES existed and silently passed everything. A guard evaluated before its inputs
+exist is fail-open while looking armed — the same defect family as the
+empty-failing-test gate (cycle 6) and the terminal-marker substring (cycle 5).
 
 ### 8.9 Family-persistence design note — paper only; gate pends 8.14c
 **Target:** `relation_synth.py` round structure + harness generation loop in
@@ -546,6 +553,12 @@ this bucket, which is why the rule-diversity claim had to be retracted: with the
 bucket unsplit, no statement about where recall is lost is trustworthy.
 **Steps:** three distinct event reasons, observability only (no decision change);
 population-pinning test over the pair fixtures; read-out rides the next live run.
+**Outcome (2026-08-01, rung-2 audit): ALREADY SHIPPED in cycle 7** — the
+five-state rate split (`RATE_STATES`, `evidence_facts.py:1978`: no-measurement /
+buggy-side-unmeasured / below-bar / catch-profile-skipped / at-or-above-bar) plus
+the 6C two-way split. This item was written before the audit noticed; no new code.
+The rung-2 smoke verifies the states appear on the LIVE path rather than assuming
+cycle-7's tests cover it.
 
 ### 8.14 Miss ledger — free, BEFORE any recall lever is chosen
 **Target:** archived traces of final30A/B + night20c (the current-config runs);
@@ -773,12 +786,17 @@ RUNG 2.
 
 **RUNG 2 — tiny code that protects every later measurement (one mini-batch;
 ~10–50 lines each; no behavior change on semantic legs).**
-8.8 label assert · 8.7 repair marker field · 8.13 bucket split · 8.12(a)(b)
-crash-gate inertness pins + offline repair compile check.
+*Contents updated 2026-08-01 by the rung-2 audit:* 8.8 label assert (DONE,
+fd67182 — refuses both mismatch directions) · 8.7 repair marker field ·
+8.12(a)(b) crash-gate inertness pins + offline repair compile check. 8.13
+was found ALREADY SHIPPED in cycle 7 (five-state RATE_STATES split) — struck
+from the rung; the smoke verifies it live instead.
 **CHECK (smoke-before-pair rule):** one 2-leg smoke (~300–500k) on the batch
 build. Pass = a deliberately mislabeled cases file refuses to launch; the
-repair marker appears on a repaired-accepted harness; all three bucket reasons
-appear in the trace; zero verdict changes vs the same legs' previous smoke.
+repair marker appears on a repaired-accepted harness; the five-state rate
+split is observed on the LIVE path (states appearing per the legs' actual
+evidence — no assumption from cycle-7 tests); zero verdict changes vs the
+same legs' previous smoke.
 
 **RUNG 3 — the one licensed precision fix (small code + one prompt rule).**
 8.4 raw-value recording (compare normalized, RECORD raw; ~17% of harnesses).
