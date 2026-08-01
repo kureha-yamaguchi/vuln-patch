@@ -574,8 +574,12 @@ class RelationVerifier:
                 if verdict.startswith("YES"):
                     return True, why or "family duty applies; proceed"
                 return False, why or "family duty does not apply"
-        # No parseable DUTY line -> not YES -> mechanical drop.
-        return False, why or "no DUTY verdict parsed"
+        # No parseable DUTY line -> not YES -> mechanical drop. Sentinel
+        # emitted unconditionally, same reason as `_parse` below: this branch
+        # DROPS, so a suppressed sentinel here lets an unparsed response read
+        # as a deliberate "duty does not apply".
+        return False, ("no DUTY verdict parsed"
+                       + (" — model said: " + why if why else ""))
 
     @staticmethod
     def _parse(out: str) -> Tuple[bool, str]:
@@ -603,5 +607,14 @@ class RelationVerifier:
             if verdict.startswith("UNSOUND"):
                 return _out(False, why or "oracle judged unsound")
             return _out(True, why or "oracle judged sound")
-        # No parseable verdict -> keep (fail open).
-        return _out(True, why or "no verdict parsed; keeping finding")
+        # No parseable verdict -> keep (fail open). The sentinel is emitted
+        # UNCONDITIONALLY, with the model's own text appended rather than
+        # substituted: `why or <sentinel>` suppressed the sentinel whenever the
+        # response carried a WHY: line, so `reask_verdict_usable` reported a
+        # response with NO parsed verdict as usable and the caller adopted a
+        # manufactured verdict. That is the July-15 silently-fail-open shape,
+        # and it is model-swap-sensitive — the incumbent emits VERDICT first so
+        # it rarely triggers, while a model that writes a preamble or reorders
+        # the fields triggers it silently on every call.
+        return _out(True, "no verdict parsed; keeping finding"
+                    + (" — model said: " + why if why else ""))
