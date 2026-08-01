@@ -240,6 +240,16 @@ category before it ships.
     name drift as absence. 8.14b's count inverted under a threshold change and was
     retracted the same day (2026-08-01); the verified false absent is Chart-19's
     winning family vs its own roll's categoryplot proposals.
+15. **Assert a guard's inputs exist, not just its outputs.** A guard evaluated
+    before (or without) its inputs is fail-open while looking armed — it reports
+    success BECAUSE it guarded nothing, so testing outputs alone cannot catch it.
+    Three measured instances share the shape and the antidote: the family-duty
+    escape asked 141 times with an empty failing-test block (cycle 6); the
+    terminal-marker substring firing on prompt template text (cycle 5); the label
+    assert placed before CASES was sourced (8.8, caught pre-ship). Every one dies
+    to the same one-line check: assert the input population is non-empty and
+    well-formed before trusting any pass. Applied prospectively to 8.12(b)'s
+    recovered-corpus check the same day it was promoted (2026-08-01).
 
 ## CURRENT STATE (2026-07-31)
 
@@ -469,12 +479,17 @@ Math-39 → fourth residual; 8.15 gains the authority-SCOPE dimension. Remnant c
 (6ffa9f0): final30A carries 4 more accusations, same shape, same delivered facts,
 all uncited — three rolls, nine accusations, one mechanism.
 
-### 8.7 Marker-field fix — small, ships with next build
+### 8.7 Marker-field fix — DONE 2026-08-01 (ad41e38)
 **Target:** `campaign.py` acceptance bookkeeping + the `harness-repair` trace event.
 **Failure mode:** repair attribution needed attempt-tag archaeology this week; record
 per accepted harness whether it came from a repaired attempt (and which repairs), so
 attribution is one field lookup. Include repaired-source reconstructability note (the
 transform is deterministic over the recorded pre-repair output).
+**Outcome:** shipped — the acceptance event carries `[FROM REPAIRED ATTEMPT: <kinds>]`
+with from_repaired_attempt / repairs_applied / repaired_source_reconstructable
+detail (`campaign.py:865`). Write-before-read ordering checked explicitly (standing
+rule 15 applied); the provenance map is run-local and test-pinned against cross-run
+drift. 566 passed, 7 skipped.
 
 ### 8.8 Suite-file label check — DONE 2026-08-01 (fd67182)
 **Target:** `run_suite.sh` case-file loading.
@@ -535,7 +550,10 @@ semantic-only validation data. Full analysis:
 **Steps:** (a) unit tests pinning gate inertness on crash-leg evidence and
 cause-signature preservation through `repair_rethrow_without_cause` (free);
 (b) run `repair_harness()` over harnesses recovered from the archived crashcheck run
-and compile-check on the VM (free); (c) reconstruct `suites/crash14.cases` (deleted in
+and compile-check on the VM (free) — standing rule 15 applies: the crashcheck
+archive predates all seven cycles, so ASSERT the recovered corpus is non-empty and
+parses under the current extraction before reading "0 regressions" as a pass;
+(c) reconstruct `suites/crash14.cases` (deleted in
 db38bd5, in git history) and rerun once (~1–2M), comparing PER LEG against the 07-16
 result — 14 legs, ~7 points per leg, so aggregates mislead. Note the crashing pool is
 largely uncertified, so weak per-leg differences are not evidence.
@@ -787,10 +805,12 @@ RUNG 2.
 **RUNG 2 — tiny code that protects every later measurement (one mini-batch;
 ~10–50 lines each; no behavior change on semantic legs).**
 *Contents updated 2026-08-01 by the rung-2 audit:* 8.8 label assert (DONE,
-fd67182 — refuses both mismatch directions) · 8.7 repair marker field ·
-8.12(a)(b) crash-gate inertness pins + offline repair compile check. 8.13
-was found ALREADY SHIPPED in cycle 7 (five-state RATE_STATES split) — struck
-from the rung; the smoke verifies it live instead.
+fd67182 — refuses both mismatch directions) · 8.7 repair marker field (DONE,
+ad41e38 — provenance at acceptance, one lookup) · 8.12(a)(b) crash-gate
+inertness pins + offline repair compile check (rule-15 corpus assert
+required). 8.13 was found ALREADY SHIPPED in cycle 7 (five-state RATE_STATES
+split) — struck from the rung; the smoke verifies it live instead. Standing
+rule 15 (guard inputs must exist) promoted out of this rung's lessons.
 **CHECK (smoke-before-pair rule):** one 2-leg smoke (~300–500k) on the batch
 build. Pass = a deliberately mislabeled cases file refuses to launch; the
 repair marker appears on a repaired-accepted harness; the five-state rate
