@@ -264,10 +264,13 @@ category before it ships.
 - **Miss stations (8.14 + 8.14b, 2026-08-01, corrected counts):** across the three
   current-config runs, 10 of 14 misses reach a judge and are dismissed (both
   tracks counted); 3 build but never fire; 0 die at harness construction. At
-  family level: 8.14b's never-proposed count was RETRACTED (method-dependent —
-  name matching cannot resolve it; 8.14c's semantic read pends). What stands: the
-  judge class and any invention class OVERLAP and their levers are disjoint. The
-  judge is simultaneously the largest recall class (over-dismissal) and the capped
+  family level (8.14c, semantic read against frozen properties — after 8.14b's
+  string-matching count was retracted): invention is the MINOR station — 1
+  confirmed never-proposed, ≤4 with every ambiguous row against, vs the judge
+  class at up to 10; the invented-vs-too-weak boundary is not archivally
+  drawable, so invention levers gate on live A/Bs only. The classes OVERLAP and
+  their levers are disjoint. The judge is simultaneously the largest recall class
+  (over-dismissal) and the capped
   precision component (under-dismissal) — opposite directions, so no single
   strictness knob fixes both; the lever must be evidence-shaped or architectural.
 - **Honestly open:** Chart-19's missed-twice→caught-twice flip in the pricing pair —
@@ -432,10 +435,10 @@ config change; if not, Chart-19's fragility attributes to variance/composition a
 stays open. 8.14 outcome note (2026-08-01): leg-level construction death measured
 ZERO, so read the -m comparison as the Chart-19-specific budget question. Third arm
 (focused per-source synthesis — 07-20 kill verdict void under the single-roll ban;
-best recall evidence on record: foc5 4/4 by-pass targets, foc15 R=0.89) pends the
-8.14c gate: 8.14b's licensing count was retracted same-day (name matching cannot
-resolve invention absence). If 8.14c licenses it, run as its OWN measurement point
-(separate roll, same legs), invention rates read from traces.
+best recall evidence on record: foc5 4/4 by-pass targets, foc15 R=0.89): 8.14c
+found invention the MINOR station (1 confirmed, ≤4 of 14), so class size alone no
+longer justifies the arm's cost — run it only as a deliberately-priced live A/B,
+and only if the judge-side levers (8.18 → 8.1) stall or report negative.
 
 ### 8.6 Math-39 event-chain read — DONE 2026-08-01: named mechanism
 **Target:** archived pricing-pair traces, both Math-39 accusing verdicts' full evidence
@@ -470,10 +473,12 @@ refuse to launch on mismatch.
 `campaign.py`.
 **Failure mode:** the invention lottery — check families proposed but landing in
 `relations_not_implemented` (Lang-63's winning family in one roll), absent next roll.
-(The 8.14b Lang-60 evidence for this item was RETRACTED with the count — string
-matching cannot establish absence. 8.14c re-decides.) Design constraint from the
-retraction: persistence must track families by ASSERTED PROPERTY, not by generated
-name — names have no stable vocabulary across rolls.
+(8.14c settled what the retracted 8.14b could not: final30B Lang-60 is the ONE
+confirmed never-proposed miss — nothing that roll asserts contains()
+non-mutation; night20c Lang-60 is ambiguous. Gate: live A/B only, priced against
+the minor-station class size of 1–4 legs.) Design constraint from the retraction:
+persistence must track families by ASSERTED PROPERTY, not by generated name —
+names have no stable vocabulary across rolls.
 **Must price:** slot competition (persisted families crowd out new ones) and the
 interaction with the novelty gate (which steers AWAY from covered families — these two
 must not fight). Run-local only; nothing crosses runs.
@@ -580,6 +585,20 @@ the winning check, regardless of name? Pre-commitment: write down each winner's
 asserted property (observable + relation) for all legs BEFORE opening any missed
 roll's proposal list, and commit that property table first — raw-before-
 interpretation applied to a reading job.
+**8.14c outcome (DONE 2026-08-01, properties frozen first in dbd8017): invention
+is the MINOR station, and the archival gate design cannot work.** Against the
+frozen definitions: proposed 7 · not-proposed 1 (final30B Lang-60 — nothing
+asserts contains() non-mutation) · ambiguous 3. So 1 confirmed never-proposed, at
+most 4 if every ambiguous row resolves against — versus the judge class at up to
+10 of 14. Chart-19 splits across rolls (proposed in B, ambiguous in A) and died at
+construction, not invention. The 3 ambiguous rows share one shape — a proposed
+rule on the SAME observable with a narrower/adjacent relation — and whether those
+would have caught depends on what the generated harness exercised, a
+post-invention station: **the invented-vs-too-weak boundary is not drawable from
+the archive.** Consequence: 8.9 / 8.17 / 8.5's third arm re-gated from archival
+evidence to a LIVE A/B (does persistence/mining change the catch rate), priced
+against an expected-payoff class of 1–4 legs. Reader judgment disclosed in the doc
+(an alternate reader gets 7/0/4; both conclusions unchanged).
 **Math-104 (3 instances, "never caught"):** not a lever-less class — 2 of its 3
 instances are fired-and-dismissed rows, i.e. inside 8.18's read population, and
 the step-1 adjudication (1d02859: drift-kill B, most borderline; dev-fix 6.77e-15
@@ -637,11 +656,13 @@ inference is admissible).
 **Must address:** the mined54 precedent (a mined flood cost Lang-7's TP — mining
 feeds the screen, never bypasses it, and survivors compete for the same
 `--synth_max_rules` slots); template reach on our observable shapes; interaction
-with 8.9 (both are anti-lottery mechanisms — never measured together). Gate
-UNRESOLVED (8.14b retracted 2026-08-01 — string matching cannot decide it):
-build/no-build waits on 8.14c's semantic adjudication. Design constraint learned
-from the retraction: family identity in this mechanism must be defined
-SEMANTICALLY (asserted property), never by generated name string.
+with 8.9 (both are anti-lottery mechanisms — never measured together). Gate re-set
+by 8.14c (2026-08-01): archival reading CANNOT decide this (the invented-vs-
+too-weak boundary is not drawable from traces); build only behind a live A/B
+priced against the measured class — invention is the minor station (1 confirmed +
+3 ambiguous of 14 misses). Design constraint from the 8.14b retraction: family
+identity in this mechanism must be defined SEMANTICALLY (asserted property), never
+by generated name string.
 
 ### 8.18 Dismissal-side authority study — free, the largest miss class's first lever
 **Target:** the 8 judge-dismissal miss instances in 8.14's ledger (station 7,
@@ -690,11 +711,12 @@ catches fails).
 *Rung extended 2026-08-01 by 8.14's outcome:* 8.6 DONE (fourth residual,
 fully closed), 8.14 DONE (dominant miss station = the judge; construction
 death zero), 8.14b RETRACTED same day (name matching cannot resolve the
-invention gate — the count inverted under a threshold change). Remaining in
-the rung, in order: **8.14c** (semantic family adjudication, property table
-pre-committed — resolves the invention gate), **8.15** (with scope), **8.18**
-(guard fixture FIRST — the largest miss class's lever probe, and it also
-decides Math-104's class), then the rung-1 check.
+invention gate), 8.14c DONE (invention is the MINOR station: 1 confirmed,
+≤4 of 14; the archival gate design cannot work — invention levers re-gated
+to live A/Bs, deprioritized below the judge thread). Remaining in the rung,
+in order: **8.15** (with scope), **8.18** (guard fixture FIRST — the largest
+miss class's lever probe, and it also decides Math-104's class), then the
+rung-1 check.
 
 **RUNG 2 — tiny code that protects every later measurement (one mini-batch;
 ~10–50 lines each; no behavior change on semantic legs).**
