@@ -37,6 +37,7 @@ from typing import List, Dict, Optional, Callable
 from java.harness.build import HarnessBuilder, BuildResult
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from java.parsing.java_source import (alarm_ids_missing, boolean_swallow,
+                         normalized_without_raw,
                          negative_modulo_index, oracle_families,
                          rethrow_without_cause, violation_swallowed)
 from llm import HarnessGenerator, record_event
@@ -587,6 +588,39 @@ class HarnessCampaign:
                             "DIFFERENT id per check. Return the full "
                             "corrected FuzzHarness.java. Raw Java source "
                             "only. No markdown fences."),
+                        raw=raw,
+                        is_repair_attempt=is_repair_attempt,
+                        repair_failures=repair_failures,
+                        current_messages=current_messages,
+                        original_messages=original_messages,
+                        fresh_prompt=fresh_prompt,
+                    )
+                )
+                continue
+
+            # --- gate 0c2: compare normalized, RECORD raw (8.4) ---------
+            # A check that normalizes before comparing and reports only the
+            # normalized value silently kills the setup-divergence rung: the
+            # failing test pins the RAW form, so a normalized-only message can
+            # never match it. Prompt instruction alone is not enough to rely on
+            # — enforcement here makes absence-of-Raw trustworthy BY
+            # CONSTRUCTION, which is what the rung's three-state read requires.
+            rawrec_reason = normalized_without_raw(source)
+            if rawrec_reason is not None:
+                print(f"✗ normalized without raw: {rawrec_reason}")
+                repair_failures, current_messages, original_messages = (
+                    self._handle_failure(
+                        diagnostic=(
+                            "Your check normalizes before comparing but its "
+                            "alarm records only the normalized value: "
+                            + rawrec_reason + "\n"
+                            "Keep the comparison as it is — compare "
+                            "NORMALIZED. Additionally include the "
+                            "pre-normalization values in the message under "
+                            "these exact keys: `expectedRaw=` and "
+                            "`actualRaw=`. Return the full corrected "
+                            "FuzzHarness.java. Raw Java source only. No "
+                            "markdown fences."),
                         raw=raw,
                         is_repair_attempt=is_repair_attempt,
                         repair_failures=repair_failures,

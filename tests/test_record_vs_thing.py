@@ -93,3 +93,72 @@ def test_lint_ignores_checks_that_never_normalize():
       }}
     }}'''
     assert normalized_without_raw(plain) is None
+
+
+# --- the lint WIRED at acceptance (rule 15's corollary) -------------------
+
+def test_the_lint_is_actually_called_by_the_campaign():
+    """A detector nothing calls guards nothing. This was named as rule-15's
+    shape before it could bite, and wired before the comparison was built so
+    the comparison is developed against the contract it will run under."""
+    import inspect
+    from java.harness import campaign
+    src = inspect.getsource(campaign.HarnessCampaign.run)
+    assert 'normalized_without_raw(source)' in src
+    assert 'gate 0c2' in src
+
+
+def test_the_gate_runs_before_acceptance():
+    """Ordering, checked rather than assumed — the 8.8 lesson."""
+    import inspect
+    from java.harness import campaign
+    src = inspect.getsource(campaign.HarnessCampaign.run)
+    gate = src.find('normalized_without_raw(source)')
+    accept = src.find('# --- accepted ---')
+    assert gate != -1 and accept != -1 and gate < accept
+
+
+def test_the_gate_tells_the_model_to_KEEP_the_comparison():
+    """The failure mode to avoid: a model reading 'record raw' as 'compare raw'
+    would undo the normalization the prompt correctly requires."""
+    import inspect
+    from java.harness import campaign
+    src = inspect.getsource(campaign.HarnessCampaign.run)
+    seg = src[src.find('gate 0c2'):src.find('gate 0d')]
+    assert 'compare' in seg.lower() and 'NORMALIZED' in seg
+
+
+def test_lint_fires_on_a_REAL_archived_harness_stripped_of_its_raw_keys():
+    """The corollary: exercise the gate on a population where it CAN fire.
+
+    A synthetic-only test would leave open whether the lint copes with real
+    generated source. This takes an actual compliant harness from
+    c84_20260801_174840, removes its Raw keys, and requires the lint to notice.
+    """
+    import glob
+    import re
+    traces = glob.glob(str(Path(__file__).resolve().parents[1]
+                           / 'runs-archive' / 'runs' / 'c84_*' / '*'
+                           / 'trace.md'))
+    if not traces:
+        pytest.skip('compliance-smoke archive not present')
+    real = None
+    for t in traces:
+        txt = open(t, errors='ignore').read()
+        for step in re.split(r'\n(?=## \[\d+\])', txt):
+            if 'harness generation' not in step.split('\n')[0]:
+                continue
+            m = re.search(r'▸ Output.*?```(?:java)?\s*(.*?)```', step, re.S)
+            if m and 'expectedRaw=' in m.group(1) and 'replaceAll' in m.group(1):
+                real = m.group(1)
+                break
+        if real:
+            break
+    assert real, 'no compliant normalizing harness found in the archive'
+    # as generated: compliant, so the lint must stay silent
+    assert normalized_without_raw(real) is None
+    # strip the Raw keys: the lint must now object
+    stripped = (real.replace('expectedRaw=', 'xxRemovedxx=')
+                    .replace('actualRaw=', 'yyRemovedyy='))
+    assert normalized_without_raw(stripped), \
+        'lint missed a real harness with its Raw keys removed'
