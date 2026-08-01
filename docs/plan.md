@@ -249,7 +249,10 @@ category before it ships.
     assert placed before CASES was sourced (8.8, caught pre-ship). Every one dies
     to the same one-line check: assert the input population is non-empty and
     well-formed before trusting any pass. Applied prospectively to 8.12(b)'s
-    recovered-corpus check the same day it was promoted (2026-08-01). Caught its
+    recovered-corpus check the same day it was promoted (2026-08-01) — and it
+    LANDED: the corpus did not exist (0 of 14 crashcheck legs have a trace.md;
+    crashtrace1 yields n=0 repairable), and without the assert the study would
+    have reported "0 regressions, 0 new errors" over nothing. Caught its
     next instance within hours: an 8.12(a) test stub declared `family_duty(**kw)`
     against a positional call — every invocation threw, took the fail-open path,
     and three tests passed while testing nothing; found by checking assertion
@@ -561,7 +564,8 @@ parses under the current extraction before reading "0 regressions" as a pass;
 db38bd5, in git history) and rerun once (~1–2M), comparing PER LEG against the 07-16
 result — 14 legs, ~7 points per leg, so aggregates mislead. Note the crashing pool is
 largely uncertified, so weak per-leg differences are not evidence.
-**Gate:** (a) and (b) before the cycle-8 batch closes; (c) before the next full 30-leg
+**Gate (amended 2026-08-01):** (a) DONE before batch close ✓; (b) DEFERRED with
+reason — runs after (c), from (c)'s output; (c) before the next full 30-leg
 pair is described as the pipeline's official state.
 **8.12(a) outcome (9ef2ec9 — DONE 2026-08-01): risk 3 upgraded from "unobserved"
 to CONFIRMED REAL.** `judge_decision.py` has no `bug_kind` reference and the
@@ -574,6 +578,17 @@ answer, not a guarantee; now documented, and the exposure doc corrected. 8.12(c)
 per-leg rerun must read the 6C/duty events on every crash leg.
 `repair_rethrow_without_cause` withdrawn as a risk BY TEST (attaches the cause,
 never strips one). 573 passed, 7 skipped.
+**8.12(b) outcome (f37f7f3 — DEFERRED 2026-08-01, with reason): the corpus does
+not exist.** crashcheck predates the one-file-trace change — 0 of 14 legs carry a
+trace.md, and its run.log format has no ACCEPTED/REJECTED markers or fenced
+sources, so rejected harnesses are unrecoverable. crashtrace1 (current format)
+extracts cleanly but yields n=0 repairable defects. The rule-15 assert is the only
+reason this reads as BLOCKED instead of "0 regressions" over an empty corpus.
+**Dependency INVERTED:** (b) runs AFTER (c), from (c)'s current-format output —
+(c) is now a corpus source as well as a measurement. Residual coverage stated
+honestly: compile safety established on 111 semantic pairs (transforms are
+kind-agnostic); cause-signature preservation pinned by (a); the crash-leg
+repairable-defect RATE is unmeasurable from any existing archive.
 
 ### 8.13 Split the `not-applicable` gate bucket — small, ships with next build
 **Target:** the trace events around `indiscriminate_buggy_rate()` / the 6B/6C gate
@@ -821,11 +836,13 @@ RUNG 2.
 ~10–50 lines each; no behavior change on semantic legs).**
 *Contents updated 2026-08-01 by the rung-2 audit:* 8.8 label assert (DONE,
 fd67182 — refuses both mismatch directions) · 8.7 repair marker field (DONE,
-ad41e38 — provenance at acceptance, one lookup) · 8.12(a)(b) crash-gate
-inertness pins + offline repair compile check (rule-15 corpus assert
-required). 8.13 was found ALREADY SHIPPED in cycle 7 (five-state RATE_STATES
-split) — struck from the rung; the smoke verifies it live instead. Standing
-rule 15 (guard inputs must exist) promoted out of this rung's lessons.
+ad41e38 — provenance at acceptance, one lookup) · 8.12(a) DONE (9ef2ec9 —
+gates confirmed kind-blind, exposure doc corrected) · 8.12(b) DEFERRED with
+reason (f37f7f3 — no corpus exists; runs after 8.12(c), from its output).
+8.13 was found ALREADY SHIPPED in cycle 7 (five-state RATE_STATES split) —
+struck from the rung; the smoke verifies it live instead. Standing rule 15
+(guard inputs must exist) promoted out of this rung's lessons and landed
+twice within the rung. The rung closes on the 2-leg smoke.
 **CHECK (smoke-before-pair rule):** one 2-leg smoke (~300–500k) on the batch
 build. Pass = a deliberately mislabeled cases file refuses to launch; the
 repair marker appears on a repaired-accepted harness; the five-state rate
