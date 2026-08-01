@@ -250,8 +250,11 @@ category before it ships.
   architecture — over measured refutations: no recorded feature separates kept catches
   from kept false accusations; the deciding fact is present in 6 of 8 decisive cases
   (8.6 added Math-39 as the sixth) but case-specific (no general gate); adjacent
-  verbatim delivery is ignored; the narrow quote-forced question voids 22% of guards.
-  Remaining directions are architectural (cycle-8 items 8.1–8.3).
+  verbatim delivery is ignored; the narrow quote-forced question voids 22% of guards;
+  authority — tier AND scope — does not separate either (8.15, 2026-08-01: 58/60,
+  29/28, 12/12; the largest scope gap runs the wrong way). Three independent
+  dimensions tested, three negatives. Remaining directions are architectural
+  (cycle-8 items 8.1–8.3).
 - **Residuals (chronic):** Closure-62, Math-30, Math-65, Math-39 (fourth — 8.6,
   2026-08-01) — one shape: accusations no delivered fact dislodges. Math-39 is the
   hardest variant: the invoked tier-1 authority is REAL (testTooLargeFirstStep pins
@@ -408,7 +411,9 @@ fired/counts) — makes 8.2 untestable and forces 6C's values-not-compared abste
 which fails SAFE — arbitration abstains); thread into the recorded fact via
 `record_event`; extend `compare_fired_values` consumption where applicable. Offline
 tests from archived raw outputs where any exist; otherwise fixture-built. Validation
-rides the next live run passively — no dedicated run.
+rides the next live run passively — no dedicated run. If this ships, ONE re-ask of
+8.15's scope dimension is licensed (firing input vs the test's pinned scenario,
+properly measured instead of keyword-classified) — recorded there, 2026-08-01.
 
 ### 8.4 Raw-value recording — independent, small, ships with any batch
 **Target:** check-writing instructions in the harness codegen prompts (`prompts.py`):
@@ -628,6 +633,20 @@ guard-set catches fails, per the guard rule. Separates → design a computed
 authority-tier fact. Doesn't → record and close, same standard as the separating
 study. Side product: an ADDITIVE kept-verdict fixture from the pair rolls
 (cases228 stays untouched — 8.1 is pre-registered against it).
+**Outcome (`docs/replay/backtrack/8.15-AUTHORITY.md` — DONE 2026-08-01, CLOSED
+NEGATIVE on both dimensions):** authority tier does not separate (model-memory /
+unattributed 58% FP vs 60% TP; documentation 29/28; failing-test pins 12/12) and
+scope fares no better — the largest gap (13 points, replay-confirmation) runs the
+WRONG way for a precision gate (genuine catches are MORE replay-confirmed).
+Math-39's exact shape appears at 2 rows vs 1 — not a measurement. No computed
+authority fact is licensed; the guard question is moot (no candidate to test).
+The ceiling now rests on THREE independent negative dimensions: delivery features
+(cycle-7 separating study), narrow structured questioning (engagement experiment),
+and authority (this). Limit honestly stated: both dimensions were keyword-
+classified over rationales; a real scope measure needs the firing input compared
+against the test's pinned scenario — 8.3's territory. If 8.3 ships, ONE re-ask of
+the scope dimension is licensed; otherwise this question is closed as askable from
+the current record.
 
 ### 8.16 Passing-suite behavior-delta fact — design note only, after 8.2
 **Target:** a new evidence generator (station 6 peer of `relation_screen.py`);
@@ -713,10 +732,12 @@ fully closed), 8.14 DONE (dominant miss station = the judge; construction
 death zero), 8.14b RETRACTED same day (name matching cannot resolve the
 invention gate), 8.14c DONE (invention is the MINOR station: 1 confirmed,
 ≤4 of 14; the archival gate design cannot work — invention levers re-gated
-to live A/Bs, deprioritized below the judge thread). Remaining in the rung,
-in order: **8.15** (with scope), **8.18** (guard fixture FIRST — the largest
-miss class's lever probe, and it also decides Math-104's class), then the
-rung-1 check.
+to live A/Bs, deprioritized below the judge thread; A/B-undetectability
+priced in 3d7414e), 8.15 DONE (CLOSED NEGATIVE on tier and scope — the
+ceiling's third independent negative dimension; one re-ask licensed if 8.3
+ships). Remaining: **8.18** (guard fixture FIRST — the last rung-1 item that
+can still find a lever, aimed at the dominant judge class; also decides
+Math-104), then the rung-1 check.
 
 **RUNG 2 — tiny code that protects every later measurement (one mini-batch;
 ~10–50 lines each; no behavior change on semantic legs).**
