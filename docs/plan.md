@@ -202,9 +202,6 @@ category before it ships.
 
 ---
 
-
----
-
 ## STANDING RULES (the distilled rulebook — full origin text in plan-history.md)
 
 1. **Label-independent authorities only.** A mechanism may anchor on: the failing
@@ -309,7 +306,15 @@ task-architecture?
 3. Part B: the frozen narrow contradiction question (exact phrasing from the failed
    engagement experiment — do NOT reword) over the same 24 accusing checks + 67 guards,
    model gpt-5.5.
-4. Commit raw outputs BEFORE scoring (both parts).
+4. Noise floor (REQUIRED before reading part A): the incumbent flips verdicts between
+   identical single draws — 5 of 10 untouched rows flipped between two draws in the
+   cycle-5 close. Establish the same-model flip rate first: one incumbent (gpt-5.4)
+   re-run on the same fixture at votes=1 repeats=1, per-case flips counted against its
+   recorded verdicts (archived verifier_replay repeats data may substitute where it
+   covers the rows). A gpt-5.5 flip counts as signal only where the flip rate exceeds
+   this floor, or where it lands on one of the 5 ignored-evidence cases with an
+   engagement shape no recorded incumbent draw ever produced.
+5. Commit raw outputs BEFORE scoring (both parts and the floor run).
 **Read-out (pre-registered):** per-case flips vs the incumbent's recorded verdicts, not
 totals — gpt-5.5 is newer than the incumbent gpt-5.4, so aggregate movement in
 either direction is plausible; the aggregate is NOT the signal either way. Decision table:
@@ -353,6 +358,18 @@ questioning.
    prints every observable — and the certifier's divergence-kind classifier
    (value_ulp / exception_generic_latent WEAK kinds). The reference-implementation
    generator should reuse that architecture rather than reinvent it.
+6. External prior art (`docs/related-work-scan-2026-08-01.md`): Differential
+   Prompting (ASE 2023) validates the mechanism class — a reference implementation
+   synthesized from inferred INTENT, not from the code under test, found
+   failure-inducing inputs at 75% vs 28.8% for direct prompting, and their reason is
+   our reason (a reference derived from the code inherits its bug — same defense as
+   our buggy-side screen). Poracle (TOSEM 2023) is the published form of our
+   preservation-condition authority. Read both summaries before writing the design.
+7. Scope note to include: whether the same buggy-validated machinery can ground
+   DISMISSAL-side hypotheticals ("a correct implementation could return X" — the
+   measured drift-kill signature, wrong in 4 of 6 measured instances). Design
+   consideration only; if ever built it gets its own guard population (the
+   correctly-dismissed firings on correct legs), since it pushes toward keeping.
 **Done when:** the design doc exists with guard-set test plan and priced reach; user
 decides build/no-build on it.
 
@@ -390,7 +407,12 @@ one roll each at -m 12 and -m 16, same commit; read INVENTION RATES of known win
 families per leg from traces (not pooled scores). Side benefit: two more Chart-19
 rolls inform the open composition-vs-variance question at zero extra cost. If -m 16 materially raises invention, adopt it as standard and record the
 config change; if not, Chart-19's fragility attributes to variance/composition and
-stays open.
+stays open. If 8.14's ledger shows never-invented / invented-but-died as a material
+miss class, a third arm may join this suite as its OWN measurement point (separate
+roll, same legs): focused per-source synthesis, whose 07-20 kill verdict is void
+under the single-roll ban (one-roll-per-arm A/B) while it holds the campaign's best
+recall evidence (foc5 4/4 by-pass targets, foc15 R=0.89) — read invention rates the
+same way, and re-adjudicate it properly either way.
 
 ### 8.6 Math-39 event-chain read — free, BEFORE any next measurement
 **Target:** archived pricing-pair traces, both Math-39 accusing verdicts' full evidence
@@ -459,9 +481,86 @@ largely uncertified, so weak per-leg differences are not evidence.
 **Gate:** (a) and (b) before the cycle-8 batch closes; (c) before the next full 30-leg
 pair is described as the pipeline's official state.
 
+### 8.13 Split the `not-applicable` gate bucket — small, ships with next build
+**Target:** the trace events around `indiscriminate_buggy_rate()` / the 6B/6C gate
+call sites in `judge_decision.py` (station 6→7 boundary).
+**Failure mode:** the final30 analysis's own top-priority finding, dropped from this
+plan until now: the gates' `not-applicable` covers three different situations —
+never measured, buggy side unmeasured, measured-and-healthy — and the event text
+reads as the first. ~90% of the 161 gate-reaching rule-firings in the pair landed in
+this bucket, which is why the rule-diversity claim had to be retracted: with the
+bucket unsplit, no statement about where recall is lost is trustworthy.
+**Steps:** three distinct event reasons, observability only (no decision change);
+population-pinning test over the pair fixtures; read-out rides the next live run.
+
+### 8.14 Miss ledger — free, BEFORE any recall lever is chosen
+**Target:** archived traces of final30A/B + night20c (the current-config runs);
+recall side.
+**Failure mode:** the precision side has its 7-case decisive-fact table; the recall
+side has no per-miss station-of-death ledger under current config. The live recall
+candidates (8.5 budget, 8.9 persistence, the focused-synthesis re-adjudication,
+8.17 invariant mining) target DIFFERENT stations; choosing among them without this
+ledger is guessing.
+**Steps:** for every missed overfit leg in the three runs, classify from the trace:
+family never invented / invented but died at harness construction / built but never
+fired / fired but judge-dismissed — with the trace line. One table, committed raw
+before interpretation. Feeds the 8.5 read-out (including its focused-synthesis arm
+decision) and the 8.17 build/no-build gate.
+
+### 8.15 Authority-tier separating study — offline, free, after 8.14
+**Target:** the kept verdicts of the final30 pair (67 genuine-catch / 23
+false-accusation); evidence assembly in `run.py` only IF it separates.
+**Failure mode:** the separating-fact study tested delivery-side features
+(corroboration, firing location, rates, replay confirmation) — none separate. It
+never tested WHICH AUTHORITY the checked property derives from: the failing test's
+pins / the buggy build off-defect / a grounded doc quote / the model's memory or
+the patch itself. The chronic accusations assert remembered contracts (Math-65's
+inverse formula, CITATION: NONE); the trust hierarchy exists today only as prompt
+guidance — the channel the meta-rule says is weak.
+**Steps:** classify each kept verdict's property (mechanically where possible:
+test-literal match, doc-quote grounding, buggy-replay presence; by hand where not);
+commit the table raw; read separation against BOTH populations — a tier that voids
+guard-set catches fails, per the guard rule. Separates → design a computed
+authority-tier fact. Doesn't → record and close, same standard as the separating
+study. Side product: an ADDITIVE kept-verdict fixture from the pair rolls
+(cases228 stays untouched — 8.1 is pre-registered against it).
+
+### 8.16 Passing-suite behavior-delta fact — design note only, after 8.2
+**Target:** a new evidence generator (station 6 peer of `relation_screen.py`);
+judge evidence assembly as consumer.
+**Failure mode:** the separating study's honest close — the accusation side may
+need a different KIND of evidence than we collect. One label-independent kind is
+measured nowhere in our pipeline: how much the patch disturbs the behavior of the
+project's PASSING tests. Published as PATCH-SIM (ICSE 2018): correct patches barely
+move passing-test behavior, overfit patches move it more; a later replication found
+moderate power, so this enters as a computed FACT for the judge, never a gate.
+**Must price:** trace-capture cost on Defects4J-scale suites; the moderate power;
+interaction with the family-duty boundary (legitimate fix propagation also moves
+behavior). Guard set before mechanism. Pointers:
+`docs/related-work-scan-2026-08-01.md`.
+
+### 8.17 Deterministic invariant mining as a rule source — design note only
+**Target:** `relations/relation_synth.py` (station 2) — a second, DETERMINISTIC
+candidate source feeding the same screen → replay machinery.
+**Failure mode:** the invention lottery is the measured recall-variance driver
+(RELIABLE 6 / COIN-FLIP 4 / INVENTS-BUT-NEVER-FIRES 4; Lang-63's winning family
+present one roll, absent the next). LLM synthesis is currently the ONLY candidate
+source, and it re-rolls per leg. Daikon-style invariant mining over buggy-build
+executions is deterministic — same leg, same candidates, every roll (Invalidator,
+TSE 2023, adapted: their developer-patch side is firewalled; only buggy-side
+inference is admissible).
+**Must address:** the mined54 precedent (a mined flood cost Lang-7's TP — mining
+feeds the screen, never bypasses it, and survivors compete for the same
+`--synth_max_rules` slots); template reach on our observable shapes; interaction
+with 8.9 (both are anti-lottery mechanisms — never measured together). Build only
+if 8.14 shows never-invented / invented-but-died is a material miss class.
+
 ### Sequencing and gates
 Today: 8.1 (on user's phrase: "Run the judge-model swap experiment with gpt-5.5, parts A
-and B as pre-registered") + 8.6 + 8.7 + 8.8. This week: 8.2 and 8.9 design docs; 8.4;
-8.5 when convenient. 8.3 after 8.1/8.2 outcomes. Then: assemble the cycle-8 batch →
-smoke on final build → the full 30-leg pair (~7M, user's word) against the 8.10 bar →
-fresh12 decision (user's literal phrase only).
+and B as pre-registered") + 8.6 + 8.7 + 8.8 + 8.14 (free, and it gates two other
+items). This week: 8.2 and 8.9 design docs; 8.4; 8.5 when convenient (with its 8.14-
+gated third arm decision); 8.13 ships with the next build alongside 8.7/8.8; 8.15
+offline after 8.14. 8.3 after 8.1/8.2 outcomes. 8.16 and 8.17 design notes after 8.2,
+informed by 8.14's ledger. Then: assemble the cycle-8 batch → smoke on final build →
+the full 30-leg pair (~7M, user's word) against the 8.10 bar → fresh12 decision
+(user's literal phrase only).
