@@ -375,6 +375,25 @@ task-architecture?
    verify `reask_verdict_usable()` recognizes THIS deployment's error/sentinel strings
    (a silently fail-open judge is the July-15 bug; add its error format to the
    sentinel list if absent). Commit this check before spending.
+   **Step 1(b) DONE pre-spend (b7e5d40, 2026-08-01) — and it found the hole it
+   existed to find.** Two producers passed `why or "<sentinel>"`, substituting the
+   model's own text for the sentinel whenever a response carried a WHY: line
+   without a parseable verdict — usable=True on garbage. In `_parse` that fails
+   open to KEEP; in family_duty's inline parse it reads as a deliberate
+   "duty does not apply", the direction that COSTS a finding. Model-swap
+   sensitive by construction: the incumbent's format compliance made the sentinel
+   appear by luck; a model that preambles, reorders VERDICT:/WHY:, or truncates
+   after WHY would fail open on every such call — the swap's per-case flip
+   read-out would have measured its own parser. Fixed: sentinel emitted
+   unconditionally, model text appended, never substituted. 617 passed, 7
+   skipped. Error path settled WITHOUT a probe: exceptions are wrapped into our
+   own `verifier error ({e})` prefix, so the sentinel keys on our wording, not
+   the provider's — "add its error format" has nothing to add; the exposure was
+   never the provider's strings but our own suppression. Rule 15, sixth
+   instance: a guard whose input can be SUPPRESSED by the very text it guards
+   against is fail-open while looking armed.
+   **Still gated on the user's phrase: step 1(a) probe, parts A and B, the noise
+   floor.**
 2. Part A: `verifier_replay.py --cases tests/fixtures/cases228.jsonl` (plus the 67-row
    guard fixture) with the judge model set to gpt-5.5 (incumbent judge: gpt-5.4), votes=1, repeats=1. Same prompts,
    zero prompt edits.
