@@ -254,9 +254,12 @@ category before it ships.
   **Hard column:** Closure-38, Math-104. **Coin-flips:** Lang-60,
   Math-68, Math-73, Closure-92. **Multi-mode:** Lang-63 (all three failure modes on
   record).
-- **Miss stations (8.14, 2026-08-01, corrected counts):** across the three
+- **Miss stations (8.14 + 8.14b, 2026-08-01, corrected counts):** across the three
   current-config runs, 10 of 14 misses reach a judge and are dismissed (both
-  tracks counted); 3 build but never fire; 0 die at harness construction. The
+  tracks counted); 3 build but never fire; 0 die at harness construction. At
+  family level (8.14b): the winning family was never proposed in ≥5 of 11
+  assessable misses (4 if the Chart-19/2d reconciliation flips one row) — the
+  judge class and the invention class OVERLAP and their levers are disjoint. The
   judge is simultaneously the largest recall class (over-dismissal) and the capped
   precision component (under-dismissal) — opposite directions, so no single
   strictness knob fixes both; the lever must be evidence-shaped or architectural.
@@ -420,13 +423,12 @@ families per leg from traces (not pooled scores). Side benefit: two more Chart-1
 rolls inform the open composition-vs-variance question at zero extra cost. If -m 16 materially raises invention, adopt it as standard and record the
 config change; if not, Chart-19's fragility attributes to variance/composition and
 stays open. 8.14 outcome note (2026-08-01): leg-level construction death measured
-ZERO, so read this suite as the Chart-19-specific budget question, not a general
-recall-lever test. If 8.14b (the winning-family fate read) shows never-invented as
-a material miss class, a third arm may join this suite as its OWN measurement point
-(separate roll, same legs): focused per-source synthesis, whose 07-20 kill verdict
-is void under the single-roll ban (one-roll-per-arm A/B) while it holds the
-campaign's best recall evidence (foc5 4/4 by-pass targets, foc15 R=0.89) — read
-invention rates the same way, and re-adjudicate it properly either way.
+ZERO, so read the -m comparison as the Chart-19-specific budget question. Third arm
+LICENSED by 8.14b (never-proposed ≥5 of 11; gate satisfied 2026-08-01) as its OWN
+measurement point (separate roll, same legs): focused per-source synthesis, whose
+07-20 kill verdict is void under the single-roll ban (one-roll-per-arm A/B) while
+it holds the campaign's best recall evidence (foc5 4/4 by-pass targets, foc15
+R=0.89) — read invention rates the same way, and re-adjudicate it properly.
 
 ### 8.6 Math-39 event-chain read — DONE 2026-08-01: named mechanism
 **Target:** archived pricing-pair traces, both Math-39 accusing verdicts' full evidence
@@ -456,11 +458,14 @@ transform is deterministic over the recorded pre-repair output).
 rescore required). Assert each case's label matches `suites/pinned_tasks.jsonl`;
 refuse to launch on mismatch.
 
-### 8.9 Family-persistence design note — paper only, LAST of design items
+### 8.9 Family-persistence design note — paper only; evidence upgraded by 8.14b
 **Target:** `relation_synth.py` round structure + harness generation loop in
 `campaign.py`.
 **Failure mode:** the invention lottery — check families proposed but landing in
 `relations_not_implemented` (Lang-63's winning family in one roll), absent next roll.
+Evidence upgrade (8.14b, 2026-08-01): Lang-60's winning family was present in
+exactly the roll it was caught and absent in both missed rolls — the sharpest
+single case on record for this item.
 **Must price:** slot competition (persisted families crowd out new ones) and the
 interaction with the novelty gate (which steers AWAY from covered families — these two
 must not fight). Run-local only; nothing crosses runs.
@@ -546,6 +551,31 @@ invention items are DEFERRED to 8.14b, not killed.
 **Follow-up 8.14b (free, REQUIRED):** per-missed-leg winning-family fate read — was
 a decisive family proposed, screened, built, fired? 8.14b, not 8.14, now gates
 8.5's third arm and 8.17.
+**8.14b outcome (`docs/replay/backtrack/8.14b-FAMILY-FATE.md`, raw table first —
+DONE 2026-08-01): gate SATISFIED.** Of 11 assessable misses (3 Math-104 instances
+unassessable — never caught in any run), the winning family was NEVER PROPOSED in
+5, present-but-lost-later in 6. Invention items (8.17, 8.9, 8.5's third arm) are
+LICENSED, not deferred. Sharpest single evidence: Lang-60's winning family present
+exactly in the roll it was caught, absent in both missed rolls (8.9's case).
+**Joint reading with 8.14 (the part that steers rung 4):** the classes OVERLAP,
+they do not add — the judge is where misses are observed, but for ≥5 the outcome
+was fixed upstream; a judge-side fix cannot recover a never-proposed leg, an
+invention-side fix cannot recover a merited dismissal. Neither lever substitutes
+for the other.
+**Two caveats on the count (2026-08-01, main-session review):** (1) the "5 is a
+floor" direction argument holds for loose matching but NOT for name drift —
+token-overlap on LLM-assigned names across rolls can produce false ABSENT; (2) one
+concrete reconciliation is open: 2d recorded 12 distinct categoryplot-* rules
+proposed in final30A, the same roll 8.14b marks never-proposed for Chart-19.
+Either the night-era winning family differs from categoryplot-* (state which in
+the doc) or the row flips and the count is 4 of 11. Materiality stands either way.
+**Math-104 (3 instances, "never caught"):** not a lever-less class — 2 of its 3
+instances are fired-and-dismissed rows, i.e. inside 8.18's read population, and
+the step-1 adjudication (1d02859: drift-kill B, most borderline; dev-fix 6.77e-15
+satisfies, overfit 8.2e-10 violates) is on record. 8.18's read of its dismissing
+verdicts decides which it is: merited near-tolerance dismissals (→ honestly
+unwinnable at current tolerance; the parked floor question) or drift (→ the judge
+lever covers it).
 
 ### 8.15 Authority-tier separating study — offline, free, after 8.14
 **Target:** the kept verdicts of the final30 pair (67 genuine-catch / 23
@@ -596,10 +626,10 @@ inference is admissible).
 **Must address:** the mined54 precedent (a mined flood cost Lang-7's TP — mining
 feeds the screen, never bypasses it, and survivors compete for the same
 `--synth_max_rules` slots); template reach on our observable shapes; interaction
-with 8.9 (both are anti-lottery mechanisms — never measured together). Build only
-if 8.14b (the winning-family fate read) shows never-invented is a material miss
-class — 8.14's leg-level ledger measured construction death at ZERO and cannot see
-invention (2026-08-01).
+with 8.9 (both are anti-lottery mechanisms — never measured together). Gate
+SATISFIED 2026-08-01: 8.14b measured never-proposed at ≥5 of 11 assessable misses
+(4 of 11 if the Chart-19/2d reconciliation flips one row) — the design note is
+licensed.
 
 ### 8.18 Dismissal-side authority study — free, the largest miss class's first lever
 **Target:** the 8 judge-dismissal miss instances in 8.14's ledger (station 7,
@@ -647,9 +677,11 @@ miss station; 8.15 is read against BOTH populations (a tier that voids guard
 catches fails).
 *Rung extended 2026-08-01 by 8.14's outcome:* 8.6 DONE (fourth residual,
 fully closed), 8.14 DONE (dominant miss station = the judge; construction
-death zero). Joining the rung: **8.14b** (winning-family fate read — now the
-actual gate for 8.5's third arm and 8.17) and **8.18** (dismissal-side
-authority study — the largest miss class's first lever candidate).
+death zero), 8.14b DONE (gate SATISFIED — never-proposed ≥5 of 11; invention
+items licensed; one open reconciliation: Chart-19-final30A vs 2d's 12
+categoryplot proposals). Remaining in the rung: **8.15** (with scope),
+**8.18** (guard fixture FIRST — the largest miss class's lever probe, and it
+also decides Math-104's class), then the rung-1 check.
 
 **RUNG 2 — tiny code that protects every later measurement (one mini-batch;
 ~10–50 lines each; no behavior change on semantic legs).**
