@@ -317,7 +317,19 @@ class PromptBuilder:
             " differ in spaces, newlines or statement-separator placement,"
             " and a raw-string firing over formatting will be dismissed in"
             " review — burying the real content difference the same"
-            " comparison would have caught.",
+            " comparison would have caught."
+            " COMPARE NORMALIZED, BUT RECORD RAW: whenever you normalize"
+            " before comparing, the alarm message MUST also carry the"
+            " PRE-normalization values, under these exact key names:"
+            " `expectedNormalized=` `actualNormalized=` `expectedRaw=`"
+            " `actualRaw=`. Emit the two Raw keys ONLY when you actually"
+            " normalized, so their absence means no normalization happened."
+            " Reason: a downstream check asks whether your reported value"
+            " equals a value the failing test pins, and the test pins the RAW"
+            " form — a message carrying only the normalized form can never"
+            " match it, so that check is dead for your alarm and a real"
+            " dismissal is lost. Named keys, never positional: the reader must"
+            " never have to guess which form it is holding.",
             "",
             "4. THEN GENERALISE — but keep every assertion TRUSTED. The"
             " lifted pair tells you the answer for ONE input only. Do not"

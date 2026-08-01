@@ -39,3 +39,42 @@ def test_preexisting_calibration_strings_untouched():
     assert "OBSERVED EVIDENCE BEATS HYPOTHETICALS" in _GUIDANCE
     assert "ROUNDING FLOOR" in _GUIDANCE
     assert "TEST the counterexample, twice" in _GUIDANCE
+
+
+# --- 8.4: compare normalized, RECORD raw ---------------------------------
+
+def test_codegen_prompt_requires_raw_values_alongside_normalized():
+    """The setup-divergence rung asks whether the reported value equals a value
+    the failing test pins — and the test pins the RAW form. A message carrying
+    only the normalized form can never match, so the rung is structurally dead
+    for every normalizing check (17% of accepted harnesses; why Closure-62 was
+    unreachable)."""
+    from java.harness import prompts
+    src = open(prompts.__file__).read()
+    assert 'expectedRaw=' in src and 'actualRaw=' in src
+    assert 'expectedNormalized=' in src and 'actualNormalized=' in src
+
+
+def test_the_raw_keys_are_named_not_positional():
+    """Standing rule 15's family, in a component whose failure mode is silent:
+    an extractor reading the wrong form would be fail-open and invisible. The
+    prompt must forbid positional reporting explicitly."""
+    from java.harness import prompts
+    src = open(prompts.__file__).read()
+    assert 'Named keys, never positional' in src
+
+
+def test_raw_keys_are_conditional_so_their_absence_is_meaningful():
+    """Emitting Raw only when normalization happened makes absence mean 'no
+    normalization', not 'normalized but forgot to record'."""
+    from java.harness import prompts
+    src = open(prompts.__file__).read()
+    assert 'ONLY when you actually' in src
+
+
+def test_the_normalize_instruction_itself_is_unchanged():
+    """8.4 adds recording; it must NOT relax the comparison. Normalizing before
+    comparing is still correct and still required."""
+    from java.harness import prompts
+    src = open(prompts.__file__).read()
+    assert 'never compare raw strings — normalize BOTH sides' in src
