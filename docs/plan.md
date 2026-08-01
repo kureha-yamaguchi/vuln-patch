@@ -249,11 +249,17 @@ category before it ships.
   2026-08-01) — one shape: accusations no delivered fact dislodges. Math-39 is the
   hardest variant: the invoked tier-1 authority is REAL (testTooLargeFirstStep pins
   the property) but its scope does not extend to the firing; the deciding fact was
-  delivered on every chain and read as corroboration. (final30A's own Math-39 chains
-  are not yet read — confirm the same mechanism there before calling it fully
-  characterized.) **Hard column:** Closure-38, Math-104. **Coin-flips:** Lang-60,
+  delivered on every chain and read as corroboration. (8.6 fully closed 2026-08-01:
+  final30A shows the same mechanism — three rolls, nine accusations, one mechanism.)
+  **Hard column:** Closure-38, Math-104. **Coin-flips:** Lang-60,
   Math-68, Math-73, Closure-92. **Multi-mode:** Lang-63 (all three failure modes on
   record).
+- **Miss stations (8.14, 2026-08-01):** across the three current-config runs, 8 of
+  14 misses reach a judge and are dismissed; 5 build but never fire; 0 die at
+  harness construction. The judge is simultaneously the largest recall class
+  (over-dismissal) and the capped precision component (under-dismissal) — opposite
+  directions, so no single strictness knob fixes both; the lever must be
+  evidence-shaped or architectural.
 - **Honestly open:** Chart-19's missed-twice→caught-twice flip in the pricing pair —
   not repair (attempt-tag grep), not the gate correction (old detector passes both
   firing harnesses); remaining candidates composition/variance.
@@ -413,12 +419,14 @@ one roll each at -m 12 and -m 16, same commit; read INVENTION RATES of known win
 families per leg from traces (not pooled scores). Side benefit: two more Chart-19
 rolls inform the open composition-vs-variance question at zero extra cost. If -m 16 materially raises invention, adopt it as standard and record the
 config change; if not, Chart-19's fragility attributes to variance/composition and
-stays open. If 8.14's ledger shows never-invented / invented-but-died as a material
-miss class, a third arm may join this suite as its OWN measurement point (separate
-roll, same legs): focused per-source synthesis, whose 07-20 kill verdict is void
-under the single-roll ban (one-roll-per-arm A/B) while it holds the campaign's best
-recall evidence (foc5 4/4 by-pass targets, foc15 R=0.89) — read invention rates the
-same way, and re-adjudicate it properly either way.
+stays open. 8.14 outcome note (2026-08-01): leg-level construction death measured
+ZERO, so read this suite as the Chart-19-specific budget question, not a general
+recall-lever test. If 8.14b (the winning-family fate read) shows never-invented as
+a material miss class, a third arm may join this suite as its OWN measurement point
+(separate roll, same legs): focused per-source synthesis, whose 07-20 kill verdict
+is void under the single-roll ban (one-roll-per-arm A/B) while it holds the
+campaign's best recall evidence (foc5 4/4 by-pass targets, foc15 R=0.89) — read
+invention rates the same way, and re-adjudicate it properly either way.
 
 ### 8.6 Math-39 event-chain read — DONE 2026-08-01: named mechanism
 **Target:** archived pricing-pair traces, both Math-39 accusing verdicts' full evidence
@@ -431,8 +439,9 @@ mechanism, sixth bucket-(a) case — five accusing verdicts across the pricing p
 all CITATION: NONE with the trigger-lift and buggy-replay facts delivered. The
 invoked tier-1 authority is REAL and in-scope claims stop at the test's own
 scenario; the firing sits outside it (two fuzzed values). Consequences applied:
-Math-39 → fourth residual; 8.15 gains the authority-SCOPE dimension. Open remnant:
-final30A's Math-39 chains unread — one cheap grep to confirm the same mechanism.
+Math-39 → fourth residual; 8.15 gains the authority-SCOPE dimension. Remnant closed
+(6ffa9f0): final30A carries 4 more accusations, same shape, same delivered facts,
+all uncited — three rolls, nine accusations, one mechanism.
 
 ### 8.7 Marker-field fix — small, ships with next build
 **Target:** `campaign.py` acceptance bookkeeping + the `harness-repair` trace event.
@@ -519,6 +528,23 @@ family never invented / invented but died at harness construction / built but ne
 fired / fired but judge-dismissed — with the trace line. One table, committed raw
 before interpretation. Feeds the 8.5 read-out (including its focused-synthesis arm
 decision) and the 8.17 build/no-build gate.
+**Outcome (`docs/replay/backtrack/8.14-MISS-LEDGER.md`, raw table committed first —
+DONE 2026-08-01):** 14 missed leg-instances: fired-all-dismissed 6,
+built-never-fired 5, fired-mixed 2, fired-never-judged 1, died-at-construction 0.
+The dominant miss station is the JUDGE: 8 of 14 misses reach a judge and are
+dismissed — recall lost to OVER-dismissal, the mirror of the precision ceiling's
+under-dismissal. Same component, opposite directions: no single strictness knob can
+fix both. This replicates the cycle-5 inventory finding (22 of 23 FN legs
+all-UNSOUND) under current config. Stated limitation: the ledger is LEG-level and
+cannot see "never invented" (it would hide inside the 5 built-never-fired legs);
+the two known winning-family fates on record ARE invention-shaped (Chart-19's
+family died at harness construction per 2d; Lang-63's is a roll lottery per
+a75012d). Open reconciliation: two rows carry judged=1 with fired=0
+(replay-track?) — pin the `fired` column's definition; reclassifying them only
+grows the judge class.
+**Follow-up 8.14b (free, REQUIRED):** per-missed-leg winning-family fate read — was
+a decisive family proposed, screened, built, fired? 8.14b, not 8.14, now gates
+8.5's third arm and 8.17.
 
 ### 8.15 Authority-tier separating study — offline, free, after 8.14
 **Target:** the kept verdicts of the final30 pair (67 genuine-catch / 23
@@ -570,7 +596,30 @@ inference is admissible).
 feeds the screen, never bypasses it, and survivors compete for the same
 `--synth_max_rules` slots); template reach on our observable shapes; interaction
 with 8.9 (both are anti-lottery mechanisms — never measured together). Build only
-if 8.14 shows never-invented / invented-but-died is a material miss class.
+if 8.14b (the winning-family fate read) shows never-invented is a material miss
+class — 8.14's leg-level ledger measured construction death at ZERO and cannot see
+invention (2026-08-01).
+
+### 8.18 Dismissal-side authority study — free, the largest miss class's first lever
+**Target:** the 8 judge-dismissal miss instances in 8.14's ledger (station 7,
+dismissal direction); `relation_verifier.verify()` dismissing verdicts.
+**Failure mode:** 8.14 found the largest miss class — genuine catches dismissed by
+the judge — has NO queued lever. Cycle-5's drift-kill read (uncorroborated "a
+correct implementation could…" hypotheticals, wrong in 4 of 6 measured instances)
+predates every current gate; whether it still describes these 8 under current
+config is unmeasured.
+**Steps:** mirror 8.15 on the dismissal side: for each dismissing verdict on the 8
+instances, classify the counterexample's authority (grounded in shown source /
+docs / buggy behavior — or hypothetical, CITATION: NONE) and its scope. Committed
+raw. If ungrounded hypotheticals dominate, the lever candidates are 8.2's
+scope-note mechanism (ground the hypothetical against buggy/docs) and the 8.1
+outcome; if grounded dismissals dominate, the loss is upstream of any judge fix
+and the class is honestly closed.
+**Guard (INVERTED):** any keep-pushing mechanism this licenses must show
+~zero cost on the correctly-dismissed firings of correct legs BEFORE anything else
+is measured — the two-directions finding makes this the sharpest guard rule in the
+plan: the same component is failing both ways, so a fix for one direction is
+presumed to damage the other until measured.
 
 ### Execution ladder (replaces the sequencing paragraph, 2026-08-01)
 
@@ -592,6 +641,11 @@ the PASS bar depends on.
 **CHECK:** tables committed raw before interpretation; 8.14 names the dominant
 miss station; 8.15 is read against BOTH populations (a tier that voids guard
 catches fails).
+*Rung extended 2026-08-01 by 8.14's outcome:* 8.6 DONE (fourth residual,
+fully closed), 8.14 DONE (dominant miss station = the judge; construction
+death zero). Joining the rung: **8.14b** (winning-family fate read — now the
+actual gate for 8.5's third arm and 8.17) and **8.18** (dismissal-side
+authority study — the largest miss class's first lever candidate).
 
 **RUNG 2 — tiny code that protects every later measurement (one mini-batch;
 ~10–50 lines each; no behavior change on semantic legs).**
@@ -613,8 +667,10 @@ target (today all `unknown`; success = any move to `matches`/`differs`).
 1. 8.1 judge swap + REQUIRED noise floor (~2–3M total; launches only on the
    user's phrase) — the biggest open question: is the ceiling the architecture
    or the model? Read-out pre-registered (per-case flips vs the floor).
-2. 8.5 relation budget −m 12 vs −m 16, plus the 8.14-gated focused-synthesis
-   third arm (~1–1.5M) — the cheapest recall-lever test.
+2. 8.5 relation budget −m 12 vs −m 16, plus the now-8.14b-gated
+   focused-synthesis third arm (~1–1.5M) — demoted 2026-08-01 by 8.14's
+   outcome: read as the Chart-19-specific budget question, not a general
+   recall-lever test.
    **CHECK:** invention rates of known winning families per leg, from traces,
    never pooled scores; two-roll rule for any claimed flip.
 3. 8.12(c) crash14 rerun (~1–2M) — **CHECK:** per-leg vs the 07-16 baseline
