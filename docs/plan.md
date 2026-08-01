@@ -547,7 +547,18 @@ the lint's three cases. Struck reasoning kept legible below the corrected design
 not deleted. 585 passed, 7 skipped.
 STATUS: lint is built but UNWIRED — a detector nothing calls guards nothing
 (rule 15's shape, named rather than left sitting). Wiring into acceptance is the
-immediate next step, BEFORE the raw-vs-pinned comparison build.**
+immediate next step, BEFORE the raw-vs-pinned comparison build.
+→ WIRED (427ccd5): gate 0c2 at acceptance (`campaign.py:601`), 589 passed 7
+skipped. The rejection diagnostic is load-bearing and test-pinned: it says keep
+the comparison NORMALIZED and add the raw values — a model reading "record raw"
+as "compare raw" would undo the normalization and trade a dead dismissal rung
+for formatting false positives. Four tests: lint-is-called, gate-before-
+acceptance (the 8.8 placement lesson), diagnostic-preserves-comparison, and a
+REAL archived compliant harness (silent as generated, objects when its Raw keys
+are stripped — the population-that-can-fire corollary). Remaining: the
+raw-vs-pinned comparison, shipping at best as observably-inert-on-old-data plus
+mechanism-correct-on-new-data — neither is a safety claim; the real guard is the
+next full suite read per-event.**
 
 ### 8.5 Relation-budget experiment (-m 12 vs -m 16) — cheap, anytime (~1M)
 **Target:** the `-m` relation-synthesis cap in suite COMMON flags.
