@@ -241,14 +241,19 @@ category before it ships.
   cost-negative (−2.3 attempts/leg).
 - **Precision ceiling ADOPTED: ~5 accusations on the trap set** under the current
   architecture — over measured refutations: no recorded feature separates kept catches
-  from kept false accusations; the deciding fact is present in 5 of 7 cases but
-  case-specific (no general gate); adjacent verbatim delivery is ignored; the narrow
-  quote-forced question voids 22% of guards. Remaining directions are architectural
-  (cycle-8 items 8.1–8.3).
-- **Residuals (chronic):** Closure-62, Math-30, Math-65 — one shape: accusations no
-  delivered fact dislodges. **Watch:** Math-39 (2-for-2, repair ruled out, event read
-  = 8.6). **Hard column:** Closure-38, Math-104. **Coin-flips:** Lang-60, Math-68,
-  Math-73, Closure-92. **Multi-mode:** Lang-63 (all three failure modes on record).
+  from kept false accusations; the deciding fact is present in 6 of 8 decisive cases
+  (8.6 added Math-39 as the sixth) but case-specific (no general gate); adjacent
+  verbatim delivery is ignored; the narrow quote-forced question voids 22% of guards.
+  Remaining directions are architectural (cycle-8 items 8.1–8.3).
+- **Residuals (chronic):** Closure-62, Math-30, Math-65, Math-39 (fourth — 8.6,
+  2026-08-01) — one shape: accusations no delivered fact dislodges. Math-39 is the
+  hardest variant: the invoked tier-1 authority is REAL (testTooLargeFirstStep pins
+  the property) but its scope does not extend to the firing; the deciding fact was
+  delivered on every chain and read as corroboration. (final30A's own Math-39 chains
+  are not yet read — confirm the same mechanism there before calling it fully
+  characterized.) **Hard column:** Closure-38, Math-104. **Coin-flips:** Lang-60,
+  Math-68, Math-73, Closure-92. **Multi-mode:** Lang-63 (all three failure modes on
+  record).
 - **Honestly open:** Chart-19's missed-twice→caught-twice flip in the pricing pair —
   not repair (attempt-tag grep), not the gate correction (old detector passes both
   firing harnesses); remaining candidates composition/variance.
@@ -259,8 +264,9 @@ Runs only after the cycle-8 batch lands, on the user's word. Width 5 / -m 12 (pe
 8.5), both rolls same commit, zero changes between, per-leg reading, tripwire: any new
 accuser greped for the harness-repair marker before attribution.
 **PASS = paired mean > 0.685 AND ≤5 accusations per roll AND zero accusations on
-historically clean legs.** The former sub-5 "strong" tier is RETIRED — see the ceiling
-evidence above and in plan-history.md.
+historically clean legs.** The historically-clean set excludes the four named
+residuals — Math-39 left it via 8.6 (2026-08-01). The former sub-5 "strong" tier is
+RETIRED — see the ceiling evidence above and in plan-history.md.
 
 ## PARKED (pointers; full specs in plan-history.md)
 
@@ -414,12 +420,19 @@ under the single-roll ban (one-roll-per-arm A/B) while it holds the campaign's b
 recall evidence (foc5 4/4 by-pass targets, foc15 R=0.89) — read invention rates the
 same way, and re-adjudicate it properly either way.
 
-### 8.6 Math-39 event-chain read — free, BEFORE any next measurement
+### 8.6 Math-39 event-chain read — DONE 2026-08-01: named mechanism
 **Target:** archived pricing-pair traces, both Math-39 accusing verdicts' full evidence
 chains (facts delivered, gates consulted, judge WHY/CITATION).
 **Failure mode:** an unexplained NEW repeat accuser (2-for-2 after clean history;
 repair ruled out by attempt-tag grep). Outcome: either a named mechanism (joins the
 chronic list / licenses a fix) or documented judge-lottery (watch list entry closed).
+**Outcome (`docs/replay/backtrack/8.6-MATH39.md`, verified against traces):** named
+mechanism, sixth bucket-(a) case — five accusing verdicts across the pricing pair,
+all CITATION: NONE with the trigger-lift and buggy-replay facts delivered. The
+invoked tier-1 authority is REAL and in-scope claims stop at the test's own
+scenario; the firing sits outside it (two fuzzed values). Consequences applied:
+Math-39 → fourth residual; 8.15 gains the authority-SCOPE dimension. Open remnant:
+final30A's Math-39 chains unread — one cheap grep to confirm the same mechanism.
 
 ### 8.7 Marker-field fix — small, ships with next build
 **Target:** `campaign.py` acceptance bookkeeping + the `harness-repair` trace event.
@@ -447,9 +460,9 @@ must not fight). Run-local only; nothing crosses runs.
 **Target:** this plan's measurement protocol section.
 Keep current: re-scoped bar (PASS = paired mean > 0.685 AND ≤5 accusations per roll AND
 zero accusations on historically clean legs; the old <5 strong tier retired with a
-pointer to the ceiling evidence), residuals (Closure-62, Math-30, Math-65 + Math-39
-pending 8.6), Chart-19 recorded honestly open (two causes eliminated: not repair, not
-the gate correction).
+pointer to the ceiling evidence), residuals (Closure-62, Math-30, Math-65, Math-39 —
+8.6 confirmed the fourth), Chart-19 recorded honestly open (two causes eliminated:
+not repair, not the gate correction).
 
 ### 8.11 (optional) Repo housekeeping from the commit audit — anytime, zero risk
 **Target:** dead modules the 2026-07-19 commit audit marked for deletion, still
@@ -516,7 +529,11 @@ never tested WHICH AUTHORITY the checked property derives from: the failing test
 pins / the buggy build off-defect / a grounded doc quote / the model's memory or
 the patch itself. The chronic accusations assert remembered contracts (Math-65's
 inverse formula, CITATION: NONE); the trust hierarchy exists today only as prompt
-guidance — the channel the meta-rule says is weak.
+guidance — the channel the meta-rule says is weak. 8.6 added a HARD requirement
+(2026-08-01): tier alone mislabels Math-39 — its accusation invokes tier 1 and is
+entitled to; what fails is SCOPE. The study must classify authority-tier AND
+authority-scope (does the invoked authority's pinned property extend to the firing
+input? Math-39: exact test setup, but two fuzzed values leave the pinned scenario).
 **Steps:** classify each kept verdict's property (mechanically where possible:
 test-literal match, doc-quote grounding, buggy-replay presence; by hand where not);
 commit the table raw; read separation against BOTH populations — a tier that voids
