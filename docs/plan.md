@@ -538,6 +538,16 @@ truncated copy, the inverse of the four contamination inflations;
 `count_in_fired_alarms_only` gains a truncation guard that REFUSES to answer on
 ellipsis-terminated records rather than undercounting (rule 8's principle: a
 display transform must not silently stand in for the original).
+**Shipped (b59ba3b): guard raises `TruncatedRecord` (silent undercount is
+indistinguishable from real absence — the whole lesson); explicit
+`on_truncation='count'` opt-out for callers who've established the needle can't
+appear late; `tests/test_record_vs_thing.py` pins both directions (inflation:
+prompt/constructing text not counted; deflation: truncated record refused) plus
+the lint's three cases. Struck reasoning kept legible below the corrected design,
+not deleted. 585 passed, 7 skipped.
+STATUS: lint is built but UNWIRED — a detector nothing calls guards nothing
+(rule 15's shape, named rather than left sitting). Wiring into acceptance is the
+immediate next step, BEFORE the raw-vs-pinned comparison build.**
 
 ### 8.5 Relation-budget experiment (-m 12 vs -m 16) — cheap, anytime (~1M)
 **Target:** the `-m` relation-synthesis cap in suite COMMON flags.
