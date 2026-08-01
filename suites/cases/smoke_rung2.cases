@@ -1,0 +1,35 @@
+# Rung-2 close smoke (2026-08-01). TWO legs, ~300-500k.
+#
+# Same two legs as the cycle-7 pre-pair smoke (smoke7_20260730_104806), so the
+# "zero verdict changes" criterion has a real baseline instead of an assumption:
+#   Closure-62_c -> TN in smoke7
+#   Math-65_c    -> FP in smoke7
+# Math-65_c is also the archive's richest repair leg (8 rejections, 6 cleared,
+# both shipped repair types), so the repair marker has something to mark.
+#
+# WHAT THIS SMOKE MUST SHOW (rung-2 gate, all four):
+#   1. mislabel refusal   — tested separately and offline (8.8 exits 2 on a
+#                           -c/Doverfitting mismatch); NOT exercised here,
+#                           because a deliberately broken cases file would
+#                           refuse to launch and produce no run.
+#   2. repair marker      — an ACCEPTED harness carrying
+#                           "[FROM REPAIRED ATTEMPT: ...]" and its detail fields
+#                           (8.7). This is the first LIVE exercise of that field.
+#   3. five rate states   — the 8.13 split observed in a real trace, not a test:
+#                           no-measurement / buggy-side-unmeasured / below-bar /
+#                           catch-profile-skipped / at-or-above-bar. Some states
+#                           are rare, so the gate is "every state that appears is
+#                           one of the five, and at least two distinct appear".
+#   4. zero verdict changes vs smoke7 on these two legs.
+#
+# Rung 2 is protective code with no verdict surface: 8.7 adds a trace field, 8.8
+# refuses bad input, 8.12(a) is tests only. If a verdict moves, something
+# unintended changed and the batch does not close.
+#
+# Config matches the pair and the cycle-7 smoke exactly (-n 5 -m 12).
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+)
