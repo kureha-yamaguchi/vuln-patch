@@ -20,7 +20,8 @@ import os
 import re
 import sys
 import glob
-from concurrent.futures import ThreadPoolExecutor
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
@@ -107,6 +108,11 @@ def collect():
     return out
 
 
+def key_of(c):
+    """Stable identity of a case, for resume-by-skip."""
+    return (c['bug'], c['roll'], c['population'], c['premise'])
+
+
 def ask(gen, case):
     prompt = TEMPLATE.format(premise=case['premise'], context=case['material'])
     try:
@@ -142,10 +148,47 @@ def main():
           f"{sum(1 for c in cases if c['population']=='guard')} guard)",
           flush=True)
     print(f"model: {model or 'config-default'} -> {out_path}", flush=True)
-    gen = (HarnessGenerator(model=model, temperature=0.0, top_p=1.0)
-           if model else HarnessGenerator(temperature=0.0, top_p=1.0))
-    with ThreadPoolExecutor(max_workers=6) as ex:
-        results = list(ex.map(lambda c: ask(gen, c), cases))
+    # EXECUTION HARNESS ONLY — the question, the populations and the mechanical
+    # grounding check above are untouched. The first gpt-5.5 attempt deadlocked
+    # after ~90 of 91 calls (main thread parked on an ex.map future, no sockets,
+    # no CPU) and every result was lost because they were only written at the
+    # end. So: bounded per-call timeout, one line written per completed case,
+    # and resume-by-skip on restart.
+    kw = dict(temperature=0.0, top_p=1.0, timeout=300.0)
+    gen = (HarnessGenerator(model=model, **kw) if model
+           else HarnessGenerator(**kw))
+
+    partial = out_path + '.partial.jsonl'
+    done, results = set(), []
+    if os.path.exists(partial):
+        for line in open(partial):
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue          # a torn last line; re-do that case
+            results.append(r)
+            done.add(key_of(r))
+        print(f"resuming: {len(done)} already done", flush=True)
+
+    todo = [c for c in cases if key_of(c) not in done]
+    print(f"to run: {len(todo)}", flush=True)
+    lock = threading.Lock()
+    with open(partial, 'a') as pf:
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            futs = {ex.submit(ask, gen, c): c for c in todo}
+            for i, fut in enumerate(as_completed(futs, timeout=3600), 1):
+                try:
+                    r = fut.result()
+                except Exception as e:                    # never lose the run
+                    c = futs[fut]
+                    r = {**c, 'verdict': 'ERROR', 'quote': '',
+                         'grounded': False, 'error': str(e)[:120]}
+                with lock:
+                    results.append(r)
+                    pf.write(json.dumps(r) + '\n')
+                    pf.flush()
+                if i % 10 == 0 or i == len(todo):
+                    print(f"  {i}/{len(todo)}", flush=True)
     with open(out_path, 'w') as f:
         json.dump(results, f, indent=1)
 
