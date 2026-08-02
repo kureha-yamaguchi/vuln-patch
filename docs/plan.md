@@ -418,7 +418,10 @@ model question is closed.**
 - The flips are not randomly signed: floor 8 drop→keep / 13 keep→drop (sign test
   p=0.3833); gpt-5.5 21 drop→keep / 2 keep→drop (p=0.0001). gpt-5.5 dismisses
   less: recall 81.7%→95.8%, specificity 79.6%→74.5%, extra keeps 10 genuine
-  catches + 9 false alarms (~1:1). A SHIFTED DISMISSAL THRESHOLD, not better
+  catches + 9 false alarms (~1:1). (Caveat added 2026-08-02: on 34% of rows
+  the judged alarm headline was a 201-char truncated prefix — full evidence
+  alongside; same-shape conclusion unaffected, absolute figures carry this
+  note. See the cases228 substrate repair under 8.3.) A SHIFTED DISMISSAL THRESHOLD, not better
   discrimination; accuracy unmoved — and a threshold does not require a model
   swap to buy. (On the pipeline's own bar, +9 accusations would blow the ≤5
   cap — not adoptable as-is even if wanted.)
@@ -552,7 +555,27 @@ prior offline studies read message CONTENT (vs row metadata) and whether any
 of the 7 decisive-case rows sit among the 78 — model-comparison conclusions
 (8.1) are internally consistent either way (both models saw the same
 substrate), but any content-dependent claim on a truncated decisive row
-deserves a one-grep re-check. 651 passed, 7 skipped. Offline
+deserves a one-grep re-check. 651 passed, 7 skipped.
+**Check DONE (2026-08-02) — clean for the claim class that mattered, with
+bounds:** truncation is confined to ONE field, `fired_assertion` (78/228 at
+max 201 chars); `concrete_evidence` (max 7,187), `code_context` (max 47,913),
+`failing_test`, `harness_source` all whole. "Delivered and ignored" rests on
+evidence/context, not the headline — Math-65's code_context is 28,207 chars,
+the exact text the character-27,051 read was performed against; all 12
+Math-65 rows carry full evidence. BUT 36 of the 78 clipped headlines sit on
+the 7 decisive bugs (Math-73 9, Math-30 8, Closure-62 7, Lang-60 7, Math-65
+3, Chart-26 1, Math-39 1); 31 repaired, 5 permanent including one Math-65 and
+one Math-39 row. Per-consumer bounds: 8.14/8.15/8.18 read judge OUTPUT blocks
+in traces — unaffected (nuance kept: a trace holds both capped alarm records
+and uncapped judge output, so "verified against traces" is not
+self-certifying; these are clean because they read the latter).
+`verifier_replay` passes fired_assertion straight to the judge
+(verifier_replay.py:257), so 8.1 part A and the floor judged a 201-char alarm
+prefix on 34% of rows WITH full evidence alongside — the same-failure-shape
+conclusion stands (both models, same substrate, complete evidence); the
+absolute figures (80.3%/81.7% etc.) carry this caveat when cited. STANDING:
+all future replays use `cases228_untruncated.jsonl` minus the 8 flagged rows;
+the original is never corrected in place. Offline
 tests from archived raw outputs where any exist; otherwise fixture-built. Validation
 rides the next live run passively — no dedicated run. If this ships, ONE re-ask of
 8.15's scope dimension is licensed (firing input vs the test's pinned scenario,
