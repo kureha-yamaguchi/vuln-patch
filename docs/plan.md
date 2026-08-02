@@ -267,7 +267,13 @@ category before it ships.
     next instance within hours: an 8.12(a) test stub declared `family_duty(**kw)`
     against a positional call — every invocation threw, took the fail-open path,
     and three tests passed while testing nothing; found by checking assertion
-    directions, not pass counts. Fifth instance (2026-08-01): 8.4's planned
+    directions, not pass counts. Seventh instance (2026-08-02, the batch
+    smoke): inputs must not merely EXIST — they must ARRIVE. 8.4's Raw keys
+    were emitted, recorded, and stripped in transit by a 200-char display cap
+    before the comparison saw them; every piece was verified in isolation and
+    the journey never was. Existence is a property of the producer; arrival is
+    a property of the journey; only an end-to-end run tests the journey.
+    Fifth instance (2026-08-01): 8.4's planned
     67-row guard measurement — archived rows cannot carry the new Raw keys, so
     the dismiss-pushing comparison would no-op on all 67 and the guard would
     pass unexercised; claims re-scoped per population. Corollary applied since:
@@ -632,6 +638,30 @@ rather than trusted — ambiguity degrades confidence, never resolves silently.
 **BATCH ASSEMBLED: 8.4 (all three parts) + 8.7 + 8.8 + 8.12(a) pins, one build.
 Status: observably-inert-on-old-data + mechanism-correct-on-new-data; the real
 guard is the next live suite read per-event.**
+**BATCH SMOKE (batch8_20260802_123712 at 2cc051f, 343,328 tokens): FAILED —
+batch REOPENED.** Build runs end to end; 8.7's marker fired live (Closure-38);
+8.4's prompt half compliant (lint: 0 of 9 normalizing harnesses flagged, gate
+0c2 correctly silent). But 8.4's comparison is DEFEATED in transit:
+`oracle_strength.exception_headlines` caps every headline at 200 chars, the
+capped string becomes `fired_all → fired` — the comparison's exact input — and
+the Raw keys sit last, so the cap strips them first. Measured on the run: 4
+normalizing firings reach the comparison, 1 still carries actualRaw= (at 198
+chars, two under the cap — the only non-unknown result), 2 visibly truncated.
+Every piece verified correct in isolation; nobody checked the journey. Verdict
+table recorded NOT scored (rule 16: only baseline differs by the whole batch).
+**FIX DECIDED (2026-08-02): split the consumers.** The cap's reasons (prompt
+size, dedup) are prompt/display-side; the comparison is code with no token
+budget — it gets the UNCAPPED headline (full output is available at the
+extraction site); prompt/dedup keep 200 unchanged, pinned. The defect is 8.4's
+own thesis violated one level up: a display transform standing in for the
+record. Fallback only if dual-form proves invasive: middle-truncation
+preserving whole trailing key/value pairs, elision marked. Requirements: (1)
+journey test pinned — a >200-char Raw-carrying alarm reaches
+`fired_value_vs_trusted` intact end-to-end; (2) ellipsis-bearing comparison
+input reads as DOUBTFUL, never trusted; (3) dedup/prompt behavior pinned
+unchanged. **Second smoke authorized (~350k); the 30-leg pair HELD until it
+passes — the pair is 8.4's live guard, and a mechanism inert on 3 of 4 firings
+guards nothing.**
 
 ### 8.5 Relation-budget experiment (-m 12 vs -m 16) — cheap, anytime (~1M)
 **Target:** the `-m` relation-synthesis cap in suite COMMON flags.
