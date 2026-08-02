@@ -1,0 +1,10 @@
+{
+  "suite": "batch8b",
+  "stamp": "20260802_135255",
+  "cases_file": "/home/code/experiments-vuln-patch/suites/cases/smoke_batch8.cases",
+  "model": "gpt-5.4",
+  "common_flags": "-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair",
+  "git_sha": "26cb728",
+  "n_cases": 2,
+  "cases": ["-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch","-o patchfile:/home/code/drr/Patches/Doverfitting/SequenceR/Closure/patch1-Closure-38-SequenceR.patch"]
+}
