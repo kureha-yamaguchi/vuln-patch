@@ -1083,6 +1083,24 @@ for the miss classes 8.14 shows are material).
 **CHECK:** every doc carries a guard-set test plan and priced reach; user
 decides build/no-build per doc — a design doc with no guard plan is returned,
 not built.
+*RUNG 5 COMPLETE (dd04743, 2026-08-02): four docs in
+`docs/replay/backtrack/8.{2,9,16,17}-DESIGN.md`, each with station tag,
+failure mode, guard-before-mechanism, and pricing. Check PASSES.* Headlines:
+8.2's authority screen IS the design (reference discarded outright on
+buggy-side disagreement; trigger reach MEASURED not estimated — 58/228 rows,
+25.4%, 9 bugs, an upper bound; P4.2's fixed-code-decides-observables named
+as the load-bearing prior art). 8.9: identity by asserted property, never
+name; prices slot competition vs the novelty gate. 8.16: fact never gate;
+its hard problem named early — fix propagation also moves passing-test
+behavior, so it needs a family-duty split or it accuses correct patches for
+fixing properly. 8.17: buggy-side only, feeds the existing screen, no own
+budget; plausibly damages BOTH guards. 8.9 and 8.17 state in their own text
+that the justification is weak against a 1–4 leg class. Alongside: the
+`verifier_replay` occupied-directory guard shipped OUTSIDE the closed batch,
+with a test walking src/ to prove no shipped module imports it (claim
+checked, not asserted). 8.11 deliberately HELD until after the batch smoke —
+rule 16 applied prospectively: the smoke's baseline stays the immediately
+preceding commit with nothing incidental between. 620 passed, 7 skipped.
 
 **RUNG 6 — gated builds.**
 8.3 buggy-value collector (after 8.1/8.2 confirm direction); validation rides
