@@ -662,6 +662,28 @@ input reads as DOUBTFUL, never trusted; (3) dedup/prompt behavior pinned
 unchanged. **Second smoke authorized (~350k); the 30-leg pair HELD until it
 passes — the pair is 8.4's live guard, and a mechanism inert on 3 of 4 firings
 guards nothing.**
+**DIAGNOSIS CORRECTED before the second smoke spent (26cb728): the cap was
+real but SECONDARY — the primary cause is an embedded NEWLINE.** The lost
+headlines are 312/314 chars with no ellipsis; the capture regex
+(`==\s*Java Exception:\s*(.+)`, `.` excludes newline) stops at the first
+embedded newline, and Closure-62's raw expected output is multi-line BY
+NATURE — the checks 8.4 exists for are exactly the ones the capture could not
+carry (the target population and the plumbing's single-line assumption
+collide). How the wrong diagnosis happened: `exception_headlines` was run over
+TRACE text whose records the trace writer had already ellipsis-truncated, and
+that truncation was attributed to the cap — record-vs-thing a FIFTH time, the
+first corrupting a diagnosis rather than a count; the cap fix passed every
+unit test and would have passed a structural re-smoke while changing nothing.
+**Fix as built (635 passed, 7 skipped):** raw values emitted with \n/\t
+ESCAPED so the alarm stays one line (matching the form of the test's own
+source literal); comparison decodes both sides; the real-newline doubt check
+runs on the CAPTURED text BEFORE decoding (decode-first would report every
+correctly-escaped value unknown — that ordering bug fired in test and is
+pinned); consumer split kept, cap still pinned by the journey test as the
+second cutter. **What the second smoke decides:** of the alarms whose checks
+normalize, how many still carry actualRaw= at the comparison — first smoke 1
+of 4; anything short of near-all means the escaping instruction didn't take,
+and the answer is then a MECHANISM, not a rewording.
 
 ### 8.5 Relation-budget experiment (-m 12 vs -m 16) — cheap, anytime (~1M)
 **Target:** the `-m` relation-synthesis cap in suite COMMON flags.
