@@ -180,6 +180,13 @@ category before it ships.
   considered twice; every wrong "no difference" we ever found came
   from looking at the wrong OUTPUT, never from failing to find the
   right INPUT — P4.2 fixes the actual cause.
+- **Judge-model swap as a precision lever (8.1, CLOSED 2026-08-01)**: per-case
+  flip rate sits at the same-model noise floor (9.2%); the real difference is a
+  shifted dismissal threshold (extra keeps ~1:1 catches:false-alarms, accuracy
+  unmoved, would blow the ≤5 accusation cap); the frozen contradiction question
+  fails identically in count AND cases across models. The ceiling is
+  architectural — model-independent. Do not re-propose absent a different
+  failure shape, which the pre-registered decision table already defines.
 - **Judge majority voting**: dead in BOTH regimes. Without computed
   facts (2026-07-15 replay): error rate unmoved at 3× the cost. WITH
   the full fact stack (2026-07-25, cycle-4a, reverted in ad65fdc):
@@ -287,9 +294,11 @@ category before it ships.
   (8.6 added Math-39 as the sixth) but case-specific (no general gate); adjacent
   verbatim delivery is ignored; the narrow quote-forced question voids 22% of guards;
   authority — tier AND scope — does not separate either (8.15, 2026-08-01: 58/60,
-  29/28, 12/12; the largest scope gap runs the wrong way). Three independent
-  dimensions tested, three negatives. Remaining directions are architectural
-  (cycle-8 items 8.1–8.3).
+  29/28, 12/12; the largest scope gap runs the wrong way); and the ceiling is
+  MODEL-INDEPENDENT (8.1, 2026-08-01: flip rate at the same-model floor, part B
+  failures identical in count and cases). Four independent dimensions tested,
+  four negatives — the ceiling is architectural, confirmed. Remaining directions
+  are evidence-side only (8.2/8.3, plus 8.4 now shipped).
 - **Residuals (chronic):** Closure-62, Math-30, Math-65, Math-39 (fourth — 8.6,
   2026-08-01) — one shape: accusations no delivered fact dislodges. Math-39 is the
   hardest variant: the invoked tier-1 authority is REAL (testTooLargeFirstStep pins
@@ -394,6 +403,32 @@ task-architecture?
    against is fail-open while looking armed.
    **Still gated on the user's phrase: step 1(a) probe, parts A and B, the noise
    floor.**
+**8.1 DONE AND CLOSED (5971360, 2026-08-01; raw committed before scoring, floor
+read before part A): SAME FAILURE SHAPE → the ceiling is ARCHITECTURAL. The
+model question is closed.**
+- Floor: the incumbent disagrees with ITSELF on 21/228 (9.2%) between identical
+  draws. gpt-5.5 vs draw0: 23/228 (10.1%); vs draw1: 32/228 (14.0%) — the flip
+  RATE sits at the floor.
+- The flips are not randomly signed: floor 8 drop→keep / 13 keep→drop (sign test
+  p=0.3833); gpt-5.5 21 drop→keep / 2 keep→drop (p=0.0001). gpt-5.5 dismisses
+  less: recall 81.7%→95.8%, specificity 79.6%→74.5%, extra keeps 10 genuine
+  catches + 9 false alarms (~1:1). A SHIFTED DISMISSAL THRESHOLD, not better
+  discrimination; accuracy unmoved — and a threshold does not require a model
+  swap to buy. (On the pipeline's own bar, +9 accusations would blow the ≤5
+  cap — not adoptable as-is even if wanted.)
+- Part B: fails all three criteria IDENTICALLY to the incumbent — 2 vs ≥7
+  contradiction hits; 10 wrong guard voids (85.1%) each; 5 non-contradiction
+  voids each, landing on the SAME wrong cases (Closure-62, Math-30). Both
+  models produce plausible quotes, not real contradictions.
+- Pre-registered decision applied: same shape → record and close. NEITHER
+  follow-on opens (future-model re-test and cross-model agreement were both
+  conditional on a different shape).
+- Cost: ~8.5M, of which ~3M lost to two harness faults (floor directory
+  collision; part B deadlock), one shared cause: work held in memory until the
+  end is work that can be destroyed. Part B runner now flushes per case and
+  resumes by skip. `verifier_replay` still TRUNCATES an occupied output
+  directory rather than refusing — recorded as a guard to add, deliberately NOT
+  slipped into the closed batch.
 2. Part A: `verifier_replay.py --cases tests/fixtures/cases228.jsonl` (plus the 67-row
    guard fixture) with the judge model set to gpt-5.5 (incumbent judge: gpt-5.4), votes=1, repeats=1. Same prompts,
    zero prompt edits.
@@ -1027,6 +1062,11 @@ user's phrase.
 1. 8.1 judge swap + REQUIRED noise floor (~2–3M total; launches only on the
    user's phrase) — the biggest open question: is the ceiling the architecture
    or the model? Read-out pre-registered (per-case flips vs the floor).
+   *DONE AND CLOSED 2026-08-01 (~8.5M incl. ~3M harness-fault waste): same
+   failure shape — the ceiling is ARCHITECTURAL, model-independent. See the
+   item and the rejected-ideas entry. The board's one card is spent; remaining
+   work is rung 5 (free design docs) and the final gate (user's word for the
+   30-leg pair; fresh12 locked).*
 2. 8.5 relation budget −m 12 vs −m 16, plus the now-8.14b-gated
    focused-synthesis third arm (~1–1.5M) — demoted 2026-08-01 by 8.14's
    outcome: read as the Chart-19-specific budget question, not a general
