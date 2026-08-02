@@ -113,3 +113,87 @@ detail, so it is recorded here rather than slipped in.
 none has a verdict surface and all behaved. 8.4's prompt and gate work. 8.4's
 comparison, the part the pair was meant to guard live, is inert for ~3 of every 4
 firings it was built for.
+
+---
+
+# CORRECTION: the 200-char cap was NOT the cause. A newline was.
+
+Found by testing the cap fix against the smoke's own data before spending the
+re-run on it. The fix recovered **nothing**:
+
+```
+  headlines reporting a Normalized value: 4
+    carrying actualRaw=  BEFORE (capped): 1
+    carrying actualRaw=  AFTER  (full)  : 1
+```
+
+The headlines that lost their keys are **312 and 314 characters with no
+ellipsis** — nothing had capped them. They stop exactly here:
+
+```
+...actualNormalized=javascript/complex.js:1:ERROR-errordescriptionhere
+   expectedRaw=javascript/complex.js:1: ERROR - error description here
+                                                                      ^ stops
+```
+
+which is precisely where the pinned literal continues `\nassert (1;\n     ^\n`.
+
+**The real cause.** `_HEADLINE_RES` is line-oriented:
+
+```python
+re.compile(r'==\s*Java Exception:\s*(.+)')     # `.` excludes newline
+```
+
+8.4's raw form of formatted text CONTAINS newlines — Closure-62's expected
+output is multi-line by nature — so the alarm spans lines and everything after
+the first embedded newline, including `actualRaw=`, is never captured at all.
+The one firing that worked (`getsource-line-roundtrip`, 198 chars) has
+single-line raw values: `assert (1;` and `null`.
+
+**So the checks 8.4 exists for are exactly the ones it could not serve.**
+Formatted multi-line output is both the reason to normalize and the reason the
+raw record was lost.
+
+## What I got wrong, and how
+
+I inferred "truncated at the 200-char cap" from applying `exception_headlines`
+to trace text whose records had **already** been ellipsis-truncated by the trace
+writer — so I measured the trace's truncation and attributed it to the cap.
+Record-vs-thing a fifth time, and the first time it corrupted a diagnosis rather
+than a count.
+
+The discipline that caught it was cheap and should be standard: **validate the
+fix against the failing data before spending a run on it.** The cap fix passed
+every unit test and would have passed a re-smoke's structural checks while
+changing nothing.
+
+## The fix, as built
+
+1. **Prompt (`prompts.py`)** — raw values must be emitted with `\n` and `\t`
+   ESCAPED, so the whole alarm stays one line. This is also the form the failing
+   test's own source literal is written in, so the two line up exactly.
+2. **Comparison (`evidence_facts.py`)** — decode BOTH sides before comparing, so
+   an escaped raw and an escaped source literal compare as the values they
+   denote. Identity on escape-free values.
+3. **Order of the doubt test** — the real-newline check runs on the CAPTURED
+   text, before decoding. A real newline means the capture may be a fragment; an
+   escaped one is exactly what was asked for. Decoding first would have reported
+   every correctly-escaped multi-line value as `unknown`.
+4. **Consumer split (kept)** — the 200-char cap is a genuine SECOND cutter for
+   long single-line alarms, proven by the journey test. `exception_headlines`
+   returns the capped list unchanged (dedup still keys on the capped form,
+   pinned); the uncapped text rides alongside for the one mechanical consumer.
+
+15 tests. Suite 620 → 635 passed, 7 skipped.
+
+## What the second smoke must now answer
+
+The prompt half of the fix is UNVERIFIED — compliance with an escaping
+instruction cannot be established offline. The measurable question is:
+
+> of the alarms whose checks normalize, how many still carry `actualRaw=` by the
+> time the comparison runs?
+
+First smoke: **1 of 4.** Anything short of near-all means the escaping
+instruction did not take, and the answer is a mechanism, not a reworded
+instruction.

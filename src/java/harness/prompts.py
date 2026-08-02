@@ -329,7 +329,17 @@ class PromptBuilder:
             " form — a message carrying only the normalized form can never"
             " match it, so that check is dead for your alarm and a real"
             " dismissal is lost. Named keys, never positional: the reader must"
-            " never have to guess which form it is holding.",
+            " never have to guess which form it is holding."
+            " KEEP THE WHOLE MESSAGE ON ONE LINE: the raw form of formatted"
+            " text usually contains newlines and tabs, and the alarm is read"
+            " line by line — a literal newline inside a value silently cuts"
+            " the message there, discarding every key after it. So ESCAPE"
+            " them: emit `\\n` and `\\t` as the two-character sequences"
+            " (backslash then n / t), never as real line breaks. In Java:"
+            " `s.replace(\"\\\\\", \"\\\\\\\\\").replace(\"\\n\", \"\\\\n\")"
+            ".replace(\"\\t\", \"\\\\t\")`. This is also the form the failing"
+            " test's own source literal is written in, so the comparison lines"
+            " up exactly.",
             "",
             "4. THEN GENERALISE — but keep every assertion TRUSTED. The"
             " lifted pair tells you the answer for ONE input only. Do not"

@@ -596,7 +596,15 @@ def _captured_raw_observed(fired_msg):
     start = at + len('actualRaw=')
     nxt = _ANY_KEY_RE.search(fired_msg, start)
     if nxt is None:
-        return fired_msg[start:], False           # runs to the end: clean
+        # Runs to the end of the string — clean ONLY if the string is the whole
+        # message. A trailing ellipsis means the message was truncated, so the
+        # value we are holding is a prefix of the real one and any comparison
+        # against it is an accident. The batch-8 smoke found the comparison
+        # being fed 200-char-capped headlines; the caller now passes the
+        # uncapped form, and this makes the failure LOUD rather than silent if
+        # a capped string ever reaches here again.
+        truncated = fired_msg.rstrip().endswith(('…', '...'))
+        return fired_msg[start:], truncated
     value = fired_msg[start:nxt.start()]
     known = nxt.group(1) in _RAW_KEYS
     return value, not known
@@ -635,10 +643,24 @@ def raw_value_vs_pinned(fired_msg, trusted_values):
     raw, ambiguous = _captured_raw_observed(fired_msg)
     if raw is None or not trusted_values:
         return "unknown"
+    # BOTH sides are decoded. The alarm is read line by line, so a raw value
+    # holding a real newline would cut the message there and discard every key
+    # after it -- the batch-8 smoke's actual defect. The prompt therefore
+    # requires raw values to be emitted with `\n` / `\t` escaped, which is also
+    # the form the test's source literal is written in. Decoding both sides
+    # compares the values they denote rather than the spellings they arrived
+    # in, and is the identity on values that contain no escapes at all.
+    # ORDER MATTERS. The doubt test runs on the CAPTURED text, before
+    # decoding: a REAL newline there means the message spanned lines and the
+    # capture may be a fragment, while an ESCAPED newline is exactly what the
+    # prompt asks for and is not doubtful at all. Decoding first would conflate
+    # the two and report every correctly-escaped multi-line value as unknown.
+    capture_doubtful = ambiguous or '\n' in raw or '\r' in raw
+    decoded = _decode_java_literal(raw)
     pinned = [_decode_java_literal(str(v)) for v in trusted_values]
-    if any(raw == p for p in pinned):
+    if any(decoded == p for p in pinned):
         return "matches"
-    if ambiguous or '\n' in raw or '\r' in raw:
+    if capture_doubtful:
         return "unknown"           # capture not trustworthy: claim nothing
     return "differs"
 

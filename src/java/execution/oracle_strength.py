@@ -62,6 +62,36 @@ def crash_excerpt(output: str, context_lines: int = 20,
     return ''
 
 
+def exception_headline_pairs(output: str, max_len: int = 200) -> list:
+    """`[(capped, full)]` for every distinct throwable headline.
+
+    THE CONSUMERS ARE SPLIT, and this is why. `max_len` exists for the human
+    and prompt-facing consumers: a headline is displayed, de-duplicated, and
+    embedded in prompts, and an unbounded one hurts all three. None of those
+    reasons apply to a MECHANICAL reader, and 8.4's raw-vs-pinned comparison is
+    a mechanical reader whose input is a key/value block appended at the END of
+    the message — so the cap deleted exactly what it needed.
+
+    Measured in the batch smoke (`batch8_20260802_123712`): of 4 headlines
+    reporting a normalized value, only 1 still carried `actualRaw=`, and that
+    one was 198 characters — two under the cap.
+
+    De-duplication keys on the CAPPED form, unchanged, so every existing
+    consumer sees exactly the list it saw before. The full form rides alongside.
+    """
+    if not output:
+        return []
+    seen, out = set(), []
+    for pat in _HEADLINE_RES:
+        for m in pat.finditer(output):
+            full = m.group(1).strip()
+            capped = full[:max_len] + ('…' if len(full) > max_len else '')
+            if capped not in seen:          # dedup on the capped form: unchanged
+                seen.add(capped)
+                out.append((capped, full))
+    return out
+
+
 def exception_headlines(output: str, max_len: int = 200) -> list:
     """EVERY distinct throwable headline in `output`, in order. A
     `--keep_going` Jazzer run reports several findings, each on its own
@@ -71,17 +101,8 @@ def exception_headlines(output: str, max_len: int = 200) -> list:
     or trusted — so a sound oracle is not hidden behind an unsound sibling
     that merely fired on some other input first. De-duplicated, order
     preserved. Empty list if none recognised."""
-    if not output:
-        return []
-    seen, out = set(), []
-    for pat in _HEADLINE_RES:
-        for m in pat.finditer(output):
-            line = m.group(1).strip()
-            line = line[:max_len] + ('…' if len(line) > max_len else '')
-            if line not in seen:
-                seen.add(line)
-                out.append(line)
-    return out
+    return [capped for capped, _full
+            in exception_headline_pairs(output, max_len)]
 
 
 # --------------------------------------------------------------------------

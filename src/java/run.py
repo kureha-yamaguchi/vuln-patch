@@ -2345,6 +2345,21 @@ def main():
                     fired_all.append(single)
                 if not fired_all:
                     fired_all = [None]
+                # Batch-8 smoke finding: `fired_all` is CAPPED at 200 chars by
+                # exception_headlines, and 8.4's Raw keys sit at the END of the
+                # message, so the comparison was reading a string its input had
+                # already been cut out of. Existence is a property of the
+                # producer; ARRIVAL is a property of the journey. This carries
+                # the uncapped text to that one mechanical consumer while every
+                # other consumer keeps the capped form unchanged.
+                _full_headline = dict(
+                    getattr(fr, 'last_full_headlines', None) or {})
+                if single:
+                    _sfull = exception_headline(
+                        (r.stdout or '') + '\n' + (r.stderr or ''),
+                        max_len=10 ** 9)
+                    if _sfull:
+                        _full_headline.setdefault(single, _sfull)
                 # Concrete evidence of the ORIGINAL firing (exception line
                 # + stack). Passed only when judging the oracle it belongs
                 # to — evidence from firing A must not colour the judgment
@@ -3117,8 +3132,11 @@ def main():
                         # dismissal wording is licensed by a mechanical value
                         # comparison, never by the name alone. A divergent
                         # value is the definition of a generalisation catch.
+                        # The UNCAPPED headline, so 8.4's trailing Raw keys
+                        # arrive. Falls back to `fired` when no full form was
+                        # recorded — never worse than before.
                         _value_verdict = fired_value_vs_trusted(
-                            fired, trusted_values)
+                            _full_headline.get(fired, fired), trusted_values)
                         _note = trigger_lift_note(
                             sorted(_lifted_of), bool(_generic_lift),
                             _value_verdict)

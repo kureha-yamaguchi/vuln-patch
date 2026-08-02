@@ -1038,7 +1038,14 @@ class FuzzRunner:
         to judge EVERY oracle that fires on the patched code, not just the
         first one Jazzer surfaced. Returns [] on any error (caller then
         falls back to the single already-captured headline)."""
-        from java.execution.oracle_strength import exception_headlines
+        from java.execution.oracle_strength import exception_headline_pairs
+        # Consumer split (batch-8 smoke finding): the returned list stays
+        # CAPPED, because every existing consumer expects that. The uncapped
+        # text is stashed alongside for the one MECHANICAL reader that needs
+        # it — 8.4's raw-vs-pinned comparison, whose input sits at the end of
+        # the message and was being deleted by the cap. Run-local, reset on
+        # every call, so a stale mapping can never be read as this call's.
+        self.last_full_headlines = {}
         try:
             builder = PatchedProjectBuilder()
             patched_dir = builder.build_patched_dir(buggy_dir, patch_path)
@@ -1059,7 +1066,10 @@ class FuzzRunner:
         except Exception as exc:
             print(f"  (keep-going re-fuzz failed: {exc})")
             return []
-        return exception_headlines(outcome.stdout + '\n' + outcome.stderr)
+        pairs = exception_headline_pairs(
+            outcome.stdout + '\n' + outcome.stderr)
+        self.last_full_headlines = {capped: full for capped, full in pairs}
+        return [capped for capped, _full in pairs]
 
     def keep_going_output(self,
                           harness_path: str,
