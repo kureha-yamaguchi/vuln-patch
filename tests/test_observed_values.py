@@ -78,3 +78,31 @@ def test_recording_is_wrapped_so_it_can_never_break_a_run():
     seg = src[i - 2000:i + 1600]
     assert 'except Exception:' in seg
     assert 'recording must never break a run' in seg
+
+
+# --- BOTH buggy-side paths must record, not just one --------------------
+
+def test_both_replay_paths_record_the_values():
+    """Rule 15's shape, applied to a channel rather than a guard: recording on
+    the plain replay but not the muted one leaves the channel HALF-ARMED --
+    populated on one path, silently empty on the other. A consumer reading an
+    empty channel then cannot tell 'this path records nothing' from 'this input
+    had no values', which is the exact ambiguity 8.3 exists to remove."""
+    src = (ROOT / 'src' / 'java' / 'run.py').read_text()
+    n = src.count("method='buggy-side-observed-values'")
+    assert n == 2, f'expected both replay paths to record, found {n}'
+
+
+def test_the_muted_path_is_distinguishable_in_the_record():
+    """The two paths answer different questions, so a reader must be able to
+    tell them apart -- an unlabelled merge would make 'fires on the buggy
+    build' and 'fires once its shadow is muted' the same recorded fact."""
+    src = (ROOT / 'src' / 'java' / 'run.py').read_text()
+    assert "'replay_kind': 'muted'" in src
+    assert "'muted_ids'" in src
+
+
+def test_the_muted_recording_is_also_fail_open():
+    src = (ROOT / 'src' / 'java' / 'run.py').read_text()
+    i = src.index("'replay_kind': 'muted'")
+    assert 'recording never breaks a run' in src[i:i + 400]

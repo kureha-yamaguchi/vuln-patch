@@ -2874,6 +2874,41 @@ def main():
                                         _mpe = fired
                                 except Exception:
                                     _mvv = "unknown"
+                                # 8.3 (mirror): the MUTED buggy-side replay is
+                                # the other path that computes observed values
+                                # and dropped them. Recording on only one of
+                                # the two would leave the value channel
+                                # half-armed -- populated on plain replays,
+                                # silently empty on muted ones -- and a
+                                # consumer reading an empty channel cannot tell
+                                # "this path records nothing" from "this input
+                                # had no values". Same fail-open wrapping.
+                                try:
+                                    from java.relations.evidence_facts import (
+                                        observed_values as _ov2)
+                                    _mbvals = _ov2(_mbe)
+                                    _mpvals = _ov2(_mpe or fired)
+                                    record_event(
+                                        'deterministic',
+                                        method='buggy-side-observed-values',
+                                        target=('muted:' + str(sorted(
+                                            _fired_ids & (_mf or set())))[:180]),
+                                        output=('recorded '
+                                                f'{len(_mbvals)} buggy / '
+                                                f'{len(_mpvals)} patched '
+                                                f'key(s); '
+                                                f'value-verdict={_mvv}'),
+                                        detail={
+                                            'buggy_values': _mbvals,
+                                            'patched_values': _mpvals,
+                                            'value_verdict': _mvv,
+                                            'buggy_msg_present': bool(_mbe),
+                                            'buggy_replay_status': _ms,
+                                            'replay_kind': 'muted',
+                                            'muted_ids': sorted(_mmuted or []),
+                                        })
+                                except Exception:
+                                    pass      # recording never breaks a run
                                 # Name the FINAL mute set (PART A may have
                                 # grown it across passes); the note's semantics
                                 # are unchanged — it just lists every check
