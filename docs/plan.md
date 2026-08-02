@@ -529,7 +529,30 @@ day one. Remaining: the recording half (thread values via `record_event`), then
 offline tests from archived raw output where any exists. NOTE: 8.3's passive
 validation now rides the pair — the pair gains a FIFTH read (does the value
 channel populate live?), and 8.2/8.20 land against a channel whose first live
-exercise is that same run. Offline
+exercise is that same run.
+**The sweep found a FOURTH cutter instance — in the offline substrate itself
+(d1e7b93, 2026-08-02): 78 of 228 cases228 rows end in an ellipsis at exactly
+201 characters** — the 200-cap's fingerprint; every offline measurement over
+message CONTENT has been reading prefixes. Repaired NON-mutating into
+`tests/fixtures/cases228_untruncated.jsonl` (cases228 untouched, so all prior
+recorded numbers stay comparable to the substrate they were computed on):
+70 repaired from archived traces, 8 permanently truncated (the archive stored
+the capped form too — `_still_truncated=True`, flagged never silently kept;
+this is 8.21(a)'s cost made concrete and raises its priority). Three build
+errors caught pre-ship, disclosed: an [oracle:] search matching inside
+prompts/harness source (rule 8's inflation direction — first time it nearly
+reached a VERSIONED asset; caught because 3000 chars was the window size, not
+a message boundary; extraction now alarm-scoped); a stripped
+FuzzerSecurityIssueLow: prefix changing row shape (restoring it also took
+recovery 36→70); two shape-test drafts narrower than the data's four
+legitimate shapes (the data was right both times).
+**Consequences:** 8.20 validates against `cases228_untruncated.jsonl` MINUS
+the 8 flagged rows. And one cheap check BEFORE that validation: list which
+prior offline studies read message CONTENT (vs row metadata) and whether any
+of the 7 decisive-case rows sit among the 78 — model-comparison conclusions
+(8.1) are internally consistent either way (both models saw the same
+substrate), but any content-dependent claim on a truncated decisive row
+deserves a one-grep re-check. 651 passed, 7 skipped. Offline
 tests from archived raw outputs where any exist; otherwise fixture-built. Validation
 rides the next live run passively — no dedicated run. If this ships, ONE re-ask of
 8.15's scope dimension is licensed (firing input vs the test's pinned scenario,
