@@ -46,12 +46,31 @@ from java.parsing.java_source import candidate_anchor_literals, expected_assert_
 from java.relations.judge_decision import adjudicate
 
 
-def _extract_oracle_msg(output, oid, cap=200):
-    """Spec I: pull the first `[oracle:<id>]` fired message out of a replay's
-    raw output (up to ~`cap` chars, single line) so the SAME check's observed
-    value on the buggy build can be compared to the patched firing. Returns
-    None when the id's message is not present — the caller then treats the
-    value comparison as UNKNOWN (never over-claims 'identical')."""
+# Where a fired message genuinely ENDS in Jazzer output: the stack trace, the
+# next exception record, or the libFuzzer banner. Deliberately not "the next
+# newline" — see below.
+_MSG_END_RE = re.compile(r'\n\s*(?:at\s+\S+\(|==\s|Caused by:|#\d+\s)')
+
+
+def _extract_oracle_msg(output, oid, cap=20000):
+    """Pull the first `[oracle:<id>]` fired message out of a replay's raw
+    output, so the SAME check's observed value on the BUGGY build can be
+    compared to the patched firing. Returns None when the id's message is not
+    present — the caller then treats the comparison as UNKNOWN (never
+    over-claims 'identical').
+
+    8.3: this used to cap at 200 characters AND stop at the first newline —
+    **both cutters that the batch-8 smoke found on the patched side**, sitting
+    here on the buggy side where nobody had looked. Either one silently
+    discards the trailing key/value block, which is precisely the observed
+    VALUE this function exists to deliver, and which 8.2's authority screen and
+    8.20's scope fact both consume.
+
+    So the message now ends where it actually ends — at the stack trace, the
+    next exception record, or the libFuzzer banner — and the cap is a runaway
+    guard rather than a formatting rule. A bare newline no longer terminates
+    it: 8.4's escaping keeps alarms on one line, but relying on that would make
+    this function's correctness depend on another component's compliance."""
     if not output or not oid:
         return None
     tag = "[oracle:" + str(oid) + "]"
@@ -59,9 +78,9 @@ def _extract_oracle_msg(output, oid, cap=200):
     if idx < 0:
         return None
     seg = output[idx:idx + cap]
-    nl = seg.find("\n")
-    if nl >= 0:
-        seg = seg[:nl]
+    end = _MSG_END_RE.search(seg)
+    if end:
+        seg = seg[:end.start()]
     return seg.strip() or None
 
 
