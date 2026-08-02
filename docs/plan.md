@@ -1183,16 +1183,55 @@ the next live run passively — no dedicated run.
 **Anytime:** 8.11 housekeeping (zero risk) · 8.10 pre-commitment upkeep
 (continuous).
 
-**FINAL GATE (status 2026-08-02):** batch assembled and CLOSED (second smoke
-passed after the newline fix; first smoke's catch held the pair correctly).
-Remaining: the full 30-leg pair on the user's word — budget from the last
-pair's actuals (~12M total: 5,973,680 + 6,038,623; the ~7M note was low) —
-answering FOUR pre-named questions: (1) the 8.10 bar (paired mean > 0.685,
-≤5 accusations/roll, zero on historically clean legs); (2) 8.4's live guard,
-read per-event; (3) the repair-provenance field's first live read at scale;
-(4) how often 8.4's `differs` branch fires on correct-patch legs and whether
-those legs accuse. Then the fresh12 decision (user's literal phrase only).
-8.11 lands in the quiet after the pair.
+**FINAL GATE (re-sequenced 2026-08-02 on the user's decision):** the pair is
+DEFERRED until the substantive builds land — the closed batch contains no
+score levers, so the user chose to build before measuring. New order:
+1. **8.3 build** (small; collection-only, rides passively; unblocks 8.2's
+   screen, 8.15's licensed scope re-ask, and 8.20).
+2. **8.2 build/no-build on the design doc** (user's call), with two design
+   extensions to evaluate first: an exact-arithmetic reference (subsumes the
+   Math-30 overflow class as a category — 46341² is the first int² overflow)
+   and, as a priced phase-2 only, the buggy-validated reference as an
+   input-finder for the 3 reach misses.
+3. **8.20 scope fact** (rides 8.3; measured alone on fixtures before joining).
+4. In parallel on the VM: **8.12(c)** crashing rerun (unparks 8.12(b), needed
+   before any "official state" claim).
+5. Then the full 30-leg pair on the user's word — budget from actuals (~12M:
+   5,973,680 + 6,038,623) — answering the four pre-named questions PLUS
+   whatever 8.2/8.20 add, each having been measured alone on fixtures first.
+Then the fresh12 decision (user's literal phrase only). 8.11 lands in the
+quiet after the pair. 8.19 (anchored generation) is generation-side and
+CANNOT be fixture-validated — its own later batch, never bundled into this
+pair.
+
+### 8.19 Buggy-anchored check generation — design doc first, the unowned big one
+**Target:** stations 2–4 (`relation_synth.py` + harness codegen prompts),
+consuming 8.3's recorded buggy-side values.
+**Failure mode:** the binding recall constraint (rung-1 synthesis): checks fire
+but deserve dismissal because they assert contracts from model MEMORY — the
+same weak-authority disease as the precision side's 90%-uncited accusations.
+Structure-from-data is the only two-roll-confirmed mechanism catch (Chart-19)
+and this is its generalization: feed observed incumbent values into generation
+so checks are born citing authority #2 (buggy behavior off-defect), not memory.
+**Rules that bind:** design doc + guard plan before any build; generation-side,
+so validation is smoke-then-live, never fixtures; no dataset-shaped anchors —
+values delivered as data, never as curated examples.
+
+### 8.20 Authority-scope fact for the Math-39 class — rides 8.3, small
+**Target:** evidence assembly (station 6→7): compute whether the firing's
+actual parameters sit inside the scenario the cited test pins (needs 8.3's
+values). Math-39's accusations invoke a REAL tier-1 pin that does not extend
+to the fuzzed inputs — the one residual class whose deciding fact is
+mechanical. Delivers "the invoked authority pins a DIFFERENT scenario than the
+firing's" as a computed fact; also the proper instrument for 8.15's licensed
+scope re-ask. Verdict-affecting → measured ALONE on cases228 + both guard
+populations before joining any live batch.
+
+### 8.21 Small hygiene, anytime
+(a) Trace-writer truncation: record alarm text in full or mark elision loudly —
+ellipsis-truncated records have corrupted one count and one diagnosis
+(record-vs-thing #5). (b) The 34 of 230 judge prompts carrying no evidence
+block (parked cycle 7, unexplained) — one read decides plumbing hole vs benign.
 
 ## The two guard populations (permanent, versioned, population-pinned)
 
