@@ -575,7 +575,27 @@ prefix on 34% of rows WITH full evidence alongside — the same-failure-shape
 conclusion stands (both models, same substrate, complete evidence); the
 absolute figures (80.3%/81.7% etc.) carry this caveat when cited. STANDING:
 all future replays use `cases228_untruncated.jsonl` minus the 8 flagged rows;
-the original is never corrected in place. Offline
+the original is never corrected in place.
+**Recording half DONE (2ddffe1, 2026-08-02; 659 passed, 7 skipped).** Two
+pieces: `observed_values(msg)`, a STRING-PRESERVING key=value extractor,
+deliberately wider than the numeric-only `_kv_values` — one extractor per
+consumer, because recording is not judging (a value the numeric comparison
+can't parse is correctly invisible to IT, but dropping it from the RECORD
+would discard exactly what 8.2's screen and 8.20's scope fact consume); `{}`
+means nothing-recorded, never nothing-existed. And a `record_event` at the
+buggy-replay site carrying buggy/patched values, the value verdict, whether a
+buggy message existed, and replay status — recording only, no verdict reads
+it, wrapped so it cannot break a run, pinned by a wiring test.
+Silent-on-buggy stays valueless by construction (fails SAFE — arbitration
+abstains). Yield on the repaired substrate (220 rows): ≥1 recorded value 127
+(58%); ≥1 numeric 85 (39%) — the string extractor ADDS 42 rows, half again
+the coverage; 43 of the 70 repaired rows yield more keys than pre-repair
+(the substrate work and this work COMPOUND). **Remaining, ordered BEFORE the
+8.20 handoff:** mirror the recording at the muted-replay site (run.py ~2811,
+`_cfv2` computes the same values, records nothing) — a one-path channel is
+rule 15's half-armed shape, and worse for 8.20 specifically: muting exists
+FOR the shadowed chronic legs, so a one-path handoff would bias 8.20's
+validation against exactly its target rows. Offline
 tests from archived raw outputs where any exist; otherwise fixture-built. Validation
 rides the next live run passively — no dedicated run. If this ships, ONE re-ask of
 8.15's scope dimension is licensed (firing input vs the test's pinned scenario,
