@@ -595,7 +595,11 @@ the coverage; 43 of the 70 repaired rows yield more keys than pre-repair
 `_cfv2` computes the same values, records nothing) — a one-path channel is
 rule 15's half-armed shape, and worse for 8.20 specifically: muting exists
 FOR the shadowed chronic legs, so a one-path handoff would bias 8.20's
-validation against exactly its target rows. Offline
+validation against exactly its target rows.
+**8.3 COMPLETE (250123e, 2026-08-02): muted-replay mirror done — the value
+channel records on both buggy-side paths.** 8.3 earns its keep independent of
+8.20's death: it is 8.2's prerequisite, and the channel is real. Passive live
+validation rides the pair (fifth read). Offline
 tests from archived raw outputs where any exist; otherwise fixture-built. Validation
 rides the next live run passively — no dedicated run. If this ships, ONE re-ask of
 8.15's scope dimension is licensed (firing input vs the test's pinned scenario,
@@ -1303,15 +1307,33 @@ so checks are born citing authority #2 (buggy behavior off-defect), not memory.
 so validation is smoke-then-live, never fixtures; no dataset-shaped anchors —
 values delivered as data, never as curated examples.
 
-### 8.20 Authority-scope fact for the Math-39 class — rides 8.3, small
-**Target:** evidence assembly (station 6→7): compute whether the firing's
+### 8.20 Authority-scope fact — NOT BUILT; closed NEGATIVE 2026-08-02 (688c710)
+**Target was:** evidence assembly (station 6→7): compute whether the firing's
 actual parameters sit inside the scenario the cited test pins (needs 8.3's
-values). Math-39's accusations invoke a REAL tier-1 pin that does not extend
-to the fuzzed inputs — the one residual class whose deciding fact is
-mechanical. Delivers "the invoked authority pins a DIFFERENT scenario than the
-firing's" as a computed fact; also the proper instrument for 8.15's licensed
-scope re-ask. Verdict-affecting → measured ALONE on cases228 + both guard
-populations before joining any live batch.
+values).
+**Why it died, twice over:** (1) Premise contradicted by 8.6 on its own
+motivating case — 8.6's mechanism paragraph found the Math-39 harness
+reproduces the test's setup EXACTLY (fuzzing only a boolean and an int), so a
+scope fact would score Math-39 in-scope and never fire; the real deciding fact
+("the real failing test passes on this build") was already delivered on all
+nine accusations and read as corroboration — not a missing fact. 8.6's
+consequence-3 ("what distinguishes it is scope") is hereby SUPERSEDED by its
+own mechanism paragraph, adjudicated by this re-ask; 8.20 and 8.15's scope
+requirement were built on the superseded sentence. (2) The licensed re-ask,
+run mechanically on 8.3's values (85 kept findings, larger than 8.15's 91):
+**80% UNDETERMINED** (68/85 — no ≥3-char test literal or no recorded value: a
+property of the MECHANISM capping reach at ~20% of firings), and on the 17
+determined: FA in-scope 4/6 vs GC 3/11, Fisher p=0.162 — right direction, 4
+counts vs 3; at these denominators only near-perfect separation reaches
+p<0.05. Undetermined four times in five, non-separating on the fifth.
+**The single re-ask 8.3 licensed is SPENT** — another population would be
+phrasing-iteration wearing measurement's clothes.
+**The residual open question, disposed by standing rule:** rewording the lift
+note so provenance reads as a limit is a judge-prompt WORDING change — rule 12
+(wording iteration measured dead; judge changes are structural or nothing)
+plus four in-cycle wording negatives say NO. Math-39 folds fully into bucket
+(a): deciding fact delivered, not binding — the adopted ceiling class. Only
+the user can override rule 12 here.
 
 ### 8.21 Small hygiene, anytime
 (a) Trace-writer truncation: record alarm text in full or mark elision loudly —
