@@ -516,7 +516,20 @@ fired/counts) — makes 8.2 untestable and forces 6C's values-not-compared abste
 **Steps:** capture the fired message's key=value observations on buggy-side replays
 (the values are printed only when a check fires there; silent-on-buggy stays valueless,
 which fails SAFE — arbitration abstains); thread into the recorded fact via
-`record_event`; extend `compare_fired_values` consumption where applicable. Offline
+`record_event`; extend `compare_fired_values` consumption where applicable.
+**Step 1 DONE (55c39a7, 2026-08-02):** before writing new code, the function 8.3
+depends on was checked — and `_extract_oracle_msg`, the buggy-side twin of the
+path the batch smoke fixed, carried BOTH cutters (200-char cap AND
+first-newline stop), each demonstrated to lose actualRaw= entirely. Same
+selection effect as before: until 8.3, nothing downstream ever wanted the
+message's tail, so a bug visible only at the tail could not surface. Fixed and
+pinned (8 tests; 643 passed, 7 skipped). Building 8.2/8.20 first would have fed
+both of them truncated values — the cheapest-first ordering earned its keep on
+day one. Remaining: the recording half (thread values via `record_event`), then
+offline tests from archived raw output where any exists. NOTE: 8.3's passive
+validation now rides the pair — the pair gains a FIFTH read (does the value
+channel populate live?), and 8.2/8.20 land against a channel whose first live
+exercise is that same run. Offline
 tests from archived raw outputs where any exist; otherwise fixture-built. Validation
 rides the next live run passively — no dedicated run. If this ships, ONE re-ask of
 8.15's scope dimension is licensed (firing input vs the test's pinned scenario,
@@ -1193,7 +1206,14 @@ score levers, so the user chose to build before measuring. New order:
    Math-30 overflow class as a category — 46341² is the first int² overflow)
    and, as a priced phase-2 only, the buggy-validated reference as an
    input-finder for the 3 reach misses.
-3. **8.20 scope fact** (rides 8.3; measured alone on fixtures before joining).
+   *Validation correction (2026-08-02): 8.2 canNOT be fixture-validated for
+   ~zero tokens — the authority screen requires generating and EXECUTING a
+   reference against the buggy build, which no archived fixture contains or
+   can. Its trigger reach is offline-measurable (58/228, done); its SAFETY is
+   not — first real validation is a run, and its cost is budgeted as one.*
+3. **8.20 scope fact** (rides 8.3; measured alone on fixtures before joining —
+   unlike 8.2, this one IS offline-validatable: it computes a fact from values
+   already recorded).
 4. In parallel on the VM: **8.12(c)** crashing rerun (unparks 8.12(b), needed
    before any "official state" claim).
 5. Then the full 30-leg pair on the user's word — budget from actuals (~12M:
