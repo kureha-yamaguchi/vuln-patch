@@ -171,6 +171,23 @@ def main():
         print("no usable cases; nothing to do")
         sys.exit(1)
     out = Path(args.out)
+    # REFUSE an output directory that already holds results, rather than
+    # truncating it. `results.jsonl` is opened 'w', so a second run pointed at
+    # a live directory silently destroys the first one's work. That happened
+    # during 8.1: a duplicate launch truncated a 33-minute incumbent run to a
+    # sparse file (188,628 bytes, 11,615 non-null, 20 of ~440 rows parseable)
+    # while the original process went on writing at its old offset. Nothing
+    # reported an error; the loss was found by reading the file.
+    #
+    # --force is deliberately NOT offered. Overwriting a completed replay has
+    # no legitimate use here: runs are cheap to re-point at a fresh directory
+    # and expensive to re-run, so the asymmetry is entirely one-sided.
+    existing = out / 'results.jsonl'
+    if existing.exists():
+        sys.exit(
+            f"refusing to run: {existing} already exists.\n"
+            "results.jsonl is opened for writing, so continuing would destroy "
+            "that run's output. Point --out at a new directory.")
     out.mkdir(parents=True, exist_ok=True)
 
     gen = (HarnessGenerator(model=args.model, temperature=0.0, top_p=1.0)
