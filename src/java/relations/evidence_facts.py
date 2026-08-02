@@ -760,6 +760,35 @@ def _kv_values(msg):
     return out
 
 
+# Any `<name>=<value>` pair, value kept as TEXT. Deliberately wider than
+# `_KV_PAIR_RE`: that one is numeric-only because it feeds a numeric
+# comparison, and a value it cannot parse is correctly invisible to it. This
+# one feeds the RECORD, and recording is not judging -- dropping the formatted
+# text and string values would discard exactly what 8.2's authority screen and
+# 8.20's scope fact were built to consume. Stops at the next ` key=` token or
+# end of message, the same rule `_captured_raw_observed` uses.
+_KV_TEXT_RE = re.compile(r'([A-Za-z_]\w*)\s*=\s*(.*?)(?=\s+[A-Za-z_]\w*\s*=|$)')
+
+
+def observed_values(msg):
+    """`{key: [value strings]}` for every `key=value` pair in a fired message.
+
+    8.3. The buggy-side replay already computed these values and then dropped
+    them: 0 of 1,452 recorded buggy-side steps carried an observed VALUE, only
+    fired/counts. That absence is what made 8.2 untestable and what forces 6C's
+    values-not-compared abstentions.
+
+    Pure, total, and never raises -- a message it cannot parse yields `{}`,
+    which reads as "no values recorded" and never as "no values existed".
+    """
+    out = {}
+    for k, v in _KV_TEXT_RE.findall(str(msg or '')):
+        v = v.strip()
+        if v:
+            out.setdefault(k, []).append(v)
+    return out
+
+
 def _vals_match(a, b):
     if math.isnan(a) or math.isnan(b):
         return math.isnan(a) and math.isnan(b)

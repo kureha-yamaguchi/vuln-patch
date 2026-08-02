@@ -2659,6 +2659,40 @@ def main():
                                     _patched_excerpt = fired
                             except Exception:
                                 _value_verdict = "unknown"
+                        # 8.3: RECORD the observed values on both sides. They
+                        # were computed above and then dropped -- 0 of 1,452
+                        # recorded buggy-side steps carried a value, only
+                        # fired/counts, which is what made 8.2 untestable and
+                        # what forces 6C's values-not-compared abstentions.
+                        # Recording only; no verdict reads this yet.
+                        # Silent-on-buggy stays VALUELESS by construction (the
+                        # values only exist when a check fires there), and that
+                        # fails safe: arbitration abstains rather than
+                        # inventing a comparison.
+                        try:
+                            from java.relations.evidence_facts import (
+                                observed_values as _ov)
+                            _bvals = _ov(_buggy_excerpt)
+                            _pvals = _ov(_patched_excerpt or fired)
+                            record_event(
+                                'deterministic',
+                                method='buggy-side-observed-values',
+                                target=str(sorted(
+                                    _fired_ids & (_breplay_ids or set()))
+                                    or sorted(_fired_ids or set()))[:200],
+                                output=('recorded '
+                                        f'{len(_bvals)} buggy / '
+                                        f'{len(_pvals)} patched key(s); '
+                                        f'value-verdict={_value_verdict}'),
+                                detail={
+                                    'buggy_values': _bvals,
+                                    'patched_values': _pvals,
+                                    'value_verdict': _value_verdict,
+                                    'buggy_msg_present': bool(_buggy_excerpt),
+                                    'buggy_replay_status': _breplay_status,
+                                })
+                        except Exception:
+                            pass          # recording must never break a run
                         _breplay_note = semantic_buggy_replay_note(
                             _fired_ids, _breplay_status, _breplay_ids,
                             _bt_all, _bt_defect, _esc_type, _idline,
