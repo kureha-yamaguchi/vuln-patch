@@ -1,0 +1,51 @@
+# Cycle-8 BATCH smoke (2026-08-02). TWO legs, ~300-500k.
+#
+# The batch: 8.4 (prompt + gate 0c2 + raw-vs-pinned comparison) · 8.7 repair
+# provenance · 8.8 label assert · 8.12(a) crash-gate pins. Of these ONLY 8.4 has
+# a verdict surface — 8.7 adds a trace field, 8.8 refuses bad input, 8.12(a) is
+# tests only. So the smoke's single meaningful question is:
+#
+#   does the assembled build behave, and does 8.4 do LIVE what it did in pieces?
+#
+# SAME TWO LEGS as the 8.4 compliance smoke (c84_20260801_174840), deliberately,
+# so the per-event read is comparable against a run where the pieces were
+# measured separately:
+#   Closure-62_c — LightweightMessageFormatter, the case that motivated 8.4
+#   Closure-38_o — CodePrinter/CodeConsumer, the leg that actually emitted Raw
+#                  keys and whose defect IS the missing separator space
+# Both are formatter/printer legs: their checks normalize before comparing, which
+# is the precondition for 8.4 to do anything at all. A numeric leg would exercise
+# none of it and would produce a clean, meaningless pass.
+#
+# WHAT THIS SMOKE MUST SHOW (read per-event, not from totals):
+#   1. gate 0c2 present and INERT on compliant harnesses — it should reject
+#      normalize-without-raw checks and stay silent otherwise. Both outcomes are
+#      informative; zero occurrences of the gate anywhere is NOT (that would mean
+#      the acceptance path never reached it).
+#   2. Raw keys emitted by normalizing checks, as in the 100% compliance read.
+#   3. raw_value_vs_pinned actually CONSULTED on a live firing — the comparison
+#      has only ever run on archived text and on the compliance smoke's records.
+#   4. 8.7 repair-provenance markers on any ACCEPTED-from-repair harness.
+#   5. the build runs end to end with all four batch members in place.
+#
+# WHAT IT CANNOT DO, stated before it runs so it cannot be claimed after:
+#   * It is NOT 8.4's guard. Two legs is not a guard population, and the
+#     dismiss-pushing risk of the raw comparison is live-only. That belongs to
+#     the 30-leg pair, read per-event.
+#   * It is NOT a verdict-regression test. Rule 16: a "zero verdict changes"
+#     criterion is only meaningful against a baseline differing by EXACTLY the
+#     change under test. c84 ran at 298d9d9 and this runs at HEAD with the whole
+#     batch between, so any verdict difference here measures accumulated batch
+#     effect, not a regression — the exact error that made the rung-2 gate's
+#     criterion 4 ill-posed. Verdicts are RECORDED here, not scored.
+#
+# 8.11's housekeeping deletions are deliberately held until after this run, so
+# nothing incidental sits between the batch and its measurement.
+#
+# Config matches the pair and every prior smoke this cycle (-n 5 -m 12).
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/SequenceR/Closure/patch1-Closure-38-SequenceR.patch"
+)
