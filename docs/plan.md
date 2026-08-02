@@ -904,6 +904,12 @@ largely uncertified, so weak per-leg differences are not evidence.
 **Gate (amended 2026-08-01):** (a) DONE before batch close ✓; (b) DEFERRED with
 reason — runs after (c), from (c)'s output; (c) before the next full 30-leg
 pair is described as the pipeline's official state.
+**(c) SKIPPED by user decision (2026-08-02).** Consequence recorded, not
+resolved: the crashing-bug path stays unmeasured since the 2026-07-16
+crashcheck run — any statement about the pipeline covers SEMANTIC bugs only,
+and the exposure doc's caveat stands. (b) stays parked indefinitely (its
+unlock was (c)'s output). The unit-test pins from (a) remain the crashing
+path's only current-code verification.
 **8.12(a) outcome (9ef2ec9 — DONE 2026-08-01): risk 3 upgraded from "unobserved"
 to CONFIRMED REAL.** `judge_decision.py` has no `bug_kind` reference and the
 semantic guard does not enclose either `adjudicate()` call site — crash legs reach
