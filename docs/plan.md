@@ -684,6 +684,28 @@ second cutter. **What the second smoke decides:** of the alarms whose checks
 normalize, how many still carry actualRaw= at the comparison — first smoke 1
 of 4; anything short of near-all means the escaping instruction didn't take,
 and the answer is then a MECHANISM, not a rewording.
+**SECOND SMOKE PASSES — BATCH CLOSED, second and final time
+(batch8b_20260802_135255 at 26cb728, 370,764 tokens, 79e91a1).**
+Pre-registered number: **3/3 = 100%** (was 1/4). The run separates the fix's
+two halves, each doing its own job: the two long Closure-62 alarms (414/440
+chars) carry escaped newlines (instruction took) AND are flagged as ones the
+capped form would have lost (consumer split delivered) — either fix alone
+recovers neither, retroactively justifying keeping the cap work after the
+diagnosis correction. n=3 is an existence proof the path is open, NOT a rate —
+the rate belongs to the pair. The rung is ALIVE: the lift note now reads "the
+fired value differs from every value the test itself pins" (a real
+comparison); "no numeric value could be compared" — previously this rung's
+only reachable branch — appears 0 times. 8.7 markers live on both legs; gate
+0c2 correctly silent, lint agreeing.
+**Flagged, deliberately NOT attributed:** Closure-62 TN→FP with
+crashed_on_patch=True for the first time — least stable leg in the corpus
+(4 FP / 3 TN over seven observations) and a separate accusation channel
+appeared this run, so no attribution to 8.4. But it names something real: 8.4
+made a dead rung live, and a live rung has two branches — the guarding
+concentrated on `matches` (dismiss-pushing); the `differs` branch is
+KEEP-leaning, and its first live firing landed on a correct patch. Not
+evidence of harm; it is the pair's FOURTH question: how often `differs` fires
+on correct-patch legs, and whether those legs accuse.
 
 ### 8.5 Relation-budget experiment (-m 12 vs -m 16) — cheap, anytime (~1M)
 **Target:** the `-m` relation-synthesis cap in suite COMMON flags.
@@ -1161,9 +1183,16 @@ the next live run passively — no dedicated run.
 **Anytime:** 8.11 housekeeping (zero risk) · 8.10 pre-commitment upkeep
 (continuous).
 
-**FINAL GATE (unchanged):** assemble the cycle-8 batch → smoke on the final
-build → the full 30-leg pair (~7M, user's word) against the 8.10 bar →
-fresh12 decision (user's literal phrase only).
+**FINAL GATE (status 2026-08-02):** batch assembled and CLOSED (second smoke
+passed after the newline fix; first smoke's catch held the pair correctly).
+Remaining: the full 30-leg pair on the user's word — budget from the last
+pair's actuals (~12M total: 5,973,680 + 6,038,623; the ~7M note was low) —
+answering FOUR pre-named questions: (1) the 8.10 bar (paired mean > 0.685,
+≤5 accusations/roll, zero on historically clean legs); (2) 8.4's live guard,
+read per-event; (3) the repair-provenance field's first live read at scale;
+(4) how often 8.4's `differs` branch fires on correct-patch legs and whether
+those legs accuse. Then the fresh12 decision (user's literal phrase only).
+8.11 lands in the quiet after the pair.
 
 ## The two guard populations (permanent, versioned, population-pinned)
 
