@@ -510,6 +510,25 @@ questioning.
    correctly-dismissed firings on correct legs), since it pushes toward keeping.
 **Done when:** the design doc exists with guard-set test plan and priced reach; user
 decides build/no-build on it.
+**Pure core BUILT (60b3553, 2026-08-02; 679 passed, 7 skipped):**
+`reference_impl.py` — the authority screen as pure logic, no JVM/IO/LLM. Fails
+closed everywhere (missing data, no off-defect keys, <3 shared off-defect
+observables, any non-weak disagreement); the fact returns None whenever the
+reference wasn't admitted (a hedged fact on a discarded reference is an
+uncited accusation with extra steps); the mirror canary returns False when it
+couldn't run, never a pass; OUR code picks the observables from 8.3's values
+(P4.2 as mechanism, not instruction).
+**Reach MEASURED, and it collapsed the estimate:** trigger 54/220 (25%) → ≥1
+comparable observable 22 (10%) → ≥3 (screen minimum) 19 = **8.6% ceiling**,
+an upper bound twice over (admission + actual disagreement still required).
+32 of 54 trigger rows record NO comparable observable — but the archives
+predate 8.3/8.4, so this may be an archive property, not a mechanism
+property.
+**DECISION (2026-08-02): the expensive half (generation prompt + execution
+adapter) is HELD until the two identical 30-leg runs populate the value
+channel live.** That run decides whether reach recovers (build against a real
+number) or stays ~9% (skip the cost). The 30-leg runs gain a SIXTH pre-named
+question: does live value-recording recover 8.2's observable rate?
 
 ### 8.3 Buggy-value collector — build AFTER 8.1/8.2 confirm direction — small
 **Target:** `fuzz_runner.py` replay functions (`replay_input_report`,
@@ -1292,9 +1311,15 @@ score levers, so the user chose to build before measuring. New order:
    already recorded).
 4. In parallel on the VM: **8.12(c)** crashing rerun (unparks 8.12(b), needed
    before any "official state" claim).
-5. Then the full 30-leg pair on the user's word — budget from actuals (~12M:
-   5,973,680 + 6,038,623) — answering the four pre-named questions PLUS
-   whatever 8.2/8.20 add, each having been measured alone on fixtures first.
+5. Then the two identical 30-leg runs on the user's word — budget from actuals
+   (~12M: 5,973,680 + 6,038,623) — now carrying SIX pre-named questions:
+   (1) the 8.10 bar; (2) 8.4's live safety guard, per-event; (3) repair
+   provenance at scale; (4) 8.4's differs-branch rate on correct legs;
+   (5) does the 8.3 value channel populate live; (6) does live recording
+   recover 8.2's observable rate (decides 8.2's expensive half).
+   Board status 2026-08-02: 8.12(c) skipped (user), 8.20 closed negative,
+   8.3 complete, 8.2 core built + held — the 30-leg runs are the one thing
+   that unblocks the rest.
 Then the fresh12 decision (user's literal phrase only). 8.11 lands in the
 quiet after the pair. 8.19 (anchored generation) is generation-side and
 CANNOT be fixture-validated — its own later batch, never bundled into this
