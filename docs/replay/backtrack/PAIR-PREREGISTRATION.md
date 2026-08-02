@@ -2,7 +2,13 @@
 
 Two identical 30-leg rolls, `suites/cases/pool30.cases`, verified byte-identical
 to the July pair (`final30A`/`final30B`): same 30 cases, same flags, same model.
-Serial, not parallel — disk is the binding constraint at 11G free.
+**PARALLEL=4**, both rolls. The script's "keep PARALLEL=1" comment is stale --
+it was written for a smaller box. Current box: 8 cores, 15 GB RAM (13 available),
+against the script's own stated budget of ~2 GB and ~1 core per concurrent case.
+4-way therefore fits with headroom, and the script notes that past ~4-6 the API
+rate limit caps throughput anyway.
+
+**Both rolls run at the same PARALLEL**, or they are not identical rolls.
 
 Written and committed before launch. Six questions, each with its criterion
 fixed now.
@@ -66,6 +72,19 @@ the mechanism.
   execution adapter
 * **< 20%** → do not build; record 8.2's core as shipped-and-parked with the
   reach that closed it
+
+## 7. DIAGNOSTIC (added with the parallelism change): fuzzing throughput
+
+`--fuzz_timeout 20` is WALL-CLOCK, so CPU contention between concurrent legs
+would mean fewer fuzzed inputs explored per leg -- which would depress catches
+for a reason that has nothing to do with the cycle's changes, and would do it
+silently.
+
+The script's budget is ~1 core per case and the box has 8, so 4-way should
+preserve per-leg throughput. That is a prediction, not a fact, so it gets
+checked: compare per-leg executed-input counts and harnesses_built against the
+July pair, which is the baseline this run is scored against. A material drop is
+a CONFOUND to report, not a result to interpret.
 
 ## Standing constraints
 
