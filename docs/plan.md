@@ -383,6 +383,46 @@ read as "duty does not apply" (escape NOT taken → drop proceeded); post-fix,
 more duty answers parse → escape taken → accusation KEPT. On correct legs a
 spared accusation is a false accusation. One grep decides: family-duty escape
 and re-ask events on Math-2-c's chains, both rolls, vs the July pair's.
+**FORENSICS COMPLETE (2026-08-03, three-reader pass over all four runs):**
+- **Sentinel hypothesis REFUTED.** Zero parse-failure/re-ask/sentinel events
+  in any of the 120 legs across all four runs; every family-duty answer in
+  every Math-2-c trace parsed cleanly (all NO, both eras). The fix's code
+  path was never exercised live.
+- **Math-2-c is the accusation lottery, not one mechanism.** The two new
+  accusations are DIFFERENT checks via DIFFERENT old routes: pairA8
+  `inverse-cdf-fixed-point-general` (surfaced by muted replay, kept by 6C's
+  different-values keep); pairB8 `readers_stable_across_mean_call`
+  (relation-replay conviction, gates skipped by design). Both CITATION: NONE
+  — ceiling-class uncited contracts. July-A's three firings were all
+  dismissed via computed facts (1-ulp citation, javadoc citation,
+  fires-on-both); the new rolls drew checks the fact machinery happens to
+  have no computed defense against. No batch mechanism involved.
+- **Closure-92's unanimous catch→miss IS plausibly batch-linked, via a side
+  channel no read pre-named:** all firings in both rolls dismissed by
+  hypotheticals that QUOTE the new raw values ("a harmless trailing
+  semicolon… exactly as observed in actualRaw"); Closure-38's dismissal
+  likewise builds on the raw record (`x- -736E3` vs `x- -736000`). Read 2
+  cleared 8.4's COMPARISON (matches=0, confirmed); it did not cover 8.4's
+  raw values entering the judge's PROMPT as dismissal material. New named
+  channel: **raw-values-as-hypothetical-fodder** — recall-side risk, two
+  suspected instances, needs its own read before any 8.4 verdict.
+- **July's disappeared accusations (Lang-60-c, Math-73-c): the accusing
+  relations were never synthesized this time** — differently-named analogues
+  stayed quiet. Not dismissed; never fired. Lottery, both directions.
+  Bonus: pairB8's Math-73-c had a SOUND harness verdict correctly KILLED by
+  the family-duty terminal (fd_prior=False) — the precision machinery
+  working.
+- **Math-86-c (one roll): two replay-track convictions, gates skipped by
+  design, CITATION: NONE** — coin-flip class pending a second observation.
+- **First-ever catches in pairB8:** Math-104 (complement-contract check kept
+  — consistent with the step-1 adjudication that its 8.2e-10 violation IS
+  catchable; softens "unwinnable at current tolerance"), Chart-19 at
+  standard width (the null-family fired and was kept clean), Lang-60-o (a
+  generalized form of the failing test's own observable).
+- **Loose end:** pairA8's summary covers 29 legs (Lang-22-c finished after
+  summary generation; TN either way, F1 unaffected) and its Lang-22 leg has
+  the only non-empty relation_replay_fired of all 120 legs without a scored
+  outcome — one check whether it was judged-and-dismissed or never judged.
 
 ## PARKED (pointers; full specs in plan-history.md)
 
