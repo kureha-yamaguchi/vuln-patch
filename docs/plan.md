@@ -348,6 +348,41 @@ accuser greped for the harness-repair marker before attribution.
 historically clean legs.** The historically-clean set excludes the four named
 residuals — Math-39 left it via 8.6 (2026-08-01). The former sub-5 "strong" tier is
 RETIRED — see the ceiling evidence above and in plan-history.md.
+**RESULT (pairA8/pairB8_20260802, raw committed before scoring — FAIL on all
+three criteria, f1e2024):**
+```
+CYCLE-8 A  TP= 9 FN= 5 FP= 7 TN= 9   F1=0.60   accusations=7
+CYCLE-8 B  TP=10 FN= 4 FP= 5 TN=11   F1=0.69   accusations=5
+PAIRED MEAN 0.6448  vs bar >0.685 (July pair: 0.6881)
+```
+Accusations per roll: A=7 FAIL. Historically clean legs accused: Math-2 (BOTH
+rolls — not noise, per the two-roll rule), Math-86 (one roll). Cutting the
+other way: July's Lang-60-c and Math-73-c accusations disappeared. The
+statistically honest sentence, recorded: within-pair spread (0.09 both pairs)
+exceeds the between-pair difference (0.043) — neither regression nor
+improvement is established; but the bar is a pre-committed threshold, not a
+significance test, and it is MISSED. Official state remains the July pair
+(0.6881) — this pair does not replace it.
+**The other five reads (none implicates the batch):** 8.4 dismiss branch: ZERO
+matches firings across 60 legs — no catch voided, the fail condition never
+triggered. differs: 5 firings, all Closure-62 (already a residual in July) —
+8.4 works, is guarded, and is nearly inert at this scale. Repair provenance:
+73 of 299 accepted harnesses (24%) came from a repaired attempt — a large,
+previously invisible dependency, the strongest positive. Value channel: 224
+events, 72 with values (baseline 0 of 1,452). Read 6 (8.2's reach recovery):
+UNRESOLVED on principle — the pre-registered denominator ("% of trigger
+rows") is not computable because result.jsonl carries no code_context;
+substituting a denominator the rule didn't name would be un-pre-registration;
+8.2's expensive half stays unbuilt for a STATED reason, not a measured one.
+Fix is small: record code_context (→ 8.21(c)); same gap blocks the
+throughput check.
+**Forensic thread #1: Math-2's two-roll accusation.** Named suspect to check
+FIRST (hypothesis, not attribution): the 8.1 step-1(b) sentinel fix changed
+what unparseable judge responses become in `family_duty` — garbage previously
+read as "duty does not apply" (escape NOT taken → drop proceeded); post-fix,
+more duty answers parse → escape taken → accusation KEPT. On correct legs a
+spared accusation is a false accusation. One grep decides: family-duty escape
+and re-ask events on Math-2-c's chains, both rolls, vs the July pair's.
 
 ## PARKED (pointers; full specs in plan-history.md)
 
@@ -1371,6 +1406,9 @@ the user can override rule 12 here.
 ellipsis-truncated records have corrupted one count and one diagnosis
 (record-vs-thing #5). (b) The 34 of 230 judge prompts carrying no evidence
 block (parked cycle 7, unexplained) — one read decides plumbing hole vs benign.
+(c) Record code_context into result.jsonl — its absence made the pair's read 6
+(8.2 reach recovery) unresolvable under its own pre-registered denominator and
+blocks the throughput check (2026-08-03).
 
 ## The two guard populations (permanent, versioned, population-pinned)
 
