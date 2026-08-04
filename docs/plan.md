@@ -1441,6 +1441,60 @@ plus four in-cycle wording negatives say NO. Math-39 folds fully into bucket
 (a): deciding fact delivered, not binding — the adopted ceiling class. Only
 the user can override rule 12 here.
 
+## POST-PAIR FIX BATCH (2026-08-04, user-approved) — the next work package
+
+Order: free reads first (8.22's confirming read, 8.24), then the tiny code
+(8.23, 8.21a, 8.21c — one mini-batch, unit-tested, no verdict surface), then
+8.22's fix measured ALONE. Nothing here is a revert; the cycle-8 batch stands.
+
+### 8.22 Raw-value containment — GATED on its confirming read
+**Target:** evidence assembly for the judge (station 7 input): the alarm text
+quoted into judge prompts, fed from station 4's fired messages.
+**Failure mode:** 8.4's raw values were built for the CODE comparison (safe —
+zero wrongful dismissals) but also travel inside the alarm text the judge
+reads, where they became material for "a correct implementation could…"
+dismissals: Closure-92 (caught both July rolls) missed BOTH new rolls with
+every firing dismissed quoting actualRaw; Closure-38's dismissal builds on the
+raw spelling (`x- -736E3` vs `x- -736000`). The judge should receive
+conclusions COMPUTED from raw values, never the raw strings as prompt text.
+**Gate (free, FIRST):** side-by-side read of Closure-92's July keep-chains vs
+the new dismiss-chains — confirm the raw text is the load-bearing difference
+(not, e.g., a different check shape). If not confirmed, stop here and record.
+**Fix (if confirmed):** consumer split, third application: the comparison
+keeps raw; the judge-facing alarm quote carries the normalized form plus the
+computed verdict line only ("raw output differs from / matches what the test
+pins"). No wording iteration — this is a structural change to what enters the
+prompt (rule 12 compliant).
+**Validation, claims scoped per population (the 8.4 lesson):** offline —
+re-judge the affected chains (pairA8/B8 Closure-92, Closure-38, plus any
+67-row guard rows whose evidence text would change) with and without the
+containment; the guard read is REGRESSION-only where rows carry no raw keys.
+Live — per-event read on the next run. Verdict-affecting → measured alone,
+never bundled.
+
+### 8.23 Summary must refuse to generate on an incomplete run — ten lines
+**Target:** `run_suite.sh` scoring/summary step.
+**Failure mode:** pairA8's summary was written while leg 18 (Lang-22-c) was
+still running — the official table covered 29 of 30 legs. Harmless this time;
+a silently under-counting report is rule 15's family (a report that looks
+complete and isn't).
+**Fix:** count result.jsonl files vs the cases file before writing summary.md;
+refuse loudly on mismatch. Test: deliberately withhold one leg.
+
+### 8.24 The unscored replay firing — one look, then decide
+**Target:** the relation-replay → judgment path (station 6→7).
+**Failure mode (suspected):** pairA8's Lang-22-c carries the only non-empty
+`relation_replay_fired` of all 120 legs (1915/20000 on patched, "silent on the
+trigger literals") with no visible judgment and no outcome effect. If it was
+judged-and-dismissed: fine, close. If replay firings can bypass judgment:
+that's a hole in the conviction path — spec the fix then, not before.
+
+### 8.21(a) and 8.21(c) are PROMOTED into this batch (from "anytime"):
+(a) trace-writer truncation — now charged with one corrupted count, one
+corrupted diagnosis, and 5 permanently unrepairable dataset rows;
+(c) record code_context into result.jsonl — a ~12M pair could not answer a
+pre-registered question for want of this field.
+
 ### 8.21 Small hygiene, anytime
 (a) Trace-writer truncation: record alarm text in full or mark elision loudly —
 ellipsis-truncated records have corrupted one count and one diagnosis
