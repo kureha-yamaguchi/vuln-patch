@@ -1460,6 +1460,24 @@ conclusions COMPUTED from raw values, never the raw strings as prompt text.
 **Gate (free, FIRST):** side-by-side read of Closure-92's July keep-chains vs
 the new dismiss-chains — confirm the raw text is the load-bearing difference
 (not, e.g., a different check shape). If not confirmed, stop here and record.
+**GATE OUTCOME (2026-08-04): NOT CONFIRMED — the fix dies for free.** Three
+strands: (1) the one check judged in both eras (`lifted-seed`) got the SAME
+verdict, UNSOUND, with raw cited in the new roll and without it in July — the
+raw text flipped nothing; (2) roll B missed with raw cited in only 1 of 6
+dismissals and still kept nothing; (3) the check sets barely overlap (3 of
+~12 distinct oracles shared) — July's keeps came from checks the new rolls
+never drew. Roll A's 5-of-5 raw citations were CO-PRESENCE, not causation:
+8.4 puts raw values in every normalizing alarm, so every dismissal of one
+quotes them regardless — the change manufactures its own correlation, the
+exact trap the gate existed to catch. Honest limit recorded: strand 1 is a
+single shared-check comparison; strands 2 and 3 are independent of it, and
+not-confirmed is the conservative direction (stops a build). **Closure-92 is
+reclassified: the invention lottery, same as Math-2 — July drew checks that
+survived, these rolls drew checks that didn't. The
+"raw-values-as-hypothetical-fodder" channel (named in the 44faf24 forensics)
+is DEMOTED to a watch item: re-openable only if a with/without replay ever
+flips a specific verdict; no evidence currently licenses that spend. 8.22's
+containment is NOT built.**
 **Fix (if confirmed):** consumer split, third application: the comparison
 keeps raw; the judge-facing alarm quote carries the normalized form plus the
 computed verdict line only ("raw output differs from / matches what the test
