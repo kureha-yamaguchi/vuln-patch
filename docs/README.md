@@ -22,6 +22,12 @@ and **frozen** (historical evidence; never updated, kept because other files cit
 
 ## Frozen — reference only
 
+- **`what-we-tried-2026-08-03.md`** — the plain-English onboarding retrospective:
+  every change attempted between Kureha's last commit (2026-06-09) and 2026-08-03,
+  grouped by era, each written as *which station · what it's for · why the edit ·
+  expected benefit · actual outcome*, with the worked/rejected/undecided master
+  tables and the methodology rules. Written for someone with no prior exposure to
+  the project. Not authoritative for the current design — `plan.md` is.
 - **`early-analysis-2026-07-04.md`** — the oldest layer: the June-29 critique notes
   and the per-run readthrough, merged and frozen (moved out of `src/java/`
   2026-07-31). Covers the era before `progress.md` starts; several of its claims are
