@@ -1506,6 +1506,15 @@ refuse loudly on mismatch. Test: deliberately withhold one leg.
 trigger literals") with no visible judgment and no outcome effect. If it was
 judged-and-dismissed: fine, close. If replay firings can bypass judgment:
 that's a hole in the conviction path — spec the fix then, not before.
+**CLOSED 2026-08-04: judged, not bypassed.** Full chain recorded: fired [63] →
+judged UNSOUND [68] → gates entered with no standing alarm [69–73]. The
+"unscored" appearance came from reading `relation_replay_kept` (a KEEP-list)
+as if it were a judgment-list — the absence reflects the dismissal, not a
+bypass. Small trap noted in the record's own shape (a field name that reads
+as more than it records — record-vs-thing, mild form). The dismissal itself
+is CITED (javadoc quote), so it sits in the healthy class; Lang-22-c is
+correct, the TN was right. No fix specced. Both pair-raised suspicions
+(8.22, 8.24) retired at zero cost.
 
 ### 8.21(a) and 8.21(c) are PROMOTED into this batch (from "anytime"):
 (a) trace-writer truncation — now charged with one corrupted count, one
