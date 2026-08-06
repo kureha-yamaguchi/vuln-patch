@@ -1448,12 +1448,27 @@ measured mechanisms, contracted infrastructure, two parked items. This is the
 next work package, as todos for the executing agent.
 
 ### Small items first
-- [ ] **9.0 reask_verdict_usable disposal** — no shipped caller (its only call
-  site was 5B's re-ask); delete function + tests + the two stale comments
-  (relation_verifier.py:552/569, evidence_facts.py:1783, judge_decision.py:99
-  region). The sentinel EMISSION stays — it is the 8.1 fix and is load-bearing.
-- [ ] **9.1 H3 five-case read** (free) — were the 5 rejections genuinely
-  infidel lifts? Note 4 sit on Closure-62.
+- [x] **9.0 reask_verdict_usable disposal** — DONE 2026-08-06. Function gone;
+  the 7 sentinel-emission pins KEPT and re-pointed at a test-local predicate
+  (deliberate: the contract stays stated where no shared-code edit can
+  silently weaken it). A blanket replace inverted two assertions; the suite
+  caught both. 576 passed.
+- [x] **9.1 H3 five-case read** — DONE 2026-08-06, and it re-ordered the
+  queue. Four rejections correct (the Closure-62 ones normalised away the
+  whitespace under test — right rejections; Math-68's cost nothing). The
+  fifth is a mechanical wrong rejection: `_values_match` cannot bridge an
+  escaped two-char \n against a literal newline. CRITICAL interaction: that
+  shape was occasional in July; **8.4 now MANDATES it** for exactly the
+  lifted text-comparing checks H3 polices — the wrong-rejection rate will
+  rise.
+- [ ] **9.1b H3 escape-decode fix — LANDS BEFORE 9.2 AND THE LADDER**
+  (decided 2026-08-06): decode escapes on both sides, the same change
+  `raw_value_vs_pinned` already made for the same reason. Verdict-affecting →
+  measured alone: (1) unit tests incl. the July case as a verbatim regression
+  fixture; (2) replay the H3 decision over the five archived rejection
+  records — the wrong one flips to accept, the four right ones stay rejected
+  (a complete known-answer population, free); (3) live it rides ladder
+  stage 1's per-event read.
 - [ ] **9.2 A5 preconditions test** (free) — against the 44 archived Lang-27
   legs: does the @throws/@param text appear in winning-harness citations?
   Promote to validated or queue for deletion.
