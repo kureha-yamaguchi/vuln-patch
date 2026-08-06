@@ -24,6 +24,15 @@ judge), 10 (refactor script). KEPT by user decision — item 1 (side quests).
 Items 3, 4, 5, 6, 9 explained to the user (studies contents, mined oracles,
 soundness-harden, 5B, rate-terminal); recommendation delete on all five,
 awaiting the user's word.
+**User word received 2026-08-06: ALL FIVE APPROVED.** (Soundness-harden
+approved conditionally — "if it isn't savable in any other way": it isn't;
+zero rescues ever, its screening role superseded by the direction check and
+the P0.2 canary, and the idea itself stays recorded in the docs and in git
+history.) Final batch: 10 deletions — old drivers, model escalation,
+attribution judge, refactor script, family-novelty gate, studies/, mined
+oracles, soundness-harden + canned_probe, 5B (with the zero-verdict-change
+AND zero-event-diff fixture proof on cases228_untruncated minus the 8),
+rate-terminal remnants. Side quests KEPT.
 
 1. **Side-quest trees** — `src/db` (10M), `src/linux`, `src/project_zero`,
    `src/oss_variant`, `src/variant.py`. Zero imports from anything live.
