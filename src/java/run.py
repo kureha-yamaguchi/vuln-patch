@@ -3993,6 +3993,22 @@ def main():
             print(f"  [trace] wrote {_tp} ({len(get_events())} steps)")
     except Exception as _e:
         print(f"  [trace] dump failed: {_e}")
+    # 8.21(c): record the class context the judge was shown.
+    #
+    # The pair could not answer 8.2's build/no-build question -- its rule named
+    # "of trigger rows", the trigger needs code_context to evaluate, and
+    # result.jsonl did not carry it. The measurement was lost for want of a
+    # field, after the run that could have supplied it had already been paid for.
+    #
+    # RAW, not a precomputed flag: a flag would freeze today's detector into the
+    # archive, and the detector is the thing most likely to change. "The record
+    # must not pre-decide what future consumers can use" -- the same rule that
+    # made observed_values string-preserving in 8.3.
+    try:
+        record_extras['code_context'] = ('\n\n'.join(class_ctx)
+                                         if class_ctx else None)
+    except Exception:
+        pass                       # recording never breaks a run
     _emit_record(args.results_json,
                  label='correct' if args.correct else 'overfitting',
                  status=status, selection=selection,

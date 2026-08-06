@@ -44,6 +44,11 @@ from llm import HarnessGenerator, record_event
 from java.execution.fuzz_runner import HarnessVerifier, VerificationResult
 from java.execution.oracle_strength import exception_headline, lifted_observed_mismatch
 
+# 8.21(a): the cap that belongs to prompts and display, not to the
+# archive. A record is read months later by someone reconstructing what
+# happened; a prefix cannot be un-truncated afterwards.
+RECORD_MAX_LEN = 100_000
+
 
 # A prompt factory takes the current set-coverage state (the functions
 # already exercised by accepted harnesses, and the crash signatures
@@ -919,8 +924,20 @@ class HarnessCampaign:
             # set can catch masked-symptom overfits.
             detail = ''
             if verification is not None:
+                # 8.21(a): the RECORD gets the alarm in full. `max_len` defaults
+                # to 200 for the prompt- and display-facing consumers, and this
+                # is neither -- it is the archive. Ellipsis-truncated records
+                # have already cost one count (8.4 compliance read as 38% when
+                # it was 100%) and one DIAGNOSIS (the batch-8 defect blamed on
+                # the cap when the cause was an embedded newline), plus 8 rows
+                # of cases228 that can never be repaired because the archive
+                # kept only the prefix.
+                #
+                # Consumer split, third application: comparison and archive get
+                # the whole thing, prompts and de-duplication keep the cap.
                 detail = exception_headline(
-                    verification.stdout + '\n' + verification.stderr) or ''
+                    verification.stdout + '\n' + verification.stderr,
+                    max_len=RECORD_MAX_LEN) or ''
             result.accepted_trigger_details.append(detail)
 
             # Fold this harness's coverage into the set state so the next

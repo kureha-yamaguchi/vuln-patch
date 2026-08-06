@@ -229,16 +229,47 @@ uv run python - "$ROOT" "$WORKLIST" "$ROOT/summary.md" "$SUITE" "$STAMP" <<'PY'
 import json, math, sys, collections, os
 root, worklist, out, suite, stamp = sys.argv[1:6]
 rows = []
+expected, missing = 0, []
 if os.path.exists(worklist):
     for line in open(worklist):
         parts = line.rstrip('\n').split('\t')
         if len(parts) < 2:
             continue
+        expected += 1
         rj = os.path.join(root, parts[1], 'result.jsonl')
-        if os.path.exists(rj):
-            txt = open(rj).read().strip()
-            if txt:
-                rows.append(json.loads(txt.splitlines()[-1]))
+        txt = open(rj).read().strip() if os.path.exists(rj) else ''
+        if txt:
+            rows.append(json.loads(txt.splitlines()[-1]))
+        else:
+            missing.append(parts[1])
+
+# 8.23 -- REFUSE to write summary.md when a leg produced no result.
+#
+# pairA8's official table covered 29 of 30 legs: Lang-22-c died on an uncaught
+# network error, wrote no result.jsonl, and the summary was generated anyway --
+# a complete-looking report over an incomplete run. That is rule 15's family
+# (something that looks like it did its job and did not), and the damage is
+# silent: every rate in the table has the wrong denominator.
+#
+# So: no summary.md at all on a mismatch, and a loudly-named INCOMPLETE file
+# instead, listing exactly which legs are absent. Refusing to write the real
+# filename is the point -- an incomplete table that is merely ANNOTATED still
+# gets read as the result later.
+if missing:
+    bad = out.replace('summary.md', 'summary-INCOMPLETE.md')
+    with open(bad, 'w') as f:
+        f.write(f"# {suite} ({stamp}) -- INCOMPLETE, NOT SCORED\n\n"
+                f"{len(rows)} of {expected} legs produced a result.\n\n"
+                "summary.md was deliberately NOT written: a table over an\n"
+                "incomplete run reports every rate with the wrong denominator.\n\n"
+                "## legs with no result.jsonl\n\n"
+                + "".join(f"* {m}\n" for m in missing)
+                + "\nRe-run the missing legs, then regenerate.\n")
+    print(f"REFUSING to write summary.md: {len(rows)} of {expected} legs have "
+          f"results; missing {len(missing)}: {', '.join(missing[:5])}"
+          + (" ..." if len(missing) > 5 else ""), file=sys.stderr)
+    print("wrote:", bad, file=sys.stderr)
+    sys.exit(3)
 cm = collections.Counter(); tok = 0
 lines = [f"# {suite} ({stamp})\n", f"{len(rows)} runs\n", "| bug | label | kind | crashed | outcome |", "|---|---|---|---|---|"]
 for r in rows:
