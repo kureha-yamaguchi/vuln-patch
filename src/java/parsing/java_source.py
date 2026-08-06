@@ -800,6 +800,7 @@ def _dynamic_oracle_ids(text: str) -> set:
     The literal-`[oracle:<id>]` scanner (`_ORACLE_ID_RE`) finds NOTHING in such
     a harness because the id is concatenated in at runtime — this was the
     empty-extraction bug behind night20's six vacuous family-novelty
+    rejections (the gate itself was deleted 2026-08-06 as inert)
     rejections (Lang-50, Chart-19, Math-65). The id string literals are
     nonetheless present statically wherever they flow into <sink>. Two flows
     are recovered here, both intraprocedural and convention-driven (they key
@@ -813,8 +814,8 @@ def _dynamic_oracle_ids(text: str) -> set:
 
     An id whose value is itself COMPUTED (`"hash-" + i`, a loop counter, a
     consumed byte) has no static literal and is deliberately NOT recovered:
-    that is a genuinely dynamic id, and the campaign's novelty gate must fail
-    open on it rather than reject (see `novelty_verdict` and the campaign
+    that is a genuinely dynamic id, so the campaign fails open on it (see the
+    family-steering block in campaign.run
     `family-extract-failed` path). Best-effort: fails soft to whatever it can
     prove, never raises."""
     src = strip_comments(text or '')
@@ -958,7 +959,7 @@ def oracle_ids_in_text(text: str) -> set:
 
 
 # ---------------------------------------------------------------------------
-# Family-novelty steering: the FAMILY STEM of an oracle id.
+# Family steering: the FAMILY STEM of an oracle id.
 #
 # Successive harnesses in a set are supposed to interrogate the root cause
 # from DIFFERENT angles; the observed failure (width5 20260725) is that later

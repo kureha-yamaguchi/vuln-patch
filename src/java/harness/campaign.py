@@ -59,7 +59,7 @@ RECORD_MAX_LEN = 100_000
 # A factory MAY additionally accept a third positional argument — the sorted
 # list of check-FAMILY stems already covered by accepted harnesses — so the
 # later-attempt prompt can steer toward an UNCOVERED family (see
-# `novelty_verdict` and the family-novelty gate in `run`). The campaign
+# family-steering below). The campaign
 # detects the factory's arity and passes families only when it is accepted, so
 # a legacy two-argument factory keeps working unchanged.
 PromptFactory = Callable[..., List[Dict[str, str]]]
@@ -81,44 +81,6 @@ def _factory_accepts_families(factory: Optional[PromptFactory]) -> bool:
     positional = [p for p in params
                   if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
     return len(positional) >= 3
-
-
-def novelty_verdict(new_families,
-                    accepted_families,
-                    rejections_so_far: int,
-                    max_rejections: int = 2) -> str:
-    """Family-novelty decision for a harness that has ALREADY compiled and
-    fired on the buggy build. Pure predicate — no I/O, no mutation.
-
-    Returns 'reject' when the harness adds NO check family beyond those an
-    accepted harness already covers AND the per-leg novelty-rejection budget
-    is not yet spent; 'accept' otherwise. Accepting despite zero new families
-    is the deliberate fail-open once the budget (`max_rejections`, default 2)
-    is exhausted — the campaign must still be able to finish rather than loop
-    forever demanding a family the model cannot invent.
-
-    FAIL-OPEN ON EMPTY EXTRACTION (belt and braces): an EMPTY `new_families`
-    set is never redundancy — it means the family extractor could not read the
-    candidate's checks (e.g. a genuinely dynamic oracle id it cannot resolve
-    statically), so there is no evidence of overlap to reject on. Such a
-    candidate is always 'accept'. The campaign gate independently short-circuits
-    empty extraction to a `family-extract-failed` fail-open before ever calling
-    this predicate; this guard makes a vacuous rejection impossible even if a
-    future caller forgets to.
-
-      new_families      — family stems of the candidate harness.
-      accepted_families — union of family stems over accepted harnesses.
-      rejections_so_far — novelty-rejections already spent this leg.
-    """
-    new_families = set(new_families)
-    if not new_families:
-        return 'accept'
-    families_added = new_families - set(accepted_families)
-    if families_added:
-        return 'accept'
-    if rejections_so_far < max_rejections:
-        return 'reject'
-    return 'accept'
 
 
 # --- Spec N (cycle 3b): generation-side convergence gate --------------------
@@ -367,11 +329,8 @@ class HarnessCampaign:
         found_signatures: List[str] = []
         # Union of the check-FAMILY stems of every accepted harness this leg
         # (see java_source.oracle_families). Steers later attempts toward an
-        # UNCOVERED family and backs the family-novelty gate below.
+        # UNCOVERED family.
         accepted_families: set = set()
-        # Per-leg count of harnesses rejected for adding no new family. Bounds
-        # the gate so it fails open rather than looping forever.
-        novelty_rejections = 0
         pass_families = _factory_accepts_families(prompt_factory)
 
         def fresh_prompt() -> List[Dict[str, str]]:
@@ -771,93 +730,13 @@ class HarnessCampaign:
                     )
                     continue
 
-            # --- gate 4 (family novelty): a later harness must add a NEW
-            #     check FAMILY. The width5 20260725 run showed later harnesses
-            #     re-skinning an earlier check under a new id (same observable,
-            #     new name) — no new evidence, and a set that only probes one
-            #     observable is blind to a patch that leaves a DIFFERENT
-            #     quantity wrong. Once at least one harness is accepted, a
-            #     compiled-and-fired attempt whose every check family is
-            #     already covered is bounced back with a targeted repair turn.
-            #     Bounded: after two such rejections this leg the gate fails
-            #     open and accepts the redundant harness, so the campaign can
-            #     always finish.
+            # Check-family stems of this harness. The family-NOVELTY GATE that
+            # used to sit here was deleted 2026-08-06: across 120 archived legs
+            # it evaluated 458 times and rejected NOTHING, so it was inert
+            # while costing an extraction per attempt. The extraction itself
+            # stays -- `accepted_families` still steers later prompts toward an
+            # uncovered family, which is a different mechanism.
             harness_families = oracle_families(source)
-            families_added = harness_families - accepted_families
-            if accepted_families and not harness_families:
-                # FAIL-OPEN BY CONSTRUCTION: an EMPTY extracted family set is a
-                # parse failure, not redundancy — the gate cannot judge what it
-                # could not read, so it must never reject on it (this is exactly
-                # what produced night20's six vacuous rejections). Log WHY, then
-                # fall through accept-eligible. novelty_verdict independently
-                # returns 'accept' for an empty set; this branch never reaches
-                # it, so a vacuous rejection is impossible on two counts.
-                print("✓ [novelty] family extraction empty — fail-open "
-                      "accept (family-extract-failed)")
-                record_event(
-                    'deterministic', method='harness-attempt',
-                    target=attempt_label,
-                    output='family-extract-failed (empty family set — '
-                           'accepted fail-open; the novelty gate cannot judge '
-                           'checks it could not parse, e.g. a dynamic oracle '
-                           'id)',
-                    detail={'harness_families': [],
-                            'accepted_families': sorted(accepted_families)})
-            elif accepted_families:
-                if (novelty_verdict(harness_families, accepted_families,
-                                    novelty_rejections) == 'reject'):
-                    novelty_rejections += 1
-                    mine = ', '.join(sorted(harness_families)) or '(none)'
-                    print(f"✗ [novelty] no new check family (covers "
-                          f"{{{mine}}}, all already accepted) — rejecting "
-                          f"({novelty_rejections}/2)")
-                    record_event(
-                        'deterministic', method='harness-attempt',
-                        target=attempt_label,
-                        output='REJECTED (family-novelty: adds no check '
-                               'family beyond the accepted harnesses)',
-                        detail={'harness_families': sorted(harness_families),
-                                'accepted_families': sorted(accepted_families),
-                                'novelty_rejections': novelty_rejections})
-                    repair_failures, current_messages, original_messages = (
-                        self._handle_failure(
-                            diagnostic=self._build_novelty_message(
-                                harness_families, accepted_families),
-                            raw=raw,
-                            is_repair_attempt=is_repair_attempt,
-                            repair_failures=repair_failures,
-                            current_messages=current_messages,
-                            original_messages=original_messages,
-                            fresh_prompt=fresh_prompt,
-                        )
-                    )
-                    continue
-                if not families_added:
-                    # verdict == 'accept' with no new family: the budget is
-                    # spent, so we accept a redundant harness rather than loop.
-                    print("[novelty] cap reached — accepting redundant "
-                          "harness")
-                    record_event(
-                        'deterministic', method='harness-attempt',
-                        target=attempt_label,
-                        output='novelty-cap fail-open (budget spent — '
-                               'redundant harness admitted so the campaign '
-                               'can finish)',
-                        detail={'harness_families': sorted(harness_families),
-                                'accepted_families': sorted(accepted_families),
-                                'novelty_rejections': novelty_rejections})
-                else:
-                    # passed the novelty gate on real new evidence: record the
-                    # compact pass so every non-trivial gate decision survives
-                    # in the trace, not only the rejections.
-                    print(f"✓ [novelty] adds {len(families_added)} new check "
-                          f"family(ies)")
-                    record_event(
-                        'deterministic', method='harness-attempt',
-                        target=attempt_label,
-                        output='novelty-gate PASS (adds new check families)',
-                        detail={'families_added': sorted(families_added),
-                                'families_added_count': len(families_added)})
 
             # --- accepted ---------------------------------------------
             result.successful_results.append(build)
@@ -915,7 +794,7 @@ class HarnessCampaign:
                 if signature and signature not in found_signatures:
                     found_signatures.append(signature)
             # Fold the accepted harness's check FAMILIES so the next attempt
-            # is steered off them and the novelty gate measures against them.
+            # is steered off them.
             accepted_families |= harness_families
 
             self._print_success(result, build, signature, detail)
@@ -1004,25 +883,6 @@ class HarnessCampaign:
             "project classpath. If javac says 'cannot find symbol', "
             "remove that import and use only classes visible in the "
             "source_imports block or java.* / java.awt.*."
-        )
-
-    def _build_novelty_message(self, harness_families,
-                               accepted_families) -> str:
-        """Repair turn for a harness that compiled and fired but whose every
-        check family is already covered by an accepted harness (gate 4)."""
-        covered = ', '.join(sorted(accepted_families)) or '(none)'
-        mine = ', '.join(sorted(harness_families)) or '(none)'
-        return (
-            "That compiled and fired on the buggy build, but every check "
-            f"FAMILY in this harness ({{{mine}}}) is already covered by an "
-            f"accepted harness (covered families: {{{covered}}}). Re-skinning "
-            "an already-covered family under a new name adds no new evidence: "
-            "a set of harnesses that all probe the SAME observable is blind "
-            "to a patch that leaves a DIFFERENT quantity wrong. Invent checks "
-            "in an UNCOVERED family — cover a different observable, a sibling "
-            "method, or a different receiver-state axis than the families "
-            "listed above. Return the full corrected FuzzHarness.java. Raw "
-            "Java source only. No markdown fences."
         )
 
     def _build_swallow_message(self, reason: str) -> str:

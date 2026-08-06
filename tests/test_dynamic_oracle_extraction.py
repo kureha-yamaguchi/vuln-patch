@@ -27,7 +27,6 @@ import os
 import pytest
 
 from java.parsing.java_source import oracle_families, oracle_ids_in_text
-from java.harness.campaign import novelty_verdict
 
 _FIX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 
@@ -115,19 +114,3 @@ def test_truly_dynamic_id_extracts_empty():
     assert oracle_families(_TRULY_DYNAMIC) == set()
     assert oracle_ids_in_text(_TRULY_DYNAMIC) == set()
 
-
-def test_truly_dynamic_id_gate_path_fails_open():
-    # This is the whole point of fail-open: an unrecoverable (empty) family set
-    # is accept-eligible at the pure-predicate boundary the campaign gate uses,
-    # no matter how many rejections have been spent.
-    fams = oracle_families(_TRULY_DYNAMIC)
-    assert fams == set()
-    assert novelty_verdict(fams, {"some-accepted-family"}, 0) == "accept"
-    assert novelty_verdict(fams, {"some-accepted-family"}, 99) == "accept"
-
-
-def test_novelty_verdict_empty_is_accept_regression():
-    # The plan's explicit regression: novelty_verdict(set(), anything, 0)
-    # == 'accept'. A vacuous rejection is impossible by construction.
-    assert novelty_verdict(set(), {"a", "b"}, 0) == "accept"
-    assert novelty_verdict(set(), set(), 0) == "accept"
