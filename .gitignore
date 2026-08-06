@@ -255,3 +255,5 @@ VERSION
 
 # Claude Code session/settings dir — local only, never commit (privacy)
 .claude/
+
+oss-fuzz/*

@@ -4,7 +4,7 @@ version → run them on HEAD to surface siblings the fix missed.
 Pipeline (mirrors src/java/run.py, but for OSS-Fuzz / libFuzzer):
 
     OsvClient          (osv.py)       pick newest public CVE + fix commit
-    OssFuzz            (ossfuzz.py)    clone repo, worktree vuln(=fix~1) & HEAD
+    OssFuzz            (ossfuzz.py)    clone repo, check out vuln(=fix~1) & HEAD
     [reproduce]        (ossfuzz.py)    optional: confirm PoC crashes on vuln
     DiffAnalyzer       (analysis.py)   fix diff → touched functions + reachable
     LibFuzzerPrompt…   (prompts.py)    build the steered prompt
@@ -23,33 +23,64 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import config
-from oss_fuzz.osv import OsvClient, CveTarget, select_from_records
+from typing import List
+
+from oss_fuzz.osv import OsvClient, CveTarget, rank_records
 from oss_fuzz.ossfuzz import OssFuzz
 from oss_fuzz.analysis import DiffAnalyzer
 from oss_fuzz.prompts import LibFuzzerPromptBuilder
 from oss_fuzz.campaign import HarnessCampaign
+from oss_fuzz.targets import find_candidates
 
 
 def parse_args():
     p = argparse.ArgumentParser(
         description="Find sibling bugs an OSS-Fuzz CVE's fix missed.")
-    p.add_argument("--project", required=True,
-                   help="OSS-Fuzz project name (projects/<name>/)")
+    p.add_argument("--project", default=None,
+                   help="OSS-Fuzz project name (projects/<name>/). Omit with "
+                        "--list-candidates to discover one, or with "
+                        "--auto-project to run the newest CVE found.")
+    p.add_argument("--list-candidates", action="store_true",
+                   help="list OSS-Fuzz projects this front-end can drive (C/C++ "
+                        "+ libFuzzer + the chosen sanitizer) that have a public "
+                        "CVE with a fix commit, then exit")
+    p.add_argument("--auto-project", action="store_true",
+                   help="pick the project automatically: the newest CVE among "
+                        "the discovered candidates")
+    p.add_argument("--candidate-limit", type=int, default=10,
+                   help="stop the candidate sweep after this many hits "
+                        "(default 10; each hit costs one OSV query)")
+    p.add_argument("--max-projects", type=int, default=None,
+                   help="cap how many projects the candidate sweep probes")
     p.add_argument("--osv-json", default=None,
                    help="load OSV records from a JSON file instead of querying "
                         "the network (a list of records, or {'vulns': [...]}). "
                         "Useful for reproducibility and offline runs.")
     p.add_argument("--cve", default=None,
                    help="force a specific CVE id (must be in the OSV results)")
+    p.add_argument("--require-cve", action="store_true",
+                   help="only consider OSV entries carrying a CVE alias. "
+                        "OSS-Fuzz's own OSV records (OSV-YYYY-NNNN) do not, so "
+                        "this usually selects nothing; off by default, where "
+                        "any disclosed bug with a fix commit is eligible.")
     p.add_argument("--sanitizer", default=None,
                    help="address/undefined/memory (default: the CVE's own, "
                         "else config.OSS_FUZZ_SANITIZER)")
+    p.add_argument("--max-target-tries", type=int, default=5,
+                   help="how many OSV records (newest first) to try before "
+                        "giving up on finding one whose fix diff touches C/C++ "
+                        "source (default 5)")
+    p.add_argument("--allow-empty-context", action="store_true",
+                   help="run even when the fix diff yields no touched "
+                        "functions. The prompt then carries no variant-analysis "
+                        "steering, so the run does not test the heuristic.")
     p.add_argument("-n", "--target-successes", type=int, default=5)
     p.add_argument("-m", "--max-attempts", type=int, default=30)
     p.add_argument("--reachable-node-cap", type=int, default=None,
@@ -67,6 +98,20 @@ def parse_args():
     p.add_argument("--reproducer", default=None,
                    help="path to the original PoC testcase; if given, we "
                         "confirm it crashes the vuln build and not HEAD")
+    p.add_argument("--harness-build", choices=("auto", "crib", "overwrite"),
+                   default="auto",
+                   help="how to get the generated harness compiled. 'crib' "
+                        "copies a $LIB_FUZZING_ENGINE compile line out of "
+                        "build.sh (needs one to exist); 'overwrite' replaces an "
+                        "existing harness source in place and lets the "
+                        "project's own build system compile it (works for "
+                        "CMake/Meson/script-driven projects, which are the "
+                        "majority); 'auto' (default) cribs when possible and "
+                        "overwrites otherwise")
+    p.add_argument("--base-harness", default=None,
+                   help="harness source to overwrite, relative to the target's "
+                        "repo root. Only used by the overwrite strategy; "
+                        "auto-detected when omitted")
     p.add_argument("--oss-fuzz-dir", default=None)
     p.add_argument("--work-dir", default=None)
     p.add_argument("--dry-run", action="store_true",
@@ -76,24 +121,32 @@ def parse_args():
     return p.parse_args()
 
 
-def _select_target(args) -> CveTarget:
+def _ranked_targets(args) -> List[CveTarget]:
+    """All usable OSV targets for the project, newest first."""
     if args.osv_json:
         raw = json.loads(Path(args.osv_json).read_text())
         records = raw.get("vulns", raw) if isinstance(raw, dict) else raw
-        if args.cve:
-            records = [r for r in records
-                       if args.cve in (r.get("aliases") or [])]
-        target = select_from_records(args.project, records)
     else:
-        client = OsvClient()
-        records = client.query_project(args.project)
-        if args.cve:
-            records = [r for r in records
-                       if args.cve in (r.get("aliases") or [])]
-        target = select_from_records(args.project, records)
-    if target is None:
-        sys.exit(f"No usable public CVE found for project '{args.project}'.")
-    return target
+        records = OsvClient().query_project(args.project)
+
+    # Pinning a CVE id only makes sense against records that carry the alias,
+    # so --cve implies --require-cve.
+    if args.cve:
+        records = [r for r in records
+                   if args.cve in (r.get("aliases") or [])]
+    ranked = rank_records(args.project, records,
+                          require_cve=args.require_cve or bool(args.cve))
+    if not ranked:
+        what = "CVE" if (args.require_cve or args.cve) else "disclosed bug"
+        hint = ""
+        if args.require_cve or args.cve:
+            hint = ("\n  OSS-Fuzz OSV records carry no CVE alias; drop "
+                    "--require-cve/--cve to accept any disclosed bug that has "
+                    "a fix commit.")
+        sys.exit(f"No usable public {what} with a fix commit found for project "
+                 f"'{args.project}' ({len(records)} OSV record(s) considered)."
+                 + hint)
+    return ranked
 
 
 def _emit(path, **rec):
@@ -103,72 +156,229 @@ def _emit(path, **rec):
         fh.write(json.dumps(rec) + "\n")
 
 
+def _fail(msg: str, dry_run: bool) -> None:
+    """Abort on a targeting problem — unless this is a --dry-run wiring check,
+    where the point is to exercise the control flow without a real checkout."""
+    if dry_run:
+        print(f"WARNING (ignored under --dry-run): {msg}")
+        return
+    sys.exit(msg)
+
+
+def _print_candidates(cands) -> None:
+    print(f"\n{len(cands)} candidate project(s) — newest first:\n")
+    print(f"  {'project':<24} {'lang':<5} {'advisory':<18} {'published':<11} "
+          "crash type")
+    for c in cands:
+        # Most OSS-Fuzz records have no CVE, so show whichever id exists and
+        # the crash type — that, not the id, is what tells you if the bug class
+        # matches the sanitizer you are about to run.
+        advisory = c.cve_id or c.target.osv_id
+        print(f"  {c.project:<24} {c.language:<5} {advisory:<18} "
+              f"{c.published[:10]:<11} {c.target.crash_type or '-'}")
+    print("\nRun one with:  uv run -m oss_fuzz.run --project <project>")
+
+
 def main():
     args = parse_args()
 
-    # 1) Most recent public CVE + fix boundary.
-    target = _select_target(args)
     of = OssFuzz(oss_fuzz_dir=args.oss_fuzz_dir, work_dir=args.work_dir,
                  dry_run=args.dry_run)
 
-    # Fill language / main_repo / sanitizer from project.yaml when OSV lacked them.
-    info = of.project_yaml(args.project)
-    target.language = target.language or info.get("language", "c++")
-    target.main_repo = target.main_repo or info.get("main_repo")
+    # 0) The checkout has to be a real oss-fuzz clone before anything below
+    #    means anything — otherwise this surfaces much later as a confusing
+    #    helper.py traceback or a silently empty candidate list.
+    problems = of.checkout_problems()
+    if problems:
+        _fail("Unusable OSS-Fuzz checkout:\n"
+              + "\n".join(f"  - {p}" for p in problems)
+              + "\n  Point --oss-fuzz-dir or $OSS_FUZZ_DIR at a "
+                "google/oss-fuzz clone.", args.dry_run)
+
+    for warning in of.host_warnings():
+        print(f"WARNING: {warning}")
+
+    sanitizer_pref = args.sanitizer or config.OSS_FUZZ_SANITIZER
+
+    # 0b) Target discovery. Without this you have to already know a project
+    #     name that is C/C++, builds with libFuzzer, and has a public CVE —
+    #     true for only a small fraction of the ~1300 projects in a checkout.
+    preselected = None
+    if args.list_candidates or (args.auto_project and not args.project):
+        print(f"scanning OSS-Fuzz projects for {sanitizer_pref}-capable C/C++ "
+              "targets with a public CVE ...")
+        cands = find_candidates(
+            of, sanitizer=sanitizer_pref, limit=args.candidate_limit,
+            max_projects=args.max_projects,
+            require_cve=args.require_cve or bool(args.cve),
+            verbose=True)
+        if not cands:
+            sys.exit("No viable candidate projects found. Widen the sweep with "
+                     "--max-projects / --candidate-limit, or try another "
+                     "--sanitizer.")
+        if args.list_candidates:
+            _print_candidates(cands)
+            sys.exit(0)
+        preselected = cands[0]
+        args.project = preselected.project
+        print(f"\nauto-selected project '{args.project}' "
+              f"({preselected.cve_id or preselected.target.osv_id})")
+
+    if not args.project:
+        sys.exit("--project is required (or use --list-candidates to discover "
+                 "one, or --auto-project to pick the newest automatically).")
+
+    # 0c) Preflight the chosen project: language, engine, sanitizer, main_repo.
+    #     This is the check that stops a python/go/jvm project — most of the
+    #     OSS-Fuzz corpus — from consuming a clone, a Docker image build and an
+    #     LLM budget before failing to compile a C/C++ harness.
+    sup = of.check_support(args.project, sanitizer_pref)
+    if not sup.supported:
+        _fail(f"Project '{args.project}' is not a target this front-end can "
+              "drive:\n" + "\n".join(f"  - {r}" for r in sup.reasons)
+              + "\n  See viable projects with --list-candidates.", args.dry_run)
+
+    # 1) Pick a target whose fix diff is actually analysable.
+    #
+    #    OSS-Fuzz 'fixed' commits come from automated bisection and a real
+    #    fraction of them do not touch source: c-blosc2's newest record points
+    #    at a commit that only adds PNG/SVG diagrams. Those produce an empty
+    #    root-cause context, hence a prompt with no variant-analysis steering —
+    #    the whole research heuristic — which would then be spent on a full
+    #    Docker build + LLM + fuzzing budget and recorded as "0 siblings" as if
+    #    the method had been fairly tested. So we walk the ranking (newest
+    #    first) and take the first record that yields touched functions.
+    ranked = _ranked_targets(args)
+    if preselected:
+        ranked = ([preselected.target]
+                  + [t for t in ranked
+                     if t.osv_id != preselected.target.osv_id])
+    tries = min(max(1, args.max_target_tries), len(ranked))
+    print(f"usable OSV records: {len(ranked)} (will try up to {tries})")
+
+    target = None
+    context = None
+    repo = vuln = None
+    vuln_commit = head_commit = None
+
+    for i, cand in enumerate(ranked[:tries], 1):
+        cand.language = cand.language or sup.language or "c++"
+        cand.main_repo = cand.main_repo or sup.main_repo
+        print(f"\n-- candidate {i}/{tries}: {cand.osv_id} "
+              f"{cand.cve_id or '(no CVE)'} --")
+        print(f"published    : {cand.published[:10]}")
+        print(f"fixed commit : {cand.fixed_commit}")
+        if cand.crash_type:
+            print(f"crash type   : {cand.crash_type}")
+        if cand.crash_state:
+            print(f"crash state  : {' <- '.join(cand.crash_state)}")
+        if cand.report_url:
+            print(f"report       : {cand.report_url}")
+        if not cand.main_repo:
+            print("  no main_repo resolvable from OSV or project.yaml; skipping")
+            continue
+
+        repo = of.clone_source(cand.main_repo)
+        vc = of.parent_commit(repo, cand.fixed_commit)
+        hc = of.head_commit(repo)
+        print(f"vuln commit  : {vc}")
+        print(f"head commit  : {hc}")
+        wt = of.checkout(repo, vc, "vuln")
+
+        diff = of.diff(repo, vc, cand.fixed_commit)
+        ctx = DiffAnalyzer(
+            language=cand.language,
+            reachable_node_cap=args.reachable_node_cap,
+            reachable_max_depth=args.reachable_max_depth,
+        ).analyze(diff, wt.path)
+        print("-- root-cause context --")
+        print(json.dumps(ctx.as_dict(), indent=2))
+
+        if ctx.functions or args.allow_empty_context or args.dry_run:
+            if not ctx.functions:
+                print("WARNING: no touched functions extracted; prompt will "
+                      "rely on the raw diff only and carries NO steering.")
+            target, context = cand, ctx
+            vuln, vuln_commit, head_commit = wt, vc, hc
+            break
+
+        print(f"  REJECTED: the fix diff ({len(diff)} bytes) touches no C/C++ "
+              "function, so the prompt would carry no steering. Trying the "
+              "next-newest record.")
+
+    if target is None:
+        sys.exit(
+            f"None of the {tries} newest OSV record(s) for '{args.project}' has "
+            "a fix diff that touches C/C++ source, so no steered prompt is "
+            "possible.\n  Raise --max-target-tries, pick another --project "
+            "(--list-candidates), or pass --allow-empty-context to run "
+            "unsteered anyway.")
+
     sanitizer = (args.sanitizer or target.sanitizer
                  or config.OSS_FUZZ_SANITIZER)
     ext = of.harness_ext(target.language)
-
-    print(f"target CVE   : {target.cve_id}  ({target.osv_id})")
-    print(f"project      : {target.project}  [{target.language}]")
-    print(f"main_repo    : {target.main_repo}")
-    print(f"fixed commit : {target.fixed_commit}")
+    print(f"\nselected     : {target.osv_id} "
+          f"{target.cve_id or '(no CVE)'}  [{target.language}]")
     print(f"sanitizer    : {sanitizer}")
-    if not target.main_repo:
-        sys.exit("No main_repo resolvable from OSV or project.yaml; cannot "
-                 "check out the vulnerable/HEAD sources.")
 
-    # 2) Clone + worktrees: vuln = parent of the fix, head = current HEAD.
-    repo = of.clone_source(target.main_repo)
-    vuln_commit = of.parent_commit(repo, target.fixed_commit)
-    head_commit = of.head_commit(repo)
-    print(f"vuln commit  : {vuln_commit}")
-    print(f"head commit  : {head_commit}")
-    vuln = of.worktree(repo, vuln_commit, "vuln")
-    head = of.worktree(repo, head_commit, "head")
+    # How the harness will be compiled. Decided here, before build_image, because
+    # a demanded-but-impossible strategy should fail before pulling gigabytes.
+    placement = of.plan_harness(args.project, vuln, target.fuzz_target, ext,
+                                mode=args.harness_build,
+                                base_harness=args.base_harness)
+    if placement is None:
+        _fail(f"--harness-build overwrite needs an existing libFuzzer harness "
+              f"in the vulnerable checkout of '{args.project}', and none was "
+              f"found (looked for a file defining LLVMFuzzerTestOneInput). "
+              f"Point at one with --base-harness, or use --harness-build auto.",
+              args.dry_run)
+        placement = of.plan_harness(args.project, vuln, target.fuzz_target, ext,
+                                    mode="crib")
+    # Overwrite keeps the replaced file's extension, which may not be the one
+    # the project's language implies; everything downstream must use it.
+    ext = placement.ext
+    print(f"harness build: {placement.describe()}")
+
+    # The bug's own OSV sanitizer can differ from the one we preflighted, so
+    # re-check whatever we ended up with rather than the preference.
+    if sup.exists and sanitizer not in sup.sanitizers:
+        _fail(f"{target.osv_id} was found with the '{sanitizer}' sanitizer, "
+              f"which project '{args.project}' does not build "
+              f"(project.yaml sanitizers: {', '.join(sup.sanitizers)}). "
+              "Override with --sanitizer.", args.dry_run)
+
+    # 2) HEAD worktree + the project's build image. Deliberately after the
+    #    analysis above: build_image pulls gigabytes, and there is no point
+    #    paying that before we know we have a steerable target.
+    head = of.checkout(repo, head_commit, "head")
     of.build_image(args.project)
 
     # 3) Optional PoC sanity: crashes on vuln, clean on HEAD (needs the harness
     #    name the bug was found on + a local testcase).
     if args.reproducer and target.fuzz_target:
         print("\n-- PoC sanity check --")
-        vc = of.reproduce(args.project, target.fuzz_target,
-                          args.reproducer, sanitizer)
-        print(f"  vuln build: {'CRASH' if vc.triggered else 'no crash'} "
-              f"({vc.crash_reason})")
-
-    # 4) Analyse the fix diff on the vulnerable sources.
-    diff = of.diff(repo, vuln_commit, target.fixed_commit)
-    context = DiffAnalyzer(
-        language=target.language,
-        reachable_node_cap=args.reachable_node_cap,
-        reachable_max_depth=args.reachable_max_depth,
-    ).analyze(diff, vuln.path)
-    print("\n-- root-cause context --")
-    print(json.dumps(context.as_dict(), indent=2))
-    if not context.functions and not args.dry_run:
-        print("WARNING: no touched functions extracted; prompt will rely on "
-              "the raw diff only.")
+        vc_out = of.reproduce(args.project, target.fuzz_target,
+                              args.reproducer, sanitizer)
+        print(f"  vuln build: {'CRASH' if vc_out.triggered else 'no crash'} "
+              f"({vc_out.crash_reason})")
 
     # 5) Campaign: generate + build + trigger-gate on the vulnerable build.
     prompt_builder = LibFuzzerPromptBuilder(language=target.language)
     repro_hint = None  # bytes of the PoC could be summarised here if desired
 
+    # Under overwrite the harness IS the project's existing target file, so name
+    # it in the prompt rather than inventing one.
+    harness_label = "vp_harness"
+    if placement.mode == "overwrite" and placement.rel_path:
+        harness_label = os.path.splitext(os.path.basename(placement.rel_path))[0]
+
     def prompt_factory(covered, signatures):
         return prompt_builder.build(
             context=context, covered_functions=covered,
-            found_signatures=signatures, harness_name="vp_harness",
-            reproducer_hint=repro_hint)
+            found_signatures=signatures, harness_name=harness_label,
+            reproducer_hint=repro_hint,
+            crash_type=target.crash_type, crash_state=target.crash_state,
+            harness_ext=placement.ext)
 
     if args.dry_run:
         generator = _StubGenerator()
@@ -177,7 +387,7 @@ def main():
         generator = HarnessGenerator(temperature=0.6, top_p=1.0)
     campaign = HarnessCampaign(
         generator=generator, oss_fuzz=of, project=args.project,
-        vuln_checkout=vuln, sanitizer=sanitizer, ext=ext,
+        vuln_checkout=vuln, sanitizer=sanitizer, ext=ext, placement=placement,
         target_successes=args.target_successes,
         max_attempts=args.max_attempts, verify_seconds=args.verify_timeout)
     result = campaign.run(prompt_factory)
@@ -185,16 +395,50 @@ def main():
     print(f"\n== campaign: {result.achieved}/{result.target_successes} "
           f"accepted in {result.attempts} attempts ==")
 
+    # An environment that cannot build anything is not a negative result. Exit
+    # distinctly (2) so a suite run does not average it in as "0 siblings".
+    if result.infra_error and result.achieved == 0:
+        _emit(args.results_json, project=args.project, osv_id=target.osv_id,
+              cve=target.cve_id, sanitizer=sanitizer, attempts=result.attempts,
+              harnesses_accepted=0, siblings=[],
+              infra_error=result.infra_error)
+        # Exit 2 (not 1, and not 0) so a suite can tell "environment broken"
+        # from "ran and found nothing" (0) and from a usage error (1).
+        sys.stderr.write(
+            "\nRUN ABORTED — the build environment could not build any "
+            f"harness:\n  {result.infra_error}\n"
+            "This is not a result about the fix; fix the environment and "
+            "re-run.\n")
+        sys.exit(2)
+
     # 6) Run each accepted harness on HEAD. A crash here = sibling the fix missed.
+    #    HEAD needs its own placement: under overwrite the harness file may have
+    #    been renamed or moved upstream between the vulnerable commit and HEAD.
+    head_placement = of.plan_harness(args.project, head, target.fuzz_target,
+                                     ext, mode=placement.mode,
+                                     base_harness=args.base_harness)
+    if head_placement is None:
+        print(f"\nWARNING: '{placement.rel_path}' does not exist in the HEAD "
+              "checkout (renamed or removed upstream?), so accepted harnesses "
+              "cannot be rebuilt there. Re-run with --base-harness naming the "
+              "HEAD path. Reporting 0 siblings, which is NOT a result about "
+              "the fix.")
+    elif head_placement.mode == "overwrite" and \
+            head_placement.rel_path != placement.rel_path:
+        print(f"\nnote: HEAD's harness is {head_placement.rel_path} "
+              f"(vuln used {placement.rel_path})")
+
     siblings = []
-    for gen in result.successful:
+    for gen in result.successful if head_placement else []:
         print(f"\n-- HEAD run: {gen.harness_name} --")
         out_bin = of.build_harness(args.project, head, gen.harness_name,
-                                   gen.source, gen.ext, sanitizer)
+                                   gen.source, gen.ext, sanitizer,
+                                   placement=head_placement)
         if out_bin is None:
             print("  did not build against HEAD (API drift?); skipping")
             continue
-        outcome = of.run_fuzzer(args.project, gen.harness_name,
+        outcome = of.run_fuzzer(args.project,
+                                head_placement.runtime_name(gen.harness_name),
                                 args.fuzz_timeout, sanitizer)
         if outcome.triggered:
             print(f"  *** SIBLING BUG on HEAD *** [{outcome.signature}] "
@@ -207,19 +451,20 @@ def main():
 
     # 7) Report.
     print("\n" + "#" * 50)
-    print(f"CVE {target.cve_id}: {len(siblings)} sibling(s) on HEAD "
-          f"from {result.achieved} harness(es)")
+    print(f"{target.cve_id or target.osv_id}: {len(siblings)} sibling(s) on "
+          f"HEAD from {result.achieved} harness(es)")
     for s in siblings:
         print(f"  - {s['harness']}: {s['signature']}  ({s['artifact']})")
     print("#" * 50)
 
     _emit(args.results_json, cve=target.cve_id, project=args.project,
-          osv_id=target.osv_id, vuln_commit=vuln_commit,
+          osv_id=target.osv_id, sanitizer=sanitizer,
+          crash_type=target.crash_type, vuln_commit=vuln_commit,
           head_commit=head_commit, harnesses_accepted=result.achieved,
           attempts=result.attempts, siblings=siblings)
 
     if not args.dry_run:
-        of.cleanup_worktrees(repo)
+        of.cleanup_checkouts(repo)
     sys.exit(0 if not siblings else 3)
 
 

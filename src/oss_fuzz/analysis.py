@@ -42,8 +42,45 @@ except ImportError:
 # treated as function headers. Crude but effective for typical C/C++ style.
 _CONTROL = {"if", "for", "while", "switch", "do", "else", "return",
             "sizeof", "case"}
+
+# Common libc/stdlib entry points. Only used by the heuristic reachable set,
+# which has no call graph to tell project functions from external ones — see
+# DiffAnalyzer._reachable_heuristic. Not exhaustive by design: it covers the
+# names that actually crowd out real targets in C fix diffs.
+_LIBC_NAMES = {
+    # memory
+    "malloc", "calloc", "realloc", "free", "memcpy", "memmove", "memset",
+    "memcmp", "memchr", "alloca", "bzero",
+    # strings
+    "strlen", "strnlen", "strcpy", "strncpy", "strcat", "strncat", "strcmp",
+    "strncmp", "strcasecmp", "strncasecmp", "strchr", "strrchr", "strstr",
+    "strdup", "strndup", "strtok", "strspn", "strcspn", "strpbrk", "strerror",
+    # conversion / formatting
+    "atoi", "atol", "atoll", "atof", "strtol", "strtoul", "strtoll",
+    "strtoull", "strtod", "sprintf", "snprintf", "vsnprintf", "sscanf",
+    "printf", "fprintf", "puts", "putchar",
+    # ctype
+    "isalpha", "isdigit", "isalnum", "isspace", "isupper", "islower",
+    "isprint", "ispunct", "isxdigit", "tolower", "toupper",
+    # stdio / os
+    "fopen", "fclose", "fread", "fwrite", "fseek", "ftell", "fflush", "fgets",
+    "open", "close", "read", "write", "lseek", "stat", "fstat",
+    "abort", "exit", "assert", "qsort", "bsearch", "time", "getenv",
+}
 _CALL_RE = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*\(")
 _HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
+
+# Directory names whose contents are not library code: tests, the project's own
+# fuzz harnesses, CLI tools, examples and language bindings. A fix that also
+# updates these (very common in a broad upstream sync) must not contribute
+# root-cause functions — see DiffAnalyzer._is_non_library.
+_NON_LIBRARY_DIRS = {
+    "test", "tests", "testing", "unittest", "unittests", "suite",
+    "fuzz", "fuzzing", "fuzzer", "fuzzers", "oss-fuzz",
+    "example", "examples", "demo", "demos", "sample", "samples",
+    "bindings", "binding", "tools", "tool", "benchmark", "benchmarks",
+    "docs", "doc", "contrib", "third_party", "thirdparty", "vendor",
+}
 
 
 @dataclass
@@ -62,6 +99,10 @@ class PatchContext:
     language: str = "c++"
     headers: List[str] = field(default_factory=list)
     reachable_source: str = "heuristic"   # 'fuzz-introspector' | 'heuristic'
+    # Source files the fix touched that were deliberately not mined for
+    # root-cause functions (tests/harnesses/tools) — reported so a surprising
+    # empty context is explainable rather than mysterious.
+    skipped_paths: List[str] = field(default_factory=list)
 
     def as_dict(self) -> dict:
         return {
@@ -71,6 +112,7 @@ class PatchContext:
             "headers": self.headers,
             "reachable": self.root_cause_reachable,
             "reachable_source": self.reachable_source,
+            "skipped_non_library": self.skipped_paths,
         }
 
 
@@ -89,11 +131,23 @@ class DiffAnalyzer:
     def analyze(self, patch_text: str, vuln_dir: str) -> PatchContext:
         touched: List[TouchedFunction] = []
         headers: set = set()
+        skipped: List[str] = []
         for path, changed_lines in self._changed_lines(patch_text).items():
-            if not self._is_source(path):
-                if path.endswith((".h", ".hpp", ".hh")):
-                    headers.add(os.path.basename(path))
+            is_hdr = self._is_header_file(path)
+            if not self._is_source(path) and not is_hdr:
                 continue
+            if self._is_non_library(path):
+                skipped.append(path)
+                continue
+            if is_hdr:
+                headers.add(os.path.basename(path))
+                # ...and fall through: headers are mined for functions too. In
+                # C++ a great deal of real code is inline in headers (templates,
+                # small methods), so skipping them loses genuine fixes — assimp
+                # OSV-2026-505 fixes only include/assimp/StreamReader.h, and
+                # treating headers as declaration-only rejected it as "touches
+                # no C/C++ function". Prototypes are not mistaken for
+                # definitions: _is_header rejects lines ending in ';'.
             abs_path = os.path.join(vuln_dir, path)
             lines = self._read(abs_path)
             if not lines:
@@ -107,12 +161,43 @@ class DiffAnalyzer:
                         file=path, name=fn.name,
                         source=fn.source, start_line=fn.start_line))
 
+        touched = self._dedupe(touched)
         reachable, source = self._reachable_set(touched, vuln_dir)
         return PatchContext(
             patch_text=patch_text, functions=touched,
             root_cause_reachable=reachable, language=self.language,
             headers=sorted(headers), reachable_source=source,
+            skipped_paths=sorted(skipped),
         )
+
+    @staticmethod
+    def _dedupe(touched: List[TouchedFunction]) -> List[TouchedFunction]:
+        """Collapse same-named functions to one entry.
+
+        A broad upstream sync can touch several files that each define e.g.
+        ``main``; without this the prompt splices four near-identical function
+        blocks and the steering list repeats the name. Keeps the first (largest
+        body wins ties by arriving first) and preserves order.
+        """
+        out: List[TouchedFunction] = []
+        seen = set()
+        for fn in touched:
+            # A CLI entry point is not a reachability goal: a libFuzzer harness
+            # cannot call main(), and OSS-Fuzz forbids it defining one.
+            if fn.name == "main":
+                continue
+            # '?' is _enclosing_function's placeholder for a header it could not
+            # name (macro-generated definitions, K&R style). An unnameable
+            # function cannot be a steering target — "steer toward ?" is noise,
+            # and the changed lines are in the diff regardless.
+            if not fn.name or fn.name == "?":
+                continue
+            key = fn.name or f"?@{fn.file}:{fn.start_line}"
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(fn)
+        return out
 
     # -- diff parsing ------------------------------------------------------
     def _changed_lines(self, patch_text: str) -> dict:
@@ -259,7 +344,13 @@ class DiffAnalyzer:
         for fn in touched:
             for m in _CALL_RE.finditer(fn.source):
                 callee = m.group(1)
-                if callee in _CONTROL or callee in seen:
+                # libc/stdlib calls are not steering targets: "drive execution
+                # into strlen" says nothing about the project. The introspector
+                # path drops these via the call graph (a name absent from the
+                # project index); the heuristic has no graph, so it needs an
+                # explicit denylist to avoid the same noise.
+                if (callee in _CONTROL or callee in seen
+                        or callee in _LIBC_NAMES):
                     continue
                 seen.add(callee)
                 names.append(callee)
@@ -387,6 +478,22 @@ class DiffAnalyzer:
     # -- io ----------------------------------------------------------------
     def _is_source(self, path: str) -> bool:
         return path.endswith((".c", ".cc", ".cpp", ".cxx", ".c++"))
+
+    def _is_header_file(self, path: str) -> bool:
+        return path.endswith((".h", ".hpp", ".hh", ".hxx", ".inl", ".ipp"))
+
+    def _is_non_library(self, path: str) -> bool:
+        """True for tests, existing fuzz harnesses, CLI tools and bindings.
+
+        These are not root-cause material even when a fix touches them, and
+        including them actively degrades steering: capstone's newest record
+        touches four different ``main`` functions plus the project's own
+        ``LLVMFuzzerTestOneInput``, and "steer toward LLVMFuzzerTestOneInput"
+        is not a reachability goal — it is the thing we are writing. The
+        library code the fix touched is what we want to reach.
+        """
+        parts = {p.lower() for p in path.replace("\\", "/").split("/")[:-1]}
+        return bool(parts & _NON_LIBRARY_DIRS)
 
     def _read(self, path: str) -> List[str]:
         try:

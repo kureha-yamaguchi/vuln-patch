@@ -23,12 +23,23 @@ class LibFuzzerPromptBuilder:
               covered_functions: List[str],
               found_signatures: List[str],
               harness_name: str,
-              reproducer_hint: Optional[str] = None) -> List[Dict[str, str]]:
-        is_c = context.language.lower() == "c"
+              reproducer_hint: Optional[str] = None,
+              crash_type: Optional[str] = None,
+              crash_state: Optional[List[str]] = None,
+              harness_ext: Optional[str] = None) -> List[Dict[str, str]]:
+        # The extension the harness will be SAVED as decides which language the
+        # model must write, and that is not always the project's language: the
+        # overwrite placement replaces an existing harness file in place and
+        # cannot change its extension, so a C++ body in a .c file will not
+        # compile. When no extension is forced, follow the project.
+        is_c = ((harness_ext == ".c") if harness_ext
+                else context.language.lower() == "c")
         lang_label = "C" if is_c else "C++"
         sections: List[str] = [self._intro(lang_label)]
 
         sections.append(self._patch_block(context.patch_text))
+        if crash_type or crash_state:
+            sections.append(self._original_crash_block(crash_type, crash_state))
         for fn in context.functions:
             sections.append(self._function_block(fn))
         if context.headers:
@@ -47,7 +58,7 @@ class LibFuzzerPromptBuilder:
             sections.append(
                 "A known crashing input for the ORIGINAL bug (bytes shown as "
                 f"context, not to be hardcoded):\n{reproducer_hint}")
-        sections.append(self._skeleton(is_c, harness_name))
+        sections.append(self._skeleton(is_c, harness_name, harness_ext))
 
         system = (
             f"You are an expert {lang_label} security engineer writing "
@@ -65,6 +76,24 @@ class LibFuzzerPromptBuilder:
             "fix may have missed. The harness must define "
             "`int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)` and "
             "call the project's real public API — never re-implement it.")
+
+    def _original_crash_block(self, crash_type: Optional[str],
+                              crash_state: Optional[List[str]]) -> str:
+        """The original bug's crash type and crashing frames, straight from the
+        OSV record. The frames are the call path the harness has to re-enter,
+        which is more direct evidence than the diff alone: the diff says what
+        changed, this says where it blew up."""
+        lines = ["The ORIGINAL bug this fix addressed, as reported by OSS-Fuzz:"]
+        if crash_type:
+            lines.append(f"  crash type : {crash_type}")
+        if crash_state:
+            lines.append("  crash stack (innermost first): "
+                         + " <- ".join(crash_state))
+            lines.append(
+                f"Drive execution into `{crash_state[0]}` via the public API. "
+                "Reaching that frame is necessary but NOT sufficient — the "
+                "point is to reach it along a path the fix did not harden.")
+        return "\n".join(lines)
 
     def _patch_block(self, patch_text: str) -> str:
         # Cap to keep the prompt bounded; the touched-function bodies below
@@ -108,7 +137,8 @@ class LibFuzzerPromptBuilder:
             "report false positives.",
         ])
 
-    def _skeleton(self, is_c: bool, harness_name: str) -> str:
+    def _skeleton(self, is_c: bool, harness_name: str,
+                  harness_ext: Optional[str] = None) -> str:
         if is_c:
             head = ("#include <stdint.h>\n#include <stddef.h>\n"
                     "#include <stdlib.h>\n#include <string.h>\n"
@@ -118,12 +148,15 @@ class LibFuzzerPromptBuilder:
                     "// #include the project headers you call\n")
         sig = ('extern "C" ' if not is_c else "") + \
             "int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {"
+        ext = harness_ext or (".c" if is_c else ".cc")
+        fence = "c" if is_c else "cpp"
         return "\n".join([
             "Output ONLY a single fenced code block containing the complete "
-            f"translation unit (it will be saved as {harness_name}"
-            f"{'.c' if is_c else '.cc'} and compiled with the project's own "
-            "OSS-Fuzz flags). Do not include a main(). Skeleton:",
-            f"```{self._fence()}",
+            f"translation unit (it will be saved as {harness_name}{ext} and "
+            f"compiled with the project's own OSS-Fuzz flags, so it must be "
+            f"valid {'C' if is_c else 'C++'}). Do not include a main(). "
+            "Skeleton:",
+            f"```{fence}",
             head + sig,
             "    // 1) carve inputs from (data, size)",
             "    // 2) call the real API in the touched region",
