@@ -1478,9 +1478,20 @@ next work package, as todos for the executing agent.
   verbatim. 584 passed. Shipping on "it flips the identified case" would
   have reopened the Closure-62-c false-alarm hole while reading as a fix —
   re-measuring ALL five is what separated them.
-- [ ] **9.2 A5 preconditions test** (free) — against the 44 archived Lang-27
-  legs: does the @throws/@param text appear in winning-harness citations?
-  Promote to validated or queue for deletion.
+- [x] **9.2 A5 preconditions test — DONE 2026-08-06 (348304f): promotion
+  REFUSED at the root, deletion NOT justified, judged pending a decidable
+  test.** The block was never delivered on any Lang-27 leg (0 of 22 traced,
+  of 44) — the promotion hypothesis dies definitively, not ambiguously. But
+  A5 reaches 191 of 648 archived traces (29%) — not novelty-gate inertness.
+  The use-grep was REFUSED on its control: donor javadoc tokens appear in
+  57% of legs that never received the block (ordinary domain vocabulary), so
+  the 40/40 "used" score is a matcher that cannot fail — the same fingerprint
+  that inflated four counts this cycle, now a named tell: **a perfect score
+  is the fingerprint of a matcher that cannot fail.** Queued instead: a
+  block-alone A/B comparing accepted-harness behaviour on inputs the javadoc
+  declares invalid (what the block actually asks for; invisible to grep);
+  rides any run already happening. Carrying cost bounded: 29% of legs,
+  ~900 chars capped.
 - [ ] (rides any future 30-leg run, no dedicated spend: A4's re-test.)
 
 ### 9.3 THE 8.2 LADDER — build the expensive half, then grow it 1→2→4→8→16→30
@@ -1499,6 +1510,22 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   AGREEMENT side ("an independent doc-derived implementation computes exactly
   what the patch computes") — symmetric, like the Math-65 fact block.
   ~50k tokens of prompt shakeout.
+  *Design guidance settled with the main session (2026-08-06), for the doc:*
+  (1) Prefer ONE two-sided fact over two facts — same sentence shape, the
+  comparison result differs ("an independent implementation derived from the
+  documentation, matching the buggy build on N off-defect observables,
+  computes X at the disputed point; the patched build computes X / computes
+  Y"). Computed-fact wording only, no dismissal or keep instruction — the
+  judge decides. (2) The GUARD SPLITS BY OUTCOME, not by fact: the
+  agreement outcome pushes toward exoneration → guarded by the 67-row
+  genuine-catch fixture; the disagreement outcome pushes toward accusation →
+  guarded by the 38-row correct-dismissals fixture + clean legs. (3) TWO
+  canaries, one per direction: the existing mirror (fake patch + correct
+  check → side with the check) AND its twin (correct patch + wrong check,
+  the Math-65 shape → side with the patch). (4) Agreement inherits
+  WEAK_KINDS/_close semantics — a value_ulp difference IS agreement.
+  (5) All of this rides on the screen's integrity — which is why the screen
+  is the design, and why its escape-decode fix (9.1b) had to precede this.
 - [ ] **Stage 1 — n=1: Math-65 correct leg** (the motivating case). Per-event
   read: disputed observable detected? reference generated? screen
   admitted/discarded (and WHY)? fact emitted? did the judge engage it?
