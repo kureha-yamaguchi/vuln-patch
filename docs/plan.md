@@ -1441,6 +1441,77 @@ plus four in-cycle wording negatives say NO. Math-39 folds fully into bucket
 (a): deciding fact delivered, not binding — the adopted ceiling class. Only
 the user can override rule 12 here.
 
+## CYCLE 9 — the 8.2 ladder + remaining judgments (2026-08-06, user-approved)
+
+The delete batch is DONE (10/10, verified). The codebase is the clean state:
+measured mechanisms, contracted infrastructure, two parked items. This is the
+next work package, as todos for the executing agent.
+
+### Small items first
+- [ ] **9.0 reask_verdict_usable disposal** — no shipped caller (its only call
+  site was 5B's re-ask); delete function + tests + the two stale comments
+  (relation_verifier.py:552/569, evidence_facts.py:1783, judge_decision.py:99
+  region). The sentinel EMISSION stays — it is the 8.1 fix and is load-bearing.
+- [ ] **9.1 H3 five-case read** (free) — were the 5 rejections genuinely
+  infidel lifts? Note 4 sit on Closure-62.
+- [ ] **9.2 A5 preconditions test** (free) — against the 44 archived Lang-27
+  legs: does the @throws/@param text appear in winning-harness citations?
+  Promote to validated or queue for deletion.
+- [ ] (rides any future 30-leg run, no dedicated spend: A4's re-test.)
+
+### 9.3 THE 8.2 LADDER — build the expensive half, then grow it 1→2→4→8→16→30
+**What:** the reimplementation checker's generation prompt + execution adapter
+(the LLM writes a reference implementation from the DOCS; our code compiles
+and runs it; the screen from `reference_impl.py` decides admission; an
+admitted reference's comparison becomes a judge fact). Iterate at small n;
+each stage's gates are written BEFORE the stage runs; advance only on pass.
+
+- [ ] **Stage 0 — build (no task runs).** Generation prompt + a standalone
+  compile-and-run adapter. The mirror canary becomes a real executed test
+  (fake patch + correct check → the reference must side WITH the check).
+  Every fail-closed path unit-tested. One design question to settle HERE,
+  because stage 1 depends on it: **is the fact two-sided?** The current core
+  emits only disagreement facts; Math-65's false accusation needs the
+  AGREEMENT side ("an independent doc-derived implementation computes exactly
+  what the patch computes") — symmetric, like the Math-65 fact block.
+  ~50k tokens of prompt shakeout.
+- [ ] **Stage 1 — n=1: Math-65 correct leg** (the motivating case). Per-event
+  read: disputed observable detected? reference generated? screen
+  admitted/discarded (and WHY)? fact emitted? did the judge engage it?
+  Iterate the prompt/adapter here where a roll costs ~150–250k. Gate to
+  stage 2: canary passes; zero facts from discarded references; the fact
+  visibly engages the disputed formula in the judge's evidence.
+- [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
+  conviction direction). Gate: both directions work — agreement-side on the
+  correct leg, disagreement-side on the fake, zero facts where the screen
+  discarded.
+- [ ] **Stage 4 — + Math-30 correct leg** (the exact-arithmetic extension:
+  a BigInteger reference disagrees with int arithmetic exactly at overflow
+  boundaries — this is the test of that design) **+ one always-clean correct
+  leg** (e.g. Math-53) as the live guard. Gate: no fact and no accusation on
+  the clean leg; Math-30's evidence visibly changed.
+- [ ] **Stage 8 — + Math-39-c, Math-2-c, two stable catches from the 58-row
+  trigger-reach list, one more clean leg.** Gate (pre-register exact
+  wording before running): ≥1 residual verdict moves the right way OR its
+  kept-accusation evidence measurably engages the fact; ZERO clean-leg
+  damage; admission rate and cost/leg recorded.
+- [ ] **Stage 16 — half the 30-leg set**, all in-reach residuals + guard mix.
+  Same gates + the reach measurement (code_context now recorded, so the
+  8.2 reach question finally gets its pre-registered denominator).
+- [ ] **Stage 30 — only if stage 16 passes its gates.** Then the batch
+  assembles and the next full pair (on the user's word) measures it against
+  the 8.10 bar.
+**Stop rules:** measurement rule 7 (two iterations with no change → stop);
+each stage's gates written before it runs; a clean-leg accusation traceable
+to the fact at ANY stage is a hard stop pending diagnosis. Read-outs carry
+BOTH SIGNS (catches gained/lost AND accusations gained/lost) per the
+lottery lesson.
+
+### Parked, unchanged
+Focused synthesis (both-signs live A/B, expensive, not now) · fresh12
+(user's literal phrase only) · the next full 30-leg pair (user's word, after
+the ladder says 8.2 is worth measuring at scale).
+
 ## POST-PAIR FIX BATCH (2026-08-04, user-approved) — the next work package
 
 Order: free reads first (8.22's confirming read, 8.24), then the tiny code
