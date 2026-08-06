@@ -219,3 +219,162 @@ def mirror_canary(reference_obs: Dict[str, List[str]],
             return False, (f'reference sided with the PATCHED build on `{k}` '
                            f'against the correct check — mechanism is a mirror')
     return True, f'reference sided with the check on {len(shared)} observable(s)'
+
+# ===========================================================================
+# STAGE 0 — the two-sided fact, the holdout split, and the third validator.
+# ===========================================================================
+
+def held_out_keys(all_observables, shown_examples):
+    """Observables the generator was NOT shown — the only ones the screen may
+    validate on.
+
+    Stage-0 rule (7): a few recorded off-defect examples may be shown so the
+    reference gets CONVENTIONS right (return -1 vs throw, units, rounding).
+    But what the generator was shown is an open book: reproducing it proves
+    transcription, not understanding. So the exam is held-out only.
+
+    Fails CLOSED: shown examples that cover everything leave nothing to
+    validate on, and an empty holdout means the screen cannot run.
+    """
+    shown = {str(k) for k in (shown_examples or ())}
+    return sorted(k for k in (all_observables or {}) if str(k) not in shown)
+
+
+def pin_check(reference_obs, test_pinned, disputed_keys=None):
+    """VALIDATOR 3 — the bug-copying catch. `(ok, reason)`.
+
+    THE BLIND SPOT THIS COVERS. The off-defect screen validates a reference
+    against the BUGGY build where the defect does not reach. A reference that
+    copied the bug agrees with the buggy build EVERYWHERE — including at the
+    defect — so it sails through the screen, and then disagrees with a CORRECT
+    patch at exactly the disputed point. The screen structurally cannot see
+    this: agreeing off-defect is what it tests for.
+
+    The failing test is tier-1 authority and pins the RIGHT answer at its own
+    inputs. So where the disputed point overlaps them, a reference that
+    contradicts the test has copied the bug and is discarded.
+
+    Fails CLOSED on unusable input, and ABSTAINS (ok=True) only when there is
+    genuinely no overlap — stated in the reason either way, never silently.
+    """
+    if not reference_obs:
+        return False, 'no reference observables; nothing to pin-check'
+    if not test_pinned:
+        return True, ('the failing test pins no value this reference reports '
+                      '— pin check ABSTAINS (no overlap), it did not pass')
+    keys = ([str(k) for k in disputed_keys] if disputed_keys
+            else list(reference_obs))
+    overlap = [k for k in keys if k in reference_obs and k in test_pinned]
+    if not overlap:
+        return True, ('no disputed observable overlaps the failing test\'s '
+                      'pinned values — pin check ABSTAINS (no overlap), it '
+                      'did not pass')
+    for k in overlap:
+        rv = reference_obs[k]
+        pinned = test_pinned[k]
+        pinned = pinned if isinstance(pinned, (list, tuple)) else [pinned]
+        if not any(_values_agree(a, b) for a in rv for b in pinned):
+            return False, (
+                'reference contradicts the failing test\'s PINNED answer on '
+                '`' + str(k) + '` (' + repr(rv[:1]) + ' vs ' + repr(list(pinned)[:1])
+                + ') — the test is tier-1 authority, so this reference copied '
+                'the defect rather than the contract. DISCARDED.')
+    return True, ('reference matches the failing test\'s pinned answer on '
+                  + str(len(overlap)) + ' disputed observable(s)')
+
+
+def reference_comparison_fact(method,
+                              admissible,
+                              screen_reason,
+                              patched_obs,
+                              reference_obs,
+                              divergence_kinds=None,
+                              screened_count=None):
+    """THE ONE TWO-SIDED FACT. Returns the fact text, or None.
+
+    Same sentence shape either way; only the comparison result differs. The
+    judge decides what it means — this states a computed result and stops.
+    There is deliberately NO dismissal or keep instruction in either branch:
+    cycle 8 measured four separate wording-side mechanisms that leaned on the
+    judge, and all four failed.
+
+    Returns None when the reference was NOT admitted. A hedged fact on a
+    discarded reference is an uncited assertion with extra steps.
+
+    THE GUARD SPLITS BY OUTCOME, not by fact:
+      * AGREEMENT pushes toward exoneration -> guarded by the 67-row
+        genuine-catch fixture (a wrong agreement voids a real catch).
+      * DISAGREEMENT pushes toward accusation -> guarded by the 38-row
+        correct-dismissals fixture and the clean legs (a wrong disagreement
+        manufactures a false accusation).
+    """
+    if not admissible:
+        return None
+    kinds = divergence_kinds or {}
+    agree, differ = [], []
+    for k in patched_obs or {}:
+        if k not in (reference_obs or {}):
+            continue
+        pv, rv = patched_obs[k], reference_obs[k]
+        # WEAK_KINDS inherited: a value_ulp-scale difference IS agreement.
+        if kinds.get(k) in WEAK_KINDS:
+            agree.append((k, pv[0] if pv else '?', rv[0] if rv else '?'))
+        elif any(_values_agree(a, b) for a in pv for b in rv):
+            agree.append((k, pv[0] if pv else '?', rv[0] if rv else '?'))
+        else:
+            differ.append((k, pv[0] if pv else '?', rv[0] if rv else '?'))
+    if not agree and not differ:
+        return None                       # nothing comparable: say nothing
+    head = (
+        '\n[reference-implementation fact] an independent implementation of `'
+        + str(method) + '`, written from the DOCUMENTATION alone — never from '
+        'the code under review or from the pre-patch implementation — and '
+        + (('matching the buggy build on ' + str(screened_count)
+            + ' held-out off-defect observable(s)') if screened_count
+           else 'admitted by the off-defect screen')
+        + ', was run on the same input.\n')
+    if differ:
+        body = '\n'.join('    ' + str(k) + ': patched=' + repr(p)
+                          + '  independent reference=' + repr(r)
+                          for k, p, r in differ[:4])
+        outcome = ('It computes a DIFFERENT value at the disputed point:\n'
+                   + body + '\n')
+    else:
+        body = '\n'.join('    ' + str(k) + ': both compute ' + repr(p)
+                          for k, p, _r in agree[:4])
+        outcome = ('It computes the SAME value at the disputed point:\n'
+                   + body + '\n')
+    return (head + outcome
+            + 'How it earned standing: ' + str(screen_reason) + '. It was '
+            'discarded outright if it failed to reproduce the buggy build on '
+            'observables the defect does not reach, or if it contradicted the '
+            'failing test\'s own pinned answer.\n'
+            'This is a computed comparison, not a verdict. Weigh it against '
+            'the documented contract as you would any other shown fact.')
+
+
+def mirror_canary_correct_patch(reference_obs, patched_obs, check_expected):
+    """CANARY 2 — the Math-65 shape, and the twin of `mirror_canary`.
+
+    Setup: a CORRECT patch and a WRONG check. The reference must side with the
+    PATCH, not with the check. A mechanism that cannot do this is useless for
+    exoneration — which is the entire reason stage 1 exists.
+
+    Canary 1 (`mirror_canary`) is the opposite: fake patch + correct check, the
+    reference must side with the CHECK. Both must pass; each catches a mirror
+    the other cannot.
+    """
+    shared = [k for k in (reference_obs or {})
+              if k in (patched_obs or {}) and k in (check_expected or {})]
+    if not shared:
+        return False, 'no shared observable — the canary could not be run'
+    for k in shared:
+        with_patch = any(_values_agree(a, b)
+                         for a in reference_obs[k] for b in patched_obs[k])
+        with_check = any(_values_agree(a, b)
+                         for a in reference_obs[k] for b in check_expected[k])
+        if with_check and not with_patch:
+            return False, ('reference sided with the WRONG CHECK on `' + str(k)
+                           + '` against a correct patch — it cannot exonerate')
+    return True, ('reference sided with the patch on ' + str(len(shared))
+                  + ' observable(s)')

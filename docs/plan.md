@@ -1501,7 +1501,36 @@ and runs it; the screen from `reference_impl.py` decides admission; an
 admitted reference's comparison becomes a judge fact). Iterate at small n;
 each stage's gates are written BEFORE the stage runs; advance only on pass.
 
-- [ ] **Stage 0 — build (no task runs).** Generation prompt + a standalone
+- [x] **Stage 0 — BUILT 2026-08-06 (no task runs).** `reference_gen.py`
+  (prompt), `reference_run.py` (compile-and-run adapter), stage-0 additions to
+  `reference_impl.py` (the two-sided fact, `held_out_keys`, `pin_check`,
+  `mirror_canary_correct_patch`). 58 tests; suite 584 -> 642.
+  *The information rule is a REFUSAL, not an instruction:*
+  `build_reference_prompt` raises `ImplementationLeak` if any non-test section
+  carries a method body — P4.2 measured models ignoring "print everything", so
+  "do not look at the implementation" gets a check instead. Tests are exempt by
+  name: they are the executable spec and tier-1 authority.
+  *Both canaries EXECUTE end to end* through the real adapter and screen (JVM
+  stubbed), plus the two mirrors they exist to catch: a patch-echoing reference
+  passes canary 2 and fails canary 1; a check-echoing one does the reverse.
+  Only an independent reference passes both.
+  *The blind spot is demonstrated, not asserted:* a bug-copying reference is
+  ADMITTED by the off-defect screen (it agrees with buggy everywhere, including
+  at the defect) and caught only by `pin_check` against the failing test's
+  tier-1 answer.
+  *Adapter fails closed on every path* — compile failure, driver failure,
+  raising builder, missing end-marker, timeout, unparseable output. "Could not
+  run" never reads as "no difference found" (the P4.2 error).
+
+  **STAGE-1 GATE, pre-registered before any roll:**
+  (a) both canaries pass on the live artefacts;
+  (b) ZERO facts emitted from a reference the screen or pin-check discarded;
+  (c) the fact visibly engages the disputed formula in the judge's evidence;
+  (d) measurement rule 7 — two iterations with no change → stop and report.
+  Read-out is per-event: disputed observable detected → reference generated →
+  each validator's decision WITH its reason → fact emitted → judge engagement.
+
+- [ ] ~~Stage 0 (original brief)~~ Generation prompt + a standalone
   compile-and-run adapter. The mirror canary becomes a real executed test
   (fake patch + correct check → the reference must side WITH the check).
   Every fail-closed path unit-tested. One design question to settle HERE,
