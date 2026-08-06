@@ -12,7 +12,7 @@ and `config` / `llm` (which live in `src/`) resolve too.
 | `parsing/` | `java_source` | Java source/AST parsing (javalang). |
 | `bug_context/` | `analysis`, `failure_test`, `crash_input`, `call_graph`, `code_context`, `patches` | Extract the bug's context: trigger test, crash input, call graph, source context, patch selection. |
 | `relations/` | `relation_synth`, `relation_screen`, `relation_verifier` | Semantic-bug metamorphic/contract relations: synthesise → screen → the soundness+attribution judges. |
-| `harness/` | `campaign`, `prompts`, `build`, `canned_probe`, `test_oracle_miner` | Build & compile Jazzer harnesses; prompt construction; oracle mining. |
+| `harness/` | `campaign`, `prompts`, `build`, `repair` | Build & compile Jazzer harnesses; prompt construction; harness repair. |
 | `execution/` | `fuzz_runner`, `jazzer`, `oracle_strength` | Run harnesses under Jazzer; classify fired oracles. |
 | `dataset/` | `certify_detectability`, `classify_bugs`, `eval_candidates` | Offline dataset tooling: label-verification (detectability certifier), crashing/semantic classification, candidate selection. |
 | `studies/` | `j1_judge_audit`, `rulegen_join*` | One-off offline analyses (not in the live path). |

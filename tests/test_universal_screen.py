@@ -219,7 +219,7 @@ def test_relation_screen_entry_points_and_primitives():
     assert screen_params == [
         'candidates', 'builder', 'buggy_dir', 'jazzer_standalone_jar',
         'package', 'imports', 'jazzer_api_jar', 'trigger_literals', 'runs',
-        'timeout_seconds', 'max_keep', 'repair_fn', 'harden_fn']
+        'timeout_seconds', 'max_keep', 'repair_fn']
 
     replay_params = list(
         inspect.signature(rs.replay_on_patched).parameters)

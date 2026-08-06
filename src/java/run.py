@@ -236,17 +236,6 @@ def parse_args():
                              "(recovers fixable typos; ~22%% of candidates die "
                              "at compile today). Measured on/off in "
                              "--rulegen_only mode.")
-    parser.add_argument("--rule_soundness_harden", action="store_true",
-                        help="Soundness pass: probe each surviving relation "
-                             "with real extreme/boundary values (canned "
-                             "FuzzedDataProvider); if it fires there it may be "
-                             "UNSOUND (asserts more than the contract "
-                             "guarantees at an extreme, e.g. NaN-result implies "
-                             "NaN-operand, which Inf+-Inf breaks). Ask the model "
-                             "to repair it from the contract, accepting the "
-                             "repair only if it still catches the bug and fires "
-                             "on fewer extremes. Attacks false positives from "
-                             "unsound rules. Measured on/off in --rulegen_only.")
     parser.add_argument("--rulegen_only", action="store_true",
                         help="RULE-GENERATION QUALITY MODE. Run synthesis + "
                              "screening (on buggy) + replay (on THIS leg's "
@@ -384,9 +373,6 @@ _STEP_LEGEND = [
     ("rule soundness-repair (LLM)",
      "a skeptical reviewer that rewrites a rule which fired on extreme inputs "
      "if it is unsound (asserts more than the contract guarantees)"),
-    ("soundness-harden",
-     "the deterministic outcome of probing a rule with extreme values: "
-     "no-fire / artifact-skip / model-KEEP / HARDENED"),
     ("screening-survivors",
      "the final set of rules kept — these are passed to replay / harness "
      "generation"),
@@ -1225,8 +1211,8 @@ def main():
             synthesized_relations = candidates
             record_extras["synth_candidates"] = len(candidates)
             # Keep references to EVERY candidate (pre-screen) so the trace can
-            # dump the ones screening/hardening later drop, with the reason —
-            # screen_relations attaches .screen_decision/.harden_decision to
+            # dump the ones screening later drops, with the reason —
+            # screen_relations attaches .screen_decision to
             # these same objects.
             _all_candidates = list(candidates)
 
@@ -1344,16 +1330,6 @@ def main():
                     _imp = context.source_imports
                     _repair = (lambda rel, err:
                                synthesizer.repair_check(rel, err, imports=_imp))
-                # Soundness hardening (--rule_soundness_harden): probe each
-                # survivor with real extreme values; if it fires there, ask the
-                # model to repair it from the contract, accepting only a repair
-                # that still catches the bug and fires on fewer extremes.
-                _harden = None
-                if getattr(args, 'rule_soundness_harden', False):
-                    _imp = context.source_imports
-                    _harden = (lambda rel, extremes, n, n_ord, imports=_imp:
-                               synthesizer.harden_for_soundness(
-                                   rel, extremes, n, n_ord, imports=imports))
                 synthesized_relations = screen_relations(
                     synthesized_relations,
                     builder=builder,
@@ -1365,7 +1341,6 @@ def main():
                     trigger_literals=_trig_lits,
                     max_keep=12,
                     repair_fn=_repair,
-                    harden_fn=_harden,
                     runs=args.screen_runs,
                 )
                 record_event('deterministic', method='screening-survivors',
@@ -1405,8 +1380,8 @@ def main():
                         imports=context.source_imports,
                         jazzer_api_jar=jazzer_api_jar,
                         trigger_literals=_trig_lits,
-                        max_keep=12, repair_fn=_repair, harden_fn=_harden,
-                        runs=args.screen_runs),
+                        max_keep=12, repair_fn=_repair,
+                                                runs=args.screen_runs),
                     max_extra_rounds=2,
                     min_extra_rounds=1,
                 )

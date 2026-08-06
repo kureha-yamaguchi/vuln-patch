@@ -40,7 +40,6 @@ import tempfile
 from typing import List, Optional
 
 from java.harness.build import HarnessBuilder
-from java.harness.canned_probe import run_canned_probe, EXTREMES_CHECKLIST, SEEDS as _SEEDS
 from llm import record_event
 from java.execution.fuzz_runner import run_jazzer
 from java.parsing.java_source import (boolean_swallow, constant_receiver_state,
@@ -260,7 +259,7 @@ def screen_relations(candidates: List,
                      timeout_seconds: int = 45,
                      max_keep: int = 3,
                      repair_fn=None,
-                     harden_fn=None) -> List:
+                     ) -> List:
     """Screen each candidate on the buggy build; return the survivors
     (ranked: selective-firing first, silent second), capped at `max_keep`
     so the prompt is never flooded. Each survivor's `screen_note` records
@@ -625,160 +624,7 @@ def screen_relations(candidates: List,
               f"(direction-confirmed first); "
               + ", ".join(getattr(r, 'name', '?') for r in dropped_by_cap)
               + " kept-but-cut")
-    if harden_fn is not None:
-        kept = [_harden_survivor(r, builder, buggy_dir, jazzer_standalone_jar,
-                                 jazzer_api_jar, package, imports,
-                                 trigger_literals, harden_fn, idx)
-                for idx, r in enumerate(kept)]
     return kept
-
-
-def _harden_survivor(rel, builder, buggy_dir, jazzer_standalone_jar,
-                     jazzer_api_jar, package, imports, trigger_literals,
-                     harden_fn, idx):
-    """Soundness pass on ONE surviving relation: probe it with real extreme
-    values (canned provider); if it fires there it MAY be unsound, so ask the
-    model to repair it from the contract. Accept the repair ONLY if it (a)
-    compiles, (b) still catches the bug (fires on the buggy build's trigger
-    inputs), and (c) fires on STRICTLY FEWER extremes than the original — the
-    mechanical guard that distinguishes a genuine unsoundness fix from a repair
-    that either broke the catch or was a firing that was the bug all along.
-    Returns the hardened relation, or the original unchanged."""
-    name = getattr(rel, 'name', 'relation')
-    check = getattr(rel, 'check', '')
-
-    def _hd(**kw):
-        try:
-            rel.harden_decision = kw
-        except Exception:
-            pass
-        record_event('deterministic', method='soundness-harden',
-                     target=name, output=kw.get('outcome'), detail=kw)
-
-    if not check:
-        _hd(outcome='skipped', reason='empty check')
-        return rel
-    # The probe below runs on the BUGGY build. If this rule already fired
-    # on the buggy build during screening, its probe firings are (or may
-    # be) THE BUG showing itself — not unsoundness — and a "repair" that
-    # silences them silences the convictor (this exact failure weakened
-    # Math-53's field-level NaN rule into a bug-blind isNaN() check).
-    # Bug-caused firings on buggy are never unsoundness evidence: skip.
-    buggy_ratio = getattr(rel, 'buggy_fire_ratio', 0) or 0
-    if buggy_ratio > 0:
-        _hd(outcome='skipped-fires-on-buggy',
-            reason=(f'fired on {buggy_ratio:.0%} of buggy-side screen inputs '
-                    f'— probe firings on the buggy build are bug evidence, '
-                    f'not unsoundness evidence; hardening only applies to '
-                    f'rules silent on buggy'),
-            buggy_fire_ratio=round(buggy_ratio, 4))
-        print(f"  [harden] {name}: fires on buggy ({buggy_ratio:.0%}) — "
-              f"probe firings there are bug-caused; skipped")
-        return rel
-    before = run_canned_probe(builder, buggy_dir, package, imports or [],
-                              f'SVh0_{idx}', check,
-                              output_subdir=f'svh0_{idx}')
-    if not before or before[1] == 0:
-        _hd(outcome='no-fire', reason='silent on all extreme inputs — nothing '
-            'to harden', extremes_fired=(before[1] if before else 0))
-        return rel   # sound at every extreme — nothing to harden
-    # Artifact filter: does it also fire on ORDINARY (benign, in-domain)
-    # canned inputs? If so the firing is a degenerate-structure artifact (the
-    # probe built a malformed input), NOT an extreme-specific unsoundness —
-    # skip the model call. Only extreme-specific firings (loud on extremes,
-    # quiet on ordinary) are real soundness candidates.
-    ctrl = run_canned_probe(builder, buggy_dir, package, imports or [],
-                            f'SVhc_{idx}', check, output_subdir=f'svhc_{idx}',
-                            ordinary=True)
-    ctrl_v = ctrl[1] if ctrl else 0
-    # NEAR-TOTAL ordinary firing = a degenerate-input artifact (the probe built
-    # a malformed structure, so the check trips on basically every input) —
-    # skip it. PARTIAL ordinary firing is AMBIGUOUS: it may be a genuinely
-    # over-strong rule tripping on a VALID ordinary input (negative index,
-    # empty string) — that must go to the model, not be silently skipped, or
-    # the exact false-alarm class we are hunting survives.
-    artifact_floor = int(0.75 * _SEEDS)
-    if ctrl_v >= artifact_floor:
-        print(f"  [harden] {name}: fires on {ctrl_v}/{_SEEDS} ORDINARY inputs "
-              f"(near-total, extremes {before[1]}/{_SEEDS}) — degenerate-input "
-              f"artifact, skipped (no model call)")
-        _hd(outcome='artifact-skip', reason='near-total ordinary firing = '
-            'degenerate-input artifact', extremes_fired=before[1],
-            ordinary_fired=ctrl_v)
-        return rel
-    print(f"  [harden] {name}: extremes {before[1]}/{_SEEDS}, ordinary "
-          f"{ctrl_v}/{_SEEDS} — asking model to reason about domain validity")
-    repaired = harden_fn(rel, EXTREMES_CHECKLIST, before[1], ctrl_v, imports)
-    if not repaired or repaired == check:
-        print(f"  [harden] {name}: model judged it sound (KEEP)")
-        _hd(outcome='model-KEEP', reason='model reasoned it is sound',
-            extremes_fired=before[1], ordinary_fired=ctrl_v)
-        return rel
-    # Log both sides so qualitative runs are inspectable.
-    print(f"  [harden] {name}: --- ORIGINAL check ---\n{check}")
-    print(f"  [harden] {name}: --- REPAIRED check ---\n{repaired}")
-    # Verify the repair on the buggy build before trusting it.
-    try:
-        cls = f'RelHarden{idx}'
-        src = _screen_harness_source(package, imports or [], cls, repaired)
-        build = builder.build(src, buggy_dir, output_subdir=f'svh1_{idx}')
-    except Exception as exc:
-        _hd(outcome='repair-build-error', reason=str(exc),
-            proposed_repair=repaired, extremes_fired=before[1],
-            ordinary_fired=ctrl_v)
-        return rel
-    if not build.compiled:
-        print(f"  [harden] {name}: repair did not compile — kept original")
-        _hd(outcome='repair-no-compile', reason='model repair did not compile',
-            proposed_repair=repaired, extremes_fired=before[1],
-            ordinary_fired=ctrl_v)
-        return rel
-    if not trigger_literals:
-        # No trigger corpus (e.g. a numeric-only failing test) means guard
-        # (b) — "the repair still catches the bug" — cannot be verified.
-        # Accepting on fewer-extremes alone once replaced Math-53's
-        # convicting rule with a bug-blind one while logging "still
-        # catches the bug". Unverifiable repair: keep the original (the
-        # replay verifier still judges its soundness downstream).
-        print(f"  [harden] {name}: no trigger corpus to verify the repair "
-              f"still catches the bug — kept original")
-        _hd(outcome='repair-unverifiable',
-            reason='no trigger literals; cannot verify the repair still '
-                   'catches the bug — kept original',
-            proposed_repair=repaired, extremes_fired=before[1],
-            ordinary_fired=ctrl_v)
-        return rel
-    r = _measure_on_corpus(build, builder, buggy_dir,
-                           jazzer_standalone_jar, jazzer_api_jar,
-                           trigger_literals)
-    still_catches = bool(r and r[1] > 0)
-    after = run_canned_probe(builder, buggy_dir, package, imports or [],
-                             f'SVh2_{idx}', repaired, output_subdir=f'svh2_{idx}')
-    fewer_extremes = bool(after and after[1] < before[1])
-    if still_catches and fewer_extremes:
-        try:
-            rel.check = repaired
-            rel.screen_note = (getattr(rel, 'screen_note', '')
-                               + f" | HARDENED: was unsound at {before[1]} "
-                               f"extreme(s), repaired to {after[1]} while still "
-                               f"catching the bug on trigger inputs")
-        except Exception:
-            pass
-        print(f"  [harden] {name}: HARDENED (extreme firings "
-              f"{before[1]}->{after[1]}, still catches the bug)")
-        _hd(outcome='HARDENED', reason='repair still catches the bug and fires '
-            'on fewer extremes', extremes_fired=before[1],
-            ordinary_fired=ctrl_v, extremes_after=(after[1] if after else None),
-            original_check=check, repaired_check=repaired)
-    else:
-        print(f"  [harden] {name}: repair rejected (still_catches="
-              f"{still_catches}, extremes {before[1]}->"
-              f"{after[1] if after else '?'}) — kept original")
-        _hd(outcome='repair-rejected', reason=f'still_catches={still_catches}, '
-            f'fewer_extremes={fewer_extremes}', extremes_fired=before[1],
-            ordinary_fired=ctrl_v, extremes_after=(after[1] if after else None),
-            proposed_repair=repaired)
-    return rel
 
 
 def replay_on_patched(relations: List,
