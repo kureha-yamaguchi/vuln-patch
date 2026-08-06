@@ -52,17 +52,37 @@ class ImplementationLeak(ValueError):
     """Raised when prompt material contains an implementation body."""
 
 
+def strip_comments(text: str) -> str:
+    """Java comments removed, so documentation cannot be read as code.
+
+    Stage-1 roll 1 refused every prompt on `@return RMS value` — a JAVADOC tag.
+    The `return ...;` marker matched from inside a comment across into the next
+    statement's semicolon. Documentation is the one thing this prompt must
+    carry MAXIMALLY, so a detector that reads it as an implementation refuses
+    exactly the material the design depends on.
+    """
+    if not text:
+        return ''
+    text = re.sub(r'/\*.*?\*/', ' ', text, flags=re.S)     # block + javadoc
+    return re.sub(r'//[^\n]*', ' ', text)                   # line comments
+
+
 def looks_like_implementation(text: str) -> Optional[str]:
     """The first body marker found in `text`, or None.
 
-    Deliberately conservative in the LEAKY direction: it is better to refuse a
-    borderline skeleton than to ship a prompt that quietly contained the code
-    the reference is supposed to be independent of.
+    Comments are stripped FIRST (see `strip_comments`): javadoc is
+    specification, not implementation, and reading it as code refuses the very
+    material the reference needs.
+
+    Still deliberately conservative in the LEAKY direction on actual code: it
+    is better to refuse a borderline skeleton than to ship a prompt that
+    quietly contained the implementation the reference must be independent of.
     """
     if not text:
         return None
+    stripped = strip_comments(text)
     for pat in _BODY_MARKERS:
-        m = pat.search(text)
+        m = pat.search(stripped)
         if m:
             return m.group(0)[:60]
     return None

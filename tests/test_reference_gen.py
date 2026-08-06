@@ -92,3 +92,32 @@ def test_the_prompt_never_asks_the_model_to_avoid_looking():
 def test_the_system_prompt_states_the_information_position():
     msgs = build_reference_prompt('chiSquare', SKELETON, DOCS, TEST)
     assert 'never an existing implementation' in msgs[0]['content']
+
+
+# --- roll-1 regression: javadoc is SPECIFICATION, not implementation -------
+
+def test_javadoc_return_tags_are_not_read_as_code():
+    """STAGE-1 ROLL 1 died here, five times in one leg. `@return RMS value` in
+    a javadoc matched the `return ...;` marker across into the next statement's
+    semicolon, so the prompt refused itself -- on the one material the design
+    says to carry MAXIMALLY."""
+    skeleton = ('/** Get the RMS value.\n'
+                ' * @return RMS value\n'
+                ' */\n'
+                'public double getRMS() { /* body withheld */ }\n'
+                'public double getChiSquare() { /* body withheld */ }')
+    assert looks_like_implementation(skeleton) is None
+    build_reference_prompt('getChiSquare', skeleton, DOCS, TEST)   # must not raise
+
+
+def test_a_real_body_is_still_caught_after_comment_stripping():
+    """The fix must not blind the detector -- including a body that hides
+    behind a comment."""
+    assert looks_like_implementation('public int f() { return a+b; }')
+    assert looks_like_implementation('public int f() { /*x*/ return a+b; }')
+    assert looks_like_implementation('// note\nif (x > 0) { y = 1; }')
+
+
+def test_a_body_commented_OUT_entirely_is_not_a_leak():
+    """Genuinely commented-out code is not shown to the model as behaviour."""
+    assert looks_like_implementation('/* return a+b; */') is None
