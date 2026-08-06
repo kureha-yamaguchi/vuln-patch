@@ -3887,6 +3887,23 @@ def main():
                         print("      [disputed-computation] repeating shown "
                               "source of the method(s) this firing names")
                         _evid = (_evid + "\n" + _dc2) if _evid else _dc2
+                    # 8.2: the SAME mechanism on the replay track. Stage-1
+                    # roll 2 recorded ZERO reference-impl events because this
+                    # leg convicted here and the wiring existed only on the
+                    # harness track — Spec K's one-door parity lesson exactly
+                    # (Math-73-c: a fact on one door and not the other makes
+                    # the two tracks judge the same check differently).
+                    if getattr(args, 'reference_impl', False):
+                        _ref_fact2 = _reference_impl_fact(
+                            args=args, fired=_fired, class_ctx=class_ctx,
+                            failure_tests=failure_tests, builder=builder,
+                            buggy_dir=selection.buggy_dir,
+                            trusted_values=_tvals)
+                        if _ref_fact2:
+                            print("      [reference-impl] fact attached "
+                                  "(replay track)")
+                            _evid = ((_evid + "\n" + _ref_fact2) if _evid
+                                     else _ref_fact2)
                     ok, why = adjudicate(
                         _rv2,
                         harness_source=_src, fired_assertion=_fired,

@@ -78,3 +78,23 @@ def test_the_generator_is_the_run_model_not_a_default():
     """A stale default deployment once 404'd every verify call and the stage
     silently became a no-op."""
     assert 'model=args.model or config.LOCAL_LLM_MODEL' in _helper()
+
+
+def test_BOTH_judge_doors_carry_the_mechanism():
+    """Spec K, one-door fact parity -- learned once on Math-73-c and re-learned
+    on stage-1 roll 2, which recorded ZERO reference-impl events because the leg
+    convicted on the REPLAY track while the wiring sat only on the harness
+    track. A fact attached at one door and not the other makes the two tracks
+    judge the same check differently."""
+    n = SRC.count("getattr(args, 'reference_impl', False)")
+    assert n == 2, (
+        f'expected the mechanism at BOTH judge doors, found {n}. '
+        f'disputed_computation_fact is called at both; so must this be.')
+
+
+def test_the_two_doors_use_their_own_firing_and_trusted_values():
+    """Copy-paste across doors is how the wrong variables get read: the replay
+    track's firing is `_fired` and its trusted values `_tvals`."""
+    i = SRC.index('(replay track)')
+    seg = SRC[i - 900:i]
+    assert 'fired=_fired' in seg and 'trusted_values=_tvals' in seg
