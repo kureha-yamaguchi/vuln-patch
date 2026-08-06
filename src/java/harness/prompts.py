@@ -33,7 +33,6 @@ class PromptBuilder:
               semantic_test: Optional[FailureTest] = None,
               variant_strategy: Optional[str] = None,
               verifier_enabled: bool = False,
-              mined_oracles: Optional[List] = None,
               synthesized_relations: Optional[List] = None,
               oracle_mechanism: Optional[str] = None,
               touched_javadocs: Optional[List[str]] = None,
@@ -98,7 +97,6 @@ class PromptBuilder:
                 accepted_families=accepted_families,
                 variant_strategy=variant_strategy,
                 verifier_enabled=verifier_enabled,
-                mined_oracles=mined_oracles or [],
                 synthesized_relations=synthesized_relations or [],
                 oracle_mechanism=oracle_mechanism,
                 touched_javadocs=touched_javadocs,
@@ -167,7 +165,6 @@ class PromptBuilder:
                         accepted_families: Optional[List[str]] = None,
                         variant_strategy: Optional[str] = None,
                         verifier_enabled: bool = False,
-                        mined_oracles: Optional[List] = None,
                         synthesized_relations: Optional[List] = None,
                         oracle_mechanism: Optional[str] = None,
                         touched_javadocs: Optional[List[str]] = None,
@@ -217,11 +214,6 @@ class PromptBuilder:
         # Mechanism gating: only the assigned extra-oracle block is
         # injected (None = stack everything, the pre-rotation behaviour).
         # The lifted block above is unconditional — it is the foundation.
-        if oracle_mechanism in (None, 'pairs'):
-            mined_block = self._mined_oracle_block(mined_oracles or [],
-                                                   chosen)
-            if mined_block:
-                sections.append(mined_block)
         if oracle_mechanism in (None, 'relations'):
             rel_block = self._synthesized_relations_block(
                 synthesized_relations or [])
@@ -901,54 +893,6 @@ class PromptBuilder:
             parts.append(f"other_observed_literals: {others}")
         parts.append("</ground_truth_crash>")
         return '\n'.join(parts)
-
-    def _mined_oracle_block(self, mined: List, chosen) -> str:
-        """Inject SIBLING test methods from the bug's own test class as extra
-        trusted oracles to lift input->expected pairs from.
-
-        `_lifted_assertion_block` already lifts the chosen trigger test. This
-        widens the net to OTHER test methods that exercise the same patched
-        class/method with DIFFERENT inputs. Except for the reported failure,
-        the buggy code already passes these, so a correct patch must too —
-        and an overfit patch that special-cases only the reported input
-        fails one of these siblings. Sound by construction: same provenance
-        as the lifted seed, no invention. We hand over whole method bodies
-        (not individual assert lines) because a test commonly stores the call
-        result in a local and asserts on it across several lines — the model
-        lifts the pairs, exactly as it does for the trigger test."""
-        if not mined:
-            return ''
-        lines = [
-            "ADDITIONAL TRUSTED ORACLES — sibling tests from THIS bug's own"
-            " test class that exercise the patched code with DIFFERENT inputs"
-            " than the reported one. Except for the single reported failure,"
-            " the buggy code already passes these, so a CORRECT patch must"
-            " too; an overfitting patch that special-cases only the reported"
-            " input still returns the wrong value for one of them.",
-            "From each method below, LIFT the input->expected pairs (the call"
-            " it makes on the real API and the value it asserts), reconstruct"
-            " the call in your harness, and throw"
-            " FuzzerSecurityIssueLow(\"[oracle:sibling-pairs] semantic"
-            " mismatch: <which>\") when the"
-            " patched code disagrees. For lifted pairs, both the input AND"
-            " its expected value must be copied VERBATIM from the test"
-            " source. Do NOT invent a NEW input->expected-value pair (e.g."
-            " Integer.MIN_VALUE, empty, huge values) and guess its answer —"
-            " an expected value you compute yourself fires on CORRECT"
-            " patches too and is the top false-positive source. (This"
-            " restriction is about value-equality pairs only: the"
-            " consistency, metamorphic, and screened-relation checks that"
-            " other sections of this prompt ask for are DIFFERENT oracle"
-            " kinds — they need no guessed expected value — and remain"
-            " required alongside these pairs.) If a pair needs a helper/type"
-            " you cannot reconstruct, skip just that pair.",
-            "<mined_sibling_tests>",
-        ]
-        for t in mined:
-            lines.append(f"// {t.name} ({t.num_asserts} assertions)")
-            lines.append(t.source)
-        lines.append("</mined_sibling_tests>")
-        return '\n'.join(lines)
 
     def _synthesized_relations_block(self, relations: List) -> str:
         """Inject mechanically screened synthesized relations as candidate

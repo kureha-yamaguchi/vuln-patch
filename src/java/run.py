@@ -172,20 +172,6 @@ def parse_args():
                         help="accept harnesses on compile alone (old "
                              "behaviour); skip the buggy-version trigger "
                              "gate. Default is to require a trigger.")
-    parser.add_argument("--mined_oracles", dest="mined_oracles",
-                        action="store_true",
-                        help="mine sibling test methods from the bug's own "
-                             "test class as extra trusted oracles (semantic "
-                             "bugs only). OFF by default: the gpt-5.4 A/B "
-                             "measured mining neutral-to-negative (it cracked "
-                             "no hard miss and a flood of mined assertions "
-                             "regressed a previously-caught bug), so it is "
-                             "opt-in, and capped at 10 total assertions when "
-                             "on.")
-    parser.add_argument("--no-mined-oracles", dest="mined_oracles",
-                        action="store_false",
-                        help="(kept for old batch scripts) explicitly disable "
-                             "mining — already the default.")
     parser.add_argument("--synthesize_relations", action="store_true",
                         help="synthesize codebase-specific invariants/"
                              "metamorphic relations for the patched method "
@@ -278,7 +264,7 @@ def parse_args():
                         help="append a one-line JSON record describing this "
                              "run's outcome to PATH (machine-readable; used "
                              "by the batch evaluation harness)")
-    parser.set_defaults(require_trigger=True, mined_oracles=False)
+    parser.set_defaults(require_trigger=True)
     return parser.parse_args()
 
 
@@ -1092,62 +1078,6 @@ def main():
     #      Pure text mining (no compile, no model); injected into the prompt
     #      as extra trusted pairs. Same provenance as the lifted seed — uses
     #      the project's own tests, never the developer fix or the label.
-    mined_oracles = []
-    if bug_kind == "semantic" and args.mined_oracles:
-        from java.harness.test_oracle_miner import mine_sibling_tests
-        # Read every trigger test's class source once.
-        class_srcs, seen_src = [], set()
-        for ft in failure_tests:
-            path = getattr(ft, 'source_path', None)
-            if not path or path in seen_src:
-                continue
-            seen_src.add(path)
-            try:
-                class_srcs.append(
-                    open(path, encoding='utf-8', errors='replace').read())
-            except OSError:
-                continue
-        # Prefer the patched METHOD names — precise when the method is public.
-        # When the patch touches a PRIVATE helper (e.g. greatestCommonDivisor)
-        # the tests exercise it only through the public API, so method-name
-        # mining is empty; fall back to the patched CLASS name, which catches
-        # the public-API tests that reach the helper. Over-inclusion is safe:
-        # every mined test is still trusted (the buggy code passes it).
-        method_tokens = [fn.func_name for fn in context.functions]
-        class_tokens = sorted(set(re.findall(
-            r'^\+\+\+\s+.*?/([A-Za-z_]\w*)\.java',
-            context.patch_text or '', re.MULTILINE)))
-        # The trigger tests are already lifted verbatim — don't re-mine them.
-        exclude = [ft.test_method for ft in failure_tests if ft.test_method]
-        used_tokens = method_tokens
-        for tokens in (method_tokens, class_tokens):
-            if not tokens:
-                continue
-            seen_names, batch, asserts_total = set(), [], 0
-            for text in class_srcs:
-                for t in mine_sibling_tests(text, tokens,
-                                            exclude_methods=exclude):
-                    # The per-call cap bounds each source file; re-apply
-                    # the TOTAL cap across files so multi-file trigger
-                    # classes can't reassemble the assertion flood the
-                    # miner just prevented (36 injected assertions once
-                    # regressed a caught bug to a miss).
-                    if t.name in seen_names:
-                        continue
-                    if asserts_total + t.num_asserts > 10:
-                        continue
-                    seen_names.add(t.name)
-                    asserts_total += t.num_asserts
-                    batch.append(t)
-            if batch:
-                mined_oracles = batch
-                used_tokens = tokens
-                break
-        if mined_oracles:
-            names = ', '.join(f"{t.name}({t.num_asserts})"
-                              for t in mined_oracles)
-            print(f"  [mined-oracles] {len(mined_oracles)} sibling test "
-                  f"method(s) on {', '.join(used_tokens) or 'target'}: {names}")
 
     # 4.6) Synthesize codebase-specific relation CANDIDATES (semantic bugs).
     #      Mining only covers TESTED inputs; an overfit can pass every test
@@ -1269,7 +1199,7 @@ def main():
                 trigger_methods = trigger_methods[:20]
             candidates = synthesizer.synthesize(
                 patched_sources, class_name,
-                context.root_cause_reachable or [], mined_oracles, '',
+                context.root_cause_reachable or [], [], '',
                 patch_text=context.patch_text or '',
                 javadocs=touched_javadocs,
                 class_context=class_ctx,
@@ -1340,7 +1270,7 @@ def main():
         # Mechanism rotation (semantic): each harness carries the lifted
         # trigger block plus ONE extra oracle mechanism, instead of every
         # prompt stacking all of them — stacked blocks contradicted each
-        # other and a flood of mined pairs once distracted the generator
+        # other and a flood of injected pairs once distracted the generator
         # off a bug it had been catching. Only mechanisms that actually
         # have content this run enter the rotation. NOTE: reads the
         # closure variables at call time, so it automatically sees the
@@ -1348,8 +1278,6 @@ def main():
         mechanism = None
         if bug_kind == "semantic":
             mechs = ['consistency']
-            if mined_oracles:
-                mechs.insert(0, 'pairs')
             if prompt_relations:
                 mechs.append('relations')
             if len(mechs) > 1:
@@ -1372,7 +1300,6 @@ def main():
             # of hedging to vacuous ones (the verifier is a backstop, and
             # the prompt says so without overpromising).
             verifier_enabled=args.verify_relations,
-            mined_oracles=mined_oracles,
             synthesized_relations=prompt_relations,
             oracle_mechanism=mechanism,
             touched_javadocs=touched_javadocs,
@@ -1462,7 +1389,7 @@ def main():
                     synthesized_relations,
                     synth_round=lambda: synthesizer.synthesize(
                         patched_sources, class_name,
-                        context.root_cause_reachable or [], mined_oracles, '',
+                        context.root_cause_reachable or [], [], '',
                         patch_text=context.patch_text or '',
                         javadocs=touched_javadocs,
                         class_context=class_ctx,
@@ -1624,7 +1551,7 @@ def main():
                            if e and not (e in seen or seen.add(e))]
 
     # Seed corpus for the buggy-version trigger gate: string literals from
-    # the trigger tests and mined siblings, written one per file. libFuzzer
+    # the trigger tests, written one per file. libFuzzer
     # starts from these instead of from nothing, so the gate's short budget
     # begins in the neighbourhood of known-valid inputs — the region an
     # overfit special-cased — rather than spending it discovering input
@@ -1646,8 +1573,7 @@ def main():
     # discriminating literal shape within budget.
     from java.parsing.java_source import literal_variations, trigger_seed_literals
     seed_literals = trigger_seed_literals(
-        [getattr(ft, 'method_source', '') or '' for ft in failure_tests]
-        + [getattr(t, 'source', '') or '' for t in mined_oracles],
+        [getattr(ft, 'method_source', '') or '' for ft in failure_tests],
         cap=48)
     seed_literals = literal_variations(seed_literals, cap=96)
     if seed_literals:
