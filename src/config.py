@@ -103,19 +103,6 @@ else:
 OPENAI_REASONING_EFFORT = os.getenv('OPENAI_REASONING_EFFORT', 'low')
 
 # --- Two-tier harness generation --------------------------------------------
-# Try a cheap PRIMARY model; if it goes HARNESS_ESCALATE_AFTER consecutive
-# attempts without a NEW accepted harness (compiles AND triggers), switch to
-# the stronger ESCALATION model for the rest of that bug. Rationale
-# (measured): a nano model matches the flagship's *judgment* when it
-# converges, but fails to *build* harnesses on hard bugs — so escalate
-# exactly when building stalls, paying nano prices for everything else.
-# Defaults are a NO-OP (primary == escalation == LOCAL_LLM_MODEL); set
-# HARNESS_MODEL_PRIMARY to a nano deployment in .env to enable. `run.py
-# --model X` forces a single model (no escalation). The ESCALATION model is
-# also what relation synthesis always uses, tier or no tier.
-HARNESS_MODEL_PRIMARY = os.getenv('HARNESS_MODEL_PRIMARY', LOCAL_LLM_MODEL)
-HARNESS_MODEL_ESCALATION = os.getenv('HARNESS_MODEL_ESCALATION', LOCAL_LLM_MODEL)
-HARNESS_ESCALATE_AFTER = int(os.getenv('HARNESS_ESCALATE_AFTER', '3'))
 
 # Votes for the relation verifier's soundness review (run.py 6b). 1 = a
 # single review (default). >1 = diverse-lens ensemble: the finding is

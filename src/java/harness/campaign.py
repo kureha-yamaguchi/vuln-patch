@@ -292,8 +292,6 @@ class HarnessCampaign:
                  max_invalid_responses: int = 100,
                  verifier: Optional[HarnessVerifier] = None,
                  require_trigger: bool = True,
-                 escalation_generator: Optional[HarnessGenerator] = None,
-                 escalate_after: int = 0,
                  trigger_wrong_values: Optional[List[str]] = None):
         if target_successes < 1:
             raise ValueError("target_successes must be at least 1")
@@ -338,11 +336,6 @@ class HarnessCampaign:
         # scenario is not the test's scenario (setup divergence), and its
         # firing would measure the divergence, not the patch.
         self.trigger_wrong_values = trigger_wrong_values or []
-        # Two-tier generation: if `escalation_generator` is set and the
-        # primary produces no ACCEPTED harness after `escalate_after`
-        # attempts, we swap to it for the rest of this bug (see run()).
-        self.escalation_generator = escalation_generator
-        self.escalate_after = escalate_after
 
     def run(self, messages: List[Dict[str, str]],
             buggy_dir: str,
@@ -404,19 +397,6 @@ class HarnessCampaign:
         # the "free retry" so a prose-only model can't loop forever.
         invalid_responses = 0
 
-        # Two-tier escalation: once the primary model has burned
-        # `escalate_after` consecutive real attempts without a NEW accepted
-        # harness, switch to the stronger model for the rest of this bug.
-        # nano matches the flagship's judgment when it converges but fails
-        # to BUILD on hard bugs, so this recovers those cases at nano prices
-        # for everything else. STALL-based, not zero-accepted-based: the
-        # earlier "escalate only while 0 accepted" rule meant a single early
-        # weak nano accept blocked escalation for the rest of the bug, and
-        # the set's quality stayed capped by nano even as it stopped
-        # producing. Already-escalated when there is no escalation model
-        # configured.
-        escalated = self.escalation_generator is None or self.escalate_after <= 0
-        attempts_at_last_accept = 0
         # 8.7: attempt_label -> the repairs applied to it, for acceptance
         # attribution. Run-local; nothing crosses runs.
         _repaired_attempts: dict = {}
@@ -424,20 +404,6 @@ class HarnessCampaign:
         while (result.achieved_successes < self.target_successes
                and result.attempts < self.max_attempts
                and invalid_responses < self.max_invalid_responses):
-            if (not escalated
-                    and result.attempts - attempts_at_last_accept
-                        >= self.escalate_after):
-                print(f"\n  [escalate] {result.attempts} attempts, "
-                      f"{result.achieved_successes} accepted, none in the "
-                      f"last {self.escalate_after} — switching to the "
-                      "stronger model for the rest of this bug.")
-                self.generator = self.escalation_generator
-                escalated = True
-                # Fresh start on the stronger model: don't make it inherit the
-                # primary's failed repair chain.
-                original_messages = fresh_prompt()
-                current_messages = list(original_messages)
-                repair_failures = 0
             is_repair_attempt = len(current_messages) > len(original_messages)
 
             raw = self.generator.generate(current_messages)
@@ -896,7 +862,6 @@ class HarnessCampaign:
             # --- accepted ---------------------------------------------
             result.successful_results.append(build)
             result.achieved_successes += 1
-            attempts_at_last_accept = result.attempts
             _rep_for_this = _repaired_attempts.get(attempt_label)
             record_event('deterministic', method='harness-attempt',
                          target=attempt_label,

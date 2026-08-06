@@ -448,7 +448,7 @@ def main():
     if args.limit:
         cands = cands[:args.limit]
 
-    model = args.model or config.HARNESS_MODEL_ESCALATION
+    model = args.model or config.LOCAL_LLM_MODEL
     gen = HarnessGenerator(model=model, temperature=0.2, top_p=1.0)
     print(f"certifying {len(cands)} candidate(s) with {model}")
 

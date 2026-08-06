@@ -109,13 +109,9 @@ def parse_args():
     parser.add_argument("--language", type=str, nargs='?', default='Java',
                         help='Programming language of project')
     parser.add_argument("--model", type=str, default=None, metavar="DEPLOYMENT",
-                        help="force a SINGLE model/deployment for harness "
-                             "generation (disables two-tier escalation). "
-                             "Without it, uses config.HARNESS_MODEL_PRIMARY and "
-                             "escalates to HARNESS_MODEL_ESCALATION after "
-                             "HARNESS_ESCALATE_AFTER attempts with no accepted "
-                             "harness. E.g. --model gpt-5.4 to always use the "
-                             "flagship.")
+                        help="model/deployment used for harness "
+                             "generation, synthesis and judging. Without it, "
+                             "config.LOCAL_LLM_MODEL. E.g. --model gpt-5.4.")
     parser.add_argument("-n", "--target_successes", type=int, default=5,
                         help="Stop once this many harnesses compile "
                              "(default: 5)")
@@ -213,7 +209,7 @@ def parse_args():
                              "Targets overfits whose discriminating input is "
                              "in no test. Off by default (adds an LLM call + "
                              "screening builds). Synthesis always uses the "
-                             "escalation/flagship model — proposing sound "
+                             "flagship model — proposing sound "
                              "relations is the hardest reasoning step in the "
                              "pipeline and the cheap model demonstrably "
                              "invents unsound ones. "
@@ -337,7 +333,7 @@ def _emit_record(path, *, label, status, selection=None,
         rec["harnesses_run"] = len(fuzz_results)
         rec["harnesses_crashed"] = len(triggered)
         rec["crashed_on_patch"] = len(triggered) > 0
-    # Exact token spend for this run (all models: harness gen, escalation,
+    # Exact token spend for this run (all models: harness gen,
     # verifier, synthesis). Lets the aggregator sum real cost per batch.
     rec["tokens_total"] = usage_totals()
     rec["tokens_by_model"] = token_usage()
@@ -1203,13 +1199,13 @@ def main():
                   "(context degraded — see warning above)")
         else:
             from java.relations.relation_synth import RelationSynthesizer
-            # Always the escalation/flagship model, regardless of the
+            # Always the flagship model, regardless of the
             # harness-generation tier: proposing relations that must hold
             # for EVERY correct implementation is the hardest reasoning
             # step in the pipeline, and the nano batch showed the cheap
             # model invents unsound out-of-domain oracles. `--model X`
             # still wins so a forced single-model run stays single-model.
-            synth_model = args.model or config.HARNESS_MODEL_ESCALATION
+            synth_model = args.model or config.LOCAL_LLM_MODEL
             patched_sources = [fn.func_source for fn in context.functions]
             _syn_cls = sorted(set(re.findall(
                 r'^\+\+\+\s+.*?/([A-Za-z_]\w*)\.java',
@@ -1698,25 +1694,16 @@ def main():
             corpus_dir=corpus_dir,
         )
 
-    # Two-tier generation: a cheap PRIMARY model, escalating to a stronger
-    # ESCALATION model if the primary can't produce an accepted harness.
-    # `--model X` forces a single model (primary == escalation == X).
-    if args.model:
-        primary_model = escalation_model = args.model
-    else:
-        primary_model = config.HARNESS_MODEL_PRIMARY
-        escalation_model = config.HARNESS_MODEL_ESCALATION
-    primary_gen = HarnessGenerator(model=primary_model,
+    # ONE model, from the input parameters. The two-tier
+    # cheap-primary/escalate-to-strong path was deleted 2026-08-06: inert in
+    # every measured run (the defaults made primary == escalation, so the
+    # guard was always false), and its enabling hypothesis -- a nano primary --
+    # was measured dead in cycle 1, where nano could not exercise this
+    # machinery at all (Closure-70 ended no_harnesses).
+    harness_model = args.model or config.LOCAL_LLM_MODEL
+    primary_gen = HarnessGenerator(model=harness_model,
                                    temperature=0.6, top_p=1.0)
-    escalation_gen = None
-    if escalation_model != primary_model and config.HARNESS_ESCALATE_AFTER > 0:
-        escalation_gen = HarnessGenerator(model=escalation_model,
-                                          temperature=0.6, top_p=1.0)
-        print(f"  [model] primary={primary_model}, escalate to "
-              f"{escalation_model} after {config.HARNESS_ESCALATE_AFTER} "
-              "attempts with no accepted harness")
-    else:
-        print(f"  [model] {primary_model} (no escalation)")
+    print(f"  [model] {harness_model}")
 
     # The set-empty prompt used for attempt 1 — built HERE, after relation
     # screening, so the very first prompt already reflects the screened
@@ -1742,8 +1729,6 @@ def main():
         max_repair_failures=args.max_repair_failures,
         verifier=verifier,
         require_trigger=args.require_trigger,
-        escalation_generator=escalation_gen,
-        escalate_after=config.HARNESS_ESCALATE_AFTER,
         trigger_wrong_values=trigger_wrong_values,
     )
     result = campaign.run(messages, selection.buggy_dir,
@@ -1818,8 +1803,6 @@ def main():
                 max_repair_failures=args.max_repair_failures,
                 verifier=verifier,
                 require_trigger=args.require_trigger,
-                escalation_generator=escalation_gen,
-                escalate_after=config.HARNESS_ESCALATE_AFTER,
                 trigger_wrong_values=trigger_wrong_values,
             )
             _retry_result = _retry_campaign.run(
@@ -2276,7 +2259,7 @@ def main():
             # fail-opened on all of them and the whole stage silently
             # became a no-op that "kept" everything. Same tier logic as
             # synthesis: judging soundness is flagship work.
-            verifier_model = args.model or config.HARNESS_MODEL_ESCALATION
+            verifier_model = args.model or config.LOCAL_LLM_MODEL
             print(f"  [verifier] model={verifier_model}, "
                   f"votes={config.RELATION_VERIFIER_VOTES}")
             rv = RelationVerifier(
@@ -3659,7 +3642,7 @@ def main():
                 for f in _replay_findings]
             if _replay_findings:
                 _verifier_model = (args.model
-                                   or config.HARNESS_MODEL_ESCALATION)
+                                   or config.LOCAL_LLM_MODEL)
                 _rv2 = RelationVerifier(
                     HarnessGenerator(model=_verifier_model,
                                      temperature=0.0, top_p=1.0),
