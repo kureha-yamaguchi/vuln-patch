@@ -1461,14 +1461,23 @@ next work package, as todos for the executing agent.
   shape was occasional in July; **8.4 now MANDATES it** for exactly the
   lifted text-comparing checks H3 polices — the wrong-rejection rate will
   rise.
-- [ ] **9.1b H3 escape-decode fix — LANDS BEFORE 9.2 AND THE LADDER**
-  (decided 2026-08-06): decode escapes on both sides, the same change
-  `raw_value_vs_pinned` already made for the same reason. Verdict-affecting →
-  measured alone: (1) unit tests incl. the July case as a verbatim regression
-  fixture; (2) replay the H3 decision over the five archived rejection
-  records — the wrong one flips to accept, the four right ones stay rejected
-  (a complete known-answer population, free); (3) live it rides ladder
-  stage 1's per-event read.
+- [x] **9.1b H3 escape-decode fix — DONE 2026-08-06 (7b02a4d), and the sweep
+  paid twice.** (1) The requested comparator sweep found the FOURTH
+  escape-blind instance in `reference_impl._values_agree` — 8.2's own
+  authority screen, caught BEFORE the ladder builds on it; there a false
+  disagreement discards a reference that actually reproduced the buggy
+  build, the screen's worst failure. Fixed together. (2) The obvious
+  decode-only fix contained a trap the full re-measurement caught: the
+  `actual=(.{1,600})` DOTALL capture over-runs into later `expected=`
+  clauses, and decoding turned that over-capture into FALSE AGREEMENT —
+  silently excusing the divergence the gate exists to catch (the second
+  archived flip was wrong). Fixed by stopping extraction at the expected=
+  half; final replay over the five archived rejections: abstain 1 / reject
+  4 — exactly the 9.1 read. The pin that matters: a diverging actual-half
+  must still reject even when the expected-half quotes the wrong value
+  verbatim. 584 passed. Shipping on "it flips the identified case" would
+  have reopened the Closure-62-c false-alarm hole while reading as a fix —
+  re-measuring ALL five is what separated them.
 - [ ] **9.2 A5 preconditions test** (free) — against the 44 archived Lang-27
   legs: does the @throws/@param text appear in winning-harness citations?
   Promote to validated or queue for deletion.
