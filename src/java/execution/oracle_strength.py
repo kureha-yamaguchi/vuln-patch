@@ -140,9 +140,28 @@ def _ws_norm(s: str) -> str:
     return re.sub(r'\s+', ' ', s or '').strip()
 
 
+def _decode_escapes(s: str) -> str:
+    """Java escapes decoded, so an ESCAPED newline compares equal to a real
+    one. Imported lazily to keep this module free of a relations import."""
+    try:
+        from java.relations.evidence_facts import _decode_java_literal
+        return _decode_java_literal(s or '')
+    except Exception:
+        return s or ''
+
+
 def _values_match(a: str, b: str) -> bool:
     """Whitespace-normalized equality / containment, with numeric-aware
-    comparison so '4.0' matches '4' and NaN matches NaN."""
+    comparison so '4.0' matches '4' and NaN matches NaN.
+
+    9.1b: BOTH SIDES ARE ESCAPE-DECODED FIRST. A harness message spells a
+    newline as the two characters `\n`; a real JUnit failure message carries a
+    literal one. Whitespace normalisation cannot bridge those, so H3 rejected a
+    FAITHFUL harness on spelling alone (the one wrong rejection of five, read in
+    9.1). 8.4 then made escaping MANDATORY for exactly the checks H3 polices --
+    lifted, text-comparing checks on formatted output -- so the shape that
+    caused one error in 120 legs became the required shape."""
+    a, b = _decode_escapes(a), _decode_escapes(b)
     na, nb = _ws_norm(a), _ws_norm(b)
     if not na or not nb:
         return False
@@ -203,6 +222,19 @@ def lifted_observed_mismatch(headline: Optional[str],
         if m and _ws_norm(m.group(1)):
             observed = m.group(1).strip().rstrip('.').strip()
             break
+    if not observed:
+        return None
+    # 9.1b: STOP AT THE `expected=` HALF. `actual=(.{1,600})` with DOTALL runs
+    # to end-of-message, so on the `expected=X actual=Y ... expected=Z` shape it
+    # swallows a following expected clause -- and the expected half naturally
+    # contains the real wrong value as a substring (expected = actual + the
+    # missing caret line). Escape-decoding then turns that over-capture into a
+    # FALSE agreement, silently excusing the exact divergence this gate exists
+    # to catch. This is the same hole the module already refuses to open via
+    # headline-wide containment; over-capture is the back door to it.
+    _cut = re.search(r'\bexpected\s*[=:]', observed)
+    if _cut:
+        observed = observed[:_cut.start()].strip().rstrip('.').strip()
     if not observed:
         return None
     if any(_values_match(observed, ra) for ra in real_actuals):

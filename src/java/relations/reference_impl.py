@@ -53,8 +53,9 @@ Pure module: no JVM, no I/O, no LLM. The execution adapter lives in the caller.
 import re
 from typing import Dict, List, Optional, Tuple
 
-from java.relations.evidence_facts import (_close, _method_body,
-                                           _methods_named_by, observed_values)
+from java.relations.evidence_facts import (_close, _decode_java_literal,
+                                           _method_body, _methods_named_by,
+                                           observed_values)
 
 # Divergence kinds that are NOT evidence of a real disagreement. Inherited from
 # the certifier's classifier, which learned them the hard way: a last-ulp float
@@ -97,7 +98,14 @@ def _values_agree(a: str, b: str) -> bool:
 
     Strings compare exactly: for a formatted-text observable the difference IS
     the finding, so a loose comparison would erase the thing being measured.
+
+    9.1b: escapes are DECODED on both sides first -- found by sweep, not by
+    symptom, before the 8.2 ladder built on it. Comparing an escaped `\n`
+    against a literal newline would have read two identical values as a
+    disagreement, which on this comparator means discarding a reference that
+    actually reproduced the buggy build.
     """
+    a, b = _decode_java_literal(a or ''), _decode_java_literal(b or '')
     if a == b:
         return True
     try:
