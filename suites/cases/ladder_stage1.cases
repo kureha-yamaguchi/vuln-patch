@@ -1,0 +1,33 @@
+# 8.2 LADDER — STAGE 1. ONE leg. ~150-250k.
+#
+#   Math-65 CORRECT patch (CapGen) — the motivating case: a correct patch
+#   falsely accused over a disputed chi-square formula. This is the AGREEMENT
+#   side, and the reason the fact had to be two-sided at all: the mechanism
+#   must be able to say "an independent implementation computes exactly what
+#   the patch computes".
+#
+# GATE TO STAGE 2 — pre-registered in plan.md BEFORE this roll:
+#   (a) both canaries pass on the live artefacts;
+#   (b) ZERO facts emitted from a reference the screen or pin-check discarded;
+#   (c) the fact visibly ENGAGES the disputed formula in the judge's evidence
+#       — engagement means the judge's WHY addresses the fact's CONTENT, not
+#       merely that the fact appears in the prompt. That distinction was
+#       measured the hard way on the Math-65 block itself: delivered at
+#       character 27,051 of a 59,830-char prompt and read by chance.
+#   (d) measurement rule 7 — two iterations with no change → stop and report.
+#
+# READ-OUT is per-event, not from totals: disputed observable detected →
+# reference generated → run outcome → screen decision WITH reason → pin-check
+# decision WITH reason → fact emitted → judge engagement.
+#
+# EXPECTED FIRST FAILURE, stated before the roll so it is not read as a
+# surprise: the disputed-observable detector or the driver's single-input
+# call shape on real Math-65 signatures. That is what a ~150k iteration is
+# for; it is upstream of anything interesting.
+#
+# Config matches every prior smoke (-n 5 -m 12), plus --reference_impl.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+)

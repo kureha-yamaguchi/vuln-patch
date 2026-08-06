@@ -151,3 +151,46 @@ def build_reference_prompt(method: str,
     ]
     return [{'role': 'system', 'content': _SYSTEM},
             {'role': 'user', 'content': '\n'.join(parts)}]
+
+
+def strip_bodies(class_context: str) -> str:
+    """A body-free skeleton from assembled class context.
+
+    NECESSARY because `assemble_class_context` deliberately KEEPS the patched
+    methods' bodies (it elides only non-patched members) — and the patched body
+    is the one thing this prompt must never contain. Brace-matched, so a nested
+    block does not end a method early.
+
+    The result is passed through `assert_no_implementation` by the caller, so a
+    stripping miss fails the build loudly rather than leaking quietly.
+    """
+    if not class_context:
+        return ''
+    out, i, n = [], 0, len(class_context)
+    while i < n:
+        ch = class_context[i]
+        if ch != '{':
+            out.append(ch)
+            i += 1
+            continue
+        depth, j = 0, i
+        while j < n:
+            if class_context[j] == '{':
+                depth += 1
+            elif class_context[j] == '}':
+                depth -= 1
+                if depth == 0:
+                    break
+            j += 1
+        inner = class_context[i + 1:j]
+        # A class/interface body holds members, not statements — keep
+        # descending into it; a METHOD body is what we drop.
+        if re.search(r'\b(class|interface|enum)\b[^;{]*$',
+                     ''.join(out)[-160:]):
+            out.append('{')
+            out.append(strip_bodies(inner))
+            out.append('}')
+        else:
+            out.append('{ /* body withheld */ }')
+        i = j + 1
+    return ''.join(out)

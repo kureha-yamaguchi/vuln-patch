@@ -84,6 +84,110 @@ def _extract_oracle_msg(output, oid, cap=20000):
     return seg.strip() or None
 
 
+def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
+                         buggy_dir, trusted_values):
+    """8.2: generate, screen and compare an independent reference. Fact or None.
+
+    Every exit records an event with its REASON. A step that produced nothing
+    must SAY nothing-and-why, because the stage read-out is per-event and an
+    absent step is indistinguishable from a step that silently failed -- the
+    failure this cycle met six times.
+
+    Fails CLOSED at every point: no disputed observable, prompt refused for an
+    implementation leak, generation error, compile/run failure, screen discard,
+    pin-check discard -> None.
+    """
+    from llm import record_event as _re, HarnessGenerator as _HG
+    from java.relations.reference_impl import (
+        disputed_observables, enumerate_observables, held_out_keys, pin_check,
+        reference_comparison_fact, screen_reference)
+    from java.relations.reference_gen import (
+        ImplementationLeak, build_reference_prompt, strip_bodies)
+    from java.relations.reference_run import build_driver, run_reference
+
+    ctx = '\n\n'.join(class_ctx) if class_ctx else ''
+    try:
+        disputed = disputed_observables(fired, ctx)
+    except Exception as e:
+        _re('deterministic', method='reference-impl', target='detect',
+            output=f'ERROR: {type(e).__name__}', reason=str(e)[:200])
+        return None
+    if not disputed:
+        _re('deterministic', method='reference-impl', target='detect',
+            output='no disputed observable',
+            reason='the firing names no method whose body is shown; the '
+                   'mechanism has nothing to reimplement')
+        return None
+    method = disputed[0]
+    _re('deterministic', method='reference-impl', target=method,
+        output='disputed observable detected',
+        detail={'candidates': disputed[:4]})
+
+    try:
+        skeleton = strip_bodies(ctx)
+        msgs = build_reference_prompt(
+            method=method, skeleton=skeleton,
+            docs=[c for c in (class_ctx or []) if '/**' in c][:4],
+            failing_test='\n\n'.join(
+                (getattr(ft, 'method_source', '') or '') for ft in failure_tests),
+            other_tests=[], shown_examples=None)
+    except ImplementationLeak as e:
+        _re('deterministic', method='reference-impl', target=method,
+            output='REFUSED: implementation leak', reason=str(e)[:300])
+        return None
+    except Exception as e:
+        _re('deterministic', method='reference-impl', target=method,
+            output=f'prompt build ERROR: {type(e).__name__}', reason=str(e)[:200])
+        return None
+
+    try:
+        src = _HG(model=args.model or config.LOCAL_LLM_MODEL,
+                  temperature=0.0, top_p=1.0).generate(msgs) or ''
+    except Exception as e:
+        _re('deterministic', method='reference-impl', target=method,
+            output=f'generation ERROR: {type(e).__name__}', reason=str(e)[:200])
+        return None
+    if 'class' not in src:
+        _re('deterministic', method='reference-impl', target=method,
+            output='generation produced no class', reason=src[:200])
+        return None
+    _re('deterministic', method='reference-impl', target=method,
+        output='reference generated', detail={'chars': len(src)})
+
+    obs, why = run_reference(builder, buggy_dir, src,
+                             build_driver('ReferenceImpl', method, ['']))
+    _re('deterministic', method='reference-impl', target=method,
+        output=('reference ran' if obs else 'reference DISCARDED'), reason=why)
+    if not obs:
+        return None
+
+    held = held_out_keys(obs, shown_examples=[])
+    ok, screen_why = screen_reference(obs, obs, off_defect_keys=set(held))
+    _re('deterministic', method='reference-impl', target=method,
+        output=('screen ADMITTED' if ok else 'screen DISCARDED'),
+        reason=screen_why)
+    if not ok:
+        return None
+
+    pinned = {}
+    for i, v in enumerate(trusted_values or []):
+        pinned[f'obs{i}'] = [v]
+    pin_ok, pin_why = pin_check(obs, pinned, list(obs))
+    _re('deterministic', method='reference-impl', target=method,
+        output=('pin-check PASSED' if pin_ok else 'pin-check DISCARDED'),
+        reason=pin_why)
+    if not pin_ok:
+        return None
+
+    fact = reference_comparison_fact(
+        method, True, screen_why, enumerate_observables(fired), obs,
+        screened_count=len(held))
+    _re('deterministic', method='reference-impl', target=method,
+        output=('fact emitted' if fact else 'no fact (nothing comparable)'),
+        detail={'chars': len(fact or '')})
+    return fact
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Generate and compile Jazzer harnesses for a "
@@ -253,6 +357,15 @@ def parse_args():
                         help="append a one-line JSON record describing this "
                              "run's outcome to PATH (machine-readable; used "
                              "by the batch evaluation harness)")
+    parser.add_argument("--reference_impl", action="store_true",
+                        help="8.2 ladder: for a DISPUTED observable (the "
+                             "firing names a method whose body is shown), ask "
+                             "the model for an independent implementation "
+                             "written from the DOCUMENTATION ONLY, screen it "
+                             "against the buggy build on held-out off-defect "
+                             "observables plus the failing test's pinned "
+                             "answer, and attach a two-sided computed "
+                             "comparison fact. OFF by default; ladder-gated.")
     parser.set_defaults(require_trigger=True)
     return parser.parse_args()
 
@@ -3418,6 +3531,21 @@ def main():
                               "source of the method(s) this firing names")
                         _fact_notes.append(_dc)
                         evid = (evid + "\n" + _dc) if evid else _dc
+                    # 8.2 ladder: the reference-implementation fact.
+                    # Every step records an event -- the stage read-out is
+                    # per-event, and a step that produced nothing must say so
+                    # rather than be absent.
+                    if getattr(args, 'reference_impl', False):
+                        _ref_fact = _reference_impl_fact(
+                            args=args, fired=fired, class_ctx=class_ctx,
+                            failure_tests=failure_tests, builder=builder,
+                            buggy_dir=selection.buggy_dir,
+                            trusted_values=trusted_values)
+                        if _ref_fact:
+                            print("      [reference-impl] fact attached")
+                            _fact_notes.append(_ref_fact)
+                            evid = ((evid + "\n" + _ref_fact) if evid
+                                    else _ref_fact)
                     ok, why = adjudicate(
                         rv,
                         harness_source=src, fired_assertion=fired,
