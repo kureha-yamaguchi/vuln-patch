@@ -274,3 +274,51 @@ LINUX_DB_DIR = os.getenv(
 # Default harness style: 'syscall' (main()-based) or 'libfuzzer' (LLVMFuzzerTestOneInput).
 # 'syscall' is correct for most Linux kernel subsystems (SCTP, block, inotify, etc.).
 LINUX_HARNESS_STYLE = os.getenv('LINUX_HARNESS_STYLE', 'syscall')
+
+# --- OSS-Fuzz / libFuzzer front-end ---------------------------------------
+# Local google/oss-fuzz checkout. Everything in src/oss_fuzz shells out to its
+# infra/helper.py for builds and runs, and reads projects/<name>/project.yaml
+# for the target's language, upstream repo, and supported sanitizers/engines,
+# so this path — not a network API — is what "an OSS-Fuzz project" resolves
+# against. The tree is only ever read, except for the build.sh crib line, which
+# ossfuzz.build_harness restores under try/finally (the overwrite strategy
+# touches only the target's own checkout, never this tree).
+OSS_FUZZ_DIR = os.getenv('OSS_FUZZ_DIR', os.path.expanduser('~/oss-fuzz'))
+
+# Where the target's upstream repo is cloned and the vuln/HEAD worktrees are
+# added. Kept out of the oss-fuzz checkout so a wiped work dir can never
+# damage the user's tree, and overridable so concurrent project runs don't
+# fight over the same wt__vuln / wt__head paths.
+OSS_FUZZ_WORK_DIR = os.getenv(
+    'OSS_FUZZ_WORK_DIR', os.path.expanduser('~/.cache/vuln-patch/oss-fuzz'))
+
+# Sanitizer used when neither --sanitizer nor the CVE's own OSV record names
+# one. 'address' matches OSS-Fuzz's constants.DEFAULT_SANITIZER and covers the
+# memory-safety bug classes that dominate C/C++ CVEs; a UBSan-only CVE needs
+# --sanitizer undefined or its harness will compile and never trigger.
+OSS_FUZZ_SANITIZER = os.getenv('OSS_FUZZ_SANITIZER', 'address')
+
+# Per-harness budget (seconds) for the in-campaign trigger gate on the
+# VULNERABLE build — the C/C++ analogue of VERIFY_TIMEOUT_SECONDS. Longer than
+# the Java gate because libFuzzer starts from an empty corpus and has to
+# discover the crashing input itself rather than replaying a unit test.
+OSS_FUZZ_VERIFY_TIMEOUT = int(os.getenv('OSS_FUZZ_VERIFY_TIMEOUT', '120'))
+
+# Per-harness budget (seconds) for the sibling hunt on HEAD. This is where the
+# research signal comes from, so it is deliberately larger than the gate: the
+# gate only has to re-find a known bug, HEAD has to find an unknown one.
+OSS_FUZZ_FUZZ_TIMEOUT = int(os.getenv('OSS_FUZZ_FUZZ_TIMEOUT', '600'))
+
+# Wall-clock cap (s) on a single `helper.py build_fuzzers` invocation. Generous
+# by default because build time swings wildly with host architecture: on an
+# x86_64 Linux host a mid-size project builds in minutes, but under amd64
+# emulation on an arm64 Mac assimp took ~2 minutes PER OBJECT FILE (51 of 248
+# in 98 minutes), so anything tighter kills builds that would have succeeded.
+# On timeout the run is reported as an infrastructure failure, never as a
+# harness that "failed to compile".
+OSS_FUZZ_BUILD_TIMEOUT = int(os.getenv('OSS_FUZZ_BUILD_TIMEOUT', '5400'))
+
+# OSV REST endpoint used to pick the target CVE (osv.py, stdlib urllib only).
+# OSS-Fuzz's disclosed bugs land here via google/oss-fuzz-vulns, which is why
+# OSV — not the oss-fuzz repo — is the CVE source of truth.
+OSV_API_URL = os.getenv('OSV_API_URL', 'https://api.osv.dev/v1')

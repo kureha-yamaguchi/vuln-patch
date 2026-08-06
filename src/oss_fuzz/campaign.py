@@ -13,7 +13,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional
 
-from oss_fuzz.ossfuzz import OssFuzz, Checkout, RunOutcome
+from oss_fuzz.ossfuzz import OssFuzz, Checkout, HarnessPlacement, RunOutcome
 
 _FENCE_RE = re.compile(r"```(?:c|cc|cpp|c\+\+)?\s*\n(.*?)```", re.DOTALL)
 
@@ -32,6 +32,10 @@ class CampaignResult:
     successful: List[GenResult] = field(default_factory=list)
     attempts: int = 0
     target_successes: int = 5
+    # Set when the campaign stopped because the build environment could not
+    # build ANY harness (see ossfuzz._infra_error). Distinguishes "the method
+    # found nothing" from "the run never got off the ground".
+    infra_error: Optional[str] = None
 
     @property
     def achieved(self) -> int:
@@ -67,6 +71,7 @@ def extract_source(llm_response: str) -> Optional[str]:
 class HarnessCampaign:
     def __init__(self, generator, oss_fuzz: OssFuzz, project: str,
                  vuln_checkout: Checkout, sanitizer: str, ext: str,
+                 placement: Optional[HarnessPlacement] = None,
                  target_successes: int = 5, max_attempts: int = 30,
                  verify_seconds: int = 60):
         self.generator = generator
@@ -75,6 +80,9 @@ class HarnessCampaign:
         self.vuln = vuln_checkout
         self.sanitizer = sanitizer
         self.ext = ext
+        # How the harness gets compiled (crib / overwrite). None keeps the crib
+        # default so a caller that predates placements still works.
+        self.placement = placement
         self.target_successes = target_successes
         self.max_attempts = max_attempts
         self.verify_seconds = verify_seconds
@@ -109,8 +117,17 @@ class HarnessCampaign:
 
             name = f"vp_harness_{n}"
             out_bin = self.of.build_harness(
-                self.project, self.vuln, name, source, self.ext, self.sanitizer)
+                self.project, self.vuln, name, source, self.ext, self.sanitizer,
+                placement=self.placement)
             if out_bin is None:
+                infra = getattr(self.of, "last_build_infra_error", None)
+                if infra:
+                    # No compiler ran, so there is nothing to repair. Retrying
+                    # would just spend the remaining attempts identically.
+                    result.infra_error = infra
+                    print(f"  ABORTING: this is an infrastructure failure, not "
+                          f"a harness problem:\n    {infra}")
+                    break
                 stderr = getattr(self.of, "last_build_stderr", "") or ""
                 print("  build failed; feeding compiler errors back")
                 repair_context = (
@@ -119,9 +136,12 @@ class HarnessCampaign:
                     + stderr[-1500:])
                 continue
 
-            # Trigger gate: must crash the vulnerable build.
+            # Trigger gate: must crash the vulnerable build. Under the overwrite
+            # placement the binary carries the replaced harness's name, not ours.
+            run_name = (self.placement.runtime_name(name) if self.placement
+                        else name)
             outcome = self.of.run_fuzzer(
-                self.project, name, self.verify_seconds, self.sanitizer)
+                self.project, run_name, self.verify_seconds, self.sanitizer)
             if outcome.triggered:
                 print(f"  ACCEPTED — triggers on vulnerable build "
                       f"[{outcome.signature or outcome.crash_reason}]")
