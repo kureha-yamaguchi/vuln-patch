@@ -738,6 +738,7 @@ class RelationSynthesizer:
         except Exception:
             return None
 
+    @staticmethod
     def _parse(out: str) -> List[Relation]:
         m = re.search(r'\[.*\]', out, re.DOTALL)
         if not m:
