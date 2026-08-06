@@ -1526,6 +1526,27 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   WEAK_KINDS/_close semantics — a value_ulp difference IS agreement.
   (5) All of this rides on the screen's integrity — which is why the screen
   is the design, and why its escape-decode fix (9.1b) had to precede this.
+  (6) *The information rule (user-shaped 2026-08-06): BLIND TO
+  IMPLEMENTATIONS, MAXIMAL ON SPECIFICATION.* Never shown: the patched
+  source (rank-5 trap) or the BUGGY implementation body — a bug-copying
+  reference agrees with buggy everywhere INCLUDING the defect, so the
+  off-defect screen structurally cannot catch it, and it then disagrees
+  with a correct patch at exactly the disputed point. Shown, as richly as
+  available: the failing test's full source (tier-1 — leaking it leaks
+  only truth), the class's OTHER tests (the project's executable spec —
+  note this is the deleted mined-oracles MATERIAL in a different, legitimate
+  use: spec context, not copied assertions), the whole documentation
+  surface (class-level javadoc, sibling-method contracts, inherited
+  interface docs, cited formulas/algorithm names — textbook knowledge of
+  the algorithm is wanted), and the class skeleton (all signatures and
+  fields, no bodies). (7) *Observed-behavior examples with a HOLDOUT:* a
+  few of 8.3's recorded off-defect input→output examples may be shown so
+  the reference gets conventions right (return −1 vs throw, units) — but
+  the screen validates ONLY on observables the generator was NOT shown;
+  what it saw is an open book and proves nothing. (8) *Third validator:*
+  where the disputed point overlaps the failing test's own inputs, the
+  reference must match the test's PINNED answer (tier-1) or be discarded —
+  catches bug-copying, the screen's one structural blind spot.
 - [ ] **Stage 1 — n=1: Math-65 correct leg** (the motivating case). Per-event
   read: disputed observable detected? reference generated? screen
   admitted/discarded (and WHY)? fact emitted? did the judge engage it?
