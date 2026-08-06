@@ -468,50 +468,6 @@ class RelationVerifier:
         return True, (f"{len(kept)}/{len(verdicts)} lenses judged sound: "
                       + (kept[0] if kept else ""))
 
-    def attribute(self, fired_assertion: str,
-                  fact_notes: str,
-                  bug_summary: str,
-                  check_rationale: Optional[str] = None
-                  ) -> Tuple[bool, str]:
-        """Second judge of the two-judge split. Returns (convicts, why).
-
-        convicts=False ONLY on an explicit NOT_ATTRIBUTED — INCONCLUSIVE,
-        parse failures and errors all fail OPEN (the finding stands on the
-        soundness verdict), so this stage can only remove convictions
-        whose computed facts positively say 'not this patch', never
-        manufacture a miss from ambiguity. Call it only when fact notes
-        were actually computed; with no facts there is nothing for this
-        judge to decide."""
-        user = (
-            "THE REPORTED BUG:\n" + (bug_summary or "?") + "\n\n"
-            "THE FIRING under review:\n    "
-            + (fired_assertion or "?") + "\n"
-            + (("The check's own stated rationale/contract:\n    "
-                + check_rationale + "\n") if check_rationale else "")
-            + "\nCOMPUTED FACTS about this firing:\n<facts>\n"
-            + (fact_notes or "").strip() + "\n</facts>\n\n"
-            + _ATTRIB_GUIDANCE)
-        messages = [
-            {'role': 'system', 'content': _ATTRIB_SYSTEM},
-            {'role': 'user', 'content': user},
-        ]
-        try:
-            out = self._gen.generate(messages) or ""
-        except Exception as e:
-            return True, f"attribution error ({e}); finding stands"
-        upper = out.upper()
-        why = ""
-        for line in out.splitlines():
-            s = line.strip()
-            if s.upper().startswith("WHY:"):
-                why = s[4:].strip()
-        if "ATTRIBUTION:" in upper:
-            v = upper.split("ATTRIBUTION:", 1)[1].lstrip()
-            if v.startswith("NOT_ATTRIBUTED"):
-                return False, why or "not attributed to the patch"
-            return True, why or "attributed or inconclusive"
-        return True, why or "no attribution verdict parsed; finding stands"
-
     def family_duty(self, fired_assertion: str,
                     failing_test_block: str,
                     check_source: str) -> Tuple[bool, str]:

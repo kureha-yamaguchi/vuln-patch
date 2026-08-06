@@ -157,18 +157,6 @@ def parse_args():
                              "calls per leg, each narrow; the union is "
                              "screened identically so there is no new FP "
                              "risk. Within-leg only — no pooling.")
-    parser.add_argument("--attribution_judge", action="store_true",
-                        help="SECOND judge of the two-judge split: after a "
-                             "firing is judged SOUND, a facts-only LLM "
-                             "decides whether it is ATTRIBUTED to this "
-                             "patch. OFF by default: falsefix13 measured it "
-                             "vetoing ~100%% of sound generalization catches "
-                             "(a relation testing a different observable "
-                             "than the test's exact assertion is exactly how "
-                             "an overfit is caught, and rule 3 rejects that "
-                             "shape). Do not re-enable without J1 offline "
-                             "evidence that its precision gain beats its "
-                             "recall cost.")
     parser.add_argument("--fuzz_timeout", type=int, default=60,
                         metavar="SECONDS",
                         help="seconds Jazzer runs per harness against the "
@@ -3539,18 +3527,6 @@ def main():
                         pinned_source=_pinned_s, evidence_profile=None,
                         failing_block=_j3_failing_test_block(failure_tests),
                         check_source=src, fd_prior=_fd_consult_result)
-                    if ok and _fact_notes and getattr(
-                            args, 'attribution_judge', False):
-                        _att_ok, _att_why = rv.attribute(
-                            fired or '', "\n".join(_fact_notes),
-                            _bug_summary)
-                        if not _att_ok:
-                            print(f"      [attribution] sound but NOT "
-                                  f"attributed — {_att_why[:120]}")
-                            drop_reasons.append(
-                                (fired,
-                                 "SOUND-BUT-NOT-ATTRIBUTED: " + _att_why))
-                            continue
                     if ok:
                         kept_reason = (fired, why)
                         break
@@ -3892,32 +3868,6 @@ def main():
                         failing_block=_j3_failing_test_block(failure_tests),
                         check_source=_src, fd_prior=None,
                         is_direction_confirmed=_dirconf)
-                    _attr_skip = _dirconf
-                    if _attr_skip and getattr(
-                            args, 'attribution_judge', False):
-                        # MECHANICAL attribution: a direction-confirmed
-                        # relation fires on the buggy build at the trigger
-                        # inputs (it detects the reported defect there) and
-                        # has passed the soundness judge; still firing on
-                        # the patched build is the patch-failed-to-fix
-                        # pattern by definition — not an LLM call. This is
-                        # the falsefix13 Math-2-o class the attribution LLM
-                        # wrongly vetoed.
-                        print(f"  ✓ attribution: MECHANICAL (relation is "
-                              f"direction-confirmed and still fires) — "
-                              f"kept without LLM")
-                    if ok and _rfacts and not _attr_skip and getattr(
-                            args, 'attribution_judge', False):
-                        _att_ok, _att_why = _rv2.attribute(
-                            _fired, "\n".join(_rfacts), _bug_summary_r,
-                            check_rationale=(getattr(rel, 'contract', '')
-                                             or None))
-                        if not _att_ok:
-                            print(f"  ✗ replay firing sound but NOT "
-                                  f"attributed: {f['name']} — "
-                                  f"{_att_why[:120]}")
-                            ok = False
-                            why = "SOUND-BUT-NOT-ATTRIBUTED: " + _att_why
                     if ok:
                         print(f"  ✓ replay conviction kept: {f['name']} "
                               f"[{f['tier']}]")
