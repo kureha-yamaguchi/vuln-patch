@@ -1,125 +1,195 @@
 # OSS-Fuzz / libFuzzer front-end
 
-Variant analysis for OSS-Fuzz projects: take the most recent **public disclosed
-bug** (CVE if there is one — usually there isn't, see *Target selection*),
-generate libFuzzer harnesses on the **vulnerable** version (gated so each one
-actually crashes there), then run them on **HEAD**. A crash on HEAD is a
-*sibling* input the fix failed to cover.
+Finds bugs that a security fix left behind.
 
-This is the C/C++ analogue of `src/java` (Defects4J + Jazzer). It reuses the
-shared LLM backend (`src/llm.py`), config (`src/config.py`), and — importantly
-— the identical variant-analysis steering (`src/variant.py`), so the research
-heuristic can't drift between the two front-ends. It does **not** build on the
-out-of-date `src/linux`.
+For an OSS-Fuzz project, this picks a recently disclosed bug, checks out the
+code as it was **just before the fix**, and asks an LLM to write libFuzzer
+harnesses that crash there. Harnesses that do are then run against **today's
+code**. If one still crashes, the fix missed something — we call that a
+*sibling bug*.
 
-## Pipeline
+This is the C/C++ version of `src/java` (Defects4J + Jazzer). It shares that
+pipeline's LLM code and, importantly, its steering logic, so the research
+method stays the same in both. It does not use the out-of-date `src/linux`.
 
-| Stage | Module | Job |
-|-------|--------|-----|
-| Target discovery | `targets.py` | which projects can this front-end drive at all? (C/C++ + libFuzzer + sanitizer + a disclosed bug) |
-| Preflight | `ossfuzz.py` | validate the checkout and the chosen project *before* any clone/build |
-| Bug selection | `osv.py` | newest public OSV entry → fix commit, repo, crash type/stack, PoC ref |
-| Substrate | `ossfuzz.py` | clone repo, self-contained checkouts `vuln`(=fix~1) & `head`, `helper.py` build/run/reproduce |
-| Analysis | `analysis.py` | fix diff → touched functions; fuzz-introspector call graph → bounded reachable set (heuristic fallback) |
-| Prompt | `prompts.py` | libFuzzer prompt + shared steering (`variant.py`) |
-| LLM | `../llm.py` | shared `HarnessGenerator` |
-| Harness placement | `ossfuzz.py` | crib a compile line from `build.sh`, or overwrite an existing harness in place |
-| Campaign | `campaign.py` | generate → build → trigger-gate on the vuln build |
-| Sibling hunt | `run.py` | build accepted harnesses on HEAD, run, report crashes |
+## How a run works
 
-Three non-obvious things in the substrate, all learned the hard way:
+`oss_fuzz/run.py` is the only entry point. Everything happens in one process,
+in this order. Cheap checks come first, so a run that cannot possibly work
+fails before it costs you a clone, a Docker image, or LLM tokens.
 
-### Getting a generated harness compiled: two placement strategies
+| Step | File | What happens |
+|---|---|---|
+| 1. Check the checkout | `ossfuzz.py` | Is `$OSS_FUZZ_DIR` really an oss-fuzz clone? Takes milliseconds. |
+| 2. Find a project *(optional)* | `targets.py` | With `--list-candidates` / `--auto-project`: scan the checkout for C/C++ projects that have a disclosed bug. |
+| 3. Check the project | `ossfuzz.py` | Read its `project.yaml` and `Dockerfile`. Reject anything not C/C++, not libFuzzer, or missing the sanitizer. A python project or a typo stops here. |
+| 4. Pick a bug | `osv.py` | Ask OSV for the project's bugs, newest first. Keep ones with a fix commit. Pull the crash type and crash stack out of the text. |
+| 5. Get the code | `ossfuzz.py` | Clone the project's own repo, then make two checkouts: `vuln` (the commit before the fix) and `head` (latest). |
+| 6. Work out what the fix touched | `analysis.py` | Diff the two commits, list the changed functions, and expand them into the surrounding call graph. This is what the prompt steers toward. |
+| 7. Decide how to compile | `ossfuzz.py` | Choose `crib` or `overwrite` (see below) — before pulling the Docker image, so an impossible choice fails early. |
+| 8. Build the image | `ossfuzz.py` | `helper.py build_image`. Optionally replay a known crashing input with `--reproducer`. |
+| 9. Generate and test harnesses | `campaign.py` | The main loop, described below. |
+| 10. Run the survivors on HEAD | `run.py` | Rebuild each accepted harness against the latest code and fuzz it. A crash here is a sibling bug. |
+| 11. Report | `run.py` | Print a summary; optionally append a JSON line with `--results-json`. |
 
-Compiling a brand-new fuzz target for an arbitrary project normally means
-knowing its include paths and link libraries. `plan_harness()` picks whichever
-way of avoiding that guess the project actually supports, and `--harness-build`
-overrides it (`auto` | `crib` | `overwrite`).
+**Step 6 can reject the bug.** Some fix commits touch no source code at all,
+which would leave the prompt with nothing to steer toward. When that happens the
+run moves on to the next-newest bug instead (`--max-target-tries`).
 
-**`crib`** — write a *new* source file and append a compile line copied from an
-existing `$LIB_FUZZING_ENGINE` command in the project's `build.sh`, reusing its
-flags and libraries while dropping that target's own object/source (or we would
-link a second `LLVMFuzzerTestOneInput` and fail on a duplicate symbol) and its
-`-o`. Commands are continuation-joined first, because bluez, assimp and
-boringssl all span several backslashed lines. `build.sh` is edited under
-try/finally and restored.
+**Step 9, the main loop.** Repeat until `-n` harnesses are accepted or `-m`
+attempts are used up:
 
-**`overwrite`** — replace the contents of an *existing* harness source in the
-checkout, keeping its path and extension, and run the project's own build
-completely untouched. The build system compiles the same file it always
-compiles and never learns the contents changed, so every include path, flag and
-library comes for free. Restored under try/finally; `build.sh` is never edited.
+1. `prompts.py` builds the prompt from the fix diff, the crash stack, and the
+   list of functions to aim at.
+2. `llm.py` returns a reply; the code block is pulled out of it.
+3. The harness is put into the `vuln` checkout and built with
+   `helper.py build_fuzzers`.
+4. It is fuzzed briefly (`--verify-timeout`) against that vulnerable build.
 
-Measured over the 588 C/C++ projects in this checkout (the same set
-`list_projects` returns, so the counts agree with the preflight):
+A harness is **accepted only if it crashes the vulnerable build** — compiling is
+not enough. If the build fails, the compiler errors go back to the model as a
+fix-it turn. If it builds but does not crash, the next prompt is steered
+somewhere new, away from what earlier harnesses already covered. If the *build
+environment* is broken (nothing was ever compiled) the run stops immediately
+rather than blaming the model.
+
+Exit codes: **0** = ran fine, no siblings. **2** = `RUN ABORTED`, the
+environment is broken — this is not a result about the fix. **3** = siblings
+found.
+
+### What it shares with the harness-generation pipeline
+
+The LLM half is not rewritten here. It is the same code the Java front-end uses,
+called through a deliberately small interface:
+
+| Shared file | How this front-end uses it |
+|---|---|
+| `src/llm.py` | Send a list of messages, get text back. Nothing else. It is imported only when needed, so `--dry-run` works without an LLM library installed. |
+| `src/variant.py` | The steering rule itself: "aim the next harness at a part of the fix's neighbourhood that earlier harnesses missed." `prompts.py` calls it with the reachable functions, the functions already covered, and the crashes already found. Because both front-ends call the same function, the method cannot quietly drift apart between them. |
+| `src/config.py` | All settings and their environment-variable defaults. |
+
+What is specific to C/C++ and therefore lives here: the prompt wording and byte
+handling for `LLVMFuzzerTestOneInput` (`prompts.py`), the diff analysis
+(`analysis.py`), and everything that builds and runs harnesses (`ossfuzz.py`).
+
+The rule for accepting a harness — crashes the vulnerable build, not just
+compiles — is the same as in the Java pipeline, and `campaign.py` is the only
+thing that decides it. The static analysis only steers; it never decides whether
+a harness is good.
+
+### What it uses from your oss-fuzz checkout
+
+`$OSS_FUZZ_DIR` (or `--oss-fuzz-dir`) must be a real `google/oss-fuzz` git clone
+— the code reads files out of it and runs its `infra/helper.py`. This repo's
+gitignored `oss-fuzz/` directory is the usual place to put it:
+`export OSS_FUZZ_DIR=$PWD/oss-fuzz`.
+
+These are the only paths it touches:
+
+| Path | What we do with it |
+|---|---|
+| `infra/helper.py` | Run it: `build_image`, `build_fuzzers`, `run_fuzzer`, `reproduce`. All Docker work goes through it; we never call `docker` directly. |
+| `projects/<p>/project.yaml` | Read: language, fuzzing engines, sanitizers, repo URL. Also what `--list-candidates` scans. |
+| `projects/<p>/Dockerfile` | Read: just the `WORKDIR` line, to skip projects that cannot be built from a local checkout. |
+| `projects/<p>/build.sh` | Read every time, to see if there is a compile line worth copying. **In `crib` mode only**, a line is appended and then removed again afterwards. `overwrite` mode never edits it. |
+| `build/out/<p>/` | Written by `helper.py` inside Docker. We read the built binary and any `crash-*` files from it. |
+
+Nothing else in the checkout is used or changed. The project's own source code
+never goes into it: that is cloned into `$OSS_FUZZ_WORK_DIR`, and the `vuln` and
+`head` directories there are handed to `helper.py build_fuzzers <project>
+<path>`, which mounts them inside the container. The pipeline also never pulls
+or switches branches in your checkout — pin it yourself if you want the project
+definitions to stay fixed.
+
+## Getting the harness compiled: `crib` vs `overwrite`
+
+To compile a new fuzz target for a project you normally need to know its include
+paths and libraries. Both strategies avoid having to know them.
+`--harness-build` picks one (`auto` | `crib` | `overwrite`).
+
+**`crib`** — write a new source file, and copy a compile line out of the
+project's `build.sh` (any line using `$LIB_FUZZING_ENGINE`), reusing its flags
+and libraries. The original target's own source is dropped from the copied line,
+or we would link two `LLVMFuzzerTestOneInput`s and fail. Lines split across
+backslashes are joined first (bluez, assimp, boringssl all do this). `build.sh`
+is restored afterwards.
+
+**`overwrite`** — replace the contents of a harness file the project already
+has, keeping its path and name, and let the project build exactly as it always
+does. The build system never knows the file changed, so all the include paths,
+flags and libraries come for free. The file is restored afterwards, and
+`build.sh` is never touched.
+
+Neither works everywhere, but together they cover most projects. Across the 588
+C/C++ projects in a checkout:
 
 | C/C++ projects | count |
 |---|---|
-| have a cribbable compile line | **225** |
-| have **none** (CMake/Meson/a script inside the upstream repo) | **305** |
+| have a compile line to copy | **225** |
+| have none (CMake/Meson, or a script inside the project's own repo) | **305** |
 | have no `build.sh` at all | 58 |
 
-For the 305 there is nothing to copy, and the generic fallback
-(`$CC $CFLAGS harness.c $LIB_FUZZING_ENGINE -o …`) has no include paths and no
-libraries, so it cannot compile whatever the model writes. That set is not the
-tail of the corpus — it is where the bugs are. Of 35 high-OSV-volume projects,
-17 have no cribbable line, including **libxml2, curl, openssl, harfbuzz,
+For those 305 there is nothing to copy, and a generic guessed compile command
+has no include paths or libraries, so it cannot build anything the model writes.
+And that group is where the bugs are: of 35 projects with the most OSV records,
+17 have no copyable line — including **libxml2, curl, openssl, harfbuzz,
 wireshark, freetype2, libtiff, openjpeg, expat, zstd, ffmpeg, libwebp**.
-libxml2's entire `build.sh` is the single line `fuzz/oss-fuzz-build.sh`, which
-delegates to a script inside the upstream repo. So `overwrite` is what makes
-the documented `--project libxml2` example buildable at all.
+libxml2's whole `build.sh` is one line calling a script inside its own repo. So
+`overwrite` is what makes the `--project libxml2` example work at all.
 
-`auto` prefers `crib` when a compile line exists (proven, and it leaves the
-checkout's sources untouched) and falls back to `overwrite` otherwise. The two
-are near-complementary rather than redundant: projects that ship their harness
-inside `oss-fuzz/projects/<name>/` must compile it with an explicit command
-(130 of 156 are cribbable), while projects whose harness lives upstream mostly
-let their own build system do it (337 of 432 are not cribbable).
+`auto` uses `crib` when a compile line exists (it leaves the project's sources
+alone) and `overwrite` otherwise. The two barely overlap: projects that keep
+their harness in `oss-fuzz/projects/<name>/` have to compile it with an explicit
+command (130 of 156 are copyable), while projects whose harness lives in their
+own repo mostly let their build system handle it (337 of 432 have nothing to
+copy).
 
-Three things the overwrite path has to get right:
+Three things `overwrite` has to get right:
 
-- **The binary keeps the *replaced* target's name**, not the generated one —
-  the build system names it after the file it compiled. `HarnessPlacement.
-  runtime_name()` is what `run_fuzzer`/`reproduce` must be given; asking
-  helper.py for `vp_harness_3` would look for a target that does not exist.
-  If the expected name is absent from `$OUT` after a successful build, the run
-  aborts as an infrastructure problem (it cannot fix itself across attempts)
-  and lists what *is* there.
-- **The extension is fixed by the file being replaced**, so it — not the
-  project's `language` — decides whether the model is asked for C or C++. A C++
-  body written into a `.c` file does not compile.
-- **The harness is located by `LLVMFuzzerTestOneInput`**, ranked by agreement
-  with the OSV fuzz-target name, then away from vendored trees (`third_party/`
-  et al ship a *dependency's* harness), then toward fuzz-ish directories.
-  `--base-harness` overrides. HEAD is planned separately from the vulnerable
-  commit, because the file may have been renamed upstream in between.
+- **The binary keeps the replaced file's name**, not ours — the build system
+  names it after the file it compiled. Asking `helper.py` to run
+  `vp_harness_3` would look for a target that does not exist. If the expected
+  name is missing after a successful build, the run stops and lists the names
+  that *are* there.
+- **The file extension decides the language**, not the project's declared
+  language. A C++ body written into a `.c` file will not compile, so the prompt
+  follows the extension.
+- **Finding the right file to replace.** We look for `LLVMFuzzerTestOneInput`,
+  prefer a file matching the bug's fuzz-target name, avoid vendored directories
+  like `third_party/` (those are a dependency's harness), and prefer
+  fuzz-related directories. `--base-harness` overrides the choice. HEAD is
+  searched separately, since the file may have been renamed upstream.
 
-**Checkouts are local clones, not git worktrees.** A worktree's `.git` is a file
-pointing at `<repo>/.git/worktrees/<name>`, which is outside the directory
-`helper.py` bind-mounts as `$SRC/<project>` — so inside the container every git
-command fails with *"fatal: not a git repository"*. Any project that stamps a
-version from git then breaks far from the cause: coturn's `CMakeLists.txt` runs
-`git describe`, gets nothing, and dies with *"set_target_properties called with
-incorrect number of arguments"*. `git clone --local` hardlinks the object store,
-so a second full checkout costs almost no disk and works inside the container.
+**The `vuln` and `head` directories are full clones, not git worktrees.** A
+worktree's `.git` is a pointer to a directory outside the mounted folder, so
+inside the container every git command fails with *"fatal: not a git
+repository"*. Projects that read their version from git then break in confusing
+ways: coturn's `CMakeLists.txt` runs `git describe`, gets nothing, and dies with
+*"set_target_properties called with incorrect number of arguments"*.
+`git clone --local` shares the object store, so a second full checkout costs
+almost no disk and works fine in the container.
 
-## Requirements (real runs)
+## Setup
 
-- A local `google/oss-fuzz` checkout — set `OSS_FUZZ_DIR` (default `~/oss-fuzz`).
-- Docker (used by `infra/helper.py`).
-- An LLM backend, same as the Java pipeline: `OPENAI_API_KEY`, or Azure, or a
-  local server (see `src/config.py`).
+You need:
 
-Settings live in `src/config.py` (all overridable by env var):
+- A local `google/oss-fuzz` clone (`OSS_FUZZ_DIR`).
+- Docker, which `infra/helper.py` uses.
+- An LLM: `OPENAI_API_KEY`, Azure, or a local server — same as the Java
+  pipeline, see `src/config.py`.
+- **An x86_64 Linux host** (see *Limits*).
+
+Settings live in `src/config.py` and can all be set by environment variable:
 
 | Var | Default | Meaning |
 |-----|---------|---------|
-| `OSS_FUZZ_DIR` | `~/oss-fuzz` | the checkout a project name resolves against |
-| `OSS_FUZZ_WORK_DIR` | `~/.cache/vuln-patch/oss-fuzz` | clones + `vuln`/`head` worktrees |
-| `OSS_FUZZ_SANITIZER` | `address` | fallback when neither the CVE nor `--sanitizer` says |
-| `OSS_FUZZ_VERIFY_TIMEOUT` | `120` | per-harness trigger gate on the vuln build |
-| `OSS_FUZZ_FUZZ_TIMEOUT` | `600` | per-harness sibling hunt on HEAD |
-| `OSV_API_URL` | `https://api.osv.dev/v1` | bug source of truth |
+| `OSS_FUZZ_DIR` | `~/oss-fuzz` | the checkout project names are looked up in |
+| `OSS_FUZZ_WORK_DIR` | `~/.cache/vuln-patch/oss-fuzz` | where the project's own clones and checkouts go |
+| `OSS_FUZZ_SANITIZER` | `address` | used when neither the bug nor `--sanitizer` says |
+| `OSS_FUZZ_BUILD_TIMEOUT` | `5400` | cap on one build (emulated builds are slow) |
+| `OSS_FUZZ_VERIFY_TIMEOUT` | `120` | seconds to test each harness on the vulnerable build |
+| `OSS_FUZZ_FUZZ_TIMEOUT` | `600` | seconds to fuzz each accepted harness on HEAD |
+| `OSV_API_URL` | `https://api.osv.dev/v1` | where bugs come from |
 
 ## Usage
 
@@ -128,23 +198,23 @@ export OSS_FUZZ_DIR=~/oss-fuzz OPENAI_API_KEY=sk-...
 uv run -m oss_fuzz.run --project libxml2 -n 5 --fuzz-timeout 300
 ```
 
-The run prints which placement strategy it chose and why, e.g.
+The run prints which compile strategy it chose and why:
 
 ```
 harness build: overwrite fuzz/xml.c in place -> target 'xml' (build.sh has no
 compile line to crib, so the project's own build system must compile the harness)
 ```
 
-Force one with `--harness-build {auto,crib,overwrite}`, and point `overwrite` at
-a specific file with `--base-harness fuzz/xml.c` (relative to the target's repo
-root) when auto-detection picks the wrong harness.
+Override with `--harness-build {auto,crib,overwrite}`, and point `overwrite` at
+a specific file with `--base-harness fuzz/xml.c` (path relative to the project's
+repo root) if it picks the wrong one.
 
-### Which projects can this actually run on?
+### Finding a project to run on
 
-Only a minority of the ~1365 projects in an OSS-Fuzz checkout are viable: 588
-are C/C++ (the rest are python/go/jvm/rust/js/swift/ruby, which this front-end
-cannot write a harness for), and of those only some have a disclosed bug with a
-fix commit. Discover them instead of guessing:
+Most of the ~1365 projects in a checkout are not usable: 588 are C/C++ (the rest
+are python/go/jvm/rust/js/swift/ruby, which this cannot write harnesses for), and
+only some of those have a disclosed bug with a fix commit. List the usable ones
+instead of guessing:
 
 ```bash
 uv run -m oss_fuzz.run --list-candidates --max-projects 60
@@ -157,55 +227,48 @@ assimp                   c++   OSV-2026-999       2026-06-04  Container-overflow
 ...
 ```
 
-`--auto-project` picks the newest and runs it. Each candidate costs one OSV
-query, so `--candidate-limit` (default 10) stops the sweep early and
-`--max-projects` caps how many are probed.
+`--auto-project` picks the newest one and runs it. Each candidate costs one OSV
+query, so `--candidate-limit` (default 10) stops the scan early and
+`--max-projects` limits how many are checked. The ranking is newest-first among
+what the scan found, not across the whole checkout.
 
-Every run preflights the target first — checkout is a real `google/oss-fuzz`
-clone; the project exists; `project.yaml` says C/C++, builds with libFuzzer, and
-supports the sanitizer; a `main_repo` is resolvable. A `--project urllib3`
-(python) or a typo now fails in milliseconds with the reason, instead of after a
-clone, a Docker image build, and an LLM budget.
-
-Pin a specific CVE, or supply the original PoC for a pre-flight sanity check:
+Pin a specific CVE, or supply a known crashing input to sanity-check first:
 
 ```bash
 uv run -m oss_fuzz.run --project libxml2 --cve CVE-2022-XXXXX \
     --reproducer ./testcase --sanitizer address
 ```
 
-## Target selection: OSS-Fuzz bugs mostly have no CVE
-
-OSS-Fuzz's OSV records are `OSV-YYYY-NNNN` entries and **carry no CVE alias** —
-measured against the live API, ten major C/C++ projects (libxml2, harfbuzz,
-curl, openssl, wireshark, …) return 261 records with zero CVE aliases between
-them. A CVE, when one exists, is usually minted on the *upstream ecosystem*
-entry rather than the OSS-Fuzz one.
-
-So selection requires a **fix boundary** (a `fixed` commit + a repo), not a CVE.
-`--require-cve` restores the stricter policy, but on the OSS-Fuzz ecosystem it
-generally selects nothing. `--cve <id>` implies it.
-
-Those records do carry something better for steering: a **crash type** and the
-original **crash stack**. Both are parsed out of the record's prose `details`
-(`database_specific` is empty in practice) and spliced into the prompt — the
-diff says what changed, the crash stack says where it blew up. The crash type
-also picks the sanitizer when the record doesn't name one, so a UBSan-only bug
-isn't run under ASan, where its harness would compile and never trigger.
-
-### Offline wiring check (no Docker / network / LLM)
+### Trying it without Docker, network, or an LLM
 
 ```bash
 uv run -m oss_fuzz.run --project demo \
     --osv-json oss_fuzz/tests/fixture_osv.json --dry-run -n 1 -m 2
 ```
 
-`--dry-run` prints every external command and uses a stub harness, so you can
-verify the control flow before spending a real fuzzing budget. `--osv-json`
-loads OSV records from a file instead of the network (also good for
-reproducible runs). Under `--dry-run` the targeting preflight downgrades to a
-warning, so the fixture project (`demo`, which is not in any checkout) still
-exercises the whole flow.
+`--dry-run` prints every external command it would run and uses a fixed stub
+harness, so you can check the whole flow before spending real time and money.
+`--osv-json` reads bugs from a file instead of the network, which is also useful
+for repeatable runs. Under `--dry-run` the project checks become warnings, so the
+fixture project (`demo`, which is in no checkout) still runs end to end.
+
+## Why bugs are picked without a CVE
+
+OSS-Fuzz bugs are `OSV-YYYY-NNNN` records and **almost never have a CVE**.
+Against the live API, ten major C/C++ projects (libxml2, harfbuzz, curl,
+openssl, wireshark, …) return 261 records with not one CVE between them. When a
+CVE does exist it is usually attached to the upstream ecosystem entry, not the
+OSS-Fuzz one.
+
+So a bug qualifies if it has a **fix commit and a repo**, not if it has a CVE.
+`--require-cve` demands one anyway, but on OSS-Fuzz that usually finds nothing.
+`--cve <id>` implies it.
+
+These records carry something more useful for steering anyway: the **crash type**
+and the original **crash stack**, both read out of the record's text and put into
+the prompt. The diff says what changed; the crash stack says where it broke. The
+crash type also picks the sanitizer when nothing else does, so a UBSan-only bug
+is not run under ASan, where the harness would compile and never crash.
 
 ## Tests
 
@@ -213,93 +276,61 @@ exercises the whole flow.
 python src/oss_fuzz/tests/test_offline.py     # or: pytest src/oss_fuzz/tests
 ```
 
-40 offline tests, no Docker/network/LLM. Covers bug selection (default and
-`--require-cve`), crash-metadata parsing and sanitizer inference,
-`project.yaml` scalar/block-list parsing, checkout validation, the
-language/engine/sanitizer support gate and its OSS-Fuzz default fallbacks,
-candidate discovery (both filters + the sweep limit), diff→function extraction,
-the `build.sh` crib, harness placement (base-harness discovery and ranking,
-`auto`/forced mode selection, overwrite restoring the tree byte-for-byte and
-never touching `build.sh`, the target-name abort, the campaign gating on the
-replaced target's name, and the prompt language following the forced
-extension), crash detection/signatures, source extraction, prompt assembly, and
-Java/shared steering parity.
+40 tests, no Docker, network, or LLM needed. They cover bug selection, crash
+parsing and sanitizer choice, `project.yaml` parsing, the checkout and project
+checks, candidate discovery, diff analysis, both compile strategies (including
+that `overwrite` restores the tree exactly and never edits `build.sh`), crash
+detection, prompt assembly, and that the steering matches the Java pipeline's.
 
-## Notes & limits
+## Limits and gotchas
 
-- **Most OSS-Fuzz projects are not targets.** 588 of 1365 are C/C++; the rest
-  need a different harness language entirely. The preflight rejects them (and
-  unsupported sanitizers/engines, and missing `main_repo`) before spending
-  anything. `--list-candidates` narrows further to projects with a fix boundary.
-- **Overwrite needs a harness to overwrite.** It is located inside the target's
-  *upstream* checkout. The 156 projects that ship their harness inside
-  `oss-fuzz/projects/<name>/` instead are mostly cribbable anyway (130 of 156),
-  but the 26 that are neither reach nothing automatically — pass
+- **x86_64 Linux only.** OSS-Fuzz's base images are amd64. On an arm64 Mac they
+  run emulated, and any build that *runs* what it just compiled fails —
+  autotools' `configure` does exactly that, so bluez dies with `configure:
+  error: cannot run C compiled programs`. Its stock build fails the same way
+  with no harness of ours involved, which is how we know it is the platform.
+  CMake projects do build. `run.py` warns at startup.
+- **Fix commits are not always fixes.** They come from automated bisection. Of 9
+  audited bugs, 2 pointed at commits touching no code at all — c-blosc2's was
+  *"Add diagrams for the new shared thread pool architecture"*, two image files.
+  Those give the prompt nothing to steer toward, so the run moves to the next
+  bug. `--allow-empty-context` runs anyway (but then it is not testing the
+  method).
+- **Only library code is used for steering.** A wide upstream sync also touches
+  tests, CLI tools, bindings, and the project's own fuzz harnesses. Telling the
+  model to "aim at `LLVMFuzzerTestOneInput`" is nonsense — that is the thing it
+  is writing. Those directories are skipped, and `main`, unnamed functions and
+  libc calls are dropped.
+- **`overwrite` needs an existing harness to replace**, inside the project's own
+  repo. The 156 projects that keep their harness in `oss-fuzz/projects/<name>/`
+  are mostly copyable instead (130 of 156); the 26 that are neither need
   `--base-harness`. Projects whose harness lives in a *third* repo cloned by
-  `build.sh` (bearssl builds a module against `cryptofuzz`) are outside both
-  strategies; `--harness-build overwrite` fails fast with the reason rather than
-  guessing.
-- **79 of 1329 projects can never be driven**, whatever their language: their
-  Dockerfile sets `WORKDIR` to the shared `/src` root, and `helper.py
-  build_fuzzers <project> <local_path>` refuses that outright ("Cannot use local
-  checkout with WORKDIR: /src") — no compiler runs. Since this pipeline builds
-  the vulnerable commit and HEAD from local worktrees, the preflight rejects
-  them from one Dockerfile read. capstone is one; it was found the expensive way.
-- **The fix commit is often not a fix.** OSS-Fuzz `fixed` commits come from
-  automated bisection. Of 9 audited candidates, 2 pointed at commits touching no
-  source at all (c-blosc2's is *"Add diagrams for the new shared thread pool
-  architecture"* — two image files, and its crash symbol isn't even in the repo,
-  being vendored zstd). Those yield an empty root-cause context and hence an
-  unsteered prompt, so the driver walks to the next-newest record rather than
-  running a test of the heuristic that cannot test it. `--max-target-tries`
-  bounds the walk; `--allow-empty-context` overrides.
-- **Only library code is mined for root cause.** A broad upstream sync also
-  touches tests, the project's own fuzz harnesses, CLI tools and bindings.
-  capstone's record dragged in four different `main`s and the project's own
-  `LLVMFuzzerTestOneInput` — "steer toward `LLVMFuzzerTestOneInput`" is
-  incoherent, it is the thing being written. Those directories are skipped and
-  listed in `skipped_non_library`; `main`, unnameable (`?`) functions and libc
-  calls are dropped from the steering set.
-- **Infrastructure failure is not a negative result.** `helper.py` exits nonzero
-  for a broken environment as well as a bad harness. Feeding the former back as
-  "your harness did not compile" wastes the whole attempt budget on a file that
-  was never compiled, then reports `0 siblings`. Such runs now abort after one
-  attempt and exit **2** with `RUN ABORTED`, distinct from a genuine clean result.
-- **amd64 only — this is a hard ceiling, not just a slowdown.** OSS-Fuzz
-  publishes `linux/amd64` base images. On an arm64 host (Apple Silicon) they run
-  under emulation, and any build that *executes* what it just compiled fails.
-  autotools' `configure` does exactly that, so bluez dies with
-  `configure: error: cannot run C compiled programs` — and its **stock** build
-  (`helper.py build_fuzzers bluez`, no harness of ours involved) fails
-  identically, which is how we know it is the platform and not the pipeline.
-  CMake projects do build. `run.py` prints a host warning up front, and such
-  failures are classified as infrastructure so the campaign aborts instead of
-  asking the model to repair them. Real runs want an x86_64 Linux host.
-- **Candidate discovery costs one OSV query per surviving project.** The local
-  `project.yaml` filter runs first precisely so the network filter runs on a few
-  hundred projects rather than all 1365; bound it with `--candidate-limit` /
-  `--max-projects`. Ranking is newest-first *among what the sweep found*, not a
-  global ranking over the whole checkout.
-- **Reproducer availability.** OSS-Fuzz testcases are embargoed until
-  disclosure and OSV doesn't always embed a stable download URL, so the PoC is
-  *optional*: the pipeline re-derives triggering harnesses from the fix diff
-  and gates on its own crash check. Pass `--reproducer <path>` if you have the
-  testcase and want the pre-flight sanity reproduce.
-- **Reachable set.** The call graph comes from fuzz-introspector's light
-  (tree-sitter, no-build) frontend — a bounded BFS over `base_callsites`
-  scoped to project functions, unioned with project-resolved source callees,
-  exactly as in `src/java`. It needs the introspector extra
-  (`uv sync --extra introspector`); without it, or on timeout, the analyzer
-  falls back to the brace-match heuristic and reports which was used
-  (`reachable_source` in the printed context). Function *extraction* itself is
-  still brace-matching, not a full parse; the trigger gate — not the analysis
-  — decides harness validity.
-- **HEAD build drift.** If the library's public API changed between the vuln
-  commit and HEAD, a harness may not compile against HEAD; those are skipped
-  and reported, not counted as clean.
+  `build.sh` (bearssl builds against `cryptofuzz`) fit neither strategy, and the
+  run says so instead of guessing.
+- **79 of 1329 projects can never be used**, whatever their language: their
+  Dockerfile sets `WORKDIR` to the shared `/src`, and `helper.py` refuses to
+  build those from a local checkout at all. Since this pipeline always builds
+  from local checkouts, they are rejected up front. capstone is one.
+- **A broken environment is not a result.** `helper.py` exits nonzero both for a
+  bad harness and for a broken setup. Treating the second as "your harness did
+  not compile" would waste every attempt on a file that never reached a
+  compiler and then report zero siblings, so those runs stop after one attempt
+  and exit 2.
+- **Crashing inputs are usually unavailable.** OSS-Fuzz testcases are embargoed
+  until disclosure, so the original input is optional here: the pipeline works
+  out its own crashing harnesses from the fix diff. Pass `--reproducer <path>`
+  if you do have the testcase.
+- **The reachable function list is approximate.** It comes from
+  fuzz-introspector's lightweight (no-build) parser, which needs the optional
+  extra (`uv sync --extra introspector`). Without it, or on timeout, a simpler
+  brace-matching fallback is used, and the run prints which one it used. Either
+  way this only steers the prompt — the crash test decides what is accepted.
+- **HEAD may not build.** If the project's API changed between the fix and now,
+  a harness may not compile against HEAD. Those are skipped and reported, not
+  counted as clean.
 
 ## Responsible disclosure
 
-A crash on HEAD is a live, unfixed issue. Report it to the project and to
-OSS-Fuzz through coordinated disclosure; don't publish the sibling input
-before a fix ships.
+A crash on HEAD is a live, unfixed bug. Report it to the project and to OSS-Fuzz
+through coordinated disclosure, and don't publish the crashing input before a
+fix ships.
