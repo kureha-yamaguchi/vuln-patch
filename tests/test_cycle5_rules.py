@@ -10,7 +10,6 @@ Coverage:
   * dismissal_invokes_pinned       (5B(i): void predicate)
   * verdict_needs_citation         (5B(ii): drift-kill citation predicate)
   * carries_terminal_identical_fact(5C: terminal-fact detector)
-  * reask_verdict_usable           (5B: fail-open sentinel detection)
   * trigger_tier_note              (5A: neutral wording, no dismiss lean)
   * pinned_environment_note        (5B(i): the attached fact)
   * _guarded_verify                (5B: void-and-re-ask, fails open)
@@ -110,19 +109,7 @@ def test_terminal_detector_negative_trigger_tier_note():
 
 
 # --------------------------------------------------------------------------
-# 5B — reask_verdict_usable (fail-open sentinel detection)
 # --------------------------------------------------------------------------
-@pytest.mark.parametrize("why,usable", [
-    ("oracle judged unsound", True),
-    ("oracle judged sound", True),
-    ("2/3 lenses judged unsound: ...", True),
-    ("verifier error (Timeout); keeping finding", False),
-    ("no verdict parsed; keeping finding", False),
-    ("family-duty check unavailable — fail open", False),
-    ("", False),
-])
-def test_reask_verdict_usable(why, usable):
-    assert ef.reask_verdict_usable(why) is usable
 
 
 # --------------------------------------------------------------------------

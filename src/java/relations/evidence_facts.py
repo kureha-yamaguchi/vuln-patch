@@ -2232,19 +2232,3 @@ def carries_terminal_identical_fact(text):
 # ---------------------------------------------------------------------------
 # Cycle-5B — re-ask plumbing (fail-open detection + injected statements).
 # ---------------------------------------------------------------------------
-
-def reask_verdict_usable(why):
-    """Cycle-5B: did a re-ask produce a USABLE verdict (not a fail-open
-    sentinel)? RelationVerifier.verify fails OPEN to KEEP on an LLM error /
-    unparseable output; this returns False on those sentinels so the caller
-    keeps the ORIGINAL verdict rather than a manufactured flip. Pure."""
-    if not why:
-        return False
-    low = str(why).lower()
-    for bad in ('verifier error', 'no verdict parsed', 'keeping finding',
-                'unavailable'):
-        if bad in low:
-            return False
-    return True
-
-

@@ -96,11 +96,9 @@ def _guarded_verify(verifier, verify_kwargs, pinned=None,
     missing/garbled CITATION line (answer-format noncompliance).
 
     FAILS OPEN: the re-ask is a fresh verify call, which itself fails open to
-    KEEP on an LLM error; `reask_verdict_usable` detects that sentinel and, on
-    it, we return the ORIGINAL verdict — so an LLM error can never manufacture
-    a drop OR a keep. Only a genuine re-ask verdict replaces the original.
-    Format noncompliance likewise never voids anything by itself, and an
-    exception inside the citation check falls back to the keyword path."""
+    KEEP on an LLM error, stamping a sentinel into the verdict text so a caller
+    can tell a fail-open from a ruling (tests/test_failopen_sentinel.py pins
+    that emission). The 5B re-ask that consumed it was deleted in cycle 9."""
     ok, why = verifier.verify(**verify_kwargs)
     if ok:
         return ok, why

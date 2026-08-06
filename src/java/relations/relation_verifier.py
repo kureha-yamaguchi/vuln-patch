@@ -566,9 +566,8 @@ class RelationVerifier:
         # No parseable verdict -> keep (fail open). The sentinel is emitted
         # UNCONDITIONALLY, with the model's own text appended rather than
         # substituted: `why or <sentinel>` suppressed the sentinel whenever the
-        # response carried a WHY: line, so `reask_verdict_usable` reported a
-        # response with NO parsed verdict as usable and the caller adopted a
-        # manufactured verdict. That is the July-15 silently-fail-open shape,
+        # response carried a WHY: line, so a response with NO parsed verdict
+        # read as usable and the caller adopted a manufactured verdict. That is the July-15 silently-fail-open shape,
         # and it is model-swap-sensitive — the incumbent emits VERDICT first so
         # it rarely triggers, while a model that writes a preamble or reorders
         # the fields triggers it silently on every call.

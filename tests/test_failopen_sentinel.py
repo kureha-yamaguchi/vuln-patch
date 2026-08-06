@@ -2,9 +2,13 @@
 
 Pre-launch check for the judge-model swap, run BEFORE any spend because it is
 the July-15 bug's shape: `RelationVerifier.verify` fails open on an LLM
-error or an unparseable response, and `reask_verdict_usable` exists so callers
-can tell a real verdict from that fail-open. If the sentinel is missing, the
-caller adopts a manufactured verdict as if the judge had ruled.
+error or an unparseable response, and it must SAY SO in the verdict text. If the
+sentinel is missing, a caller cannot tell a fail-open from a real ruling.
+
+The reader that used to make that distinction (`reask_verdict_usable`) was
+deleted in cycle 9 (9.0) along with its only caller, 5B. The EMISSION it read is still
+load-bearing -- every fail-open path must still stamp its sentinel -- so these
+tests now assert on the sentinel text directly rather than through a helper.
 
 MODEL-SWAP SENSITIVE, which is why it belongs to 8.1 rather than to general
 hygiene. The incumbent emits `VERDICT:` as its first line, so an unparsed
@@ -18,8 +22,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 
-from java.relations.evidence_facts import reask_verdict_usable   # noqa: E402
 from java.relations.relation_verifier import RelationVerifier    # noqa: E402
+
+
+#: The fail-open sentinels every non-verdict path must stamp into `why`.
+SENTINELS = ('verifier error', 'no verdict parsed', 'keeping finding',
+             'unavailable')
+
+
+def _is_failopen(why):
+    """True iff the text carries a fail-open sentinel. Local to this test file
+    on purpose: it defines the CONTRACT the emission side must satisfy, and it
+    must not silently follow a future edit to some shared helper."""
+    return any(m in str(why or '').lower() for m in SENTINELS)
 
 
 UNPARSEABLE = [
@@ -37,7 +52,7 @@ def test_every_unparseable_response_is_reported_UNUSABLE():
     for out in UNPARSEABLE:
         ok, why = RelationVerifier._parse(out)
         assert ok is True, 'no-verdict must fail open to KEEP'
-        assert reask_verdict_usable(why) is False, (
+        assert _is_failopen(why) is True, (
             f'unparseable response reported USABLE: {out!r} -> {why!r}')
 
 
@@ -54,7 +69,7 @@ def test_well_formed_verdicts_are_still_usable():
                         ('VERDICT: UNSOUND\nWHY: counterexample x', False)):
         ok, why = RelationVerifier._parse(out)
         assert ok is expect
-        assert reask_verdict_usable(why) is True
+        assert _is_failopen(why) is False
 
 
 class _Gen:
@@ -97,13 +112,13 @@ def test_duty_fails_OPEN_on_an_api_error():
     v._gen = _Boom()
     ok, why = v.family_duty('a', 'b', 'c')
     assert ok is True
-    assert reask_verdict_usable(why) is False
+    assert _is_failopen(why) is True
 
 
 def test_error_path_sentinel_keys_on_OUR_wording_not_the_providers():
     """Why a new deployment's error strings cannot evade the check: the
     exception is wrapped into our own 'verifier error (...)' prefix, so the
     sentinel does not depend on the provider's error text at all."""
-    assert reask_verdict_usable(
+    assert _is_failopen(
         'verifier error (SomeBrandNewProviderError: 429 whatever); '
-        'keeping finding') is False
+        'keeping finding') is True
