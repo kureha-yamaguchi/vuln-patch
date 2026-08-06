@@ -1504,7 +1504,7 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
 - [x] **Stage 0 — BUILT 2026-08-06 (no task runs).** `reference_gen.py`
   (prompt), `reference_run.py` (compile-and-run adapter), stage-0 additions to
   `reference_impl.py` (the two-sided fact, `held_out_keys`, `pin_check`,
-  `mirror_canary_correct_patch`). 58 tests; suite 584 -> 642.
+  `mirror_canary_correct_patch`). 41 tests; suite 584 -> 625 passed, 7 skipped (verbatim).
   *The information rule is a REFUSAL, not an instruction:*
   `build_reference_prompt` raises `ImplementationLeak` if any non-test section
   carries a method body — P4.2 measured models ignoring "print everything", so
