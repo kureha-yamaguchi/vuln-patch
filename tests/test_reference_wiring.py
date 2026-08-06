@@ -98,3 +98,31 @@ def test_the_two_doors_use_their_own_firing_and_trusted_values():
     i = SRC.index('(replay track)')
     seg = SRC[i - 900:i]
     assert 'fired=_fired' in seg and 'trusted_values=_tvals' in seg
+
+
+def test_the_chain_reads_NO_track_specific_name_from_enclosing_scope():
+    """The one-door invariant applied to INPUTS, not just attachment points.
+
+    The fact is now attached at both doors, but a helper that reached out to
+    `fired` or `trusted_values` as globals would read the HARNESS track's values
+    while running on the replay door -- the same bug one level down, and
+    invisible because it would still produce events.
+
+    Every track-specific input must arrive as a parameter.
+    """
+    import ast
+    i = SRC.index('def _reference_impl_fact(')
+    j = SRC.index('\ndef parse_args(')
+    fn = ast.parse(SRC[i:j]).body[0]
+    params = {a.arg for a in fn.args.args + fn.args.kwonlyargs}
+    assigned, used = set(), set()
+    for n in ast.walk(fn):
+        if isinstance(n, ast.Name):
+            (assigned if isinstance(n.ctx, ast.Store) else used).add(n.id)
+    free = used - params - assigned - set(dir(__builtins__))
+    track_specific = {'fired', '_fired', 'trusted_values', '_tvals',
+                      'src', '_src', 'evid', '_evid', 'rv', '_rv2'}
+    leaked = sorted(free & track_specific)
+    assert not leaked, (
+        f'the chain reads track-specific name(s) {leaked} from enclosing '
+        f'scope; on the replay door it would silently use harness-track values')
