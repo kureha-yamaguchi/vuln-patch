@@ -22,7 +22,7 @@ _RATE_REVERTED = pytest.mark.skip(
     reason="rate-based 5C terminal path REVERTED 2026-07-28 (iteration-2 "
            "evidence: net-negative — dropped 4 confirmed catches, gained ~0 "
            "leaks; the rates live in the inventory, not in delivered "
-           "evidence). The pure helpers fire_rate_is_terminal / "
+           "evidence). The pure helpers were deleted 2026-08-06; "
            "parse_fire_rate_facts keep their own unit tests; these assert the "
            "WIRING, which is intentionally gone. Re-enable with the delivery "
            "fix in cycle 6.")
@@ -142,19 +142,6 @@ def test_parse_fire_rate_facts_none_when_absent():
     assert ef.parse_fire_rate_facts("no rates here") == []
 
 
-@pytest.mark.parametrize("b,p,terminal", [
-    (1.0, None, True),          # intrinsic on the broken build
-    (0.99, 0.10, True),         # intrinsic stands alone
-    (0.70, 0.42, True),         # measured fires-on-both
-    (0.58, 0.25, True),         # just over the both-bar
-    (0.50, 1.00, False),        # buggy side not genuinely high
-    (0.70, 0.05, False),        # patched side under the cap: not "both"
-    (0.00, 1.00, False),        # 5A asymmetric CATCH profile
-    (0.03, 0.90, False),        # 5A asymmetric CATCH profile
-    (None, 0.90, False),        # buggy side unmeasured
-])
-def test_fire_rate_is_terminal(b, p, terminal):
-    assert ef.fire_rate_is_terminal(b, p) is terminal
 
 
 def test_terminal_bar_sits_between_the_two_shipped_constants():

@@ -2185,33 +2185,6 @@ def confirmed_fires_on_both_verdict(text):
     return None
 
 
-def fire_rate_is_terminal(buggy_rate, patched_rate):
-    """Cycle-5D: is this MEASURED rate pair the terminal fires-on-both/
-    pre-existing profile? Pure, rate-only — no bug, leg or oracle name is
-    consulted anywhere.
-
-      * buggy >= INTRINSIC_FIRE_RATIO                       -> terminal
-      * buggy >= TERMINAL_BOTH_FIRE_RATIO and patched >= MAX_FIRE_RATIO
-                                                            -> terminal
-      * anything else (notably the 5A asymmetric CATCH profile, buggy LOW /
-        patched high, and any unmeasured buggy side)        -> NOT terminal
-    """
-    if buggy_rate is None:
-        return False
-    if buggy_rate >= INTRINSIC_FIRE_RATIO:
-        return True
-    return (buggy_rate >= TERMINAL_BOTH_FIRE_RATIO
-            and patched_rate is not None
-            and patched_rate >= MAX_FIRE_RATIO)
-
-
-def carries_terminal_fire_rate_fact(text):
-    """Cycle-5D: does the evidence carry a [fire-rate fact] whose MEASURED
-    rates match the terminal fires-on-both / pre-existing profile? Pure."""
-    return any(fire_rate_is_terminal(b, p) for b, p in
-               parse_fire_rate_facts(text))
-
-
 def terminal_profile(text):
     """Cycle-5C/5D: which terminal profile (if any) the evidence carries.
 
@@ -2243,8 +2216,8 @@ def terminal_profile(text):
     # and gained ~0 leaks, because of the 16 leak rows only 3 carry a
     # [fire-rate fact] at all and only 1 was rate-terminal. The rates it reasons
     # about live in the inventory, not in the evidence the judge is shown — a
-    # DELIVERY problem (cycle 6), not a judging rule. `fire_rate_is_terminal` /
-    # `carries_terminal_fire_rate_fact` are retained (tested, pure) for when the
+    # DELIVERY problem (cycle 6), not a judging rule. The two pure helpers that
+    # encoded the reverted rate rule were deleted 2026-08-06 as dead code; when
     # facts are actually delivered; they are simply not consulted here.
     return None
 

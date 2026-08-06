@@ -252,16 +252,6 @@ def test_a_known_buggy_only_rate_now_reaches_the_evidence(events):
     assert of(events, 'cycle6_rate_absent') == []
 
 
-def test_delivering_that_rate_moves_no_mechanical_decision():
-    """No new threshold and no touching of 6B/6C: the delivered block is below
-    the intrinsic bar and carries no patched rate, so neither the 6B drop nor
-    the 5D two-sided terminal profile can read it as a drop."""
-    note = ef.fire_rate_fact(_MATH30[0], _MATH30[1], None, None, '')
-    assert ef.indiscriminate_buggy_rate(note) is None
-    assert ef.carries_terminal_fire_rate_fact(note) is False
-    assert ef.terminal_profile(note) is None
-    # It is explicitly NOT read as "silent on the buggy build".
-    assert ef.rate_profile(note) == 'ambiguous'
 
 
 def test_the_intrinsic_and_silent_readings_are_unchanged():

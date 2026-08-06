@@ -392,7 +392,7 @@ def _terminal_identical_gate(ok, why, evidence_text, verifier, fired,
     Provenance ('lifts the trusted test') alone cannot override it.
 
     Cycle-5D adds the MEASURED form of the same fact: a [fire-rate fact]
-    whose buggy-side rate is genuinely high (see ``fire_rate_is_terminal``) is
+    whose buggy-side rate is genuinely high is
     the same pre-existing-behaviour signal expressed as rates, and is terminal
     on the same terms — family-duty escape included. The 5A asymmetric CATCH
     profile (buggy LOW / patched high) is never terminal.
