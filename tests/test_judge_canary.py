@@ -45,33 +45,6 @@ _IDENTICAL_EVID = ("[buggy-replay fact] the exact firing input fires the SAME "
                    "behaviour at this input is identical on both builds.")
 
 
-def test_canary_math2_direction_keeps_via_citation_void_and_family_duty():
-    # Base verdict UNSOUND on an uncited "a correct implementation could..."
-    # hypothetical under the drift-kill signature -> 5B citation-void re-ask
-    # flips it SOUND; fd_prior=True -> 5C terminal gate keeps the
-    # identical-on-both firing.
-    v = _StubVerifier([
-        (False, "a correct implementation could legitimately compute a "
-                "different mean here"),          # base: UNSOUND, uncited hedge
-        (True, "oracle judged sound on re-ask"),  # citation-void re-ask: SOUND
-    ])
-    ok, why = adjudicate(
-        v,
-        harness_source="// mean-formula check",
-        fired_assertion="[oracle:mean-formula] consistency violation",
-        trusted_values=None,
-        concrete_evidence=_IDENTICAL_EVID,
-        code_context=None,
-        pinned_source=None,
-        evidence_profile=_DRIFT,
-        failing_block="",
-        check_source="// mean-formula check",
-        fd_prior=True,
-    )
-    assert ok is True                       # KEEP
-    assert v.verify_calls == 2              # base + one citation-void re-ask
-    assert v.fd_calls == 0                  # fd_prior=True short-circuits 5C
-    assert "citation-void re-ask" in why
 
 
 def test_canary_math30_direction_drops_via_terminal_gate():

@@ -1675,27 +1675,6 @@ def pinned_environment_note(pinned):
             "check bug that holds with the pinned parameters left fixed.")
 
 
-def dismissal_invokes_pinned(why, pinned):
-    """Cycle-5B(i) predicate: does a dismissal WHY rest on varying a parameter
-    the check PINS? `pinned` is a pinned_parameters() dict (or any iterable of
-    category names). Conservative keyword match against each pinned category's
-    synonyms; categories without synonyms (e.g. 'size') never match. Pure."""
-    if not why or not pinned:
-        return False
-    cats = pinned.keys() if isinstance(pinned, dict) else pinned
-    low = str(why).lower()
-    for cat in cats:
-        for syn in _PIN_SYNONYMS.get(cat, ()):
-            if syn and syn in low:
-                return True
-    return False
-
-
-# Hedge markers = the "a correct implementation could..." shape. Citation
-# markers = a shown contract or a demonstrable check bug. Erring toward NOT
-# voiding (a false void could rescue a genuinely unsound check -> FP), the
-# citation set is deliberately broad: only a clearly UNCITED hypothetical
-# under the drift-kill signature is void.
 _HEDGE_MARKERS = (
     'could', 'might', 'may ', 'a correct implementation',
     'a correct printer', 'a correct solver', 'legitimately', 'legal',
@@ -1746,49 +1725,6 @@ _NEGATED_CITATION_RE = re.compile(
     r'(?:requires|pins|covers|guarantees)\b[^,.;]{0,80}'
     r'|\bdoes\s+not\s+(?:document|specify|pin|require)\w*[^,.;]{0,60}',
     re.I)
-
-
-def has_drift_kill_signature(evidence_profile):
-    """The 5B drift-kill signature: {buggy silent + deterministic trigger
-    firing + patched firing}. `evidence_profile` is a mapping/object exposing
-    booleans `buggy_silent`, `deterministic_trigger`, `patched_firing`
-    (missing => False). Pure."""
-
-    def _b(k):
-        if isinstance(evidence_profile, dict):
-            return bool(evidence_profile.get(k))
-        return bool(getattr(evidence_profile, k, False))
-
-    return (_b('buggy_silent') and _b('deterministic_trigger')
-            and _b('patched_firing'))
-
-
-def verdict_needs_citation(evidence_profile, why):
-    """Cycle-5B(ii) predicate: under the drift-kill signature {buggy silent +
-    deterministic trigger firing + patched firing}, a UNSOUND verdict must
-    CITE a shown contract or a demonstrable check bug — an uncited "a correct
-    implementation could..." hypothetical is INADMISSIBLE. Returns True when
-    the verdict is VOID (a hedge with no citation, under the signature).
-
-    KEYWORD PATH — SUPERSEDED. Cycle-5 iteration 3 replaced this prose matcher
-    with the STRUCTURAL check (`citation_void_decision`: the judge must emit a
-    verbatim CITATION line, and we verify it literally against the material it
-    was shown). This function survives as the FALLBACK for the one case the
-    structural check cannot decide — a missing/garbled CITATION line, i.e.
-    answer-format noncompliance — and for callers that predate the format.
-    Pure."""
-    if not why:
-        return False
-    if not has_drift_kill_signature(evidence_profile):
-        return False
-    low = str(why).lower()
-    has_hedge = any(h in low for h in _HEDGE_MARKERS)
-    # Blank out NEGATED-citation spans first, so "undocumented" / "not
-    # contradicted by any shown contract" cannot be read as citations.
-    cite_text = _NEGATED_CITATION_RE.sub(' ', low)
-    has_citation = (any(c in cite_text for c in _CITATION_MARKERS)
-                    or _TOLERANCE_MAGNITUDE_RE.search(cite_text) is not None)
-    return has_hedge and not has_citation
 
 
 # ---------------------------------------------------------------------------
@@ -1905,48 +1841,6 @@ def strip_citation_line(text):
     if not text:
         return text
     return _CITATION_LINE_RE.sub('', str(text)).strip()
-
-
-def citation_void_decision(evidence_profile, why, contexts=()):
-    """Cycle-5 iteration 3: is this UNSOUND verdict CITATION-VOID?
-
-    Returns ``(void, event)``; `event` is a stable, greppable label naming the
-    path taken. Order:
-
-      1. off the drift-kill signature            -> (False, 'not-signature')
-      2. ``CITATION: NONE``                      -> (True,  'citation-declared-none')
-      3. a quoted citation, no context to check against
-         -> FAIL-SAFE fallback to the keyword path ('citation-uncheckable-*')
-      4. a quoted citation LITERALLY present in the shown material
-                                                 -> (False, 'citation-grounded')
-      5. a quoted citation absent from it        -> (True,  'citation-ungrounded')
-      6. missing/garbled CITATION line (answer-format noncompliance)
-         -> FAIL-SAFE fallback to the keyword path
-            ('citation-format-noncompliant-keyword-void' / '-keyword-ok')
-
-    FAIL-SAFE: format noncompliance NEVER voids a verdict by itself; it can
-    only reach the pre-existing keyword decision. Pure."""
-    if not why:
-        return (False, 'no-verdict-text')
-    if not has_drift_kill_signature(evidence_profile):
-        return (False, 'not-signature')
-    status, citation = citation_line_status(why)
-    if status == 'none':
-        return (True, 'citation-declared-none')
-    if status == 'quoted':
-        if not any(_cite_norm(blob) for blob in _context_blobs(contexts)):
-            # Nothing was supplied to check against — we cannot establish
-            # ungroundedness, so we must not claim it.
-            void = verdict_needs_citation(evidence_profile,
-                                          strip_citation_line(why))
-            return (void, 'citation-uncheckable-no-context-keyword-'
-                          + ('void' if void else 'ok'))
-        if citation_is_grounded(citation, *contexts):
-            return (False, 'citation-grounded')
-        return (True, 'citation-ungrounded')
-    void = verdict_needs_citation(evidence_profile, strip_citation_line(why))
-    return (void, 'citation-format-noncompliant-keyword-'
-                  + ('void' if void else 'ok'))
 
 
 # ---------------------------------------------------------------------------
@@ -2381,28 +2275,3 @@ def reask_verdict_usable(why):
     return True
 
 
-def pinned_reask_statement(pinned):
-    """Cycle-5B(i): the explicit pin statement injected on a pin-void re-ask."""
-    cats = sorted(pinned.keys() if isinstance(pinned, dict) else set(pinned))
-    names = ", ".join(cats) or "environment parameters"
-    return (
-        "[PIN-VOID RE-ASK] Your previous dismissal rested on VARYING a "
-        "parameter this check's own source PINS (" + names + "). The harness "
-        "holds it fixed (e.g. it pins UTC / a fixed Locale / a fixed RNG "
-        "seed), so a counterexample that changes it is INADMISSIBLE — it "
-        "cannot occur under this check. Re-judge WITHOUT relying on variation "
-        "of any pinned parameter: to answer UNSOUND you must cite a contract "
-        "the check contradicts or a demonstrable check bug that holds with "
-        "the pinned parameters left fixed.")
-
-
-def citation_reask_statement():
-    """Cycle-5B(ii): the citation demand injected on a citation-void re-ask."""
-    return (
-        "[CITATION-VOID RE-ASK] This firing has the strong-evidence profile: "
-        "silent on the buggy build, a deterministic replay on the failing "
-        "test's own literals, and firing on the patched build. Under that "
-        "profile an uncited 'a correct implementation could...' hypothetical "
-        "is INADMISSIBLE. To answer UNSOUND you must cite a SHOWN contract "
-        "the check contradicts, or a demonstrable bug in the check itself; "
-        "with neither, the verdict is SOUND.")

@@ -75,73 +75,17 @@ def _adjudicate(v, *, evidence='', profile=None, fd_prior=None):
 # ---------------------------------------------------------------------------
 # (a) 5B: signature-complete + TWICE-uncited dismissal -> KEEP
 # ---------------------------------------------------------------------------
-def test_5b_twice_uncited_under_signature_keeps():
-    v = _StubVerifier([(False, _UNCITED), (False, _UNCITED_2)])
-    ok, why = _adjudicate(v, profile=_DRIFT)
-    assert ok is True
-    assert v.verify_calls == 2
-    assert "5B-INADMISSIBLE" in why
-    assert "dismissal inadmissible" in why
-    assert "twice uncited under drift-kill signature" in why
-    # the re-asked text is carried through for the trace
-    assert _UNCITED_2 in why
 
 
-def test_5b_twice_uncited_flip_is_greppable_in_helper_too():
-    v = _StubVerifier([(False, _UNCITED), (False, _UNCITED_2)])
-    ok, why = _guarded_verify(v, dict(harness_source="s",
-                                      concrete_evidence="e"),
-                              pinned=None, evidence_profile=_DRIFT)
-    assert ok is True and why.startswith("[5B-INADMISSIBLE keep]")
 
 
 # ---------------------------------------------------------------------------
 # (b) 5B guard: signature-complete + re-ask returns a CITED dismissal -> dead
 # ---------------------------------------------------------------------------
-@pytest.mark.parametrize("cited", [
-    # Lang-50 shape: a demonstrable `!=` / object-identity check bug.
-    "check requires `la != lb` — Locale object identity; equal-but-distinct "
-    "instances are legal, a real check bug",
-    # Math-74 shape: a rounding / tolerance floor.
-    "the solver is approximate only; the 8.7e-7 gap is within its legitimate "
-    "error and the check may not demand more",
-    "default accuracy is 1e-6, so the check's exactness is not guaranteed",
-    "fp round-off: time-reversibility is not guaranteed for an adaptive method",
-    # documented contract
-    "the documented javadoc contract permits either order",
-])
-def test_5b_cited_reask_dismissal_stands(cited):
-    v = _StubVerifier([(False, _UNCITED), (False, cited)])
-    ok, why = _adjudicate(v, profile=_DRIFT)
-    assert ok is False
-    assert "citation-void re-ask" in why
-    assert "INADMISSIBLE" not in why
 
 
-@pytest.mark.parametrize("cited", [
-    "check requires `la != lb` — Locale object identity; equal-but-distinct "
-    "instances are legal, a real check bug",
-    "the solver is approximate only; the 8.7e-7 gap is within its legitimate "
-    "error and the check may not demand more",
-    "too-tight accuracy demanded; the same deviation is legal here",
-    "bit-exact == on n*m/N; a different evaluation order is legal",
-])
-def test_5b_cited_first_verdict_never_reasked(cited):
-    """The guard cases are not even VOID: no re-ask, the drop stands."""
-    assert ef.verdict_needs_citation(_DRIFT, cited) is False
-    v = _StubVerifier([(False, cited)])
-    ok, why = _adjudicate(v, profile=_DRIFT)
-    assert ok is False and v.verify_calls == 1 and why == cited
 
 
-def test_5b_uncited_closure38_shapes_are_still_void():
-    """The rule's target class must stay void (the citation set did not grow
-    so broad that the format-drift hypotheticals now read as cited)."""
-    for why in ("a correct printer could emit x-0.0 vs the hard-coded x-0",
-                '"compact" doesn\'t forbid the optional separator `x- 1`',
-                "the printer could legally emit `1- 2` instead",
-                "contains could legally call minimizeCapacity first"):
-        assert ef.verdict_needs_citation(_DRIFT, why) is True
 
 
 # ---------------------------------------------------------------------------
@@ -161,16 +105,6 @@ def test_5b_no_profile_stays_dropped():
     assert ok is False and v.verify_calls == 1 and why == _UNCITED
 
 
-def test_5b_pin_void_path_never_flips_to_inadmissible():
-    """Only the citation-void path can produce the keep; a pin-void re-ask
-    that comes back UNSOUND again still drops."""
-    v = _StubVerifier([(False, "a DST transition could shift the day"),
-                       (False, "a DST transition could still shift the day")])
-    ok, why = _guarded_verify(v, dict(harness_source="s",
-                                      concrete_evidence="e"),
-                              pinned={'timezone': ['UTC_TIME_ZONE']},
-                              evidence_profile=_DRIFT)
-    assert ok is False and "INADMISSIBLE" not in why
 
 
 def test_5b_reask_transport_error_returns_original_verdict():

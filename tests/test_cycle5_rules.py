@@ -57,41 +57,16 @@ def test_pinned_parameters_empty_when_nothing_pinned():
 # --------------------------------------------------------------------------
 # 5B(i) — dismissal_invokes_pinned
 # --------------------------------------------------------------------------
-def test_dismissal_invokes_pinned_dst():
-    pinned = {'timezone': ['UTC_TIME_ZONE']}
-    why = ("a DST-observing default zone could change the result across the "
-           "transition")
-    assert ef.dismissal_invokes_pinned(why, pinned) is True
 
 
-def test_dismissal_invokes_pinned_calendar_latitude():
-    # Lang-63 shape: the UTC-pinned relation killed on calendar-decomposition.
-    pinned = {'timezone': ['UTC_TIME_ZONE']}
-    why = "calendar-field decomposition latitude permits this"
-    assert ef.dismissal_invokes_pinned(why, pinned) is True
 
 
-def test_dismissal_invokes_pinned_locale():
-    pinned = {'locale': ['Locale.setDefault(']}
-    assert ef.dismissal_invokes_pinned(
-        "the locale could differ between the two calls", pinned) is True
 
 
-def test_dismissal_does_not_invoke_unpinned():
-    pinned = {'timezone': ['UTC_TIME_ZONE']}
-    assert ef.dismissal_invokes_pinned(
-        "the tolerance is too tight for an iterative solver", pinned) is False
 
 
-def test_dismissal_invokes_pinned_empty_pin_is_false():
-    assert ef.dismissal_invokes_pinned("anything with dst", {}) is False
 
 
-def test_size_pin_never_voids():
-    # 'size' is stated in the note but has no enforcement synonyms.
-    pinned = {'size': ['new double[8]']}
-    assert ef.dismissal_invokes_pinned(
-        "a different size could change the result", pinned) is False
 
 
 # --------------------------------------------------------------------------
@@ -101,28 +76,12 @@ _DRIFT = {'buggy_silent': True, 'deterministic_trigger': True,
           'patched_firing': True}
 
 
-def test_uncited_hypothetical_under_signature_is_void():
-    why = "a correct printer could emit the optional separator x- 1"
-    assert ef.verdict_needs_citation(_DRIFT, why) is True
 
 
-def test_cited_check_bug_under_signature_is_not_void():
-    # The justified Lang-50 kill: a demonstrable `!=` identity check bug.
-    why = ("check compares Locale objects with != (identity); equal-but-"
-           "distinct instances are legal — a real check bug")
-    assert ef.verdict_needs_citation(_DRIFT, why) is False
 
 
-def test_documented_contract_under_signature_is_not_void():
-    why = "the documented javadoc contract permits a different order"
-    assert ef.verdict_needs_citation(_DRIFT, why) is False
 
 
-def test_hypothetical_off_signature_is_not_void():
-    profile = {'buggy_silent': False, 'deterministic_trigger': True,
-               'patched_firing': True}
-    why = "a correct implementation could legitimately differ"
-    assert ef.verdict_needs_citation(profile, why) is False
 
 
 # --------------------------------------------------------------------------
@@ -223,42 +182,14 @@ _PIN = {'timezone': ['UTC_TIME_ZONE']}
 _KW = dict(harness_source="src", concrete_evidence="e")
 
 
-def test_guarded_verify_initial_sound_no_reask():
-    v = _FakeVerifier([(True, "oracle judged sound")])
-    ok, why = _guarded_verify(v, dict(_KW), pinned=_PIN)
-    assert ok is True and v.verify_calls == 1
 
 
-def test_guarded_verify_pin_void_rescues():
-    v = _FakeVerifier([(False, "a DST transition could shift the day"),
-                       (True, "oracle judged sound")])
-    ok, why = _guarded_verify(v, dict(_KW), pinned=_PIN)
-    assert ok is True and v.verify_calls == 2
-    assert "pin-void re-ask" in why
 
 
-def test_guarded_verify_reask_fails_open_keeps_original_drop():
-    # Re-ask errors -> keep the ORIGINAL (UNSOUND) verdict, never a keep.
-    orig = "a DST transition could shift the day"
-    v = _FakeVerifier([(False, orig),
-                       (True, "verifier error (boom); keeping finding")])
-    ok, why = _guarded_verify(v, dict(_KW), pinned=_PIN)
-    assert ok is False and why == orig and v.verify_calls == 2
 
 
-def test_guarded_verify_no_void_when_not_pinned_invocation():
-    v = _FakeVerifier([(False, "the tolerance is simply too tight")])
-    ok, why = _guarded_verify(v, dict(_KW), pinned=_PIN)
-    assert ok is False and v.verify_calls == 1
 
 
-def test_guarded_verify_citation_void_rescues():
-    v = _FakeVerifier([(False, "a correct printer could emit optional space"),
-                       (True, "oracle judged sound")])
-    ok, why = _guarded_verify(v, dict(_KW), pinned=None,
-                              evidence_profile=_DRIFT)
-    assert ok is True and v.verify_calls == 2
-    assert "citation-void re-ask" in why
 
 
 def test_terminal_gate_voids_on_family_duty_no():

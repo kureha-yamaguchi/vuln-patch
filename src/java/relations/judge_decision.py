@@ -104,65 +104,12 @@ def _guarded_verify(verifier, verify_kwargs, pinned=None,
     ok, why = verifier.verify(**verify_kwargs)
     if ok:
         return ok, why
-    from java.relations.evidence_facts import (
-        dismissal_invokes_pinned, verdict_needs_citation,
-        pinned_reask_statement, citation_reask_statement,
-        reask_verdict_usable, strip_citation_line, citation_void_decision)
-
-    # The material the judge was actually shown, for the literal grounding
-    # check. `concrete_evidence` is taken from the ORIGINAL kwargs, so the
-    # re-ask statement we ourselves append can never ground a citation.
-    _tv = verify_kwargs.get('trusted_values')
-    contexts = (verify_kwargs.get('harness_source'),
-                verify_kwargs.get('code_context'),
-                verify_kwargs.get('concrete_evidence'),
-                _tv)
-
-    def _citation_void(verdict_text):
-        """Structural citation check, wrapped fail-safe: any failure degrades
-        to the pre-existing keyword decision, never to a void."""
-        try:
-            void, event = citation_void_decision(
-                evidence_profile, verdict_text, contexts)
-        except Exception as e:  # pragma: no cover - defensive
-            print(f"      [citation-check-error] {e} — falling back to the"
-                  f" keyword path")
-            try:
-                return bool(verdict_needs_citation(
-                    evidence_profile, strip_citation_line(verdict_text)))
-            except Exception:
-                return False
-        if event != 'not-signature':
-            print(f"      [citation-check] {event}")
-        return void
-
-    reask_stmt, tag = None, None
-    if pinned and dismissal_invokes_pinned(strip_citation_line(why), pinned):
-        reask_stmt, tag = pinned_reask_statement(pinned), "pin-void"
-    elif evidence_profile and _citation_void(why):
-        reask_stmt, tag = citation_reask_statement(), "citation-void"
-    if not reask_stmt:
-        return ok, why
-    kw2 = dict(verify_kwargs)
-    kw2['concrete_evidence'] = (
-        (kw2.get('concrete_evidence') or '') + "\n" + reask_stmt)
-    print(f"      [{tag}] verdict void — re-asking once")
-    ok2, why2 = verifier.verify(**kw2)
-    if not reask_verdict_usable(strip_citation_line(why2)):
-        # Re-ask unavailable (LLM error / unparseable) -> keep the ORIGINAL
-        # verdict. Never a manufactured flip.
-        return ok, why
-    if (tag == "citation-void" and not ok2
-            and _citation_void(why2)):
-        # 5D: TWICE citation-void under the full drift-kill signature. The
-        # rule already declares such a dismissal inadmissible; enforce it.
-        print("      [5B-INADMISSIBLE] dismissal twice uncited under "
-              "drift-kill signature — KEEPING the finding")
-        return True, ("[5B-INADMISSIBLE keep] 5B: dismissal inadmissible — "
-                      "twice uncited under drift-kill signature; the "
-                      "re-asked dismissal was again an uncited hypothetical: "
-                      + str(why2))
-    return ok2, (f"[{tag} re-ask] " + why2)
+    # 5B (void-and-re-ask) was deleted 2026-08-06. It never fired: zero
+    # occurrences across the 143-row fixture iterations and every archived live
+    # run including both closing pairs, after its matcher bug was found and
+    # fixed. Its reach was structurally capped at 10 of 143 rows. The base
+    # verify stands on its own; a dismissal is a dismissal.
+    return ok, why
 
 
 def _family_duty_escape(verifier, fired, failing_block, check_source,
