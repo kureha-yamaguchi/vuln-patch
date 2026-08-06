@@ -18,6 +18,12 @@ DELETE with evidence: 10 items (~10.8 MB, ~1,200 lines of live-path code,
 
 Each deletion lands as its own commit; git history preserves everything.
 Two deletions carry a REQUIRED validation step, marked ⚠.
+**User review 2026-08-06:** APPROVED — items 2 (old drivers), 7 (model
+escalation: simplify to the one model given in input params), 8 (attribution
+judge), 10 (refactor script). KEPT by user decision — item 1 (side quests).
+Items 3, 4, 5, 6, 9 explained to the user (studies contents, mined oracles,
+soundness-harden, 5B, rate-terminal); recommendation delete on all five,
+awaiting the user's word.
 
 1. **Side-quest trees** — `src/db` (10M), `src/linux`, `src/project_zero`,
    `src/oss_variant`, `src/variant.py`. Zero imports from anything live.
@@ -25,6 +31,8 @@ Two deletions carry a REQUIRED validation step, marked ⚠.
    its only thread to the world is `pyproject.toml` testpaths (8 tests) —
    remove the testpaths entry with it (the 563-vs-555 pytest confusion came
    from exactly this entry).
+   **USER DECISION 2026-08-06: KEEP as they are.** Struck from the delete
+   batch; the testpaths entry stays too.
 2. **Old drivers** — `scripts/evaluate.sh`, `scripts/evaluate_crashing.sh`,
    `scripts/run.sh`. Unreferenced; superseded by `run_suite.sh` + cases files.
 3. **`src/java/studies/`** (120K) — one-off offline analyses; conclusions
@@ -147,6 +155,28 @@ Two deletions carry a REQUIRED validation step, marked ⚠.
    A/B with BOTH-SIGNS read-outs (catches gained/lost AND accusations
    gained/lost, both guard populations) — the pair showed the lottery cuts
    both ways inside one change-set, so a single-sign read would flatter it.
+
+## Judgment-grep results (2026-08-06, run BEFORE the delete batch as ordered)
+
+- **Grep 5 SAVED a mechanism — the audit's own hypothesis refuted.** Rules
+  screened by round: {1: 630, 2: 619, 3: 113}; rules that FIRED: {1: 69,
+  2: 59, 3: 10}. Round 2 contributes almost as much as round 1 — dropping
+  the forced round would have removed ~half the relation supply from the
+  station the pair identified as the only surviving outcome-explanation.
+  The forced width round is VALIDATED and stays.
+- **Family-novelty gate joins the delete list (10 → 11):** 458 evaluations,
+  0 rejections across 120 legs; post-hoc, so zero cannot be deterrence —
+  inert while costing family extraction every attempt.
+- **A4 STATE COUPLING: kept on a near-miss** — delivered in 17 of 120 legs,
+  used in exactly 1; the criterion was zero and 1 is not zero (and the
+  detection is heuristic). Re-test on the next run; waste bounded.
+- **A6 class-skeleton: RECLASSIFIED as infrastructure** — 120/120 delivery;
+  it is the output contract (package/class/entrypoint), not an unproven
+  hint. The audit's "unvalidated block" framing was wrong; corrected here.
+- **H3: alive** (5 rejections; 4 on Closure-62 — they did not prevent its
+  accusations, noted without conclusion).
+- **A5: untestable in this corpus** (0 Lang-27 legs in the four runs; 44
+  elsewhere in the archive) — pending, unchanged.
 
 ## Ordering note
 
