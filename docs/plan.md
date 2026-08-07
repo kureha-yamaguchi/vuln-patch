@@ -2095,6 +2095,37 @@ rolls 10/11's kept relations fired at test-coincident values and would
 VOID — which relations a roll synthesizes and keeps is stochastic. Thin
 reach -> 8.4 extension is the recorded next step, not another predicate
 tweak. 799 passed, 7 skipped; pushed. **Roll 13 is GO.**
+  *ROLL 13 (2026-08-07): TN — AND IT IS NOT THE GATE'S DOING (the
+  launching session's stop-call, confirmed): zero harness crashes on the
+  patched build, one judge call (vs 17), zero reference-chain admissions,
+  zero gate events. A mechanism that never executed cannot cause a flip
+  — this is the invention lottery's signature, and banking it would have
+  been the Chart-19 attribution error at verdict-affecting stakes.
+  Recorded as: no gate datum, one weak fail-closed datum (the gate was
+  inert with its inputs absent), and one structural reach fact — the
+  reference chain triggers only on a firing that reaches the judge, so
+  legs that never accuse produce no reference (acceptable: the
+  mechanism's job is judging accusations).*
+  *CORPUS MEASUREMENT INSTEAD OF DRAWS (same day,
+  `scripts/gate_corpus_scan.py`, event-level extraction after a first
+  regex harvest returned empty strings and nearly recorded a false
+  zero): the gate over EVERY recorded value-bearing firing, both doors,
+  13 rolls. REPLAY door (where phase 1 is wired): 31 firings, 0 void —
+  synthesized-relation replays fire at fuzz inputs; values never
+  coincide with test state. HARNESS door (NOT wired): 26 patched-build
+  firings, 2 VOID — ladder1g `circle-dense-chi-formula` and ladder1k
+  `constant-weight-rms-chi`; the fuzz harness replays the failing
+  test's scenario, so ITS firings carry test-state-coincident values.
+  **THE DOOR WITH REACH IS THE UNWIRED ONE — Spec-K one-door parity,
+  now with measured stakes.** Neither roll flips outright: ladder1g's
+  second patched firing prints `getChiSquare()=` with the REFERENCE'S
+  EXACT VALUE but the `()` on the key defeats parsing (mechanical
+  accommodation away from a full void); ladder1k's prints only lhs/rhs
+  (unreachable without 8.4). SCOPED NEXT, in order: (i) wire the gate
+  at the harness-track adjudication site — door parity; (ii) key-parse
+  accommodation for the `obs()=value` shape; (iii) the 8.4
+  firing-state extension for the lhs/rhs population. Measurement
+  before mechanism, as the rules require — none built yet.*
 
 **Reach honesty:** the gate exists only where the chain admits a
 reference (disputed-observable detection measured 25.4% of rows; admission
