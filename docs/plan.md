@@ -1695,6 +1695,25 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   discarded references. 742 passed, 7 skipped; pushed. **Roll 6 is GO** —
   next unknown is the screen itself: does a doc-derived reference actually
   reproduce the buggy build on the 6 siblings?*
+  *ROLL 6 (2026-08-07): 8 chain steps — deepest yet. CONFIRMED WORKING on
+  real material: name normalization (chiSquare→getChiSquare, RMS→getRMS,
+  `cost` correctly declared-only and never called), signature mapping (2
+  params → real state fields), setup extraction (receiver `optimizer`),
+  twin build (1 helper, 13 imports, real package), and per-leg memoization
+  (3 later firings reused the resolution). Discarded at the twin RUN: exit
+  1, no end marker — while the same twin source ran fine by hand in
+  re-walk #5, localising it to the seam. CAUSE (found by reading build.py,
+  not by re-rolling): `HarnessBuilder.build` compiles with `-d <fuzz_dir>`
+  but `BuildResult.classpath` carries only project cp + jazzer API jar, so
+  `java -cp` could not find the class it had just built; the pipeline's own
+  Jazzer runner has always appended the harness dir. Ninth integration
+  defect, same shape as the other eight. Fixed (343d887, main session) for
+  run_twin AND run_reference via one shared `_runtime_classpath()` (cwd
+  anchored too), plus the agent's ask: the JVM's own stdout/stderr now
+  rides in the discard reason (`_jvm_failure_reason`), so a missing class,
+  a thrown exception and a silent exit are distinguishable in one read.
+  Gate (b) 12-for-12. 748 passed, 7 skipped; pushed. **Roll 7 is GO** —
+  the screen question is still the next unknown, now one seam closer.*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
