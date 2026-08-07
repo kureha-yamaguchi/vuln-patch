@@ -23,6 +23,12 @@ from typing import Dict, List, Optional, Tuple
 
 from java.relations.evidence_facts import observed_values
 
+
+def _java_string(expr: str) -> str:
+    """A Java string literal holding `expr` verbatim."""
+    return '"' + expr.replace(chr(92), chr(92)*2).replace('"', chr(92)+'"') + '"'
+
+
 #: The driver prints one `key=value` per observable, then this marker. Its
 #: absence means the run did not complete, however the process exited.
 END_MARKER = '[[reference-run-complete]]'
@@ -88,32 +94,61 @@ def build_buggy_twin_driver(fq_class: str,
     """The OTHER side of the comparison, run LIVE on the buggy build.
 
     Fuzzed vectors have no recorded buggy values, so the screen needs the buggy
-    class executed on the SAME constructed states. That is admissible: the buggy
-    build is authority rank 2 whether its values are archived or produced now.
+    class executed on the SAME constructed states. Admissible: the buggy build
+    is authority rank 2 whether its values are archived or produced now.
     Bounded cost -- one class, no fuzzing loop.
 
-    `construct` is a Java expression building the object from a vector, with
-    `{vec}` substituted; observables are read as no-arg getters, keyed the same
-    way as the reference driver so the two dictionaries compare key-for-key.
+    CONSTRUCTION IS ATTEMPTED ONCE PER VECTOR AND ECHOED. Mis-construction is a
+    REACH risk rather than a safety one -- a wrong state produces systematic
+    disagreement across every observable, so the reference is discarded, and
+    wrong-state AGREEMENT across many independent observables is implausibility
+    stacked on implausibility. But a discard then reads as "bad reference" when
+    it was "bad twin", and that misattribution costs a roll. So each vector
+    emits `__construct<j>` (OK or the exception) and `__state<j>` (the
+    expression used), making state-mismatch distinguishable from semantic
+    disagreement in one read.
+
+    Constructing once per vector rather than once per (observable, vector) also
+    means a single failure is reported once, not N times.
     """
     pkg = f'package {package};\n\n' if package else ''
-    calls = []
-    for obs in observables:
-        for vec in vectors:
-            calls.append(
-                '    try {\n'
-                f'      {fq_class} o = {construct.replace("{vec}", vec)};\n'
-                f'      Object r = o.{obs}();\n'
-                f'      System.out.println("{obs}=" + String.valueOf(r));\n'
-                '    } catch (Throwable t) {\n'
-                f'      System.out.println("{obs}=EX:" '
-                '+ t.getClass().getSimpleName());\n'
-                '    }')
+    blocks = []
+    for j, vec in enumerate(vectors):
+        reads = '\n'.join(
+            '      try {\n'
+            f'        Object r = o.{obs}();\n'
+            f'        System.out.println("{obs}=" + String.valueOf(r));\n'
+            '      } catch (Throwable t) {\n'
+            f'        System.out.println("{obs}=EX:" '
+            '+ t.getClass().getSimpleName());\n'
+            '      }'
+            for obs in observables)
+        blocks.append(
+            f'    System.out.println("__state{j}=" + {_java_string(vec)});\n'
+            '    try {\n'
+            f'      {fq_class} o = {construct.replace("{vec}", vec)};\n'
+            f'      System.out.println("__construct{j}=OK");\n'
+            + reads + '\n'
+            '    } catch (Throwable t) {\n'
+            f'      System.out.println("__construct{j}=EX:" '
+            '+ t.getClass().getSimpleName());\n'
+            '    }')
     return (pkg + 'public class BuggyTwinDriver {\n'
             '  public static void main(String[] args) {\n'
-            + '\n'.join(calls) + '\n'
+            + '\n'.join(blocks) + '\n'
             f'    System.out.println("{END_MARKER}");\n'
             '  }\n}\n')
+
+
+def construction_report(output: str) -> Dict[str, str]:
+    """`{__construct<j>: OK|EX:Type}` from a twin run -- the attribution read.
+
+    A discard with every `__construct` OK is a SEMANTIC disagreement; one with a
+    failed construct is a bad twin, and the difference is one grep rather than
+    one roll.
+    """
+    return {k: v[0] for k, v in observed_values(output).items()
+            if k.startswith('__construct') or k.startswith('__state')}
 
 
 def run_reference(builder,
@@ -159,6 +194,12 @@ def run_reference(builder,
         return None, ('reference run did not complete (no end marker; exit '
                       f'{p.returncode}) — DISCARDED')
     obs = observed_values(out.split(END_MARKER)[0])
+    # Bookkeeping keys are NOT observables. `__state`/`__construct` exist for
+    # attribution, and counting them would let the twin's own diagnostics
+    # satisfy MIN_SCREENED_OBSERVABLES -- volume meeting the letter of the bar
+    # while contributing nothing to independence, the exact failure the
+    # distinct-observable rule was written against.
+    obs = {k: v for k, v in obs.items() if not k.startswith('__')}
     if not obs:
         return None, 'reference produced no parseable observables — DISCARDED'
     return obs, f'reference ran and produced {len(obs)} observable(s)'

@@ -63,13 +63,40 @@ def test_the_reference_driver_calls_every_observable_on_every_vector():
     assert sorted(set(re.findall(r'println\("(\w+)=', d))) == sorted(OBS)
 
 
-def test_the_buggy_twin_reads_the_SAME_keys():
-    """The two dictionaries must compare key-for-key, or the screen silently
-    shares nothing and discards every reference."""
-    r = build_driver('ReferenceImpl', OBS, VECS)
-    b = build_buggy_twin_driver('org.X.Opt', 'new org.X.Opt({vec})', OBS, VECS)
-    assert (sorted(set(re.findall(r'println\("(\w+)=', r)))
-            == sorted(set(re.findall(r'println\("(\w+)=', b))))
+def test_the_buggy_twin_reads_the_SAME_OBSERVABLE_keys():
+    """The two dictionaries must compare key-for-key on OBSERVABLES, or the
+    screen silently shares nothing and discards every reference. The twin also
+    emits `__state`/`__construct` for attribution; those are bookkeeping and are
+    excluded from the observable set by run_reference."""
+    r = set(re.findall(r'println\("(\w+)=', build_driver('ReferenceImpl', OBS, VECS)))
+    b = set(re.findall(r'println\("(\w+)=',
+                       build_buggy_twin_driver('org.X.Opt', 'new org.X.Opt({vec})',
+                                               OBS, VECS)))
+    assert r == {k for k in b if not k.startswith('__')}
+
+
+def test_bookkeeping_keys_are_NOT_counted_as_observables(monkeypatch):
+    """If they were, the twin's own diagnostics would satisfy the
+    three-observable bar -- volume meeting the letter of the rule while adding
+    nothing to independence."""
+    import java.relations.reference_run as rr
+    from java.relations.reference_run import END_MARKER, run_reference
+
+    class _B:
+        compiled, classpath, class_name = True, 'cp', 'D'
+        harness_path, returncode = '/tmp/D.java', 0
+
+    class _Builder:
+        def build(self, *a, **k):
+            return _B()
+
+    class _P:
+        stdout = ('__state0=v\n__construct0=OK\n__state1=w\n'
+                  f'getRMS=1.0\n{END_MARKER}\n')
+        stderr, returncode = '', 0
+    monkeypatch.setattr(rr.subprocess, 'run', lambda *a, **k: _P())
+    obs, _why = run_reference(_Builder(), '/d', 's', 'd')
+    assert obs == {'getRMS': ['1.0']}, 'only real observables survive' 
 
 
 def test_the_twin_constructs_the_object_from_each_vector():
@@ -140,3 +167,44 @@ def test_stored_settings_sort_AFTER_computed_quantities():
     sibs = sibling_observables(ctx, 'getChiSquare', cap=2)
     assert 'getMaxIterations' not in sibs
     assert set(sibs) == {'getRMS', 'getX'}
+
+
+# --- twin attribution: state-mismatch vs semantic disagreement ------------
+
+def test_the_twin_echoes_the_state_it_constructed():
+    """Mis-construction is a REACH risk, not a safety one: a wrong state
+    disagrees across every observable, so the reference is discarded. But the
+    discard then reads as 'bad reference' when it was 'bad twin', and that
+    misattribution costs a roll. The echo makes the two distinguishable in one
+    grep."""
+    from java.relations.reference_run import build_buggy_twin_driver
+    t = build_buggy_twin_driver('X', 'new X({vec})', ['getRMS'],
+                                ['new double[]{1,2}, 3'])
+    assert '__state0=' in t and '__construct0=OK' in t
+    assert '__construct0=EX:' in t
+
+
+def test_construction_is_attempted_ONCE_per_vector():
+    """Once per (observable, vector) would report a single failure N times and
+    rebuild the object needlessly."""
+    from java.relations.reference_run import build_buggy_twin_driver
+    t = build_buggy_twin_driver('X', 'new X({vec})',
+                                ['a', 'b', 'c'], ['v1', 'v2'])
+    assert t.count('new X(') == 2, 'one construction per VECTOR'
+    assert t.count('__construct') == 4      # 2 vectors x (OK + EX)
+
+
+def test_the_attribution_read_separates_the_two_causes():
+    from java.relations.reference_run import construction_report
+    good = construction_report('__state0=v\n__construct0=OK\ngetRMS=1.0\n')
+    bad = construction_report('__state0=v\n__construct0=EX:NullPointerException\n')
+    assert good['__construct0'] == 'OK'
+    assert bad['__construct0'].startswith('EX:')
+
+
+def test_the_echo_survives_a_vector_containing_quotes_or_backslashes():
+    from java.relations.reference_run import build_buggy_twin_driver
+    t = build_buggy_twin_driver('X', 'new X({vec})', ['a'],
+                                ['new String[]{"x\\\\y"}'])
+    # the echoed literal must be escaped, or the driver will not compile
+    assert '\\\\' in t or '\\"' in t
