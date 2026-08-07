@@ -336,12 +336,15 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
                 reason=f'state field `{field}` ({typ}) printed as '
                        f'{printed[:80]!r}')
             return None
-        lits.append(lit)
-    obs, why = run_reference(
-        builder, buggy_dir, src,
-        build_reference_call_driver('ReferenceImpl',
-                                    list(matched.items()),
-                                    ', '.join(lits)))
+        lits.append((lit, typ))
+    try:
+        driver_src = build_reference_call_driver(
+            'ReferenceImpl', list(matched.items()), lits)
+    except (ValueError, TypeError) as e:
+        _re('deterministic', method='reference-impl', target=method,
+            output='driver source invalid — DISCARDED', reason=str(e)[:200])
+        return None
+    obs, why = run_reference(builder, buggy_dir, src, driver_src)
     _re('deterministic', method='reference-impl', target=method,
         output=('reference ran' if obs else 'reference DISCARDED'), reason=why)
     if not obs:

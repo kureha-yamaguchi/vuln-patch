@@ -144,7 +144,43 @@ def _values_agree(a: str, b: str) -> bool:
     try:
         return _close(float(a), float(b))
     except (TypeError, ValueError):
+        pass
+    return _arrays_agree(a, b)
+
+
+def _arrays_agree(a: str, b: str) -> bool:
+    """Per-ELEMENT agreement for printed arrays, same structure required.
+
+    Re-walk #8, on real material: the buggy build's OWN covariance matrix is
+    one ulp ASYMMETRIC (cov[0][1] prints ...54E-7, cov[1][0] prints
+    ...546E-7), and the reference computed the transpose pattern. Exact
+    string comparison read that single-ulp printing artifact as a semantic
+    disagreement and discarded the reference — the permanent-false-
+    disagreement class again (the design guidance is explicit: a value_ulp
+    difference IS agreement). Structure is compared exactly (bracket/comma
+    skeleton), elements numerically within the rounding floor; any
+    non-numeric element falls back to exact equality.
+    """
+    if not (a.startswith('[') and a.endswith(']')
+            and b.startswith('[') and b.endswith(']')):
         return False
+    sa = re.sub(r'[^\[\],]+', '#', a.replace(' ', ''))
+    sb = re.sub(r'[^\[\],]+', '#', b.replace(' ', ''))
+    if sa != sb:
+        return False                      # different shape is a real difference
+    va = re.findall(r'[^\[\],\s]+', a)
+    vb = re.findall(r'[^\[\],\s]+', b)
+    if len(va) != len(vb):
+        return False
+    for x, y in zip(va, vb):
+        if x == y:
+            continue
+        try:
+            if not _close(float(x), float(y)):
+                return False
+        except (TypeError, ValueError):
+            return False
+    return True
 
 
 def screen_reference(reference_obs: Dict[str, List[str]],

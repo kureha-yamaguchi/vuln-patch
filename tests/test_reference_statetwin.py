@@ -1145,14 +1145,45 @@ def test_roll9_signature_builds_a_bracket_free_driver():
         'residualsWeights': '[1.0, 1.0]',
         'cost': '1.25', 'rows': '5', 'cols': '2',
     }
-    lits = [rr.java_literal(t, printed[n]) for t, n in params]
-    assert all(lits), lits
+    lits = [(rr.java_literal(t, printed[n]), t) for t, n in params]
+    assert all(l for l, _ in lits), lits
     driver = rr.build_reference_call_driver(
         'ReferenceImpl',
         [('getChiSquare', 'getChiSquare'), ('getRMS', 'getRMS')],
-        ', '.join(lits))
+        lits)
     assert '{[' not in driver
     assert 'new double[][]{{1.5, 2.5}, {3.5, 4.5}}' in driver
+
+
+def test_driver_hoists_each_array_literal_exactly_once():
+    # Re-walk #8 (roll 10's recorded artifacts, replayed): ~630 points ->
+    # ~15KB per array literal, inlined once per observable call -> main()
+    # blew the JVM's 64KB bytecode-per-method cap (`code too large`). One
+    # static field + one initializer per array bounds every method
+    # regardless of how many observables share the state.
+    big = '[' + ', '.join(f'{i}.5' for i in range(630)) + ']'
+    lits = [(rr.java_literal('double[]', big), 'double[]'),
+            ('5', 'int')]
+    driver = rr.build_reference_call_driver(
+        'ReferenceImpl',
+        [('getChiSquare', 'getChiSquare'), ('getRMS', 'getRMS'),
+         ('getCovariances', 'getCovariances'),
+         ('guessParametersErrors', 'guessParametersErrors')],
+        lits)
+    # The big literal appears ONCE (in its initializer), not per call.
+    assert driver.count('629.5') == 1
+    # Call sites reference the field; scalars stay inline.
+    assert driver.count('.compute_getChiSquare(A0, 5)') == 1
+    body = driver[driver.index('void main'):]
+    assert '629.5' not in body
+
+
+def test_driver_refuses_a_single_oversized_literal():
+    monster = '[' + ', '.join('1.0' for _ in range(20000)) + ']'
+    with pytest.raises(ValueError, match='64KB'):
+        rr.build_reference_call_driver(
+            'ReferenceImpl', [('a', 'a')],
+            [(rr.java_literal('double[]', monster), 'double[]')])
 
 
 class _FailedBuild:
@@ -1279,3 +1310,46 @@ def test_build_prepends_extra_classpath_to_javac(monkeypatch, tmp_path):
                   output_subdir='reference', extra_classpath=['/refdir'])
     cp = cmds[0][cmds[0].index('-cp') + 1]
     assert cp.split(os.pathsep) == ['/refdir', 'TESTCP', 'jz.jar']
+
+
+# ---------------------------------------------------------------------------
+# Re-walk #8, screen findings (2026-08-07): the buggy build's own covariance
+# matrix is one ulp ASYMMETRIC in its printed form, and exact string
+# comparison read that as a semantic disagreement -- the permanent-false-
+# disagreement class again. Arrays now agree per element within the
+# rounding floor. The REAL divergences (chiSquare 4x, the errors vector)
+# must keep disagreeing.
+# ---------------------------------------------------------------------------
+
+REWALK8_COV_REF = ('[[0.0015747823386087533, 3.1995427705658546E-7], '
+                   '[3.199542770565854E-7, 0.0015798545955493326]]')
+REWALK8_COV_BUGGY = ('[[0.0015747823386087533, 3.199542770565854E-7], '
+                     '[3.1995427705658546E-7, 0.0015798545955493326]]')
+
+
+def test_array_agreement_is_per_element_not_string():
+    from java.relations.reference_impl import _values_agree
+    assert _values_agree(REWALK8_COV_REF, REWALK8_COV_BUGGY)
+    # Real divergence stays a divergence.
+    assert not _values_agree('[0.003947421421789695, 0.003953773486615504]',
+                             '[0.0019737107108948474, 0.001976886743307752]')
+    # Shape is structure, not noise.
+    assert not _values_agree('[[1.0], [2.0]]', '[1.0, 2.0]')
+    assert not _values_agree('[1.0, 2.0]', '[1.0]')
+    # Non-numeric elements: exact only.
+    assert not _values_agree('[a, b]', '[a, c]')
+
+
+def test_screen_admits_on_ulp_noise_discards_on_real_divergence():
+    from java.relations.reference_impl import screen_reference
+    ref = {'getRMS': ['0.09931552348327041'],
+           'getCovariances': [REWALK8_COV_REF],
+           'guessParametersErrors': ['[0.0039, 0.0039]']}
+    buggy = {'getRMS': ['0.09931552348327041'],
+             'getCovariances': [REWALK8_COV_BUGGY],
+             'guessParametersErrors': ['[0.0039, 0.0039]']}
+    ok, why = screen_reference(ref, buggy, off_defect_keys=set(ref))
+    assert ok, why
+    buggy['guessParametersErrors'] = ['[0.0019737, 0.0019768]']
+    ok, why = screen_reference(ref, buggy, off_defect_keys=set(ref))
+    assert not ok and 'guessParametersErrors' in why

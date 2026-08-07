@@ -112,7 +112,8 @@ def build_driver(reference_class: str,
                  observables: List[str],
                  vectors: List[str],
                  package: Optional[str] = None,
-                 call: str = 'compute_{obs}') -> str:
+                 call: str = 'compute_{obs}',
+                 fields_src: str = '') -> str:
     """Call EVERY observable on EVERY vector, keyed by OBSERVABLE NAME.
 
     KEYING IS THE DESIGN. `observed_values` returns {key: [values]}, and the
@@ -154,7 +155,7 @@ def build_driver(reference_class: str,
                 '+ t.getClass().getSimpleName());\n'
                 '    }')
     return (pkg + 'public class ReferenceDriver {\n'
-            + _FMT_HELPER +
+            + _FMT_HELPER + fields_src +
             '  public static void main(String[] args) {\n'
             + '\n'.join(calls) + '\n'
             f'    System.out.println("{END_MARKER}");\n'
@@ -999,19 +1000,54 @@ def java_literal(typ: str, printed: str) -> Optional[str]:
     return None
 
 
+#: A single hoisted literal above this many characters would itself push its
+#: initializer method toward the JVM's 64KB bytecode cap (~15 bytes/element,
+#: ~20 chars/element printed). Discard loudly rather than emit code javac
+#: must refuse.
+_MAX_LITERAL_CHARS = 60_000
+
+
 def build_reference_call_driver(reference_class: str,
                                 observable_names: List[str],
-                                args_expr: str,
+                                arg_literals: List[Tuple[str, str]],
                                 package: Optional[str] = None) -> str:
     """Call each `compute_<name>` ONCE with the shared resolved arguments.
 
     One state (the test's), many observables -- keyed by observable name so
     the screen's count stays an observable count.
+
+    `arg_literals` is `(literal_src, java_type)` in call order. ARRAYS ARE
+    HOISTED: each literal is emitted ONCE as a static field with its own
+    initializer method, and every call site references the field. Re-walk
+    #8 (replaying roll 10's recorded artifacts): the driver inlined ~15KB
+    array literals once per observable call and main() blew the JVM's 64KB
+    bytecode-per-method cap (`code too large`) -- Math-65's test state
+    holds ~630 fitted points, so the 4-observable driver could NEVER have
+    compiled inline, on any classpath. The cap binds per METHOD, so one
+    field + one initializer per array keeps every method bounded no matter
+    how many observables share the state. A single literal too large even
+    alone raises ValueError -- the caller discards with the reason, never
+    hands javac code it must refuse.
     """
-    if isinstance(observable_names, str):
-        raise TypeError('observable_names must be a list, not str')
-    return build_driver(reference_class, observable_names, [args_expr],
-                        package=package)
+    if isinstance(observable_names, str) or isinstance(arg_literals, str):
+        raise TypeError('observable_names and arg_literals must be lists, '
+                        'not str')
+    fields, names = [], []
+    for i, (lit, typ) in enumerate(arg_literals):
+        if len(lit or '') > _MAX_LITERAL_CHARS:
+            raise ValueError(
+                f'argument {i} ({typ}): literal is {len(lit)} chars -- its '
+                f'initializer alone would exceed the JVM 64KB method cap')
+        if '[' in typ:
+            fields.append(
+                f'  private static final {typ} A{i} = mkA{i}();\n'
+                f'  private static {typ} mkA{i}() {{ return {lit}; }}\n')
+            names.append(f'A{i}')
+        else:
+            names.append(lit)
+    return build_driver(reference_class, observable_names,
+                        [', '.join(names)], package=package,
+                        fields_src=''.join(fields))
 
 
 def run_twin(builder, project_dir: str, twin_source: str,
