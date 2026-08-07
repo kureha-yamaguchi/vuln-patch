@@ -1617,6 +1617,21 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   honest discard rather than emitting invalid Java. Eight new pins from
   the real Math-65 material. 712 passed, 7 skipped. VM re-walk #2 is
   roll 5's gate.*
+  *VM re-walk #2 (2026-08-07): all three prior failures GONE; two new ones,
+  both fixed at root (bbc0039, main session). (a) RECEIVER — usage-pattern
+  selection deleted entirely: "last-constructed" picked `center` (roll 5),
+  "most-called" picked the optimizer's RESULT object (re-walk #2). The
+  receiver must DECLARE the disputed observable — `types_declaring()` walks
+  the class context plus one `extends` level, a by-call candidate whose
+  declared type is NOT a declaring type is now VETOED (closing the
+  silent-wrong-state case: a same-named method on another type would have
+  compiled and read the wrong object), and no type evidence = discard with
+  the declaring types named. (b) PACKAGE — the twin is emitted into the test
+  file's own package, restoring the simple-name resolution the original test
+  method had. 717 passed, 7 skipped; pushed. VM re-walk #3 is roll 5's gate.
+  Residual risks named for that walk: a fixture helper referencing test-class
+  FIELDS (honest discard), and whatever `optimize(...)` needs at runtime
+  (twin runs, `__construct0` reports).*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
