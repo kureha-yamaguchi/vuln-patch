@@ -1095,3 +1095,103 @@ def test_roll8_reference_through_the_chain_discards_thin_before_any_jvm(
     thin_reason = next(r for o, r in events
                        if o and 'too thin' in o)
     assert '1 shared sibling' in thin_reason
+
+
+# ---------------------------------------------------------------------------
+# Roll 9 (2026-08-07): died at `driver did not compile`, reason carrying no
+# javac output. Desk diagnosis, confirmed by replay: java_literal stripped
+# EVERY `[]` from a multi-dimensional type and passed deepToString's inner
+# text through -- `new double[]{[...], [...]}` -- non-None, so the chain
+# proceeded and javac refused the driver. Roll 9's reference was the first
+# to take a `double[][] jacobian` (the prompt fix worked; the literal
+# builder had never been asked for 2-D). Second seam, same read: all three
+# COMPILE-failure branches returned bare messages while BuildResult.stderr
+# held javac's words -- the roll-6 attribution treatment covered only the
+# RUN phase.
+# ---------------------------------------------------------------------------
+
+ROLL9_SIG = ('double[][] jacobian, double[] residuals, '
+             'double[] residualsWeights, double cost, int rows, int cols')
+
+
+def test_java_literal_two_dimensional_arrays():
+    # Real-shaped: the twin's deepToString of getCovariances in re-walk #7.
+    printed = ('[[0.0015747823386087533, 3.199542770565854E-7], '
+               '[3.199542770565854E-7, 0.0016461547716898509]]')
+    lit = rr.java_literal('double[][]', printed)
+    assert lit == ('new double[][]{{0.0015747823386087533, '
+                   '3.199542770565854E-7}, {3.199542770565854E-7, '
+                   '0.0016461547716898509}}')
+    assert rr.java_literal('double[][]', '[]') == 'new double[0][]'
+    assert rr.java_literal('int[][]', '[[1, 2], [3]]') == \
+        'new int[][]{{1, 2}, {3}}'
+    # Element types whose printed form could itself contain a bracket
+    # fail closed rather than guessing.
+    assert rr.java_literal('String[][]', '[[a], [b]]') is None
+    # 1-D behaviour unchanged.
+    assert rr.java_literal('double[]', '[1.0, 2.5]') == \
+        'new double[]{1.0, 2.5}'
+
+
+def test_roll9_signature_builds_a_bracket_free_driver():
+    # The verbatim roll-9 parameter list, end to end: every literal
+    # reconstructs, and the driver text contains no `{[` -- the exact
+    # character pair javac refused.
+    params = rr.parse_parameters(ROLL9_SIG)
+    printed = {
+        'jacobian': '[[1.5, 2.5], [3.5, 4.5]]',
+        'residuals': '[1.0, 2.0]',
+        'residualsWeights': '[1.0, 1.0]',
+        'cost': '1.25', 'rows': '5', 'cols': '2',
+    }
+    lits = [rr.java_literal(t, printed[n]) for t, n in params]
+    assert all(lits), lits
+    driver = rr.build_reference_call_driver(
+        'ReferenceImpl',
+        [('getChiSquare', 'getChiSquare'), ('getRMS', 'getRMS')],
+        ', '.join(lits))
+    assert '{[' not in driver
+    assert 'new double[][]{{1.5, 2.5}, {3.5, 4.5}}' in driver
+
+
+class _FailedBuild:
+    compiled = False
+    stderr = ('ReferenceDriver.java:12: error: illegal start of expression\n'
+              '      Object r1 = ReferenceImpl.compute_getChiSquare('
+              'new double[]{[1.5, 2.5], ...\n'
+              '1 error\n')
+
+
+class _FailingBuilder:
+    def build(self, source, project_dir, output_subdir=''):
+        return _FailedBuild()
+
+
+def test_compile_discards_carry_javacs_words():
+    obs, why = rr.run_reference(_FailingBuilder(), '/b', 'class R {}', 'drv')
+    assert obs is None
+    assert 'javac:' in why and 'illegal start of expression' in why
+    vals, why = rr.run_twin(_FailingBuilder(), '/b', 'class T {}')
+    assert vals is None
+    assert 'javac:' in why and 'illegal start of expression' in why
+
+
+def test_compile_discard_says_when_javac_printed_nothing():
+    class _Silent:
+        compiled = False
+        stderr = ''
+    class _B:
+        def build(self, *a, **k): return _Silent()
+    obs, why = rr.run_reference(_B(), '/b', 'class R {}', 'drv')
+    assert obs is None and 'printed nothing' in why
+
+
+def test_all_compile_branches_use_the_attribution_helper():
+    # Seam: a fourth compile branch added without the helper would
+    # reopen the roll-9 gap.
+    for fn in (rr.run_reference, rr.run_twin):
+        src = inspect.getsource(fn)
+        assert "not compile" not in src.replace(
+            '_compile_failure_reason', ''), (
+            f'{fn.__name__} has a compile branch bypassing attribution')
+        assert '_compile_failure_reason(' in src

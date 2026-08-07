@@ -272,6 +272,20 @@ def _jvm_failure_reason(what, out, rc):
             f'nothing -- DISCARDED')
 
 
+def _compile_failure_reason(what, build_result):
+    """A discard reason carrying JAVAC's own words (roll 9: `driver did not
+    compile` with no stderr made the cause a guess where a read should be
+    -- the same attribution gap roll 6 closed for the RUN phase, still open
+    on the COMPILE phase). Head, not tail: javac leads with the file, line
+    and error; the tail is the `N errors` summary."""
+    err = getattr(build_result, 'stderr', '') or ''
+    head = [l.strip() for l in err.splitlines() if l.strip()][:6]
+    if head:
+        return (f'{what} did not compile — DISCARDED. javac: '
+                + ' | '.join(head)[:600])
+    return f'{what} did not compile — DISCARDED (javac printed nothing)'
+
+
 def run_reference(builder,
                   buggy_dir: str,
                   reference_source: str,
@@ -290,14 +304,14 @@ def run_reference(builder,
     except Exception as e:                       # pragma: no cover - defensive
         return None, f'reference compile raised: {type(e).__name__}: {e}'
     if not getattr(ref, 'compiled', False):
-        return None, 'reference did not compile — DISCARDED'
+        return None, _compile_failure_reason('reference', ref)
     try:
         drv = builder.build(driver_source, buggy_dir,
                             output_subdir=work_subdir)
     except Exception as e:                       # pragma: no cover - defensive
         return None, f'driver compile raised: {type(e).__name__}: {e}'
     if not getattr(drv, 'compiled', False):
-        return None, 'driver did not compile — DISCARDED'
+        return None, _compile_failure_reason('driver', drv)
     cp = _runtime_classpath(drv, buggy_dir)
     cls = getattr(drv, 'class_name', 'ReferenceDriver')
     cwd = os.path.dirname(getattr(drv, 'harness_path', '') or '') or buggy_dir
@@ -938,11 +952,27 @@ def java_literal(typ: str, printed: str) -> Optional[str]:
     if not p or p == 'ABSENT' or p.startswith('EX:') or p == 'null':
         return None
     base = typ.replace('[]', '').strip()
-    if typ.endswith('[]'):
+    dims = typ.count('[]')
+    if dims:
         if not (p.startswith('[') and p.endswith(']')):
             return None
-        inner = p[1:-1].strip()
-        return f'new {base}[]{{{inner}}}' if inner else f'new {base}[0]'
+        if dims == 1:
+            inner = p[1:-1].strip()
+            return f'new {base}[]{{{inner}}}' if inner else f'new {base}[0]'
+        # MULTI-DIMENSIONAL (roll 9's killer): deepToString prints nested
+        # BRACKETS, Java needs nested BRACES and the full dimensionality on
+        # the `new`. The old path stripped every `[]` from the type and
+        # passed the inner text through, emitting `new double[]{[...], ...}`
+        # -- non-None, so the chain proceeded, and javac refused the driver
+        # with the reason discarded. Numeric/boolean element text never
+        # contains a bracket, so the global replace is exact; element types
+        # whose printed form could (String, Object) fail closed instead.
+        if base not in ('double', 'float', 'int', 'long', 'boolean'):
+            return None
+        if p[1:-1].strip() == '':
+            return f'new {base}[0]' + '[]' * (dims - 1)
+        return (f'new {base}' + '[]' * dims
+                + p.replace('[', '{').replace(']', '}'))
     if base == 'String':
         return _java_string(p)
     if base in ('double', 'float', 'int', 'long', 'boolean'):
@@ -982,7 +1012,7 @@ def run_twin(builder, project_dir: str, twin_source: str,
     except Exception as e:                       # pragma: no cover - defensive
         return None, f'twin compile raised: {type(e).__name__}: {e}'
     if not getattr(drv, 'compiled', False):
-        return None, 'twin did not compile — DISCARDED'
+        return None, _compile_failure_reason('twin', drv)
     cp = _runtime_classpath(drv, project_dir)
     cls = getattr(drv, 'class_name', 'StateTwinDriver')
     cwd = os.path.dirname(getattr(drv, 'harness_path', '') or '') or project_dir
