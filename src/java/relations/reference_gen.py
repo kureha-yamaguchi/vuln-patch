@@ -36,6 +36,8 @@ the kind of guidance P4.2 showed models ignore.
 import re
 from typing import Dict, List, Optional, Sequence
 
+from java.relations.reference_impl import MIN_SCREENED_OBSERVABLES
+
 #: Shapes that betray a method BODY rather than a signature or a doc comment.
 #: A skeleton line ends in `;` or `{ }`; a body has statements in it.
 _BODY_MARKERS = (
@@ -131,7 +133,8 @@ def build_reference_prompt(method: str,
                            failing_test: str,
                            other_tests: Sequence[str] = (),
                            shown_examples: Optional[Dict[str, str]] = None,
-                           package: Optional[str] = None) -> List[Dict[str, str]]:
+                           package: Optional[str] = None,
+                           siblings: Sequence[str] = ()) -> List[Dict[str, str]]:
     """Chat messages that ask for an independent reference implementation.
 
     Raises ImplementationLeak if any non-test section carries a method body.
@@ -196,6 +199,28 @@ def build_reference_prompt(method: str,
         "They are how this reference earns its standing: the named method is "
         "where the disagreement under review lives, so it cannot also be the "
         "evidence that the reference is trustworthy. The siblings are.",
+    ]
+    if siblings:
+        # Naming the siblings is spec-side information — their signatures are
+        # in the skeleton already; what was missing was WHICH ones count.
+        # Rolls 6, 7 and 8 each wrote {chiSquare, RMS(, cost)}: one countable
+        # sibling against a bar of three, so every mechanically perfect roll
+        # would still have been discarded at the screen. The bar and the
+        # counter caveat cannot be gamed: the sibling VALUES are printed
+        # nowhere, so only computing them correctly passes.
+        parts += [
+            "",
+            "The siblings that count are exactly: "
+            + ", ".join(f"`{s}`" for s in siblings)
+            + f". At least {MIN_SCREENED_OBSERVABLES} of them must be "
+            "implemented and agree with the class's real behaviour for this "
+            "reference to be admitted, so implement every one whose value "
+            "the documentation lets you derive from the declared state. A "
+            "counter of internal bookkeeping (how many times something was "
+            "evaluated or iterated) is not derivable from state — skip "
+            "those rather than invent them.",
+        ]
+    parts += [
         "",
         "First line of your reply must be a comment listing what you wrote, "
         "exactly: `// compute(<shared parameter types>) : <name1>, <name2>, "

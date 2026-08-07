@@ -381,6 +381,56 @@ def parse_parameters(sig: str) -> List[Tuple[str, str]]:
     return out
 
 
+def merge_declared_parameter_names(reference_source: str, sig: str,
+                                   canonical=None) -> str:
+    """Fill UNNAMED comment-line parameters with the names the class's own
+    `compute_*` declarations carry -- when every declaration agrees.
+
+    Roll 8 pre-walk: the comment line declared bare types (`double[],
+    double[]`) while the method declarations right below named both
+    parameters (`double[] residualsWeights, double[] residuals`) -- in the
+    OPPOSITE order from the buggy body's read order, so positional mapping
+    would have fed the reference swapped arrays: same type, same length,
+    compiles, runs, computes garbage, and the screen's discard would then
+    read as "a doc-derived reference cannot reproduce the buggy build". A
+    name in the model's own declaration is evidence; a positional guess is
+    the fallback, never the preference.
+
+    Conservative on every mismatch: names are merged only when all
+    `compute_*` declarations share ONE parameter list whose types match the
+    comment line position for position, only into positions the comment
+    left unnamed, and (when `canonical` is given) only when EVERY declared
+    name resolves to a canonical state field. A model that names its
+    parameters `r, w` has named nothing a field answers to; adopting those
+    would turn a read-order-mappable signature into a discard, so the merge
+    declines and leaves the positional fallback in play. Anything else
+    returns `sig` unchanged.
+    """
+    if not reference_source or not sig:
+        return sig
+    decls = re.findall(r'\bstatic\s+[\w\[\]<>.]+\s+compute_\w+\s*\(([^)]*)\)',
+                       reference_source)
+    if not decls:
+        return sig
+    parsed = [parse_parameters(re.sub(r'\bfinal\s+', '', d)) for d in decls]
+    first = parsed[0]
+    if any(p != first for p in parsed[1:]):
+        return sig
+    comment = parse_parameters(sig)
+    if len(comment) != len(first) or any(not n for _t, n in first):
+        return sig
+    if canonical is not None:
+        fields = {n.lower() for _t, n in canonical}
+        if any(n.lower() not in fields for _t, n in first):
+            return sig
+    merged = []
+    for (ctyp, cname), (dtyp, dname) in zip(comment, first):
+        if ctyp != dtyp:
+            return sig
+        merged.append((ctyp, cname or dname))
+    return ', '.join(f'{t} {n}' for t, n in merged)
+
+
 def canonical_state(class_context: str) -> List[Tuple[str, str]]:
     """The class's declared FIELDS -- the canonical state vocabulary.
 

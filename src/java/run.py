@@ -101,7 +101,7 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     from llm import record_event as _re, HarnessGenerator as _HG
     from java.relations.reference_impl import (
         disputed_observables, pin_check, reference_comparison_fact,
-        screen_reference)
+        screen_reference, too_thin_to_screen)
     from java.relations.reference_gen import (
         ImplementationLeak, build_reference_prompt, sibling_observables,
         strip_bodies)
@@ -109,7 +109,7 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         build_reference_call_driver, build_state_twin_driver, canonical_state,
         declared_observable_names, declared_signature, extract_test_dependencies,
         extract_test_setup, fields_read_by, java_literal, match_parameters,
-        parse_parameters,
+        merge_declared_parameter_names, parse_parameters,
         match_observable_names, plausible_class_names, run_reference,
         run_twin, test_package, types_declaring)
 
@@ -143,6 +143,32 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         output='disputed observable detected',
         detail={'candidates': disputed[:4]})
 
+    # The screening surface is resolved BEFORE the generation (roll 8
+    # pre-walk): a broken declaring-type parse should cost zero model calls,
+    # and the prompt must NAME the siblings — rolls 6/7/8 all declared one
+    # countable sibling against a bar of three, so every mechanically
+    # perfect roll would still have discarded at the screen. Siblings are
+    # scoped to the RECEIVER's own type, or the twin calls a collaborator's
+    # method on the optimizer and cannot compile (VM re-walk #4:
+    # getPoint/getPointRef/getArgument).
+    declaring = types_declaring(ctx, method)
+    if declaring and not plausible_class_names(declaring):
+        _re('deterministic', method='reference-impl', target=method,
+            output='declaring-type PARSE BROKEN — DISCARDED',
+            reason=f'parsed type names are not plausible Java classes: '
+                   f'{sorted(declaring)[:6]} — this is an extractor failure, '
+                   f'not a property of this leg',
+            detail={'parsed': sorted(declaring)[:6]})
+        return None
+    siblings = sibling_observables(ctx, method, declaring_types=declaring)
+    _re('deterministic', method='reference-impl', target=method,
+        output='screening surface resolved',
+        reason=f'{len(siblings)} computed sibling observable(s) on the '
+               f'receiver\'s own type (stored settings excluded — they '
+               f'agree for free)',
+        detail={'siblings': siblings[:8],
+                'declaring_types': sorted(declaring)[:4]})
+
     try:
         skeleton = strip_bodies(ctx)
         # Javadoc arrives with its /** */ delimiters ALREADY stripped
@@ -155,7 +181,7 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
                   if _docish.search(c)][:4],
             failing_test='\n\n'.join(
                 (getattr(ft, 'method_source', '') or '') for ft in failure_tests),
-            other_tests=[], shown_examples=None)
+            other_tests=[], shown_examples=None, siblings=siblings)
     except ImplementationLeak as e:
         _re('deterministic', method='reference-impl', target=method,
             output='REFUSED: implementation leak', reason=str(e)[:300])
@@ -189,6 +215,22 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         return None
     _re('deterministic', method='reference-impl', target=method,
         output='signature declared', detail={'signature': sig})
+    # PARAMETER NAMES FROM THE DECLARATIONS (roll 8 pre-walk). Roll 8's
+    # comment line was bare types while its own `compute_*` declarations
+    # named both parameters — in the OPPOSITE order from the buggy body's
+    # read order, so the positional fallback would have fed the reference
+    # swapped arrays: same type, same length, runs cleanly, computes
+    # garbage. A name in the model's own declaration is evidence; the
+    # read-order guess is for references that name nothing anywhere.
+    _canon = canonical_state(ctx)
+    _named = merge_declared_parameter_names(src, sig, _canon)
+    if _named != sig:
+        _re('deterministic', method='reference-impl', target=method,
+            output='parameter names recovered from the declarations',
+            reason='the `// compute(...)` line is bare types; every '
+                   'compute_* declaration agrees on one named list',
+            detail={'declared': sig, 'named': _named})
+        sig = _named
     ref_names = declared_observable_names(src)
     # NAME NORMALIZATION (VM re-walk #6). The model wrote `compute_chiSquare`
     # where the chain wanted `compute_getChiSquare` and the reference was
@@ -197,26 +239,6 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     # (_methods_named_by, since P0); the reference matcher now does too, and
     # the driver calls what the model DECLARED while keying by the canonical
     # name. Mechanism, not an instruction: the prompt already asked.
-    # Declaring types first: siblings must be scoped to the RECEIVER's own
-    # type, or the twin calls a collaborator's method on the optimizer and
-    # cannot compile (VM re-walk #4: getPoint/getPointRef/getArgument).
-    declaring = types_declaring(ctx, method)
-    if declaring and not plausible_class_names(declaring):
-        _re('deterministic', method='reference-impl', target=method,
-            output='declaring-type PARSE BROKEN — DISCARDED',
-            reason=f'parsed type names are not plausible Java classes: '
-                   f'{sorted(declaring)[:6]} — this is an extractor failure, '
-                   f'not a property of this leg',
-            detail={'parsed': sorted(declaring)[:6]})
-        return None
-    siblings = sibling_observables(ctx, method, declaring_types=declaring)
-    _re('deterministic', method='reference-impl', target=method,
-        output='screening surface resolved',
-        reason=f'{len(siblings)} computed sibling observable(s) on the '
-               f'receiver\'s own type (stored settings excluded — they '
-               f'agree for free)',
-        detail={'siblings': siblings[:8],
-                'declaring_types': sorted(declaring)[:4]})
     matched = match_observable_names(ref_names, [method] + siblings)
     if method not in matched:
         _re('deterministic', method='reference-impl', target=method,
@@ -230,10 +252,19 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         detail={'matched': {k: v for k, v in list(matched.items())[:6]},
                 'declared_only': [n for n in ref_names
                                   if n not in matched.values()][:4]})
+    # THE SCREEN'S COUNT BAR, DECIDED HERE (roll 8 pre-walk): the shared
+    # siblings are known the moment the observables are matched, and the
+    # run can only shrink that set. The late path bought the twin build and
+    # two JVM runs before `screen_reference` said "1 shared; 3 required".
+    thin, thin_why = too_thin_to_screen(matched, siblings)
+    _re('deterministic', method='reference-impl', target=method,
+        output=('reference too thin to screen — DISCARDED' if thin else
+                'screen bar reachable'), reason=thin_why)
+    if thin:
+        return None
 
     # Signature -> canonical state fields, nominally. Unmappable = discard,
     # never a guessed call (roll 4: five attempts, five different signatures).
-    _canon = canonical_state(ctx)
     mapping, map_why = match_parameters(parse_parameters(sig), _canon,
                                         fields_read_by(ctx, method, _canon))
     _re('deterministic', method='reference-impl', target=method,

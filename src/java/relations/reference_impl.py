@@ -79,6 +79,30 @@ WEAK_KINDS = ('value_ulp', 'exception_generic_latent')
 MIN_SCREENED_OBSERVABLES = 3
 
 
+def too_thin_to_screen(matched_keys, siblings):
+    """`(too_thin, why)` — the screen's count bar, decided at the MATCH step.
+
+    The bar is knowable the moment the declared observables are matched: the
+    shared siblings are exactly the off-defect keys the screen will count
+    (the run can only shrink that set, never grow it). The late path paid
+    for the twin build and two JVM runs before `screen_reference` said
+    "only 1 shared; 3 required" — rolls 6, 7 and 8 all declared exactly one
+    countable sibling, so every one of them would have bought those runs
+    just to be discarded. Same decision, same fail-closed sign, none of the
+    cost. `screen_reference` keeps its own count check: this is an early
+    exit, not a replacement.
+    """
+    shared = [s for s in (siblings or []) if s in (matched_keys or ())]
+    if len(shared) < MIN_SCREENED_OBSERVABLES:
+        return True, (
+            f'{len(shared)} shared sibling observable(s) {shared[:6]}; '
+            f'{MIN_SCREENED_OBSERVABLES} required before agreement means '
+            f'anything — the screen would discard this reference after the '
+            f'twin build and two JVM runs, so it is discarded now instead')
+    return False, (f'{len(shared)} shared sibling observable(s) — enough for '
+                   f'the screen to decide')
+
+
 def disputed_observables(fired_msg: str, code_context: str) -> List[str]:
     """Methods the firing names whose real body is shown — the trigger.
 

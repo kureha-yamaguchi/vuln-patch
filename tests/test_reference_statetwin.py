@@ -147,7 +147,8 @@ def _mk_failure_test():
     return ft
 
 
-def _run_chain(monkeypatch, twin_outputs, ref_output, generated=REFERENCE_REPLY):
+def _run_chain(monkeypatch, twin_outputs, ref_output, generated=REFERENCE_REPLY,
+               ctx=None):
     """Drive run._reference_impl_fact with stubbed generator and JVM."""
     from java import run as runmod
     events = []
@@ -181,7 +182,7 @@ def _run_chain(monkeypatch, twin_outputs, ref_output, generated=REFERENCE_REPLY)
     fact = runmod._reference_impl_fact(
         args=types.SimpleNamespace(model='m', reference_impl=True),
         fired='[oracle:x] semantic mismatch: getChiSquare expected=3.25 '
-              'actual=9.99', class_ctx=[CTX],
+              'actual=9.99', class_ctx=[ctx if ctx is not None else CTX],
         failure_tests=[_mk_failure_test()], builder=object(),
         buggy_dir='/buggy', patch_path='/p.patch',
         trusted_values=['3.25'], package=None, imports=None)
@@ -881,3 +882,216 @@ def test_chain_calls_the_reference_impl_helpers_it_imports():
                 block.split('import', 1)[1].replace('(', '').split(',')]
     unused = [n for n in imported if n and f'{n}(' not in src]
     assert not unused, f'imported into the chain but never called: {unused}'
+
+
+# ---------------------------------------------------------------------------
+# Roll 8 pre-walk (2026-08-07): three seams found by replaying roll 8's
+# RECORDED reference through the code roll 9 would run -- before spending the
+# roll. (1) The comment line was bare types but the model's own declarations
+# named both parameters, in the OPPOSITE order from the buggy body's read
+# order: positional mapping would have fed the reference swapped arrays --
+# same type, same length, runs cleanly, computes garbage, and the screen's
+# discard would then read as "a doc-derived reference cannot reproduce the
+# buggy build". (2) Rolls 6/7/8 all declared ONE countable sibling against a
+# screen bar of three, because the prompt never named the siblings that
+# count. (3) The bar was enforced only inside screen_reference, after the
+# twin build and two JVM runs, though it is knowable at the match step.
+# ---------------------------------------------------------------------------
+
+ROLL8_REFERENCE = '''// compute(double[], double[]) : getRMS, getChiSquare
+public class ReferenceImpl {
+
+    public static double compute_getRMS(double[] residualsWeights, double[] residuals) {
+        double chiSquare = compute_getChiSquare(residualsWeights, residuals);
+        return Math.sqrt(chiSquare / residuals.length);
+    }
+
+    public static double compute_getChiSquare(double[] residualsWeights, double[] residuals) {
+        double chiSquare = 0.0;
+        for (int i = 0; i < residuals.length; ++i) {
+            final double r = residuals[i];
+            chiSquare += residualsWeights[i] * r * r;
+        }
+        return chiSquare;
+    }
+}'''
+
+
+def test_roll8_reference_maps_by_declaration_names_not_read_order():
+    # The verbatim roll-8 material end to end: merge, then map. The
+    # declaration order (residualsWeights, residuals) must win over the
+    # read order (residuals, residualsWeights) -- the swap IS the bug.
+    sig = rr.declared_signature(ROLL8_REFERENCE)
+    assert sig == 'double[], double[]'
+    canon = rr.canonical_state(M65_CTX_BODY)
+    merged = rr.merge_declared_parameter_names(ROLL8_REFERENCE, sig, canon)
+    assert merged == 'double[] residualsWeights, double[] residuals'
+    reads = rr.fields_read_by(M65_CTX_BODY, 'getChiSquare', canon)
+    names, why = rr.match_parameters(
+        rr.parse_parameters(merged), canon, reads)
+    assert names == ['residualsWeights', 'residuals'], why
+    assert names != ['residuals', 'residualsWeights']
+
+
+def test_merge_declines_when_declarations_disagree():
+    src = ('// compute(double[], double[]) : a, b\n'
+           'class ReferenceImpl {\n'
+           '  public static double compute_a(double[] x, double[] y) '
+           '{ return 0; }\n'
+           '  public static double compute_b(double[] y, double[] x) '
+           '{ return 0; }\n}')
+    assert rr.merge_declared_parameter_names(src, 'double[], double[]') == \
+        'double[], double[]'
+
+
+def test_merge_never_overwrites_comment_line_names():
+    merged = rr.merge_declared_parameter_names(
+        ROLL8_REFERENCE, 'double[] weights, double[] residuals')
+    assert merged == 'double[] weights, double[] residuals'
+
+
+def test_merge_declines_on_arity_or_type_mismatch():
+    # Comment says two params, declarations carry two but a different type.
+    src = ('// compute(double[], double) : a\n'
+           'class ReferenceImpl {\n'
+           '  public static double compute_a(double[] x, double[] y) '
+           '{ return 0; }\n}')
+    assert rr.merge_declared_parameter_names(src, 'double[], double') == \
+        'double[], double'
+    assert rr.merge_declared_parameter_names(src, 'double[]') == 'double[]'
+
+
+def test_merge_declines_names_that_answer_to_no_field():
+    # A model that names its parameters `r, w` has named nothing a field
+    # answers to. Adopting those would turn a read-order-mappable
+    # signature into a discard, so the merge declines and the positional
+    # fallback stays in play.
+    src = ('// compute(double[], double[]) : a\n'
+           'class ReferenceImpl {\n'
+           '  public static double compute_a(double[] r, double[] w) '
+           '{ return 0; }\n}')
+    canon = rr.canonical_state(M65_CTX_BODY)
+    assert rr.merge_declared_parameter_names(
+        src, 'double[], double[]', canon) == 'double[], double[]'
+    # Without canonical evidence available the merge stays permissive —
+    # a name is still better than a bare type when nothing contradicts it.
+    assert 'double[] r, double[] w' == rr.merge_declared_parameter_names(
+        src, 'double[], double[]')
+
+
+def test_merge_strips_final_modifier_from_declarations():
+    src = ('// compute(double[], int) : a\n'
+           'class ReferenceImpl {\n'
+           '  public static double compute_a(final double[] residuals, '
+           'final int rows) { return 0; }\n}')
+    assert rr.merge_declared_parameter_names(src, 'double[], int') == \
+        'double[] residuals, int rows'
+
+
+def test_prompt_names_the_siblings_and_the_bar():
+    from java.relations.reference_impl import MIN_SCREENED_OBSERVABLES
+    sibs = ['getCovariances', 'getRMS', 'guessParametersErrors']
+    msgs = rg.build_reference_prompt(
+        method='getChiSquare', skeleton='class A { /* body withheld */ }',
+        docs=[], failing_test='', siblings=sibs)
+    user = msgs[1]['content']
+    for s in sibs:
+        assert f'`{s}`' in user
+    assert f'At least {MIN_SCREENED_OBSERVABLES} of them' in user
+    # Counters are named as underivable-from-state, so the model skips
+    # rather than fakes them.
+    assert 'bookkeeping' in user
+
+
+def test_prompt_without_siblings_omits_the_section():
+    msgs = rg.build_reference_prompt(
+        method='getChiSquare', skeleton='class A { /* body withheld */ }',
+        docs=[], failing_test='')
+    assert 'siblings that count' not in msgs[1]['content']
+
+
+def test_too_thin_is_decided_at_the_match_step():
+    from java.relations.reference_impl import too_thin_to_screen
+    sibs = ['getRMS', 'getCovariances', 'getEvaluations', 'getIterations']
+    # Roll 8's real shape: disputed + one sibling matched.
+    thin, why = too_thin_to_screen(
+        {'getChiSquare': 'getChiSquare', 'getRMS': 'getRMS'}, sibs)
+    assert thin and 'JVM runs' in why
+    thin, why = too_thin_to_screen(
+        {'getChiSquare': 'x', 'getRMS': 'x', 'getCovariances': 'x',
+         'getEvaluations': 'x'}, sibs)
+    assert not thin, why
+
+
+def test_chain_resolves_siblings_before_generating():
+    # Seam: the prompt can only NAME the siblings if the surface is
+    # resolved before the generation -- and a broken declaring-type parse
+    # must cost zero model calls.
+    src = _chain_source()
+    assert src.index('sibling_observables(') < src.index(
+        'build_reference_prompt(')
+    call = src[src.index('build_reference_prompt('):]
+    call = call[:call.index('except')]
+    assert 'siblings=siblings' in call, (
+        'the prompt is built without the sibling list: ' + call[:200])
+
+
+def test_chain_merges_declaration_names_before_mapping():
+    # Seam: merging after the mapper would be the roll-8 shape again --
+    # a helper that exists but cannot affect the decision.
+    src = _chain_source()
+    assert src.index('merge_declared_parameter_names(') < src.index(
+        'match_parameters(')
+
+
+def test_chain_decides_the_thin_bar_before_the_twin_runs():
+    src = _chain_source()
+    assert src.index('too_thin_to_screen(') < src.index('run_twin(')
+
+
+M65_SURFACE_CTX = '''<class name="AbstractLeastSquaresOptimizer" role="patched">
+     * Get a Chi-Square-like value assuming the N residuals follow N
+     * distinct normal distributions centered on 0 and whose variances are
+     * the reciprocal of the weights. @return chi-square value
+public abstract class AbstractLeastSquaresOptimizer {
+    protected double[] residuals;
+    protected double[] residualsWeights;
+    protected double cost;
+    protected int rows;
+    protected int cols;
+    public double getChiSquare() {
+        double chiSquare = 0;
+        for (int i = 0; i < rows; ++i) {
+            final double residual = residuals[i];
+            chiSquare += residual * residual / residualsWeights[i];
+        }
+        return chiSquare;
+    }
+    public double getRMS() { }
+    public double[][] getCovariances() { }
+    public double[] guessParametersErrors() { }
+    public int getEvaluations() { }
+    public int getIterations() { }
+    public int getJacobianEvaluations() { }
+}
+</class>'''
+
+
+def test_roll8_reference_through_the_chain_discards_thin_before_any_jvm(
+        monkeypatch):
+    # The whole roll-9-if-nothing-changed scenario, on the production
+    # function: roll 8's verbatim reply against a real-shaped M65 surface.
+    # The chain must (a) recover the declaration names — the swap is the
+    # bug — and (b) discard at the thin bar BEFORE building or running any
+    # twin, with the count in the reason.
+    fact, events, calls = _run_chain(
+        monkeypatch, [], None, generated=ROLL8_REFERENCE,
+        ctx=M65_SURFACE_CTX)
+    assert fact is None
+    outs = [(o or '') for o, _ in events]
+    assert any('parameter names recovered' in o for o in outs)
+    assert any('too thin to screen' in o for o in outs)
+    assert calls['twin_dirs'] == []          # decided before any JVM run
+    thin_reason = next(r for o, r in events
+                       if o and 'too thin' in o)
+    assert '1 shared sibling' in thin_reason
