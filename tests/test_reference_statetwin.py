@@ -542,3 +542,74 @@ def test_stored_settings_are_excluded_not_just_sorted_last():
     decl = rr.types_declaring(ctx, 'getChiSquare')
     sibs = rg.sibling_observables(ctx, 'getChiSquare', declaring_types=decl)
     assert sibs == ['getRMS'], sibs      # free passes gone
+
+
+# ---------------------------------------------------------------------------
+# VM re-walk #5 (2026-08-07): array observables must print by VALUE, and
+# BOTH sides must format identically. Real symptom: getCovariances printed
+# `[D@19469ea2` -- a per-invocation identity hash, so equal arrays always
+# "disagreed", and 2 of Math-65's 6 siblings are arrays.
+# ---------------------------------------------------------------------------
+
+ALL_EMITTERS = ('twin', 'reference', 'buggy_twin')
+
+
+def _emit(kind):
+    if kind == 'twin':
+        return rr.build_state_twin_driver('X o = new X();', 'o',
+                                          ['getCovariances'], ['residuals'])
+    if kind == 'reference':
+        return rr.build_driver('R', ['getCovariances'], ['a'])
+    return rr.build_buggy_twin_driver('C', 'new C()', ['getCovariances'],
+                                      ['a'])
+
+
+@pytest.mark.parametrize('kind', ALL_EMITTERS)
+def test_every_emitter_carries_the_shared_formatter(kind):
+    src = _emit(kind)
+    assert 'static String vpFmt' in src, kind
+
+
+@pytest.mark.parametrize('kind', ALL_EMITTERS)
+def test_no_observable_is_printed_with_raw_valueOf(kind):
+    src = _emit(kind)
+    # OBSERVABLE prints only: the `__state`/`__construct` echoes are
+    # bookkeeping literals, not values under comparison.
+    reads = [l for l in src.splitlines()
+             if 'System.out.println' in l and '=" +' in l
+             and '__state' not in l and '__construct' not in l]
+    assert reads, kind
+    for line in reads:
+        assert 'String.valueOf(' not in line, (kind, line)
+        assert 'vpFmt(' in line, (kind, line)
+
+
+@pytest.mark.parametrize('kind', ALL_EMITTERS)
+def test_formatter_is_identical_across_emitters(kind):
+    # Identical formatting on BOTH sides is the whole point: a difference
+    # here manufactures disagreement out of representation.
+    a = rr._FMT_HELPER
+    assert a in _emit(kind)
+
+
+def test_formatter_covers_every_array_arity_and_nesting():
+    h = rr._FMT_HELPER
+    for t in ('double[]', 'int[]', 'long[]', 'float[]', 'boolean[]',
+              'byte[]', 'short[]', 'char[]'):
+        assert f'instanceof {t}' in h, t
+    # double[][] is an Object[] -> deepToString, which prints nested values.
+    assert 'instanceof Object[]' in h and 'deepToString' in h
+    # The Object[] branch must come AFTER the primitive-array branches,
+    # or a double[] would match Object[]... (it does not, but order still
+    # matters for nested primitive arrays).
+    assert h.index('instanceof double[]') < h.index('instanceof Object[]')
+
+
+def test_reflection_and_observable_paths_share_one_formatter():
+    # printField and the observable reads must not format differently:
+    # __param_* feeds the reference's INPUTS, the reads feed the COMPARISON.
+    src = rr.build_state_twin_driver('X o = new X();', 'o', ['getCov'],
+                                     ['residuals'])
+    assert 'vpFmt(v)' in src            # printField path
+    assert 'vpFmt(r0)' in src           # observable path
+    assert src.count('static String vpFmt') == 1

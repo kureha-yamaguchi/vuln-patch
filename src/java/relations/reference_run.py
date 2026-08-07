@@ -29,6 +29,29 @@ def _java_string(expr: str) -> str:
     return '"' + expr.replace(chr(92), chr(92)*2).replace('"', chr(92)+'"') + '"'
 
 
+#: The ONE value formatter, injected into every emitted driver. Both sides of
+#: every comparison must format identically or the comparison is meaningless:
+#: VM re-walk #5 found `String.valueOf(double[])` printing `[D@19469ea2`, a
+#: JVM-invocation-specific identity hash, so two arrays that ARE equal always
+#: differed -- a spurious disagreement wearing the costume of a real one, and
+#: two of Math-65's six siblings are arrays. Arrays print by VALUE, nested
+#: arrays deeply, everything else via String.valueOf.
+_FMT_HELPER = """
+  static String vpFmt(Object v) {
+    if (v == null) return "null";
+    if (v instanceof double[]) return java.util.Arrays.toString((double[]) v);
+    if (v instanceof int[]) return java.util.Arrays.toString((int[]) v);
+    if (v instanceof long[]) return java.util.Arrays.toString((long[]) v);
+    if (v instanceof float[]) return java.util.Arrays.toString((float[]) v);
+    if (v instanceof boolean[]) return java.util.Arrays.toString((boolean[]) v);
+    if (v instanceof byte[]) return java.util.Arrays.toString((byte[]) v);
+    if (v instanceof short[]) return java.util.Arrays.toString((short[]) v);
+    if (v instanceof char[]) return java.util.Arrays.toString((char[]) v);
+    if (v instanceof Object[]) return java.util.Arrays.deepToString((Object[]) v);
+    return String.valueOf(v);
+  }
+"""
+
 #: The driver prints one `key=value` per observable, then this marker. Its
 #: absence means the run did not complete, however the process exited.
 END_MARKER = '[[reference-run-complete]]'
@@ -82,12 +105,13 @@ def build_driver(reference_class: str,
             calls.append(
                 '    try {\n'
                 f'      Object r{_k} = {reference_class}.{fn}({vec});\n'
-                f'      System.out.println("{obs}=" + String.valueOf(r{_k}));\n'
+                f'      System.out.println("{obs}=" + vpFmt(r{_k}));\n'
                 '    } catch (Throwable t) {\n'
                 f'      System.out.println("{obs}=EX:" '
                 '+ t.getClass().getSimpleName());\n'
                 '    }')
     return (pkg + 'public class ReferenceDriver {\n'
+            + _FMT_HELPER +
             '  public static void main(String[] args) {\n'
             + '\n'.join(calls) + '\n'
             f'    System.out.println("{END_MARKER}");\n'
@@ -125,7 +149,7 @@ def build_buggy_twin_driver(fq_class: str,
         reads = '\n'.join(
             '      try {\n'
             f'        Object r{_i} = o.{obs}();\n'
-            f'        System.out.println("{obs}=" + String.valueOf(r{_i}));\n'
+            f'        System.out.println("{obs}=" + vpFmt(r{_i}));\n'
             '      } catch (Throwable t) {\n'
             f'        System.out.println("{obs}=EX:" '
             '+ t.getClass().getSimpleName());\n'
@@ -142,6 +166,7 @@ def build_buggy_twin_driver(fq_class: str,
             '+ t.getClass().getSimpleName());\n'
             '    }')
     return (pkg + 'public class BuggyTwinDriver {\n'
+            + _FMT_HELPER +
             '  public static void main(String[] args) {\n'
             + '\n'.join(blocks) + '\n'
             f'    System.out.println("{END_MARKER}");\n'
@@ -640,12 +665,7 @@ _REFLECT_HELPER = '''
       if (f == null) { System.out.println("__param_" + name + "=ABSENT"); return; }
       f.setAccessible(true);
       Object v = f.get(o);
-      String s;
-      if (v instanceof double[]) s = java.util.Arrays.toString((double[]) v);
-      else if (v instanceof int[]) s = java.util.Arrays.toString((int[]) v);
-      else if (v instanceof Object[]) s = java.util.Arrays.deepToString((Object[]) v);
-      else s = String.valueOf(v);
-      System.out.println("__param_" + name + "=" + s);
+      System.out.println("__param_" + name + "=" + vpFmt(v));
     } catch (Throwable t) {
       System.out.println("__param_" + name + "=EX:" + t.getClass().getSimpleName());
     }
@@ -681,7 +701,7 @@ def build_state_twin_driver(setup_code: str,
     reads = '\n'.join(
         '      try {\n'
         f'        Object r{_i} = {receiver}.{obs}();\n'
-        f'        System.out.println("{obs}=" + String.valueOf(r{_i}));\n'
+        f'        System.out.println("{obs}=" + vpFmt(r{_i}));\n'
         '      } catch (Throwable t) {\n'
         f'        System.out.println("{obs}=EX:" '
         '+ t.getClass().getSimpleName());\n'
@@ -690,7 +710,7 @@ def build_state_twin_driver(setup_code: str,
     params = '\n'.join(
         f'      printField({receiver}, "{name}");' for name in param_fields)
     out = (pkg + imp + 'public class StateTwinDriver {\n'
-            + _REFLECT_HELPER +
+            + _FMT_HELPER + _REFLECT_HELPER +
             '  public static void main(String[] args) throws Exception {\n'
             '    try {\n'
             + '\n'.join('      ' + l for l in setup_code.splitlines()) + '\n'
