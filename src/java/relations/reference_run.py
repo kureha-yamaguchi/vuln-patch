@@ -70,6 +70,44 @@ def declared_signature(reference_source: str) -> Optional[str]:
     return m.group(1).strip() if m else None
 
 
+def observable_key(name):
+    """Canonical key for an observable name: accessor prefix stripped,
+    lowercased.
+
+    Reuses the codebase's existing convention -- `_methods_named_by` has
+    matched `chiSquare` to `getChiSquare` since P0. VM re-walk #6: the model
+    wrote `compute_chiSquare` where the chain looked for
+    `compute_getChiSquare`, and the reference was discarded on SPELLING
+    while having implemented the observable correctly. `guessParametersErrors`
+    matched only because it has no prefix to drop.
+    """
+    low = str(name or '').lower()
+    for pre in ('get', 'is', 'has', 'compute', 'calculate'):
+        if low.startswith(pre) and len(low) > len(pre) + 2:
+            return low[len(pre):]
+    return low
+
+
+def match_observable_names(declared, wanted):
+    """`{wanted_name: declared_name}` for every canonical match.
+
+    Matching is NORMALIZED both ways (mechanism, not instruction: the prompt
+    already asks for `compute_<observable>` and the model deviated anyway).
+    The value is what the model ACTUALLY declared, because the driver must
+    call that -- the canonical name is only the key the comparison is keyed
+    by, and after this the two can legitimately differ.
+    """
+    by_key = {}
+    for d in (declared or []):
+        by_key.setdefault(observable_key(d), d)
+    out = {}
+    for w in (wanted or []):
+        d = by_key.get(observable_key(w))
+        if d is not None:
+            out[w] = d
+    return out
+
+
 def build_driver(reference_class: str,
                  observables: List[str],
                  vectors: List[str],
@@ -99,15 +137,20 @@ def build_driver(reference_class: str,
     calls = []
     _k = 0
     for obs in observables:
+        # A pair is (output KEY, declared method suffix): the model may
+        # spell an observable differently from the class (chiSquare vs
+        # getChiSquare), so we CALL what it declared and KEY by the
+        # canonical name the comparison uses.
+        key, suffix = obs if isinstance(obs, (tuple, list)) else (obs, obs)
         for j, vec in enumerate(vectors):
-            fn = call.format(obs=obs)
+            fn = call.format(obs=suffix)
             _k += 1
             calls.append(
                 '    try {\n'
                 f'      Object r{_k} = {reference_class}.{fn}({vec});\n'
-                f'      System.out.println("{obs}=" + vpFmt(r{_k}));\n'
+                f'      System.out.println("{key}=" + vpFmt(r{_k}));\n'
                 '    } catch (Throwable t) {\n'
-                f'      System.out.println("{obs}=EX:" '
+                f'      System.out.println("{key}=EX:" '
                 '+ t.getClass().getSimpleName());\n'
                 '    }')
     return (pkg + 'public class ReferenceDriver {\n'

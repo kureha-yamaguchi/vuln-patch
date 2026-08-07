@@ -613,3 +613,55 @@ def test_reflection_and_observable_paths_share_one_formatter():
     assert 'vpFmt(v)' in src            # printField path
     assert 'vpFmt(r0)' in src           # observable path
     assert src.count('static String vpFmt') == 1
+
+
+# ---------------------------------------------------------------------------
+# VM re-walk #6 (2026-08-07): the model spells observables without the
+# accessor prefix. Real declared list: ['rms', 'chiSquare',
+# 'guessParametersErrors'] against wanted getChiSquare/getRMS/... .
+# ---------------------------------------------------------------------------
+
+ROLL5_DECLARED = ['rms', 'chiSquare', 'guessParametersErrors']
+ROLL5_WANTED = ['getChiSquare', 'getRMS', 'getCovariances',
+                'guessParametersErrors']
+
+
+def test_observable_key_matches_the_codebase_convention():
+    assert rr.observable_key('getChiSquare') == rr.observable_key('chiSquare')
+    assert rr.observable_key('isEmpty') == rr.observable_key('empty')
+    # No prefix to drop: unchanged, which is why it matched in the roll.
+    assert rr.observable_key('guessParametersErrors') == \
+        'guessparameterserrors'
+    # Too short after stripping -> not treated as a prefix.
+    assert rr.observable_key('getX') == 'getx'
+
+
+def test_the_roll5_discard_now_matches():
+    m = rr.match_observable_names(ROLL5_DECLARED, ROLL5_WANTED)
+    assert m['getChiSquare'] == 'chiSquare'      # the disputed observable
+    assert m['getRMS'] == 'rms'
+    assert m['guessParametersErrors'] == 'guessParametersErrors'
+    assert 'getCovariances' not in m             # genuinely not implemented
+
+
+def test_driver_calls_declared_name_but_keys_canonical():
+    m = rr.match_observable_names(ROLL5_DECLARED, ROLL5_WANTED)
+    d = rr.build_driver('ReferenceImpl', list(m.items()), ['a, b'])
+    assert 'ReferenceImpl.compute_chiSquare(a, b)' in d   # what it wrote
+    assert '"getChiSquare="' in d                         # what we compare
+    assert 'compute_getChiSquare' not in d
+    # The exception path must carry the canonical key too, or a throw would
+    # land under a key nothing compares.
+    assert '"getChiSquare=EX:"' in d
+
+
+def test_unmatched_declaration_is_not_called():
+    m = rr.match_observable_names(['somethingElse'], ['getChiSquare'])
+    assert m == {}
+    d = rr.build_driver('R', list(m.items()), ['a'])
+    assert 'compute_' not in d
+
+
+def test_plain_names_still_work_unchanged():
+    d = rr.build_driver('R', ['getA', 'getB'], ['x'])
+    assert 'R.compute_getA(x)' in d and '"getA="' in d

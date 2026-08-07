@@ -109,8 +109,8 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         build_reference_call_driver, build_state_twin_driver, canonical_state,
         declared_observable_names, declared_signature, extract_test_dependencies,
         extract_test_setup, java_literal, match_parameters, parse_parameters,
-        plausible_class_names, run_reference, run_twin, test_package,
-        types_declaring)
+        match_observable_names, plausible_class_names, run_reference,
+        run_twin, test_package, types_declaring)
 
     ctx = '\n\n'.join(class_ctx) if class_ctx else ''
     try:
@@ -189,6 +189,13 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     _re('deterministic', method='reference-impl', target=method,
         output='signature declared', detail={'signature': sig})
     ref_names = declared_observable_names(src)
+    # NAME NORMALIZATION (VM re-walk #6). The model wrote `compute_chiSquare`
+    # where the chain wanted `compute_getChiSquare` and the reference was
+    # discarded on SPELLING, having implemented the observable correctly.
+    # The codebase already matches `chiSquare` to `getChiSquare`
+    # (_methods_named_by, since P0); the reference matcher now does too, and
+    # the driver calls what the model DECLARED while keying by the canonical
+    # name. Mechanism, not an instruction: the prompt already asked.
     # Declaring types first: siblings must be scoped to the RECEIVER's own
     # type, or the twin calls a collaborator's method on the optimizer and
     # cannot compile (VM re-walk #4: getPoint/getPointRef/getArgument).
@@ -209,12 +216,19 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
                f'agree for free)',
         detail={'siblings': siblings[:8],
                 'declaring_types': sorted(declaring)[:4]})
-    targets = [n for n in ref_names if n == method or n in siblings]
-    if method not in targets:
+    matched = match_observable_names(ref_names, [method] + siblings)
+    if method not in matched:
         _re('deterministic', method='reference-impl', target=method,
             output='reference omits the disputed observable — DISCARDED',
-            reason=f'declared: {ref_names[:8]}')
+            reason=f'declared: {ref_names[:8]} — none normalizes to '
+                   f'`{method}` (accessor prefixes are stripped both ways)')
         return None
+    targets = list(matched)          # canonical keys, in wanted order
+    _re('deterministic', method='reference-impl', target=method,
+        output='reference observables matched',
+        detail={'matched': {k: v for k, v in list(matched.items())[:6]},
+                'declared_only': [n for n in ref_names
+                                  if n not in matched.values()][:4]})
 
     # Signature -> canonical state fields, nominally. Unmappable = discard,
     # never a guessed call (roll 4: five attempts, five different signatures).
@@ -292,7 +306,8 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         lits.append(lit)
     obs, why = run_reference(
         builder, buggy_dir, src,
-        build_reference_call_driver('ReferenceImpl', targets,
+        build_reference_call_driver('ReferenceImpl',
+                                    list(matched.items()),
                                     ', '.join(lits)))
     _re('deterministic', method='reference-impl', target=method,
         output=('reference ran' if obs else 'reference DISCARDED'), reason=why)
