@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 from java.harness.build import HarnessBuilder                      # noqa: E402
 from java.relations import reference_run as rr                     # noqa: E402
 from java.relations.reference_impl import (                        # noqa: E402
-    pin_check, screen_reference)
+    pin_check, screen_reference, test_corroboration_pins)
 
 CO = ('/home/code/scratch/co/ladder1k_20260807_164149/'
       '01_patch1-Math-65-CapGen_c/Math_65_buggy')
@@ -85,7 +85,16 @@ def main():
 
     buggy_obs = {k: v for k, v in vals.items() if not k.startswith('__')}
     off = [k for k in SIBLINGS if k in obs and k in buggy_obs]
-    ok, why = screen_reference(obs, buggy_obs, off_defect_keys=set(off))
+    # OPTION B, verbatim recorded material: the failure message and the
+    # test's assertion line, attributed through the production function.
+    failure_msg = ('junit.framework.AssertionFailedError: '
+                   'expected:<0.004> but was:<0.0019737107108948474>')
+    assert_src = 'assertEquals(0.004, errors[0], 0.001);'
+    pins = test_corroboration_pins([failure_msg], [assert_src],
+                                   buggy_obs, SIBLINGS)
+    print(f'    corroboration pins: {pins}')
+    ok, why = screen_reference(obs, buggy_obs, off_defect_keys=set(off),
+                               test_corroboration=pins)
     print(f'    shared off-defect: {off}')
     for k in sorted(set(obs) | set(buggy_obs)):
         print(f'    {k:24s} ref={str(obs.get(k, "-"))[:52]:54s} '

@@ -183,16 +183,92 @@ def _arrays_agree(a: str, b: str) -> bool:
     return True
 
 
+def _pin_matches(printed: str, expected: str, tol) -> bool:
+    """Any numeric element of `printed` within `tol` of `expected`.
+
+    The failing test asserts on ELEMENTS (`errors[0]`), the twin prints the
+    whole array, so the pin matches if any element lands inside the test's
+    own tolerance. With no tolerance recovered, the rounding floor applies
+    (stricter — fails closed toward not-corroborated).
+    """
+    try:
+        e = float(expected)
+        t = float(tol) if tol is not None else None
+    except (TypeError, ValueError):
+        return False
+    for tok in re.findall(r'-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?',
+                          _decode_java_literal(printed or '')):
+        try:
+            v = float(tok)
+        except ValueError:
+            continue
+        if (abs(v - e) <= t) if t is not None else _close(v, e):
+            return True
+    return False
+
+
+def test_corroboration_pins(failure_messages, test_sources, buggy_obs,
+                            siblings) -> Dict[str, Tuple[str, Optional[str]]]:
+    """`{sibling: (expected, tolerance)}` — mechanical attribution only.
+
+    OPTION B's evidence source (user decision 2026-08-07). A sibling the
+    defect REACHES is a rigged screen question: the buggy build is the wrong
+    answer key there, and the failing test's own asserted literal is the
+    right one. The pin attaches to a sibling ONLY when the failure message's
+    observed value (`but was:<...>`) appears verbatim inside the twin's
+    buggy print for that sibling — the same character-level identity that
+    proves the twin stands at the failing assertion's state (re-walk #7).
+    The tolerance is recovered from the test source's
+    `assertEquals(expected, ..., tol)` literal; unrecoverable tolerance
+    stays None and the stricter rounding floor applies downstream.
+    """
+    out = {}
+    for msg in failure_messages or []:
+        m = re.search(r'expected:<([^>]+)> but was:<([^>]+)>', msg or '')
+        if not m:
+            continue
+        exp, was = m.group(1).strip(), m.group(2).strip()
+        key = next((k for k in (siblings or [])
+                    if any(was in str(v) for v in buggy_obs.get(k, []))),
+                   None)
+        if not key:
+            continue
+        tol = None
+        for src in test_sources or []:
+            t = re.search(r'assertEquals\(\s*' + re.escape(exp)
+                          + r'\s*,[^,()]+,\s*([0-9.eE+-]+)\s*\)', src or '')
+            if t:
+                tol = t.group(1)
+                break
+        out[key] = (exp, tol)
+    return out
+
+
 def screen_reference(reference_obs: Dict[str, List[str]],
                      buggy_obs: Dict[str, List[str]],
                      off_defect_keys,
-                     divergence_kinds: Optional[Dict[str, str]] = None
+                     divergence_kinds: Optional[Dict[str, str]] = None,
+                     test_corroboration: Optional[
+                         Dict[str, Tuple[str, Optional[str]]]] = None
                      ) -> Tuple[bool, str]:
     """THE AUTHORITY SCREEN. `(admissible, reason)`.
 
     `off_defect_keys` are the observables the family-duty boundary says the
     defect does not touch. Only those are screened — screening ON the defect
     would require the reference to reproduce the BUG, which is backwards.
+
+    OPTION B (user decision 2026-08-07, from re-walk #8's read): the sibling
+    surface can contain an observable the defect REACHES — Math-65's
+    `guessParametersErrors` is the very value the failing test asserts on —
+    and there the buggy build is the wrong answer key, so exact-match
+    grading fails the reference for being right. `test_corroboration`
+    carries the failing test's own asserted literals for such siblings, and
+    a disagreement with buggy is RE-GRADED as a pass ONLY when BOTH hold:
+    the reference matches the test's expected value within the test's own
+    tolerance, AND the buggy build fails that same pin. The second
+    condition contains the open-book concern (the generator sees the test):
+    the test's answer overrides the buggy build only where the buggy build
+    is demonstrably the one that is wrong.
 
     Fails CLOSED in every uncertain case: too few shared observables, no
     off-defect keys, missing data. An unscreened reference is an inadmissible
@@ -210,16 +286,30 @@ def screen_reference(reference_obs: Dict[str, List[str]],
                        f'{MIN_SCREENED_OBSERVABLES} required before agreement '
                        f'means anything')
     kinds = divergence_kinds or {}
+    corroborated = []
     for k in shared:
         if kinds.get(k) in WEAK_KINDS:
             continue                     # noise, not disagreement
         rv, bv = reference_obs[k], buggy_obs[k]
         if not any(_values_agree(a, b) for a in rv for b in bv):
+            pin = (test_corroboration or {}).get(k)
+            if pin:
+                exp, tol = pin
+                if (any(_pin_matches(a, exp, tol) for a in rv)
+                        and not any(_pin_matches(b, exp, tol) for b in bv)):
+                    corroborated.append(k)
+                    continue
             return False, (f'reference disagrees with the buggy build on '
                            f'off-defect observable `{k}` '
                            f'({rv[:1]} vs {bv[:1]}) — DISCARDED')
-    return True, (f'reference reproduces the buggy build on {len(shared)} '
-                  f'off-defect observable(s)')
+    why = (f'reference reproduces the buggy build on {len(shared)} '
+           f'off-defect observable(s)')
+    if corroborated:
+        why += (f' ({len(corroborated)} of them defect-reached and re-graded '
+                f'against the failing test\'s own asserted value, which the '
+                f'reference matches and the buggy build fails: '
+                f'{corroborated})')
+    return True, why
 
 
 def reference_disagreement_fact(method: str,

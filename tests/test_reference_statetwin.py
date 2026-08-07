@@ -1353,3 +1353,91 @@ def test_screen_admits_on_ulp_noise_discards_on_real_divergence():
     buggy['guessParametersErrors'] = ['[0.0019737, 0.0019768]']
     ok, why = screen_reference(ref, buggy, off_defect_keys=set(ref))
     assert not ok and 'guessParametersErrors' in why
+
+
+# ---------------------------------------------------------------------------
+# OPTION B (user decision 2026-08-07): re-grade defect-reached siblings
+# against the failing test's own asserted literal. All fixtures verbatim
+# from the Math-65 record: the failure message, the assertion line, the
+# twin's buggy print, the reference's computed values.
+# ---------------------------------------------------------------------------
+
+M65_FAILURE_MSG = ('--- org.apache.commons.math.optimization.general.'
+                   'LevenbergMarquardtOptimizerTest::testCircleFitting\n'
+                   'junit.framework.AssertionFailedError: '
+                   'expected:<0.004> but was:<0.0019737107108948474>')
+M65_ASSERT_SRC = ('double[] errors = optimizer.guessParametersErrors();\n'
+                  '        assertEquals(0.004, errors[0], 0.001);\n'
+                  '        assertEquals(0.004, errors[1], 0.001);\n')
+M65_BUGGY_ERRORS = '[0.0019737107108948474, 0.001976886743307752]'
+M65_REF_ERRORS = '[0.003947421421789695, 0.003953773486615504]'
+M65_SIBS = ['getCovariances', 'getEvaluations', 'getIterations',
+            'getJacobianEvaluations', 'getRMS', 'guessParametersErrors']
+
+
+def test_corroboration_pin_attributed_by_verbatim_state_match():
+    from java.relations.reference_impl import test_corroboration_pins
+    buggy = {'guessParametersErrors': [M65_BUGGY_ERRORS],
+             'getRMS': ['0.09931552348327041']}
+    pins = test_corroboration_pins([M65_FAILURE_MSG], [M65_ASSERT_SRC],
+                                   buggy, M65_SIBS)
+    assert pins == {'guessParametersErrors': ('0.004', '0.001')}
+    # No verbatim match of the observed value -> no pin, no guessing.
+    buggy['guessParametersErrors'] = ['[0.9, 0.9]']
+    assert test_corroboration_pins([M65_FAILURE_MSG], [M65_ASSERT_SRC],
+                                   buggy, M65_SIBS) == {}
+    # Assertion literal not found -> pin survives with tolerance None.
+    buggy['guessParametersErrors'] = [M65_BUGGY_ERRORS]
+    pins = test_corroboration_pins([M65_FAILURE_MSG], ['no asserts here'],
+                                   buggy, M65_SIBS)
+    assert pins == {'guessParametersErrors': ('0.004', None)}
+
+
+def test_screen_option_b_regrades_the_defect_reached_sibling():
+    from java.relations.reference_impl import screen_reference
+    ref = {'getRMS': ['0.09931552348327041'],
+           'getCovariances': [REWALK8_COV_REF],
+           'guessParametersErrors': [M65_REF_ERRORS]}
+    buggy = {'getRMS': ['0.09931552348327041'],
+             'getCovariances': [REWALK8_COV_BUGGY],
+             'guessParametersErrors': [M65_BUGGY_ERRORS]}
+    pins = {'guessParametersErrors': ('0.004', '0.001')}
+    # Without the pin: discarded (the pre-decision behaviour).
+    ok, why = screen_reference(ref, buggy, off_defect_keys=set(ref))
+    assert not ok and 'guessParametersErrors' in why
+    # With the pin: admitted, and the reason says what happened.
+    ok, why = screen_reference(ref, buggy, off_defect_keys=set(ref),
+                               test_corroboration=pins)
+    assert ok, why
+    assert 're-graded' in why and 'guessParametersErrors' in why
+
+
+def test_screen_option_b_requires_buggy_to_fail_the_pin():
+    # Containment of the open-book concern: if the buggy build ALSO matches
+    # the test's value, the answer key is not provably wrong there, and the
+    # disagreement stands.
+    from java.relations.reference_impl import screen_reference
+    ref = {'a': ['0.0039'], 'b': ['1.0'], 'c': ['2.0']}
+    buggy = {'a': ['0.0041'], 'b': ['1.0'], 'c': ['2.0']}
+    pins = {'a': ('0.004', '0.001')}
+    ok, why = screen_reference(ref, buggy, off_defect_keys=set(ref),
+                               test_corroboration=pins)
+    assert not ok and '`a`' in why
+
+
+def test_screen_option_b_requires_reference_to_match_the_pin():
+    from java.relations.reference_impl import screen_reference
+    ref = {'a': ['0.9'], 'b': ['1.0'], 'c': ['2.0']}
+    buggy = {'a': ['0.0019'], 'b': ['1.0'], 'c': ['2.0']}
+    pins = {'a': ('0.004', '0.001')}
+    ok, why = screen_reference(ref, buggy, off_defect_keys=set(ref),
+                               test_corroboration=pins)
+    assert not ok
+
+
+def test_chain_resolves_corroboration_before_the_screen():
+    src = _chain_source()
+    assert src.index('test_corroboration_pins(') < src.index(
+        'screen_reference(')
+    call = src[src.index('screen_reference('):][:220]
+    assert 'test_corroboration=corro' in call

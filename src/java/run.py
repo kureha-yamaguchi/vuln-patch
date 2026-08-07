@@ -101,7 +101,7 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     from llm import record_event as _re, HarnessGenerator as _HG
     from java.relations.reference_impl import (
         disputed_observables, pin_check, reference_comparison_fact,
-        screen_reference, too_thin_to_screen)
+        screen_reference, test_corroboration_pins, too_thin_to_screen)
     from java.relations.reference_gen import (
         ImplementationLeak, build_reference_prompt, sibling_observables,
         strip_bodies)
@@ -355,7 +355,24 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     buggy_obs = {k: v for k, v in buggy_vals.items()
                  if not k.startswith('__')}
     off = [k for k in siblings if k in obs and k in buggy_obs]
-    ok, screen_why = screen_reference(obs, buggy_obs, off_defect_keys=set(off))
+    # OPTION B (user decision 2026-08-07): a sibling the failing test itself
+    # shows diverging is a rigged screen question — the buggy build is the
+    # wrong answer key there. The pin attaches only where the failure
+    # message's observed value appears verbatim in the twin's buggy print
+    # (state identity), and it re-grades a disagreement only when the
+    # reference matches the test's literal AND buggy fails it.
+    corro = test_corroboration_pins(
+        [getattr(ft, 'failure_message', '') or '' for ft in failure_tests],
+        [getattr(ft, 'method_source', '') or '' for ft in failure_tests],
+        buggy_obs, siblings)
+    if corro:
+        _re('deterministic', method='reference-impl', target=method,
+            output='test-corroboration pins resolved',
+            reason='failing-test asserted value(s) attributed to defect-'
+                   'reached sibling(s) by verbatim state match',
+            detail={'pins': corro})
+    ok, screen_why = screen_reference(obs, buggy_obs, off_defect_keys=set(off),
+                                      test_corroboration=corro)
     _re('deterministic', method='reference-impl', target=method,
         output=('screen ADMITTED' if ok else 'screen DISCARDED'),
         reason=screen_why,
