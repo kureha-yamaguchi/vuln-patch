@@ -1647,6 +1647,24 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   matching; now 6 class names read as 'name') — all fixture sets in the
   state-twin test file are now real recorded material. 722 passed, 7
   skipped; pushed. VM re-walk #4 is roll 5's gate.*
+  *VM re-walk #4 (2026-08-07): everything from #1–#3 held; the last compile
+  error plus one defect the walk's harness masked, both fixed (8e575d2,
+  main session). (a) UNIQUE READS — r0/r1/… instead of reusing `Object r`
+  in all three emitters (already try-scoped, but a name that cannot collide
+  removes the mode entirely). (b) SIBLINGS SCOPED TO THE RECEIVER'S TYPE —
+  the agent attributed the `getPoint` error to their hand-written list, but
+  the production extractor had it too: an unscoped scan of the context
+  returns collaborators' observables (getPoint/getPointRef/getArgument live
+  on the RESULT object), which the twin then calls on the optimizer and
+  cannot compile. Now scoped to the declaring types' blocks, resolved
+  BEFORE the screening surface so the two always agree: 8 unscoped (3
+  uncallable) → 6 scoped on ladder1e's real context. (c) STORED SETTINGS
+  EXCLUDED (agent's design point, accepted) — getMax*/getDefault* agree for
+  free, so counting them made "8 observables" really "6 plus 2 free
+  passes"; exclusion can push a leg below the bar, which is the honest
+  outcome. 726 passed, 7 skipped; pushed. VM re-walk #5 is roll 5's gate —
+  and if the twin compiles, its run is the first real test of whether
+  `optimize(...)` completes, the last unknown before step 6.*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
