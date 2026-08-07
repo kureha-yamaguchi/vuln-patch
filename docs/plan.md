@@ -1665,6 +1665,21 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   outcome. 726 passed, 7 skipped; pushed. VM re-walk #5 is roll 5's gate —
   and if the twin compiles, its run is the first real test of whether
   `optimize(...)` completes, the last unknown before step 6.*
+  *VM re-walk #5 (2026-08-07): **GATE CLEARED** — the twin compiles and
+  runs, `optimize(...)` completes at test state, the disputed observable
+  and siblings compute, and reflection recovers the state fields
+  (`__construct0=OK`, getChiSquare=1.5633763529538318, residuals/weights/
+  cost recovered). The last unknown is closed. One defect only a run could
+  show: `String.valueOf(double[])` printed `[D@19469ea2`, a per-invocation
+  identity hash — 2 of the 6 siblings are arrays, so both would have
+  "disagreed" permanently and the effective surface was silently 4. Fixed
+  (8082487, main session) with ONE formatter injected into all three
+  emitters AND the reflection path, since identical formatting on both
+  sides is the entire point of the comparison. 737 passed, 7 skipped;
+  pushed. **Roll 5 is GO** — the chain is end-to-end runnable; the desk
+  walkthrough stays standing practice for stage 2+ (5 walks, 8 distinct
+  defects, each of which would otherwise have surfaced as an opaque
+  mid-roll discard at ~250k).*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
