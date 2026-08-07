@@ -77,7 +77,11 @@ def test_the_disagreement_side():
     assert 'DIFFERENT value' in f and 'chiSquare' in f
     assert "buggy build's LIVE behaviour" in f
     assert 'documented sibling observables' in f
-    assert 'never shown' in f
+    # State-twin correction (2026-08-07): everything runs at the failing
+    # test's own state, whose INPUTS the generator was shown by design. The
+    # honest claim is open-input/closed-output, not "never shown".
+    assert "failing test's own state" in f
+    assert 'sibling VALUES it was not' in f
 
 
 def test_the_AGREEMENT_side_exists_and_is_the_same_sentence_shape():

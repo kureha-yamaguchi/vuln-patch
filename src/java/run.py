@@ -85,7 +85,8 @@ def _extract_oracle_msg(output, oid, cap=20000):
 
 
 def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
-                         buggy_dir, trusted_values):
+                         buggy_dir, patch_path, trusted_values,
+                         package=None, imports=None):
     """8.2: generate, screen and compare an independent reference. Fact or None.
 
     Every exit records an event with its REASON. A step that produced nothing
@@ -99,11 +100,16 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     """
     from llm import record_event as _re, HarnessGenerator as _HG
     from java.relations.reference_impl import (
-        disputed_observables, enumerate_observables, held_out_keys, pin_check,
-        reference_comparison_fact, screen_reference)
+        disputed_observables, pin_check, reference_comparison_fact,
+        screen_reference)
     from java.relations.reference_gen import (
-        ImplementationLeak, build_reference_prompt, strip_bodies)
-    from java.relations.reference_run import build_driver, run_reference
+        ImplementationLeak, build_reference_prompt, sibling_observables,
+        strip_bodies)
+    from java.relations.reference_run import (
+        build_reference_call_driver, build_state_twin_driver, canonical_state,
+        declared_observable_names, declared_signature, extract_test_setup,
+        java_literal, match_parameters, parse_parameters, run_reference,
+        run_twin)
 
     ctx = '\n\n'.join(class_ctx) if class_ctx else ''
     try:
@@ -119,15 +125,32 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
                    'mechanism has nothing to reimplement')
         return None
     method = disputed[0]
+    # The chain is expensive (a generation plus three JVM runs) and BOTH judge
+    # doors may ask about the same method several times per leg. One process =
+    # one leg, so a process-level memo is run-local by construction.
+    memo = getattr(_reference_impl_fact, '_memo', None)
+    if memo is None:
+        memo = _reference_impl_fact._memo = {}
+    if method in memo:
+        _re('deterministic', method='reference-impl', target=method,
+            output='memoized result reused',
+            reason='this disputed observable was already resolved this leg')
+        return memo[method]
+    memo[method] = None          # every early exit below leaves None memoized
     _re('deterministic', method='reference-impl', target=method,
         output='disputed observable detected',
         detail={'candidates': disputed[:4]})
 
     try:
         skeleton = strip_bodies(ctx)
+        # Javadoc arrives with its /** */ delimiters ALREADY stripped
+        # (assemble_class_context) — filtering chunks on '/**' selects
+        # nothing. Doc-ish means bare-star lines or @param/@return/@throws.
+        _docish = re.compile(r'^\s*\*|@param|@return|@throws', re.M)
         msgs = build_reference_prompt(
             method=method, skeleton=skeleton,
-            docs=[c for c in (class_ctx or []) if '/**' in c][:4],
+            docs=[strip_bodies(c) for c in (class_ctx or [])
+                  if _docish.search(c)][:4],
             failing_test='\n\n'.join(
                 (getattr(ft, 'method_source', '') or '') for ft in failure_tests),
             other_tests=[], shown_examples=None)
@@ -154,9 +177,7 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     _re('deterministic', method='reference-impl', target=method,
         output='reference generated', detail={'chars': len(src)})
 
-    # The generator declares its own signature; we read it rather than guess.
-    # Unreadable signature -> discard, never an assumed call shape.
-    from java.relations.reference_run import declared_signature
+    # The generator declares signature AND observable list; we read both.
     sig = declared_signature(src)
     if sig is None:
         _re('deterministic', method='reference-impl', target=method,
@@ -166,37 +187,117 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         return None
     _re('deterministic', method='reference-impl', target=method,
         output='signature declared', detail={'signature': sig})
-    obs, why = run_reference(builder, buggy_dir, src,
-                             build_driver('ReferenceImpl', 'compute', ['']))
+    ref_names = declared_observable_names(src)
+    siblings = sibling_observables(ctx, method)
+    targets = [n for n in ref_names if n == method or n in siblings]
+    if method not in targets:
+        _re('deterministic', method='reference-impl', target=method,
+            output='reference omits the disputed observable — DISCARDED',
+            reason=f'declared: {ref_names[:8]}')
+        return None
+
+    # Signature -> canonical state fields, nominally. Unmappable = discard,
+    # never a guessed call (roll 4: five attempts, five different signatures).
+    mapping, map_why = match_parameters(parse_parameters(sig),
+                                        canonical_state(ctx))
+    _re('deterministic', method='reference-impl', target=method,
+        output=('signature mapped' if mapping else
+                'signature unmappable — DISCARDED'), reason=map_why)
+    if not mapping:
+        return None
+
+    # THE STATE TWIN: everything is compared at the failing test's own state.
+    test_src = next((getattr(ft, 'method_source', '') or ''
+                     for ft in failure_tests
+                     if getattr(ft, 'method_source', None)), '')
+    setup, receiver, setup_why = extract_test_setup(test_src, method)
+    _re('deterministic', method='reference-impl', target=method,
+        output=('twin setup extracted' if setup else
+                'twin underivable — DISCARDED'), reason=setup_why)
+    if not setup:
+        return None
+    twin_src = build_state_twin_driver(
+        setup, receiver, [method] + siblings, mapping,
+        package=package, imports=imports)
+    buggy_vals, twin_why = run_twin(builder, buggy_dir, twin_src)
+    _re('deterministic', method='reference-impl', target=method,
+        output=('buggy twin ran' if buggy_vals else
+                'buggy twin FAILED — DISCARDED'), reason=twin_why)
+    if not buggy_vals:
+        return None
+
+    # The reference's inputs come from the twin itself (reflection-printed).
+    params = parse_parameters(sig)
+    lits = []
+    for (typ, _n), field in zip(params, mapping):
+        printed = (buggy_vals.get(f'__param_{field}') or ['ABSENT'])[0]
+        lit = java_literal(typ, printed)
+        if lit is None:
+            _re('deterministic', method='reference-impl', target=method,
+                output='reference inputs unrecoverable — DISCARDED',
+                reason=f'state field `{field}` ({typ}) printed as '
+                       f'{printed[:80]!r}')
+            return None
+        lits.append(lit)
+    obs, why = run_reference(
+        builder, buggy_dir, src,
+        build_reference_call_driver('ReferenceImpl', targets,
+                                    ', '.join(lits)))
     _re('deterministic', method='reference-impl', target=method,
         output=('reference ran' if obs else 'reference DISCARDED'), reason=why)
     if not obs:
         return None
 
-    held = held_out_keys(obs, shown_examples=[])
-    ok, screen_why = screen_reference(obs, obs, off_defect_keys=set(held))
+    # THE SCREEN: reference vs the BUGGY build, on siblings only — the
+    # disputed point is on-defect by definition and cannot vouch for itself.
+    buggy_obs = {k: v for k, v in buggy_vals.items()
+                 if not k.startswith('__')}
+    off = [k for k in siblings if k in obs and k in buggy_obs]
+    ok, screen_why = screen_reference(obs, buggy_obs, off_defect_keys=set(off))
     _re('deterministic', method='reference-impl', target=method,
         output=('screen ADMITTED' if ok else 'screen DISCARDED'),
-        reason=screen_why)
+        reason=screen_why,
+        detail={'construct': (buggy_vals.get('__construct0') or ['?'])[0],
+                'off_defect_shared': len(off)})
     if not ok:
         return None
 
-    pinned = {}
-    for i, v in enumerate(trusted_values or []):
-        pinned[f'obs{i}'] = [v]
-    pin_ok, pin_why = pin_check(obs, pinned, list(obs))
+    # VALIDATOR 3: at test state the failing test's pinned answer applies to
+    # the disputed observable — the bug-copying catch, now with real overlap.
+    pin_ok, pin_why = pin_check(
+        obs, {method: list(trusted_values or [])} if trusted_values else {},
+        [method])
     _re('deterministic', method='reference-impl', target=method,
         output=('pin-check PASSED' if pin_ok else 'pin-check DISCARDED'),
         reason=pin_why)
     if not pin_ok:
         return None
 
+    # THE OTHER SIDE OF THE FACT: the SAME twin on the PATCHED build.
+    try:
+        pdir = PatchedProjectBuilder().build_patched_dir(buggy_dir, patch_path)
+    except Exception as e:
+        _re('deterministic', method='reference-impl', target=method,
+            output='patched build unavailable — no fact',
+            reason=f'{type(e).__name__}: {e}'[:200])
+        return None
+    patched_vals, ptwin_why = run_twin(builder, pdir, twin_src,
+                                       work_subdir='reference_twin_patched')
+    _re('deterministic', method='reference-impl', target=method,
+        output=('patched twin ran' if patched_vals else
+                'patched twin FAILED — no fact'), reason=ptwin_why)
+    if not patched_vals:
+        return None
+    patched_obs = {k: v for k, v in patched_vals.items()
+                   if not k.startswith('__')}
+
     fact = reference_comparison_fact(
-        method, True, screen_why, enumerate_observables(fired), obs,
-        screened_count=len(held))
+        method, True, screen_why, patched_obs, obs,
+        screened_count=len(off))
     _re('deterministic', method='reference-impl', target=method,
         output=('fact emitted' if fact else 'no fact (nothing comparable)'),
         detail={'chars': len(fact or '')})
+    memo[method] = fact
     return fact
 
 
@@ -3552,7 +3653,10 @@ def main():
                             args=args, fired=fired, class_ctx=class_ctx,
                             failure_tests=failure_tests, builder=builder,
                             buggy_dir=selection.buggy_dir,
-                            trusted_values=trusted_values)
+                            patch_path=selection.patch_path,
+                            trusted_values=trusted_values,
+                            package=context.package,
+                            imports=context.source_imports)
                         if _ref_fact:
                             print("      [reference-impl] fact attached")
                             _fact_notes.append(_ref_fact)
@@ -3910,7 +4014,10 @@ def main():
                             args=args, fired=_fired, class_ctx=class_ctx,
                             failure_tests=failure_tests, builder=builder,
                             buggy_dir=selection.buggy_dir,
-                            trusted_values=_tvals)
+                            patch_path=selection.patch_path,
+                            trusted_values=_tvals,
+                            package=context.package,
+                            imports=context.source_imports)
                         if _ref_fact2:
                             print("      [reference-impl] fact attached "
                                   "(replay track)")

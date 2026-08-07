@@ -1,0 +1,254 @@
+"""The state-twin architecture (post-roll-4): parsing, matching, setup
+extraction, input recovery, and the production-path walkthrough.
+
+Roll 4's lesson pinned here: the walkthrough must drive the SAME code path
+run.py drives. `test_production_chain_*` calls `_reference_impl_fact` itself
+with a stubbed generator/JVM — a call-site lag now fails a test instead of a
+roll.
+"""
+import re
+import sys
+import types
+import pytest
+
+sys.path.insert(0, 'src')
+
+from java.relations import reference_run as rr
+from java.relations import reference_gen as rg
+
+
+# The five signatures roll 4 actually produced — the real corpus.
+ROLL4_SIGS = [
+    'double[], double[], double',
+    'double[] residuals, double[] residualsWeights, double cost',
+    'double[], double[], double, int',
+    'int, double[][], double[], double[], double, int',
+    'int, double',
+]
+
+CANON = [('double[]', 'residuals'), ('double[]', 'residualsWeights'),
+         ('double', 'cost'), ('int', 'rows'), ('double[][]', 'jacobian')]
+
+
+def test_parse_parameters_named_and_bare():
+    assert rr.parse_parameters(ROLL4_SIGS[1]) == [
+        ('double[]', 'residuals'), ('double[]', 'residualsWeights'),
+        ('double', 'cost')]
+    assert rr.parse_parameters(ROLL4_SIGS[0]) == [
+        ('double[]', ''), ('double[]', ''), ('double', '')]
+
+
+def test_match_named_signature_resolves():
+    names, why = rr.match_parameters(rr.parse_parameters(ROLL4_SIGS[1]), CANON)
+    assert names == ['residuals', 'residualsWeights', 'cost']
+
+
+def test_match_bare_ambiguous_types_discards():
+    # Two double[] fields exist; a bare double[] cannot pick one.
+    names, why = rr.match_parameters(rr.parse_parameters(ROLL4_SIGS[0]), CANON)
+    assert names is None
+    assert 'unmappable' in why
+
+
+def test_match_unmappable_roll4_sig4_discards():
+    names, why = rr.match_parameters(rr.parse_parameters(ROLL4_SIGS[3]), CANON)
+    assert names is None
+
+
+def test_build_driver_refuses_str_observables():
+    # THE roll-4 bug, made impossible: a str would iterate as characters.
+    with pytest.raises(TypeError):
+        rr.build_driver('ReferenceImpl', 'compute', [''])
+
+
+def test_canonical_state_reads_fields():
+    ctx = ('public class A {\n  private double[] residuals;\n'
+           '  protected double cost = 0;\n  public int rows;\n'
+           '  public double getRMS() { return 0; }\n}')
+    got = rr.canonical_state(ctx)
+    assert ('double[]', 'residuals') in got and ('double', 'cost') in got
+
+
+TEST_SRC = '''
+public void testChiSquare() {
+    CurveFitter f = new CurveFitter();
+    f.addPoint(1.0, 2.0);
+    optimizer.fit();
+    Assert.assertEquals(3.2, optimizer.getChiSquare(), 1e-10);
+    assertTrue(optimizer.getRMS() > 0);
+}
+'''
+
+
+def test_extract_setup_strips_asserts_and_finds_receiver():
+    setup, recv, why = rr.extract_test_setup(TEST_SRC, 'getChiSquare')
+    assert recv == 'optimizer'
+    assert 'assertEquals' not in setup and 'assertTrue' not in setup
+    assert 'addPoint' in setup
+
+
+def test_extract_setup_all_asserts_is_underivable():
+    setup, recv, why = rr.extract_test_setup(
+        'public void t() {\n  assertEquals(1, 1);\n}', 'getX')
+    assert setup is None and 'assertions' in why
+
+
+def test_twin_driver_reflects_params_and_reads_observables():
+    src = rr.build_state_twin_driver('X o = new X();', 'o',
+                                    ['getChiSquare', 'getRMS'],
+                                    ['residuals'])
+    assert 'printField(o, "residuals")' in src
+    assert 'o.getChiSquare()' in src and '__construct0=OK' in src
+    assert rr.END_MARKER in src
+
+
+def test_java_literal_roundtrips():
+    assert rr.java_literal('double[]', '[1.0, 2.5]') == 'new double[]{1.0, 2.5}'
+    assert rr.java_literal('double[]', '[]') == 'new double[0]'
+    assert rr.java_literal('double', '3.14') == '3.14'
+    assert rr.java_literal('double[]', 'ABSENT') is None
+    assert rr.java_literal('double', 'EX:NullPointerException') is None
+
+
+# ---------------------------------------------------------------------------
+# The production-path walkthrough: drives run.py's own chain function.
+# ---------------------------------------------------------------------------
+
+CTX = ('/** The chi-square. @return chi-square value */\n'
+       'public class Opt {\n'
+       '  private double[] residuals;\n'
+       '  private double[] residualsWeights;\n'
+       '  public double getChiSquare() { double s=0; return s; }\n'
+       '  public double getRMS() { return 0.0; }\n'
+       '  public double getCost() { return 0.0; }\n'
+       '  public int getRows() { return 0; }\n'
+       '}')
+
+REFERENCE_REPLY = (
+    '// compute(double[] residuals, double[] residualsWeights) : '
+    'getChiSquare, getRMS, getCost, getRows\n'
+    'public class ReferenceImpl {\n'
+    '  public static double compute_getChiSquare(double[] r, double[] w) '
+    '{ double s=0; for (int i=0;i<r.length;i++) s+=r[i]*r[i]/w[i]; return s; }\n'
+    '}')
+
+
+class _FiredMsg(str):
+    pass
+
+
+def _mk_failure_test():
+    ft = types.SimpleNamespace()
+    ft.method_source = (
+        'public void testCS() {\n'
+        '  Opt optimizer = new Opt();\n'
+        '  optimizer.setUp();\n'
+        '  Assert.assertEquals(3.25, optimizer.getChiSquare(), 1e-9);\n}')
+    return ft
+
+
+def _run_chain(monkeypatch, twin_outputs, ref_output, generated=REFERENCE_REPLY):
+    """Drive run._reference_impl_fact with stubbed generator and JVM."""
+    from java import run as runmod
+    events = []
+    monkeypatch.setattr(
+        'llm.record_event',
+        lambda kind, **kw: events.append((kw.get('output'), kw.get('reason'))),
+        raising=False)
+
+    class FakeHG:
+        def __init__(self, **kw): pass
+        def generate(self, msgs): return generated
+    monkeypatch.setattr('llm.HarnessGenerator', FakeHG, raising=False)
+
+    calls = {'twin_dirs': []}
+
+    def fake_run_twin(builder, project_dir, twin_source, **kw):
+        calls['twin_dirs'].append(project_dir)
+        out = twin_outputs.pop(0)
+        return out
+    def fake_run_reference(builder, buggy_dir, ref_src, driver_src, **kw):
+        calls['driver_src'] = driver_src
+        return ref_output
+    monkeypatch.setattr(rr, 'run_twin', fake_run_twin)
+    monkeypatch.setattr(rr, 'run_reference', fake_run_reference)
+
+    class FakePPB:
+        def build_patched_dir(self, b, p): return '/patched'
+    monkeypatch.setattr(runmod, 'PatchedProjectBuilder', FakePPB)
+    runmod._reference_impl_fact._memo = {}
+
+    fact = runmod._reference_impl_fact(
+        args=types.SimpleNamespace(model='m', reference_impl=True),
+        fired='[oracle:x] semantic mismatch: getChiSquare expected=3.25 '
+              'actual=9.99', class_ctx=[CTX],
+        failure_tests=[_mk_failure_test()], builder=object(),
+        buggy_dir='/buggy', patch_path='/p.patch',
+        trusted_values=['3.25'], package=None, imports=None)
+    return fact, events, calls
+
+
+BUGGY_TWIN = ({'__construct0': ['OK'],
+               '__param_residuals': ['[1.0, 2.0]'],
+               '__param_residualsWeights': ['[1.0, 1.0]'],
+               'getChiSquare': ['9.99'], 'getRMS': ['1.1'],
+               'getCost': ['2.2'], 'getRows': ['2']}, 'twin ran')
+PATCHED_TWIN = ({'__construct0': ['OK'],
+                 'getChiSquare': ['3.25'], 'getRMS': ['1.1'],
+                 'getCost': ['2.2'], 'getRows': ['2']}, 'twin ran')
+REF_OK = ({'getChiSquare': ['3.25'], 'getRMS': ['1.1'],
+           'getCost': ['2.2'], 'getRows': ['2']}, 'ran, 4 observables')
+
+
+def test_production_chain_emits_two_sided_fact(monkeypatch):
+    fact, events, calls = _run_chain(
+        monkeypatch, [BUGGY_TWIN, PATCHED_TWIN], REF_OK)
+    assert fact is not None
+    assert 'reference-implementation fact' in fact
+    # patched twin computes 3.25 = reference -> agreement side on disputed
+    assert 'SAME value' in fact
+    # the driver was built with real observable names, not characters
+    assert 'compute_getChiSquare(' in calls['driver_src']
+    assert 'compute_c(' not in calls['driver_src']
+    # both builds' twins ran: buggy then patched
+    assert calls['twin_dirs'] == ['/buggy', '/patched']
+
+
+def test_production_chain_screen_uses_buggy_not_self(monkeypatch):
+    # Reference disagrees with buggy on SIBLINGS -> screen must discard.
+    ref_bad = ({'getChiSquare': ['3.25'], 'getRMS': ['7.7'],
+                'getCost': ['8.8'], 'getRows': ['9']}, 'ran')
+    fact, events, calls = _run_chain(monkeypatch, [BUGGY_TWIN], ref_bad)
+    assert fact is None
+    assert any('screen DISCARDED' in (o or '') for o, _ in events)
+
+
+def test_production_chain_pin_check_catches_bug_copy(monkeypatch):
+    # Reference agrees with buggy EVERYWHERE incl. the disputed point (a
+    # bug-copy): screen passes, the PIN must catch it (trusted 3.25 != 9.99).
+    ref_copy = ({'getChiSquare': ['9.99'], 'getRMS': ['1.1'],
+                 'getCost': ['2.2'], 'getRows': ['2']}, 'ran')
+    fact, events, calls = _run_chain(monkeypatch, [BUGGY_TWIN], ref_copy)
+    assert fact is None
+    assert any('pin-check DISCARDED' in (o or '') for o, _ in events)
+
+
+def test_production_chain_unmappable_signature_discards(monkeypatch):
+    bare = REFERENCE_REPLY.replace(
+        'double[] residuals, double[] residualsWeights', 'double[], double[]')
+    fact, events, calls = _run_chain(
+        monkeypatch, [BUGGY_TWIN, PATCHED_TWIN], REF_OK, generated=bare)
+    assert fact is None
+    assert any('unmappable' in (o or '') + (r or '') for o, r in events)
+
+
+def test_wiring_both_doors_pass_patch_path():
+    src = open('src/java/run.py').read()
+    chunks = src.split('_reference_impl_fact(')[1:]
+    # def + memo attr + 2 call sites; a CALL passes args=args in its kwargs.
+    calls = [c[:700] for c in chunks if 'args=args' in c[:700]]
+    assert len(calls) == 2, f'expected exactly 2 call sites, got {len(calls)}'
+    for c in calls:
+        assert 'patch_path=selection.patch_path' in c
+        assert 'package=context.package' in c
+        assert 'imports=context.source_imports' in c

@@ -340,7 +340,9 @@ def reference_comparison_fact(method,
         'the code under review or from the pre-patch implementation — and '
         + (('demonstrated to match the buggy build\'s LIVE behaviour on '
             + str(screened_count) + ' of the class\'s documented sibling '
-            'observables, at machine-chosen states it was never shown')
+            'observables at the failing test\'s own state — inputs it was '
+            'shown, sibling VALUES it was not (printed nowhere; they must be '
+            'computed from the documented formulas)')
            if screened_count else 'admitted by the off-defect screen')
         + ', was run on the same input.\n')
     if differ:
