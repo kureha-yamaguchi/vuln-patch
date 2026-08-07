@@ -108,7 +108,8 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     from java.relations.reference_run import (
         build_reference_call_driver, build_state_twin_driver, canonical_state,
         declared_observable_names, declared_signature, extract_test_dependencies,
-        extract_test_setup, java_literal, match_parameters, parse_parameters,
+        extract_test_setup, fields_read_by, java_literal, match_parameters,
+        parse_parameters,
         match_observable_names, plausible_class_names, run_reference,
         run_twin, test_package, types_declaring)
 
@@ -232,8 +233,9 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
 
     # Signature -> canonical state fields, nominally. Unmappable = discard,
     # never a guessed call (roll 4: five attempts, five different signatures).
-    mapping, map_why = match_parameters(parse_parameters(sig),
-                                        canonical_state(ctx))
+    _canon = canonical_state(ctx)
+    mapping, map_why = match_parameters(parse_parameters(sig), _canon,
+                                        fields_read_by(ctx, method, _canon))
     _re('deterministic', method='reference-impl', target=method,
         output=('signature mapped' if mapping else
                 'signature unmappable — DISCARDED'), reason=map_why)

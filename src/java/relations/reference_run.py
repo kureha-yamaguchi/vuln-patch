@@ -439,7 +439,7 @@ def fields_read_by(class_context, method, canonical=None):
 
 def match_parameters(params: List[Tuple[str, str]],
                      canonical: List[Tuple[str, str]],
-                     read_order: Optional[List[Tuple[str, str]]] = None
+                     read_order: List[Tuple[str, str]]
                      ) -> Tuple[Optional[List[str]], str]:
     """Each declared parameter matched to a canonical field. `(names, why)`.
 
@@ -448,6 +448,14 @@ def match_parameters(params: List[Tuple[str, str]],
     canonical field has that type. Anything unmatchable -> (None, reason):
     an unmappable signature is a DISCARD with its reason, never a guessed
     call (roll 4's five-signatures-in-five-attempts finding).
+
+    `read_order` is REQUIRED, deliberately. It arrived as an optional third
+    parameter in roll 7's fix and the call site was never updated, so
+    production silently ran with `None` for a whole roll while the unit
+    tests -- which call this function directly with correct arguments --
+    stayed green. Making it required turns that class of omission into a
+    TypeError at the call site instead of a degraded mapping. Pass `[]`
+    explicitly when the body genuinely is not visible.
     """
     if not params:
         return None, 'declared signature has no parameters'

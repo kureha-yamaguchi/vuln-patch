@@ -39,19 +39,19 @@ def test_parse_parameters_named_and_bare():
 
 
 def test_match_named_signature_resolves():
-    names, why = rr.match_parameters(rr.parse_parameters(ROLL4_SIGS[1]), CANON)
+    names, why = rr.match_parameters(rr.parse_parameters(ROLL4_SIGS[1]), CANON, [])
     assert names == ['residuals', 'residualsWeights', 'cost']
 
 
 def test_match_bare_ambiguous_types_discards():
     # Two double[] fields exist; a bare double[] cannot pick one.
-    names, why = rr.match_parameters(rr.parse_parameters(ROLL4_SIGS[0]), CANON)
+    names, why = rr.match_parameters(rr.parse_parameters(ROLL4_SIGS[0]), CANON, [])
     assert names is None
     assert 'unmappable' in why
 
 
 def test_match_unmappable_roll4_sig4_discards():
-    names, why = rr.match_parameters(rr.parse_parameters(ROLL4_SIGS[3]), CANON)
+    names, why = rr.match_parameters(rr.parse_parameters(ROLL4_SIGS[3]), CANON, [])
     assert names is None
 
 
@@ -825,3 +825,59 @@ def test_error_names_read_fields_and_total_count():
         rr.parse_parameters('Widget gadget'), canon, [])
     assert names is None
     assert 'all fields (' in why          # count, not a truncated list alone
+
+
+# ---------------------------------------------------------------------------
+# Roll 8 (2026-08-07): fields_read_by was built, tested, and wired at ZERO
+# call sites -- the same shape as roll 2's Spec K (one door of two). Unit
+# tests call helpers directly with correct arguments, so they cannot see a
+# missing or degraded call. These tests look at the SEAM.
+# ---------------------------------------------------------------------------
+
+import inspect
+
+
+def _chain_source():
+    from java import run as runmod
+    return inspect.getsource(runmod._reference_impl_fact)
+
+
+def test_match_parameters_requires_read_order_positionally():
+    # The default that let production run with None for a whole roll is
+    # gone: omitting it is now a TypeError, not a silent degradation.
+    sig = inspect.signature(rr.match_parameters)
+    p = sig.parameters['read_order']
+    assert p.default is inspect.Parameter.empty
+
+
+def test_production_passes_read_fields_to_the_mapper():
+    src = _chain_source()
+    assert 'fields_read_by(' in src, 'derivation never invoked in production'
+    i = src.index('match_parameters(')
+    call = src[i:i + 220]
+    assert 'fields_read_by' in call, (
+        'match_parameters is called without the read-order argument: '
+        + call[:160])
+
+
+def test_every_helper_the_chain_imports_is_actually_used():
+    # The generalized Spec-K guard: a mechanism imported but never called
+    # is a mechanism that does not exist. Roll 2 (one door of two) and
+    # roll 8 (zero call sites) were both invisible to unit tests.
+    src = _chain_source()
+    i = src.index('from java.relations.reference_run import')
+    block = src[i:src.index(')', i)]
+    imported = [n.strip() for n in
+                block.split('import', 1)[1].replace('(', '').split(',')]
+    unused = [n for n in imported if n and f'{n}(' not in src]
+    assert not unused, f'imported into the chain but never called: {unused}'
+
+
+def test_chain_calls_the_reference_impl_helpers_it_imports():
+    src = _chain_source()
+    i = src.index('from java.relations.reference_impl import')
+    block = src[i:src.index(')', i)]
+    imported = [n.strip() for n in
+                block.split('import', 1)[1].replace('(', '').split(',')]
+    unused = [n for n in imported if n and f'{n}(' not in src]
+    assert not unused, f'imported into the chain but never called: {unused}'
