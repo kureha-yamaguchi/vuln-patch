@@ -75,7 +75,9 @@ def test_the_disagreement_side():
                                   {'chi': ['9.9']}, {'chi': ['3.3']},
                                   screened_count=5)
     assert 'DIFFERENT value' in f and 'chiSquare' in f
-    assert 'held-out off-defect observable' in f
+    assert "buggy build's LIVE behaviour" in f
+    assert 'documented sibling observables' in f
+    assert 'never shown' in f
 
 
 def test_the_AGREEMENT_side_exists_and_is_the_same_sentence_shape():

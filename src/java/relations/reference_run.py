@@ -42,26 +42,74 @@ def declared_signature(reference_source: str) -> Optional[str]:
 
 
 def build_driver(reference_class: str,
-                 entry: str,
-                 inputs: List[str],
-                 package: Optional[str] = None) -> str:
-    """A Java driver that calls `entry` on each input and prints the results.
+                 observables: List[str],
+                 vectors: List[str],
+                 package: Optional[str] = None,
+                 call: str = 'compute_{obs}') -> str:
+    """Call EVERY observable on EVERY vector, keyed by OBSERVABLE NAME.
 
-    `inputs` are Java expressions, chosen by the CALLER (our code), not by the
-    model that wrote the reference.
+    KEYING IS THE DESIGN. `observed_values` returns {key: [values]}, and the
+    screen counts KEYS -- so keying by observable name makes
+    MIN_SCREENED_OBSERVABLES mean "three DISTINCT observables", not "three
+    input/output pairs through one formula". N vectors through a single formula
+    are N correlated samples of one claim; they would satisfy the letter of the
+    screen while gutting its independence.
+
+    A throw is RECORDED, not skipped: a documented rejection contract is an
+    observable. Matching throws are agreement (shared semantics); a one-sided
+    throw is a disagreement, and exactly the misunderstanding the screen exists
+    to catch.
     """
     pkg = f'package {package};\n\n' if package else ''
     calls = []
-    for i, expr in enumerate(inputs):
-        calls.append(
-            '    try {\n'
-            f'      Object r{i} = {reference_class}.{entry}({expr});\n'
-            f'      System.out.println("obs{i}=" + String.valueOf(r{i}));\n'
-            '    } catch (Throwable t) {\n'
-            f'      System.out.println("obs{i}=EX:" '
-            '+ t.getClass().getSimpleName());\n'
-            '    }')
+    for obs in observables:
+        for j, vec in enumerate(vectors):
+            fn = call.format(obs=obs)
+            calls.append(
+                '    try {\n'
+                f'      Object r = {reference_class}.{fn}({vec});\n'
+                f'      System.out.println("{obs}=" + String.valueOf(r));\n'
+                '    } catch (Throwable t) {\n'
+                f'      System.out.println("{obs}=EX:" '
+                '+ t.getClass().getSimpleName());\n'
+                '    }')
     return (pkg + 'public class ReferenceDriver {\n'
+            '  public static void main(String[] args) {\n'
+            + '\n'.join(calls) + '\n'
+            f'    System.out.println("{END_MARKER}");\n'
+            '  }\n}\n')
+
+
+def build_buggy_twin_driver(fq_class: str,
+                            construct: str,
+                            observables: List[str],
+                            vectors: List[str],
+                            package: Optional[str] = None) -> str:
+    """The OTHER side of the comparison, run LIVE on the buggy build.
+
+    Fuzzed vectors have no recorded buggy values, so the screen needs the buggy
+    class executed on the SAME constructed states. That is admissible: the buggy
+    build is authority rank 2 whether its values are archived or produced now.
+    Bounded cost -- one class, no fuzzing loop.
+
+    `construct` is a Java expression building the object from a vector, with
+    `{vec}` substituted; observables are read as no-arg getters, keyed the same
+    way as the reference driver so the two dictionaries compare key-for-key.
+    """
+    pkg = f'package {package};\n\n' if package else ''
+    calls = []
+    for obs in observables:
+        for vec in vectors:
+            calls.append(
+                '    try {\n'
+                f'      {fq_class} o = {construct.replace("{vec}", vec)};\n'
+                f'      Object r = o.{obs}();\n'
+                f'      System.out.println("{obs}=" + String.valueOf(r));\n'
+                '    } catch (Throwable t) {\n'
+                f'      System.out.println("{obs}=EX:" '
+                '+ t.getClass().getSimpleName());\n'
+                '    }')
+    return (pkg + 'public class BuggyTwinDriver {\n'
             '  public static void main(String[] args) {\n'
             + '\n'.join(calls) + '\n'
             f'    System.out.println("{END_MARKER}");\n'

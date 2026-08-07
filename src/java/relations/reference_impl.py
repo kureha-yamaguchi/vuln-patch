@@ -64,9 +64,18 @@ from java.relations.evidence_facts import (_close, _decode_java_literal,
 # facts.
 WEAK_KINDS = ('value_ulp', 'exception_generic_latent')
 
-# A reference must agree on at least this many observables before its agreement
-# means anything. Two matching values could be two constants; the screen has to
-# be able to fail.
+# A reference must agree on at least this many DISTINCT OBSERVABLES before its
+# agreement means anything. Two matching values could be two constants; the
+# screen has to be able to fail.
+#
+# THREE OBSERVABLES, NOT THREE INPUT/OUTPUT PAIRS. N vectors through a single
+# formula are N correlated samples of ONE claim -- they satisfy the letter of
+# this bar while gutting its independence. The drivers therefore key results by
+# OBSERVABLE NAME, so `observed_values` returns one entry per observable with
+# its values as a list, and `len(shared)` below counts observables. The disputed
+# point is on-defect almost by definition (it is where the bug lives), so the
+# genuinely off-defect screening surface is the class's documented SIBLING
+# observables computed from the same state.
 MIN_SCREENED_OBSERVABLES = 3
 
 
@@ -329,9 +338,10 @@ def reference_comparison_fact(method,
         '\n[reference-implementation fact] an independent implementation of `'
         + str(method) + '`, written from the DOCUMENTATION alone — never from '
         'the code under review or from the pre-patch implementation — and '
-        + (('matching the buggy build on ' + str(screened_count)
-            + ' held-out off-defect observable(s)') if screened_count
-           else 'admitted by the off-defect screen')
+        + (('demonstrated to match the buggy build\'s LIVE behaviour on '
+            + str(screened_count) + ' of the class\'s documented sibling '
+            'observables, at machine-chosen states it was never shown')
+           if screened_count else 'admitted by the off-defect screen')
         + ', was run on the same input.\n')
     if differ:
         body = '\n'.join('    ' + str(k) + ': patched=' + repr(p)

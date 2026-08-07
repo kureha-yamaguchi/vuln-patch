@@ -42,23 +42,27 @@ class _Builder:
 def test_the_driver_calls_every_input_the_CALLER_chose():
     """P4.2: the model writes the reference, our code decides what is
     compared. A driver that asked the model to print things would inherit the
-    bug that made half the certifier's answers wrong."""
-    src = build_driver('ReferenceImpl', 'chiSquare', ['1, 2', '3, 4'])
-    assert 'ReferenceImpl.chiSquare(1, 2)' in src
-    assert 'ReferenceImpl.chiSquare(3, 4)' in src
-    assert 'obs0=' in src and 'obs1=' in src
+    bug that made half the certifier's answers wrong.
+
+    Signature changed when the screening surface became multi-observable: the
+    driver now takes OBSERVABLES x VECTORS and keys by observable name."""
+    src = build_driver('ReferenceImpl', ['chiSquare'], ['1, 2', '3, 4'])
+    assert 'ReferenceImpl.compute_chiSquare(1, 2)' in src
+    assert 'ReferenceImpl.compute_chiSquare(3, 4)' in src
+    assert 'chiSquare=' in src
     assert END_MARKER in src
 
 
 def test_the_driver_records_a_throw_as_an_observable():
     """An exception IS an observable — a reference that throws where the patch
     returns is a real difference, not a missing datum."""
-    src = build_driver('ReferenceImpl', 'f', ['bad'])
+    src = build_driver('ReferenceImpl', ['f'], ['bad'])
     assert 'catch (Throwable t)' in src and 'EX:' in src
 
 
 def test_the_driver_can_be_packaged():
-    assert 'package org.x;' in build_driver('R', 'f', ['1'], package='org.x')
+    assert 'package org.x;' in build_driver('R', ['f'], ['1'],
+                                            package='org.x')
 
 
 # --- every failure path returns None ---------------------------------------

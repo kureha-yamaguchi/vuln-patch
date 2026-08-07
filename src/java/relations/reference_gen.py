@@ -171,22 +171,29 @@ def build_reference_prompt(method: str,
                   "===", material['skeleton']]
     parts += [
         "",
-        "Write ONE self-contained Java class named `ReferenceImpl` with a "
-        "single PUBLIC STATIC method named `compute`"
+        "Write ONE self-contained Java class named `ReferenceImpl` whose "
+        "PUBLIC STATIC methods are named `compute_<observable>`"
         + (f", in package {package}" if package else "")
         + ".",
         "",
-        "FUNCTIONALIZE IT. The method above may read object state rather than "
-        "take arguments; `compute` must take that state as PARAMETERS and be "
-        "pure — same inputs, same result, no fields, no I/O. Declare exactly "
-        "the data the computation needs (e.g. the arrays or scalars the "
-        "documentation says it is computed from), in that order, and return "
-        "the same type. A reference that reads no input cannot be run on "
-        "different inputs, and one that cannot be varied cannot be checked.",
+        "FUNCTIONALIZE IT. These methods may read object state rather than "
+        "take arguments; each `compute_<name>` must take that state as "
+        "PARAMETERS and be pure — same inputs, same result, no fields, no I/O. "
+        "Declare exactly the data the computation needs, in the SAME parameter "
+        "order for every one, and return the documented type. A reference that "
+        "reads no input cannot be run on different inputs, and one that cannot "
+        "be varied cannot be checked.",
         "",
-        "First line of your reply must be a comment giving the signature you "
-        "chose, exactly: `// compute(<types>)`. Then the class. No markdown "
-        "fences, no prose.",
+        "IMPLEMENT THE SIBLINGS TOO, not only the method named above. The "
+        "documentation defines several quantities over the same state; write "
+        "`compute_<name>` for each one you can derive from the documentation. "
+        "They are how this reference earns its standing: the named method is "
+        "where the disagreement under review lives, so it cannot also be the "
+        "evidence that the reference is trustworthy. The siblings are.",
+        "",
+        "First line of your reply must be a comment listing what you wrote, "
+        "exactly: `// compute(<shared parameter types>) : <name1>, <name2>, "
+        "...`. Then the class. No markdown fences, no prose.",
     ]
     return [{'role': 'system', 'content': _SYSTEM},
             {'role': 'user', 'content': '\n'.join(parts)}]
@@ -233,3 +240,43 @@ def strip_bodies(class_context: str) -> str:
             out.append('{ /* body withheld */ }')
         i = j + 1
     return ''.join(out)
+
+
+#: Return types whose value is a computation rather than a stored setting.
+#: Deliberately excludes the object types that would need deep comparison.
+_OBSERVABLE_TYPES = ('double', 'float', 'int', 'long', 'boolean',
+                     'double[]', 'int[]', 'double[][]', 'String')
+
+
+def sibling_observables(class_context: str, disputed: str,
+                        cap: int = 8) -> list:
+    """The class's PUBLIC NO-ARG observables, minus the disputed one.
+
+    These are the screening surface. The disputed point is on-defect almost by
+    definition -- it is where the bug lives -- so it cannot also be the evidence
+    that the reference is trustworthy; its siblings are.
+
+    A first walkthrough of Math-65 extracted 2 observables and concluded the
+    class was too thin to screen. That was the EXTRACTOR: it matched only
+    `double` returns. The real surface is 16. Measuring a mechanism's reach with
+    a regex that sees a third of the data is how a design gets abandoned for a
+    property it does not have.
+
+    Ordered so genuinely COMPUTED quantities come before stored settings: a
+    getter that echoes a constructor argument agrees trivially and screens
+    nothing.
+    """
+    if not class_context:
+        return []
+    found = re.findall(
+        r'public\s+(?:final\s+)?([\w\[\]<>.]+)\s+(\w+)\s*\(\s*\)',
+        class_context)
+    stored = re.compile(r'^get(Max|Min)\w*$')
+    out = []
+    for typ, name in found:
+        if name == disputed or typ not in _OBSERVABLE_TYPES:
+            continue
+        if name not in [n for _t, n in out]:
+            out.append((typ, name))
+    out.sort(key=lambda tn: (bool(stored.match(tn[1])), tn[1]))
+    return [n for _t, n in out][:cap]
