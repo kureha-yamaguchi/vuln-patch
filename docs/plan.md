@@ -1909,6 +1909,19 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   Pin check verified to ABSTAIN on no overlap. 784 passed, 7 skipped;
   pushed. Eighteen defects total; 17 and 18 found by the same walk, at
   desk cost.*
+  *RE-WALK #8 ADDENDUM — THE PATCHED SIDE (user-prompted: "then we
+  check the patch, right?"). `scripts/rewalk8_patched_side.py` ran the
+  recorded twin on ladder1k's PATCHED build — the chain's final step,
+  never yet reached in a roll because the screen discards first. The
+  would-be fact is total agreement, DIGIT FOR DIGIT: getChiSquare
+  patched=6.253505411815327 = reference exactly; guessParametersErrors
+  patched=[0.003947421421789695, 0.003953773486615504] = reference
+  exactly (and inside the failing test's 0.004±0.001); getRMS all
+  three builds identical. An independent documentation-derived
+  implementation computes EXACTLY what the patch computes at the
+  disputed point and everywhere else it reports — the exoneration
+  evidence 8.2 was designed to produce for Math-65, sitting one
+  screen-design decision away from the judge.*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
