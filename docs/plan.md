@@ -1632,6 +1632,21 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   Residual risks named for that walk: a fixture helper referencing test-class
   FIELDS (honest discard), and whatever `optimize(...)` needs at runtime
   (twin runs, `__construct0` reports).*
+  *VM re-walk #3 (2026-08-07): everything else held (package, helpers,
+  escaping, braces); one blocker — `types_declaring` returned {'name'} six
+  times because the class context is XML-WRAPPED and the bare pattern
+  matched the ATTRIBUTE, hiding the actual declarer. Fixed (6952492, main
+  session): both shapes parsed, transitive extends closure, bare pass
+  requires an uppercase-initial name not preceded by '<' (javadoc prose was
+  yielding 'for'); verified against ladder1e's REAL context → exactly
+  {AbstractLeastSquaresOptimizer, LevenbergMarquardtOptimizer}. Plus the
+  agent's ask: `plausible_class_names()` + a `declaring-type PARSE BROKEN`
+  discard, because a broken extractor and "no declaring type in this leg"
+  are different failures and only one is about the leg. THIRD instance of
+  the check-your-matcher lesson (16 observables read as 2; 57%-token
+  matching; now 6 class names read as 'name') — all fixture sets in the
+  state-twin test file are now real recorded material. 722 passed, 7
+  skipped; pushed. VM re-walk #4 is roll 5's gate.*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
