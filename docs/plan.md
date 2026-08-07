@@ -2023,6 +2023,63 @@ to the fact at ANY stage is a hard stop pending diagnosis. Read-outs carry
 BOTH SIGNS (catches gained/lost AND accusations gained/lost) per the
 lottery lesson.
 
+### 8.25 THE REFERENCE VERDICT GATE — design note ONLY (user-approved direction 2026-08-07; no build without fixture gates)
+**Decision context.** Roll 12: the chain is fully correct and the judge is
+evidence-blind to its fact (9 deliveries, 0 engagements — fifth negative on
+the persuasion axis). User decision: stop persuading; make the admitted
+fact DETERMINISTIC. This note is the required paper pass.
+
+**The naive rule fails the recall guard BY CONSTRUCTION — recorded first
+so it cannot be built by accident.** "Admitted reference agrees with the
+patch at TEST STATE → void the conviction" is unsound: an overfit patch is
+typically CORRECT at the test's own inputs (that is what overfitting to a
+test means), so the reference would agree with a FAKE patch at test state
+too, and the gate would void genuine catches — exactly the 67-row
+population's damage mode. Agreement at test state discriminates
+correct-vs-buggy, NOT correct-vs-overfit.
+
+**The sound rule: the reference answers at the ACCUSER'S chosen input.**
+A conviction is a relation firing at a concrete input on the patched
+build. The reference is a pure function; replay the FIRING'S OWN input
+through it:
+  * reference sides with the PATCH at the firing input → the relation
+    encodes the wrong contract (Math-65's [16]: relation asserts sum r^2/w,
+    patch and reference both compute sum w*r^2) → VOID/downgrade;
+  * reference sides with the RELATION against the patch → the patch is
+    wrong at that input → conviction STANDS, now corroborated (a recall
+    GAIN, not just a precision fix — both signs, per the lottery lesson).
+Admission prerequisites unchanged and mandatory: screen (3+ siblings,
+option-B re-grade), corroboration attribution, pin discipline. The gate
+consumes only ADMITTED references.
+
+**The build question (why this is a note, not a diff): state recovery at
+the firing.** The twin recovers state at TEST state via reflection; a
+firing's state (post-optimize with fuzz-chosen inputs) is not currently
+recorded. Two candidate paths, decide at design review: (a) extend 8.4
+raw-value recording so the harness reflection-prints the reference's
+declared state fields AT the firing (a firing-twin: same _FMT_HELPER,
+same __param_ discipline); (b) restrict phase 1 to firings whose message
+already carries every input the reference's signature needs (scalar
+metamorphic relations) and measure reach before widening. (b) is the
+cheap honest start.
+
+**Pre-registered gates, BEFORE any build:**
+  (a) 67-row genuine-catch fixture: ZERO voids. Rows lack reference-chain
+      data, so the run is a REPLAY of the gate's predicate over each row's
+      firing input with the leg's reference where one exists, abstain
+      where none — an abstain is a pass, a void is a fail.
+  (b) 38-row correct-dismissals: untouched (the gate never manufactures a
+      keep; sides-with-relation only CORROBORATES an existing keep).
+  (c) Math-65 ladder leg: FP -> TN with the gate live, traceable to the
+      gate's event in the trace.
+  (d) A clean-leg accusation traceable to the gate at ANY point = hard
+      stop (standing ladder rule).
+  (e) Rule 7: two no-change iterations -> stop and report.
+**Reach honesty:** the gate exists only where the chain admits a
+reference (disputed-observable detection measured 25.4% of rows; admission
+is rarer). Phase-1 (b)-scope reach is measured and reported with the
+first fixture run — a silent-cap disclosure, not a footnote.
+
 ### Parked, unchanged
 Focused synthesis (both-signs live A/B, expensive, not now) · fresh12
 (user's literal phrase only) · the next full 30-leg pair (user's word, after
