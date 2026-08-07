@@ -184,6 +184,12 @@ def build_reference_prompt(method: str,
         "reads no input cannot be run on different inputs, and one that cannot "
         "be varied cannot be checked.",
         "",
+        "NAME each parameter after the state it represents, using the name "
+        "the class uses for it, and repeat those names in the declaration "
+        "line below. Take only state the computation actually consumes: a "
+        "parameter for something the quantity does not depend on cannot be "
+        "supplied and the reference will be discarded unused.",
+        "",
         "IMPLEMENT THE SIBLINGS TOO, not only the method named above. The "
         "documentation defines several quantities over the same state; write "
         "`compute_<name>` for each one you can derive from the documentation. "

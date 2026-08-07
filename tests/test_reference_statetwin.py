@@ -739,3 +739,89 @@ def test_run_twin_passes_the_output_dir_on_the_classpath(monkeypatch):
     assert vals is not None, why
     assert '/proj/fuzz/reference_twin' in seen['cp']
     assert seen['cwd'] == '/proj/fuzz/reference_twin'
+
+
+# ---------------------------------------------------------------------------
+# Roll 7 (2026-08-07): the model declared BARE types -- `double[], double[],
+# double` -- so nominal matching had nothing to work with and two double[]
+# fields made the unique-type fallback ambiguous. Real Math-65 field set.
+# ---------------------------------------------------------------------------
+
+M65_CANON = [('int', 'DEFAULT_MAX_ITERATIONS'), ('Checker', 'checker'),
+             ('double[][]', 'jacobian'), ('int', 'cols'), ('int', 'rows'),
+             ('double[]', 'targetValues'), ('double[]', 'residualsWeights'),
+             ('double[]', 'point'), ('Objective', 'objective'),
+             ('double[]', 'residuals'), ('double', 'cost')]
+
+M65_CTX_BODY = ('public class A {\n'
+                '  private double[] residuals;\n'
+                '  private double[] residualsWeights;\n'
+                '  private int rows;\n'
+                '  private double[] targetValues;\n'
+                '  private double cost;\n'
+                '  public double getChiSquare() {\n'
+                '    double chiSquare = 0;\n'
+                '    for (int i = 0; i < rows; ++i) {\n'
+                '      final double residual = residuals[i];\n'
+                '      chiSquare += residual * residual / residualsWeights[i];\n'
+                '    }\n    return chiSquare;\n  }\n}')
+
+
+def test_fields_read_by_is_code_order_not_declaration_order():
+    canon = rr.canonical_state(M65_CTX_BODY)
+    reads = rr.fields_read_by(M65_CTX_BODY, 'getChiSquare', canon)
+    assert [n for _t, n in reads] == ['rows', 'residuals', 'residualsWeights']
+    # targetValues and cost are fields but this method does not read them.
+    assert 'targetValues' not in [n for _t, n in reads]
+
+
+def test_bare_signature_maps_by_read_order():
+    canon = rr.canonical_state(M65_CTX_BODY)
+    reads = rr.fields_read_by(M65_CTX_BODY, 'getChiSquare', canon)
+    names, why = rr.match_parameters(
+        rr.parse_parameters('double[], double[]'), canon, reads)
+    assert names == ['residuals', 'residualsWeights'], why
+
+
+def test_bare_signature_without_read_order_still_discards():
+    # No body visible -> no ordering evidence -> ambiguous -> discard.
+    names, why = rr.match_parameters(
+        rr.parse_parameters('double[], double[]'), M65_CANON, [])
+    assert names is None and 'unmappable' in why
+
+
+def test_unsupplyable_parameter_discards_rather_than_guessing():
+    # Roll 7's real signature: the third `double` corresponds to no field
+    # the method reads. Guessing would feed silent wrong input.
+    canon = rr.canonical_state(M65_CTX_BODY)
+    reads = rr.fields_read_by(M65_CTX_BODY, 'getChiSquare', canon)
+    names, why = rr.match_parameters(
+        rr.parse_parameters('double[], double[], double'), canon, reads)
+    assert names is None
+    assert 'read by the method' in why and 'residuals' in why
+
+
+def test_named_parameters_still_win_over_read_order():
+    canon = rr.canonical_state(M65_CTX_BODY)
+    reads = rr.fields_read_by(M65_CTX_BODY, 'getChiSquare', canon)
+    names, why = rr.match_parameters(
+        rr.parse_parameters('double[] residualsWeights, double[] residuals'),
+        canon, reads)
+    assert names == ['residualsWeights', 'residuals'], why   # order honoured
+
+
+def test_substring_match_cannot_cross_to_an_unread_field():
+    # `residuals` is a substring of `residualsWeights`: mapping one to the
+    # other compiles, runs, and feeds the reference the WRONG array.
+    canon = [('double[]', 'residualsWeights'), ('int', 'rows')]
+    names, why = rr.match_parameters(
+        rr.parse_parameters('double[] residuals'), canon, [('int', 'rows')])
+    assert names is None, (names, why)
+
+
+def test_error_names_read_fields_and_total_count():
+    canon = rr.canonical_state(M65_CTX_BODY)
+    names, why = rr.match_parameters(
+        rr.parse_parameters('Widget gadget'), canon, [])
+    assert names is None
+    assert 'all fields (' in why          # count, not a truncated list alone

@@ -401,8 +401,45 @@ def canonical_state(class_context: str) -> List[Tuple[str, str]]:
     return out
 
 
+def fields_read_by(class_context, method, canonical=None):
+    """The canonical state fields the disputed method's body references, in
+    order of first appearance -- or [] if the body is not visible.
+
+    Legitimate authority: this reads the BUGGY implementation, which is
+    rank 2 and is OUR deterministic code doing the reading. The generator
+    never sees it (that is the information rule, and it is enforced by
+    ImplementationLeak); the MAPPER may, because knowing which fields a
+    computation consumes is not knowing how it computes them.
+
+    Roll 7: the model declared `double[], double[], double` with no names,
+    so nominal matching had nothing to work with and two double[] fields
+    made the unique-type fallback ambiguous. Read-order gives an ordering
+    that is derived from the code rather than guessed.
+    """
+    import re as _re
+    if not class_context or not method:
+        return []
+    canonical = canonical if canonical is not None else canonical_state(
+        class_context)
+    by_name = {n: t for t, n in canonical}
+    m = _re.search(r'\b' + _re.escape(method) + r'\s*\([^)]*\)\s*\{',
+                   class_context)
+    if not m:
+        return []
+    open_idx = class_context.index('{', m.start())
+    close = _match_brace(class_context, open_idx)
+    body = class_context[open_idx:close + 1] if close > 0 else ''
+    out, seen = [], set()
+    for w in _re.findall(r'\b(\w+)\b', body):
+        if w in by_name and w not in seen:
+            seen.add(w)
+            out.append((by_name[w], w))
+    return out
+
+
 def match_parameters(params: List[Tuple[str, str]],
-                     canonical: List[Tuple[str, str]]
+                     canonical: List[Tuple[str, str]],
+                     read_order: Optional[List[Tuple[str, str]]] = None
                      ) -> Tuple[Optional[List[str]], str]:
     """Each declared parameter matched to a canonical field. `(names, why)`.
 
@@ -416,6 +453,11 @@ def match_parameters(params: List[Tuple[str, str]],
         return None, 'declared signature has no parameters'
     unused = list(canonical)
     resolved = []
+    # Fields the disputed method actually reads, in code order. Used to
+    # resolve UNNAMED parameters positionally by type (roll 7) and to
+    # sanity-check loose nominal matches.
+    reads = list(read_order or [])
+    read_names = {n for _t, n in reads}
     for typ, name in params:
         pick = None
         if name:
@@ -429,21 +471,38 @@ def match_parameters(params: List[Tuple[str, str]],
                         pick = c
                         break
             if pick is None:
+                # Substring matching is a LAST resort and is restricted to
+                # fields the method actually reads: `residuals` is a
+                # substring of `residualsWeights`, and mapping one to the
+                # other would feed the reference the wrong array while
+                # compiling and running perfectly (silent wrong input).
                 subs = [c for c in unused
-                        if name.lower() in c[1].lower()
-                        or c[1].lower() in name.lower()]
+                        if (name.lower() in c[1].lower()
+                            or c[1].lower() in name.lower())
+                        and (not read_names or c[1] in read_names)]
                 if len(subs) == 1:
                     pick = subs[0]
-        if pick is None:
-            same_t = [c for c in unused if c[0] == typ]
-            if len(same_t) == 1:
-                pick = same_t[0]
+        # A NAME IS EVIDENCE; A BARE TYPE IS NOT. If the model named a
+        # parameter and no field answers to that name, falling back to type
+        # would map `residuals` onto `residualsWeights` -- compiling,
+        # running, and feeding the reference the wrong array. So the type
+        # fallback is for UNNAMED parameters only, and it is restricted to
+        # fields the method actually reads, in code order: an ordering
+        # derived from the implementation rather than guessed. A parameter
+        # for state the computation does not consume cannot be supplied at
+        # all, and that is a discard, not a guess.
+        if pick is None and not name:
+            same_read = [c for c in reads if c in unused and c[0] == typ]
+            if same_read:
+                pick = same_read[0]
         if pick is None:
             label = f'{typ} {name}'.strip()
-            return None, (f'parameter `{label}` matches no canonical state '
-                          f'field (fields: '
-                          f'{[n for _t, n in canonical][:8]}) — signature '
-                          f'unmappable, DISCARDED')
+            return None, (
+                f'parameter `{label}` matches no canonical state field. '
+                f'Fields read by the method: {[n for _t, n in reads][:6]}; '
+                f'all fields ({len(canonical)}): '
+                f'{[n for _t, n in canonical][:12]}… — signature unmappable, '
+                f'DISCARDED')
         unused.remove(pick)
         resolved.append(pick[1])
     return resolved, f'matched {len(resolved)} parameter(s) to state fields'
