@@ -207,6 +207,55 @@ def _pin_matches(printed: str, expected: str, tol) -> bool:
     return False
 
 
+def _assert_tolerance(expected: str, test_sources) -> Optional[str]:
+    """The test's own assertEquals tolerance for `expected`, or None."""
+    for src in test_sources or []:
+        t = re.search(r'assertEquals\(\s*' + re.escape(expected)
+                      + r'\s*,[^,()]+,\s*([0-9.eE+-]+)\s*\)', src or '')
+        if t:
+            return t.group(1)
+    return None
+
+
+def pins_for_disputed(method, failure_messages, test_sources, buggy_obs
+                      ) -> Dict[str, List[Tuple[str, Optional[str]]]]:
+    """Pin material that GENUINELY attaches to the disputed observable.
+
+    Roll 11 (defect 19, the first inside the mechanism's judgement rather
+    than its plumbing): the chain mapped EVERY trusted test literal onto the
+    disputed observable by construction, so a reference that correctly
+    diverged on-defect was discarded against a literal from a NEIGHBOURING
+    assertion — 1.768262623567235 is asserted against
+    `Math.sqrt(circle.getN()) * rms`, an RMS line, not a getChiSquare value.
+    The silent-wrong-comparison class, one layer in.
+
+    Validator 3 now uses the SAME attribution discipline as corroboration
+    pins. A pin attaches to the disputed observable only via:
+      (a) the failure message's expected value, when its observed
+          (`but was:<...>`) value appears VERBATIM in the twin's buggy
+          print for the disputed observable — the state identity rule; or
+      (b) an assertion whose actual-value expression calls the disputed
+          method DIRECTLY: `assert*(<literal>, <...method(...)...>[, tol])`.
+    Each pin carries the test's own tolerance where recoverable. No
+    attribution -> no pin -> the pin check ABSTAINS, stated not silent.
+    """
+    pins: List[Tuple[str, Optional[str]]] = []
+    for msg in failure_messages or []:
+        m = re.search(r'expected:<([^>]+)> but was:<([^>]+)>', msg or '')
+        if not m:
+            continue
+        exp, was = m.group(1).strip(), m.group(2).strip()
+        if any(was in str(v) for v in (buggy_obs or {}).get(method, [])):
+            pins.append((exp, _assert_tolerance(exp, test_sources)))
+    for src in test_sources or []:
+        for m in re.finditer(
+                r'assert\w*\(\s*(-?[\d.][\deE.+-]*)\s*,'
+                r'\s*[^,;]*\b' + re.escape(method) + r'\s*\([^)]*\)[^,;]*'
+                r'(?:,\s*(-?[\d.][\deE.+-]*)\s*)?\)', src or ''):
+            pins.append((m.group(1), m.group(2)))
+    return {method: pins} if pins else {}
+
+
 def test_corroboration_pins(failure_messages, test_sources, buggy_obs,
                             siblings) -> Dict[str, Tuple[str, Optional[str]]]:
     """`{sibling: (expected, tolerance)}` — mechanical attribution only.
@@ -431,11 +480,19 @@ def pin_check(reference_obs, test_pinned, disputed_keys=None):
     for k in overlap:
         rv = reference_obs[k]
         pinned = test_pinned[k]
-        pinned = pinned if isinstance(pinned, (list, tuple)) else [pinned]
-        if not any(_values_agree(a, b) for a in rv for b in pinned):
+        pinned = list(pinned) if isinstance(pinned, (list, tuple)) else [pinned]
+        # A pin may be a bare value (compared on the rounding floor) or an
+        # attributed `(value, tolerance)` pair from `pins_for_disputed` —
+        # then the TEST'S OWN tolerance governs, not our floor (roll 11:
+        # the test's slack is part of what the test pins).
+        def _pin_ok(a, p):
+            if isinstance(p, (list, tuple)):
+                return _pin_matches(a, p[0], p[1] if len(p) > 1 else None)
+            return _values_agree(a, p)
+        if not any(_pin_ok(a, p) for a in rv for p in pinned):
             return False, (
                 'reference contradicts the failing test\'s PINNED answer on '
-                '`' + str(k) + '` (' + repr(rv[:1]) + ' vs ' + repr(list(pinned)[:1])
+                '`' + str(k) + '` (' + repr(rv[:1]) + ' vs ' + repr(pinned[:1])
                 + ') — the test is tier-1 authority, so this reference copied '
                 'the defect rather than the contract. DISCARDED.')
     return True, ('reference matches the failing test\'s pinned answer on '

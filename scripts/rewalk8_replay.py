@@ -30,23 +30,20 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 from java.harness.build import HarnessBuilder                      # noqa: E402
 from java.relations import reference_run as rr                     # noqa: E402
 from java.relations.reference_impl import (                        # noqa: E402
-    pin_check, screen_reference, test_corroboration_pins)
+    pin_check, pins_for_disputed, screen_reference, test_corroboration_pins)
 
-CO = ('/home/code/scratch/co/ladder1k_20260807_164149/'
+CO = ('/home/code/scratch/co/ladder1l_20260807_185007/'
       '01_patch1-Math-65-CapGen_c/Math_65_buggy')
 
-# Recorded by the chain in ladder1k's trace — verbatim.
-SIG = ('double[] residuals, double[] residualsWeights, double[][] jacobian, '
-       'int rows, int cols')
+# Recorded by the chain in ladder1l's (roll 11's) trace — verbatim.
+SIG = ('double[][] jacobian, int rows, int cols, double[] residuals, '
+       'double[] residualsWeights')
 MATCHED = {'getChiSquare': 'getChiSquare', 'getCovariances': 'getCovariances',
            'getRMS': 'getRMS', 'guessParametersErrors': 'guessParametersErrors'}
 SIBLINGS = ['getCovariances', 'getEvaluations', 'getIterations',
             'getJacobianEvaluations', 'getRMS', 'guessParametersErrors']
-# The failing test never asserts getChiSquare directly, so the honest pin
-# input here is EMPTY — the walk verifies the pin ABSTAINS on no overlap
-# (the production chain derives real pin material from the test's own
-# assertions; feeding it the buggy build's value would test nothing).
-TRUSTED = {}
+# The failing test never asserts getChiSquare directly, so the production
+# attribution (pins_for_disputed) must yield NO pin and the check ABSTAINS.
 
 
 def step(n, title, ok, why):
@@ -103,7 +100,15 @@ def main():
             'on siblings)', True, ('ADMITTED — ' if ok else 'DISCARDED — ')
          + why)
 
-    ok, why = pin_check(obs, TRUSTED, disputed_keys={'getChiSquare'})
+    # Roll 11's exact material: the RMS assertion whose literal was
+    # misattributed to getChiSquare, plus the real failure message. The
+    # production attribution must yield NO pin for getChiSquare -> ABSTAIN.
+    rms_assert = ('assertEquals(1.768262623567235,  '
+                  'Math.sqrt(circle.getN()) * rms,  1.0e-10);')
+    pins_d = pins_for_disputed('getChiSquare', [failure_msg],
+                               [rms_assert + '\n' + assert_src], buggy_obs)
+    print(f'    disputed pins: {pins_d}')
+    ok, why = pin_check(obs, pins_d, ['getChiSquare'])
     step(7, 'pin check at the disputed point', True,
          ('pass/abstain — ' if ok else 'DISCARD (bug-copy) — ') + why)
 

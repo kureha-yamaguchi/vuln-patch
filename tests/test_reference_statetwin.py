@@ -1441,3 +1441,73 @@ def test_chain_resolves_corroboration_before_the_screen():
         'screen_reference(')
     call = src[src.index('screen_reference('):][:220]
     assert 'test_corroboration=corro' in call
+
+
+# ---------------------------------------------------------------------------
+# Roll 11 (defect 19, the first in the mechanism's judgement): the pin check
+# discarded a correctly-diverging reference against a literal from a
+# NEIGHBOURING assertion. 1.768262623567235 is asserted against
+# `Math.sqrt(circle.getN()) * rms` — an RMS line, not a getChiSquare value —
+# and reached the disputed observable only because the chain mapped every
+# trusted literal onto it by construction. Validator 3 now attributes pins
+# exactly as corroboration does.
+# ---------------------------------------------------------------------------
+
+M65_RMS_ASSERT_SRC = (
+    '        double rms = optimizer.getRMS();\n'
+    '        assertEquals(1.768262623567235,  '
+    'Math.sqrt(circle.getN()) * rms,  1.0e-10);\n')
+
+
+def test_no_pin_borrowed_from_a_neighbouring_assertion():
+    from java.relations.reference_impl import pins_for_disputed, pin_check
+    buggy = {'getChiSquare': ['1.5633763529538318'],
+             'guessParametersErrors': [M65_BUGGY_ERRORS]}
+    pins = pins_for_disputed('getChiSquare', [M65_FAILURE_MSG],
+                             [M65_RMS_ASSERT_SRC + M65_ASSERT_SRC], buggy)
+    # The failure message attributes to errors (not chiSquare), and no
+    # assertion calls getChiSquare directly -> NO pin, whatever literals
+    # the test contains.
+    assert pins == {}
+    # And the roll-11 reference (correctly diverging on-defect) ABSTAINS
+    # instead of being discarded against the RMS literal.
+    ok, why = pin_check({'getChiSquare': ['6.253505411815327']}, pins,
+                        ['getChiSquare'])
+    assert ok and 'ABSTAIN' in why
+
+
+def test_pin_attaches_by_direct_assertion_and_keeps_the_bug_copy_catch():
+    from java.relations.reference_impl import pins_for_disputed, pin_check
+    src = ('  Opt optimizer = new Opt();\n'
+           '  Assert.assertEquals(3.25, optimizer.getChiSquare(), 1e-9);\n')
+    pins = pins_for_disputed('getChiSquare', [], [src],
+                             {'getChiSquare': ['9.99']})
+    assert pins == {'getChiSquare': [('3.25', '1e-9')]}
+    # A bug-copying reference (echoes buggy 9.99) is still discarded.
+    ok, why = pin_check({'getChiSquare': ['9.99']}, pins, ['getChiSquare'])
+    assert not ok and 'copied the defect' in why
+    # A faithful reference passes within the test's own tolerance.
+    ok, why = pin_check({'getChiSquare': ['3.2500000004']}, pins,
+                        ['getChiSquare'])
+    assert ok, why
+
+
+def test_pin_attaches_by_state_identity_when_failure_is_on_disputed():
+    from java.relations.reference_impl import pins_for_disputed
+    # If the failing assertion's observed value appears verbatim in the
+    # twin's buggy print for the DISPUTED observable, the expected value
+    # pins it — with the test's own tolerance recovered.
+    msg = 'junit...AssertionFailedError: expected:<0.004> but was:<0.00197>'
+    buggy = {'getX': ['0.00197']}
+    pins = pins_for_disputed('getX', [msg],
+                             ['assertEquals(0.004, thing.getX(), 0.001);'],
+                             buggy)
+    assert ('0.004', '0.001') in pins['getX']
+
+
+def test_chain_attributes_pins_instead_of_blanket_trusted_values():
+    src = _chain_source()
+    assert 'pins_for_disputed(' in src
+    i = src.index('pin_check(')
+    assert 'trusted_values' not in src[i:i + 120], (
+        'pin_check is still fed blanket trusted_values')

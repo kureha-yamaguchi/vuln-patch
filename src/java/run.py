@@ -100,8 +100,9 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     """
     from llm import record_event as _re, HarnessGenerator as _HG
     from java.relations.reference_impl import (
-        disputed_observables, pin_check, reference_comparison_fact,
-        screen_reference, test_corroboration_pins, too_thin_to_screen)
+        disputed_observables, pin_check, pins_for_disputed,
+        reference_comparison_fact, screen_reference, test_corroboration_pins,
+        too_thin_to_screen)
     from java.relations.reference_gen import (
         ImplementationLeak, build_reference_prompt, sibling_observables,
         strip_bodies)
@@ -382,10 +383,29 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         return None
 
     # VALIDATOR 3: at test state the failing test's pinned answer applies to
-    # the disputed observable — the bug-copying catch, now with real overlap.
-    pin_ok, pin_why = pin_check(
-        obs, {method: list(trusted_values or [])} if trusted_values else {},
-        [method])
+    # the disputed observable — the bug-copying catch. Roll 11 (defect 19):
+    # blanket `{method: trusted_values}` mapped every test literal onto the
+    # disputed observable, so a correctly-diverging reference was discarded
+    # against a NEIGHBOURING assertion's literal. Pins now attach only by
+    # the same attribution discipline as corroboration (state identity, or
+    # an assertion calling the disputed method directly); `trusted_values`
+    # is deliberately NOT consulted here — its provenance is exactly the
+    # misattribution vector.
+    pins_d = pins_for_disputed(
+        method,
+        [getattr(ft, 'failure_message', '') or '' for ft in failure_tests],
+        [getattr(ft, 'method_source', '') or '' for ft in failure_tests],
+        buggy_obs)
+    _re('deterministic', method='reference-impl', target=method,
+        output=('disputed-observable pins resolved' if pins_d
+                else 'no pin attaches to the disputed observable'),
+        reason=('attributed by state identity or a direct assertion on the '
+                'disputed method' if pins_d else
+                'no failure-message or direct-assertion attribution — the '
+                'pin check will ABSTAIN rather than borrow a neighbouring '
+                'assertion\'s literal'),
+        detail={'pins': {k: v[:4] for k, v in pins_d.items()}})
+    pin_ok, pin_why = pin_check(obs, pins_d, [method])
     _re('deterministic', method='reference-impl', target=method,
         output=('pin-check PASSED' if pin_ok else 'pin-check DISCARDED'),
         reason=pin_why)
