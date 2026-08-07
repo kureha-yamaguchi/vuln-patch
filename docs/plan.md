@@ -1846,6 +1846,30 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   value would not compile as a literal (unhandled, now visible in the
   javac words if it fires), and the reference's own compile is the
   same class of first-time seam.*
+  *ROLL 10 (2026-08-07): TWELVE steps, deepest yet; the attribution fix
+  worked immediately (javac's words in the discard), name recovery ran
+  live (bare 5-type comment → named, 5-of-5 mapped), the 2-D literal
+  emitted valid Java, the twin ran again in production (13 keys).
+  Died: `cannot find symbol` at the driver's first call to
+  ReferenceImpl. DECIDED BY READING build(), no re-roll (d183077,
+  second session): javac's `-d` output dir was never on the COMPILE
+  classpath, so the driver could not see the class the previous
+  build() call had just produced — roll 6's seam ONE PHASE OVER
+  (runtime fixed, compile not; the twin never hit it because a twin is
+  one self-contained source, and reference+driver is the chain's only
+  two-artifact compile). Fifteenth defect. build() gains
+  `extra_classpath` (prepended to -cp); run_reference hands the driver
+  the reference's class dir — the same dir the runtime path already
+  appends. Sixteenth, found by the same read: the compile reason's raw
+  head spent its character budget on javac's source-line echo (the
+  long literal argument) and cut off `symbol:`/`location:` — the two
+  lines that decide class-missing vs method-missing.
+  `_compile_failure_reason` now keeps the structural lines, capped per
+  line; roll 10's verbatim stderr is the fixture (symbol and location
+  survive, the literal does not). Seam-tested at both levels. Gate (b)
+  16-for-16; rule 7 still unstarted. 780 passed, 7 skipped; pushed.
+  **Roll 11 is GO — same one-step stack as before, now with the
+  compile seam closed: the reference runs, and the screen answers.***
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
