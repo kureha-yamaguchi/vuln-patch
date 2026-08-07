@@ -1582,6 +1582,28 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   Iterate the prompt/adapter here where a roll costs ~150–250k. Gate to
   stage 2: canary passes; zero facts from discarded references; the fact
   visibly engages the disputed formula in the judge's evidence.
+  **MAIN-SESSION DEBUG PASS (2026-08-07, 1b802dc) — the chain rebuilt on the
+  STATE-TWIN architecture before roll 5.** Roll 4's call-site lag was one of
+  FOUR integration defects: the screen compared the reference to ITSELF
+  (always-admit, fail-open — the worst); the pin check's keys could never
+  overlap (permanent silent abstention); the fact's keys could never match
+  (no fact, ever). Root cause under all four: the chain never settled WHAT
+  STATE the three programs compare at. Answer now built: one twin driver
+  replays the failing test's setup on BOTH builds; the reference's inputs
+  come from the twin's reflection-printed state; screen =
+  reference-vs-buggy on siblings, fact = reference-vs-patched at the same
+  state, pin = the test's own answer at its own state (validator 3 is now
+  real). The screen's exam is open-INPUT/closed-OUTPUT and the fact's
+  standing sentence says so. Signature handling per the roll-4 finding:
+  nominal matching to canonical state fields, unmappable = discard;
+  build_driver now raises TypeError on a str (the roll-4 bug made
+  impossible). Per-leg memo: both doors reuse one resolution. The
+  production-path walkthrough is now a TEST (drives run.py's own function
+  with stubbed generator/JVM; roll 4's five signatures are fixtures). 704
+  passed, 7 skipped. **Before roll 5 the agent re-walks on the VM** — the
+  local pass proves wiring and logic; javac and the real twin compiles it
+  cannot (no local JRE), and the twin's test-setup compile is the likeliest
+  next failure (missing test-class imports/helpers → honest discard).
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
