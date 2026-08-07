@@ -6,6 +6,7 @@ run.py drives. `test_production_chain_*` calls `_reference_impl_fact` itself
 with a stubbed generator/JVM — a call-site lag now fails a test instead of a
 roll.
 """
+import os
 import re
 import sys
 import types
@@ -1195,3 +1196,86 @@ def test_all_compile_branches_use_the_attribution_helper():
             '_compile_failure_reason', ''), (
             f'{fn.__name__} has a compile branch bypassing attribution')
         assert '_compile_failure_reason(' in src
+
+
+# ---------------------------------------------------------------------------
+# Roll 10 (2026-08-07): `cannot find symbol` at the driver's first call to
+# ReferenceImpl. Decided by reading build(), not by re-rolling: javac's -d
+# output dir was never on the COMPILE classpath, so the driver could not see
+# the class the previous build() call had just produced -- roll 6's seam,
+# one phase over (runtime was fixed, compile was not). And the compile
+# reason's raw character-count head spent itself on the source-line echo
+# (the hundreds-of-characters literal argument) and cut off `symbol:` and
+# `location:` -- the two lines that decide between the two candidate causes.
+# ---------------------------------------------------------------------------
+
+ROLL10_STDERR = (
+    'ReferenceDriver.java:18: error: cannot find symbol\n'
+    '      Object r1 = ReferenceImpl.compute_getChiSquare(new double[]{'
+    '0.9627965464677999, -1.128551577257383, 0.4038559788434105, '
+    '1.7357155278727387, -0.9737928643591186, 0.1101013265334561, '
+    '0.6511469699382675, -0.4113178459772596, 0.0997307251152219}, '
+    'new double[]{1.0, 1.0, 1.0, 1.0, 1.0});\n'
+    '                  ^\n'
+    '  symbol:   class ReferenceImpl\n'
+    '  location: class ReferenceDriver\n'
+    '1 error\n')
+
+
+def test_compile_reason_keeps_symbol_and_location_lines():
+    class _B:
+        compiled = False
+        stderr = ROLL10_STDERR
+    why = rr._compile_failure_reason('driver', _B())
+    assert 'cannot find symbol' in why
+    assert 'symbol:   class ReferenceImpl' in why
+    assert 'location: class ReferenceDriver' in why
+    # The source-line echo (the long literal) must NOT eat the budget.
+    assert '0.9627965464677999' not in why
+
+
+def test_driver_compiles_with_the_references_class_dir_on_the_classpath(
+        monkeypatch):
+    seen = []
+
+    class _Ref:
+        compiled = True
+        harness_path = '/b/fuzz/reference/ReferenceImpl.java'
+
+    class _Drv:
+        compiled = True
+        harness_path = '/b/fuzz/reference/ReferenceDriver.java'
+        class_name = 'ReferenceDriver'
+        classpath = 'TESTCP'
+
+    class _Builder:
+        def build(self, source, project_dir, output_subdir='',
+                  extra_classpath=()):
+            seen.append(list(extra_classpath))
+            return _Ref() if len(seen) == 1 else _Drv()
+
+    monkeypatch.setattr(rr, '_run_java',
+                        lambda *a, **k: (f'getRMS=1.0\n{rr.END_MARKER}\n',
+                                        0, None))
+    obs, why = rr.run_reference(_Builder(), '/b', 'class R {}', 'class D {}')
+    assert obs == {'getRMS': ['1.0']}, why
+    # First build (the reference) gets no extras; the second (the driver)
+    # must see the dir the reference's .class landed in.
+    assert seen[0] == []
+    assert seen[1] == ['/b/fuzz/reference']
+
+
+def test_build_prepends_extra_classpath_to_javac(monkeypatch, tmp_path):
+    from java.harness import build as bmod
+    cmds = []
+
+    def fake_run(cmd, **kw):
+        cmds.append(cmd)
+        return types.SimpleNamespace(returncode=0, stdout='', stderr='')
+    monkeypatch.setattr(bmod.subprocess, 'run', fake_run)
+    builder = bmod.HarnessBuilder(jazzer_api_jar='jz.jar')
+    builder._test_classpath = lambda d: 'TESTCP'
+    builder.build('public class D {}', str(tmp_path),
+                  output_subdir='reference', extra_classpath=['/refdir'])
+    cp = cmds[0][cmds[0].index('-cp') + 1]
+    assert cp.split(os.pathsep) == ['/refdir', 'TESTCP', 'jz.jar']

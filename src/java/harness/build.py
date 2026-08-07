@@ -132,13 +132,20 @@ class HarnessBuilder:
     # --- compilation -----------------------------------------------------
 
     def build(self, harness_source: str, buggy_dir: str,
-              output_subdir: str = '') -> BuildResult:
+              output_subdir: str = '', extra_classpath=()) -> BuildResult:
         """Compile `harness_source` against `buggy_dir`'s classpath.
 
         If `output_subdir` is given, the .java and .class files land in
         `<buggy_dir>/fuzz/<output_subdir>/` rather than directly in
         `<buggy_dir>/fuzz/` — useful when running many attempts so the
         successful ones survive past the next overwrite.
+
+        `extra_classpath` entries are prepended to javac's -cp. Roll 10:
+        the reference driver compiles against a class the PREVIOUS build()
+        call produced, but the -d output dir was never on the compile
+        classpath — `cannot find symbol: class ReferenceImpl` with the
+        .class sitting right there. Roll 6's seam, one phase over: the
+        runtime classpath was fixed, the compile classpath was not.
         """
         simple_name = self.primary_class_name(harness_source) or 'FuzzHarness'
         # Jazzer's --target_class needs the fully-qualified name; javac
@@ -155,10 +162,11 @@ class HarnessBuilder:
         with open(harness_path, 'w') as fh:
             fh.write(harness_source)
 
-        classpath = os.pathsep.join([
-            self._test_classpath(buggy_dir),
-            self.jazzer_api_jar,
-        ])
+        classpath = os.pathsep.join(
+            [str(p) for p in extra_classpath if p] + [
+                self._test_classpath(buggy_dir),
+                self.jazzer_api_jar,
+            ])
 
         result = subprocess.run(
             # -encoding UTF-8: harness/relation sources can carry non-ASCII

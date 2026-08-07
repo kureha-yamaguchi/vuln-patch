@@ -32,7 +32,7 @@ class _Builder:
         self._r = list(results)
         self.calls = 0
 
-    def build(self, source, buggy_dir, output_subdir=''):
+    def build(self, source, buggy_dir, output_subdir='', extra_classpath=()):
         self.calls += 1
         return self._r.pop(0)
 

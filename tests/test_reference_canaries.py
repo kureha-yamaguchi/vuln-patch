@@ -34,7 +34,7 @@ class _B:
 
 
 class _Builder:
-    def build(self, source, buggy_dir, output_subdir=''):
+    def build(self, source, buggy_dir, output_subdir='', extra_classpath=()):
         return _B()
 
 

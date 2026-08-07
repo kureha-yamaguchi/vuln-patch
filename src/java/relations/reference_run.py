@@ -276,13 +276,24 @@ def _compile_failure_reason(what, build_result):
     """A discard reason carrying JAVAC's own words (roll 9: `driver did not
     compile` with no stderr made the cause a guess where a read should be
     -- the same attribution gap roll 6 closed for the RUN phase, still open
-    on the COMPILE phase). Head, not tail: javac leads with the file, line
-    and error; the tail is the `N errors` summary."""
+    on the COMPILE phase).
+
+    DIAGNOSTIC lines, not a raw head (roll 10): javac follows the error
+    line with the source-line echo -- for a generated driver that echo is
+    the hundreds-of-characters literal argument, and a character-count cap
+    spent itself there and cut off `symbol:` and `location:`, the two
+    lines that say WHICH symbol was missing. Keep the lines that carry
+    structure (`error:`, `symbol:`, `location:`), capped per line; fall
+    back to a raw head only when nothing matches."""
     err = getattr(build_result, 'stderr', '') or ''
-    head = [l.strip() for l in err.splitlines() if l.strip()][:6]
+    lines = [l.strip() for l in err.splitlines() if l.strip()]
+    keyed = [l for l in lines
+             if ' error: ' in l or l.startswith(('symbol:', 'location:',
+                                                 'error:'))]
+    head = (keyed or lines)[:6]
     if head:
         return (f'{what} did not compile — DISCARDED. javac: '
-                + ' | '.join(head)[:600])
+                + ' | '.join(l[:200] for l in head))
     return f'{what} did not compile — DISCARDED (javac printed nothing)'
 
 
@@ -305,9 +316,16 @@ def run_reference(builder,
         return None, f'reference compile raised: {type(e).__name__}: {e}'
     if not getattr(ref, 'compiled', False):
         return None, _compile_failure_reason('reference', ref)
+    # The driver references the class the build() call above just produced.
+    # Its .class lands in the -d dir, which is NOT on build()'s compile
+    # classpath (roll 10: `cannot find symbol: class ReferenceImpl` with
+    # the class file sitting right there) — so hand that dir over
+    # explicitly. Same dir the runtime path already appends.
+    ref_dir = os.path.dirname(getattr(ref, 'harness_path', '') or '')
     try:
         drv = builder.build(driver_source, buggy_dir,
-                            output_subdir=work_subdir)
+                            output_subdir=work_subdir,
+                            extra_classpath=[ref_dir] if ref_dir else ())
     except Exception as e:                       # pragma: no cover - defensive
         return None, f'driver compile raised: {type(e).__name__}: {e}'
     if not getattr(drv, 'compiled', False):
