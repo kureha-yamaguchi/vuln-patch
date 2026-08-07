@@ -1736,6 +1736,26 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   (every roll a different mechanism). 755 passed, 7 skipped; pushed.
   **Roll 8 is GO** — the screen question is STILL the next unknown, and
   the untested classpath seam sits directly before it.*
+  *ROLL 8 (2026-08-07): discarded at signature mapping again — and the
+  improved message diagnosed it in one read (`Fields read by the method:
+  []`). Cause: `fields_read_by` was built, tested and wired at ZERO call
+  sites; `match_parameters` took `read_order` as an OPTIONAL third
+  argument and the call site passed two, so production ran with None for a
+  whole roll while unit tests stayed green. Eleventh integration defect,
+  and the SECOND of exactly this shape after roll 2's Spec K. Fixed
+  (44d6469, main session): call site wired; `read_order` made REQUIRED so
+  omission is a TypeError rather than a silent degradation (callers with
+  no visible body pass `[]`, stating the fact instead of defaulting into
+  it); and a generalized SEAM TEST — every helper the chain imports from
+  reference_run/reference_impl must actually be called in the chain, since
+  a mechanism imported but never invoked is a mechanism that does not
+  exist. **Pattern now worth stating as a rule: all eleven defects in this
+  ladder have been SEAMS, never pieces — the pieces were right on first
+  writing almost without exception. Tests that call functions cannot see
+  this; only tests that read or drive the call site can.** Gate (b)
+  14-for-14; rule 7 still unstarted. 759 passed, 7 skipped; pushed.
+  **Roll 9 is GO** — unchanged stack: the twin's first production run,
+  then the screen question.*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
