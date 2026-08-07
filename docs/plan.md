@@ -1680,6 +1680,21 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   walkthrough stays standing practice for stage 2+ (5 walks, 8 distinct
   defects, each of which would otherwise have surfaced as an opaque
   mid-roll discard at ~250k).*
+  *ROLL 5 (2026-08-07): deepest yet — steps 1–5 all worked on the real leg
+  (2,455-char multi-observable reference; signature named residuals /
+  residualsWeights / cost, Math-65's true dependency; 6 computed siblings
+  resolved), then discarded at the omits-the-observable validator. Cause
+  was SPELLING, not semantics: the model wrote `compute_chiSquare` where
+  the chain wanted `compute_getChiSquare` (guessParametersErrors matched
+  only because it has no prefix to drop). Fixed (51991f7, main session)
+  the way the codebase already solved it — `_methods_named_by` has matched
+  chiSquare→getChiSquare since P0: matching is normalized both ways, and
+  the driver now CALLS the declared name while KEYING by the canonical one
+  (they legitimately differ after normalization; the EX: path carries the
+  canonical key too). Gate (b) held again: 11-for-11, zero facts from
+  discarded references. 742 passed, 7 skipped; pushed. **Roll 6 is GO** —
+  next unknown is the screen itself: does a doc-derived reference actually
+  reproduce the buggy build on the 6 siblings?*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
