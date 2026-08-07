@@ -1791,6 +1791,30 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   now with the swap dead, the bar reachable, and the untested seams
   reduced to the genuinely runtime ones: the twin's first production
   run (classpath), then the screen.***
+  *VM RE-WALK #7 (2026-08-07): **the twin runs in PRODUCTION** — run_twin
+  through HarnessBuilder and `_runtime_classpath` found its own compiled
+  class, ran to the end marker, returned 11 keys. The roll-6 classpath
+  seam (343d887) and the shared formatter (8082487) are both proven in
+  production for the first time — getCovariances and
+  guessParametersErrors print by value, nested arrays deeply, not
+  `[[D@...`; those two were the permanent-false-disagreement hazard.
+  Two verbatim cross-validations, both against tier-1 material: the
+  twin's buggy-build `guessParametersErrors[0] = 0.0019737107108948474`
+  is character-for-character the value the failing test itself reported
+  (`expected:<0.004> but was:<0.0019737107108948474>`) — the twin is
+  provably AT the failing assertion's own state, reproducing the bug's
+  recorded symptom through a different path (twin+reflection vs JUnit);
+  and `getChiSquare = 1.5633763529538318` equals re-walk #5's hand-run
+  value. The whole upstream chain held on real material: declaring
+  types, six scoped siblings, receiver `optimizer`, helper + package
+  assembly, `__construct0=OK` (optimize completed at test state).
+  Twelve integration defects found so far, eleven at desk cost; gate (b)
+  14-for-14. **Roll 9 is GO with ONE unknown left, the substantive one:
+  does a doc-derived reference reproduce the buggy build on those six
+  siblings?** Named reach caveat, not a defect: if the model again
+  implements only {RMS, chiSquare}, roll 9 discards at the thin bar,
+  honestly and before the JVM — getCovariances/guessParametersErrors
+  are the hard asks the new prompt names but cannot compel.*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
