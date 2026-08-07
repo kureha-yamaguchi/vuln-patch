@@ -207,6 +207,86 @@ def _pin_matches(printed: str, expected: str, tol) -> bool:
     return False
 
 
+def reference_verdict_gate(fired_msg, admitted) -> Tuple[str, str]:
+    """8.25 phase 1: `('void'|'corroborate'|'abstain', why)` on a KEPT
+    conviction. Deterministic — the judge is not consulted (roll 12: nine
+    deliveries of the fact, zero engagements; fifth negative on the
+    persuasion axis. The user's decision: stop persuading).
+
+    THE PREDICATE NEEDS NO STATE RECOVERY. The firing message prints the
+    observable values the relation fired ON (the 8.3/8.4 recorders), and an
+    ADMITTED reference — screened on 3+ siblings, corroboration-attributed,
+    pin-disciplined — computed its own values for the same observables at
+    test state. Compare where they overlap (names normalized, chiSquare ==
+    getChiSquare):
+
+      * all shared observables agree AND at least one is DISCRIMINATING
+        (the reference's value differs from the BUGGY build's at test
+        state) -> VOID. The 16-digit coincidence on a discriminating
+        value is itself the proof of same-state: a firing at any other
+        input reproducing the reference's exact value is vanishingly
+        unlikely, so the relation demonstrably fired on the very
+        behaviour an independently validated implementation produces.
+      * anything else -> ABSTAIN, with the reason split three ways: no
+        admitted reference; no shared observable; or values differ /
+        agree only on legacy behaviour.
+
+    DISAGREEMENT IS DELIBERATELY NOT 'CORROBORATE' (dry-run finding,
+    recorded before first live run): a firing at a DIFFERENT input
+    legitimately produces different values, so disagreement with the
+    reference's test-state values cannot distinguish "the patch is
+    wrong" from "the state is different". The corroboration side of the
+    both-signs design needs the reference evaluated AT the firing's own
+    input (the 8.4 firing-state extension) — asymmetry is the honest
+    phase-1 shape: void is self-proving, corroborate is not.
+
+    Sound against the overfit trap by construction: a genuine catch fires
+    at values the correct implementation does NOT produce, so it can only
+    ever be abstained on, never voided. No admitted reference -> abstain:
+    the gate consumes admission, never manufactures it.
+    """
+    from java.relations.reference_run import observable_key
+    obs = (admitted or {}).get('obs') or {}
+    buggy = (admitted or {}).get('buggy') or {}
+    if not fired_msg or not obs:
+        return 'abstain', 'no admitted reference for this leg'
+    fired_vals = observed_values(fired_msg)
+    ref_by_key = {observable_key(k): (k, v) for k, v in obs.items()}
+    shared = [(fk, ref_by_key[observable_key(fk)])
+              for fk in fired_vals if observable_key(fk) in ref_by_key]
+    if not shared:
+        return 'abstain', ('the firing reports no observable the admitted '
+                           'reference computes')
+    disagree = [fk for fk, (_rk, rv) in shared
+                if not any(_values_agree(a, b)
+                           for a in fired_vals[fk] for b in rv)]
+    if disagree:
+        return 'abstain', (
+            f'fired values differ from the reference\'s TEST-STATE values '
+            f'on {disagree[:4]} — a firing at a different input is expected '
+            f'to differ, so same-state cannot be established and this says '
+            f'nothing about the patch (corroboration needs the reference '
+            f'evaluated at the firing\'s own input — the 8.4 extension)')
+    discriminating = [
+        fk for fk, (rk, rv) in shared
+        if rk in buggy and not any(_values_agree(a, b)
+                                   for a in rv for b in buggy[rk])]
+    if not discriminating:
+        return 'abstain', (
+            f'fired values match the reference only on observables where '
+            f'buggy and reference coincide ({[fk for fk, _ in shared][:4]}) '
+            f'— shared legacy behaviour vouches for nothing about the '
+            f'dispute')
+    return 'void', (
+        f'the relation fired on exactly the values the admitted reference '
+        f'computes ({[fk for fk, _ in shared][:4]}), including '
+        f'{discriminating[:3]} where reference and buggy DIFFER — an '
+        f'implementation derived from the documentation alone, validated '
+        f'on {len(obs)} observables, produces the very behaviour this '
+        f'relation condemns; the relation\'s contract is wrong, the '
+        f'conviction is VOID')
+
+
 def _assert_tolerance(expected: str, test_sources) -> Optional[str]:
     """The test's own assertEquals tolerance for `expected`, or None."""
     for src in test_sources or []:

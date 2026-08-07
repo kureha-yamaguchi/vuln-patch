@@ -412,6 +412,15 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     if not pin_ok:
         return None
 
+    # ADMISSION is complete (screen + corroboration + pin). Store the
+    # admitted values for the 8.25 verdict gate — one process = one leg,
+    # so function-level storage is run-local by construction, like _memo.
+    # Stored at admission, not at fact emission: the gate needs the
+    # reference's validated VALUES, which stand even if the patched twin
+    # later fails and no fact is emitted.
+    _reference_impl_fact._admitted = {'method': method, 'obs': obs,
+                                      'buggy': buggy_obs}
+
     # THE OTHER SIDE OF THE FACT: the SAME twin on the PATCHED build.
     try:
         pdir = PatchedProjectBuilder().build_patched_dir(buggy_dir, patch_path)
@@ -4173,6 +4182,28 @@ def main():
                         check_source=_src, fd_prior=None,
                         is_direction_confirmed=_dirconf)
                     if ok:
+                        # 8.25 THE REFERENCE VERDICT GATE (user-approved
+                        # 2026-08-07): deterministic, judge-independent.
+                        # Runs ONLY on kept convictions — it can void or
+                        # corroborate a keep, never manufacture one (the
+                        # 38-row correct-dismissals population is untouched
+                        # by construction).
+                        from java.relations.reference_impl import (
+                            reference_verdict_gate)
+                        _gv, _gwhy = reference_verdict_gate(
+                            _fired,
+                            getattr(_reference_impl_fact, '_admitted', None))
+                        record_event(
+                            'deterministic', method='reference-verdict-gate',
+                            target=f['name'],
+                            output=('conviction VOIDED' if _gv == 'void'
+                                    else 'gate abstains'),
+                            reason=_gwhy)
+                        if _gv == 'void':
+                            print(f"  ∅ replay conviction VOIDED by the "
+                                  f"reference verdict gate: {f['name']}")
+                            print(f"      {_gwhy}")
+                            continue
                         print(f"  ✓ replay conviction kept: {f['name']} "
                               f"[{f['tier']}]")
                         print(f"      {why}")

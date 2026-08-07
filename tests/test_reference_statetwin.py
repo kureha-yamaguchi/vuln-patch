@@ -1511,3 +1511,111 @@ def test_chain_attributes_pins_instead_of_blanket_trusted_values():
     i = src.index('pin_check(')
     assert 'trusted_values' not in src[i:i + 120], (
         'pin_check is still fed blanket trusted_values')
+
+
+# ---------------------------------------------------------------------------
+# 8.25 phase 1: THE REFERENCE VERDICT GATE (user-approved 2026-08-07).
+# Deterministic, judge-independent, runs only on KEPT convictions. All
+# fixtures verbatim from roll 12's record.
+# ---------------------------------------------------------------------------
+
+ROLL12_FIRING = ('[oracle:constant-weight-rms-chi] metamorphic violation: '
+                 'n*RMS^2 must equal weight^2*chiSquare for uniform weights '
+                 'weight=2.0 n=634 lhs=25.01402164726131 '
+                 'rhs=6.253505411815327 chiSquare=6.253505411815327 '
+                 'rms=0.09931552348327041')
+ADMITTED_M65 = {
+    'method': 'getChiSquare',
+    'obs': {'getChiSquare': ['6.253505411815327'],
+            'getRMS': ['0.09931552348327041'],
+            'getCovariances': [REWALK8_COV_REF],
+            'guessParametersErrors': [M65_REF_ERRORS]},
+    'buggy': {'getChiSquare': ['1.5633763529538318'],
+              'getRMS': ['0.09931552348327041'],
+              'getCovariances': [REWALK8_COV_BUGGY],
+              'guessParametersErrors': [M65_BUGGY_ERRORS]},
+}
+
+
+def test_gate_voids_the_roll12_conviction():
+    from java.relations.reference_impl import reference_verdict_gate
+    v, why = reference_verdict_gate(ROLL12_FIRING, ADMITTED_M65)
+    assert v == 'void', why
+    # The reason names the discriminating observable — the one where
+    # reference and buggy DIFFER, so legacy coincidence cannot explain it.
+    assert 'chiSquare' in why and 'VOID' in why
+
+
+def test_gate_never_claims_corroboration_across_states():
+    # Dry-run finding, fixed BEFORE first live run: a firing at a different
+    # input legitimately produces different values, so disagreement with
+    # the reference's test-state values cannot distinguish "patch wrong"
+    # from "state different". The conviction stands, but the gate says
+    # why it cannot say more.
+    from java.relations.reference_impl import reference_verdict_gate
+    fired = ROLL12_FIRING.replace('chiSquare=6.253505411815327',
+                                  'chiSquare=42.0')
+    v, why = reference_verdict_gate(fired, ADMITTED_M65)
+    assert v == 'abstain'
+    assert 'same-state cannot be established' in why
+    # And the real roll-12 kept firing at a fuzz input abstains too.
+    fuzz_fired = ('[oracle:chiSquare_matches_weighted_residual_sum] relation '
+                  'violated: chi=0.055934191393670646 expected=0.0279')
+    v, why = reference_verdict_gate(fuzz_fired, ADMITTED_M65)
+    assert v == 'abstain'
+
+
+def test_gate_abstains_on_shared_legacy_behaviour():
+    # The design note's trap one level down: rms is identical on buggy,
+    # patched and reference — matching it says nothing about the dispute.
+    from java.relations.reference_impl import reference_verdict_gate
+    fired = '[oracle:x] violation: rms=0.09931552348327041 threshold=0.5'
+    v, why = reference_verdict_gate(fired, ADMITTED_M65)
+    assert v == 'abstain'
+    assert 'vouches for nothing' in why
+
+
+def test_gate_abstains_without_an_admitted_reference():
+    from java.relations.reference_impl import reference_verdict_gate
+    assert reference_verdict_gate(ROLL12_FIRING, None)[0] == 'abstain'
+    assert reference_verdict_gate(ROLL12_FIRING, {})[0] == 'abstain'
+    assert reference_verdict_gate('', ADMITTED_M65)[0] == 'abstain'
+    fired = '[oracle:x] violation: lhs=1.0 rhs=2.0 count=3'
+    v, why = reference_verdict_gate(fired, ADMITTED_M65)
+    assert v == 'abstain' and 'no observable' in why
+
+
+def test_gate_voids_nothing_on_the_genuine_catch_population():
+    # Pre-registered gate (a). The 67 rows carry no admitted reference —
+    # the gate abstains on every one BY REACH, disclosed as such: this is
+    # an abstention result, not a values-level exoneration. The live
+    # guard remains the ladder's clean-leg hard stop.
+    import json
+    from pathlib import Path
+    from java.relations.reference_impl import reference_verdict_gate
+    pop = Path(__file__).resolve().parents[1] / 'docs' / 'replay' / \
+        'backtrack' / 'guard_population.json'
+    if not pop.exists():
+        pytest.skip('genuine-catch guard not present')
+    rows = json.load(pop.open())
+    assert len(rows) == 67
+    verdicts = [reference_verdict_gate(r.get('claim', ''), None)[0]
+                for r in rows]
+    assert verdicts.count('void') == 0
+    assert set(verdicts) == {'abstain'}
+
+
+def test_gate_runs_only_on_kept_convictions_and_before_the_keep():
+    # Structural guards: (i) the gate is called inside the kept branch
+    # (it can void or corroborate a keep, never manufacture one — the
+    # 38-row population is untouched by construction); (ii) a void skips
+    # the append.
+    src = open(Path(__file__).resolve().parents[1] / 'src' / 'java'
+               / 'run.py').read()
+    i = src.index('reference_verdict_gate(\n')
+    keep = src.index('_kept_replays.append', i)
+    void = src.index("if _gv == 'void':", i)
+    assert void < keep, 'the void decision must precede the keep'
+
+
+from pathlib import Path  # noqa: E402  (used by the structural guards)
