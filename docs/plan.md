@@ -1870,6 +1870,45 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   16-for-16; rule 7 still unstarted. 780 passed, 7 skipped; pushed.
   **Roll 11 is GO — same one-step stack as before, now with the
   compile seam closed: the reference runs, and the screen answers.***
+  *VM RE-WALK #8 (2026-08-07, second session, user-directed: "debug
+  without burning rolls") — THE WHOLE remaining path replayed on the VM
+  with roll 10's RECORDED artifacts (`scripts/rewalk8_replay.py`;
+  ladder1k's checkout, reference, and twin were still on disk).
+  Production functions only, zero generation cost, iterated to green.
+  The method change it encodes: every prior walk verified up to the
+  frontier, not THROUGH it — that is why each roll bought exactly one
+  seam. Findings: DEFECT 17 (would have killed roll 11 on any
+  classpath): `code too large` — ~630 fitted points → ~15KB per array
+  literal, inlined once per observable call, main() over the JVM's 64KB
+  bytecode-per-method cap; roll 10's `cannot find symbol` was merely
+  the first error javac reported, this one was stacked behind it.
+  Fixed (76d1be6): literals HOISTED, one static field + one initializer
+  method each, call sites reference the field; oversized single
+  literals discard loudly. DEFECT 18 (on real values): the buggy
+  build's OWN covariance matrix is one ulp asymmetric in print, and
+  exact string comparison read it as semantic disagreement — arrays now
+  agree per element within the rounding floor; the real divergences
+  still disagree. THE SCREEN'S FIRST REAL ANSWER, the walk's prize:
+  getRMS agrees EXACTLY, covariances agree modulo one ulp, and the two
+  true disagreements are the DISPUTED observable itself (ref = 4.000×
+  buggy — the multiply-vs-divide weighting that IS Math-65's defect)
+  and guessParametersErrors, where the reference computes ~0.00395 —
+  the failing test's own expected 0.004±0.001, against buggy's 0.00197.
+  The reference sides with tier-1 authority exactly where the defect
+  reaches. Current design discards there: the sibling surface contains
+  an observable the failing test itself shows diverging, so Math-65's
+  reference can NEVER be admitted as-is. **DESIGN DECISION AT THE GATE
+  (not taken unilaterally): (a) exclude defect-reached siblings
+  (mechanically knowable from the failure message) — shared drops to 2,
+  below the bar of 3, honest thin-discard but the mechanism never helps
+  Math-65; or (b) a sibling where the reference matches the TEST'S
+  pinned value against buggy counts as pro-admission corroboration
+  (pin-check logic extended to siblings) — converts the strongest
+  apparent counter-signal into the strongest evidence. Roll 11 without
+  this decision will run clean and discard at the screen, honestly.**
+  Pin check verified to ABSTAIN on no overlap. 784 passed, 7 skipped;
+  pushed. Eighteen defects total; 17 and 18 found by the same walk, at
+  desk cost.*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
