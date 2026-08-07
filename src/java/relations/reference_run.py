@@ -227,6 +227,51 @@ def construction_report(output: str) -> Dict[str, str]:
             if k.startswith('__construct') or k.startswith('__state')}
 
 
+def _runtime_classpath(drv, project_dir):
+    """Compile classpath PLUS the directory the classes were compiled into.
+
+    VM roll 6: the twin compiled and then died with exit 1 and no end
+    marker. `HarnessBuilder.build` compiles with `-d <fuzz_dir>` but
+    `BuildResult.classpath` carries only the project classpath and the
+    jazzer API jar -- so `java -cp <that>` cannot find the class it just
+    built. The pipeline's own Jazzer runner has always appended the harness
+    directory for exactly this reason (`fuzz_runner.run_jazzer`); this path
+    simply did not. A pure seam defect: both pieces correct, the join wrong.
+    """
+    cp = getattr(drv, 'classpath', '') or ''
+    out_dir = os.path.dirname(getattr(drv, 'harness_path', '') or '')
+    parts = [p for p in (cp, out_dir or project_dir) if p]
+    return os.pathsep.join(parts)
+
+
+def _run_java(cls, classpath, cwd, timeout_seconds):
+    """`(output, returncode, error_or_None)` -- stdout+stderr ALWAYS kept.
+
+    Roll 6's attribution gap: run_twin reported only "no end marker", so a
+    JVM failure was indistinguishable from a silent one and cost a roll to
+    localise. The same treatment `__construct0` gave construction, given to
+    the process itself.
+    """
+    try:
+        p = subprocess.run(['java', '-cp', classpath, cls],
+                           capture_output=True, text=True,
+                           timeout=timeout_seconds, cwd=cwd)
+    except subprocess.TimeoutExpired:
+        return '', -1, f'timed out after {timeout_seconds}s'
+    except Exception as e:                       # pragma: no cover - defensive
+        return '', -1, f'{type(e).__name__}: {e}'
+    return (p.stdout or '') + '\n' + (p.stderr or ''), p.returncode, None
+
+
+def _jvm_failure_reason(what, out, rc):
+    """A discard reason carrying the JVM's own words, not just 'no marker'."""
+    tail = [l for l in (out or '').splitlines() if l.strip()][-4:]
+    return (f'{what} did not complete (exit {rc}; no end marker) -- '
+            f'DISCARDED. JVM output: ' + ' | '.join(tail) if tail else
+            f'{what} did not complete (exit {rc}; no end marker) and printed '
+            f'nothing -- DISCARDED')
+
+
 def run_reference(builder,
                   buggy_dir: str,
                   reference_source: str,
@@ -253,22 +298,14 @@ def run_reference(builder,
         return None, f'driver compile raised: {type(e).__name__}: {e}'
     if not getattr(drv, 'compiled', False):
         return None, 'driver did not compile — DISCARDED'
-    cp = getattr(drv, 'classpath', '') or ''
+    cp = _runtime_classpath(drv, buggy_dir)
     cls = getattr(drv, 'class_name', 'ReferenceDriver')
-    try:
-        p = subprocess.run(['java', '-cp', cp, cls],
-                           capture_output=True, text=True,
-                           timeout=timeout_seconds,
-                           cwd=os.path.dirname(getattr(drv, 'harness_path', '')
-                                               or buggy_dir))
-    except subprocess.TimeoutExpired:
-        return None, f'reference run timed out after {timeout_seconds}s'
-    except Exception as e:                       # pragma: no cover - defensive
-        return None, f'reference run raised: {type(e).__name__}: {e}'
-    out = (p.stdout or '') + '\n' + (p.stderr or '')
+    cwd = os.path.dirname(getattr(drv, 'harness_path', '') or '') or buggy_dir
+    out, rc, err = _run_java(cls, cp, cwd, timeout_seconds)
+    if err:
+        return None, f'reference run {err}'
     if END_MARKER not in out:
-        return None, ('reference run did not complete (no end marker; exit '
-                      f'{p.returncode}) — DISCARDED')
+        return None, _jvm_failure_reason('reference run', out, rc)
     obs = observed_values(out.split(END_MARKER)[0])
     # Bookkeeping keys are NOT observables. `__state`/`__construct` exist for
     # attribution, and counting them would let the twin's own diagnostics
@@ -829,22 +866,14 @@ def run_twin(builder, project_dir: str, twin_source: str,
         return None, f'twin compile raised: {type(e).__name__}: {e}'
     if not getattr(drv, 'compiled', False):
         return None, 'twin did not compile — DISCARDED'
-    cp = getattr(drv, 'classpath', '') or ''
+    cp = _runtime_classpath(drv, project_dir)
     cls = getattr(drv, 'class_name', 'StateTwinDriver')
-    try:
-        p = subprocess.run(['java', '-cp', cp, cls],
-                           capture_output=True, text=True,
-                           timeout=timeout_seconds,
-                           cwd=os.path.dirname(getattr(drv, 'harness_path', '')
-                                               or project_dir))
-    except subprocess.TimeoutExpired:
-        return None, f'twin run timed out after {timeout_seconds}s'
-    except Exception as e:                       # pragma: no cover - defensive
-        return None, f'twin run raised: {type(e).__name__}: {e}'
-    out = (p.stdout or '') + '\n' + (p.stderr or '')
+    cwd = os.path.dirname(getattr(drv, 'harness_path', '') or '') or project_dir
+    out, rc, err = _run_java(cls, cp, cwd, timeout_seconds)
+    if err:
+        return None, f'twin run {err}'
     if END_MARKER not in out:
-        return None, (f'twin run did not complete (no end marker; exit '
-                      f'{p.returncode}) — DISCARDED')
+        return None, _jvm_failure_reason('twin run', out, rc)
     vals = observed_values(out.split(END_MARKER)[0])
     if vals.get('__construct0', ['?'])[0] != 'OK':
         return None, ('twin setup failed: __construct0='

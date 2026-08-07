@@ -665,3 +665,77 @@ def test_unmatched_declaration_is_not_called():
 def test_plain_names_still_work_unchanged():
     d = rr.build_driver('R', ['getA', 'getB'], ['x'])
     assert 'R.compute_getA(x)' in d and '"getA="' in d
+
+
+# ---------------------------------------------------------------------------
+# Roll 6 (2026-08-07): the twin compiled, then died exit 1 / no end marker.
+# HarnessBuilder compiles with `-d <fuzz_dir>` but BuildResult.classpath
+# carries only project cp + jazzer api jar -- so `java -cp` could not find
+# the class it had just built. A seam defect: the pipeline's own Jazzer
+# runner has always appended the harness dir.
+# ---------------------------------------------------------------------------
+
+def _fake_drv(cp='/a.jar', out='/proj/fuzz/reference_twin'):
+    return types.SimpleNamespace(
+        classpath=cp, harness_path=f'{out}/StateTwinDriver.java',
+        class_name='StateTwinDriver', compiled=True)
+
+
+def test_runtime_classpath_includes_the_compiled_output_dir():
+    cp = rr._runtime_classpath(_fake_drv(), '/proj')
+    assert '/proj/fuzz/reference_twin' in cp.split(':')
+    assert '/a.jar' in cp.split(':')
+
+
+def test_runtime_classpath_falls_back_to_project_dir():
+    drv = types.SimpleNamespace(classpath='/a.jar', harness_path='',
+                                class_name='X')
+    assert '/proj' in rr._runtime_classpath(drv, '/proj').split(':')
+
+
+def test_jvm_failure_reason_carries_the_jvms_own_words():
+    # The attribution gap roll 6 cost: "no end marker" alone is
+    # indistinguishable between a missing class, a thrown exception and a
+    # silent exit.
+    why = rr._jvm_failure_reason(
+        'twin run',
+        'Error: Could not find or load main class StateTwinDriver\n', 1)
+    assert 'Could not find or load main class' in why
+    assert 'exit 1' in why
+
+
+def test_jvm_failure_reason_says_so_when_nothing_was_printed():
+    why = rr._jvm_failure_reason('twin run', '', 137)
+    assert 'printed\nnothing' in why or 'printed nothing' in why
+    assert '137' in why
+
+
+def test_run_twin_reports_jvm_output_on_failure(monkeypatch):
+    class B:
+        def build(self, src, d, output_subdir=''):
+            return _fake_drv()
+    monkeypatch.setattr(
+        rr, '_run_java',
+        lambda cls, cp, cwd, t: ('Exception in thread "main" '
+                                 'java.lang.NoClassDefFoundError: Circle', 1,
+                                 None))
+    vals, why = rr.run_twin(B(), '/proj', 'class StateTwinDriver {}')
+    assert vals is None
+    assert 'NoClassDefFoundError' in why
+
+
+def test_run_twin_passes_the_output_dir_on_the_classpath(monkeypatch):
+    seen = {}
+
+    class B:
+        def build(self, src, d, output_subdir=''):
+            return _fake_drv()
+
+    def spy(cls, cp, cwd, t):
+        seen['cp'], seen['cwd'] = cp, cwd
+        return 'x=1\n__construct0=OK\n' + rr.END_MARKER, 0, None
+    monkeypatch.setattr(rr, '_run_java', spy)
+    vals, why = rr.run_twin(B(), '/proj', 'class StateTwinDriver {}')
+    assert vals is not None, why
+    assert '/proj/fuzz/reference_twin' in seen['cp']
+    assert seen['cwd'] == '/proj/fuzz/reference_twin'
