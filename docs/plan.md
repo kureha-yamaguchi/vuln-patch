@@ -1604,6 +1604,19 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   local pass proves wiring and logic; javac and the real twin compiles it
   cannot (no local JRE), and the twin's test-setup compile is the likeliest
   next failure (missing test-class imports/helpers → honest discard).
+  *VM re-walk #1 found three compile failures; all fixed at the root
+  (3a649d3, main session): (1) input shape — the chain receives annotated
+  BLOBS, so the method is now isolated brace-matched, the receiver comes
+  from sibling-call counts (testCircleFitting never calls getChiSquare),
+  and fixture classes the setup needs (`new Circle()`) are extracted from
+  the test FILE and emitted beside the driver; (2) encoding — every
+  non-ASCII char becomes its unicode escape, semantically identical under
+  javac's pre-lexical escape processing; (3) structure — assertion
+  stripping is statement-aware (line-dropping ate closing braces), and
+  both setup and emitted twin are brace-balance-guarded, raising for an
+  honest discard rather than emitting invalid Java. Eight new pins from
+  the real Math-65 material. 712 passed, 7 skipped. VM re-walk #2 is
+  roll 5's gate.*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
