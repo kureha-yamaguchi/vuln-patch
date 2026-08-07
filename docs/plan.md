@@ -1815,6 +1815,37 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   implements only {RMS, chiSquare}, roll 9 discards at the thin bar,
   honestly and before the JVM — getCovariances/guessParametersErrors
   are the hard asks the new prompt names but cannot compel.*
+  *ROLL 9 (2026-08-07): TEN steps deep, the furthest by far, and all
+  three pre-walk fixes worked on real material — the surface resolved
+  before generation, the model implemented the HARD siblings
+  (getCovariances, guessParametersErrors, getRMS — the reach question
+  answered favourably; 3,820 chars vs roll 8's 634), the bar read
+  reachable at 3 shared, the six-parameter signature (incl.
+  `double[][] jacobian`) mapped, and the buggy twin ran INSIDE a
+  production roll (14 keys — the classpath seam now proven twice).
+  Died at step 11: `driver did not compile`, reason carrying no javac
+  output. Desk replay of the verbatim signature found the killer
+  without a re-roll (70e6875, second session): `java_literal` stripped
+  every `[]` from a multi-dimensional type and passed deepToString's
+  inner text through — `new double[]{[...], ...}` — non-None, so the
+  chain proceeded and javac refused. Roll 9's reference was the FIRST
+  to take a 2-D parameter; the literal builder had never been asked.
+  Fixed: nested brackets → nested braces, full dimensionality on the
+  `new`, numeric/boolean elements only (their text never contains a
+  bracket), String/Object fail closed. Second seam, same read: all
+  three COMPILE branches returned bare messages while
+  BuildResult.stderr held javac's words — the roll-6 attribution
+  treatment covered only the RUN phase; `_compile_failure_reason` now
+  rides the javac head into every compile discard, seam-tested against
+  bypass. The roll-9 parameter list and re-walk #7's real covariances
+  matrix are the fixtures. Gate (b) 15-for-15; rule 7 still unstarted
+  (fourteenth defect, fourteenth distinct mechanism). 777 passed, 7
+  skipped; pushed. **Roll 10 is GO — the remaining stack is exactly
+  one step: the reference RUNS, and the screen finally answers.**
+  Named residual risks for the read: `Infinity`/`NaN` in a printed
+  value would not compile as a literal (unhandled, now visible in the
+  javac words if it fires), and the reference's own compile is the
+  same class of first-time seam.*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
