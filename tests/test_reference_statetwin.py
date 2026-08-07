@@ -286,18 +286,25 @@ private ArrayList<Point2D.Double> points;
 SIBS = ['getRMS', 'getCovariances', 'getEvaluations']
 
 
+BLOB_DECLARING = {'LevenbergMarquardtOptimizer'}
+
+
 def test_blob_isolates_the_method_not_the_annotations():
-    setup, recv, why = rr.extract_test_setup(BLOB, 'getChiSquare', SIBS)
+    setup, recv, why = rr.extract_test_setup(BLOB, 'getChiSquare', SIBS,
+                                             BLOB_DECLARING)
     assert setup is not None, why
     assert 'helper Circle()' not in setup            # annotations excluded
     assert 'private ArrayList' not in setup          # fields excluded
     assert 'addPoint' in setup
 
 
-def test_receiver_by_sibling_calls_not_last_new():
-    # getChiSquare is never called; 'optimizer' has the sibling calls, and
-    # the last `new` in setup is NOT the receiver (the roll-5 'center' bug).
-    setup, recv, why = rr.extract_test_setup(BLOB, 'getChiSquare', SIBS)
+def test_receiver_by_declaring_type_not_by_usage():
+    # getChiSquare is never called in this test. The receiver is chosen
+    # because `optimizer` is DECLARED with a type that declares the
+    # observable -- not because it is most-called (VM re-walk #2) and not
+    # because it is last-constructed (roll 5's `center` bug).
+    setup, recv, why = rr.extract_test_setup(BLOB, 'getChiSquare', SIBS,
+                                             BLOB_DECLARING)
     assert recv == 'optimizer', why
 
 
@@ -351,3 +358,72 @@ def test_twin_driver_is_ascii_and_balanced_with_helpers():
 def test_unbalanced_twin_raises_for_honest_discard():
     with pytest.raises(ValueError):
         rr.build_state_twin_driver('if (a) { b();', 'o', ['getN'], [])
+
+
+# ---------------------------------------------------------------------------
+# VM re-walk #2 (2026-08-07): receiver by DECLARING TYPE, and the twin's
+# package. Both from the real Math-65 shapes.
+# ---------------------------------------------------------------------------
+
+LM_CTX = ('public class AbstractLeastSquaresOptimizer {\n'
+          '  public double getChiSquare() { }\n'
+          '  public double getRMS() { }\n'
+          '  public double[][] getCovariances() { }\n}\n'
+          'class LevenbergMarquardtOptimizer extends '
+          'AbstractLeastSquaresOptimizer { }\n'
+          'class VectorialPointValuePair { public double[] getPointRef() { } }')
+
+LM_BODY = '''public void testCircleFitting() {
+    Circle circle = new Circle();
+    circle.addPoint(30.0, 68.0);
+    LevenbergMarquardtOptimizer optimizer = new LevenbergMarquardtOptimizer();
+    VectorialPointValuePair optimum = optimizer.optimize(circle);
+    double rms = optimizer.getRMS();
+    double[][] cov = optimizer.getCovariances();
+    assertEquals(1.8, cov[0][0], 0.001);
+}'''
+
+
+def test_types_declaring_walks_inheritance():
+    got = rr.types_declaring(LM_CTX, 'getChiSquare')
+    assert 'AbstractLeastSquaresOptimizer' in got
+    assert 'LevenbergMarquardtOptimizer' in got     # via extends
+    assert 'VectorialPointValuePair' not in got
+
+
+def test_receiver_is_typed_not_most_called():
+    declaring = rr.types_declaring(LM_CTX, 'getChiSquare')
+    setup, recv, why = rr.extract_test_setup(
+        LM_BODY, 'getChiSquare', ['getRMS', 'getCovariances'], declaring)
+    assert recv == 'optimizer', why
+
+
+def test_no_declaring_type_discards_rather_than_guesses():
+    setup, recv, why = rr.extract_test_setup(
+        LM_BODY, 'getChiSquare', ['getRMS'], {'UnrelatedClass'})
+    assert setup is None and recv is None
+    assert 'DISCARDED rather than guessed' in why
+
+
+def test_wrong_typed_variable_cannot_be_receiver_even_if_called():
+    # The silent-wrong-state case: a same-named method on another type. The
+    # by-call candidate is VETOED because its declared type is not a
+    # declaring type.
+    body = ('public void t() {\n'
+            '  Result r = new Result();\n'
+            '  double d = r.getChiSquare();\n}')
+    setup, recv, why = rr.extract_test_setup(
+        body, 'getChiSquare', [], {'Optimizer'})
+    assert recv is None, why
+
+
+def test_twin_emitted_into_the_tests_package():
+    assert rr.test_package(
+        'package org.apache.commons.math.optimization.general;\n'
+        'import java.util.List;\npublic class T {}'
+    ) == 'org.apache.commons.math.optimization.general'
+    src = rr.build_state_twin_driver(
+        'X o = new X();', 'o', ['getN'], [],
+        package='org.apache.commons.math.optimization.general')
+    assert src.startswith('package org.apache.commons.math.optimization'
+                          '.general;')

@@ -109,7 +109,7 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         build_reference_call_driver, build_state_twin_driver, canonical_state,
         declared_observable_names, declared_signature, extract_test_dependencies,
         extract_test_setup, java_literal, match_parameters, parse_parameters,
-        run_reference, run_twin)
+        run_reference, run_twin, test_package, types_declaring)
 
     ctx = '\n\n'.join(class_ctx) if class_ctx else ''
     try:
@@ -210,11 +210,14 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     test_src = next((getattr(ft, 'method_source', '') or ''
                      for ft in failure_tests
                      if getattr(ft, 'method_source', None)), '')
+    # Receiver by DECLARING TYPE, never by usage pattern (VM re-walk #2).
+    declaring = types_declaring(ctx, method)
     setup, receiver, setup_why = extract_test_setup(test_src, method,
-                                                    siblings)
+                                                    siblings, declaring)
     _re('deterministic', method='reference-impl', target=method,
         output=('twin setup extracted' if setup else
-                'twin underivable — DISCARDED'), reason=setup_why)
+                'twin underivable — DISCARDED'), reason=setup_why,
+        detail={'declaring_types': sorted(declaring)[:4]})
     if not setup:
         return None
     # Fixture classes live only in the TEST FILE (`new Circle()`); the twin
@@ -230,10 +233,14 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         except OSError:
             test_file_src = ''
     t_imports, helpers = extract_test_dependencies(test_file_src, setup)
+    # The twin is the test method, so it must resolve names the way the test
+    # did: emitted INTO the test's own package (the class under test is
+    # referenced by simple name because they share it).
+    twin_pkg = test_package(test_file_src) or package
     try:
         twin_src = build_state_twin_driver(
             setup, receiver, [method] + siblings, mapping,
-            package=package, imports=(t_imports or imports),
+            package=twin_pkg, imports=(t_imports or imports),
             helper_classes=helpers)
     except (ValueError, TypeError) as e:
         _re('deterministic', method='reference-impl', target=method,
@@ -241,7 +248,8 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         return None
     _re('deterministic', method='reference-impl', target=method,
         output='twin built',
-        detail={'helpers': len(helpers), 'imports': len(t_imports or [])})
+        detail={'helpers': len(helpers), 'imports': len(t_imports or []),
+                'package': twin_pkg, 'receiver': receiver})
     buggy_vals, twin_why = run_twin(builder, buggy_dir, twin_src)
     _re('deterministic', method='reference-impl', target=method,
         output=('buggy twin ran' if buggy_vals else

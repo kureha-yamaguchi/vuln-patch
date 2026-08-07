@@ -424,7 +424,35 @@ def isolate_test_method(source, disputed, siblings):
     return best
 
 
-def extract_test_setup(test_source, disputed, siblings=None):
+def types_declaring(class_context, method):
+    """Class names whose body declares `method`, plus one `extends` level.
+
+    VM re-walk #2: the receiver must be selected by DECLARING TYPE, not by
+    call frequency -- the most-called variable was the optimizer's RESULT
+    object, and a same-named method on another type would have produced a
+    compilable twin reading the wrong object (the silent-wrong-state case).
+    """
+    import re as _re
+    if not class_context or not method:
+        return set()
+    out = set()
+    for m in _re.finditer(r'\bclass\s+(\w+)[^{;]*\{', class_context):
+        end = _match_brace(class_context,
+                          class_context.index('{', m.start()))
+        if end < 0:
+            continue
+        if _re.search(r'\b' + _re.escape(method) + r'\s*\(',
+                      class_context[m.start():end + 1]):
+            out.add(m.group(1))
+    for m in _re.finditer(r'class\s+(\w+)\s+extends\s+([\w.]+)',
+                          class_context):
+        if m.group(2).split('.')[-1] in out:
+            out.add(m.group(1))
+    return out
+
+
+def extract_test_setup(test_source, disputed, siblings=None,
+                       declaring_types=None):
     """`(setup_code, receiver_var, reason)` from a failing-test method OR an
     annotated blob (the VM re-walk found both shapes arrive here).
 
@@ -448,24 +476,33 @@ def extract_test_setup(test_source, disputed, siblings=None):
     if setup.count('{') != setup.count('}'):
         return None, None, ('setup braces unbalanced after assertion '
                             'stripping -- refusing to emit invalid Java')
-    m = _re.search(r'(\w+)\s*\.\s*' + _re.escape(disputed) + r'\s*\(',
-                   body)
-    receiver = m.group(1) if m else None
-    if receiver is None and siblings:
-        counts = {}
-        for s in siblings:
-            for v in _re.findall(
-                    r'(\w+)\s*\.\s*' + _re.escape(s) + r'\s*\(', body):
-                counts[v] = counts.get(v, 0) + 1
-        if counts:
-            receiver = max(counts, key=counts.get)
+    # RECEIVER BY DECLARING TYPE (VM re-walk #2). Usage-pattern guesses
+    # (most-called, last-constructed) both picked wrong objects; worse, a
+    # same-named method on another type compiles and reads the WRONG object.
+    # A candidate needs type evidence: its declared type must be one that
+    # declares the disputed observable -- and a VISIBLE declaration of the
+    # wrong type VETOES a by-call candidate. No type evidence -> discard.
+    declaring = {str(t) for t in (declaring_types or ())}
+    decls = {v: t for t, v in _re.findall(
+        r'\b([A-Z]\w*)(?:<[^>]*>)?\s+(\w+)\s*=', body)}
+    by_call = [v for v in _re.findall(
+        r'(\w+)\s*\.\s*' + _re.escape(disputed) + r'\s*\(', body)]
+    receiver = None
+    for v in by_call:
+        t = decls.get(v)
+        if t is None or not declaring or t in declaring:
+            receiver = v            # call evidence, type unknown or confirmed
+            break
+    if receiver is None and declaring:
+        typed = [v for v in decls if decls[v] in declaring]
+        if len(set(typed)) == 1:
+            receiver = typed[0]
     if receiver is None:
-        decls = _re.findall(
-            r'\b[A-Z]\w+(?:<[^>]*>)?\s+(\w+)\s*=\s*new\b', setup)
-        receiver = decls[-1] if decls else None
-    if receiver is None:
-        return None, None, ('no receiver: neither the disputed observable '
-                            'nor any sibling is invoked on a variable')
+        return None, None, (
+            'no receiver with type evidence: no variable both reaches the '
+            'disputed observable and is declared with a type that declares '
+            'it (declaring types: ' + str(sorted(declaring)[:4]) + ') — '
+            'DISCARDED rather than guessed')
     return setup, receiver, f'setup extracted; receiver `{receiver}`'
 
 
@@ -502,6 +539,23 @@ def extract_test_dependencies(test_file_source, setup_code):
         cls = _re.sub(r'^\s*static\s+', '', cls)
         helpers.append(cls)
     return imports, helpers
+
+
+def test_package(test_file_source):
+    """The test file's own `package` declaration, or None.
+
+    VM re-walk #2: the test refers to the class under test by SIMPLE NAME
+    because they share a package. A twin emitted package-less loses that
+    implicit resolution ("cannot find symbol
+    LevenbergMarquardtOptimizer"). Emitting the twin INTO the test's package
+    restores exactly the resolution the original test method had -- the
+    honest fix, since the twin is that method.
+    """
+    import re as _re
+    if not test_file_source:
+        return None
+    m = _re.search(r'^\s*package\s+([\w.]+)\s*;', test_file_source, _re.M)
+    return m.group(1) if m else None
 
 
 def ascii_safe(java_source):
