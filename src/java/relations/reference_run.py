@@ -17,6 +17,7 @@ is a reference with no standing, exactly as an unscreened relation is an
 uninjected relation.
 """
 import os
+import re
 import subprocess
 from typing import Dict, List, Optional, Tuple
 
@@ -25,6 +26,19 @@ from java.relations.evidence_facts import observed_values
 #: The driver prints one `key=value` per observable, then this marker. Its
 #: absence means the run did not complete, however the process exited.
 END_MARKER = '[[reference-run-complete]]'
+
+
+def declared_signature(reference_source: str) -> Optional[str]:
+    """The `// compute(<types>)` line the prompt requires, or None.
+
+    The generator declares the signature it chose; our code reads it rather
+    than guessing. A reference whose signature we cannot read is a reference we
+    cannot drive, which is a discard -- not an assumption.
+    """
+    if not reference_source:
+        return None
+    m = re.search(r'//\s*compute\(([^)\n]*)\)', reference_source)
+    return m.group(1).strip() if m else None
 
 
 def build_driver(reference_class: str,

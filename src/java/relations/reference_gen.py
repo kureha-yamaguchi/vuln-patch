@@ -64,7 +64,14 @@ def strip_comments(text: str) -> str:
     if not text:
         return ''
     text = re.sub(r'/\*.*?\*/', ' ', text, flags=re.S)     # block + javadoc
-    return re.sub(r'//[^\n]*', ' ', text)                   # line comments
+    text = re.sub(r'//[^\n]*', ' ', text)                   # line comments
+    # BARE CONTINUATION LINES. assemble_class_context delivers javadoc with its
+    # /** and */ delimiters already removed, leaving 332 lines of ` * ...` in
+    # Math-65 alone. With no opener the block pattern above matches nothing, so
+    # `@return RMS value` survived and matched the `return ...;` marker across
+    # newlines to the next semicolon. Stage-1 rolls 1 AND 3 both died here; the
+    # first fix handled only delimited comments and looked complete.
+    return re.sub(r'^[ \t]*\*.*$', ' ', text, flags=re.M)
 
 
 def looks_like_implementation(text: str) -> Optional[str]:
@@ -164,10 +171,22 @@ def build_reference_prompt(method: str,
                   "===", material['skeleton']]
     parts += [
         "",
-        "Write ONE self-contained Java class named `ReferenceImpl`"
-        + (f" in package {package};" if package else ";")
-        + " give it a public static entry point with the same parameter and "
-          "return types as the method above. No markdown fences, no prose.",
+        "Write ONE self-contained Java class named `ReferenceImpl` with a "
+        "single PUBLIC STATIC method named `compute`"
+        + (f", in package {package}" if package else "")
+        + ".",
+        "",
+        "FUNCTIONALIZE IT. The method above may read object state rather than "
+        "take arguments; `compute` must take that state as PARAMETERS and be "
+        "pure — same inputs, same result, no fields, no I/O. Declare exactly "
+        "the data the computation needs (e.g. the arrays or scalars the "
+        "documentation says it is computed from), in that order, and return "
+        "the same type. A reference that reads no input cannot be run on "
+        "different inputs, and one that cannot be varied cannot be checked.",
+        "",
+        "First line of your reply must be a comment giving the signature you "
+        "chose, exactly: `// compute(<types>)`. Then the class. No markdown "
+        "fences, no prose.",
     ]
     return [{'role': 'system', 'content': _SYSTEM},
             {'role': 'user', 'content': '\n'.join(parts)}]

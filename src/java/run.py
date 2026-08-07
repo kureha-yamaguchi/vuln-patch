@@ -154,8 +154,20 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     _re('deterministic', method='reference-impl', target=method,
         output='reference generated', detail={'chars': len(src)})
 
+    # The generator declares its own signature; we read it rather than guess.
+    # Unreadable signature -> discard, never an assumed call shape.
+    from java.relations.reference_run import declared_signature
+    sig = declared_signature(src)
+    if sig is None:
+        _re('deterministic', method='reference-impl', target=method,
+            output='no declared signature — DISCARDED',
+            reason='the reply carried no `// compute(<types>)` line, so the '
+                   'driver cannot know how to call it')
+        return None
+    _re('deterministic', method='reference-impl', target=method,
+        output='signature declared', detail={'signature': sig})
     obs, why = run_reference(builder, buggy_dir, src,
-                             build_driver('ReferenceImpl', method, ['']))
+                             build_driver('ReferenceImpl', 'compute', ['']))
     _re('deterministic', method='reference-impl', target=method,
         output=('reference ran' if obs else 'reference DISCARDED'), reason=why)
     if not obs:
