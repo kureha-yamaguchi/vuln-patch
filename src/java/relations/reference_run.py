@@ -342,46 +342,178 @@ def match_parameters(params: List[Tuple[str, str]],
     return resolved, f'matched {len(resolved)} parameter(s) to state fields'
 
 
-_ASSERT_LINE = re.compile(
-    r'^\s*(?:org\.junit\.)?(?:Assert\.)?'
-    r'(?:assert\w*|fail)\s*\(', re.I)
+_ASSERT_STMT = re.compile(
+    r'(?:org\.junit\.)?(?:Assert\.)?(?:assert\w+|fail)\s*\(')
 
 
-def extract_test_setup(test_source: str, disputed: str
-                       ) -> Tuple[Optional[str], Optional[str], str]:
-    """`(setup_code, receiver_var, reason)` from a failing-test method.
+def _strip_assert_statements(body: str) -> str:
+    """Remove assertion STATEMENTS, preserving everything else.
 
-    Setup = the test body with assertion/fail lines removed. Receiver = the
-    variable the DISPUTED method is invoked on in the original body; fallback
-    is the last `Type var = new ...` declaration. Both None -> the twin is
-    underivable and the chain discards with this reason.
+    Statement-aware, not line-based: the VM re-walk showed line-dropping
+    eats closing braces (`assertTrue(x); }` lost its `}`) and leaves `try`
+    blocks without their tails. Walks each assert call to its matching `)`
+    and the following `;`, removes exactly that span.
     """
+    out, i, n = [], 0, len(body)
+    while i < n:
+        m = _ASSERT_STMT.search(body, i)
+        if not m:
+            out.append(body[i:])
+            break
+        out.append(body[i:m.start()])
+        j = body.index('(', m.start())
+        depth = 0
+        while j < n:
+            if body[j] == '(':
+                depth += 1
+            elif body[j] == ')':
+                depth -= 1
+                if depth == 0:
+                    break
+            j += 1
+        j += 1
+        while j < n and body[j] in ' \t':
+            j += 1
+        if j < n and body[j] == ';':
+            j += 1
+        i = j
+    return ''.join(out)
+
+
+def _match_brace(text: str, open_idx: int) -> int:
+    """Index of the `}` matching `{` at open_idx, or -1."""
+    depth = 0
+    for j in range(open_idx, len(text)):
+        if text[j] == '{':
+            depth += 1
+        elif text[j] == '}':
+            depth -= 1
+            if depth == 0:
+                return j
+    return -1
+
+
+def isolate_test_method(source, disputed, siblings):
+    """The ONE test method from a possibly-annotated blob, or None.
+
+    The VM re-walk found the chain's input is not always a clean method: the
+    recorded form carries advisory comments, helper classes and field lists.
+    Stripping assertions from THAT produced structurally invalid Java and a
+    wrong receiver. So: find every `void name(...) {...}` method, pick the
+    one that calls the disputed observable, else the one with the most
+    sibling calls; extract exactly its brace-matched span.
+    """
+    import re as _re
+    if not source:
+        return None
+    best, best_score = None, -1
+    for m in _re.finditer(r'(?:public\s+)?void\s+\w+\s*\([^)]*\)'
+                          r'(?:\s*throws\s+[\w.,\s]+)?\s*\{', source):
+        end = _match_brace(source, source.index('{', m.start()))
+        if end < 0:
+            continue
+        meth = source[m.start():end + 1]
+        score = 0
+        if _re.search(r'\.' + _re.escape(disputed) + r'\s*\(', meth):
+            score += 100
+        score += sum(
+            len(_re.findall(r'\.' + _re.escape(s) + r'\s*\(', meth))
+            for s in (siblings or []))
+        if score > best_score:
+            best, best_score = meth, score
+    return best
+
+
+def extract_test_setup(test_source, disputed, siblings=None):
+    """`(setup_code, receiver_var, reason)` from a failing-test method OR an
+    annotated blob (the VM re-walk found both shapes arrive here).
+
+    Receiver = the variable the DISPUTED observable is invoked on; when the
+    test never calls it (Math-65's testCircleFitting never calls
+    getChiSquare), the variable with the most SIBLING-observable calls --
+    the object whose state the test actually inspects.
+    """
+    import re as _re
     if not test_source:
         return None, None, 'no failing-test source available'
-    i = test_source.find('{')
-    j = test_source.rfind('}')
-    if i < 0 or j <= i:
-        return None, None, 'failing-test source has no method body'
-    body = test_source[i + 1:j]
-    m = re.search(r'(\w+)\s*\.\s*' + re.escape(disputed) + r'\s*\(', body)
-    receiver = m.group(1) if m else None
-    kept = []
-    for line in body.splitlines():
-        if _ASSERT_LINE.match(line):
-            continue
-        kept.append(line)
-    setup = '\n'.join(kept).strip()
+    meth = isolate_test_method(test_source, disputed, siblings or [])
+    if meth is None:
+        return None, None, ('no test method isolatable from the source '
+                            '(annotated blob without a void method?)')
+    i = meth.find('{')
+    body = meth[i + 1:-1]
+    setup = _strip_assert_statements(body).strip()
     if not setup:
         return None, None, 'failing-test body is all assertions'
+    if setup.count('{') != setup.count('}'):
+        return None, None, ('setup braces unbalanced after assertion '
+                            'stripping -- refusing to emit invalid Java')
+    m = _re.search(r'(\w+)\s*\.\s*' + _re.escape(disputed) + r'\s*\(',
+                   body)
+    receiver = m.group(1) if m else None
+    if receiver is None and siblings:
+        counts = {}
+        for s in siblings:
+            for v in _re.findall(
+                    r'(\w+)\s*\.\s*' + _re.escape(s) + r'\s*\(', body):
+                counts[v] = counts.get(v, 0) + 1
+        if counts:
+            receiver = max(counts, key=counts.get)
     if receiver is None:
-        decls = re.findall(r'\b[A-Z]\w+(?:<[^>]*>)?\s+(\w+)\s*=\s*new\b',
-                           setup)
+        decls = _re.findall(
+            r'\b[A-Z]\w+(?:<[^>]*>)?\s+(\w+)\s*=\s*new\b', setup)
         receiver = decls[-1] if decls else None
     if receiver is None:
-        return None, None, ('no receiver: the disputed method is not invoked '
-                            'in the test body and no constructed object was '
-                            'found')
+        return None, None, ('no receiver: neither the disputed observable '
+                            'nor any sibling is invoked on a variable')
     return setup, receiver, f'setup extracted; receiver `{receiver}`'
+
+
+def extract_test_dependencies(test_file_source, setup_code):
+    """`(imports, helper_class_sources)` the setup needs, from the test FILE.
+
+    The VM re-walk's deepest finding: a test's setup may construct FIXTURE
+    classes that exist only in the test file (`new Circle()`), so an
+    isolated method cannot compile without them. Helpers referenced by
+    `new <Name>(` are extracted brace-matched and emitted as top-level
+    package-private classes beside the driver. Missing file or missing
+    helper -> the caller discards with a reason; nothing is guessed.
+    """
+    import re as _re
+    if not test_file_source or not setup_code:
+        return [], []
+    imports = _re.findall(r'^import\s+[\w.*]+\s*;', test_file_source,
+                          _re.M)
+    imports = [i for i in imports if 'junit' not in i]
+    needed = set(_re.findall(r'new\s+([A-Z]\w*)\s*\(', setup_code))
+    helpers = []
+    for name in sorted(needed):
+        m = _re.search(r'(?:private|public|protected)?\s*(?:static\s+)?'
+                       r'(?:final\s+)?class\s+' + _re.escape(name)
+                       + r'\b[^{]*\{', test_file_source)
+        if not m:
+            continue
+        end = _match_brace(test_file_source,
+                           test_file_source.index('{', m.start()))
+        if end < 0:
+            continue
+        cls = test_file_source[m.start():end + 1]
+        cls = _re.sub(r'^\s*(?:private|public|protected)\s+', '', cls)
+        cls = _re.sub(r'^\s*static\s+', '', cls)
+        helpers.append(cls)
+    return imports, helpers
+
+
+def ascii_safe(java_source):
+    """Every non-ASCII char as a backslash-uXXXX escape -- semantically identical.
+
+    Java processes unicode escapes BEFORE lexing, so this is a total fix for
+    the VM's `unmappable character for encoding US-ASCII` failure: an
+    em-dash in a copied comment compiles identically as backslash-u2014,
+    everywhere, including inside comments and string literals.
+    """
+    return ''.join(c if ord(c) < 128 else '\\u%04x' % ord(c)
+                   for c in java_source)
 
 
 #: Reflection helper injected into the twin: walks the class hierarchy for a
@@ -417,7 +549,8 @@ def build_state_twin_driver(setup_code: str,
                             observables: List[str],
                             param_fields: List[str],
                             package: Optional[str] = None,
-                            imports: Optional[List[str]] = None) -> str:
+                            imports: Optional[List[str]] = None,
+                            helper_classes: Optional[List[str]] = None) -> str:
     """The twin: replay the failing test's setup, then print everything.
 
     Runs UNMODIFIED on the buggy build and on the patched build -- one source,
@@ -429,7 +562,9 @@ def build_state_twin_driver(setup_code: str,
     if isinstance(observables, str) or isinstance(param_fields, str):
         raise TypeError('observables and param_fields must be lists, not str')
     pkg = f'package {package};\n\n' if package else ''
-    imp = ''.join(f'import {i};\n' for i in (imports or []))
+    imp = ''.join((i if i.rstrip().endswith(';') else f'import {i};') + '\n'
+                  for i in (imports or []))
+    helpers = '\n\n'.join(helper_classes or [])
     reads = '\n'.join(
         '      try {\n'
         f'        Object r = {receiver}.{obs}();\n'
@@ -441,7 +576,7 @@ def build_state_twin_driver(setup_code: str,
         for obs in observables)
     params = '\n'.join(
         f'      printField({receiver}, "{name}");' for name in param_fields)
-    return (pkg + imp + 'public class StateTwinDriver {\n'
+    out = (pkg + imp + 'public class StateTwinDriver {\n'
             + _REFLECT_HELPER +
             '  public static void main(String[] args) throws Exception {\n'
             '    try {\n'
@@ -453,7 +588,13 @@ def build_state_twin_driver(setup_code: str,
             '+ t.getClass().getSimpleName());\n'
             '    }\n'
             f'    System.out.println("{END_MARKER}");\n'
-            '  }\n}\n')
+            '  }\n}\n'
+            + ('\n' + helpers + '\n' if helpers else ''))
+    out = ascii_safe(out)
+    if out.count('{') != out.count('}'):
+        raise ValueError('twin driver braces unbalanced -- refusing to emit '
+                         'invalid Java (caller discards with this reason)')
+    return out
 
 
 def java_literal(typ: str, printed: str) -> Optional[str]:

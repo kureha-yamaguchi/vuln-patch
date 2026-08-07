@@ -252,3 +252,102 @@ def test_wiring_both_doors_pass_patch_path():
         assert 'patch_path=selection.patch_path' in c
         assert 'package=context.package' in c
         assert 'imports=context.source_imports' in c
+
+
+# ---------------------------------------------------------------------------
+# The three VM re-walk failures (2026-08-07), pinned with real Math-65 shapes.
+# ---------------------------------------------------------------------------
+
+# The annotated blob shape the chain actually receives: method + advisory
+# prose + helper class + fields (condensed from ladder1e's recorded trace).
+BLOB = '''
+[REAL FAILING TEST ...Test::testCircleFitting — trust source #1, verbatim]
+    public void testCircleFitting() throws OptimizationException {
+        Circle circle = new Circle();
+        circle.addPoint( 30.0,  68.0);
+        LevenbergMarquardtOptimizer optimizer = new LevenbergMarquardtOptimizer();
+        optimizer.optimize(circle, new double[] { 0 }, new double[] { 1 },
+                           new double[] { 98.680, 47.345 });
+        assertTrue(optimizer.getEvaluations() < 10);
+        double rms = optimizer.getRMS();
+        assertEquals(1.768262623567235,  Math.sqrt(circle.getN()) * rms,  1.0e-10);
+        double[][] cov = optimizer.getCovariances();
+        assertEquals(1.839, cov[0][0], 0.001);
+    }
+// The test DEPENDS on this setup from its test class (helpers, fields...):
+// --- helper Circle() ---
+        public Circle() {
+            points  = new ArrayList<Point2D.Double>();
+        }
+// --- class fields/constants the test uses ---
+private ArrayList<Point2D.Double> points;
+'''
+
+SIBS = ['getRMS', 'getCovariances', 'getEvaluations']
+
+
+def test_blob_isolates_the_method_not_the_annotations():
+    setup, recv, why = rr.extract_test_setup(BLOB, 'getChiSquare', SIBS)
+    assert setup is not None, why
+    assert 'helper Circle()' not in setup            # annotations excluded
+    assert 'private ArrayList' not in setup          # fields excluded
+    assert 'addPoint' in setup
+
+
+def test_receiver_by_sibling_calls_not_last_new():
+    # getChiSquare is never called; 'optimizer' has the sibling calls, and
+    # the last `new` in setup is NOT the receiver (the roll-5 'center' bug).
+    setup, recv, why = rr.extract_test_setup(BLOB, 'getChiSquare', SIBS)
+    assert recv == 'optimizer', why
+
+
+def test_assert_stripping_is_statement_aware():
+    body = ('int x = 1;\n'
+            '        assertEquals(cov[0][1], cov[1][0], 1.0e-14); }\n')
+    out = rr._strip_assert_statements(body)
+    assert '}' in out                                # the brace survives
+    assert 'assertEquals' not in out
+
+
+def test_multiline_assert_statement_fully_removed():
+    body = ('go();\nassertEquals(1.768262623567235,\n'
+            '    Math.sqrt(circle.getN()) * rms,\n    1.0e-10);\nrest();')
+    out = rr._strip_assert_statements(body)
+    assert 'go();' in out and 'rest();' in out
+    assert 'sqrt' not in out
+
+
+def test_unbalanced_setup_is_refused_not_emitted():
+    src = 'public void t() {\n  if (a) {\n  helper(b);\n}'  # missing brace
+    setup, recv, why = rr.extract_test_setup(src + '\n}', 'getX', [])
+    if setup is not None:
+        assert setup.count('{') == setup.count('}')
+
+
+def test_ascii_safe_escapes_emdash_everywhere():
+    s = rr.ascii_safe('// values — the pipeline prose\nint x = 1;')
+    assert '—' not in s
+    assert '\\u2014' in s
+    assert 'int x = 1;' in s
+
+
+def test_twin_driver_is_ascii_and_balanced_with_helpers():
+    imports, helpers = rr.extract_test_dependencies(
+        'import java.util.ArrayList;\nimport junit.framework.TestCase;\n'
+        'public class T {\n  private static class Circle {\n'
+        '    public Circle() { }\n    public void addPoint(double a, double b) { }\n'
+        '    public int getN() { return 0; }\n  }\n}',
+        'Circle circle = new Circle();')
+    assert helpers and 'class Circle' in helpers[0]
+    assert all('junit' not in i for i in imports)
+    src = rr.build_state_twin_driver(
+        'Circle circle = new Circle(); // em—dash prose', 'circle',
+        ['getN'], [], imports=imports, helper_classes=helpers)
+    assert src.count('{') == src.count('}')
+    assert all(ord(c) < 128 for c in src)
+    assert 'class Circle' in src
+
+
+def test_unbalanced_twin_raises_for_honest_discard():
+    with pytest.raises(ValueError):
+        rr.build_state_twin_driver('if (a) { b();', 'o', ['getN'], [])
