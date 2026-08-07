@@ -1966,6 +1966,37 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   after the discard, as specified). 793 passed, 7 skipped; pushed.
   **Roll 12 is GO — the remaining read is the stage-1 gate itself:
   fact emitted, judge engagement.***
+  *ROLL 12 (2026-08-07): **THE CHAIN COMPLETED END TO END — and gate (c)
+  FAILED.** Every mechanical step worked live: screen ADMITTED (3
+  off-defect, 1 re-graded), no pin attaches → explicit ABSTAIN, patched
+  twin ran (13 keys), FACT EMITTED and delivered into 9 of 17 judge
+  prompts. Engagement: ZERO of 9. No WHY mentions the independent
+  implementation; no CITATION quotes the fact. The dismissals the judge
+  did reach ([5],[13],[16]) answer the disputed multiply-vs-divide
+  question FROM THE JAVADOC — "chi-square as Σ w·(target−f)² (because
+  the variance is 1/w)" — with the digit-for-digit fact unquoted in the
+  same prompt; and the judge is INTERNALLY INCONSISTENT on the same
+  formula (kept [10] endorses the divide form as "the documented
+  contract"). Final outcome FP (relation-replay-conviction). Read: the
+  judge is not evidence-starved but evidence-blind on this axis — the
+  FIFTH independent negative (cycle 8 measured delivery, placement,
+  questioning, judge model; this adds a new EVIDENCE KIND) and the
+  strongest yet that the ceiling is architectural, not informational.
+  The mechanism itself is fully positive: admission works, two
+  independent generations converge digit-for-digit, the exoneration
+  chain is real and verified. **STAGE-1 GATE (c) IS NOT MET; per the
+  pre-registered ladder, no advance without an explicit decision.
+  PENDING USER: (i) close 8.2 as measured-and-recorded; (ii) override
+  the gate and run stage 2's conviction direction (a different ask —
+  disagreement fact on a fake patch vs agreement fact against a trusted
+  javadoc); (iii) repurpose the ADMITTED fact as a DETERMINISTIC gate
+  (the mechanism-beats-instruction route: an admitted, thrice-validated
+  reference that agrees with the patch digit-for-digit on the convicted
+  observable voids/downgrades that conviction mechanically — design
+  note + both guard-fixture populations BEFORE any build; recall risk
+  is the 67-row genuine-catch fixture's to referee). Either way the
+  outstanding generality checks stand: guard fixtures vs the option-B
+  screen, and stage-2 material as held-out validation.***
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
