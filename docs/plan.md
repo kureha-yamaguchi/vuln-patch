@@ -1714,6 +1714,28 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   a thrown exception and a silent exit are distinguishable in one read.
   Gate (b) 12-for-12. 748 passed, 7 skipped; pushed. **Roll 7 is GO** —
   the screen question is still the next unknown, now one seam closer.*
+  *ROLL 7 (2026-08-07): discarded one step EARLIER than roll 6, unrelated
+  cause — model variance in the declaration line (roll 6 named its
+  parameters, roll 7 declared bare `double[], double[], double`). Note the
+  classpath fix from roll 6 was never reached, so it remains untested.
+  Fixed (0116e6f, main session) the roll-5 way — accommodate the deviation
+  mechanically: `fields_read_by()` derives the state a computation consumes
+  from the BUGGY body in code order (getChiSquare → rows, residuals,
+  residualsWeights; legitimate rank-2 authority read by OUR code, the
+  generator still never sees it), and unnamed parameters map positionally
+  against that. Two silent-wrong-input paths closed on the way, both found
+  by the new tests rather than by a roll: a NAMED parameter no longer falls
+  back to type (`residuals` is a substring of `residualsWeights` — a type
+  fallback maps one onto the other and feeds the reference the wrong array
+  while compiling and running perfectly), and an UNNAMED parameter maps
+  only to fields the method reads. Roll 7's exact signature still discards
+  (its third `double` answers to nothing getChiSquare reads) with the read
+  fields named. Also corrected: the error truncated the field list at 8,
+  which made `residuals` look absent — it is field 10 of 39, so roll 6's
+  mapping was exact all along. Gate (b) 13-for-13; rule 7 still unstarted
+  (every roll a different mechanism). 755 passed, 7 skipped; pushed.
+  **Roll 8 is GO** — the screen question is STILL the next unknown, and
+  the untested classpath seam sits directly before it.*
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
