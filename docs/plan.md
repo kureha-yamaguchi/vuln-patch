@@ -1943,6 +1943,29 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   is a fresh generation's content, and the read is whether the live
   chain produces the fact and the judge engages it (stage-1 gate (c),
   at last).***
+  *ROLL 11 (2026-08-07): **THE SCREEN ADMITTED — a first.** Option B ran
+  exactly as designed: 3 shared, the re-graded sibling named, the two
+  evidence kinds kept separate. Died one step later: DEFECT 19, the
+  first inside the mechanism's judgement rather than its plumbing — the
+  pin check discarded the correctly-diverging reference (6.253505411815327
+  = 4.000× buggy, the defect's own weighting) against 1.768262623567235,
+  a literal asserted on `Math.sqrt(circle.getN()) * rms`: an RMS line's
+  answer key, mapped onto getChiSquare because the chain fed
+  `{method: trusted_values}` by construction. Fixed (4e5d9cb, second
+  session): `pins_for_disputed` gives validator 3 the SAME attribution
+  discipline as corroboration — state identity (was-value verbatim in
+  the twin's buggy print for THAT observable) or a direct assertion on
+  the disputed method; pins carry the test's own tolerance and
+  `pin_check` honours it; no attribution → ABSTAIN, stated. The
+  bug-copy catch is preserved (direct-assertion pins still attach;
+  canaries green). Walk rerun against roll 11's OWN artifacts: the
+  fresh generation — different parameter order — computes the same
+  values DIGIT FOR DIGIT as roll 10's (two independent generations
+  converging: reproducibility the mechanism did not have before);
+  screen ADMITS, pins {} → ABSTAIN. Gate (b) 17-for-17 (zero facts
+  after the discard, as specified). 793 passed, 7 skipped; pushed.
+  **Roll 12 is GO — the remaining read is the stage-1 gate itself:
+  fact emitted, judge engagement.***
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
