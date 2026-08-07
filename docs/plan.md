@@ -1922,6 +1922,27 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   disputed point and everywhere else it reports — the exoneration
   evidence 8.2 was designed to produce for Math-65, sitting one
   screen-design decision away from the judge.*
+  *THE GATE DECISION — TAKEN (user, 2026-08-07): OPTION B, implemented
+  (14851e0) and verified by rerunning re-walk #8 with production
+  functions on verbatim recorded material. A defect-reached sibling
+  re-grades against the failing test's own asserted literal, with both
+  conditions required: the reference matches the test's value within
+  the TEST'S OWN tolerance AND the buggy build fails the same pin (the
+  second contains the open-book concern — the test's answer overrides
+  the buggy build only where buggy is demonstrably wrong). Attribution
+  is mechanical: a pin attaches only where the failure message's
+  `was:<...>` value appears verbatim in the twin's buggy print (the
+  re-walk-#7 state identity). Walk result: pins resolve to
+  {guessParametersErrors: (0.004, 0.001)}, THE SCREEN ADMITS — 3
+  shared: getRMS exact, getCovariances per-element, errors re-graded —
+  and the admit reason names the re-graded sibling. With the addendum's
+  patched-side run (digit-for-digit agreement), the COMPLETE
+  exoneration chain for Math-65 is verified end to end on recorded
+  material. 789 passed, 7 skipped; pushed. **Roll 11 is GO — for the
+  first time with zero known mechanical unknowns: the only new event
+  is a fresh generation's content, and the read is whether the live
+  chain produces the fact and the judge engages it (stage-1 gate (c),
+  at last).***
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
