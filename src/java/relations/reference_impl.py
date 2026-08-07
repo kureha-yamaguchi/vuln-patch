@@ -250,7 +250,20 @@ def reference_verdict_gate(fired_msg, admitted) -> Tuple[str, str]:
     buggy = (admitted or {}).get('buggy') or {}
     if not fired_msg or not obs:
         return 'abstain', 'no admitted reference for this leg'
-    fired_vals = observed_values(fired_msg)
+    # Harness firings echo the method CALL (`getChiSquare()=6.25...`), and
+    # the k=v parser requires a bare identifier before `=` — ladder1g's
+    # second patched firing carried the reference's exact value behind that
+    # `()` and read as no-overlap. Normalized HERE, not in the global
+    # parser: the 8.3 recorder's semantics stay untouched.
+    fired_vals = observed_values(re.sub(r'\(\s*\)\s*=', '=',
+                                        str(fired_msg)))
+    # Formula echoes (`sum((t-v)^2 / w[i])=...`) are not parseable keys, so
+    # the k=v parser swallows them INTO the preceding value ("6.25 sum((...")
+    # and a matching number reads as a mismatch. A scalar value is one
+    # token; arrays keep their bracketed form.
+    fired_vals = {k: [v if v.startswith('[') else v.split()[0]
+                      for v in vs]
+                  for k, vs in fired_vals.items()}
     ref_by_key = {observable_key(k): (k, v) for k, v in obs.items()}
     shared = [(fk, ref_by_key[observable_key(fk)])
               for fk in fired_vals if observable_key(fk) in ref_by_key]

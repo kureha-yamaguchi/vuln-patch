@@ -1619,3 +1619,43 @@ def test_gate_runs_only_on_kept_convictions_and_before_the_keep():
 
 
 from pathlib import Path  # noqa: E402  (used by the structural guards)
+
+
+# ---------------------------------------------------------------------------
+# Door parity + parse reach (post-roll-13 corpus measurement). The verbatim
+# ladder1g firing: the harness echoes the method CALL (`getChiSquare()=`)
+# and recomputes the buggy formula inline (`sum(...)=1.56...`), both of
+# which defeated the k=v parser -- the reference's exact value sat behind
+# them, unread.
+# ---------------------------------------------------------------------------
+
+LADDER1G_FIRING = ('[oracle:unnamed-check] [oracle:seed-dense-chi-formula] '
+                   'metamorphic violation: getChiSquare()=6.253505411815327 '
+                   'sum((target[i]-value[i])^2 / weights[i])='
+                   '1.5633763529538318 relTol=1.0e-10')
+
+
+def test_gate_reads_method_call_echo_keys_and_formula_echo_values():
+    from java.relations.reference_impl import reference_verdict_gate
+    v, why = reference_verdict_gate(LADDER1G_FIRING, ADMITTED_M65)
+    assert v == 'void', why
+    assert 'getChiSquare' in why
+
+
+def test_gate_is_wired_on_both_doors():
+    # Spec-K parity, measured before wired: the corpus scan found the
+    # gate's only reach on the HARNESS door. Both adjudication sites must
+    # gate their keeps; a void must precede the keep on each.
+    src = open(Path(__file__).resolve().parents[1] / 'src' / 'java'
+               / 'run.py').read()
+    sites = [m for m in range(len(src))
+             if src.startswith('reference_verdict_gate(\n', m)
+             or src.startswith('reference_verdict_gate(', m)
+             and src[m - 1] != '.']
+    calls = src.count('_gv, _gwhy = reference_verdict_gate(')
+    assert calls == 2, f'expected the gate on both doors, found {calls}'
+    # Harness door: the void path records a drop reason, never a keep.
+    i = src.index('fd_prior=_fd_consult_result')
+    harness = src[i:i + 1800]
+    assert "reference-verdict-gate: " in harness
+    assert harness.index("if _gv == 'void':") < harness.index('kept_reason =')

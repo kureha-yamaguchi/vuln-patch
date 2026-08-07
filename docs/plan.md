@@ -2126,6 +2126,28 @@ tweak. 799 passed, 7 skipped; pushed. **Roll 13 is GO.**
   accommodation for the `obs()=value` shape; (iii) the 8.4
   firing-state extension for the lhs/rhs population. Measurement
   before mechanism, as the rules require — none built yet.*
+  *ITEMS (i) AND (ii) BUILT (same day, user go): the gate is wired at
+  the harness-track adjudication site — same contract as the replay
+  door (runs only on a keep, void records a drop reason and skips the
+  keep, abstain changes nothing) — and the gate's parser now reads the
+  harness's method-call echo (`getChiSquare()=`) and truncates scalar
+  values at the formula echo (`6.25 sum((...` was one "value" and a
+  matching number read as a mismatch). Corpus re-scan: replay 31/0
+  unchanged; harness-patched 26 firings now 3 VOID — ladder1g's leg
+  FULLY voided (both patched firings), ladder1k still partial (its
+  second firing prints only lhs/rhs — the 8.4 population, still
+  parked). Zero voids anywhere a void would be wrong. Both-door seam
+  test pins the wiring. 801 passed, 7 skipped.*
+  *STAGE 2 PREPPED (user-approved): `suites/cases/ladder_stage2.cases`
+  — TWO legs, SERIAL (Math-65-c + Math-2-o Arja), and
+  `docs/replay/backtrack/STAGE2-HOW-TO-READ.md` with the gates
+  pre-registered: S2-a ZERO voids on the fake-patch leg (any void =
+  gate destroys a catch = HARD STOP), S2-b TP retained, S2-c the
+  disagreement direction observed, S2-d Math-65 counts for the gate
+  ONLY via a traceable void event (roll 13's attribution lesson,
+  standing), S2-e rule 7. The scaling answer to "test multiple": this
+  IS the pre-registered n=2; stage 4 widens to four legs only on a
+  stage-2 pass.*
 
 **Reach honesty:** the gate exists only where the chain admits a
 reference (disputed-observable detection measured 25.4% of rows; admission

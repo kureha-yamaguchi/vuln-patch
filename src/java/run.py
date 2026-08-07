@@ -3821,6 +3821,32 @@ def main():
                         failing_block=_j3_failing_test_block(failure_tests),
                         check_source=src, fd_prior=_fd_consult_result)
                     if ok:
+                        # 8.25 DOOR PARITY (Spec-K, this time measured
+                        # first): the corpus scan found the gate's ONLY
+                        # reach on THIS door — the fuzz harness replays the
+                        # failing test's scenario, so its firings carry
+                        # test-state-coincident values; the replay door's
+                        # never do. Same contract as the replay site: runs
+                        # only on a keep, void skips it, abstain changes
+                        # nothing.
+                        from java.relations.reference_impl import (
+                            reference_verdict_gate)
+                        _gv, _gwhy = reference_verdict_gate(
+                            fired,
+                            getattr(_reference_impl_fact, '_admitted', None))
+                        record_event(
+                            'deterministic', method='reference-verdict-gate',
+                            target=(fired or '')[:80],
+                            output=('conviction VOIDED' if _gv == 'void'
+                                    else 'gate abstains'),
+                            reason=_gwhy)
+                        if _gv == 'void':
+                            print(f"  ∅ harness firing VOIDED by the "
+                                  f"reference verdict gate")
+                            print(f"      {_gwhy}")
+                            drop_reasons.append(
+                                (fired, 'reference-verdict-gate: ' + _gwhy))
+                            continue
                         kept_reason = (fired, why)
                         break
                     # P4.3: remember which ORACLE the verifier judged

@@ -1,0 +1,41 @@
+# 8.2 LADDER — STAGE 2. TWO legs, run SERIAL (PARALLEL=1; the tiny-suite
+# rule: relation pooling within a run needs serial order). ~300-500k.
+#
+#   Leg 1: Math-65 CORRECT (CapGen) — the stage-1 leg, now with the 8.25
+#   verdict gate wired on BOTH doors. The gate (c) question moves from
+#   "does the judge engage" (measured NO, five ways) to "does the GATE
+#   void the conviction, traceably".
+#
+#   Leg 2: Math-2 OVERFIT (Arja) — the CONVICTION direction, and the first
+#   held-out material every 8.2 design decision (option B, the bar, pin
+#   discipline, the gate predicate) has never seen. The documented-mean
+#   dispute: the reference should side AGAINST the patch.
+#
+# PRE-REGISTERED GATES (in plan.md §8.25 + stage-2 entry BEFORE launch):
+#   (S2-a) Math-2 leg: ZERO gate voids. On a fake patch every kept
+#          conviction must come back ABSTAIN or the gate is destroying a
+#          genuine catch — ANY void on this leg is a HARD STOP.
+#   (S2-b) Math-2 leg: TP retained (the catch survives option B and the
+#          gate; both-signs read: catches gained/lost AND accusations
+#          gained/lost).
+#   (S2-c) Math-2 leg, informational: does the chain admit a reference,
+#          and does the DISAGREEMENT side behave (fact says the reference
+#          computes something other than the patch)? Zero facts from
+#          discarded references, as always.
+#   (S2-d) Math-65 leg: if it convicts, the gate's void event must appear
+#          in the trace and the outcome must trace to it — roll 13's
+#          lesson: a flip without the gate's event is a lottery draw, not
+#          a result. If it doesn't convict (lottery), the leg is a no-op
+#          for gate purposes; say so, don't bank it.
+#   (S2-e) Rule 7 stands: two no-change iterations → stop and report.
+#
+# READ-OUT is per-event on BOTH legs: reference chain events, gate events
+# (one per kept conviction, each with its verdict and reason), and the
+# outcome flags. The gate events are new since roll 13: 'conviction
+# VOIDED' / 'gate abstains' under method reference-verdict-gate.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
+)
