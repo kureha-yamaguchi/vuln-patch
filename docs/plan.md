@@ -2075,6 +2075,27 @@ cheap honest start.
   (d) A clean-leg accusation traceable to the gate at ANY point = hard
       stop (standing ladder rule).
   (e) Rule 7: two no-change iterations -> stop and report.
+**PHASE 1 BUILT (5ba0508, second session, same day).** Predicate as
+refined at build time: VOID only on self-proving value coincidence — all
+firing-reported observables match the admitted reference's test-state
+values, at least one DISCRIMINATING (reference differs from buggy there);
+the 16-digit coincidence is itself the proof of same-state. Everything
+else ABSTAINS with a split reason. THE DRY RUN CAUGHT THE UNSOUND HALF
+BEFORE FIRST LIVE USE: 'disagreement -> corroborate' cannot distinguish
+patch-wrong from state-different (fuzz-input firings legitimately differ
+from test-state values), so corroboration is REMOVED from phase 1 and
+deferred to the 8.4 firing-state extension — void is self-proving,
+corroborate is not; the asymmetry is the honest shape. Gates run:
+(a) 67-row zero voids (all abstain BY REACH — no admitted reference on
+those legs; disclosed as abstention, not exoneration); (b) 38-row
+untouched BY CONSTRUCTION (gate runs only inside the kept branch;
+structural test pins it). Gate (c) = roll 13's read, honestly uncertain:
+roll 12's three kept firings would all ABSTAIN (fuzz-input states) while
+rolls 10/11's kept relations fired at test-coincident values and would
+VOID — which relations a roll synthesizes and keeps is stochastic. Thin
+reach -> 8.4 extension is the recorded next step, not another predicate
+tweak. 799 passed, 7 skipped; pushed. **Roll 13 is GO.**
+
 **Reach honesty:** the gate exists only where the chain admits a
 reference (disputed-observable detection measured 25.4% of rows; admission
 is rarer). Phase-1 (b)-scope reach is measured and reported with the
