@@ -1756,6 +1756,41 @@ each stage's gates are written BEFORE the stage runs; advance only on pass.
   14-for-14; rule 7 still unstarted. 759 passed, 7 skipped; pushed.
   **Roll 9 is GO** — unchanged stack: the twin's first production run,
   then the screen question.*
+  *PRE-ROLL-9 WALK (2026-08-07, second session): the recorded rolls
+  replayed through the code roll 9 would run, BEFORE spending it. Three
+  seams found and fixed. (1) SWAP — the wired mapper would have fed roll
+  8's reference its two arrays REVERSED: the comment line is bare types,
+  but the model's own `compute_*` declarations name both parameters, in
+  the OPPOSITE order from the buggy body's read order. Same type, same
+  length: compiles, runs, computes garbage, and the screen's discard
+  would then have read as "a doc-derived reference cannot reproduce the
+  buggy build" — a wrong answer to the ladder's own question. Fixed:
+  `merge_declared_parameter_names` adopts the declarations' names into
+  unnamed comment positions, gated on every name resolving to a canonical
+  field (a model that names its parameters `r, w` has named nothing a
+  field answers to; the merge declines and read-order stays in play).
+  (2) THIN — rolls 6/7/8 all declared ONE countable sibling
+  ({chiSquare, RMS(, cost)}) against a screen bar of THREE, because the
+  prompt never named the siblings that count. A mechanically perfect roll
+  9 would still have discarded at the screen. Fixed: the surface is
+  resolved BEFORE the generation (a broken declaring-type parse now costs
+  zero model calls) and the prompt names the exact siblings, the bar, and
+  the counter caveat (getEvaluations/getIterations/getJacobianEvaluations
+  are bookkeeping, not derivable from state — the realistic shared set is
+  getRMS + getCovariances + guessParametersErrors, exactly the bar).
+  (3) LATE BAR — MIN_SCREENED_OBSERVABLES was enforced only inside
+  `screen_reference`, after the twin build and two JVM runs, though the
+  count is knowable at the match step; `too_thin_to_screen` now decides
+  it there, fail-closed, same sign. Roll 8's verbatim reference is the
+  fixture, driven chain-level: names recovered, thin discard, zero JVM
+  calls. Seam tests extended to ORDER (siblings resolved before the
+  prompt is built; merge before mapping; thin bar before run_twin).
+  Also confirmed on the way: the 719-vs-759 test-count scare is the
+  documented invocation-scope phantom (bare `pytest` collects both
+  roots), not a regression. 772 passed, 7 skipped. **Roll 9 stays GO,
+  now with the swap dead, the bar reachable, and the untested seams
+  reduced to the genuinely runtime ones: the twin's first production
+  run (classpath), then the screen.***
 - [ ] **Stage 2 — n=2: + Math-2 overfit leg** (documented mean formula — the
   conviction direction). Gate: both directions work — agreement-side on the
   correct leg, disagreement-side on the fake, zero facts where the screen
