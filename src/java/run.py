@@ -109,7 +109,8 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         build_reference_call_driver, build_state_twin_driver, canonical_state,
         declared_observable_names, declared_signature, extract_test_dependencies,
         extract_test_setup, java_literal, match_parameters, parse_parameters,
-        run_reference, run_twin, test_package, types_declaring)
+        plausible_class_names, run_reference, run_twin, test_package,
+        types_declaring)
 
     ctx = '\n\n'.join(class_ctx) if class_ctx else ''
     try:
@@ -211,7 +212,19 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
                      for ft in failure_tests
                      if getattr(ft, 'method_source', None)), '')
     # Receiver by DECLARING TYPE, never by usage pattern (VM re-walk #2).
+    # A BROKEN PARSE and "no declaring type in this leg" are different
+    # failures and only one is about the leg (re-walk #3: the XML wrapper
+    # yielded {'name'} six times, invisible to the code, obvious to a
+    # reader). Say which, loudly.
     declaring = types_declaring(ctx, method)
+    if declaring and not plausible_class_names(declaring):
+        _re('deterministic', method='reference-impl', target=method,
+            output='declaring-type PARSE BROKEN — DISCARDED',
+            reason=f'parsed type names are not plausible Java classes: '
+                   f'{sorted(declaring)[:6]} — this is an extractor failure, '
+                   f'not a property of this leg',
+            detail={'parsed': sorted(declaring)[:6]})
+        return None
     setup, receiver, setup_why = extract_test_setup(test_src, method,
                                                     siblings, declaring)
     _re('deterministic', method='reference-impl', target=method,

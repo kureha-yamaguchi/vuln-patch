@@ -425,30 +425,83 @@ def isolate_test_method(source, disputed, siblings):
 
 
 def types_declaring(class_context, method):
-    """Class names whose body declares `method`, plus one `extends` level.
+    """Class names whose body declares `method`, plus `extends` closure.
 
     VM re-walk #2: the receiver must be selected by DECLARING TYPE, not by
     call frequency -- the most-called variable was the optimizer's RESULT
     object, and a same-named method on another type would have produced a
     compilable twin reading the wrong object (the silent-wrong-state case).
+
+    VM re-walk #3: the context arrives XML-WRAPPED
+    (a <class name="X" role="..."> ... </class> wrapper), and a bare
+    class-name pattern matched the ATTRIBUTE, returning {'name'} six
+    times over -- so the one class that actually declares getChiSquare was
+    invisible and every candidate was rejected. Both shapes are parsed now.
+    This is the sibling-extractor lesson again (16 observables read as 2):
+    check a matcher's output against ground truth before a decision rests
+    on it, which is why `plausible_class_names` exists below.
     """
     import re as _re
     if not class_context or not method:
         return set()
-    out = set()
-    for m in _re.finditer(r'\bclass\s+(\w+)[^{;]*\{', class_context):
-        end = _match_brace(class_context,
-                          class_context.index('{', m.start()))
-        if end < 0:
+    decl = _re.compile(r'\b' + _re.escape(method) + r'\s*\(')
+    out, extends = set(), {}
+
+    # (a) XML-wrapped blocks: name from the attribute, body to </class>.
+    for m in _re.finditer(r'<class\s+name="([^"]+)"[^>]*>', class_context):
+        name = m.group(1).split('.')[-1]
+        close = class_context.find('</class>', m.end())
+        body = class_context[m.end():close if close > 0 else len(class_context)]
+        if decl.search(body):
+            out.add(name)
+        e = _re.search(r'\bclass\s+' + _re.escape(name)
+                       + r'\b[^{]*?\bextends\s+([\w.]+)', body)
+        if e:
+            extends[name] = e.group(1).split('.')[-1]
+
+    # (b) Bare `class X ... { ... }` declarations (unwrapped context).
+    for m in _re.finditer(r'\bclass\s+([A-Z]\w*)\b([^{;]*)\{', class_context):
+        name = m.group(1)
+        # Not an XML tag (<class name=...>) and not javadoc prose: a real
+        # declaration is never preceded by '<'.
+        if class_context[max(0, m.start() - 1):m.start()] == '<':
             continue
-        if _re.search(r'\b' + _re.escape(method) + r'\s*\(',
-                      class_context[m.start():end + 1]):
-            out.add(m.group(1))
-    for m in _re.finditer(r'class\s+(\w+)\s+extends\s+([\w.]+)',
-                          class_context):
-        if m.group(2).split('.')[-1] in out:
-            out.add(m.group(1))
+        e = _re.search(r'\bextends\s+([\w.]+)', m.group(2))
+        if e:
+            extends.setdefault(name, e.group(1).split('.')[-1])
+        idx = class_context.index('{', m.start())
+        close = _match_brace(class_context, idx)
+        body = (class_context[idx:close + 1] if close > 0
+                else class_context[idx:])
+        if decl.search(body):
+            out.add(name)
+
+    # Transitive `extends` closure: a subclass of a declaring type declares
+    # it too (getChiSquare lives on AbstractLeastSquaresOptimizer; the test
+    # declares a LevenbergMarquardtOptimizer).
+    for _ in range(4):
+        grew = False
+        for child, parent in extends.items():
+            if parent in out and child not in out:
+                out.add(child)
+                grew = True
+        if not grew:
+            break
     return out
+
+
+def plausible_class_names(names):
+    """True if a parsed type set looks like Java class names, not artefacts.
+
+    VM re-walk #3's tell: a declaring-type set of {'name'} was self-evidently
+    wrong to a reader and invisible to the code. A parse that yields only
+    lowercase or XML-attribute-ish tokens is a BROKEN PARSE, and the caller
+    must discard loudly rather than treat it as "no declaring type found" --
+    the two are different failures and only one is about the leg.
+    """
+    bad = {'name', 'role', 'class', 'value', 'type'}
+    real = [n for n in (names or ()) if n and n not in bad and n[:1].isupper()]
+    return bool(real)
 
 
 def extract_test_setup(test_source, disputed, siblings=None,

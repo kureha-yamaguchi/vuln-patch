@@ -427,3 +427,68 @@ def test_twin_emitted_into_the_tests_package():
         package='org.apache.commons.math.optimization.general')
     assert src.startswith('package org.apache.commons.math.optimization'
                           '.general;')
+
+
+# ---------------------------------------------------------------------------
+# VM re-walk #3 (2026-08-07): the context is XML-WRAPPED. Fixtures are the
+# REAL shape from ladder1e's recorded trace, condensed.
+# ---------------------------------------------------------------------------
+
+XML_CTX = '''<class name="AbstractLeastSquaresOptimizer" role="patched">
+     * Base class for implementing least squares optimizers.
+     * <p>handles boilerplate for thresholds and jacobians.</p>
+public abstract class AbstractLeastSquaresOptimizer implements DMVOptimizer {
+    protected double[] residuals;
+    public double getChiSquare() { }
+    public double getRMS() { }
+}
+</class>
+<class name="LevenbergMarquardtOptimizer" role="test-subject">
+     * Solves a least squares problem using the Levenberg-Marquardt algorithm.
+public class LevenbergMarquardtOptimizer extends AbstractLeastSquaresOptimizer {
+    public VectorialPointValuePair optimize(Circle c) { }
+}
+</class>
+<class name="VectorialPointValuePair" role="collaborator">
+public class VectorialPointValuePair {
+    public double[] getPointRef() { }
+}
+</class>'''
+
+
+def test_xml_wrapped_context_yields_real_class_names():
+    got = rr.types_declaring(XML_CTX, 'getChiSquare')
+    # The re-walk-3 bug: {'name'} six times over, the declarer invisible.
+    assert 'name' not in got
+    assert 'AbstractLeastSquaresOptimizer' in got     # the declarer
+    assert 'LevenbergMarquardtOptimizer' in got       # via extends
+    assert 'VectorialPointValuePair' not in got
+
+
+def test_javadoc_prose_is_not_a_class_name():
+    got = rr.types_declaring(XML_CTX, 'getRMS')
+    assert all(n[:1].isupper() for n in got), got
+
+
+def test_plausible_class_names_flags_the_broken_parse():
+    assert rr.plausible_class_names({'AbstractLeastSquaresOptimizer'})
+    assert not rr.plausible_class_names({'name'})
+    assert not rr.plausible_class_names({'name', 'role', 'for'})
+    assert not rr.plausible_class_names(set())
+
+
+def test_receiver_resolves_end_to_end_on_xml_context():
+    declaring = rr.types_declaring(XML_CTX, 'getChiSquare')
+    setup, recv, why = rr.extract_test_setup(
+        LM_BODY, 'getChiSquare', ['getRMS', 'getCovariances'], declaring)
+    assert recv == 'optimizer', why
+
+
+def test_broken_parse_is_discarded_loudly_not_silently(monkeypatch):
+    # A broken extractor must not read as "this leg has no declaring type".
+    import java.run as runmod
+    monkeypatch.setattr(rr, 'types_declaring', lambda ctx, m: {'name'})
+    fact, events, calls = _run_chain(
+        monkeypatch, [BUGGY_TWIN, PATCHED_TWIN], REF_OK)
+    assert fact is None
+    assert any('PARSE BROKEN' in (o or '') for o, _ in events), events[-3:]
