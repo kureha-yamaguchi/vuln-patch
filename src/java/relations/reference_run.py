@@ -74,13 +74,15 @@ def build_driver(reference_class: str,
                         '(a str iterates as characters -- the roll-4 bug)')
     pkg = f'package {package};\n\n' if package else ''
     calls = []
+    _k = 0
     for obs in observables:
         for j, vec in enumerate(vectors):
             fn = call.format(obs=obs)
+            _k += 1
             calls.append(
                 '    try {\n'
-                f'      Object r = {reference_class}.{fn}({vec});\n'
-                f'      System.out.println("{obs}=" + String.valueOf(r));\n'
+                f'      Object r{_k} = {reference_class}.{fn}({vec});\n'
+                f'      System.out.println("{obs}=" + String.valueOf(r{_k}));\n'
                 '    } catch (Throwable t) {\n'
                 f'      System.out.println("{obs}=EX:" '
                 '+ t.getClass().getSimpleName());\n'
@@ -122,13 +124,13 @@ def build_buggy_twin_driver(fq_class: str,
     for j, vec in enumerate(vectors):
         reads = '\n'.join(
             '      try {\n'
-            f'        Object r = o.{obs}();\n'
-            f'        System.out.println("{obs}=" + String.valueOf(r));\n'
+            f'        Object r{_i} = o.{obs}();\n'
+            f'        System.out.println("{obs}=" + String.valueOf(r{_i}));\n'
             '      } catch (Throwable t) {\n'
             f'        System.out.println("{obs}=EX:" '
             '+ t.getClass().getSimpleName());\n'
             '      }'
-            for obs in observables)
+            for _i, obs in enumerate(observables))
         blocks.append(
             f'    System.out.println("__state{j}=" + {_java_string(vec)});\n'
             '    try {\n'
@@ -672,15 +674,19 @@ def build_state_twin_driver(setup_code: str,
     imp = ''.join((i if i.rstrip().endswith(';') else f'import {i};') + '\n'
                   for i in (imports or []))
     helpers = '\n\n'.join(helper_classes or [])
+    # UNIQUE read variables (VM re-walk #4: `variable r is already defined`
+    # with 9 real siblings). Each read is already try-scoped, so this is
+    # belt-and-braces -- but a name that cannot collide removes the failure
+    # mode from every caller and every future refactor of the block shape.
     reads = '\n'.join(
         '      try {\n'
-        f'        Object r = {receiver}.{obs}();\n'
-        f'        System.out.println("{obs}=" + String.valueOf(r));\n'
+        f'        Object r{_i} = {receiver}.{obs}();\n'
+        f'        System.out.println("{obs}=" + String.valueOf(r{_i}));\n'
         '      } catch (Throwable t) {\n'
         f'        System.out.println("{obs}=EX:" '
         '+ t.getClass().getSimpleName());\n'
         '      }'
-        for obs in observables)
+        for _i, obs in enumerate(observables))
     params = '\n'.join(
         f'      printField({receiver}, "{name}");' for name in param_fields)
     out = (pkg + imp + 'public class StateTwinDriver {\n'

@@ -492,3 +492,53 @@ def test_broken_parse_is_discarded_loudly_not_silently(monkeypatch):
         monkeypatch, [BUGGY_TWIN, PATCHED_TWIN], REF_OK)
     assert fact is None
     assert any('PARSE BROKEN' in (o or '') for o, _ in events), events[-3:]
+
+
+# ---------------------------------------------------------------------------
+# VM re-walk #4 (2026-08-07): unique read variables, and the screening
+# surface scoped to the receiver's own type with free passes excluded.
+# ---------------------------------------------------------------------------
+
+def test_read_variables_are_unique_across_observables():
+    # `variable r is already defined` with 9 real siblings.
+    src = rr.build_state_twin_driver(
+        'X o = new X();', 'o',
+        ['getA', 'getB', 'getC', 'getD'], ['f'])
+    names = [l.split('=')[0].strip().split()[-1]
+             for l in src.splitlines() if 'Object r' in l]
+    assert len(names) == len(set(names)) == 4, names
+
+
+def test_reference_driver_read_variables_are_unique():
+    d = rr.build_driver('R', ['getA', 'getB', 'getC'], ['1'])
+    names = [l.split('=')[0].strip().split()[-1]
+             for l in d.splitlines() if 'Object r' in l]
+    assert len(names) == len(set(names)) == 3, names
+
+
+def test_siblings_scoped_to_the_receivers_type():
+    # The context holds collaborators; their observables are NOT callable on
+    # the receiver, so an unscoped scan guarantees a compile error.
+    ctx = XML_CTX + '''
+<class name="Other" role="collaborator">
+public class Other {
+    public double getSomethingElse() { }
+}
+</class>'''
+    decl = rr.types_declaring(ctx, 'getChiSquare')
+    sibs = rg.sibling_observables(ctx, 'getChiSquare', declaring_types=decl)
+    assert 'getRMS' in sibs
+    assert 'getSomethingElse' not in sibs
+    assert 'getPointRef' not in sibs
+
+
+def test_stored_settings_are_excluded_not_just_sorted_last():
+    ctx = ('<class name="Opt" role="patched">\npublic class Opt {\n'
+           '  public double getChiSquare() { }\n'
+           '  public double getRMS() { }\n'
+           '  public int getMaxIterations() { }\n'
+           '  public int getMaxEvaluations() { }\n'
+           '  public double getDefaultTolerance() { }\n}\n</class>')
+    decl = rr.types_declaring(ctx, 'getChiSquare')
+    sibs = rg.sibling_observables(ctx, 'getChiSquare', declaring_types=decl)
+    assert sibs == ['getRMS'], sibs      # free passes gone

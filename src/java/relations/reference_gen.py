@@ -249,7 +249,7 @@ _OBSERVABLE_TYPES = ('double', 'float', 'int', 'long', 'boolean',
 
 
 def sibling_observables(class_context: str, disputed: str,
-                        cap: int = 8) -> list:
+                        cap: int = 8, declaring_types=None) -> list:
     """The class's PUBLIC NO-ARG observables, minus the disputed one.
 
     These are the screening surface. The disputed point is on-defect almost by
@@ -262,21 +262,46 @@ def sibling_observables(class_context: str, disputed: str,
     a regex that sees a third of the data is how a design gets abandoned for a
     property it does not have.
 
-    Ordered so genuinely COMPUTED quantities come before stored settings: a
-    getter that echoes a constructor argument agrees trivially and screens
-    nothing.
+    STORED SETTINGS ARE EXCLUDED, not merely sorted last (VM re-walk #4). A
+    getter that echoes a constructor argument -- getMaxIterations,
+    getMaxEvaluations -- agrees between reference and buggy build for free,
+    because both were handed the same number. Counting it toward
+    MIN_SCREENED_OBSERVABLES inflates the screen's strength without adding
+    any independence: "8 off-defect observables" that is really "6 plus 2
+    free passes". Excluding them can push a leg BELOW the bar, and that is
+    the honest outcome -- the screen failing closed on a class with too few
+    computed quantities is correct, where passing on padding is not.
     """
     if not class_context:
         return []
+    # SCOPE TO THE RECEIVER'S OWN TYPE (VM re-walk #4). The context holds
+    # every collaborator class, so an unscoped scan returned getPoint,
+    # getPointRef and getArgument -- declared on the optimizer's RESULT
+    # object, not on the optimizer. The twin calls these on the receiver,
+    # so an out-of-type sibling is a guaranteed compile error, and the
+    # receiver is chosen by declaring type precisely so the two agree.
+    scope = class_context
+    if declaring_types:
+        want = {str(t).split('.')[-1] for t in declaring_types}
+        blocks = []
+        for m in re.finditer(r'<class\s+name="([^"]+)"[^>]*>', class_context):
+            if m.group(1).split('.')[-1] in want:
+                close = class_context.find('</class>', m.end())
+                blocks.append(class_context[m.end():
+                                            close if close > 0 else len(class_context)])
+        if blocks:
+            scope = '\n'.join(blocks)
     found = re.findall(
         r'public\s+(?:final\s+)?([\w\[\]<>.]+)\s+(\w+)\s*\(\s*\)',
-        class_context)
-    stored = re.compile(r'^get(Max|Min)\w*$')
+        scope)
+    stored = re.compile(r'^(?:get|is)(Max|Min|Default|Absolute|Relative)\w*$')
     out = []
     for typ, name in found:
         if name == disputed or typ not in _OBSERVABLE_TYPES:
             continue
+        if stored.match(name):
+            continue                     # free pass, not evidence
         if name not in [n for _t, n in out]:
             out.append((typ, name))
-    out.sort(key=lambda tn: (bool(stored.match(tn[1])), tn[1]))
+    out.sort(key=lambda tn: tn[1])
     return [n for _t, n in out][:cap]

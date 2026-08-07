@@ -189,7 +189,26 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     _re('deterministic', method='reference-impl', target=method,
         output='signature declared', detail={'signature': sig})
     ref_names = declared_observable_names(src)
-    siblings = sibling_observables(ctx, method)
+    # Declaring types first: siblings must be scoped to the RECEIVER's own
+    # type, or the twin calls a collaborator's method on the optimizer and
+    # cannot compile (VM re-walk #4: getPoint/getPointRef/getArgument).
+    declaring = types_declaring(ctx, method)
+    if declaring and not plausible_class_names(declaring):
+        _re('deterministic', method='reference-impl', target=method,
+            output='declaring-type PARSE BROKEN — DISCARDED',
+            reason=f'parsed type names are not plausible Java classes: '
+                   f'{sorted(declaring)[:6]} — this is an extractor failure, '
+                   f'not a property of this leg',
+            detail={'parsed': sorted(declaring)[:6]})
+        return None
+    siblings = sibling_observables(ctx, method, declaring_types=declaring)
+    _re('deterministic', method='reference-impl', target=method,
+        output='screening surface resolved',
+        reason=f'{len(siblings)} computed sibling observable(s) on the '
+               f'receiver\'s own type (stored settings excluded — they '
+               f'agree for free)',
+        detail={'siblings': siblings[:8],
+                'declaring_types': sorted(declaring)[:4]})
     targets = [n for n in ref_names if n == method or n in siblings]
     if method not in targets:
         _re('deterministic', method='reference-impl', target=method,
@@ -211,20 +230,8 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     test_src = next((getattr(ft, 'method_source', '') or ''
                      for ft in failure_tests
                      if getattr(ft, 'method_source', None)), '')
-    # Receiver by DECLARING TYPE, never by usage pattern (VM re-walk #2).
-    # A BROKEN PARSE and "no declaring type in this leg" are different
-    # failures and only one is about the leg (re-walk #3: the XML wrapper
-    # yielded {'name'} six times, invisible to the code, obvious to a
-    # reader). Say which, loudly.
-    declaring = types_declaring(ctx, method)
-    if declaring and not plausible_class_names(declaring):
-        _re('deterministic', method='reference-impl', target=method,
-            output='declaring-type PARSE BROKEN — DISCARDED',
-            reason=f'parsed type names are not plausible Java classes: '
-                   f'{sorted(declaring)[:6]} — this is an extractor failure, '
-                   f'not a property of this leg',
-            detail={'parsed': sorted(declaring)[:6]})
-        return None
+    # Receiver by DECLARING TYPE, never by usage pattern (VM re-walk #2);
+    # `declaring` was resolved above, before the screening surface.
     setup, receiver, setup_why = extract_test_setup(test_src, method,
                                                     siblings, declaring)
     _re('deterministic', method='reference-impl', target=method,
