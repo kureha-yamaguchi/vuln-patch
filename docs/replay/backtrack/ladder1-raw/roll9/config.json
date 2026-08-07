@@ -1,0 +1,10 @@
+{
+  "suite": "ladder1j",
+  "stamp": "20260807_155537",
+  "cases_file": "/home/code/experiments-vuln-patch/suites/cases/ladder_stage1.cases",
+  "model": "gpt-5.4",
+  "common_flags": "-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl",
+  "git_sha": "910ba07",
+  "n_cases": 1,
+  "cases": ["-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"]
+}
