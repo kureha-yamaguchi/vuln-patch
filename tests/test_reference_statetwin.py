@@ -1891,3 +1891,48 @@ def test_chain_falls_back_past_a_failed_first_candidate(monkeypatch):
     # Both attempts are memoized individually.
     memo = runmod._reference_impl_fact._memo
     assert memo.get('getSpread') is None and memo.get('getChiSquare')
+
+
+# ---------------------------------------------------------------------------
+# 8.4x p1a (user go): the replay-track wrapper RECORDS. A firing prints its
+# own thrown message plus the exact consumed inputs; replay_on_patched
+# harvests the lines; run.py's synthesized nameless _fired (the 88%
+# problem's replay half) carries the real firing. VM-validated: compiles
+# against jazzer-api-0.22.1 and the smoke run prints
+# `[relfire] relation demo violated: n=100 ... __consumed=100|1.0`.
+# ---------------------------------------------------------------------------
+
+def test_recording_wrapper_only_in_the_record_variant():
+    from java.relations.relation_screen import _screen_harness_source
+    body = '        int n = data.consumeInt(1, 5);'
+    plain = _screen_harness_source(None, [], 'R', body)
+    rec = _screen_harness_source(None, [], 'R', body, record_firings=True)
+    assert 'RecFDP' not in plain and '[relfire]' not in plain
+    assert 'class RecFDP implements FuzzedDataProvider' in rec
+    assert '__consumed=' in rec and 'firePrints < 5' in rec
+    # The counting semantics are identical in both variants.
+    for v in (plain, rec):
+        assert v.count('violated++') == 2
+
+
+def test_relfire_harvest_dedupes_and_caps():
+    from java.relations.relation_screen import harvest_relfire_lines
+    text = ('junk\n[relfire] a violated: x=1 __consumed=1\n'
+            '[relfire] a violated: x=1 __consumed=1\n'
+            '[relfire] b violated: y=2 __consumed=2\n'
+            '[relfire] c violated: z=3 __consumed=3\n'
+            '[relfire] d violated: w=4 __consumed=4\n')
+    got = harvest_relfire_lines(text)
+    assert len(got) == 3                       # capped
+    assert got[0].startswith('[relfire] a')   # deduped, order kept
+
+
+def test_replay_conviction_carries_the_real_firing():
+    # Seam: run.py's _fired for replay findings must append the recorded
+    # line when one exists — the gate's value comparison and the judge
+    # both read _fired.
+    src = open(Path(__file__).resolve().parents[1] / 'src' / 'java'
+               / 'run.py').read()
+    i = src.index("[replay-on-patched, {f['tier']} tier]")
+    seg = src[i - 600:i + 300]
+    assert "fired_lines" in seg and '_fline' in seg

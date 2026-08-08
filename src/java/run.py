@@ -4026,8 +4026,15 @@ def main():
                         pass
                 for f in _replay_findings:
                     rel = f['relation']
+                    # 8.4x p1a: the conviction carries the REAL firing —
+                    # the thrown message with its values plus the exact
+                    # consumed inputs — instead of a synthesized nameless
+                    # line. Feeds the judge, the detector's message route,
+                    # and the verdict gate's value comparison.
+                    _fline = (f.get('fired_lines') or [None])[0]
                     _fired = (f"relation {f['name']} violated "
-                              f"[replay-on-patched, {f['tier']} tier]")
+                              f"[replay-on-patched, {f['tier']} tier]"
+                              + (f" — {_fline}" if _fline else ""))
                     _rfacts = []
                     _evid = ("[relation replay] the check below was "
                              "mechanically screened on the buggy build ("

@@ -61,10 +61,76 @@ _STATS_RE = re.compile(
 MIN_CHECKED = 100
 
 
+#: 8.4x p1a — a recording FuzzedDataProvider. Every consumed value is
+#: logged in consumption order, so a FIRING can print the exact inputs it
+#: fired on. Delegation is total (the full interface), logging is capped,
+#: and the log resets per input. Formatting matches the pipeline's value
+#: conventions (String.valueOf scalars, Arrays.toString arrays).
+_RECORDING_FDP = r'''
+    static final class RecFDP implements FuzzedDataProvider {
+        private final FuzzedDataProvider d;
+        private final StringBuilder log = new StringBuilder();
+        RecFDP(FuzzedDataProvider d) { this.d = d; }
+        void reset() { log.setLength(0); }
+        String consumed() { return log.toString(); }
+        private <T> T rec(T v) {
+            if (log.length() < 1500) {
+                if (log.length() > 0) log.append('|');
+                String s;
+                if (v instanceof boolean[]) s = java.util.Arrays.toString((boolean[]) v);
+                else if (v instanceof byte[]) s = java.util.Arrays.toString((byte[]) v);
+                else if (v instanceof short[]) s = java.util.Arrays.toString((short[]) v);
+                else if (v instanceof int[]) s = java.util.Arrays.toString((int[]) v);
+                else if (v instanceof long[]) s = java.util.Arrays.toString((long[]) v);
+                else s = String.valueOf(v);
+                log.append(s, 0, Math.min(s.length(), 300));
+            }
+            return v;
+        }
+        public boolean consumeBoolean() { return rec(d.consumeBoolean()); }
+        public boolean[] consumeBooleans(int n) { return rec(d.consumeBooleans(n)); }
+        public byte consumeByte() { return rec(d.consumeByte()); }
+        public byte consumeByte(byte lo, byte hi) { return rec(d.consumeByte(lo, hi)); }
+        public byte[] consumeBytes(int n) { return rec(d.consumeBytes(n)); }
+        public byte[] consumeRemainingAsBytes() { return rec(d.consumeRemainingAsBytes()); }
+        public short consumeShort() { return rec(d.consumeShort()); }
+        public short consumeShort(short lo, short hi) { return rec(d.consumeShort(lo, hi)); }
+        public short[] consumeShorts(int n) { return rec(d.consumeShorts(n)); }
+        public int consumeInt() { return rec(d.consumeInt()); }
+        public int consumeInt(int lo, int hi) { return rec(d.consumeInt(lo, hi)); }
+        public int[] consumeInts(int n) { return rec(d.consumeInts(n)); }
+        public long consumeLong() { return rec(d.consumeLong()); }
+        public long consumeLong(long lo, long hi) { return rec(d.consumeLong(lo, hi)); }
+        public long[] consumeLongs(int n) { return rec(d.consumeLongs(n)); }
+        public float consumeFloat() { return rec(d.consumeFloat()); }
+        public float consumeRegularFloat() { return rec(d.consumeRegularFloat()); }
+        public float consumeRegularFloat(float lo, float hi) { return rec(d.consumeRegularFloat(lo, hi)); }
+        public float consumeProbabilityFloat() { return rec(d.consumeProbabilityFloat()); }
+        public double consumeDouble() { return rec(d.consumeDouble()); }
+        public double consumeRegularDouble() { return rec(d.consumeRegularDouble()); }
+        public double consumeRegularDouble(double lo, double hi) { return rec(d.consumeRegularDouble(lo, hi)); }
+        public double consumeProbabilityDouble() { return rec(d.consumeProbabilityDouble()); }
+        public char consumeChar() { return rec(d.consumeChar()); }
+        public char consumeChar(char lo, char hi) { return rec(d.consumeChar(lo, hi)); }
+        public char consumeCharNoSurrogates() { return rec(d.consumeCharNoSurrogates()); }
+        public String consumeString(int n) { return rec(d.consumeString(n)); }
+        public String consumeRemainingAsString() { return rec(d.consumeRemainingAsString()); }
+        public String consumeAsciiString(int n) { return rec(d.consumeAsciiString(n)); }
+        public String consumeRemainingAsAsciiString() { return rec(d.consumeRemainingAsAsciiString()); }
+        public <T> T pickValue(T[] a) { return rec(d.pickValue(a)); }
+        public <T> T pickValue(java.util.Collection<T> c) { return rec(d.pickValue(c)); }
+        public <T> java.util.List<T> pickValues(T[] a, int n) { return rec(d.pickValues(a, n)); }
+        public <T> java.util.List<T> pickValues(java.util.Collection<T> c, int n) { return rec(d.pickValues(c, n)); }
+        public int remainingBytes() { return d.remainingBytes(); }
+    }
+'''
+
+
 def _screen_harness_source(package: Optional[str],
                            imports: List[str],
                            class_name: str,
-                           check_body: str) -> str:
+                           check_body: str,
+                           record_firings: bool = False) -> str:
     """A counting wrapper around one relation check.
 
     The check body is written (per relation_synth's instructions) to run
@@ -87,6 +153,8 @@ def _screen_harness_source(package: Optional[str],
         '',
         f'public class {class_name} ' + '{',
         '    static long checked = 0, violated = 0;',
+    ] + (['    static int firePrints = 0;', _RECORDING_FDP]
+         if record_firings else []) + [
         '    static {',
         '        Runtime.getRuntime().addShutdownHook(new Thread(() ->',
         '            System.err.println("[relscreen] checked=" + checked',
@@ -101,6 +169,10 @@ def _screen_harness_source(package: Optional[str],
         '    public static void fuzzerTestOneInput(FuzzedDataProvider data)'
         ' {',
         '        checked++;',
+    ] + ([
+        '        RecFDP rec = new RecFDP(data);',
+        '        data = rec;',
+    ] if record_firings else []) + [
         '        try {',
         '            runCheck(data);',
         '        } catch (RuntimeException e) {',
@@ -113,7 +185,17 @@ def _screen_harness_source(package: Optional[str],
         '            // byte-for-byte unchanged in what it counts.',
         '            if (m.contains("violated")',
         '                    || e.getClass().getName().contains(',
-        '                            "FuzzerSecurityIssue")) { violated++; }',
+        '                            "FuzzerSecurityIssue")) { violated++;',
+    ] + ([
+        '                // 8.4x p1a: a firing prints its own message AND the',
+        '                // exact inputs it fired on. Capped: first 5 firings.',
+        '                if (firePrints < 5) { firePrints++;',
+        '                    System.err.println("[relfire] "',
+        '                        + m.substring(0, Math.min(m.length(), 400))',
+        '                        + " __consumed=" + ((RecFDP) data).consumed());',
+        '                }',
+    ] if record_firings else []) + [
+        '            }',
         '            // other runtime exceptions: input rejection the body',
         '            // failed to fence — not a violation, not counted',
         '        } catch (Throwable t) {',
@@ -130,7 +212,8 @@ def _screen_harness_source(package: Optional[str],
 
 
 def _measure_on_corpus(build, builder, buggy_dir, jazzer_standalone_jar,
-                       jazzer_api_jar, literals, timeout_seconds=25):
+                       jazzer_api_jar, literals, timeout_seconds=25,
+                       fired_out=None):
     """Run one already-compiled counting harness over EXACTLY the given
     input literals (libFuzzer `-runs=0` replays the corpus and exits —
     no mutation), and return (checked, violated) or None on failure.
@@ -150,16 +233,21 @@ def _measure_on_corpus(build, builder, buggy_dir, jazzer_standalone_jar,
                 fh.write(lit)
         return _measure_on_dir(build, builder, buggy_dir,
                                jazzer_standalone_jar, jazzer_api_jar,
-                               corpus, timeout_seconds)
+                               corpus, timeout_seconds, fired_out=fired_out)
     finally:
         shutil.rmtree(corpus, ignore_errors=True)
 
 
 def _measure_on_dir(build, builder, work_dir, jazzer_standalone_jar,
-                    jazzer_api_jar, corpus_dir, timeout_seconds=25):
+                    jazzer_api_jar, corpus_dir, timeout_seconds=25,
+                    fired_out=None):
     """Replay one already-compiled counting harness over EXACTLY the seeds
     in `corpus_dir` (`-runs=0`, no mutation) against `work_dir`'s classpath,
-    and return (checked, violated) or None on failure."""
+    and return (checked, violated) or None on failure.
+
+    `fired_out` (8.4x p1a): pass a list to collect the harness's
+    `[relfire]` lines — a recording wrapper's firing messages carrying the
+    thrown text AND the exact consumed inputs. Return shape unchanged."""
     try:
         outcome = run_jazzer(
             jazzer_standalone_jar=jazzer_standalone_jar,
@@ -173,10 +261,25 @@ def _measure_on_dir(build, builder, work_dir, jazzer_standalone_jar,
         )
     except Exception:
         return None
-    m = _STATS_RE.search(outcome.stdout + '\n' + outcome.stderr)
+    text = outcome.stdout + '\n' + outcome.stderr
+    if fired_out is not None:
+        fired_out.extend(harvest_relfire_lines(text))
+    m = _STATS_RE.search(text)
     if not m:
         return None
     return int(m.group(1)), int(m.group(2))
+
+
+def harvest_relfire_lines(text, cap=3):
+    """First `cap` DISTINCT `[relfire] ...` lines from a run's output."""
+    out = []
+    for m in re.finditer(r'\[relfire\][^\n]{0,700}', str(text or '')):
+        line = m.group(0).strip()
+        if line not in out:
+            out.append(line)
+        if len(out) >= cap:
+            break
+    return out
 
 
 def _run_counting_fuzz(build, builder, work_dir, jazzer_standalone_jar,
@@ -666,7 +769,12 @@ def replay_on_patched(relations: List,
         if not check:
             continue
         cls = f'RelReplay{i}'
-        src = _screen_harness_source(package, imports or [], cls, check)
+        # 8.4x p1a: the replay wrapper RECORDS — a firing prints its own
+        # message and the exact consumed inputs, so the conviction that
+        # reaches the judge and the verdict gate carries values instead of
+        # a synthesized nameless line (the 88% problem, replay track).
+        src = _screen_harness_source(package, imports or [], cls, check,
+                                     record_firings=True)
         try:
             build = builder.build(src, patched_dir,
                                   output_subdir=f'relreplay_{i}')
@@ -680,13 +788,14 @@ def replay_on_patched(relations: List,
 
         trig_v = None                     # violated count on trigger inputs
         trig_deterministic = False
+        fired_lines = []
         if trigger_literals:
             r1 = _measure_on_corpus(build, builder, patched_dir,
                                     jazzer_standalone_jar, jazzer_api_jar,
-                                    trigger_literals)
+                                    trigger_literals, fired_out=fired_lines)
             r2 = _measure_on_corpus(build, builder, patched_dir,
                                     jazzer_standalone_jar, jazzer_api_jar,
-                                    trigger_literals)
+                                    trigger_literals, fired_out=fired_lines)
             if r1 and r2:
                 trig_v = max(r1[1], r2[1])
                 trig_deterministic = (r1[1] == r2[1])
@@ -702,7 +811,9 @@ def replay_on_patched(relations: List,
                 jazzer_api_jar=jazzer_api_jar,
                 extra_libfuzzer_args=[f'-runs={runs}'],
             )
-            m = _STATS_RE.search(outcome.stdout + '\n' + outcome.stderr)
+            _text = outcome.stdout + '\n' + outcome.stderr
+            fired_lines.extend(harvest_relfire_lines(_text))
+            m = _STATS_RE.search(_text)
             if m:
                 checked, violated = int(m.group(1)), int(m.group(2))
         except Exception as exc:
@@ -729,9 +840,13 @@ def replay_on_patched(relations: List,
             continue
         print(f"  [replay] {name}: FIRED [{tier}] — {note}")
         record_event('deterministic', method='replay-on-patched', target=name,
-                     output=f'FIRED [{tier}]', note=note)
+                     output=f'FIRED [{tier}]'
+                            + (f' — {fired_lines[0][:300]}' if fired_lines
+                               else ''),
+                     note=note)
         findings.append({
             'relation': rel, 'name': name, 'tier': tier, 'note': note,
+            'fired_lines': fired_lines[:3],
             'trigger_violations': trig_v,
             'trigger_deterministic': trig_deterministic,
             'fuzz_checked': checked, 'fuzz_violated': violated,

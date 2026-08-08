@@ -1666,6 +1666,31 @@ one roll to validate both. Keep/drop behavior untouched (measure-first;
 any screen-time demotion of nameless relations is a separate gated
 decision with the 67-row fixture as referee).
 
+### 8.4x PROGRESS — p1a BUILT AND VM-VALIDATED (2026-08-08)
+The replay-track wrapper now RECORDS (user go): `RecFDP`, a full
+recording FuzzedDataProvider delegate emitted by `_screen_harness_source
+(record_firings=True)`, logs every consumed value in order; a firing
+prints `[relfire] <thrown message> __consumed=<values>` (capped 5/proc);
+`replay_on_patched` harvests the lines into `findings['fired_lines']`;
+run.py's replay `_fired` — previously a SYNTHESIZED NAMELESS string
+("relation X violated [replay-on-patched, trigger tier]"), the 88%
+problem's replay half — now carries the real firing message with its
+values and inputs. Feeds the judge, the detector's message route, and
+the verdict gate's value comparison at once. VM-VALIDATED blind-Java:
+compiles clean against jazzer-api-0.22.1 (-encoding UTF-8, nested class
+and all) and the runtime smoke prints `[relfire] relation demo
+violated: n=100 x=1.0 arr=[1.0, 2.0] __consumed=100|1.0`. Buggy-side
+screening counting is byte-semantics-identical (non-record variant;
+pinned by test). 813 passed, 7 skipped. REMAINING for 8.4x: p1b — gate-
+side input replay (map __consumed / recorded state to the admitted
+reference's parameters, run at the firing's input, void/corroborate) —
+next session, with the offline gates from the design note.
+**COORDINATION NOTE (standing until invdiv lands): the VM stays at
+32b5787 behavior (the A/B baseline); invention_diversity.cases was
+copied surgically. DO NOT push-to-vm until the invdiv suite has
+launched or completed — p1a changes replay behavior and would
+contaminate the A/B.**
+
 ### 8.27 SHAPE-ADAPTIVE SCREENING for stateless receivers — design sketch only
 The stateless-receiver ceiling is population-measured (11/27 discards,
 all Closure/Time). But the ROLL-4 LESSON INVERTS for pure utilities: the
