@@ -1504,6 +1504,32 @@ test on the ONE class where admission is proven, isolating the
 agreement question from the admission question. Cases + read doc
 amended; gates otherwise unchanged. Stage-4 roll 2 is GO.***
 
+*STAGE-4 ROLL 2 (2026-08-08, raw before read, read 5f7aa26): S4-a no
+trigger (clean leg zero mechanism events), S4-c PASS, S4-e PASS (5
+generations, 1 admission, 4 discards, zero leaks — gate (b) 19-for-19),
+S4-d held. BANKED: the Math-2-Arja fact is DIGIT-IDENTICAL to stage-2
+roll 3 across runs and days — independent generations now 3-for-3
+convergent. S4-b FAILED and RULE 7 TRIGGERED: the agreement side went
+untested a second time, for a second unrelated cause — `disputed[0]`
+was the entire attempt policy, and on the SOFix leg both firings'
+position 0 was a stored-field accessor incidentally named by the
+message; getNumericalMean (documented closed form, twice-admitted on
+this exact class) sat in BOTH candidate lists, attempted in NEITHER,
+and the memo cached the failures. Richest screening surface ever
+recorded (7 siblings) produced nothing — not reach, not shape, not the
+screen: attempt POLICY. Fixed per rule 7 without a re-roll: candidate
+ORDER is ranked by signal strength (message∩check first — two
+independent routes agreeing, Math-65's shape; check-called next, in
+call order — the check calls what it disputes, Math-2's shape;
+message-only words LAST — they produced both wasted attempts), and the
+chain now FALLS BACK through up to three candidates, each attempt
+memoized individually. Verified offline against both recorded shapes;
+the walkthrough drives a first-candidate failure through to a
+second-candidate fact. Admission-rate denominator note: 2/10 then 1/5
+triggered references admitted (20% both rolls). 810 passed, 7 skipped.
+**Stage-4 roll 3 is GO — same legs, same gates; the agreement side's
+third attempt, now with the productive candidate reachable.***
+
 
 ### 8.19 Buggy-anchored check generation — design doc first, the unowned big one
 **Target:** stations 2–4 (`relation_synth.py` + harness codegen prompts),

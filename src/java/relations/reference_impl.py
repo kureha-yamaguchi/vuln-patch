@@ -132,11 +132,26 @@ def disputed_observables(fired_msg: str, code_context: str,
     """
     if not fired_msg or not code_context:
         return []
-    names = list(_methods_named_by(fired_msg, code_context))
+    msg_names = list(_methods_named_by(fired_msg, code_context))
+    called = []
     for n in _METHOD_CALL_RE.findall(str(check_source or '')):
-        if n not in names and n not in _UNINTERESTING_METHODS:
-            names.append(n)
-    return [n for n in names if _method_declared(code_context, n)]
+        if n not in called and n not in _UNINTERESTING_METHODS:
+            called.append(n)
+    # ORDER IS ATTEMPTED ORDER (stage-4 roll 2: only disputed[0] was ever
+    # tried, and on the SOFix leg both firings' position 0 was a stored-
+    # field accessor named incidentally by the message — getNumericalMean,
+    # in both lists, attempted in neither). Ranked by signal strength,
+    # mechanically: (1) named by the MESSAGE and called by the CHECK — two
+    # independent routes agreeing (Math-65's getChiSquare); (2) check-
+    # called only, in call order — the check calls what it disputes
+    # (Math-2's mean relation); (3) message-only last — words a firing
+    # happens to print (sampleSize=50 -> getSampleSize) are the weakest
+    # signal and produced both wasted attempts.
+    both = [n for n in msg_names if n in called]
+    check_only = [n for n in called if n not in msg_names]
+    msg_only = [n for n in msg_names if n not in called]
+    return [n for n in both + check_only + msg_only
+            if _method_declared(code_context, n)]
 
 
 #: Words that can directly precede a method CALL but never a declaration's

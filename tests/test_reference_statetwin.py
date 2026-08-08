@@ -149,7 +149,7 @@ def _mk_failure_test():
 
 
 def _run_chain(monkeypatch, twin_outputs, ref_output, generated=REFERENCE_REPLY,
-               ctx=None):
+               ctx=None, fired=None):
     """Drive run._reference_impl_fact with stubbed generator and JVM."""
     from java import run as runmod
     events = []
@@ -182,8 +182,10 @@ def _run_chain(monkeypatch, twin_outputs, ref_output, generated=REFERENCE_REPLY,
 
     fact = runmod._reference_impl_fact(
         args=types.SimpleNamespace(model='m', reference_impl=True),
-        fired='[oracle:x] semantic mismatch: getChiSquare expected=3.25 '
-              'actual=9.99', class_ctx=[ctx if ctx is not None else CTX],
+        fired=(fired if fired is not None else
+               '[oracle:x] semantic mismatch: getChiSquare expected=3.25 '
+               'actual=9.99'),
+        class_ctx=[ctx if ctx is not None else CTX],
         failure_tests=[_mk_failure_test()], builder=object(),
         buggy_dir='/buggy', patch_path='/p.patch',
         trusted_values=['3.25'], package=None, imports=None)
@@ -1823,3 +1825,69 @@ def test_a_call_is_not_a_declaration():
         '[oracle:x] mismatch: p=0.9', ctx,
         check_source='double p = standardNormal.cumulativeProbability(z);')
     assert 'cumulativeProbability' not in got
+
+
+# ---------------------------------------------------------------------------
+# Stage-4 roll 2 (rule 7): only disputed[0] was ever attempted, and on the
+# SOFix leg both firings' position 0 was a stored-field accessor named
+# incidentally by the message -- getNumericalMean, in both candidate lists,
+# attempted in neither. Ordering is now ranked by signal strength and the
+# chain falls back through up to three candidates, each memoized.
+# ---------------------------------------------------------------------------
+
+def test_candidate_order_ranks_check_calls_above_message_words():
+    from java.relations.reference_impl import disputed_observables
+    ctx = ('public class HypergeometricDistribution {\n'
+           '  public int getSampleSize() { … }\n'
+           '  public int getNumberOfSuccesses() { … }\n'
+           '  public double getNumericalMean() { … }\n'
+           '  public int sample() { … }\n'
+           '}')
+    # The SOFix shape: the message incidentally names accessors (it prints
+    # sampleSize=...), the check CALLS the disputed method.
+    fired = '[oracle:mean] violated: sampleSize=50 actual=-49.7 expected=49.8'
+    check = 'double actual = dist.getNumericalMean();'
+    got = disputed_observables(fired, ctx, check_source=check)
+    assert got[0] == 'getNumericalMean', got
+    assert 'getSampleSize' in got            # still a candidate, just later
+    # The Math-65 shape: message AND check agree on the disputed method --
+    # the intersection outranks the check's other calls.
+    ctx65 = ('public class Opt {\n'
+             '  public void addPoint(double a, double b) { … }\n'
+             '  public double optimize(double x) { … }\n'
+             '  public double getChiSquare() { … }\n'
+             '}')
+    fired65 = '[oracle:x] semantic mismatch: getChiSquare expected=3 actual=9'
+    check65 = ('o.addPoint(1.0, 2.0); o.optimize(0.5); '
+               'double c = o.getChiSquare();')
+    got = disputed_observables(fired65, ctx65, check_source=check65)
+    assert got[0] == 'getChiSquare', got
+
+
+def test_chain_falls_back_past_a_failed_first_candidate(monkeypatch):
+    # First candidate (getSpread) fails cheaply -- the generated reply
+    # does not declare it -- and the chain must go on to getChiSquare and
+    # emit the fact, instead of memo-caching the leg into failure.
+    ctx = ('/** doc. @return v */\n'
+           'public class Opt {\n'
+           '  private double[] residuals;\n'
+           '  private double[] residualsWeights;\n'
+           '  public double getSpread() { double c=1; return c; }\n'
+           '  public double getChiSquare() { double s=0; return s; }\n'
+           '  public double getCost() { return 0.0; }\n'
+           '  public double getRMS() { return 0.0; }\n'
+           '  public int getRows() { return 0; }\n'
+           '}')
+    from java import run as runmod
+    fact, events, calls = _run_chain(
+        monkeypatch, [BUGGY_TWIN, PATCHED_TWIN], REF_OK, ctx=ctx,
+        fired='[oracle:x] semantic mismatch: getSpread getChiSquare '
+              'expected=3.25 actual=9.99')
+    assert fact is not None, [e for e in events][-4:]
+    outs = [(o or '') for o, _ in events]
+    # Candidate 1 died with its reason on record; candidate 2 delivered.
+    assert any('omits the disputed observable' in o for o in outs)
+    assert any('fact emitted' in o for o in outs)
+    # Both attempts are memoized individually.
+    memo = runmod._reference_impl_fact._memo
+    assert memo.get('getSpread') is None and memo.get('getChiSquare')

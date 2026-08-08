@@ -130,326 +130,345 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
             reason='the firing (and its check) names no method the context '
                    'declares; the mechanism has nothing to reimplement')
         return None
-    method = disputed[0]
+
     # The chain is expensive (a generation plus three JVM runs) and BOTH judge
     # doors may ask about the same method several times per leg. One process =
     # one leg, so a process-level memo is run-local by construction.
     memo = getattr(_reference_impl_fact, '_memo', None)
     if memo is None:
         memo = _reference_impl_fact._memo = {}
-    if method in memo:
-        _re('deterministic', method='reference-impl', target=method,
-            output='memoized result reused',
-            reason='this disputed observable was already resolved this leg')
-        return memo[method]
-    memo[method] = None          # every early exit below leaves None memoized
-    _re('deterministic', method='reference-impl', target=method,
-        output='disputed observable detected',
-        detail={'candidates': disputed[:4]})
 
-    # The screening surface is resolved BEFORE the generation (roll 8
-    # pre-walk): a broken declaring-type parse should cost zero model calls,
-    # and the prompt must NAME the siblings — rolls 6/7/8 all declared one
-    # countable sibling against a bar of three, so every mechanically
-    # perfect roll would still have discarded at the screen. Siblings are
-    # scoped to the RECEIVER's own type, or the twin calls a collaborator's
-    # method on the optimizer and cannot compile (VM re-walk #4:
-    # getPoint/getPointRef/getArgument).
-    declaring = types_declaring(ctx, method)
-    if declaring and not plausible_class_names(declaring):
-        _re('deterministic', method='reference-impl', target=method,
-            output='declaring-type PARSE BROKEN — DISCARDED',
-            reason=f'parsed type names are not plausible Java classes: '
-                   f'{sorted(declaring)[:6]} — this is an extractor failure, '
-                   f'not a property of this leg',
-            detail={'parsed': sorted(declaring)[:6]})
-        return None
-    siblings = sibling_observables(ctx, method, declaring_types=declaring)
-    _re('deterministic', method='reference-impl', target=method,
-        output='screening surface resolved',
-        reason=f'{len(siblings)} computed sibling observable(s) on the '
-               f'receiver\'s own type (stored settings excluded — they '
-               f'agree for free)',
-        detail={'siblings': siblings[:8],
-                'declaring_types': sorted(declaring)[:4]})
-
-    try:
-        skeleton = strip_bodies(ctx)
-        # Javadoc arrives with its /** */ delimiters ALREADY stripped
-        # (assemble_class_context) — filtering chunks on '/**' selects
-        # nothing. Doc-ish means bare-star lines or @param/@return/@throws.
-        _docish = re.compile(r'^\s*\*|@param|@return|@throws', re.M)
-        msgs = build_reference_prompt(
-            method=method, skeleton=skeleton,
-            docs=[strip_bodies(c) for c in (class_ctx or [])
-                  if _docish.search(c)][:4],
-            failing_test='\n\n'.join(
-                (getattr(ft, 'method_source', '') or '') for ft in failure_tests),
-            other_tests=[], shown_examples=None, siblings=siblings)
-    except ImplementationLeak as e:
-        _re('deterministic', method='reference-impl', target=method,
-            output='REFUSED: implementation leak', reason=str(e)[:300])
-        return None
-    except Exception as e:
-        _re('deterministic', method='reference-impl', target=method,
-            output=f'prompt build ERROR: {type(e).__name__}', reason=str(e)[:200])
-        return None
-
-    try:
-        src = _HG(model=args.model or config.LOCAL_LLM_MODEL,
-                  temperature=0.0, top_p=1.0).generate(msgs) or ''
-    except Exception as e:
-        _re('deterministic', method='reference-impl', target=method,
-            output=f'generation ERROR: {type(e).__name__}', reason=str(e)[:200])
-        return None
-    if 'class' not in src:
-        _re('deterministic', method='reference-impl', target=method,
-            output='generation produced no class', reason=src[:200])
-        return None
-    _re('deterministic', method='reference-impl', target=method,
-        output='reference generated', detail={'chars': len(src)})
-
-    # The generator declares signature AND observable list; we read both.
-    sig = declared_signature(src)
-    if sig is None:
-        _re('deterministic', method='reference-impl', target=method,
-            output='no declared signature — DISCARDED',
-            reason='the reply carried no `// compute(<types>)` line, so the '
-                   'driver cannot know how to call it')
-        return None
-    _re('deterministic', method='reference-impl', target=method,
-        output='signature declared', detail={'signature': sig})
-    # PARAMETER NAMES FROM THE DECLARATIONS (roll 8 pre-walk). Roll 8's
-    # comment line was bare types while its own `compute_*` declarations
-    # named both parameters — in the OPPOSITE order from the buggy body's
-    # read order, so the positional fallback would have fed the reference
-    # swapped arrays: same type, same length, runs cleanly, computes
-    # garbage. A name in the model's own declaration is evidence; the
-    # read-order guess is for references that name nothing anywhere.
-    _canon = canonical_state(ctx)
-    _named = merge_declared_parameter_names(src, sig, _canon)
-    if _named != sig:
-        _re('deterministic', method='reference-impl', target=method,
-            output='parameter names recovered from the declarations',
-            reason='the `// compute(...)` line is bare types; every '
-                   'compute_* declaration agrees on one named list',
-            detail={'declared': sig, 'named': _named})
-        sig = _named
-    ref_names = declared_observable_names(src)
-    # NAME NORMALIZATION (VM re-walk #6). The model wrote `compute_chiSquare`
-    # where the chain wanted `compute_getChiSquare` and the reference was
-    # discarded on SPELLING, having implemented the observable correctly.
-    # The codebase already matches `chiSquare` to `getChiSquare`
-    # (_methods_named_by, since P0); the reference matcher now does too, and
-    # the driver calls what the model DECLARED while keying by the canonical
-    # name. Mechanism, not an instruction: the prompt already asked.
-    matched = match_observable_names(ref_names, [method] + siblings)
-    if method not in matched:
-        _re('deterministic', method='reference-impl', target=method,
-            output='reference omits the disputed observable — DISCARDED',
-            reason=f'declared: {ref_names[:8]} — none normalizes to '
-                   f'`{method}` (accessor prefixes are stripped both ways)')
-        return None
-    targets = list(matched)          # canonical keys, in wanted order
-    _re('deterministic', method='reference-impl', target=method,
-        output='reference observables matched',
-        detail={'matched': {k: v for k, v in list(matched.items())[:6]},
-                'declared_only': [n for n in ref_names
-                                  if n not in matched.values()][:4]})
-    # THE SCREEN'S COUNT BAR, DECIDED HERE (roll 8 pre-walk): the shared
-    # siblings are known the moment the observables are matched, and the
-    # run can only shrink that set. The late path bought the twin build and
-    # two JVM runs before `screen_reference` said "1 shared; 3 required".
-    thin, thin_why = too_thin_to_screen(matched, siblings)
-    _re('deterministic', method='reference-impl', target=method,
-        output=('reference too thin to screen — DISCARDED' if thin else
-                'screen bar reachable'), reason=thin_why)
-    if thin:
-        return None
-
-    # Signature -> canonical state fields, nominally. Unmappable = discard,
-    # never a guessed call (roll 4: five attempts, five different signatures).
-    mapping, map_why = match_parameters(parse_parameters(sig), _canon,
-                                        fields_read_by(ctx, method, _canon))
-    _re('deterministic', method='reference-impl', target=method,
-        output=('signature mapped' if mapping else
-                'signature unmappable — DISCARDED'), reason=map_why)
-    if not mapping:
-        return None
-
-    # THE STATE TWIN: everything is compared at the failing test's own state.
-    test_src = next((getattr(ft, 'method_source', '') or ''
-                     for ft in failure_tests
-                     if getattr(ft, 'method_source', None)), '')
-    # Receiver by DECLARING TYPE, never by usage pattern (VM re-walk #2);
-    # `declaring` was resolved above, before the screening surface.
-    setup, receiver, setup_why = extract_test_setup(test_src, method,
-                                                    siblings, declaring)
-    _re('deterministic', method='reference-impl', target=method,
-        output=('twin setup extracted' if setup else
-                'twin underivable — DISCARDED'), reason=setup_why,
-        detail={'declaring_types': sorted(declaring)[:4]})
-    if not setup:
-        return None
-    # Fixture classes live only in the TEST FILE (`new Circle()`); the twin
-    # cannot compile without them, so they ride along as package-private
-    # top-level classes. The test file's own imports come with them.
-    test_file_src = ''
-    _tf = next((getattr(ft, 'source_path', None) for ft in failure_tests
-                if getattr(ft, 'source_path', None)), None)
-    if _tf:
-        try:
-            with open(_tf, encoding='utf-8', errors='replace') as fh:
-                test_file_src = fh.read()
-        except OSError:
-            test_file_src = ''
-    t_imports, helpers = extract_test_dependencies(test_file_src, setup)
-    # The twin is the test method, so it must resolve names the way the test
-    # did: emitted INTO the test's own package (the class under test is
-    # referenced by simple name because they share it).
-    twin_pkg = test_package(test_file_src) or package
-    try:
-        twin_src = build_state_twin_driver(
-            setup, receiver, [method] + siblings, mapping,
-            package=twin_pkg, imports=(t_imports or imports),
-            helper_classes=helpers)
-    except (ValueError, TypeError) as e:
-        _re('deterministic', method='reference-impl', target=method,
-            output='twin source invalid — DISCARDED', reason=str(e)[:200])
-        return None
-    _re('deterministic', method='reference-impl', target=method,
-        output='twin built',
-        detail={'helpers': len(helpers), 'imports': len(t_imports or []),
-                'package': twin_pkg, 'receiver': receiver})
-    buggy_vals, twin_why = run_twin(builder, buggy_dir, twin_src)
-    _re('deterministic', method='reference-impl', target=method,
-        output=('buggy twin ran' if buggy_vals else
-                'buggy twin FAILED — DISCARDED'), reason=twin_why)
-    if not buggy_vals:
-        return None
-
-    # The reference's inputs come from the twin itself (reflection-printed).
-    params = parse_parameters(sig)
-    lits = []
-    for (typ, _n), field in zip(params, mapping):
-        printed = (buggy_vals.get(f'__param_{field}') or ['ABSENT'])[0]
-        lit = java_literal(typ, printed)
-        if lit is None:
+    def _attempt(method):
+        """One candidate, full chain; a fact or None. Every early exit is
+        an event with its reason, exactly as before — only the CALLER
+        changed (stage-4 roll 2): `disputed[0]` was the whole attempt
+        policy, and on the SOFix leg the productive candidate sat in both
+        lists, attempted in neither."""
+        # The screening surface is resolved BEFORE the generation (roll 8
+        # pre-walk): a broken declaring-type parse should cost zero model calls,
+        # and the prompt must NAME the siblings — rolls 6/7/8 all declared one
+        # countable sibling against a bar of three, so every mechanically
+        # perfect roll would still have discarded at the screen. Siblings are
+        # scoped to the RECEIVER's own type, or the twin calls a collaborator's
+        # method on the optimizer and cannot compile (VM re-walk #4:
+        # getPoint/getPointRef/getArgument).
+        declaring = types_declaring(ctx, method)
+        if declaring and not plausible_class_names(declaring):
             _re('deterministic', method='reference-impl', target=method,
-                output='reference inputs unrecoverable — DISCARDED',
-                reason=f'state field `{field}` ({typ}) printed as '
-                       f'{printed[:80]!r}')
+                output='declaring-type PARSE BROKEN — DISCARDED',
+                reason=f'parsed type names are not plausible Java classes: '
+                       f'{sorted(declaring)[:6]} — this is an extractor failure, '
+                       f'not a property of this leg',
+                detail={'parsed': sorted(declaring)[:6]})
             return None
-        lits.append((lit, typ))
-    try:
-        driver_src = build_reference_call_driver(
-            'ReferenceImpl', list(matched.items()), lits)
-    except (ValueError, TypeError) as e:
+        siblings = sibling_observables(ctx, method, declaring_types=declaring)
         _re('deterministic', method='reference-impl', target=method,
-            output='driver source invalid — DISCARDED', reason=str(e)[:200])
-        return None
-    obs, why = run_reference(builder, buggy_dir, src, driver_src)
-    _re('deterministic', method='reference-impl', target=method,
-        output=('reference ran' if obs else 'reference DISCARDED'), reason=why)
-    if not obs:
-        return None
+            output='screening surface resolved',
+            reason=f'{len(siblings)} computed sibling observable(s) on the '
+                   f'receiver\'s own type (stored settings excluded — they '
+                   f'agree for free)',
+            detail={'siblings': siblings[:8],
+                    'declaring_types': sorted(declaring)[:4]})
 
-    # THE SCREEN: reference vs the BUGGY build, on siblings only — the
-    # disputed point is on-defect by definition and cannot vouch for itself.
-    buggy_obs = {k: v for k, v in buggy_vals.items()
-                 if not k.startswith('__')}
-    off = [k for k in siblings if k in obs and k in buggy_obs]
-    # OPTION B (user decision 2026-08-07): a sibling the failing test itself
-    # shows diverging is a rigged screen question — the buggy build is the
-    # wrong answer key there. The pin attaches only where the failure
-    # message's observed value appears verbatim in the twin's buggy print
-    # (state identity), and it re-grades a disagreement only when the
-    # reference matches the test's literal AND buggy fails it.
-    corro = test_corroboration_pins(
-        [getattr(ft, 'failure_message', '') or '' for ft in failure_tests],
-        [getattr(ft, 'method_source', '') or '' for ft in failure_tests],
-        buggy_obs, siblings)
-    if corro:
+        try:
+            skeleton = strip_bodies(ctx)
+            # Javadoc arrives with its /** */ delimiters ALREADY stripped
+            # (assemble_class_context) — filtering chunks on '/**' selects
+            # nothing. Doc-ish means bare-star lines or @param/@return/@throws.
+            _docish = re.compile(r'^\s*\*|@param|@return|@throws', re.M)
+            msgs = build_reference_prompt(
+                method=method, skeleton=skeleton,
+                docs=[strip_bodies(c) for c in (class_ctx or [])
+                      if _docish.search(c)][:4],
+                failing_test='\n\n'.join(
+                    (getattr(ft, 'method_source', '') or '') for ft in failure_tests),
+                other_tests=[], shown_examples=None, siblings=siblings)
+        except ImplementationLeak as e:
+            _re('deterministic', method='reference-impl', target=method,
+                output='REFUSED: implementation leak', reason=str(e)[:300])
+            return None
+        except Exception as e:
+            _re('deterministic', method='reference-impl', target=method,
+                output=f'prompt build ERROR: {type(e).__name__}', reason=str(e)[:200])
+            return None
+
+        try:
+            src = _HG(model=args.model or config.LOCAL_LLM_MODEL,
+                      temperature=0.0, top_p=1.0).generate(msgs) or ''
+        except Exception as e:
+            _re('deterministic', method='reference-impl', target=method,
+                output=f'generation ERROR: {type(e).__name__}', reason=str(e)[:200])
+            return None
+        if 'class' not in src:
+            _re('deterministic', method='reference-impl', target=method,
+                output='generation produced no class', reason=src[:200])
+            return None
         _re('deterministic', method='reference-impl', target=method,
-            output='test-corroboration pins resolved',
-            reason='failing-test asserted value(s) attributed to defect-'
-                   'reached sibling(s) by verbatim state match',
-            detail={'pins': corro})
-    ok, screen_why = screen_reference(obs, buggy_obs, off_defect_keys=set(off),
-                                      test_corroboration=corro)
-    _re('deterministic', method='reference-impl', target=method,
-        output=('screen ADMITTED' if ok else 'screen DISCARDED'),
-        reason=screen_why,
-        detail={'construct': (buggy_vals.get('__construct0') or ['?'])[0],
-                'off_defect_shared': len(off)})
-    if not ok:
-        return None
+            output='reference generated', detail={'chars': len(src)})
 
-    # VALIDATOR 3: at test state the failing test's pinned answer applies to
-    # the disputed observable — the bug-copying catch. Roll 11 (defect 19):
-    # blanket `{method: trusted_values}` mapped every test literal onto the
-    # disputed observable, so a correctly-diverging reference was discarded
-    # against a NEIGHBOURING assertion's literal. Pins now attach only by
-    # the same attribution discipline as corroboration (state identity, or
-    # an assertion calling the disputed method directly); `trusted_values`
-    # is deliberately NOT consulted here — its provenance is exactly the
-    # misattribution vector.
-    pins_d = pins_for_disputed(
-        method,
-        [getattr(ft, 'failure_message', '') or '' for ft in failure_tests],
-        [getattr(ft, 'method_source', '') or '' for ft in failure_tests],
-        buggy_obs)
-    _re('deterministic', method='reference-impl', target=method,
-        output=('disputed-observable pins resolved' if pins_d
-                else 'no pin attaches to the disputed observable'),
-        reason=('attributed by state identity or a direct assertion on the '
-                'disputed method' if pins_d else
-                'no failure-message or direct-assertion attribution — the '
-                'pin check will ABSTAIN rather than borrow a neighbouring '
-                'assertion\'s literal'),
-        detail={'pins': {k: v[:4] for k, v in pins_d.items()}})
-    pin_ok, pin_why = pin_check(obs, pins_d, [method])
-    _re('deterministic', method='reference-impl', target=method,
-        output=('pin-check PASSED' if pin_ok else 'pin-check DISCARDED'),
-        reason=pin_why)
-    if not pin_ok:
-        return None
-
-    # ADMISSION is complete (screen + corroboration + pin). Store the
-    # admitted values for the 8.25 verdict gate — one process = one leg,
-    # so function-level storage is run-local by construction, like _memo.
-    # Stored at admission, not at fact emission: the gate needs the
-    # reference's validated VALUES, which stand even if the patched twin
-    # later fails and no fact is emitted.
-    _reference_impl_fact._admitted = {'method': method, 'obs': obs,
-                                      'buggy': buggy_obs}
-
-    # THE OTHER SIDE OF THE FACT: the SAME twin on the PATCHED build.
-    try:
-        pdir = PatchedProjectBuilder().build_patched_dir(buggy_dir, patch_path)
-    except Exception as e:
+        # The generator declares signature AND observable list; we read both.
+        sig = declared_signature(src)
+        if sig is None:
+            _re('deterministic', method='reference-impl', target=method,
+                output='no declared signature — DISCARDED',
+                reason='the reply carried no `// compute(<types>)` line, so the '
+                       'driver cannot know how to call it')
+            return None
         _re('deterministic', method='reference-impl', target=method,
-            output='patched build unavailable — no fact',
-            reason=f'{type(e).__name__}: {e}'[:200])
-        return None
-    patched_vals, ptwin_why = run_twin(builder, pdir, twin_src,
-                                       work_subdir='reference_twin_patched')
-    _re('deterministic', method='reference-impl', target=method,
-        output=('patched twin ran' if patched_vals else
-                'patched twin FAILED — no fact'), reason=ptwin_why)
-    if not patched_vals:
-        return None
-    patched_obs = {k: v for k, v in patched_vals.items()
-                   if not k.startswith('__')}
+            output='signature declared', detail={'signature': sig})
+        # PARAMETER NAMES FROM THE DECLARATIONS (roll 8 pre-walk). Roll 8's
+        # comment line was bare types while its own `compute_*` declarations
+        # named both parameters — in the OPPOSITE order from the buggy body's
+        # read order, so the positional fallback would have fed the reference
+        # swapped arrays: same type, same length, runs cleanly, computes
+        # garbage. A name in the model's own declaration is evidence; the
+        # read-order guess is for references that name nothing anywhere.
+        _canon = canonical_state(ctx)
+        _named = merge_declared_parameter_names(src, sig, _canon)
+        if _named != sig:
+            _re('deterministic', method='reference-impl', target=method,
+                output='parameter names recovered from the declarations',
+                reason='the `// compute(...)` line is bare types; every '
+                       'compute_* declaration agrees on one named list',
+                detail={'declared': sig, 'named': _named})
+            sig = _named
+        ref_names = declared_observable_names(src)
+        # NAME NORMALIZATION (VM re-walk #6). The model wrote `compute_chiSquare`
+        # where the chain wanted `compute_getChiSquare` and the reference was
+        # discarded on SPELLING, having implemented the observable correctly.
+        # The codebase already matches `chiSquare` to `getChiSquare`
+        # (_methods_named_by, since P0); the reference matcher now does too, and
+        # the driver calls what the model DECLARED while keying by the canonical
+        # name. Mechanism, not an instruction: the prompt already asked.
+        matched = match_observable_names(ref_names, [method] + siblings)
+        if method not in matched:
+            _re('deterministic', method='reference-impl', target=method,
+                output='reference omits the disputed observable — DISCARDED',
+                reason=f'declared: {ref_names[:8]} — none normalizes to '
+                       f'`{method}` (accessor prefixes are stripped both ways)')
+            return None
+        targets = list(matched)          # canonical keys, in wanted order
+        _re('deterministic', method='reference-impl', target=method,
+            output='reference observables matched',
+            detail={'matched': {k: v for k, v in list(matched.items())[:6]},
+                    'declared_only': [n for n in ref_names
+                                      if n not in matched.values()][:4]})
+        # THE SCREEN'S COUNT BAR, DECIDED HERE (roll 8 pre-walk): the shared
+        # siblings are known the moment the observables are matched, and the
+        # run can only shrink that set. The late path bought the twin build and
+        # two JVM runs before `screen_reference` said "1 shared; 3 required".
+        thin, thin_why = too_thin_to_screen(matched, siblings)
+        _re('deterministic', method='reference-impl', target=method,
+            output=('reference too thin to screen — DISCARDED' if thin else
+                    'screen bar reachable'), reason=thin_why)
+        if thin:
+            return None
 
-    fact = reference_comparison_fact(
-        method, True, screen_why, patched_obs, obs,
-        screened_count=len(off))
-    _re('deterministic', method='reference-impl', target=method,
-        output=('fact emitted' if fact else 'no fact (nothing comparable)'),
-        detail={'chars': len(fact or '')})
-    memo[method] = fact
-    return fact
+        # Signature -> canonical state fields, nominally. Unmappable = discard,
+        # never a guessed call (roll 4: five attempts, five different signatures).
+        mapping, map_why = match_parameters(parse_parameters(sig), _canon,
+                                            fields_read_by(ctx, method, _canon))
+        _re('deterministic', method='reference-impl', target=method,
+            output=('signature mapped' if mapping else
+                    'signature unmappable — DISCARDED'), reason=map_why)
+        if not mapping:
+            return None
+
+        # THE STATE TWIN: everything is compared at the failing test's own state.
+        test_src = next((getattr(ft, 'method_source', '') or ''
+                         for ft in failure_tests
+                         if getattr(ft, 'method_source', None)), '')
+        # Receiver by DECLARING TYPE, never by usage pattern (VM re-walk #2);
+        # `declaring` was resolved above, before the screening surface.
+        setup, receiver, setup_why = extract_test_setup(test_src, method,
+                                                        siblings, declaring)
+        _re('deterministic', method='reference-impl', target=method,
+            output=('twin setup extracted' if setup else
+                    'twin underivable — DISCARDED'), reason=setup_why,
+            detail={'declaring_types': sorted(declaring)[:4]})
+        if not setup:
+            return None
+        # Fixture classes live only in the TEST FILE (`new Circle()`); the twin
+        # cannot compile without them, so they ride along as package-private
+        # top-level classes. The test file's own imports come with them.
+        test_file_src = ''
+        _tf = next((getattr(ft, 'source_path', None) for ft in failure_tests
+                    if getattr(ft, 'source_path', None)), None)
+        if _tf:
+            try:
+                with open(_tf, encoding='utf-8', errors='replace') as fh:
+                    test_file_src = fh.read()
+            except OSError:
+                test_file_src = ''
+        t_imports, helpers = extract_test_dependencies(test_file_src, setup)
+        # The twin is the test method, so it must resolve names the way the test
+        # did: emitted INTO the test's own package (the class under test is
+        # referenced by simple name because they share it).
+        twin_pkg = test_package(test_file_src) or package
+        try:
+            twin_src = build_state_twin_driver(
+                setup, receiver, [method] + siblings, mapping,
+                package=twin_pkg, imports=(t_imports or imports),
+                helper_classes=helpers)
+        except (ValueError, TypeError) as e:
+            _re('deterministic', method='reference-impl', target=method,
+                output='twin source invalid — DISCARDED', reason=str(e)[:200])
+            return None
+        _re('deterministic', method='reference-impl', target=method,
+            output='twin built',
+            detail={'helpers': len(helpers), 'imports': len(t_imports or []),
+                    'package': twin_pkg, 'receiver': receiver})
+        buggy_vals, twin_why = run_twin(builder, buggy_dir, twin_src)
+        _re('deterministic', method='reference-impl', target=method,
+            output=('buggy twin ran' if buggy_vals else
+                    'buggy twin FAILED — DISCARDED'), reason=twin_why)
+        if not buggy_vals:
+            return None
+
+        # The reference's inputs come from the twin itself (reflection-printed).
+        params = parse_parameters(sig)
+        lits = []
+        for (typ, _n), field in zip(params, mapping):
+            printed = (buggy_vals.get(f'__param_{field}') or ['ABSENT'])[0]
+            lit = java_literal(typ, printed)
+            if lit is None:
+                _re('deterministic', method='reference-impl', target=method,
+                    output='reference inputs unrecoverable — DISCARDED',
+                    reason=f'state field `{field}` ({typ}) printed as '
+                           f'{printed[:80]!r}')
+                return None
+            lits.append((lit, typ))
+        try:
+            driver_src = build_reference_call_driver(
+                'ReferenceImpl', list(matched.items()), lits)
+        except (ValueError, TypeError) as e:
+            _re('deterministic', method='reference-impl', target=method,
+                output='driver source invalid — DISCARDED', reason=str(e)[:200])
+            return None
+        obs, why = run_reference(builder, buggy_dir, src, driver_src)
+        _re('deterministic', method='reference-impl', target=method,
+            output=('reference ran' if obs else 'reference DISCARDED'), reason=why)
+        if not obs:
+            return None
+
+        # THE SCREEN: reference vs the BUGGY build, on siblings only — the
+        # disputed point is on-defect by definition and cannot vouch for itself.
+        buggy_obs = {k: v for k, v in buggy_vals.items()
+                     if not k.startswith('__')}
+        off = [k for k in siblings if k in obs and k in buggy_obs]
+        # OPTION B (user decision 2026-08-07): a sibling the failing test itself
+        # shows diverging is a rigged screen question — the buggy build is the
+        # wrong answer key there. The pin attaches only where the failure
+        # message's observed value appears verbatim in the twin's buggy print
+        # (state identity), and it re-grades a disagreement only when the
+        # reference matches the test's literal AND buggy fails it.
+        corro = test_corroboration_pins(
+            [getattr(ft, 'failure_message', '') or '' for ft in failure_tests],
+            [getattr(ft, 'method_source', '') or '' for ft in failure_tests],
+            buggy_obs, siblings)
+        if corro:
+            _re('deterministic', method='reference-impl', target=method,
+                output='test-corroboration pins resolved',
+                reason='failing-test asserted value(s) attributed to defect-'
+                       'reached sibling(s) by verbatim state match',
+                detail={'pins': corro})
+        ok, screen_why = screen_reference(obs, buggy_obs, off_defect_keys=set(off),
+                                          test_corroboration=corro)
+        _re('deterministic', method='reference-impl', target=method,
+            output=('screen ADMITTED' if ok else 'screen DISCARDED'),
+            reason=screen_why,
+            detail={'construct': (buggy_vals.get('__construct0') or ['?'])[0],
+                    'off_defect_shared': len(off)})
+        if not ok:
+            return None
+
+        # VALIDATOR 3: at test state the failing test's pinned answer applies to
+        # the disputed observable — the bug-copying catch. Roll 11 (defect 19):
+        # blanket `{method: trusted_values}` mapped every test literal onto the
+        # disputed observable, so a correctly-diverging reference was discarded
+        # against a NEIGHBOURING assertion's literal. Pins now attach only by
+        # the same attribution discipline as corroboration (state identity, or
+        # an assertion calling the disputed method directly); `trusted_values`
+        # is deliberately NOT consulted here — its provenance is exactly the
+        # misattribution vector.
+        pins_d = pins_for_disputed(
+            method,
+            [getattr(ft, 'failure_message', '') or '' for ft in failure_tests],
+            [getattr(ft, 'method_source', '') or '' for ft in failure_tests],
+            buggy_obs)
+        _re('deterministic', method='reference-impl', target=method,
+            output=('disputed-observable pins resolved' if pins_d
+                    else 'no pin attaches to the disputed observable'),
+            reason=('attributed by state identity or a direct assertion on the '
+                    'disputed method' if pins_d else
+                    'no failure-message or direct-assertion attribution — the '
+                    'pin check will ABSTAIN rather than borrow a neighbouring '
+                    'assertion\'s literal'),
+            detail={'pins': {k: v[:4] for k, v in pins_d.items()}})
+        pin_ok, pin_why = pin_check(obs, pins_d, [method])
+        _re('deterministic', method='reference-impl', target=method,
+            output=('pin-check PASSED' if pin_ok else 'pin-check DISCARDED'),
+            reason=pin_why)
+        if not pin_ok:
+            return None
+
+        # ADMISSION is complete (screen + corroboration + pin). Store the
+        # admitted values for the 8.25 verdict gate — one process = one leg,
+        # so function-level storage is run-local by construction, like _memo.
+        # Stored at admission, not at fact emission: the gate needs the
+        # reference's validated VALUES, which stand even if the patched twin
+        # later fails and no fact is emitted.
+        _reference_impl_fact._admitted = {'method': method, 'obs': obs,
+                                          'buggy': buggy_obs}
+
+        # THE OTHER SIDE OF THE FACT: the SAME twin on the PATCHED build.
+        try:
+            pdir = PatchedProjectBuilder().build_patched_dir(buggy_dir, patch_path)
+        except Exception as e:
+            _re('deterministic', method='reference-impl', target=method,
+                output='patched build unavailable — no fact',
+                reason=f'{type(e).__name__}: {e}'[:200])
+            return None
+        patched_vals, ptwin_why = run_twin(builder, pdir, twin_src,
+                                           work_subdir='reference_twin_patched')
+        _re('deterministic', method='reference-impl', target=method,
+            output=('patched twin ran' if patched_vals else
+                    'patched twin FAILED — no fact'), reason=ptwin_why)
+        if not patched_vals:
+            return None
+        patched_obs = {k: v for k, v in patched_vals.items()
+                       if not k.startswith('__')}
+
+        fact = reference_comparison_fact(
+            method, True, screen_why, patched_obs, obs,
+            screened_count=len(off))
+        _re('deterministic', method='reference-impl', target=method,
+            output=('fact emitted' if fact else 'no fact (nothing comparable)'),
+            detail={'chars': len(fact or '')})
+        return fact
+
+    # ORDERED, BOUNDED FALLBACK (stage-4 roll 2, rule 7): try up to three
+    # candidates in the detector's ranked order; each attempt is memoized
+    # individually, so across firings a leg spends at most one generation
+    # per distinct method and never revisits a failure.
+    for method in disputed[:3]:
+        if method in memo:
+            if memo[method] is not None:
+                _re('deterministic', method='reference-impl', target=method,
+                    output='memoized result reused',
+                    reason='this disputed observable was already resolved '
+                           'this leg')
+                return memo[method]
+            continue                     # known failure — try the next
+        _re('deterministic', method='reference-impl', target=method,
+            output='disputed observable detected',
+            detail={'candidates': disputed[:4], 'attempting': method})
+        memo[method] = None      # every early exit inside leaves None
+        fact = _attempt(method)
+        memo[method] = fact
+        if fact:
+            return fact
+    return None
 
 
 def parse_args():

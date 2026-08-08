@@ -35,7 +35,9 @@ def test_every_exit_path_records_an_event():
     """The per-event read is the stage-1 deliverable; a silent return would
     make a discarded reference indistinguishable from an absent one."""
     h = _helper()
-    returns = len(re.findall(r'\n        return None', h))
+    # exits live inside the _attempt wrapper since the stage-4 roll-2
+    # fallback loop (one indent deeper); the intent is unchanged.
+    returns = len(re.findall(r'\n {8,12}return None', h))
     events = len(re.findall(r'_re\(', h))
     assert returns >= 7, f'expected the fail-closed exits, found {returns}'
     assert events >= returns, (
