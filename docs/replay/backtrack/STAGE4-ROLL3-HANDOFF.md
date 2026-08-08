@@ -33,13 +33,14 @@ java -version                    # sanity: JDK present
 
 ```bash
 cd /home/code/experiments-vuln-patch
-PARALLEL=1 nohup ./run_suite.sh stage4r3 suites/cases/ladder_stage4.cases \
+PARALLEL=6 nohup ./run_suite.sh stage4r3 suites/cases/ladder_stage4.cases \
     > /home/code/scratch/stage4r3.log 2>&1 &
 ```
 
-SERIAL is mandatory (`PARALLEL=1`, the tiny-suite pooling rule). Expect
-roughly 3–5 hours and ~1.5–2M tokens for ten legs (roll-2 baseline:
-131–250k/leg). Progress: `tail -f /home/code/scratch/stage4r3.log`. The
+Run PARALLEL (user rule: never serial; the machine is big enough — cap
+at ~6, where the shared gpt-* API starts throttling per run_suite.sh's
+own note). Expect roughly 1–1.5 hours wall-clock and ~1.5–2M tokens for
+ten legs (roll-2 baseline: 131–250k/leg). Progress: `tail -f /home/code/scratch/stage4r3.log`. The
 run lands in `/home/code/scratch/runs/stage4r3_<STAMP>/`.
 
 ## 3. Post-run protocol (unchanged since roll 5 — raw before read)

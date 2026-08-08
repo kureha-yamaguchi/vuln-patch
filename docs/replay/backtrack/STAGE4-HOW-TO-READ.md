@@ -1,8 +1,8 @@
 # Stage 4 — how to read it (written BEFORE launch, deliberately)
 
 Suite: `suites/cases/ladder_stage4.cases`, TEN legs (four decisive + six
-scout), SERIAL
-(`PARALLEL=1`). Protocol unchanged: rsync → copy raw into
+scout), PARALLEL=6 (user
+rule: never serial). Protocol unchanged: rsync → copy raw into
 `docs/replay/backtrack/ladder4-raw/roll1/` → **commit raw before
 reading** → per-event read, never totals.
 

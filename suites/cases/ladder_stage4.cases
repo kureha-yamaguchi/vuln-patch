@@ -1,5 +1,5 @@
-# 8.2 LADDER — STAGE 4 ROLL 3 + STAGE-8 SCOUT. TEN legs, SERIAL
-# (PARALLEL=1). ~1.5-2M. The four stage-4 legs keep their DECISIVE
+# 8.2 LADDER — STAGE 4 ROLL 3 + STAGE-8 SCOUT. TEN legs, PARALLEL=6
+# (user rule: never serial). ~1.5-2M. The four stage-4 legs keep their DECISIVE
 # gates; the four scout legs are pre-registered DENOMINATORS (admission
 # rate, reach across class shapes, gate-abstention behavior on non-Math
 # material) plus two hard-stop extensions — they inform stage 8, they do
