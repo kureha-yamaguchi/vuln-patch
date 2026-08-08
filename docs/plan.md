@@ -1762,6 +1762,74 @@ like every mechanism before them. Using ground truth to EVALUATE and
 UNDERSTAND is the same legitimacy class as scoring runs against
 labels; using it to STEER a run is farming. The line sits between.
 
+### 8.34 WITNESS STUDY — SYNTHESIS (6 Opus agents, 137 witness rows across 28 bugs; 3 assigned bugs had no witness: Lang20, Math50, Math6)
+**READ PER BUG, NOT PER PATCH.** A raw per-patch tally is dominated by
+whichever bugs attracted many APR attempts — Math80 alone is 29 patches
+of ONE eigenvalue bug, one distinguishing-input SHAPE. Per-patch the
+gap looks like 54/137; per DISTINCT BUG it is far smaller. The design
+question is "how many KINDS of distinguishing input exist," so bugs are
+the unit.
+
+**PER-BUG COVERAGE by the general generators already sketched (28 bugs
+with witnesses):**
+- LATTICE (universal boundary atoms — null / 0 / ±1 / MIN/MAX / NaN /
+  empty / size / out-of-range-enum-int): Chart9, Chart19, Chart25,
+  Lang22, Lang45, Lang50, Math53, Math59, Math63, Math82 = **10**
+- WITHIN-RUN-SEQUENCE (build state with a short mutating call sequence /
+  call ORDERING, then probe): Chart3, Chart5, Chart7, Chart13, Lang55,
+  Math32 = **6**
+- BOTH lattice+sequence: Math2 (scalar extremes lattice-reach the
+  overflow; large-n sample()-driven cases need sequence) = **1**
+- DIFF-DERIVED (seed from the patch's own changed constants): Lang51
+  (near-keyword boolean strings) = **1**
+- PARTIAL (some patches covered, some gap): Lang39 (null element =
+  lattice; cyclic self-referential arrays = gap), Math85 (degenerate
+  zero-width intervals = lattice; finite maxIter tuned to arbitrary
+  mid-range bounds = gap) = **2**
+- STRUCTURAL GAP (no bug-agnostic generator plausibly produces it):
+  Chart15, Chart26, Lang27, Math8, Math80, Math81, Math97, Time4 = **8**
+
+So ~18 of 28 (64%) are cleanly covered by lattice + within-run-sequence
++ diff-derived seeding; 2 partial; 8 (29%) are genuine gaps.
+
+**THE 8 GAPS COLLAPSE TO FOUR FAMILIES (the real design menu):**
+1. CHART-RENDER — construct a concrete `Plot` subtype and call
+   `createBufferedImage`; divergence lives deep in the draw pipeline
+   (`Axis.drawLabel`, `calculateRangeAxisSpace`). (Chart15, Chart26)
+2. TYPE-GRAPH CONSTRUCTION — compose a specific subclass/domain-object
+   stack: joda Chronology→…→ZeroIsMaxDateTimeField (Time4), or generic
+   `Distribution<T>` + typed-array capture forcing a ClassCastException
+   (Math8).
+3. SPECIFIC NUMERIC CONTENT — a particular matrix spectrum / near-flat
+   polynomial / interval that drives one algorithm branch; a boundary
+   value cannot synthesize it. (Math80, Math81, Math97, Math85-partial)
+4. STRUCTURED STRING/COLLECTION CONTENT — cyclic arrays, invalid-number
+   strings, near-keyword strings. (Lang27, Lang39-Elixir, Lang51)
+
+**DESIGN CONCLUSION.** Build ONE general seeder: universal boundary
+lattice + within-run operation-sequence exploration + diff-derived
+constant seeding. It covers ~64% of distinct bugs with ZERO bug-specific
+knowledge (firewall-safe: reads only per-leg patch text + universal
+atoms). The four gap families are each a bespoke generator (much larger
+build, lower marginal coverage) — DEFER, accept as the named uncovered
+tail; family 3 (specific numeric content) may be fundamentally beyond
+general generation and stay uncovered.
+
+**FOUR HONEST CAVEATS (bound the claim):**
+(a) Per-patch skew flagged and avoided (per-bug is the stat).
+(b) "Lattice-coverable" means the input CAN be generated — it does NOT
+prove our fuzzer's distribution REACHES it or that seeding fixes recall.
+The parked diff-hit instrumentation must still measure reach; this study
+sizes the DESIGN, not the outcome.
+(c) Witnesses expose divergence in a TEST; our path is fuzz+relations —
+the mapping is not 1:1.
+(d) Our OWN missed legs Lang-63 and Lang-41 have NO witness in this set,
+so the study can't speak to them directly — but the studied unstable
+legs it CAN (Chart-19 = null/lattice, Chart-7 = sequence/within-run)
+both fall in the covered set, so a lattice+sequence seeder is on-target
+for the miss class IF reach — not routing — is the bottleneck (open per
+the 8.32 flag).
+
 ### 8.32 THE DRAW-05 DESK READ — answered 2026-08-08, then PARTLY INVALIDATED by 8.33's Chart-19 correction (see head note)
 **CORRECTION (2026-08-08):** 8.33 verified Chart-19's distinguisher is a NULL ARGUMENT to `indexOf`, not constructor scale — and draw 05 DID invent null probes (`domain-axis-null`, `lifted-domain-axis-null`) that went QUIET on the patched build. So "input reach, not invention" is not yet established: the null probes reached the build and stayed silent, which points at PROBE ROUTING (did the invented null probe actually reach `AbstractObjectList.indexOf`, or a different method?) rather than input-value reach. The list-identity probe (`state-get-after-set`) that DID crash draw 04 is a separate, second distinguisher. NEEDS A RE-READ against the corrected target before any input-search design rests on it. The eliminations below (not-invention, not-selection) still stand; the POSITIVE conclusion (input reach) does not.
 The 8.30 framing was WRONG and the correction matters. The catching
