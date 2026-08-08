@@ -1432,6 +1432,21 @@ information rule; the mapper degrades gracefully to []) or whether the
 context assembler should keep fired-named methods' bodies too, is a
 design decision with judge-prompt-size and information-rule
 implications. Decide before stage-2 roll 3.**
+**DECIDED — OPTION A (user, 2026-08-08), built same day: the detector's
+filter is DECLARED-IN-CONTEXT (signature visible; body shown, elided, or
+abstract), not body-shown. The body requirement was inherited from the
+quoting feature, which KEEPS its own — judge prompts are untouched. The
+one internal body consumer (`fields_read_by`) already degrades to [];
+a wrongly-started chain ends in a reasoned discard at the screen, never
+wrong evidence; cost is bounded by the per-method-per-leg memo.
+Consequence accepted with eyes open: Math-2's `sample` firings now
+trigger too (a stochastic method — expect an honest discard; that
+discard is itself reach data). Regressions: suite 807/7, corpus scan
+unchanged (3 voids), full rewalk8 replay green on stage2b artifacts
+(06be7bb). STAGE-2 ROLL 3 IS GO — same suite, same five gates;
+expected on Math-2: detection at getNumericalMean (replay door, via
+check source), then the first generation/screen attempt on held-out
+material.**
 
 ### 8.19 Buggy-anchored check generation — design doc first, the unowned big one
 **Target:** stations 2–4 (`relation_synth.py` + harness codegen prompts),
