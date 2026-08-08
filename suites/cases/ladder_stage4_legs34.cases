@@ -1,0 +1,21 @@
+# 8.2 LADDER — STAGE 4 roll 2, LEGS 3 AND 4 ONLY, run concurrently.
+#
+# Split out of ladder_stage4.cases so the two remaining legs run alongside
+# stage4b's legs 1-2 instead of queueing behind them. Safe to split because
+# relation pooling was removed on 2026-07-19 (user rule: any leg-to-leg
+# sharing is benchmark farming) — every leg is fully self-contained, with
+# its own rundir, log and D4J_CHECKOUT_ROOT, so a leg's result does not
+# depend on which suite it ran in or what ran beside it.
+#
+#   Leg 3: Math-2 CORRECT (SOFix) — the agreement-side test on the one
+#          receiver where admission is proven (admitted twice).
+#   Leg 4: Math-53 CORRECT (Arja) — the always-clean LIVE GUARD.
+#
+# Gates unchanged: STAGE4-HOW-TO-READ.md, S4-a..S4-f. S4-a (any clean-leg
+# accusation traceable to the mechanism) remains a HARD STOP.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-53-Arja.patch"
+)
