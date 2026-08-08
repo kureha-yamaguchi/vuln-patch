@@ -1617,6 +1617,33 @@ one extra JVM run per gated conviction, bounded by admission (10%).
 untouched (see 8.27); lhs/rhs-only relations reachable only where state
 recovery succeeds.
 
+### 8.29 VARIANCE BASELINE — measured 2026-08-08 (varbase, raw before read, read 2ce8bbf; 15 runs, 76 min, frozen code e9868f2)
+**The lottery has a size and a station.** 3 of 5 legs move under
+repetition, BOTH directions: Math-65-c FP/TN/FP, Chart-19-o TP/FN/TP,
+Lang-63-o TP/FN/FN — two of the three unstable legs are RECALL legs (a
+fake patch escaped 1-in-3 and 2-in-3 draws). Every recall number this
+project has quoted is a single draw; roll 3's R=1.00 was four draws,
+not four guarantees. **THE STATION IS ORACLE INVENTION — the FIRST
+model call**, observed directly: harness counts identical on all
+fifteen runs (built=5 run=5 triggers=5 everywhere); what differs is
+WHICH checks get invented (Chart-19's FN draw never probed the null
+range axis; Math-65's draws invented different chiSquare formula
+relations). **THE NUANCE ANY FIX MUST BE BUILT AROUND: invention
+variance is UNIVERSAL, outcome variance is NOT** — the stable legs
+invent just as differently (Math-2-SOFix: three disjoint oracle sets,
+TN every time). A leg is stable when its defect is reachable by MANY
+different checks and unstable when detection hinges on inventing ONE
+particular check — a property of the BUG, not the run. The design
+question is therefore "invent more, or select better?" — open, gated,
+connects to parked 8.19. GAP FILED AND FIXED same day: per-run
+artifacts carried no sha (suite config.json does; leg dirs on their
+own did not) — result.jsonl now records git_sha and the trace header
+prints it (GITSHA exported by run_suite.sh from VERSION). Repeated-
+draw designs now rest on artifact-checkable provenance. CONSEQUENCE
+FOR REPORTING, standing: single-draw outcomes on the three unstable
+legs are DRAWS; stage-16 and any headline P/R must be multi-draw on
+unstable legs.*
+
 ### 8.28 TWO DESK READS (2026-08-08, free, from recorded material) — findings recorded
 **(a) The six signature-mapping discards, read.** Two classes. MODEL-
 DEVIATION SHAPES (4): a literal `...` signature, a bundled

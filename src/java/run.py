@@ -696,6 +696,12 @@ def _emit_record(path, *, label, status, selection=None,
     # verifier, synthesis). Lets the aggregator sum real cost per batch.
     rec["tokens_total"] = usage_totals()
     rec["tokens_by_model"] = token_usage()
+    # Provenance IN the per-run artifact (variance-baseline read, 2026-08-08):
+    # the suite-level config.json carries the sha, but a leg dir compared or
+    # shared on its own loses it — and repeated-draw designs REST on the
+    # frozen-code premise being checkable from the artifact itself, not from
+    # mtimes. GITSHA is exported by run_suite.sh from VERSION.
+    rec["git_sha"] = os.environ.get("GITSHA", "unknown")
     # Free-form flags the caller wants queryable per run (e.g.
     # context_degraded when the touched-function extraction came up empty,
     # so an aggregator can tell "feature tested and failed" from "feature
@@ -808,6 +814,9 @@ def _write_trace_md(path, bug, label, events, outcome=None):
     the record."""
     n_llm = sum(1 for e in events if e.get('kind') == 'llm')
     L = [f"# Pipeline trace — {bug}\n"]
+    # Per-run provenance (variance-baseline read): the frozen-code premise
+    # must be checkable from the artifact itself.
+    L.append(f"**Code:** `{os.environ.get('GITSHA', 'unknown')}`\n")
     L.append(f"**Patch label:** {label}  "
              f"*(the patch under analysis is a "
              f"{'known-OVERFIT' if 'over' in str(label).lower() else 'known-CORRECT'}"

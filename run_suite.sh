@@ -147,6 +147,9 @@ GITSHA="$(cat /home/code/experiments-vuln-patch/VERSION 2>/dev/null \
   printf '}\n'
 } > "$ROOT/config.json"
 echo "suite root: $ROOT  (model=$MODEL git=$GITSHA)"
+# Per-run provenance: run.py stamps this into every result.jsonl (the
+# variance-baseline read found leg dirs carry no sha of their own).
+export GITSHA
 
 # --- concurrency -----------------------------------------------------------
 # PARALLEL=N runs up to N cases at once (default 1 = serial, unchanged). Each
