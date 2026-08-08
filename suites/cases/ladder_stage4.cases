@@ -1,0 +1,41 @@
+# 8.2 LADDER — STAGE 4. FOUR legs, run SERIAL (PARALLEL=1). ~600-900k.
+#
+# Stage 2 passed (read 48e796a; advancement is the recorded judgment call:
+# S2-a/b/c PASS with S2-a non-vacuous — an admitted reference on the fake
+# patch did NOT void the catch — and the first attributed judge engagement:
+# call 138's WHY consumes the reference's computed value as its "expected",
+# a number that occurs exactly twice in the trace). The correct-patch side
+# has produced nothing attributable in three rolls — which is exactly what
+# stage 4 tests, on FRESH correct legs instead of more Math-65 draws.
+#
+#   Leg 1: Math-65 CORRECT (CapGen)  — carried; attribution rule stands.
+#   Leg 2: Math-2  OVERFIT (Arja)    — regression of stage 2's result.
+#   Leg 3: Math-30 CORRECT (CapGen)  — the exact-arithmetic extension test:
+#          int-overflow dispute, where a doc-derived reference disagrees
+#          with int arithmetic exactly at overflow boundaries. The plan's
+#          own named test of the AGREEMENT side on fresh material.
+#   Leg 4: Math-53 CORRECT (Arja)    — the always-clean LIVE GUARD.
+#
+# PRE-REGISTERED GATES (before launch, per ladder rule):
+#   (S4-a) HARD STOP: any accusation on the Math-53 clean leg traceable to
+#          the reference fact or the verdict gate. Standing ladder rule —
+#          a clean-leg accusation traceable to the mechanism at ANY stage
+#          stops everything pending diagnosis.
+#   (S4-b) Math-30: the mechanism's evidence visibly present (chain events;
+#          if convicted, fact/gate evidence in the trace). A TN banks for
+#          the mechanism ONLY with attributable events (roll-13 rule).
+#   (S4-c) Math-2: catch retained AND zero voids (stage-2 regression).
+#   (S4-d) Math-65: attribution rule unchanged — record, don't bank.
+#   (S4-e) Zero facts from discarded references, all legs (standing).
+#   (S4-f) Rule 7: two no-change iterations → stop and report.
+#   Read-out carries BOTH SIGNS: catches gained/lost AND accusations
+#   gained/lost, plus admission rate and cost per leg (pre-registered
+#   denominators for the 8.2 reach question).
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-30-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-53-Arja.patch"
+)

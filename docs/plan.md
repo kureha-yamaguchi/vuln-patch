@@ -1447,6 +1447,37 @@ unchanged (3 voids), full rewalk8 replay green on stage2b artifacts
 expected on Math-2: detection at getNumericalMean (replay door, via
 check source), then the first generation/screen attempt on held-out
 material.**
+*STAGE-2 ROLL 3 (2026-08-08, stage2c, raw before read, read 48e796a):
+**THE MECHANISM DID ITS JOB ON HELD-OUT MATERIAL — stage 2 PASSES.**
+Math-2: the chain ran end to end on its first new bug — detection at
+getNumericalMean via the check source (the 8.26 fixes working live),
+generation for a distribution class, twin from testMath1021, standing
+earned on 6 off-defect siblings computed from documented formulas, pin
+ABSTAINED rather than borrowing a literal — and emitted the
+disagreement fact: patched −49.759350398538686 vs independent
+reference 49.821236993679285 (a hypergeometric mean cannot be
+negative; sign flip, not tolerance). S2-a PASSED NON-VACUOUSLY: the
+admitted reference did not void the catch. S2-b/S2-c PASS; the sample
+trigger accepted under option A fired and died honestly at compile,
+zero facts leaked (gate (b) now 3 stages standing). **FIRST ATTRIBUTED
+JUDGE ENGAGEMENT**: call 138's WHY consumes the reference's value as
+its "expected" — a number occurring EXACTLY TWICE in the trace (the
+fact, and that sentence; verified independently). ASYMMETRY RECORDED:
+the first engagement is on the CONVICTION side; roll 12's agreement
+facts were ignored 9-of-9 — consistent with the judge's measured
+keep-bias, and exactly why the verdict gate exists for the exoneration
+side. S2-d not banked (Math-65 crashed=False, third straight upstream
+lottery; the correct-patch side still has NOTHING attributable).
+**ADVANCEMENT JUDGMENT (user's word, recorded): STAGE 4 FIRES** — not
+despite the correct-side gap but because of it: stage 4's fresh
+correct legs (Math-30, the design's own exact-arithmetic agreement
+test; Math-53 as live clean guard) are the correct-side test that more
+Math-65 draws are not. `suites/cases/ladder_stage4.cases` + gates
+pre-registered in STAGE4-HOW-TO-READ.md before launch: S4-a clean-leg
+hard stop, S4-b Math-30 attributable evidence, S4-c Math-2 regression
+(lost catch = hard stop), S4-d Math-65 attribution rule, S4-e zero
+facts from discards, S4-f rule 7, plus pre-registered denominators
+(admission rate, cost/leg, both signs).*
 
 ### 8.19 Buggy-anchored check generation — design doc first, the unowned big one
 **Target:** stations 2–4 (`relation_synth.py` + harness codegen prompts),
