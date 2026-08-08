@@ -1,5 +1,5 @@
-# 8.2 LADDER — STAGE 4 ROLL 3 + STAGE-8 SCOUT. EIGHT legs, SERIAL
-# (PARALLEL=1). ~1.2-1.6M. The four stage-4 legs keep their DECISIVE
+# 8.2 LADDER — STAGE 4 ROLL 3 + STAGE-8 SCOUT. TEN legs, SERIAL
+# (PARALLEL=1). ~1.5-2M. The four stage-4 legs keep their DECISIVE
 # gates; the four scout legs are pre-registered DENOMINATORS (admission
 # rate, reach across class shapes, gate-abstention behavior on non-Math
 # material) plus two hard-stop extensions — they inform stage 8, they do
@@ -37,6 +37,20 @@
 #   Leg 8: Time-4 CORRECT (Elixir)   — stable TN (both pairs): second
 #          clean guard. HARD-STOP EXTENSION: same rule as S4-a.
 #
+#   RECALL SCOUTS (user direction: the never-solved population). Stable
+#   FNs in BOTH pairs, verified DISMISSAL-TYPE (firings reached the judge
+#   and were all dismissed — the miss class 8.14 measured as the largest):
+#   Leg 9:  Closure-92 OVERFIT (SequenceR) — 5-6 judge calls per pair,
+#           all dismissed. If the chain triggers at the dismissal site and
+#           the disagreement fact engages (as it did on Math-2-o), an
+#           FN->TP with attribution is the first RECALL win.
+#   Leg 10: Closure-38 OVERFIT — 3 judge calls per pair, all dismissed.
+#           Same read. (Lang-63-o excluded: its firings barely trigger —
+#           1 then 0 judge calls — so its miss is upstream of anything
+#           the mechanism touches; it belongs to the repeated-measures
+#           design with the unstable legs.)
+#   BLANKET SCOUT RULE: zero gate voids on ANY overfit leg — hard stop.
+#
 # PRE-REGISTERED GATES (before launch, per ladder rule):
 #   (S4-a) HARD STOP: any accusation on the Math-53 clean leg traceable to
 #          the reference fact or the verdict gate. Standing ladder rule —
@@ -64,4 +78,6 @@ CASES=(
   "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-39-Arja.patch"
   "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch"
   "-c patchfile:/home/code/drr/Patches/Dcorrect/Elixir/Time/patch1-Time-4-Elixir.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/SequenceR/Closure/patch1-Closure-92-SequenceR.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/SequenceR/Closure/patch1-Closure-38-SequenceR.patch"
 )

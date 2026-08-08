@@ -1,7 +1,7 @@
 # Stage 4 — how to read it (written BEFORE launch, deliberately)
 
-Suite: `suites/cases/ladder_stage4.cases`, EIGHT legs (four decisive +
-four scout), SERIAL
+Suite: `suites/cases/ladder_stage4.cases`, TEN legs (four decisive + six
+scout), SERIAL
 (`PARALLEL=1`). Protocol unchanged: rsync → copy raw into
 `docs/replay/backtrack/ladder4-raw/roll1/` → **commit raw before
 reading** → per-event read, never totals.
@@ -51,6 +51,8 @@ for leg in LEGS:
 | SCOUT-b | Time-4 (clean) | HARD STOP on any mechanism-traceable accusation — S4-a's rule, second guard leg. |
 | SCOUT-c | Closure-62 (correct, STABLE FP both pair runs) | Informational, weighted: the second live precision target. Read: does the chain trigger/admit on a Closure receiver, and if the leg convicts (expected — stable FP), do fact/gate events appear? Attribution rules as everywhere. |
 | SCOUT-d | Math-39 (correct) | Informational: reach datum on the plan-named stage-8 leg. |
+| SCOUT-e | Closure-92, Closure-38 (overfit, STABLE FN both pairs, dismissal-type) | THE RECALL READ: firings reach the judge on these legs and get dismissed. Does the chain trigger at the dismissal site? Does a disagreement fact emit and engage (roll-3 attribution)? An FN→TP with an attributed engagement = the first recall win. An FN staying FN = status quo, recorded. |
+| SCOUT-f | ALL overfit legs | Blanket hard stop: zero gate voids on any fake patch. |
 
 ## Also record (pre-registered denominators, not gates)
 

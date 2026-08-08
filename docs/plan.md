@@ -1540,6 +1540,21 @@ hard-stop extension). The pair record also reframes the target
 population: Math-2-c is a STABLE FP in both pairs — the precision
 problem was never one bug. Eight legs serial, ~1.2-1.6M, gates and
 scout reads pre-registered in STAGE4-HOW-TO-READ.md before launch.*
+*WIDENED AGAIN (user challenge, recorded): "why stable ones only?"
+Answer split by what one draw can attribute. STABLE legs = attribution
+(a flip with events is evidence; roll-13's lottery rule); UNSTABLE legs
+(Chart-26-c, Chart-19-o, Lang-63-o) need a repeated-measures design —
+deferred to stage-16/pair, stated not skipped. But the challenge caught
+a real under-sample: the NEVER-SOLVED population. Stable FNs verified
+DISMISSAL-TYPE from the pair traces (firings reached the judge, all
+dismissed — 8.14's largest miss class): Closure-92-o (5-6 judge calls
+per pair) and Closure-38-o (3 per pair) ADDED as recall scouts — the
+judge engages disagreement facts (stage-2 roll 3), so an FN→TP with
+attribution would be the first RECALL win. Lang-63-o excluded with its
+reason (1 then 0 judge calls: miss is upstream of the mechanism).
+Blanket scout rule: zero gate voids on ANY overfit leg. Ten legs,
+~1.5-2M.*
+
 
 
 
