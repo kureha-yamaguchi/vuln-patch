@@ -1845,7 +1845,8 @@ def main():
                     runs=args.screen_runs)
                 replay_fired = [
                     {'name': x['name'], 'tier': x['tier'],
-                     'note': x['note']} for x in _f]
+                     'note': x['note'],
+                     'fired_lines': x.get('fired_lines', [])} for x in _f]
             except (PatchApplyError, TriggerVerificationError) as exc:
                 record_extras['rulegen_status'] = getattr(
                     exc, 'status', 'bad_patch')
@@ -3965,7 +3966,13 @@ def main():
                 runs=args.screen_runs,
             )
             record_extras['relation_replay_fired'] = [
-                {'name': f['name'], 'tier': f['tier'], 'note': f['note']}
+                {'name': f['name'], 'tier': f['tier'], 'note': f['note'],
+                 # Corpus 2feb27d: the capped trace copy was the ONLY copy
+                 # of a firing's snapshot, and it ended mid-value. The
+                 # UNTRUNCATED lines now persist in result.jsonl — the
+                 # p1b corpus lives in the durable artifact, not in a
+                 # display preview.
+                 'fired_lines': f.get('fired_lines', [])}
                 for f in _replay_findings]
             if _replay_findings:
                 _verifier_model = (args.model

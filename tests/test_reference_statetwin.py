@@ -2008,3 +2008,29 @@ def test_consumed_entries_are_typed_and_strings_quoted():
     assert '"i:" + v' in _RECORDING_FDP
     assert '"d:" + v' in _RECORDING_FDP
     assert 'q:\\"' in _RECORDING_FDP
+
+
+# ---------------------------------------------------------------------------
+# Corpus 2feb27d (the first state-carrying roll): four firings, none
+# complete -- the 700-char harvest truncated mid-array and nothing else
+# preserved the line, so the capped copy was the only copy. Two fixes:
+# the harvest keeps the whole snapshot (~4.9k max from the Java side),
+# and the untruncated lines persist in result.jsonl.
+# ---------------------------------------------------------------------------
+
+def test_harvest_keeps_the_whole_snapshot():
+    from java.relations.relation_screen import harvest_relfire_lines
+    long_state = ' '.join(f'f{i}=[1.0, 2.0, 3.0]' for i in range(180))
+    line = f'[relfire] relation x violated: a=1 __consumed=i:1 __rcvstate o:T {long_state}'
+    assert len(line) > 3000
+    got = harvest_relfire_lines('junk\n' + line + '\nmore')
+    assert got and got[0] == line          # no truncation
+
+
+def test_replay_record_persists_untruncated_fired_lines():
+    src = open(Path(__file__).resolve().parents[1] / 'src' / 'java'
+               / 'run.py').read()
+    # BOTH sites that persist replay firings carry the untruncated lines
+    # (the full-pipeline site and the rulegen-only site).
+    assert src.count("'fired_lines': f.get('fired_lines', [])") == 1
+    assert src.count("'fired_lines': x.get('fired_lines', [])") == 1

@@ -365,9 +365,15 @@ def _measure_on_dir(build, builder, work_dir, jazzer_standalone_jar,
 
 
 def harvest_relfire_lines(text, cap=3):
-    """First `cap` DISTINCT `[relfire] ...` lines from a run's output."""
+    """First `cap` DISTINCT `[relfire] ...` lines from a run's output.
+
+    Per-line width 6000: the mechanism-roll read (corpus 2feb27d) found
+    the old 700-char harvest truncating mid-array — and since nothing
+    else preserved the line, the capped copy was the ONLY copy. The Java
+    side prints up to ~4.9k (400 message + 1.5k consumed + 3k state);
+    6000 keeps the whole snapshot."""
     out = []
-    for m in re.finditer(r'\[relfire\][^\n]{0,700}', str(text or '')):
+    for m in re.finditer(r'\[relfire\][^\n]{0,6000}', str(text or '')):
         line = m.group(0).strip()
         if line not in out:
             out.append(line)

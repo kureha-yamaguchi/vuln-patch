@@ -1730,6 +1730,37 @@ populationSize=100 successes=100 cache=[100.0, 100.0]`. 817 passed, 7
 skipped. The p1b corpus re-collects on the next mechanism roll; p1b's
 design waits for it.
 
+### 8.31 FIRST STATE-CARRYING ROLL — corpus 2feb27d (2026-08-08); collection gaps fixed same day
+**Safety clear** (Math-2 caught, zero VOIDs, Math-53 silent, zero facts
+from 15 discards — gate (b) unbroken). **The recording works**:
+`__rcvstate` on every firing (vs 0-of-9 in invdiv), `__consumed` typed.
+**Corpus vs criterion: 4 distinct firings, not a dozen** (Math-65-c: 3,
+Math-2-Arja: 1, other legs silent) **and none complete** — the 700-char
+harvest truncated mid-array AND the capped trace copy was the ONLY copy
+(result.jsonl carried nothing). FIXED (same day): harvest keeps the
+whole ~4.9k snapshot (6000-char width) and the UNTRUNCATED lines
+persist in result.jsonl at BOTH replay sites (full pipeline + rulegen-
+only). The durable artifact now holds the p1b corpus, not a display
+preview. **THE SHAPE INVENTORY (the read's real value — four of five
+shapes would break rules written against firing 1 alone):** two
+receivers in one firing (opt1:/opt2:); UNINITIALISED receivers
+(iterations=0, point=null, jacobian=null — the relation fired on an
+optimizer that NEVER RAN, 2 of Math-65's 3 firings); NaN with
+numericalVarianceIsCalculated=false (uncomputed cache, not corruption);
+mid-array truncation; unlabeled consumed widths (now typed). **DESIGN
+ANSWER (taken, fail-closed, narrow): the uninitialised-receiver
+distinction IS one the gate must respect, in the conservative
+direction only — a firing whose captured state shows the receiver
+never ran carries no state at which the reference can be evaluated, so
+p1b's rules must classify it ABSTAIN (mechanically detectable:
+null/zero sentinel fields). Whether such firings deserve their own
+treatment BEYOND abstention (they are a distinct alarm kind —
+"contract violated at construction" vs "at computation") is deferred
+to p1b design with the fuller corpus; nothing acts on it yet.** The
+corpus keeps growing with every future roll at zero marginal cost; p1b
+design proceeds when it has both completeness (fixed) and enough
+distinct firings.
+
 ### 8.27 SHAPE-ADAPTIVE SCREENING for stateless receivers — design sketch only
 The stateless-receiver ceiling is population-measured (11/27 discards,
 all Closure/Time). But the ROLL-4 LESSON INVERTS for pure utilities: the
