@@ -126,6 +126,72 @@ _RECORDING_FDP = r'''
 '''
 
 
+#: 8.4x recording half, part 2: on a firing, print every captured
+#: receiver's primitive/array state fields via reflection — the exact
+#: inputs a reference implementation needs, formatted by the same
+#: conventions as the twin (String.valueOf scalars, deepToString arrays).
+_STATE_PRINTER = r'''
+    static String __rcvState() {
+        StringBuilder sb = new StringBuilder();
+        for (java.util.Map.Entry<String, Object> en : __rcv.entrySet()) {
+            Object o = en.getValue();
+            if (o == null) continue;
+            sb.append(" __rcvstate ").append(en.getKey()).append(':')
+              .append(o.getClass().getSimpleName());
+            Class<?> c = o.getClass();
+            int printed = 0;
+            while (c != null && c != Object.class && printed < 24) {
+                for (java.lang.reflect.Field f : c.getDeclaredFields()) {
+                    if (printed >= 24) break;
+                    if (java.lang.reflect.Modifier.isStatic(f.getModifiers()))
+                        continue;
+                    Class<?> t = f.getType();
+                    boolean ok = t.isPrimitive()
+                        || (t.isArray() && (t.getComponentType().isPrimitive()
+                            || (t.getComponentType().isArray()
+                                && t.getComponentType().getComponentType()
+                                     .isPrimitive())));
+                    if (!ok) continue;
+                    try {
+                        f.setAccessible(true);
+                        Object v = f.get(o);
+                        String sv;
+                        if (v == null) sv = "null";
+                        else if (v instanceof double[]) sv = java.util.Arrays.toString((double[]) v);
+                        else if (v instanceof int[]) sv = java.util.Arrays.toString((int[]) v);
+                        else if (v instanceof long[]) sv = java.util.Arrays.toString((long[]) v);
+                        else if (v instanceof float[]) sv = java.util.Arrays.toString((float[]) v);
+                        else if (v instanceof boolean[]) sv = java.util.Arrays.toString((boolean[]) v);
+                        else if (v instanceof short[]) sv = java.util.Arrays.toString((short[]) v);
+                        else if (v instanceof byte[]) sv = java.util.Arrays.toString((byte[]) v);
+                        else if (v.getClass().isArray()) sv = java.util.Arrays.deepToString((Object[]) v);
+                        else sv = String.valueOf(v);
+                        sb.append(' ').append(f.getName()).append('=')
+                          .append(sv, 0, Math.min(sv.length(), 400));
+                        printed++;
+                    } catch (Throwable ignore) { }
+                }
+                c = c.getSuperclass();
+            }
+        }
+        String out = sb.toString();
+        return out.substring(0, Math.min(out.length(), 3000));
+    }
+'''
+
+
+def capture_receivers(check_body: str) -> str:
+    """Insert `__rcv.put("var", var);` after every locally-constructed
+    object — mechanical, pattern-scoped, fail-closed (no match, no
+    capture, no state print; the firing still carries its message and
+    consumed inputs). The captured objects' state is what the reference
+    needs to be evaluated AT THE FIRING (8.4x p1b's input)."""
+    return re.sub(
+        r'([A-Za-z_][\w.<>\[\]]*\s+(\w+)\s*=\s*new\s+[A-Z]\w*\s*\([^;]*\)\s*;)',
+        r'\1 __rcv.put("\2", \2);',
+        check_body or '')
+
+
 def _screen_harness_source(package: Optional[str],
                            imports: List[str],
                            class_name: str,
@@ -153,7 +219,10 @@ def _screen_harness_source(package: Optional[str],
         '',
         f'public class {class_name} ' + '{',
         '    static long checked = 0, violated = 0;',
-    ] + (['    static int firePrints = 0;', _RECORDING_FDP]
+    ] + (['    static int firePrints = 0;',
+          '    static final java.util.LinkedHashMap<String, Object> __rcv =',
+          '        new java.util.LinkedHashMap<>();',
+          _RECORDING_FDP, _STATE_PRINTER]
          if record_firings else []) + [
         '    static {',
         '        Runtime.getRuntime().addShutdownHook(new Thread(() ->',
@@ -163,7 +232,7 @@ def _screen_harness_source(package: Optional[str],
         '',
         '    private static void runCheck(FuzzedDataProvider data)'
         ' throws Exception {',
-        check_body,
+        capture_receivers(check_body) if record_firings else check_body,
         '    }',
         '',
         '    public static void fuzzerTestOneInput(FuzzedDataProvider data)'
@@ -172,6 +241,7 @@ def _screen_harness_source(package: Optional[str],
     ] + ([
         '        RecFDP rec = new RecFDP(data);',
         '        data = rec;',
+        '        __rcv.clear();',
     ] if record_firings else []) + [
         '        try {',
         '            runCheck(data);',
@@ -192,7 +262,8 @@ def _screen_harness_source(package: Optional[str],
         '                if (firePrints < 5) { firePrints++;',
         '                    System.err.println("[relfire] "',
         '                        + m.substring(0, Math.min(m.length(), 400))',
-        '                        + " __consumed=" + ((RecFDP) data).consumed());',
+        '                        + " __consumed=" + ((RecFDP) data).consumed()',
+        '                        + __rcvState());',
         '                }',
     ] if record_firings else []) + [
         '            }',

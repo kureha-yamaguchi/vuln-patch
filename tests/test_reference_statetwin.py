@@ -1936,3 +1936,36 @@ def test_replay_conviction_carries_the_real_firing():
     i = src.index("[replay-on-patched, {f['tier']} tier]")
     seg = src[i - 600:i + 300]
     assert "fired_lines" in seg and '_fline' in seg
+
+
+# ---------------------------------------------------------------------------
+# 8.4x recording half, part 2: receiver capture + state printing. VM smoke
+# (jazzer-api-0.22.1, real javac + JVM) printed the complete line:
+# [relfire] relation demo violated: actual=100.0 expected=100.0
+#   __consumed=100|1.0 __rcvstate dist:Demo n=100 w=1.0 arr=[1.0, 2.0]
+# -- the thrown message, the consumed inputs, and the receiver's state BY
+# FIELD NAME: everything the gate needs to evaluate the admitted reference
+# AT THE FIRING (p1b's input), recorded mechanically.
+# ---------------------------------------------------------------------------
+
+def test_capture_receivers_tags_local_constructions():
+    from java.relations.relation_screen import capture_receivers
+    body = ('        int N = data.consumeInt(1, 100);\n'
+            '        HypergeometricDistribution dist = '
+            'new HypergeometricDistribution(N, m, n);\n'
+            '        double actual = dist.getNumericalMean();\n')
+    out = capture_receivers(body)
+    assert '__rcv.put("dist", dist);' in out
+    # Non-constructions untouched; fail-closed on no match.
+    assert capture_receivers('int x = 3;') == 'int x = 3;'
+    assert capture_receivers('') == ''
+
+
+def test_state_printer_rides_only_the_record_variant():
+    from java.relations.relation_screen import _screen_harness_source
+    body = '        Foo f = new Foo(1);\n'
+    rec = _screen_harness_source(None, [], 'R', body, record_firings=True)
+    plain = _screen_harness_source(None, [], 'R', body)
+    assert '__rcvState()' in rec and '__rcv.put("f", f);' in rec
+    assert '__rcv.clear();' in rec            # per-input reset
+    assert '__rcv' not in plain

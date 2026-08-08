@@ -1681,10 +1681,20 @@ compiles clean against jazzer-api-0.22.1 (-encoding UTF-8, nested class
 and all) and the runtime smoke prints `[relfire] relation demo
 violated: n=100 x=1.0 arr=[1.0, 2.0] __consumed=100|1.0`. Buggy-side
 screening counting is byte-semantics-identical (non-record variant;
-pinned by test). 813 passed, 7 skipped. REMAINING for 8.4x: p1b — gate-
-side input replay (map __consumed / recorded state to the admitted
-reference's parameters, run at the firing's input, void/corroborate) —
-next session, with the offline gates from the design note.
+pinned by test). 813 passed, 7 skipped. RECORDING HALF COMPLETE (same day): part 2 adds RECEIVER CAPTURE
+(`capture_receivers`: `__rcv.put` after every locally-constructed
+object, pattern-scoped, fail-closed) and a reflection STATE PRINTER —
+on a firing the line now carries the receiver's primitive/array fields
+BY NAME. VM smoke, real javac+JVM: `[relfire] relation demo violated:
+actual=100.0 expected=100.0 __consumed=100|1.0 __rcvstate dist:Demo
+n=100 w=1.0 arr=[1.0, 2.0]`. 815 passed, 7 skipped. REMAINING for
+8.4x: p1b — the GATE-SIDE decision logic (map __rcvstate fields to the
+admitted reference's parameters, run at the firing's state,
+void/corroborate). Deliberately AFTER the next mechanism roll: the
+recorded corpus predates state-carrying firings, so p1b's decision
+rules get designed against the first roll's REAL recorded lines — the
+design-against-real-material rule that every sound fix this month
+followed.
 **COORDINATION NOTE (standing until invdiv lands): the VM stays at
 32b5787 behavior (the A/B baseline); invention_diversity.cases was
 copied surgically. DO NOT push-to-vm until the invdiv suite has
