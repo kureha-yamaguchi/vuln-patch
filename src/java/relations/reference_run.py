@@ -21,7 +21,7 @@ import re
 import subprocess
 from typing import Dict, List, Optional, Tuple
 
-from java.relations.evidence_facts import observed_values
+from java.relations.evidence_facts import _METHOD_BODY_OPEN, observed_values
 
 
 def _java_string(expr: str) -> str:
@@ -505,7 +505,10 @@ def fields_read_by(class_context, method, canonical=None):
     canonical = canonical if canonical is not None else canonical_state(
         class_context)
     by_name = {n: t for t, n in canonical}
-    m = _re.search(r'\b' + _re.escape(method) + r'\s*\([^)]*\)\s*\{',
+    # Shared header tail (stage-2 roll 2): a throws clause between the
+    # parameter list and the brace made 93.5% of throws-declaring methods
+    # invisible to the old `\)\s*\{` shape.
+    m = _re.search(r'\b' + _re.escape(method) + _METHOD_BODY_OPEN,
                    class_context)
     if not m:
         return []

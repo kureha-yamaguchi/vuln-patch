@@ -131,7 +131,12 @@ def disputed_observables(fired_msg: str, code_context: str,
     for n in _METHOD_CALL_RE.findall(str(check_source or '')):
         if n not in names and n not in _UNINTERESTING_METHODS:
             names.append(n)
-    return [n for n in names if _method_body(code_context, n)]
+    # max_chars=None: this is an EXISTENCE check, not a quoting decision.
+    # Stage-2 roll 2: a 1,518-char patched body was invisible to the
+    # reference chain purely because of the 900-char prompt-budget cap —
+    # a constant that belongs to the quoting path alone.
+    return [n for n in names
+            if _method_body(code_context, n, max_chars=None)]
 
 
 def enumerate_observables(msg: str) -> Dict[str, List[str]]:

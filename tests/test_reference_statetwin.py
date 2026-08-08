@@ -1724,3 +1724,60 @@ def test_chain_passes_the_check_source_at_both_doors():
     i = src.index('def _reference_impl_fact')
     body = src[i:i + 3000]
     assert 'check_source=check_source' in body
+
+
+# ---------------------------------------------------------------------------
+# Stage-2 roll 2: the patched method's full body was in the context and
+# _method_body returned None for TWO independent reasons — the throws
+# clause between the parameter list and the brace (976 throws-clause
+# definitions in the untruncated fixture corpus, 913 invisible: 93.5%),
+# and the 900-char QUOTING cap applied to an EXISTENCE check (this body is
+# 1,518 chars). Two locks on one door; fixing either alone changed nothing.
+# ---------------------------------------------------------------------------
+
+THROWS_BODY = ('    public int inverseCumulativeProbability(final double p) '
+               'throws OutOfRangeException {\n'
+               + '        cumulative += probability(x);   // padding line\n'
+               * 28
+               + '        return x;\n    }')
+THROWS_CTX = ('public class HypergeometricDistribution {\n'
+              '  private int numberOfSuccesses;\n'
+              + THROWS_BODY + '\n'
+              '  public double getNumericalMean() { … }\n'
+              '}')
+
+
+def test_throws_clause_methods_are_visible_to_every_matcher():
+    from java.relations.evidence_facts import _method_body, _defined_methods
+    assert len(THROWS_BODY) > 900          # both locks genuinely engaged
+    # Quoting path: still capped (this body must NOT ride into a prompt).
+    assert _method_body(THROWS_CTX, 'inverseCumulativeProbability') is None
+    # Existence path: visible.
+    body = _method_body(THROWS_CTX, 'inverseCumulativeProbability',
+                        max_chars=None)
+    assert body is not None and 'cumulative += probability' in body
+    assert 'inverseCumulativeProbability' in _defined_methods(THROWS_CTX)
+
+
+def test_detector_sees_the_throws_declaring_patched_method():
+    from java.relations.reference_impl import disputed_observables
+    fired = ('[oracle:x] semantic mismatch: inverseCumulativeProbability '
+             'returned -50')
+    got = disputed_observables(fired, THROWS_CTX)
+    assert 'inverseCumulativeProbability' in got
+    # The elided-body decline is unchanged.
+    assert disputed_observables(
+        '[oracle:x] mismatch: getNumericalMean wrong', THROWS_CTX) == []
+
+
+def test_fields_read_by_reads_through_a_throws_clause():
+    canon = rr.canonical_state(THROWS_CTX)
+    reads = rr.fields_read_by(THROWS_CTX, 'inverseCumulativeProbability',
+                              canon)
+    # The body references no canonical field by name here; the point is
+    # that the HEADER matched (empty is fine, None/crash is not).
+    assert isinstance(reads, list)
+    src_ctx = THROWS_CTX.replace('probability(x)', 'numberOfSuccesses')
+    reads = rr.fields_read_by(src_ctx, 'inverseCumulativeProbability',
+                              rr.canonical_state(src_ctx))
+    assert [n for _t, n in reads] == ['numberOfSuccesses']

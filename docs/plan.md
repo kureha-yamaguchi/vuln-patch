@@ -1400,6 +1400,39 @@ quiet after the pair. 8.19 (anchored generation) is generation-side and
 CANNOT be fixture-validated — its own later batch, never bundled into this
 pair.
 
+### 8.26 THE THROWS-CLAUSE + QUOTING-CAP REACH REPAIR — built 2026-08-08 (stage-2 roll 2's finding)
+Stage-2 roll 2 (stage2b, raw 502928c, read ed9b1f4): perfect score
+(TP=1 FP=0 — the Math-65 TN is the lottery again, 0 gate events, not
+banked), gates S2-c/S2-d still unmet, stage 4 does not fire; rule 7
+applied — no third draw, fix the measured constraint. The constraint:
+the patched method's FULL body was in the context and `_method_body`
+returned None for TWO independent reasons. (1) THROWS — the header
+matcher required the brace to follow the parameter list; `throws
+OutOfRangeException {` made 913 of 976 throws-declaring definitions in
+the untruncated fixture corpus invisible (93.5%) — the largest measured
+reach constraint yet found, and the SIXTH check-your-matcher instance.
+(2) THE CAP — the 900-char QUOTING budget applied to an EXISTENCE check
+(this body is 1,518 chars). Two locks on one door; either alone changed
+nothing. FIXED: one shared `_METHOD_BODY_OPEN` header tail used by
+`_defined_methods`, `_method_body` and `fields_read_by`; `_method_body`
+gains `max_chars` (quoting path keeps its 900 default — judge prompts
+unchanged; the detector passes None). Fixtures modeled on the real
+blocked method, both locks tested separately and together; elided-body
+declines unchanged. Suite 807/7; corpus scan unchanged (3 voids, no
+regression); full rewalk8 replay green on stage2b's OWN artifacts — a
+THIRD independent generation, one ulp off the earlier two on the errors
+vector, absorbed by per-element agreement exactly as designed.
+**OPEN AT THE GATE (not decided unilaterally): even with both locks
+fixed, Math-2's S2-c stays blocked — the DISPUTED method
+(getNumericalMean) is not the PATCHED method, so its body is elided by
+the context assembler's only-patched-methods-keep-bodies rule, and the
+detector's body-shown requirement drops it. Whether the reference chain
+should require the disputed body AT ALL (the generator never sees it —
+information rule; the mapper degrades gracefully to []) or whether the
+context assembler should keep fired-named methods' bodies too, is a
+design decision with judge-prompt-size and information-rule
+implications. Decide before stage-2 roll 3.**
+
 ### 8.19 Buggy-anchored check generation — design doc first, the unowned big one
 **Target:** stations 2–4 (`relation_synth.py` + harness codegen prompts),
 consuming 8.3's recorded buggy-side values.

@@ -1124,11 +1124,20 @@ _WORD_RE = re.compile(r'[A-Za-z][A-Za-z0-9]{3,}')
 #: name, so `chiSquare` finds `getChiSquare`.
 _ACCESSOR_PREFIXES = ('get', 'is', 'has', 'compute', 'calculate')
 
+#: A Java method header's tail: parameter list, optional THROWS clause, body
+#: brace. Stage-2 roll 2 measured the miss of the old `\)\s*\{` shape: 976
+#: throws-clause definitions in the untruncated fixture corpus, 913 of them
+#: invisible (93.5%) — `public int inverseCumulativeProbability(final double
+#: p) throws OutOfRangeException {` simply did not exist to any matcher
+#: built on it. Sixth instance of the check-your-matcher lesson, so the
+#: tail lives HERE once and every header matcher shares it.
+_METHOD_BODY_OPEN = r'\s*\([^)]*\)\s*(?:throws\s+[\w.$\s,]*?)?\{'
+
 
 def _defined_methods(source):
     """Names of methods that have a REAL (non-elided) body in ``source``."""
     out = []
-    for m in re.finditer(r'\b([a-zA-Z_][A-Za-z0-9_]*)\s*\([^)]*\)\s*\{',
+    for m in re.finditer(r'\b([a-zA-Z_][A-Za-z0-9_]*)' + _METHOD_BODY_OPEN,
                          str(source or '')):
         name = m.group(1)
         if name not in out and name not in _UNINTERESTING_METHODS:
@@ -1165,15 +1174,21 @@ def _methods_named_by(fired_msg, code_context):
     return names
 
 
-def _method_body(source, name):
+def _method_body(source, name, max_chars=_MAX_QUOTED_BODY):
     """The verbatim body of ``name`` in ``source``, or None.
 
     None when the method is absent, when its body was elided to ``{ … }``, or
-    when it is longer than the quoting cap. Brace-matched, so a nested block does
-    not truncate the body early. Pure."""
+    when it is longer than ``max_chars``. Brace-matched, so a nested block does
+    not truncate the body early. Pure.
+
+    ``max_chars`` defaults to the QUOTING cap — right for the quoting path
+    (this body rides into a judge prompt) and wrong for an EXISTENCE check:
+    stage-2 roll 2 found a 1,518-char patched body invisible to the
+    reference chain's detector purely because of a prompt-budget constant.
+    Existence callers pass ``max_chars=None``."""
     if not source or not name:
         return None
-    for m in re.finditer(r'\b' + re.escape(name) + r'\s*\([^)]*\)\s*\{',
+    for m in re.finditer(r'\b' + re.escape(name) + _METHOD_BODY_OPEN,
                          str(source)):
         start = m.end() - 1           # at the opening brace
         depth, i, n = 0, start, len(source)
@@ -1190,7 +1205,7 @@ def _method_body(source, name):
         body = source[start:i + 1]
         if _ELIDED_BODY_RE.match(body):
             continue                  # `{ … }` — nothing shown to quote
-        if len(body) > _MAX_QUOTED_BODY:
+        if max_chars is not None and len(body) > max_chars:
             continue
         return (source[m.start():start] + body).strip()
     return None

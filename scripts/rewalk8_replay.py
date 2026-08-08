@@ -32,12 +32,12 @@ from java.relations import reference_run as rr                     # noqa: E402
 from java.relations.reference_impl import (                        # noqa: E402
     pin_check, pins_for_disputed, screen_reference, test_corroboration_pins)
 
-CO = ('/home/code/scratch/co/ladder1l_20260807_185007/'
+CO = ('/home/code/scratch/co/stage2b_20260808_063833/'
       '01_patch1-Math-65-CapGen_c/Math_65_buggy')
 
-# Recorded by the chain in ladder1l's (roll 11's) trace — verbatim.
-SIG = ('double[][] jacobian, int rows, int cols, double[] residuals, '
-       'double[] residualsWeights')
+# Recorded by the chain in stage2b's (stage-2 roll 2's) trace — verbatim.
+SIG = ('double[][] jacobian, double[] residuals, double[] residualsWeights, '
+       'double cost, int rows, int cols')
 MATCHED = {'getChiSquare': 'getChiSquare', 'getCovariances': 'getCovariances',
            'getRMS': 'getRMS', 'guessParametersErrors': 'guessParametersErrors'}
 SIBLINGS = ['getCovariances', 'getEvaluations', 'getIterations',
