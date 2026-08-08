@@ -1478,6 +1478,32 @@ hard stop, S4-b Math-30 attributable evidence, S4-c Math-2 regression
 (lost catch = hard stop), S4-d Math-65 attribution rule, S4-e zero
 facts from discards, S4-f rule 7, plus pre-registered denominators
 (admission rate, cost/leg, both signs).*
+*STAGE-4 ROLL 1 (2026-08-08, raw 8bde6bc, read 2a6183f): S4-a no
+trigger (clean leg: 0 facts/admissions/voids; its accusation is real but
+not ours), S4-c PASS (Math-2 fact re-emitted, catch intact), S4-e PASS
+(8 discards, zero leaks — gate (b) now 18-for-18), S4-d held. S4-b
+PARTIAL: Math-30's chain ran twice and banked nothing — one honest cheap
+death (mannWhitneyUTest, too thin to screen, killed before the JVM) and
+one FALSE TRIGGER: `_method_declared` accepted a CALL as a declaration
+(`return 2*standardNormal.cumulativeProbability(z);` ends in `);` and
+satisfied the `[{;]` tail; fixture scope 3,858/18,496 = 20.9% calls).
+Fixed same day (f8e4b52): a declaration's name is preceded by its return
+type — type-ish token + whitespace, never a receiver dot; `return
+foo(x);` excluded by keyword; verbatim fixture. Fail-closed held (spend
+and noise, never a fact). **THE FINDING WEIGHTED ABOVE EVERYTHING: the
+STATELESS-RECEIVER CEILING.** MannWhitneyUTest takes its data as
+arguments and keeps no computable sibling state — screening surface 0
+vs bar 3: no reference for such a class can EVER be admitted, however
+good. Both admissions on record are stateful receivers. The mechanism's
+reach tracks RECEIVER STATEFULNESS, not bug difficulty. Admission rate
+2/10 triggered (20%), cost 131-250k/leg. AGREEMENT SIDE: still
+untested, NOT refuted — Math-30 never reached it. **ROLL-2 SELECTION
+(decision recorded): shape-selected — Math-30 out (shape-blocked;
+exact-arithmetic test deferred), Math-2-c (SOFix) in: the agreement
+test on the ONE class where admission is proven, isolating the
+agreement question from the admission question. Cases + read doc
+amended; gates otherwise unchanged. Stage-4 roll 2 is GO.***
+
 
 ### 8.19 Buggy-anchored check generation — design doc first, the unowned big one
 **Target:** stations 2–4 (`relation_synth.py` + harness codegen prompts),
