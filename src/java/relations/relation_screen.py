@@ -74,15 +74,27 @@ _RECORDING_FDP = r'''
         void reset() { log.setLength(0); }
         String consumed() { return log.toString(); }
         private <T> T rec(T v) {
+            // invdiv read 817858f: positional unlabelled entries made
+            // `||3|5||` unreadable (empty strings invisible). Every entry
+            // now carries a type tag, and strings are quoted.
             if (log.length() < 1500) {
                 if (log.length() > 0) log.append('|');
                 String s;
-                if (v instanceof boolean[]) s = java.util.Arrays.toString((boolean[]) v);
-                else if (v instanceof byte[]) s = java.util.Arrays.toString((byte[]) v);
-                else if (v instanceof short[]) s = java.util.Arrays.toString((short[]) v);
-                else if (v instanceof int[]) s = java.util.Arrays.toString((int[]) v);
-                else if (v instanceof long[]) s = java.util.Arrays.toString((long[]) v);
-                else s = String.valueOf(v);
+                if (v instanceof boolean[]) s = "za:" + java.util.Arrays.toString((boolean[]) v);
+                else if (v instanceof byte[]) s = "ba:" + java.util.Arrays.toString((byte[]) v);
+                else if (v instanceof short[]) s = "ha:" + java.util.Arrays.toString((short[]) v);
+                else if (v instanceof int[]) s = "ia:" + java.util.Arrays.toString((int[]) v);
+                else if (v instanceof long[]) s = "la:" + java.util.Arrays.toString((long[]) v);
+                else if (v instanceof Boolean) s = "z:" + v;
+                else if (v instanceof Byte) s = "b:" + v;
+                else if (v instanceof Short) s = "h:" + v;
+                else if (v instanceof Integer) s = "i:" + v;
+                else if (v instanceof Long) s = "l:" + v;
+                else if (v instanceof Float) s = "f:" + v;
+                else if (v instanceof Double) s = "d:" + v;
+                else if (v instanceof Character) s = "c:" + v;
+                else if (v instanceof String) s = "q:\"" + v + "\"";
+                else s = "o:" + String.valueOf(v);
                 log.append(s, 0, Math.min(s.length(), 300));
             }
             return v;
@@ -185,10 +197,21 @@ def capture_receivers(check_body: str) -> str:
     object — mechanical, pattern-scoped, fail-closed (no match, no
     capture, no state print; the firing still carries its message and
     consumed inputs). The captured objects' state is what the reference
-    needs to be evaluated AT THE FIRING (8.4x p1b's input)."""
+    needs to be evaluated AT THE FIRING (8.4x p1b's input).
+
+    THE INVDIV DEFECT (read 817858f): zero `__rcvstate` across nine
+    traces. The first pattern required `Type var = new Uppercase(...)`
+    in one statement — production checks construct FULLY-QUALIFIED
+    (`new org.apache.commons.math3...`, lowercase package first) and
+    often SPLIT declaration from assignment (`Foo dist; ... dist = new
+    Foo(...);` — the verbatim Math-2 shape). The smoke test used `new
+    Demo(...)` and exercised neither. Seventh check-your-matcher
+    instance. Now: the assignment form `var = new <qualified>(...)` is
+    the anchor (it covers both shapes) and the qualified name may start
+    with a package segment."""
     return re.sub(
-        r'([A-Za-z_][\w.<>\[\]]*\s+(\w+)\s*=\s*new\s+[A-Z]\w*\s*\([^;]*\)\s*;)',
-        r'\1 __rcv.put("\2", \2);',
+        r'\b(\w+)(\s*=\s*new\s+[A-Za-z_][\w.]*\s*(?:<[^;()]*>)?\s*\([^;]*\)\s*;)',
+        r'\1\2 __rcv.put("\1", \1);',
         check_body or '')
 
 

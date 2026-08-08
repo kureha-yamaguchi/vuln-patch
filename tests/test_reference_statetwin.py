@@ -1969,3 +1969,42 @@ def test_state_printer_rides_only_the_record_variant():
     assert '__rcvState()' in rec and '__rcv.put("f", f);' in rec
     assert '__rcv.clear();' in rec            # per-input reset
     assert '__rcv' not in plain
+
+
+# ---------------------------------------------------------------------------
+# invdiv read 817858f: zero __rcvstate across nine traces. The capture
+# pattern required `Type var = new Uppercase(...)` in one statement;
+# production constructs FULLY-QUALIFIED and SPLIT declaration from
+# assignment (the verbatim Math-2 shape). Seventh check-your-matcher
+# instance. VM-revalidated on the verbatim shapes:
+# ... __consumed=i:100|i:100|q:"s" __rcvstate dist:Dist populationSize=100 ...
+# ---------------------------------------------------------------------------
+
+def test_capture_handles_split_declaration_and_qualified_constructors():
+    from java.relations.relation_screen import capture_receivers
+    # The verbatim production shape that produced zero captures.
+    body = ('        org.apache.commons.math3.distribution.'
+            'HypergeometricDistribution dist;\n'
+            '        double actual;\n'
+            '        try {\n'
+            '            dist = new org.apache.commons.math3.distribution.'
+            'HypergeometricDistribution(N, m, n);\n'
+            '            actual = dist.getNumericalMean();\n'
+            '        } catch (Exception e) { return; }\n')
+    out = capture_receivers(body)
+    assert '__rcv.put("dist", dist);' in out
+    # Combined declaration still captured; generics too.
+    assert '__rcv.put("list", list);' in capture_receivers(
+        'java.util.List<Double> list = new java.util.ArrayList<Double>();')
+    # No construction, no insertion.
+    assert capture_receivers('actual = dist.getNumericalMean();') == \
+        'actual = dist.getNumericalMean();'
+
+
+def test_consumed_entries_are_typed_and_strings_quoted():
+    from java.relations.relation_screen import _RECORDING_FDP
+    # invdiv's `||3|5||` unreadability: every entry tagged, strings quoted
+    # so an empty string is a visible q:"" instead of nothing.
+    assert '"i:" + v' in _RECORDING_FDP
+    assert '"d:" + v' in _RECORDING_FDP
+    assert 'q:\\"' in _RECORDING_FDP

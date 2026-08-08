@@ -1701,6 +1701,35 @@ copied surgically. DO NOT push-to-vm until the invdiv suite has
 launched or completed — p1a changes replay behavior and would
 contaminate the A/B.**
 
+### 8.30 INVDIV COMBINED RUN — read 817858f (2026-08-08); capture defect fixed same day
+**Fail-closed clear:** zero VOIDs, zero facts from discards (facts only
+on the two admitting Math-65 draws vs 14 discards elsewhere).
+**INVENT-MORE (the only baseline-comparable read): Chart-19's killer
+family responded strongly** — range-axis checks from 2-of-3 draws at
+1-2 checks each to 3-of-3 at 6-7. Clean -n 8 attribution (upstream of
+the recording). **AND the within-run finding that matters more: draw
+05 carried SIX range-axis checks and crashed ZERO patched harnesses —
+inventing the right family, in quantity, did not convert the miss.**
+The bottleneck moved downstream of invention: check shape or
+fuzz-input reach. Sharpens invent-more-vs-select-better: count alone
+is insufficient. QUEUED DESK READ (free): why draw 05's six checks
+never fired on patched. Lang-63 (3/3→2/3) and Math-65's name-count
+drop are unreadable at n=3 draws. Outcomes recorded, not compared,
+nothing banked, per the narrowed pre-registration.
+**P1B CORPUS, half-collected:** 15 [relfire] lines with typed inputs —
+but `__rcvstate` 0-of-9 traces. COLLECTION DEFECT (seventh
+check-your-matcher): the capture pattern required `Type var = new
+Uppercase(...)` in ONE statement; production constructs are
+FULLY-QUALIFIED (lowercase package first) and SPLIT declaration from
+assignment — the verbatim Math-2 shape, present in our own test
+fixtures all along. FIXED: assignment-form anchor covers both shapes,
+qualified names allowed; PLUS typed consumed labels (i:/d:/q:"...") so
+`||3|5||` positional blanks are readable. VM-revalidated on the
+verbatim shapes: `__consumed=i:100|i:100|q:"s" __rcvstate dist:Dist
+populationSize=100 successes=100 cache=[100.0, 100.0]`. 817 passed, 7
+skipped. The p1b corpus re-collects on the next mechanism roll; p1b's
+design waits for it.
+
 ### 8.27 SHAPE-ADAPTIVE SCREENING for stateless receivers — design sketch only
 The stateless-receiver ceiling is population-measured (11/27 discards,
 all Closure/Time). But the ROLL-4 LESSON INVERTS for pure utilities: the
