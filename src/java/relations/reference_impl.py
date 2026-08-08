@@ -54,7 +54,7 @@ import re
 from typing import Dict, List, Optional, Tuple
 
 from java.relations.evidence_facts import (_close, _decode_java_literal,
-                                           _METHOD_CALL_RE, _method_body,
+                                           _METHOD_CALL_RE,
                                            _methods_named_by,
                                            _UNINTERESTING_METHODS,
                                            observed_values)
@@ -107,23 +107,28 @@ def too_thin_to_screen(matched_keys, siblings):
 
 def disputed_observables(fired_msg: str, code_context: str,
                          check_source: Optional[str] = None) -> List[str]:
-    """Methods the firing names whose real body is shown — the trigger.
-
-    Deliberately the SAME detector `disputed_computation_fact` already uses, so
-    this mechanism's reach is a measured property of existing code rather than
-    a new guess. Measured on cases228: 58 of 228 rows (25.4%), 9 bugs.
+    """Methods the firing (or its check) names that the context DECLARES.
 
     STAGE 2 (Math-2, the first held-out bug): reach was ZERO, and the trace
     said why — the kept relation's check CALLS `dist.getNumericalMean()` and
-    recomputes the documented mean (the exact dispute the leg exists for,
-    body shown in the context), but its fired MESSAGE prints only
-    `actual=.. expected=..`, and the detector read only the message. The
-    check SOURCE is the same artifact the judge already receives, so
-    scanning it adds no new authority: methods it CALLS (exact call syntax,
-    the narrow matcher — never substrings) join the candidates. The
-    body-shown requirement is unchanged and still fails closed: Math-2's
-    harness firings name `sample`, whose body the context elides, and they
-    still decline.
+    recomputes the documented mean (the exact dispute the leg exists for),
+    but its fired MESSAGE prints only `actual=.. expected=..`, and the
+    detector read only the message. The check SOURCE is the same artifact
+    the judge already receives, so scanning it adds no new authority:
+    methods it CALLS (exact call syntax, the narrow matcher — never
+    substrings) join the candidates.
+
+    OPTION A (user decision 2026-08-08): the filter is DECLARED IN THE
+    CONTEXT, not body-shown. The body requirement was inherited from the
+    quoting feature (`disputed_computation_fact`, which pastes the body
+    into a judge prompt and KEEPS its own requirement) — but this chain
+    never quotes the body to anyone: the generator is FORBIDDEN it
+    (information rule), and the one internal consumer (`fields_read_by`,
+    ordering nameless parameters) already degrades to [] without it. The
+    old rule made the chain sit out every disputed != patched leg, because
+    the context assembler elides non-patched bodies — Math-2's shape.
+    The judge's prompts are untouched either way; a wrongly-started chain
+    ends in a reasoned discard at the screen, never in wrong evidence.
     """
     if not fired_msg or not code_context:
         return []
@@ -131,12 +136,20 @@ def disputed_observables(fired_msg: str, code_context: str,
     for n in _METHOD_CALL_RE.findall(str(check_source or '')):
         if n not in names and n not in _UNINTERESTING_METHODS:
             names.append(n)
-    # max_chars=None: this is an EXISTENCE check, not a quoting decision.
-    # Stage-2 roll 2: a 1,518-char patched body was invisible to the
-    # reference chain purely because of the 900-char prompt-budget cap —
-    # a constant that belongs to the quoting path alone.
-    return [n for n in names
-            if _method_body(code_context, n, max_chars=None)]
+    return [n for n in names if _method_declared(code_context, n)]
+
+
+def _method_declared(code_context, name) -> bool:
+    """A declaration for `name` exists in the context — signature visible;
+    the body may be shown, elided (`{ … }`), or abstract (`;`). Absence
+    still declines: a name the context does not declare is not this
+    class's dispute."""
+    if not code_context or not name:
+        return False
+    return bool(re.search(
+        r'\b' + re.escape(name)
+        + r'\s*\([^)]*\)\s*(?:throws\s+[\w.$\s,]*?)?[{;]',
+        str(code_context)))
 
 
 def enumerate_observables(msg: str) -> Dict[str, List[str]]:

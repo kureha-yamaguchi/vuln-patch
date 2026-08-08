@@ -1706,14 +1706,17 @@ def test_detection_reads_the_check_source_not_only_the_message():
     assert 'getNumericalMean' in got
 
 
-def test_detection_still_declines_elided_bodies():
+def test_option_a_detects_declared_methods_and_declines_absent_ones():
     from java.relations.reference_impl import disputed_observables
-    # Math-2's harness firings name `sample`; its body is elided — the
-    # fail-closed decline is unchanged, message or source.
+    # OPTION A (user decision 2026-08-08): an elided declaration is enough
+    # — Math-2's `sample` firings now trigger (the chain's own validators
+    # decide admission), and the disputed != patched shape is reachable.
     fired = '[oracle:seed-sample-lower] semantic mismatch: sample=-50'
-    assert disputed_observables(fired, MATH2_CTX) == []
+    assert 'sample' in disputed_observables(fired, MATH2_CTX)
+    # A name the context does not declare still declines.
     assert disputed_observables(
-        fired, MATH2_CTX, check_source='int s = dist.sample();') == []
+        '[oracle:x] mismatch: fooBarBaz=3', MATH2_CTX,
+        check_source='int q = obj.fooBarBaz();') == []
 
 
 def test_chain_passes_the_check_source_at_both_doors():
@@ -1765,9 +1768,11 @@ def test_detector_sees_the_throws_declaring_patched_method():
              'returned -50')
     got = disputed_observables(fired, THROWS_CTX)
     assert 'inverseCumulativeProbability' in got
-    # The elided-body decline is unchanged.
-    assert disputed_observables(
-        '[oracle:x] mismatch: getNumericalMean wrong', THROWS_CTX) == []
+    # OPTION A: the elided getNumericalMean is DECLARED, so it detects too
+    # — this is Math-2's disputed != patched shape, the decision's point.
+    got = disputed_observables(
+        '[oracle:x] mismatch: getNumericalMean wrong', THROWS_CTX)
+    assert 'getNumericalMean' in got
 
 
 def test_fields_read_by_reads_through_a_throws_clause():

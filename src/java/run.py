@@ -127,8 +127,8 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     if not disputed:
         _re('deterministic', method='reference-impl', target='detect',
             output='no disputed observable',
-            reason='the firing names no method whose body is shown; the '
-                   'mechanism has nothing to reimplement')
+            reason='the firing (and its check) names no method the context '
+                   'declares; the mechanism has nothing to reimplement')
         return None
     method = disputed[0]
     # The chain is expensive (a generation plus three JVM runs) and BOTH judge
