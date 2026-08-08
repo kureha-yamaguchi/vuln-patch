@@ -1730,6 +1730,34 @@ populationSize=100 successes=100 cache=[100.0, 100.0]`. 817 passed, 7
 skipped. The p1b corpus re-collects on the next mechanism roll; p1b's
 design waits for it.
 
+### 8.32 THE DRAW-05 DESK READ — answered 2026-08-08 (free, queued in 8.30); the miss is INPUT REACH, not invention
+The 8.30 framing was WRONG and the correction matters. The catching
+draw's (04) actual patched-build crashes were NOT range-axis checks:
+they were (a) `domain-axis-index-null-independent` — expected exception,
+patched "completed normally" — and (b) `state-get-after-set`, a list
+identity probe firing at index=0. The Arja patch touches
+`AbstractObjectList` (the storage under the axes), so (b) is the most
+direct probe of the patched code. THE MISS DRAW (05) INVENTED
+EVERYTHING: 4 domain-null oracles, 25 list-family oracles — RICHER than
+draw 04 — an objectlist probe rode an accepted harness, and 16
+relations including the family replayed DIRECTLY on patched. All
+quiet. Conclusion, three eliminations deep: not invention (families
+present in quantity), not harness-acceptance selection (probes reached
+the patched build both ways), but INPUT REACH — the overfit patch
+breaks the list only under specific input trajectories; draw 04's
+fuzzer found one, draw 05's did not, and the relation replay's fixed
+probe shapes did not either. **The recall lever after invent-more is
+therefore PATCHED-SIDE INPUT SEARCH** — candidate designs (parked, not
+built): within-leg cross-harness corpus seeding (allowed: within-run
+sharing), boundary-value seed corpora for list/index probes, larger
+patched-fuzz budgets on quiet overfit legs. Each is a design decision
+with cost implications; none written against n=1 evidence. The
+invent-more config question resolves cleanly now: -n 8 raised
+invention (measured) but invention was never draw 05's constraint —
+HOLD -n at 5 pending an input-reach experiment, and the
+invent-more-vs-select-better question is superseded by
+reach-the-broken-region.
+
 ### 8.31 FIRST STATE-CARRYING ROLL — corpus 2feb27d (2026-08-08); collection gaps fixed same day
 **Safety clear** (Math-2 caught, zero VOIDs, Math-53 silent, zero facts
 from 15 discards — gate (b) unbroken). **The recording works**:
