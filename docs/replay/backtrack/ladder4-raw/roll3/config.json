@@ -1,0 +1,10 @@
+{
+  "suite": "stage4r3",
+  "stamp": "20260808_163007",
+  "cases_file": "/home/code/experiments-vuln-patch/suites/cases/ladder_stage4.cases",
+  "model": "gpt-5.4",
+  "common_flags": "-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl",
+  "git_sha": "2998de4",
+  "n_cases": 10,
+  "cases": ["-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch","-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch","-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch","-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-53-Arja.patch","-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch","-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-39-Arja.patch","-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch","-c patchfile:/home/code/drr/Patches/Dcorrect/Elixir/Time/patch1-Time-4-Elixir.patch","-o patchfile:/home/code/drr/Patches/Doverfitting/SequenceR/Closure/patch1-Closure-92-SequenceR.patch","-o patchfile:/home/code/drr/Patches/Doverfitting/SequenceR/Closure/patch1-Closure-38-SequenceR.patch"]
+}
