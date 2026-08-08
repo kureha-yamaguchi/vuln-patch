@@ -1733,17 +1733,18 @@ design waits for it.
 ### 8.33 THE WITNESS STUDY — proposed 2026-08-08 (user direction: "check them and understand them"); exemplar verified
 **The dataset already contains ground-truth witnesses.** The drr repo
 ships DiffTGen and RGT results — the label-establishing tests, inputs
-included, per overfit patch. VERIFIED EXEMPLAR: the witness for
-patch1-Chart-19-Arja (the exact patch draw 05 missed) is
-`new AbstractObjectList(668); list.indexOf(null)` — a NON-DEFAULT
-CONSTRUCTOR CAPACITY plus a null probe, whose covered goals name the
-capacity-growth branches in `set`. Draw 05 had null probes and
-objectlist probes but built every object with DEFAULT constructors:
-the capacity-dependent branch was unreachable. The lacking input kind
-is ordinary — constructor scale/boundary parameter variation — and
-squarely inside the general generators already sketched (diff-derived
-boundary seeding would target the changed lines' size/capacity
-comparisons; the universal lattice covers wide-int constructor args).
+included, per overfit patch. VERIFIED EXEMPLAR (corrected 2026-08-08
+against witness + patch source — my first reading was WRONG): the
+witness for patch1-Chart-19-Arja is `new AbstractObjectList(668);
+indexOf((Object) null)`, and the patch adds `if (object == null) throw
+new IllegalArgumentException(...)` in `indexOf`. The DISTINGUISHER IS
+THE NULL ARGUMENT (correct throws IAE; overfit returns -1); the
+capacity 668 is INCIDENTAL — the list is empty, 668 never matters.
+So the lacking input kind is null-arg — the single most universal
+lattice atom — NOT constructor scale. That STRENGTHENS the generality
+story (a boundary lattice's first atom would produce it) but INVALIDATES
+the 8.32 draw-05 mechanism below, which must be re-examined: draw 05
+DID invent null probes.
 **THE STUDY (offline, read-only, assignment-ready):** for every
 overfit patch in the leg pool, read its DiffTGen/RGT witness and
 classify the distinguishing input KIND (constructor scale, null-arg,
@@ -1761,7 +1762,8 @@ like every mechanism before them. Using ground truth to EVALUATE and
 UNDERSTAND is the same legitimacy class as scoring runs against
 labels; using it to STEER a run is farming. The line sits between.
 
-### 8.32 THE DRAW-05 DESK READ — answered 2026-08-08 (free, queued in 8.30); the miss is INPUT REACH, not invention
+### 8.32 THE DRAW-05 DESK READ — answered 2026-08-08, then PARTLY INVALIDATED by 8.33's Chart-19 correction (see head note)
+**CORRECTION (2026-08-08):** 8.33 verified Chart-19's distinguisher is a NULL ARGUMENT to `indexOf`, not constructor scale — and draw 05 DID invent null probes (`domain-axis-null`, `lifted-domain-axis-null`) that went QUIET on the patched build. So "input reach, not invention" is not yet established: the null probes reached the build and stayed silent, which points at PROBE ROUTING (did the invented null probe actually reach `AbstractObjectList.indexOf`, or a different method?) rather than input-value reach. The list-identity probe (`state-get-after-set`) that DID crash draw 04 is a separate, second distinguisher. NEEDS A RE-READ against the corrected target before any input-search design rests on it. The eliminations below (not-invention, not-selection) still stand; the POSITIVE conclusion (input reach) does not.
 The 8.30 framing was WRONG and the correction matters. The catching
 draw's (04) actual patched-build crashes were NOT range-axis checks:
 they were (a) `domain-axis-index-null-independent` — expected exception,
