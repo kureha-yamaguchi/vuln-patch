@@ -1,0 +1,41 @@
+# FOUR-BUG MECHANISM ROLL, with the firing-state recording live (8.30 fix:
+# the receiver-capture matcher rebuilt around the real declaration shapes —
+# fully-qualified `new org.apache...` and declare-then-assign — after
+# __rcvstate came back empty in all nine invdiv runs).
+#
+# The stage-4 set, legs 1-4 of ladder_stage4.cases, settings unchanged from
+# previous stage-4 rolls (-n 5 -m 12) so the safety regressions stay
+# comparable to them:
+#
+#   Leg 1: Math-65 CORRECT (CapGen) — the false-accusation path; its replay
+#          convictions are the target sample for the corpus.
+#   Leg 2: Math-2  OVERFIT (Arja)   — the catch that must survive.
+#   Leg 3: Math-2  CORRECT (SOFix)  — the agreement side.
+#   Leg 4: Math-53 CORRECT (Arja)   — the live clean guard.
+#
+# THE DELIVERABLE IS THE CORPUS, NOT THE SCOREBOARD. Every alarm that fires
+# should now arrive carrying its full snapshot (message + __consumed= inputs,
+# typed and quoted + __rcvstate receiver numbers). Those recorded lines are
+# the material the gate's overrule/uphold rules get designed against.
+#
+# OUTCOMES ARE RECORD-ONLY AND NON-ATTRIBUTABLE: the recording change enriches
+# what reaches the judge AND the judge may decide differently as a result, so
+# no outcome shift may be credited to either. Standing dice rule (roll-13),
+# applied in advance.
+#
+# SAFETY REGRESSIONS THAT MUST HOLD (fail-closed, checked first):
+#   - Math-2 fake patch stays CAUGHT
+#   - zero `conviction VOIDED` on any fake patch  -> HARD STOP
+#   - Math-53 stays clean
+#   - zero facts from discarded references
+#
+# Success = a dozen-plus alarm lines with COMPLETE snapshots in the traces,
+# safety green. Nothing is fixed in-flight; defects are filed.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-53-Arja.patch"
+)
