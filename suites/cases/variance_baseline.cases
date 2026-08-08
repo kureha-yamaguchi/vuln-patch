@@ -1,0 +1,44 @@
+# VARIANCE BASELINE — measurement only, NO mechanism gates. 15 runs
+# (5 legs x 3 draws each), PARALLEL=6. ~2-3M tokens.
+#
+# WHY: every attribution argument this month ("record, don't bank")
+# leans on the lottery being real, but its SIZE has never been measured.
+# This suite draws each leg three times under IDENTICAL code (launch all
+# 15 from ONE sync — the sha is recorded per run) and reads, per leg:
+# the outcome distribution AND the STATION where draws diverge (harness
+# generation? fired-on-patched? judge verdict?). That localization is
+# the deliverable — it decides whether variance is attackable (e.g.
+# seed-pinning, a user-gated design question) and it gives stage 16 its
+# repeated-draws denominators.
+#
+# LEG SELECTION (by measured instability):
+#   Math-65-c   — flips FP/TN constantly; THE attribution nuisance.
+#   Math-2-SOFix-c — stable FP in the pairs, TN in stage rolls: which?
+#   Chart-26-c  — unstable FP/TN across the pairs.
+#   Chart-19-o  — unstable FN/TP across the pairs.
+#   Lang-63-o   — unstable trigger (1 then 0 judge calls).
+#
+# READ RULES: no gates pass or fail here. Mechanism events are recorded
+# (flags identical to ladder rolls) but facts/gate decisions are
+# DENOMINATOR data only. Raw before read, as always. Report format:
+# per-leg outcome table (3 draws), plus for each leg that diverged, the
+# first trace point where the draws differ.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+)
