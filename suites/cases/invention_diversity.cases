@@ -1,0 +1,37 @@
+# INVENTION-DIVERSITY A/B (the "invent more" arm) — measurement only.
+# 9 runs (3 unstable legs x 3 draws), PARALLEL=6, ~2-3M tokens.
+#
+# HYPOTHESIS (from the 8.29 variance baseline): a leg is unstable when
+# detection hinges on inventing ONE particular check, and the killer
+# check appears in SOME draws (Chart-19: 2 of 3). More independent
+# harnesses per run = more invention draws per run = the union should
+# stabilize detection. This arm raises -n 5 -> 8 (accepted harnesses)
+# and -m 12 -> 20 (attempt cap); EVERYTHING else identical to
+# variance_baseline.cases.
+#
+# BASELINE: varbase_20260808_183839 (8.29) — same three legs, 3 draws,
+# -n 5, code e9868f2. Compare OUTCOME DISTRIBUTIONS per leg, plus: did
+# the killer check family appear in more draws? Token cost per leg
+# recorded (the price of "invent more" is the point of the experiment).
+#
+# LAUNCH RULE: behavior-identical code to baseline matters. 32b5787
+# adds only per-run sha stamping (no behavior change) — launch from a
+# VM state whose VERSION is 32b5787 (or ask before launching if it has
+# moved past that: 8.4x behavior changes must NOT be in the binary).
+#
+# READ: no gates. Per leg: outcome table (3 draws) vs baseline's, the
+# oracle-set overlap across draws, whether the null-axis /
+# boundary-check family was invented, tokens per leg vs baseline.
+MODEL="gpt-5.4"
+COMMON="-n 8 -m 20 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+)
