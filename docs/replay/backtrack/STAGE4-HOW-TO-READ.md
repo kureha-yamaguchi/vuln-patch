@@ -21,7 +21,7 @@ material; more Math-65 draws are not.
 ```python
 import re
 LEGS = ['01_patch1-Math-65-CapGen_c', '02_patch1-Math-2-Arja-plausible_o',
-        '03_patch1-Math-30-CapGen_c', '04_patch1-Math-53-Arja_c']
+        '03_patch1-Math-2-SOFix_c', '04_patch1-Math-53-Arja_c']
 for leg in LEGS:
     t = f'runs-archive/runs/stage4_<stamp>/{leg}/trace.md'
     print('='*20, leg)
@@ -41,7 +41,7 @@ for leg in LEGS:
 | gate | leg | expectation |
 |---|---|---|
 | S4-a | Math-53 (clean) | **HARD STOP** on any accusation traceable to the reference fact or verdict gate. The mechanism must be invisible on a leg with nothing to dispute. An FP whose evidence chain does NOT touch the mechanism is recorded but is not this gate's failure. |
-| S4-b | Math-30 (correct) | The mechanism's evidence visibly present: chain events at minimum; if the leg convicts, the fact and/or gate events must appear beside the conviction. A TN banks for the mechanism ONLY with attributable events. Engagement, if any, attributed the roll-3 way: a value the judge could only have gotten from the fact. |
+| S4-b | Math-2-c (correct, roll-2 swap) | THE AGREEMENT-SIDE TEST, shape-selected onto the one class where admission is proven. Expect: chain admits, the fact's AGREEMENT side emits (reference computes what the patch computes), and — if the leg convicts — the verdict gate gets its first live decision points with an admitted reference on a correct patch. A TN banks for the mechanism ONLY with attributable events. Engagement attributed the roll-3 way: a value the judge could only have gotten from the fact. |
 | S4-c | Math-2 (overfit) | Catch retained AND zero voids — the stage-2 result must reproduce. A lost catch here is a HARD STOP (recall damage). |
 | S4-d | Math-65 (correct) | Attribution rule unchanged: record, don't bank. |
 | S4-e | all | Zero facts from discarded references (standing; 17-for-17 so far). |
@@ -54,7 +54,9 @@ for leg in LEGS:
 * Cost per leg (tokens), so the stage-8 decision has real economics.
 * BOTH SIGNS: catches gained/lost, accusations gained/lost vs the same
   legs' historical outcomes.
-* Math-30 specifics: does the twin handle a `long`/`BigInteger`-flavored
-  state? Does the reference use exact arithmetic where the buggy build
-  overflows? Any new literal/parse shape is one read, per the ladder's
-  defect discipline.
+* Math-2-c specifics: the reference should compute the DOCUMENTED mean —
+  which the correct patch also computes — so the disputed-point comparison
+  should read AGREEMENT. Any conviction on this leg is the Math-65 shape
+  on a second bug: the exoneration evidence exists and the question is
+  whether fact or gate moves the outcome. Both channels' events are the
+  read.

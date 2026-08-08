@@ -10,10 +10,14 @@
 #
 #   Leg 1: Math-65 CORRECT (CapGen)  — carried; attribution rule stands.
 #   Leg 2: Math-2  OVERFIT (Arja)    — regression of stage 2's result.
-#   Leg 3: Math-30 CORRECT (CapGen)  — the exact-arithmetic extension test:
-#          int-overflow dispute, where a doc-derived reference disagrees
-#          with int arithmetic exactly at overflow boundaries. The plan's
-#          own named test of the AGREEMENT side on fresh material.
+#   Leg 3: Math-2 CORRECT (SOFix)    — ROLL 2 SWAP, shape-selected: the
+#          agreement-side test on the ONE class where admission is PROVEN
+#          (same distribution receiver as the overfit leg: 6 computable
+#          siblings, chain ran end to end twice). Math-30 is out —
+#          measured shape-blocked (stateless utility receiver, 0 siblings,
+#          the screen bar is unreachable by class shape, not bug
+#          difficulty); its exact-arithmetic test is deferred until a
+#          stateful exact-arithmetic case exists.
 #   Leg 4: Math-53 CORRECT (Arja)    — the always-clean LIVE GUARD.
 #
 # PRE-REGISTERED GATES (before launch, per ladder rule):
@@ -21,9 +25,10 @@
 #          the reference fact or the verdict gate. Standing ladder rule —
 #          a clean-leg accusation traceable to the mechanism at ANY stage
 #          stops everything pending diagnosis.
-#   (S4-b) Math-30: the mechanism's evidence visibly present (chain events;
-#          if convicted, fact/gate evidence in the trace). A TN banks for
-#          the mechanism ONLY with attributable events (roll-13 rule).
+#   (S4-b) Math-2-c: the AGREEMENT-side test on the proven-admissible
+#          class — chain admits, agreement fact emits; if convicted, the
+#          gate gets its first live decisions with an admitted reference
+#          on a correct patch. A TN banks ONLY with attributable events.
 #   (S4-c) Math-2: catch retained AND zero voids (stage-2 regression).
 #   (S4-d) Math-65: attribution rule unchanged — record, don't bank.
 #   (S4-e) Zero facts from discarded references, all legs (standing).
@@ -36,6 +41,6 @@ COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --sy
 CASES=(
   "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
   "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
-  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-30-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch"
   "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-53-Arja.patch"
 )

@@ -139,17 +139,39 @@ def disputed_observables(fired_msg: str, code_context: str,
     return [n for n in names if _method_declared(code_context, n)]
 
 
+#: Words that can directly precede a method CALL but never a declaration's
+#: return type position: `return foo(x);` is a call, `double foo(x) {` is
+#: a declaration.
+_NOT_A_RETURN_TYPE = frozenset({
+    'return', 'new', 'throw', 'else', 'case', 'break', 'continue', 'do',
+    'while', 'if', 'assert', 'yield'})
+
+
 def _method_declared(code_context, name) -> bool:
-    """A declaration for `name` exists in the context — signature visible;
+    """A DECLARATION for `name` exists in the context — signature visible;
     the body may be shown, elided (`{ … }`), or abstract (`;`). Absence
     still declines: a name the context does not declare is not this
-    class's dispute."""
+    class's dispute.
+
+    A CALL is not a declaration (stage 4, Math-30): `return 2 *
+    standardNormal.cumulativeProbability(z);` ends in `);` and satisfied
+    the old `[{;]` tail, registering a NormalDistribution method as
+    declared by the patched class — one wasted generation per false
+    trigger (fixture scope: 3,858 of 18,496 matches, 20.9%, were calls).
+    A declaration's name is preceded by its return type — a type-ish
+    token and whitespace — never by a receiver dot, and `return foo(x);`
+    is excluded by keyword. Fail-closed held throughout (no fact can come
+    of a false trigger); this fix is about spend and noise.
+    """
     if not code_context or not name:
         return False
-    return bool(re.search(
-        r'\b' + re.escape(name)
-        + r'\s*\([^)]*\)\s*(?:throws\s+[\w.$\s,]*?)?[{;]',
-        str(code_context)))
+    pat = re.compile(
+        r'([A-Za-z_$][\w$]*|[\]>])\s+' + re.escape(name)
+        + r'\s*\([^)]*\)\s*(?:throws\s+[\w.$\s,]*?)?[{;]')
+    for m in pat.finditer(str(code_context)):
+        if m.group(1) not in _NOT_A_RETURN_TYPE:
+            return True
+    return False
 
 
 def enumerate_observables(msg: str) -> Dict[str, List[str]]:

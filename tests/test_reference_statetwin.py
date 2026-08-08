@@ -1786,3 +1786,40 @@ def test_fields_read_by_reads_through_a_throws_clause():
     reads = rr.fields_read_by(src_ctx, 'inverseCumulativeProbability',
                               rr.canonical_state(src_ctx))
     assert [n for _t, n in reads] == ['numberOfSuccesses']
+
+
+# ---------------------------------------------------------------------------
+# Stage 4 (Math-30): a CALL is not a declaration. The `[{;]` tail accepted
+# `return 2 * standardNormal.cumulativeProbability(z);` as a declaration
+# because `);` ends a call statement too -- one wasted generation on a
+# method the context never declares (20.9% of fixture matches were calls).
+# ---------------------------------------------------------------------------
+
+def test_a_call_is_not_a_declaration():
+    from java.relations.reference_impl import _method_declared
+    ctx = ('public class MannWhitneyUTest {\n'
+           '  public double mannWhitneyU(double[] x, double[] y) {\n'
+           '    return 2 * standardNormal.cumulativeProbability(z);\n'
+           '  }\n}')
+    # The verbatim Math-30 false trigger: a receiver-dotted call.
+    assert not _method_declared(ctx, 'cumulativeProbability')
+    # An unqualified call is not a declaration either.
+    assert not _method_declared('  return cumulativeProbability(z);\n',
+                                'cumulativeProbability')
+    # Real declarations of every stripe still pass.
+    assert _method_declared(
+        'public double cumulativeProbability(double x) {', 'cumulativeProbability')
+    assert _method_declared(
+        '  double cumulativeProbability(double x);', 'cumulativeProbability')
+    assert _method_declared(
+        'double[] cumulativeProbability(int n) { … }', 'cumulativeProbability')
+    assert _method_declared(
+        'public int inverseCumulativeProbability(final double p) '
+        'throws OutOfRangeException {', 'inverseCumulativeProbability')
+    # And detection composes: the call in the check source triggers the
+    # candidate, the context's lack of a DECLARATION declines it.
+    from java.relations.reference_impl import disputed_observables
+    got = disputed_observables(
+        '[oracle:x] mismatch: p=0.9', ctx,
+        check_source='double p = standardNormal.cumulativeProbability(z);')
+    assert 'cumulativeProbability' not in got
