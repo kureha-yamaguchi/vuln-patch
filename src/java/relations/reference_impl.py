@@ -54,7 +54,9 @@ import re
 from typing import Dict, List, Optional, Tuple
 
 from java.relations.evidence_facts import (_close, _decode_java_literal,
-                                           _method_body, _methods_named_by,
+                                           _METHOD_CALL_RE, _method_body,
+                                           _methods_named_by,
+                                           _UNINTERESTING_METHODS,
                                            observed_values)
 
 # Divergence kinds that are NOT evidence of a real disagreement. Inherited from
@@ -103,17 +105,33 @@ def too_thin_to_screen(matched_keys, siblings):
                    f'the screen to decide')
 
 
-def disputed_observables(fired_msg: str, code_context: str) -> List[str]:
+def disputed_observables(fired_msg: str, code_context: str,
+                         check_source: Optional[str] = None) -> List[str]:
     """Methods the firing names whose real body is shown — the trigger.
 
     Deliberately the SAME detector `disputed_computation_fact` already uses, so
     this mechanism's reach is a measured property of existing code rather than
     a new guess. Measured on cases228: 58 of 228 rows (25.4%), 9 bugs.
+
+    STAGE 2 (Math-2, the first held-out bug): reach was ZERO, and the trace
+    said why — the kept relation's check CALLS `dist.getNumericalMean()` and
+    recomputes the documented mean (the exact dispute the leg exists for,
+    body shown in the context), but its fired MESSAGE prints only
+    `actual=.. expected=..`, and the detector read only the message. The
+    check SOURCE is the same artifact the judge already receives, so
+    scanning it adds no new authority: methods it CALLS (exact call syntax,
+    the narrow matcher — never substrings) join the candidates. The
+    body-shown requirement is unchanged and still fails closed: Math-2's
+    harness firings name `sample`, whose body the context elides, and they
+    still decline.
     """
     if not fired_msg or not code_context:
         return []
-    return [n for n in _methods_named_by(fired_msg, code_context)
-            if _method_body(code_context, n)]
+    names = list(_methods_named_by(fired_msg, code_context))
+    for n in _METHOD_CALL_RE.findall(str(check_source or '')):
+        if n not in names and n not in _UNINTERESTING_METHODS:
+            names.append(n)
+    return [n for n in names if _method_body(code_context, n)]
 
 
 def enumerate_observables(msg: str) -> Dict[str, List[str]]:

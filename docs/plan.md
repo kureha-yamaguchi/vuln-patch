@@ -2148,6 +2148,36 @@ tweak. 799 passed, 7 skipped; pushed. **Roll 13 is GO.**
   standing), S2-e rule 7. The scaling answer to "test multiple": this
   IS the pre-registered n=2; stage 4 widens to four legs only on a
   stage-2 pass.*
+  *STAGE 2 ROLL 1 (2026-08-07, stage2_20260807_213510): **DOES NOT
+  PASS — stage 4 does not fire.** Math-65 FP / Math-2 TP. S2-a passed
+  VACUOUSLY (0 voids, but by "no admitted reference", not by looking
+  and declining); S2-b passed (catch intact); S2-c NOT OBSERVED;
+  S2-d NOT MET (0 voids; Math-65's kept firings printed observables
+  the reference doesn't compute — the 8.4 fuzz-state population, as
+  predicted). THE SUBSTANTIVE FINDING: reference-chain reach on the
+  first held-out bug was ZERO — one detect event, "the firing names
+  no method whose body is shown". DIAGNOSIS (free trace read, same
+  day): two distinct mechanical causes, neither a reach ceiling.
+  (1) Harness door: firings name `sample`, whose body the context
+  ELIDES (the Arja patch didn't touch it) — correct fail-closed
+  decline. (2) Replay door, the real gap: the kept relation's check
+  CALLS `dist.getNumericalMean()` and recomputes the documented mean
+  n*m/N — the exact dispute the leg exists for, body SHOWN, 86
+  context mentions — but its fired MESSAGE prints only
+  `actual=/expected=`, and the detector read only the message. The
+  mechanism's home-turf case was present and detectable; the detector
+  was reading the least informative artifact while the most
+  informative (the check source, which the judge already receives)
+  sat unread in the same call. FIXED (same day): `disputed_observables`
+  gains `check_source` — methods the check CALLS (exact call syntax,
+  the narrow matcher) join the candidates; body-shown requirement
+  unchanged (the `sample` decline stands); both doors pass their
+  check source through. Verbatim Math-2 fixtures. 804 passed, 7
+  skipped. **NEXT: re-roll stage 2 (the ladder's iterate-at-stage
+  loop), same gates. Expected on Math-2 with the widened detector:
+  detection → generation → the first screen/admission attempt on
+  held-out material — each step is new reach territory and may fail
+  honestly; the read is per-event as ever.***
 
 **Reach honesty:** the gate exists only where the chain admits a
 reference (disputed-observable detection measured 25.4% of rows; admission

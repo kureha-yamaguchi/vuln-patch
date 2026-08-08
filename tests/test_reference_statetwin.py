@@ -1659,3 +1659,68 @@ def test_gate_is_wired_on_both_doors():
     harness = src[i:i + 1800]
     assert "reference-verdict-gate: " in harness
     assert harness.index("if _gv == 'void':") < harness.index('kept_reason =')
+
+
+# ---------------------------------------------------------------------------
+# Stage 2 (Math-2, the first held-out bug): reference-chain reach was ZERO.
+# The kept relation's check CALLS dist.getNumericalMean() and recomputes the
+# documented mean n*m/N — the exact dispute the leg exists for, body shown —
+# but its fired MESSAGE prints only actual=/expected= and the detector read
+# only the message. Detection now also scans the check SOURCE (the same
+# artifact the judge receives) for called methods, exact call syntax only.
+# ---------------------------------------------------------------------------
+
+MATH2_CHECK_SRC = '''int N = data.consumeInt(1, 1000000);
+int m = data.consumeInt(0, N);
+int n = data.consumeInt(0, N);
+org.apache.commons.math3.distribution.HypergeometricDistribution dist;
+double actual;
+try {
+  dist = new org.apache.commons.math3.distribution.HypergeometricDistribution(N, m, n);
+  actual = dist.getNumericalMean();
+} catch (Exception e) { return; }
+double expected = ((double) n) * ((double) m) / ((double) N);
+if (!(Math.abs(actual - expected) <= tol)) {
+  throw new RuntimeException("relation hypergeometricMeanFormula violated: actual=" + actual + " expected=" + expected);
+}'''
+
+MATH2_FIRED = ('relation hypergeometricMeanFormula violated: '
+               'actual=-49.5 expected=27.5')
+
+MATH2_CTX = ('public class HypergeometricDistribution {\n'
+             '  private int numberOfSuccesses;\n'
+             '  public double getNumericalMean() {\n'
+             '    return (double) (getSampleSize() * getNumberOfSuccesses()) '
+             '/ (double) getPopulationSize();\n  }\n'
+             '  public int sample() { … }\n'
+             '}')
+
+
+def test_detection_reads_the_check_source_not_only_the_message():
+    from java.relations.reference_impl import disputed_observables
+    # The fired message alone names nothing — the stage-2 zero-reach shape.
+    assert disputed_observables(MATH2_FIRED, MATH2_CTX) == []
+    # With the check source, the called method with a shown body is found.
+    got = disputed_observables(MATH2_FIRED, MATH2_CTX,
+                               check_source=MATH2_CHECK_SRC)
+    assert 'getNumericalMean' in got
+
+
+def test_detection_still_declines_elided_bodies():
+    from java.relations.reference_impl import disputed_observables
+    # Math-2's harness firings name `sample`; its body is elided — the
+    # fail-closed decline is unchanged, message or source.
+    fired = '[oracle:seed-sample-lower] semantic mismatch: sample=-50'
+    assert disputed_observables(fired, MATH2_CTX) == []
+    assert disputed_observables(
+        fired, MATH2_CTX, check_source='int s = dist.sample();') == []
+
+
+def test_chain_passes_the_check_source_at_both_doors():
+    src = open(Path(__file__).resolve().parents[1] / 'src' / 'java'
+               / 'run.py').read()
+    assert src.count('check_source=src)') == 1     # harness door
+    assert src.count('check_source=_src)') == 1    # replay door
+    i = src.index('def _reference_impl_fact')
+    body = src[i:i + 3000]
+    assert 'check_source=check_source' in body

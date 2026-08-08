@@ -86,7 +86,7 @@ def _extract_oracle_msg(output, oid, cap=20000):
 
 def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
                          buggy_dir, patch_path, trusted_values,
-                         package=None, imports=None):
+                         package=None, imports=None, check_source=None):
     """8.2: generate, screen and compare an independent reference. Fact or None.
 
     Every exit records an event with its REASON. A step that produced nothing
@@ -116,7 +116,10 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
 
     ctx = '\n\n'.join(class_ctx) if class_ctx else ''
     try:
-        disputed = disputed_observables(fired, ctx)
+        # Stage 2 (Math-2): the fired MESSAGE may print only actual=/expected=
+        # while the check SOURCE calls the disputed method by name — the same
+        # artifact the judge receives, so scanning it adds no new authority.
+        disputed = disputed_observables(fired, ctx, check_source=check_source)
     except Exception as e:
         _re('deterministic', method='reference-impl', target='detect',
             output=f'ERROR: {type(e).__name__}', reason=str(e)[:200])
@@ -3804,7 +3807,8 @@ def main():
                             patch_path=selection.patch_path,
                             trusted_values=trusted_values,
                             package=context.package,
-                            imports=context.source_imports)
+                            imports=context.source_imports,
+                            check_source=src)
                         if _ref_fact:
                             print("      [reference-impl] fact attached")
                             _fact_notes.append(_ref_fact)
@@ -4191,7 +4195,8 @@ def main():
                             patch_path=selection.patch_path,
                             trusted_values=_tvals,
                             package=context.package,
-                            imports=context.source_imports)
+                            imports=context.source_imports,
+                            check_source=_src)
                         if _ref_fact2:
                             print("      [reference-impl] fact attached "
                                   "(replay track)")
