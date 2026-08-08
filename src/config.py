@@ -227,6 +227,22 @@ INTROSPECTOR_TIMEOUT_SECONDS = int(
 INTROSPECTOR_METHOD_DEPTH_CAP = int(
     os.getenv('INTROSPECTOR_METHOD_DEPTH_CAP', '3'))
 
+# --- diff-hit instrumentation (--diffcov) ----------------------------------
+# Inject a hit counter into every method the patch under evaluation changed,
+# so a measurement run can read whether generated inputs actually REACH the
+# changed code (docs/witness-study-2026-08-08.md §7, caveat (b)). OFF by
+# default: with it on the patched build is recompiled into its own directory
+# and its sources differ from the frozen guard-fixture baselines'.
+# MEASUREMENT ONLY — never an input to a prompt, oracle, verifier or verdict.
+DIFFCOV = os.getenv('VULNPATCH_DIFFCOV', '').strip().lower() in (
+    '1', 'true', 'yes', 'on')
+
+# How often the instrumented JVM dumps its counters to the collection file.
+# It flushes on a timer rather than only at shutdown because the fuzz runner
+# SIGKILLs the JVM on its subprocess timeout and libFuzzer ends a finding run
+# from native code — neither runs JVM shutdown hooks.
+DIFFCOV_FLUSH_SECONDS = float(os.getenv('DIFFCOV_FLUSH_SECONDS', '2'))
+
 # --- drr patch dataset -----------------------------------------------------
 DRR_CORRECT_DIR     = '../drr/Patches/Dcorrect'
 DRR_OVERFITTING_DIR = '../drr/Patches/Doverfitting'

@@ -1701,6 +1701,61 @@ copied surgically. DO NOT push-to-vm until the invdiv suite has
 launched or completed — p1a changes replay behavior and would
 contaminate the A/B.**
 
+### 8.35 DRAW-05 ROUTING RE-READ — FORK-ORACLE (2026-08-09); the 8.32 flag is RESOLVED
+**Full evidence: `docs/draw05-routing-reread-2026-08-09.md`** (Opus desk
+read; every load-bearing claim re-verified independently against the
+traces, the patch file, the Chart-19 source, and the pipeline code
+before this entry was written).
+**Verdict: the right input reached the right method and the check
+swallowed the signal.** Draw 05's relation
+`objectlist-indexof-null-absent-is-minus-one` (trace line 1624) calls
+the patched `AbstractObjectList.indexOf` with null, null absent, empty
+list included — the exact ground-truth distinguisher — on every
+iteration; the patched build throws the added IAE inside the mandated
+`catch (Exception e) { return; }` and the firing is swallowed TWICE
+(relation body, then the counting wrapper at
+`relation_screen.py:293-294`, which only counts "violated"/
+FuzzerSecurityIssue). Replay step [173]: quiet. FORK-ROUTING is
+eliminated (12/16 kept relations + all 8 accepted harnesses reach the
+patched method, directly via `ObjectList.indexOf` and via
+`CategoryPlot.getDomainAxisIndex`/`getRangeAxisIndex`); FORK-REACH is
+eliminated (null WAS the argument at that frame). ALL THREE DRAWS
+invented this exactly-right relation; all three were silenced
+identically — the catch/miss lottery lives in the OTHER channel: the
+rejection-independence companion (fuzz-drawn install index → null
+holes in the axis list → `getRangeAxisIndex(null)` completes normally)
+which draws 04 and 06 instantiated (both fired on patched) and draw 05
+did not; 05's harness null probes also ran BEFORE the hole-creating
+mutation both times. That second leg is receiver STATE + probe
+ORDERING (FORK-STATE), not input value.
+**CONSEQUENCES (build order changed):**
+- **Lattice seeder DEMOTED for this miss class** — the atom was already
+  supplied in both channels; a seeder would be validated against a bug
+  it cannot help. The seeder's case now rests on the other 9 lattice
+  bugs from 8.34, unmeasured for reach.
+- **BUILD FIRST — patched-side unexpected-exception reportable
+  (narrow):** when the call under test is on the patch-changed
+  class/method AND the relation's input is declared valid-by-
+  construction (the prompt already requires this), an exception from
+  that call becomes a reportable finding with its cause attached —
+  BOTH layers (relation-body shape + counting wrapper). Precision
+  guards exist: fires-on-both/buggy-replay attribution already
+  dismisses exceptions the buggy build also throws; both-signs guard
+  fixtures + clean-leg hard-stop gate the roll like every mechanism.
+  Payoff bound (measured 2026-08-09): 17/381 overfit patches textually
+  add `throw new` (grep over Doverfitting; lower bound — patches that
+  reroute control flow into existing throws are uncounted).
+- **BUILD SECOND — rejection probes vs receiver state:** re-run
+  rejection probes AFTER each state mutation (ordering rule), and give
+  harness-channel rejection oracles the rejection-independence
+  companion treatment that today is stated only for relations.
+- **Diff-targeted probe routing: NOT needed for this bug** (routing was
+  fine); keep as a hypothesis for legs where diffcov shows zero reach.
+**Diffcov stays load-bearing** — reach on Lang-63/Lang-41 (no
+witnesses, no re-read) is still unmeasured; on Chart-19 it would have
+read hits>0, which is exactly the point: reach confirmed ≠ signal
+reported, and the two must be measured separately.
+
 ### 8.30 INVDIV COMBINED RUN — read 817858f (2026-08-08); capture defect fixed same day
 **Fail-closed clear:** zero VOIDs, zero facts from discards (facts only
 on the two admitting Math-65 draws vs 14 discards elsewhere).
@@ -1831,6 +1886,7 @@ for the miss class IF reach — not routing — is the bottleneck (open per
 the 8.32 flag).
 
 ### 8.32 THE DRAW-05 DESK READ — answered 2026-08-08, then PARTLY INVALIDATED by 8.33's Chart-19 correction (see head note)
+**RESOLVED 2026-08-09 → 8.35 / `docs/draw05-routing-reread-2026-08-09.md`: FORK-ORACLE.** The re-read demanded below happened. Neither routing nor input reach: the null probe DID reach `AbstractObjectList.indexOf(null)` in the distinguishing state and the patched build's added throw was swallowed by the mandated catch-and-return plus the counting wrapper. "PATCHED-SIDE INPUT SEARCH" as the recall lever is superseded for this miss class; see 8.35 for the new build order.
 **CORRECTION (2026-08-08):** 8.33 verified Chart-19's distinguisher is a NULL ARGUMENT to `indexOf`, not constructor scale — and draw 05 DID invent null probes (`domain-axis-null`, `lifted-domain-axis-null`) that went QUIET on the patched build. So "input reach, not invention" is not yet established: the null probes reached the build and stayed silent, which points at PROBE ROUTING (did the invented null probe actually reach `AbstractObjectList.indexOf`, or a different method?) rather than input-value reach. The list-identity probe (`state-get-after-set`) that DID crash draw 04 is a separate, second distinguisher. NEEDS A RE-READ against the corrected target before any input-search design rests on it. The eliminations below (not-invention, not-selection) still stand; the POSITIVE conclusion (input reach) does not.
 The 8.30 framing was WRONG and the correction matters. The catching
 draw's (04) actual patched-build crashes were NOT range-axis checks:

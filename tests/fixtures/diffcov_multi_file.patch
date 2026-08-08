@@ -1,0 +1,23 @@
+diff -u -r pre_multi_file/source/org/example/Gadget.java post/source/org/example/Gadget.java
+--- /source/org/example/Gadget.java
++++ /source/org/example/Gadget.java
+@@ -3,5 +3,6 @@
+ public class Gadget {
+ 
+     public String render(Map<String, List<Integer>> m, Object... rest) {
++        return String.valueOf(m) + rest.length;
+     }
+ }
+diff -u -r pre_multi_file/source/org/example/Widget.java post/source/org/example/Widget.java
+--- /source/org/example/Widget.java
++++ /source/org/example/Widget.java
+@@ -19,6 +19,9 @@
+     }
+ 
+     public int indexOf(Object o) {
++        if (o == null) {
++            throw new IllegalArgumentException("null argument");
++        }
+         return -1;
+     }
+ 

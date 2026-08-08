@@ -1,0 +1,13 @@
+diff -u -r pre_overload/source/org/example/Widget.java post/source/org/example/Widget.java
+--- /source/org/example/Widget.java
++++ /source/org/example/Widget.java
+@@ -26,6 +26,9 @@
+     }
+ 
+     public int indexOf(String s, int from) {
++        if (from < 0) {
++            return 0;
++        }
+         return from + size;
+     }
+ 

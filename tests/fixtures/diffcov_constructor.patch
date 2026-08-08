@@ -1,0 +1,16 @@
+diff -u -r pre_constructor/source/org/example/Widget.java post/source/org/example/Widget.java
+--- /source/org/example/Widget.java
++++ /source/org/example/Widget.java
+@@ -10,10 +10,12 @@
+ 
+     public Widget() {
+         this(7);
++        this.tag = "default";
+     }
+ 
+     public Widget(int size) {
+         this.size = size;
++        this.tag = "w";
+     }
+ 
+     public int indexOf(Object o) {

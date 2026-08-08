@@ -1,0 +1,37 @@
+# DIFFCOV REACH MEASUREMENT — measurement only, NO mechanism gates.
+# Serves witness-study caveat (b) / plan 8.35: "coverable ≠ reached".
+# First run with --diffcov live: every leg's result.jsonl carries, per
+# harness execution, `[diffcov] method=… hits=N` for each patch-changed
+# method (zeros included — the zeros are the signal). The counts feed no
+# prompt, no verifier evidence, no gate, no verdict; outcomes are
+# recorded as denominator data only, nothing banked.
+#
+# LEG SELECTION (one draw each; reach is a per-input-distribution
+# property, not an outcome lottery, so n=1 per leg is the right spend
+# for a zero/non-zero reading):
+#   Chart-19-o — the 8.35 FORK-ORACLE leg. Expected: hits>0 (the re-read
+#                proved the input reaches indexOf); a zero would
+#                contradict 8.35 and reopen it.
+#   Lang-63-o  — actually-missed leg, NO witness, reach UNKNOWN. The
+#                measurement's real target.
+#   Lang-41-o  — same.
+#   Math-2-o   — known-catch leg (8.31 safety canary): expect hits>0
+#                alongside a conviction; positive control that the
+#                counter fires on a catching leg.
+#   Math-65-c  — correct leg: clean-side check that instrumentation
+#                perturbs nothing (verdict must stay a correct
+#                dismissal; any new false alarm here is a hard stop on
+#                the diffcov build).
+#
+# READ, per leg: the diffcov table (method × harness × hits), the
+# unmapped list (changed lines with no instrumentable method), and the
+# usual outcome — reach and signal reported SEPARATELY, per 8.35.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl --diffcov"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+)

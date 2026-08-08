@@ -1,0 +1,16 @@
+diff -u -r pre_fields_only/source/org/example/Widget.java post/source/org/example/Widget.java
+--- /source/org/example/Widget.java
++++ /source/org/example/Widget.java
+@@ -1,10 +1,12 @@
+ package org.example;
+ 
+ import java.util.List;
++import java.util.Map;
+ 
+ public class Widget {
+ 
+     private int size;
++    private String tag;
+ 
+     public Widget() {
+         this(7);

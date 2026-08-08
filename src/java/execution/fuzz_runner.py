@@ -74,6 +74,9 @@ class JazzerOutcome:
     stdout: str
     stderr: str
     crash_reason: Optional[str] = None  # why we classified this as a crash
+    # {method-id: hits} from the diff-hit instrumentation, or None when the
+    # --diffcov flag is off. MEASUREMENT ONLY — see _collect_diffcov.
+    diffcov: Optional[dict] = None
 
     @property
     def combined_output(self) -> str:
@@ -153,6 +156,7 @@ def run_jazzer(jazzer_standalone_jar: str,
                extra_libfuzzer_args: Optional[List[str]] = None,
                corpus_dir: Optional[str] = None,
                input_file: Optional[str] = None,
+               diffcov_out: Optional[str] = None,
                ) -> JazzerOutcome:
     """Run one Jazzer harness against `project_cp` and report whether it
     crashed within `timeout_seconds`. Shared by the buggy-version gate
@@ -233,11 +237,23 @@ def run_jazzer(jazzer_standalone_jar: str,
             # — the neighbourhood an overfit special-cased.
             cmd.append(corpus_dir)
 
+    # `env` stays None unless the diff-hit instrumentation is on, so the
+    # subprocess call is byte-for-byte what it was when the flag is off.
+    env = None
+    if diffcov_out:
+        from java.execution import diffcov as diffcov_mod
+        try:
+            os.unlink(diffcov_out)   # never read a previous run's dump
+        except OSError:
+            pass
+        env = dict(os.environ)
+        env[diffcov_mod.OUT_ENV_VAR] = diffcov_out
+
     timed_out = False
     try:
         proc = subprocess.run(
             cmd, capture_output=True, text=True,
-            timeout=timeout_seconds + 15,
+            timeout=timeout_seconds + 15, env=env,
         )
         returncode = proc.returncode
         stdout, stderr = proc.stdout, proc.stderr
@@ -263,7 +279,30 @@ def run_jazzer(jazzer_standalone_jar: str,
         stdout=stdout,
         stderr=stderr,
         crash_reason=crash_reason,
+        diffcov=(_collect_diffcov(diffcov_out, combined)
+                 if diffcov_out else None),
     )
+
+
+def _collect_diffcov(diffcov_out: str, combined: str) -> dict:
+    """`{method-id: hits}` for one Jazzer execution.
+
+    MEASUREMENT ONLY, and deliberately isolated here: diffcov exists so a
+    human can read whether generated inputs REACHED the patch-changed code.
+    It must never be added to an LLM prompt, to verifier evidence, or to any
+    gate or verdict — doing so would make the pipeline's decision depend on
+    a signal it has not been validated against.
+
+    The FILE is preferred over stderr because neither of this runner's two
+    normal exits runs JVM shutdown hooks: `subprocess.run(timeout=...)`
+    SIGKILLs the JVM on the wall-clock cap above, and libFuzzer terminates a
+    finding run from native code. The instrumented build therefore flushes
+    the counters to `diffcov_out` on a timer; stderr is only the fallback for
+    a clean exit.
+    """
+    from java.execution import diffcov as diffcov_mod
+    counts = diffcov_mod.read_diffcov_file(diffcov_out)
+    return counts if counts else diffcov_mod.parse_diffcov(combined)
 
 
 # Jazzer prints the offending throwable on a line like
@@ -532,6 +571,9 @@ class FuzzRunResult:
     # on the buggy build. None when the run didn't crash or the artifact
     # couldn't be attributed to this run.
     artifact_path: Optional[str] = None
+    # {method-id: hits} for the patch-changed methods, or None with
+    # --diffcov off. MEASUREMENT ONLY (see _collect_diffcov).
+    diffcov: Optional[dict] = None
 
 
 class PatchApplyError(RuntimeError):
@@ -703,8 +745,14 @@ class PatchedProjectBuilder:
     (TriggerVerificationError otherwise).
     """
 
-    def __init__(self, patched_root: str = config.D4J_CHECKOUT_ROOT):
+    def __init__(self, patched_root: str = config.D4J_CHECKOUT_ROOT,
+                 diffcov: bool = False):
         self.patched_root = patched_root
+        # --diffcov: inject a hit counter into every patch-changed method
+        # before compiling. Off by default; when off nothing below runs and
+        # the build is byte-for-byte the one it always was.
+        self.diffcov = diffcov
+        self.diffcov_plan = None
         self._classpath_cache: dict = {}
 
     def build_patched_dir(self, buggy_dir: str, patch_path: str,
@@ -720,6 +768,8 @@ class PatchedProjectBuilder:
             try:
                 shutil.copytree(buggy_dir, patched_dir)
                 self._apply_patch(patched_dir, patch_path)
+                if self.diffcov:
+                    self._instrument(patched_dir, patch_path)
                 subprocess.run(
                     ['defects4j', 'compile'],
                     cwd=patched_dir, check=True,
@@ -727,9 +777,41 @@ class PatchedProjectBuilder:
             except BaseException:
                 shutil.rmtree(patched_dir, ignore_errors=True)
                 raise
+        if self.diffcov and self.diffcov_plan is None:
+            self._load_diffcov_plan(patched_dir)
         if verify_trigger:
             self._verify_trigger_tests(buggy_dir, patched_dir)
         return patched_dir
+
+    # ---- diff-hit instrumentation (--diffcov, measurement only) --------
+
+    def _instrument(self, patched_dir: str, patch_path: str) -> None:
+        """Inject the per-method hit counters into the patched WORKING COPY,
+        after the patch applied and before it is compiled. Best-effort: an
+        instrumentation failure must not cost the run its patched build, so
+        it is reported and the build proceeds uninstrumented."""
+        from java.execution import diffcov as diffcov_mod
+        try:
+            plan = diffcov_mod.instrument_patched_dir(
+                patched_dir, patch_path, config.DIFFCOV_FLUSH_SECONDS)
+        except Exception as exc:
+            print(f"  [diffcov] instrumentation skipped: {exc}")
+            return
+        # Stored in its serialised form — the same shape a cached patched
+        # dir hands back through _load_diffcov_plan.
+        self.diffcov_plan = plan.as_dict()
+        print(f"  [diffcov] instrumented {len(plan.methods)} changed "
+              f"method(s); {len(plan.unmapped)} changed line(s) mapped to "
+              f"no method")
+
+    def _load_diffcov_plan(self, patched_dir: str) -> None:
+        """Read back the plan a previous (idempotent-skip) build wrote."""
+        try:
+            with open(os.path.join(patched_dir,
+                                   '.diffcov_methods.json')) as fh:
+                self.diffcov_plan = json.load(fh)
+        except (OSError, ValueError):
+            self.diffcov_plan = None
 
     # ---- P0.1b: trigger-test safety net --------------------------------
 
@@ -905,7 +987,13 @@ class PatchedProjectBuilder:
     def _patched_dir_path(self, buggy_dir: str, patch_path: str) -> str:
         patch_stem = os.path.splitext(os.path.basename(patch_path))[0]
         base = os.path.basename(buggy_dir.rstrip('/'))
-        return os.path.join(self.patched_root, f'{base}_patched_{patch_stem}')
+        # An instrumented build gets its OWN directory. build_patched_dir is
+        # idempotent on directory existence alone, so sharing the path would
+        # let a cached uninstrumented tree be reused as "already built" and
+        # the measurement would silently come back empty.
+        suffix = '_diffcov' if self.diffcov else ''
+        return os.path.join(self.patched_root,
+                            f'{base}_patched_{patch_stem}{suffix}')
 
     @staticmethod
     def _apply_patch(target_dir: str, patch_path: str) -> None:
@@ -989,7 +1077,8 @@ class FuzzRunner:
                  timeout_seconds: int = config.FUZZ_TIMEOUT_SECONDS,
                  expected_exceptions: Optional[List[str]] = None,
                  jazzer_api_jar: Optional[str] = None,
-                 seed_literals: Optional[List[str]] = None):
+                 seed_literals: Optional[List[str]] = None,
+                 diffcov: bool = False):
         self.jazzer_standalone_jar = jazzer_standalone_jar
         self.timeout_seconds = timeout_seconds
         self.expected_exceptions = expected_exceptions or []
@@ -1004,14 +1093,19 @@ class FuzzRunner:
         # invented check was present and stayed latent because 20s of
         # fuzz never generated an exponent-plus-suffix string).
         self.seed_literals = list(seed_literals or [])
+        # --diffcov: count entries into the patch-changed methods during the
+        # patched-side fuzz. Off by default; measurement only.
+        self.diffcov = diffcov
+        self.diffcov_plan = None
 
     def run_all(self,
                 successful_results: List[BuildResult],
                 patch_path: str,
                 buggy_dir: str) -> List[FuzzRunResult]:
         """Apply patch, compile patched project, then fuzz every harness."""
-        builder = PatchedProjectBuilder()
+        builder = PatchedProjectBuilder(diffcov=self.diffcov)
         patched_dir = builder.build_patched_dir(buggy_dir, patch_path)
+        self.diffcov_plan = builder.diffcov_plan
         patched_cp = builder.classpath(patched_dir, fallback_buggy_dir=buggy_dir)
 
         results = []
@@ -1169,7 +1263,13 @@ class FuzzRunner:
             jazzer_api_jar=self.jazzer_api_jar,
             corpus_dir=seed_dir,
             keep_going=8,
+            diffcov_out=(os.path.join(harness_dir, 'diffcov.out')
+                         if self.diffcov else None),
         )
+        if outcome.diffcov is not None:
+            _hit = sum(1 for n in outcome.diffcov.values() if n)
+            print(f"  [diffcov] {_hit}/{len(outcome.diffcov)} changed "
+                  f"method(s) reached: {outcome.diffcov}")
         artifact = None
         if outcome.triggered:
             # not_before guards against picking up a stale artifact the
@@ -1187,6 +1287,7 @@ class FuzzRunner:
             stdout=outcome.stdout,
             stderr=outcome.stderr,
             artifact_path=artifact,
+            diffcov=outcome.diffcov,
         )
 
     def replay_input_result(self,

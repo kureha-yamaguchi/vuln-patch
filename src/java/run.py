@@ -635,6 +635,19 @@ def parse_args():
                              "the overfit-patch build and stays quiet on the "
                              "correct one; false-fire = fires on the correct "
                              "one.")
+    parser.add_argument("--diffcov", action="store_true",
+                        default=config.DIFFCOV,
+                        help="MEASUREMENT ONLY. Inject a hit counter into "
+                             "every method the patch changed, build the "
+                             "patched project from the instrumented sources "
+                             "(into its own _diffcov directory), and record "
+                             "per-harness `[diffcov] method=... hits=N` "
+                             "counts in result.jsonl and the trace. Answers "
+                             "'did any generated input REACH the changed "
+                             "code' — the load-bearing caveat of "
+                             "docs/witness-study-2026-08-08.md. OFF by "
+                             "default; the counts feed no prompt, no "
+                             "verifier evidence, and no gate or verdict.")
     parser.add_argument("--results_json", type=str, default=None,
                         metavar="PATH",
                         help="append a one-line JSON record describing this "
@@ -651,6 +664,39 @@ def parse_args():
                              "comparison fact. OFF by default; ladder-gated.")
     parser.set_defaults(require_trigger=True)
     return parser.parse_args()
+
+
+def _record_diffcov(runner, fuzz_results, record_extras) -> None:
+    """Persist the diff-hit counts for this leg — one record per harness
+    execution — into result.jsonl (`diffcov`) and the trace.
+
+    MEASUREMENT ONLY, and this is the boundary: `diffcov` is written to the
+    run artifacts and read by humans. It is deliberately NOT passed to any
+    prompt, to the relation verifier's evidence, or to any gate or verdict
+    computation. Adding it to one of those would make a decision depend on a
+    signal that has never been validated against the guard fixtures.
+    """
+    if not getattr(runner, 'diffcov', False):
+        return
+    plan = getattr(runner, 'diffcov_plan', None)
+    if plan:
+        record_extras['diffcov_methods'] = plan
+    records = []
+    for _fr in (fuzz_results or []):
+        counts = getattr(_fr, 'diffcov', None)
+        if counts is None:
+            continue
+        rec = {'diffcov': counts, 'phase': 'patched-fuzz',
+               'harness': getattr(_fr, 'attempt_label', '') or
+                          os.path.basename(getattr(_fr, 'harness_path', ''))}
+        records.append(rec)
+        record_event('deterministic', method='diffcov',
+                     target=rec['harness'],
+                     output=(f"{sum(1 for n in counts.values() if n)}/"
+                             f"{len(counts)} changed method(s) reached"),
+                     detail=rec)
+    if records:
+        record_extras['diffcov'] = records
 
 
 def _emit_record(path, *, label, status, selection=None,
@@ -2219,18 +2265,21 @@ def main():
     if args.fuzz_timeout > 0 and result.successful_results:
         print("\n" + "#" * 20 + " fuzzing patched code " + "#" * 20)
         try:
-            fuzz_results = FuzzRunner(
+            _runner = FuzzRunner(
                 jazzer_standalone_jar=jazzer_standalone_jar,
                 timeout_seconds=args.fuzz_timeout,
                 expected_exceptions=expected_exceptions,
                 jazzer_api_jar=jazzer_api_jar,
                 seed_literals=seed_literals,
-            ).run_all(
+                diffcov=args.diffcov,
+            )
+            fuzz_results = _runner.run_all(
                 successful_results=result.successful_results,
                 patch_path=selection.patch_path,
                 buggy_dir=selection.buggy_dir,
             )
             _print_fuzz_summary(fuzz_results)
+            _record_diffcov(_runner, fuzz_results, record_extras)
             for _fr in (fuzz_results or []):
                 _fired = getattr(_fr, 'triggered', False)
                 _kw = {}
