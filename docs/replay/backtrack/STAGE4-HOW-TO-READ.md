@@ -22,7 +22,10 @@ material; more Math-65 draws are not.
 ```python
 import re
 LEGS = ['01_patch1-Math-65-CapGen_c', '02_patch1-Math-2-Arja-plausible_o',
-        '03_patch1-Math-2-SOFix_c', '04_patch1-Math-53-Arja_c']
+        '03_patch1-Math-2-SOFix_c', '04_patch1-Math-53-Arja_c',
+        '05_patch1-Closure-62-Jaid_c', '06_patch1-Math-39-Arja_c',
+        '07_patch1-Lang-41-Arja-plausible_o', '08_patch1-Time-4-Elixir_c',
+        '09_patch1-Closure-92-SequenceR_o', '10_patch1-Closure-38-SequenceR_o']
 for leg in LEGS:
     t = f'runs-archive/runs/stage4_<stamp>/{leg}/trace.md'
     print('='*20, leg)
