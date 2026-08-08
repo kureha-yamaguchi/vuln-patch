@@ -1617,6 +1617,28 @@ one extra JVM run per gated conviction, bounded by admission (10%).
 untouched (see 8.27); lhs/rhs-only relations reachable only where state
 recovery succeeds.
 
+### 8.28 TWO DESK READS (2026-08-08, free, from recorded material) — findings recorded
+**(a) The six signature-mapping discards, read.** Two classes. MODEL-
+DEVIATION SHAPES (4): a literal `...` signature, a bundled
+`ReferenceImpl.State` struct parameter, a `double p]` bracket-parse
+artifact — parse-hygiene fixable, small, mechanical. BARE TYPES WITH NO
+VISIBLE BODY (2): option A admits detection on elided-body methods, but
+`fields_read_by` then has no read-order, so a nameless `double` against
+72 fields is an HONEST discard — the only lever is the prompt's existing
+name-your-parameters demand; accepted as a known loss, not a defect.
+**(b) The nameless-firing population, measured: 88%.** 2,520 of 2,877
+fired messages across the archive print NO named observable (only
+expected/actual/lhs/rhs/N-style keys). The gate's value-coincidence
+parser and detection's message route are structurally blind on 88% of
+firings — far larger than assumed from single traces. CONSEQUENCE
+(priority reorder): the print-naming requirement is no longer a minor
+lint — it rides INTO the 8.4x build as the same Station-1 template
+change (the harness/relation failure branch that learns to print state
+also learns to print `observable=value` by name), one combined change,
+one roll to validate both. Keep/drop behavior untouched (measure-first;
+any screen-time demotion of nameless relations is a separate gated
+decision with the 67-row fixture as referee).
+
 ### 8.27 SHAPE-ADAPTIVE SCREENING for stateless receivers — design sketch only
 The stateless-receiver ceiling is population-measured (11/27 discards,
 all Closure/Time). But the ROLL-4 LESSON INVERTS for pure utilities: the
