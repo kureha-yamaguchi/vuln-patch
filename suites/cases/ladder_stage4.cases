@@ -1,4 +1,9 @@
-# 8.2 LADDER — STAGE 4. FOUR legs, run SERIAL (PARALLEL=1). ~600-900k.
+# 8.2 LADDER — STAGE 4 ROLL 3 + STAGE-8 SCOUT. EIGHT legs, SERIAL
+# (PARALLEL=1). ~1.2-1.6M. The four stage-4 legs keep their DECISIVE
+# gates; the four scout legs are pre-registered DENOMINATORS (admission
+# rate, reach across class shapes, gate-abstention behavior on non-Math
+# material) plus two hard-stop extensions — they inform stage 8, they do
+# not gate stage 4.
 #
 # Stage 2 passed (read 48e796a; advancement is the recorded judgment call:
 # S2-a/b/c PASS with S2-a non-vacuous — an admitted reference on the fake
@@ -19,6 +24,18 @@
 #          difficulty); its exact-arithmetic test is deferred until a
 #          stateful exact-arithmetic case exists.
 #   Leg 4: Math-53 CORRECT (Arja)    — the always-clean LIVE GUARD.
+#
+#   SCOUT LEGS (stage-8 material, selected from the pair runs' record):
+#   Leg 5: Closure-62 CORRECT (Jaid) — STABLE FP in BOTH pair runs: the
+#          second live precision target after Math-65. Informational:
+#          does the chain reach/admit on a Closure-shaped receiver?
+#   Leg 6: Math-39 CORRECT (Arja)    — plan-named stage-8 leg (the 8.6
+#          event-chain read). Informational.
+#   Leg 7: Lang-41 OVERFIT (Arja)    — stable catch (TP both pairs).
+#          HARD-STOP EXTENSION: zero voids on this fake patch, same rule
+#          as S2-a/S4-c.
+#   Leg 8: Time-4 CORRECT (Elixir)   — stable TN (both pairs): second
+#          clean guard. HARD-STOP EXTENSION: same rule as S4-a.
 #
 # PRE-REGISTERED GATES (before launch, per ladder rule):
 #   (S4-a) HARD STOP: any accusation on the Math-53 clean leg traceable to
@@ -43,4 +60,8 @@ CASES=(
   "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
   "-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch"
   "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-53-Arja.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-39-Arja.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Elixir/Time/patch1-Time-4-Elixir.patch"
 )

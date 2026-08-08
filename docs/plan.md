@@ -1529,6 +1529,18 @@ second-candidate fact. Admission-rate denominator note: 2/10 then 1/5
 triggered references admitted (20% both rolls). 810 passed, 7 skipped.
 **Stage-4 roll 3 is GO — same legs, same gates; the agreement side's
 third attempt, now with the productive candidate reachable.***
+*ROLL-3 WIDENED (user direction 2026-08-08): the four stage-4 legs keep
+their decisive gates; FOUR SCOUT LEGS appended as pre-registered
+denominators for stage 8, selected from the pair runs' record —
+Closure-62-c (STABLE FP in both pairs: the second live precision target
+after Math-65; does the chain reach a Closure-shaped receiver?),
+Math-39-c (plan-named stage-8 leg), Lang-41-o (stable catch; hard-stop
+extension: zero voids), Time-4-c (stable TN; second clean guard,
+hard-stop extension). The pair record also reframes the target
+population: Math-2-c is a STABLE FP in both pairs — the precision
+problem was never one bug. Eight legs serial, ~1.2-1.6M, gates and
+scout reads pre-registered in STAGE4-HOW-TO-READ.md before launch.*
+
 
 
 ### 8.19 Buggy-anchored check generation — design doc first, the unowned big one
