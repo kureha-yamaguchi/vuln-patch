@@ -1730,6 +1730,37 @@ populationSize=100 successes=100 cache=[100.0, 100.0]`. 817 passed, 7
 skipped. The p1b corpus re-collects on the next mechanism roll; p1b's
 design waits for it.
 
+### 8.33 THE WITNESS STUDY — proposed 2026-08-08 (user direction: "check them and understand them"); exemplar verified
+**The dataset already contains ground-truth witnesses.** The drr repo
+ships DiffTGen and RGT results — the label-establishing tests, inputs
+included, per overfit patch. VERIFIED EXEMPLAR: the witness for
+patch1-Chart-19-Arja (the exact patch draw 05 missed) is
+`new AbstractObjectList(668); list.indexOf(null)` — a NON-DEFAULT
+CONSTRUCTOR CAPACITY plus a null probe, whose covered goals name the
+capacity-growth branches in `set`. Draw 05 had null probes and
+objectlist probes but built every object with DEFAULT constructors:
+the capacity-dependent branch was unreachable. The lacking input kind
+is ordinary — constructor scale/boundary parameter variation — and
+squarely inside the general generators already sketched (diff-derived
+boundary seeding would target the changed lines' size/capacity
+comparisons; the universal lattice covers wide-int constructor args).
+**THE STUDY (offline, read-only, assignment-ready):** for every
+overfit patch in the leg pool, read its DiffTGen/RGT witness and
+classify the distinguishing input KIND (constructor scale, null-arg,
+index/size boundary, operation sequence, numeric scale, ...).
+Deliverables: the kind distribution; per kind, which GENERAL generator
+covers it (lattice / diff-derived / sequence / none); and the gap list
+(kinds no general generator would produce). That table, not intuition,
+then picks the seeding design.
+**THE FIREWALL, stated before any of it happens:** witness content is
+GROUND-TRUTH-DERIVED and never enters prompts, runs, corpora, or any
+per-leg artifact — the pipeline stays label-blind. Only the AGGREGATE
+design conclusions (bug-agnostic input-kind patterns) inform the
+general generators, and those get validated both-signs on clean legs
+like every mechanism before them. Using ground truth to EVALUATE and
+UNDERSTAND is the same legitimacy class as scoring runs against
+labels; using it to STEER a run is farming. The line sits between.
+
 ### 8.32 THE DRAW-05 DESK READ — answered 2026-08-08 (free, queued in 8.30); the miss is INPUT REACH, not invention
 The 8.30 framing was WRONG and the correction matters. The catching
 draw's (04) actual patched-build crashes were NOT range-axis checks:
