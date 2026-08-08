@@ -1590,6 +1590,46 @@ i.e. the parked 8.4 firing-state extension, not more evidence quality.*
 
 
 
+### 8.4x THE FIRING-STATE EXTENSION — design note (user go 2026-08-08); build after offline replay gates
+**What:** when a rule FIRES in the harness, the firing message also
+reflection-prints the receiver's state fields (same `_FMT_HELPER`, same
+`__param_` discipline as the twin — identical formatting on both sides is
+the whole point, defect-8 lesson). At the verdict gate, a kept conviction
+with an admitted reference reconstructs those inputs (existing
+`java_literal` machinery) and calls the ALREADY-COMPILED ReferenceImpl
+once at the firing's own input. Sides-with-patch → VOID (precision, now
+at every firing instead of value-coincidence luck). Sides-with-relation →
+conviction stands, CORROBORATED (the direction removed from phase 1 as
+unsound becomes sound: state recovery kills the different-situation
+ambiguity).
+**Where:** Station 1 (harness generation prompt/template: the failure
+branch prints state) + the gate's abstain branch (judging station).
+**Why now (measured):** judge keep-bias is a measurement (1/1 vs 0/11,
+two bugs) → precision runs through the gate only; roll 3's three FPs had
+zero gate decisions because every conviction fired at a fuzz state.
+**Pre-registered gates before build:** (a) offline replay over the four
+rolls' recorded firings: state-printing simulated from twin fields,
+reconstruction round-trips, zero voids anywhere a void would be wrong;
+(b) 67-row genuine-catch fixture logic re-argued for the corroborate
+direction; (c) zero voids on any overfit leg, standing; (d) cost note:
+one extra JVM run per gated conviction, bounded by admission (10%).
+**Limits stated:** helps only admitted-reference legs; stateless ceiling
+untouched (see 8.27); lhs/rhs-only relations reachable only where state
+recovery succeeds.
+
+### 8.27 SHAPE-ADAPTIVE SCREENING for stateless receivers — design sketch only
+The stateless-receiver ceiling is population-measured (11/27 discards,
+all Closure/Time). But the ROLL-4 LESSON INVERTS for pure utilities: the
+original vector-based screen died because STATEFUL objects cannot be
+constructed from signatures — a STATELESS utility's methods take their
+data as ARGUMENTS, so synthesized input vectors are exactly right there.
+Sketch: screen = reference vs buggy build on N held-out argument vectors
+through the disputed method's siblings-by-arity (or the method itself at
+non-trigger inputs), open-input/closed-output as ever. Decision gates to
+write before any build: what counts as off-defect for an argument-space
+screen; bar; canary pair. NOT started — recorded so the ceiling has a
+named candidate fix.
+
 ### 8.19 Buggy-anchored check generation — design doc first, the unowned big one
 **Target:** stations 2–4 (`relation_synth.py` + harness codegen prompts),
 consuming 8.3's recorded buggy-side values.
