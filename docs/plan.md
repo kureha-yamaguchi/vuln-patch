@@ -1554,6 +1554,38 @@ attribution would be the first RECALL win. Lang-63-o excluded with its
 reason (1 then 0 judge calls: miss is upstream of the mechanism).
 Blanket scout rule: zero gate voids on ANY overfit leg. Ten legs,
 ~1.5-2M.*
+*STAGE-4 ROLL 3 (2026-08-08, raw 49e1117, read e698525; 10 legs, 107
+min, 2.21M tokens, PARALLEL): **STAGE 4 PASSES.** All hard stops clear;
+zero voids on all ten legs; S4-a no trigger on both guards; S4-c PASS.
+S4-b PASS — the ordering fix worked exactly as built (getNumericalMean
+attempted FIRST and ONLY: one generation, one admission, zero discards,
+vs roll 2's two wasted accessor attempts; standing earned on 7
+siblings, strongest recorded) and produced THE A/B, in one run: same
+class, same documentation, reference computes 49.821236993679285 on
+BOTH legs — DISAGREES with the fake patch (which computes −49.759...),
+AGREES with the correct one (identical to the last digit). The central
+claim, shown on both signs; fourth digit-identical reproduction across
+independent generations. **THE ASYMMETRY IS NOW A MEASUREMENT, not a
+suspicion: conviction-side engagement 1/1, agreement-side 0/11, across
+TWO bugs** — the agreement fact reached the judge twice on SOFix and
+was ignored twice (occurrence-count standard: the value appears only
+inside the fact block). The TN does not bank (leg already clean; no
+gate decision point — roll-13 rule). RECALL SCOUTS: both stable FNs
+(Closure-92-o, Closure-38-o) converted to TP but WITHOUT mechanism
+attribution — recorded as lottery per the standing rule, not banked.
+REACH, now population-measured: admission 3/30 generations (10%; Math-
+only rolls were 20%); 11 of 27 discards are too-thin-to-screen and
+EVERY ONE is on Closure or Time — the stateless-receiver ceiling is a
+population property, not a one-leg inference; signature mapping is the
+next class (6). Both-signs ledger: nothing gained or lost traceable to
+the mechanism; all three FPs have zero gate events behind them (no
+admitted reference on those legs). **PENDING: the stage-8 decision.**
+What roll 3 sharpens for it: the mechanism is PROVEN on both signs; the
+judge's keep-bias is measured; therefore the precision path runs
+through the DETERMINISTIC gate only — and the gate's binding constraint
+is now clearly its reach (value-coincidence + admission on FP legs),
+i.e. the parked 8.4 firing-state extension, not more evidence quality.*
+
 
 
 

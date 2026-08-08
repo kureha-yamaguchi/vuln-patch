@@ -25,8 +25,9 @@ cat VERSION                      # must correspond to fc5ec88 (re-run
 grep -c patchfile suites/cases/ladder_stage4.cases    # must print 10
 df -h /home/code/scratch         # need comfortable headroom; 10 legs of
                                  # checkouts (protocol: df precheck)
-export PATH=$PATH:/home/code/defects4j/framework/bin
-java -version                    # sanity: JDK present
+# No env prechecks needed: run_suite.sh sources its own environment
+# (defects4j PATH etc.); shell-level `which`/`java` checks mislead in
+# non-login shells (roll-3 launcher's correction).
 ```
 
 ## 2. Launch
