@@ -1,0 +1,82 @@
+# MECHANISM-B FRESH ROLL (8.38). 9 runs (3 legs x 3 draws), PARALLEL=6,
+# -n 5 -m 12 (n HELD at 5 per 8.32), NO --diffcov: one variable per roll.
+# Baseline for invention comparisons is varbase_20260808_183839 (same
+# flags); invdiv_20260808_203424 ran -n 8 and is NOT flag-comparable.
+#
+# WHAT SHIPPED AT 6ef2e3b, and how each half can be read:
+#   Mechanism A (reportable patched-only exceptions) — probe calls on the
+#     patch-changed class rethrow unexpected exceptions as `violated:
+#     unexpected <Exc>`, with same-tree `extends` SUBTYPE closure. Already
+#     replay-validated on all 29 archived legs
+#     (docs/rex-replay-study-2026-08-09.md). This roll is its first LIVE
+#     draw.
+#   Mechanism B (rejection-probe-after-mutation) — prompt text in BOTH the
+#     relation channel (REJECTION INDEPENDENCE ordering rule) and the
+#     harness channel (_preconditions_block, renders only where the touched
+#     methods carry @param/@throws javadoc), plus the demote-only lint
+#     `probe_before_last_mutation`. Changes what gets INVENTED, so NO
+#     replay can show it — this roll is the only evidence there will be.
+#
+# LEGS: Chart-19-o x3 (the witness leg: 8.35's draw-05 exemplar, both
+# mechanisms bear on it), Lang-63-o x3 (the open question — 8.37 records
+# that its 5 archived misses do NOT convert under Mechanism A because its
+# relations never probe the distinguishing observable at all; whether B's
+# prompt moves invention there is what nobody knows), Math-65-c x3 (the
+# correct-patch guard, carrying its own known instability).
+#
+# THE PRE-REGISTERED READ — per draw, numbers pasted verbatim, RECORDED
+# NOT BANKED:
+#
+# (1) MECHANISM A LIVE. Does Chart-19 convict via the new tier-2 route
+#     (`violated: unexpected IllegalArgumentException ... Null 'object'
+#     argument`)? Replay-study prediction: YES, deterministically, in every
+#     draw that writes a null-absent relation. Also check the `[synth]`
+#     probe-tier line APPEARS and LISTS ObjectList (the subtype closure —
+#     diff headers name AbstractObjectList; without closure the probes on
+#     ObjectList receivers are missed).
+#
+# (2) MECHANISM B INVENTION TABLES, per draw:
+#       - is the rejection-independence companion present? (baseline: 2 of
+#         3 varbase draws)
+#       - do checks MUTATE-THEN-PROBE rather than probe-then-mutate (the
+#         draw-05 failure shape)?
+#       - does `[screen] ... PROBE BEFORE LAST MUTATION — DEMOTED` fire,
+#         and on what? Per 8.37 §5 it should FALL against the comparable
+#         roll; every rejection relation demoted = rule read and ignored.
+#       - `[screen] ... PATCHED-PROBE SWALLOWED — REWRITTEN` counts
+#         prompt-adherence; `— DEMOTED (rewrite not applicable)` is the
+#         fail-closed skip rate and must stay small.
+#       - harness channel: on legs with documented @throws, does any
+#         rejection oracle re-probe after a state-changing call, and is the
+#         mutation target drawn from the fuzzer rather than a literal?
+#
+# (3) LANG-63, EXPLORATORY. Does any draw probe a distinguishing
+#     observable it did not probe before? 8.37 predicts nothing for it.
+#     Record what appears; no prediction is being tested.
+#
+# HARD STOPS (check FIRST, stop everything and diagnose):
+#   - any gate `conviction VOIDED` on an overfit leg;
+#   - any Math-65-c conviction that is a TIER-2 (`violated: unexpected`)
+#     firing — that is Mechanism A's first live false alarm.
+#   A Math-65-c VALUE-COMPARISON flip is that leg's KNOWN instability
+#   (8.29 variance baseline: FP/TN/FP on frozen code): record, do NOT stop.
+#
+# NON-COMPARABILITY: outcomes are recorded; Chart-19 gains a second
+# independent route this roll, so an outcome shift has two possible causes
+# and is credited to neither. Standing dice rule, applied in advance.
+#
+# FIREWALL: nothing from drr/ or DiffTGen enters any prompt, corpus or
+# artifact.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+)
