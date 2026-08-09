@@ -1701,6 +1701,64 @@ copied surgically. DO NOT push-to-vm until the invdiv suite has
 launched or completed — p1a changes replay behavior and would
 contaminate the A/B.**
 
+### 8.37 REPORTABLE PATCHED-ONLY EXCEPTIONS — built, replay-validated, SHIPPED (2026-08-09)
+**Pre-registration:** `docs/reportable-exception-prereg-2026-08-09.md`
+(gates written before any code). **Build:**
+`docs/reportable-exception-mechanism-2026-08-09.md` — two-tier catch in
+the synthesis prompt (setup exceptions stay rejections; probe calls on
+the patch-changed class rethrow as `violated: unexpected <Exc>` — the
+counting wrapper unchanged, it already hears that message), three
+mechanical lints (`patched_probe_swallowed`, `rethrow_patched_probe` —
+a stack-frame-guarded rethrow inserted into swallowing catches, fires
+only for exceptions raised inside the patch-changed class, constructors
+excluded — and `probe_before_last_mutation`, demote-only, Mechanism B's
+ordering half), plus the SUBTYPE fix added in verification
+(`subclasses_in_tree`: diff-header classes alone would have missed the
+dataset's normal delegation shape — probes on `ObjectList` for a patch
+in `AbstractObjectList`; run.py now folds same-tree `extends` subtypes
+into the probe tier). 877 passed, 7 skipped.
+**REPLAY STUDY (the "would the last runs pass" answer):** all 29
+archived legs of invdiv + varbase + diffcov_reach re-executed under the
+mechanical rewrite (`src/java/studies/rex_replay.py`; results
+`runs-archive/runs/rex_replay_20260809_074539/`, doc
+`docs/rex-replay-study-2026-08-09.md`; 340/340 kept relations
+extracted, 244 transformed, 1 fail-closed skip, zero compile failures,
+zero LLM calls in phase 1).
+- **G-P (hard stop): PASS = 0.** 13 correct legs, 151 relations, zero
+  new tier-2 firings. (Two Math-65-c patched-only firings exist but are
+  the archived run's own pre-existing value-comparison firings,
+  verbatim-matched; that leg's archived verdict was correctly quiet.)
+- **G-R: both archived Chart-19 MISSES convert** — invdiv/05 (the
+  draw-05 exemplar itself: `[relfire] relation
+  objectlist-indexof-null-absent-is-minus-one violated: unexpected
+  java.lang.IllegalArgumentException on valid-by-construction input:
+  Null 'object' argument. __consumed=i:0 __rcvstate list:ObjectList
+  size=0`) and varbase/11. Four already-caught Chart-19 legs gain a
+  second, deterministic route (invdiv/04, invdiv/06, varbase/12,
+  diffcov_reach/01). All 11 rewrite-created firings: buggy-silent
+  0/20000, deterministic on trigger literals 2/2, all via the SUBTYPE
+  closure (ObjectList receivers, AbstractObjectList frame).
+- **PHASE 2 (verdict level, `vreplay_rex_20260809`, 11 cases ×3
+  repeats, 110,524 tokens):** varbase/11 converts in 3/3 repeats (two
+  independent kept firings incl. 3/3 on `empty-list-null-lookup`);
+  invdiv/05's single firing kept 2/3 — converts in most draws, not
+  all. Judge drops concentrate on wrong-vehicle relations (read-only /
+  does-not-mutate contracts firing via the exception: 0/3 kept — those
+  dismissals look right; the null-absent family keeps 22/24). Over-kill
+  10/33 overall, leak 0/0.
+- **G-F: PASS** — no verifier/judge/gate code touched (changed-file
+  list verified); full suite green.
+**RESIDUAL, stated plainly:** the 5 archived Lang-63 misses do NOT
+convert — 73/74 of their relations transformed and re-executed, zero
+tier-2 firings. Lang-63's gap is not exception-swallowing: its
+archived relations never probe the distinguishing observable at all.
+That is invention-side; Mechanism B (rejection-probe-after-mutation,
+prompt + demote-lint, harness channel included) ships in this same
+batch and is NOT replay-testable — **the next fresh roll carries its
+pre-registered read** (invention tables: does every draw now emit the
+companion + mutate-then-probe ordering; Chart-19 + Lang-63 legs are
+the natural readout).
+
 ### 8.36 DIFFCOV REACH MEASUREMENT — first instrumented run, read 2026-08-09 (suite `diffcov_reach_20260808_233005`, archived; 744,829 tokens, git a2cdaad)
 **THE MEASUREMENT: every leg reaches its patch-changed methods — reach
 is nowhere the bottleneck.** Per-harness `[diffcov]` entry counts over

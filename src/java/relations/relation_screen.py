@@ -44,7 +44,8 @@ from llm import record_event
 from java.execution.fuzz_runner import run_jazzer
 from java.parsing.java_source import (boolean_swallow, constant_receiver_state,
                          library_subclass, negative_modulo_index,
-                         violation_swallowed)
+                         patched_probe_swallowed, probe_before_last_mutation,
+                         rethrow_patched_probe, violation_swallowed)
 # Fire ratio above which a relation is out-of-domain: the buggy build is
 # known-correct on the overwhelming majority of inputs (it passes its whole
 # suite bar the triggers), so a relation violated this often contradicts
@@ -462,13 +463,21 @@ def screen_relations(candidates: List,
                      timeout_seconds: int = 45,
                      max_keep: int = 3,
                      repair_fn=None,
+                     patched_classes: Optional[List[str]] = None,
                      ) -> List:
     """Screen each candidate on the buggy build; return the survivors
     (ranked: selective-firing first, silent second), capped at `max_keep`
     so the prompt is never flooded. Each survivor's `screen_note` records
     what the screen observed. Fails soft per candidate — a candidate that
     cannot be compiled/run is dropped with a printed reason, never injected
-    unscreened."""
+    unscreened.
+
+    `patched_classes` (the classes the patch under analysis changed) arms
+    the 8.35 Mechanism-A normalisation: a probe on one of those classes
+    fenced behind a blanket catch-and-return has its outcome swallowed
+    before the counting wrapper can see it, and is rewritten to re-throw.
+    Empty/omitted, that step is inert and screening is byte-for-byte what
+    it was."""
     confirmed, confirmed_flaky, selective, silent, high_ratio = (
         [], [], [], [], [])
 
@@ -506,6 +515,54 @@ def screen_relations(candidates: List,
             _mark(rel, 'dropped', 'format: never throws the mandated '
                   '"violated" message')
             continue
+        # 8.35 Mechanism A — reportable patched-only exceptions. A probe on
+        # the PATCH-CHANGED class wrapped in the old blanket
+        # `catch (Exception e) { return; }` reports NOTHING when the patched
+        # build throws on an input the relation itself declared valid by
+        # construction: the check goes quiet on both builds, measures 0/N,
+        # and reads as a well-behaved tripwire. Normalise it here, before any
+        # other lint sees the body, so every downstream check runs on the
+        # shape that will actually be compiled: a tier-2 rethrow that fires
+        # only for exceptions raised INSIDE the patch-changed class (its
+        # constructors excluded — a constructor refusing its arguments is
+        # setup, i.e. a rejection). The rethrow carries the mandated
+        # "violated" message, so the counting wrapper, [relfire] recording,
+        # attribution facts and judge all see an ordinary firing; nothing
+        # downstream changes. FAIL-CLOSED: when the rewrite cannot be
+        # produced the candidate is KEPT and DEMOTED with the reason
+        # recorded — a blanket catch costs recall, not soundness, so a drop
+        # would delete sound checks to punish a shape the prompt only just
+        # started asking for.
+        if patched_classes:
+            _swallow = patched_probe_swallowed(getattr(rel, 'check', ''),
+                                               patched_classes)
+            if _swallow is not None:
+                _rewritten = rethrow_patched_probe(
+                    getattr(rel, 'check', ''), patched_classes,
+                    relation_name=name)
+                if _rewritten:
+                    try:
+                        rel.check = _rewritten
+                        rel.tier2_rewritten = True
+                    except Exception:
+                        pass
+                    print(f"  [screen] {name}: PATCHED-PROBE SWALLOWED — "
+                          f"{_swallow} — REWRITTEN (tier-2 rethrow inserted)")
+                    record_event('deterministic', method='screen', target=name,
+                                 output='tier2-rewritten', reason=_swallow)
+                else:
+                    print(f"  [screen] {name}: PATCHED-PROBE SWALLOWED — "
+                          f"{_swallow} — DEMOTED (rewrite not applicable, "
+                          f"kept as written)")
+                    try:
+                        rel.screen_demotion = (' | PATCHED-PROBE-SWALLOWED '
+                                               '(exception blind spot): '
+                                               + _swallow)
+                    except Exception:
+                        pass
+                    record_event('deterministic', method='screen', target=name,
+                                 output='demoted',
+                                 reason=f'patched probe swallowed: {_swallow}')
         # P0.2 self-swallow lint: an alarm thrown inside the check's own
         # catch-everything block is caught and discarded before the
         # counting wrapper can see it — the check then measures 0/20,000
@@ -573,6 +630,28 @@ def screen_relations(candidates: List,
             record_event('deterministic', method='screen',
                          target=name, output='demoted',
                          reason=f'constant receiver state: {conststate}')
+        # 8.35 Mechanism B — the ORDERING half of the same blind spot. A
+        # rejection probe that never re-runs after its receiver's last state
+        # change has only ever observed the pre-mutation state, which is the
+        # state a state-conditional patch still gets right; the container can
+        # be perfectly fuzz-shaped and the probe still never sees the shape.
+        # DEMOTED like its shape twin: textual ordering is an approximation
+        # (a probe inside a loop that mutates after it does re-run), and the
+        # check may be sound and catch something else.
+        probeorder = probe_before_last_mutation(getattr(rel, 'check', ''))
+        if probeorder is not None:
+            print(f"  [screen] {name}: PROBE BEFORE LAST MUTATION — "
+                  f"{probeorder} — DEMOTED (kept, ordering blind spot "
+                  f"recorded)")
+            try:
+                rel.screen_demotion = (getattr(rel, 'screen_demotion', '')
+                                       + ' | PROBE-BEFORE-LAST-MUTATION '
+                                       '(ordering blind spot): ' + probeorder)
+            except Exception:
+                pass
+            record_event('deterministic', method='screen',
+                         target=name, output='demoted',
+                         reason=f'probe before last mutation: {probeorder}')
         cls = f'RelScreen{i}'
         src = _screen_harness_source(package, imports or [], cls,
                                      getattr(rel, 'check', ''))

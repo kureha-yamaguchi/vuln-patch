@@ -11,6 +11,7 @@ here removes that duplication and gives "how do we parse Java text" one home.
 Everything is best-effort and fails soft (returns -1 / '' / []) on malformed
 input rather than raising — callers rely on that to degrade gracefully.
 """
+import os
 import re
 from typing import List, Optional
 
@@ -1715,3 +1716,345 @@ def constant_receiver_state(check_source: str):
             f'is never exercised. Draw the structure from `data`: the number '
             f'of elements, the indices they are installed at, whether the '
             f'container is empty, and whether it is freshly built or mutated.')
+
+
+# ---------------------------------------------------------------------------
+# 8.35 Mechanism A: a probe on the PATCH-CHANGED class swallowed by a blanket
+# catch-and-return.
+#
+# The relation body's setup tier (build the inputs and the receiver) rightly
+# treats an exception as a rejection: an input we cannot build is an input we
+# skip. The PROBE tier is different. The relation has already declared its
+# input VALID BY CONSTRUCTION, so an exception raised INSIDE the changed code
+# on that input is a result the relation must report — and a blanket
+# `catch (Exception e) { return; }` around the probe reports nothing: the
+# check goes quiet on both builds and measures 0/N, which reads as
+# "well-behaved tripwire". A patch that ADDS or MOVES a throw is invisible to
+# every relation shaped that way.
+#
+# Two functions, deliberately split:
+#   * patched_probe_swallowed  — the LINT (detect + explain), same shape as
+#     violation_swallowed / boolean_swallow.
+#   * rethrow_patched_probe    — the mechanical NORMALISATION the screen
+#     applies when the lint fires. It inserts a tier-2 rethrow that fires
+#     ONLY for exceptions whose stack trace shows a frame in the
+#     patch-changed class, and never for a frame in that class's CONSTRUCTOR
+#     (a constructor rejecting its arguments is setup, i.e. a rejection).
+#     That dynamic frame test is the runtime twin of "only the calls whose
+#     owner is the patch-changed class": it needs no statement-level
+#     isolation of the probe, so it cannot mis-split a try body, and it
+#     leaves everything the model wrote in place.
+#
+# Both are conservative: a try whose catches include a TARGETED exception
+# type is an expected-rejection contract (the convicting documented-@throws
+# shape) and is never touched, and a broad catch that already rethrows, or
+# that records the outcome in a flag, is not a swallow.
+
+def _patched_class_names(patched_classes) -> set:
+    """Simple class names from whatever the caller has: `Foo`, `Foo.java`,
+    `a/b/Foo.java`, `pkg.Foo`. Anything unparseable is dropped."""
+    out = set()
+    for raw in patched_classes or []:
+        name = str(raw or '').strip().replace('\\', '/').rsplit('/', 1)[-1]
+        if name.endswith('.java'):
+            name = name[:-5]
+        name = name.rsplit('.', 1)[-1]
+        if re.match(r'^[A-Za-z_]\w*$', name):
+            out.add(name)
+    return out
+
+
+def subclasses_in_tree(root_dir, class_names, max_rounds=4):
+    """Simple names of classes under `root_dir` whose declaration
+    (transitively) `extends` any name in `class_names`, by textual scan of
+    the checkout's .java files. Test trees are skipped.
+
+    Exists for the 8.35 Mechanism-A tier: a patch to a base class is probed
+    through its public subclass (delegation is the dataset's normal shape —
+    the base is often protected and the subclass merely re-exposes it), so
+    the probe-tier receiver check must count those subtypes or it misses
+    exactly the delegating probes it was built for."""
+    decl = {}
+    for dirpath, dirnames, files in os.walk(root_dir):
+        dirnames[:] = [d for d in dirnames
+                       if d not in ('test', 'tests') and not d.startswith('.')]
+        for fname in files:
+            if not fname.endswith('.java'):
+                continue
+            try:
+                with open(os.path.join(dirpath, fname),
+                          encoding='utf-8', errors='replace') as fh:
+                    text = fh.read()
+            except OSError:
+                continue
+            for m in re.finditer(
+                    r'\bclass\s+(\w+)(?:\s*<[^>]*>)?\s+extends\s+'
+                    r'(?:[\w.]+\.)?(\w+)', text):
+                decl[m.group(1)] = m.group(2)
+    known = set(_patched_class_names(class_names))
+    for _ in range(max_rounds):
+        added = {c for c, parent in decl.items() if parent in known} - known
+        if not added:
+            break
+        known |= added
+    return sorted(known - set(_patched_class_names(class_names)))
+
+
+def _patched_receivers(src: str, names) -> dict:
+    """{local var -> class} for locals whose STATIC type is a patch-changed
+    class: declared (`Foo f = ...`, `Foo f;`) or assigned (`f = new Foo(...)`,
+    possibly package-qualified)."""
+    found = {}
+    for cls in names:
+        esc = re.escape(cls)
+        for m in re.finditer(r'\b(?:[\w.]+\.)?' + esc + _GENERIC
+                             + r'\s+(\w+)\s*[=;,)]', src):
+            if m.group(1) not in ('new', 'return', 'instanceof'):
+                found[m.group(1)] = cls
+        for m in re.finditer(r'\b(\w+)\s*=\s*new\s+(?:[\w.]+\.)?' + esc
+                             + _GENERIC + r'\s*\(', src):
+            found[m.group(1)] = cls
+    return found
+
+
+def _patched_probe_calls(body: str, receivers: dict, names) -> List[tuple]:
+    """[(call_text, class)] for every method call in `body` made ON a
+    patch-changed receiver or statically on a patch-changed class. A
+    CONSTRUCTOR call is not a probe — building the receiver is setup."""
+    hits = []
+    for m in re.finditer(r'\b(\w+)\s*\.\s*(\w+)\s*\(', body):
+        recv, meth = m.group(1), m.group(2)
+        if recv in receivers:
+            hits.append((f'{recv}.{meth}(...)', receivers[recv]))
+        elif recv in names:
+            hits.append((f'{recv}.{meth}(...)', recv))
+    return hits
+
+
+def _swallowing_broad_catch(catches):
+    """Index of the first broad catch (Throwable/Exception/RuntimeException)
+    that absorbs the exception WITHOUT reporting it — an empty body, or a
+    body that returns and never throws. None when there is none.
+
+    A broad catch that rethrows, or that records the outcome in a flag the
+    check later alarms on (the mandated documented-@throws shape), is not a
+    swallow and is left alone."""
+    for i, (params, body) in enumerate(catches):
+        if not _BROAD_CATCH_RE.search(params):
+            continue
+        stmts = _catch_statements(body)
+        if any('throw' in s for s in stmts):
+            continue
+        if not stmts or any(re.match(r'return\b', s) for s in stmts):
+            return i
+    return None
+
+
+def _flagged_probe_tries(src: str, names):
+    """[(open_idx, close_idx, catches, catch_index, call, cls)] for every try
+    in `src` whose body probes a patch-changed class and whose broad catch
+    swallows the outcome. Shared by the lint and the rewrite so the two can
+    never disagree about what is flagged."""
+    receivers = _patched_receivers(src, names)
+    out = []
+    for open_idx, close_idx, catches in _try_blocks(src):
+        if not catches:
+            continue
+        if any(not _BROAD_CATCH_RE.search(p) for p, _b in catches):
+            continue                 # targeted rejection contract — leave it
+        ci = _swallowing_broad_catch(catches)
+        if ci is None:
+            continue
+        hits = _patched_probe_calls(src[open_idx + 1:close_idx],
+                                    receivers, names)
+        if not hits:
+            continue
+        # Name a READ call when the body has one: `list.indexOf(...)` says
+        # more about what got swallowed than the `list.set(...)` that built
+        # the state. The rewrite covers every call in the body either way.
+        call, cls = next(
+            (h for h in hits
+             if not h[0].split('.', 1)[-1].lower().startswith(
+                 _MUTATOR_PREFIXES)),
+            hits[0])
+        out.append((open_idx, close_idx, catches, ci, call, cls))
+    return out
+
+
+def patched_probe_swallowed(check_source: str,
+                            patched_classes) -> Optional[str]:
+    """Return a reason string when `check_source` calls into a PATCH-CHANGED
+    class inside a try whose broad catch swallows the outcome (empty body, or
+    a body that returns without throwing); None otherwise.
+
+    `patched_classes` is the list of classes the patch under analysis
+    changed; with an empty list the lint is inert (nothing to compare a
+    receiver's type against, so nothing is flagged)."""
+    src = strip_comments(check_source or '')
+    names = _patched_class_names(patched_classes)
+    if not src.strip() or not names:
+        return None
+    flagged = _flagged_probe_tries(src, names)
+    if not flagged:
+        return None
+    open_idx, _close, catches, _ci, call, cls = flagged[0]
+    line = src[:open_idx].count('\n') + 1
+    return (f'the probe `{call}` on the patch-changed class `{cls}` runs '
+            f'inside the try at line {line}, whose catch '
+            f'({_catch_types_of(catches)}) swallows every exception and '
+            f'returns. The relation declares this input VALID BY '
+            f'CONSTRUCTION, so an exception raised inside `{cls}` on it is a '
+            f'RESULT the relation must report, not a rejection to skip — as '
+            f'written the check goes quiet on both builds and a patch that '
+            f'adds or moves a throw is invisible to it. Give the probe its '
+            f'own try (not nested in the setup try) whose catch rethrows '
+            f'`new RuntimeException("relation <name> violated: unexpected " '
+            f'+ e.getClass().getName() + " on valid-by-construction input: " '
+            f'+ e.getMessage())`, and keep the blanket catch-and-return for '
+            f'the SETUP calls only.')
+
+
+def _catch_clause_spans(src: str, close_idx: int):
+    """[(params, body_start, body_end)] for the catch clauses following the
+    try body that ends at `close_idx`. Positions are into `src`."""
+    spans, j, n = [], close_idx + 1, len(src)
+    while True:
+        mm = re.match(r'\s*catch\s*\(', src[j:])
+        if not mm:
+            break
+        k = j + mm.end()
+        depth, start = 1, k
+        while k < n and depth:
+            if src[k] in '"\'':
+                k = skip_literal(src, k) - 1
+            elif src[k] == '(':
+                depth += 1
+            elif src[k] == ')':
+                depth -= 1
+            k += 1
+        params = src[start:k - 1]
+        b = src.find('{', k)
+        if b < 0:
+            break
+        bend = match_brace(src, b)
+        if bend < 0:
+            break
+        spans.append((params, b + 1, bend))
+        j = bend + 1
+    return spans
+
+
+def rethrow_patched_probe(check_source: str, patched_classes,
+                          relation_name: str = '') -> Optional[str]:
+    """Return `check_source` with a tier-2 rethrow inserted at the head of
+    every swallowing broad catch that absorbs a patch-changed-class probe —
+    or None when nothing could be rewritten.
+
+    The inserted guard walks the caught exception's stack trace and rethrows
+    the standard `... violated: ...` alarm ONLY when a frame belongs to the
+    patch-changed class and is not that class's constructor. Everything else
+    — a setup failure elsewhere, an argument another class rejected, a
+    constructor refusing its arguments — still falls through to the original
+    catch body and is skipped, exactly as before. Comments are stripped (the
+    rewrite works on the lexed source); the code is otherwise untouched."""
+    src = strip_comments(check_source or '')
+    names = _patched_class_names(patched_classes)
+    if not src.strip() or not names:
+        return None
+    flagged = _flagged_probe_tries(src, names)
+    if not flagged:
+        return None
+    slug = re.sub(r'[^-\w]', '', str(relation_name or '')) or 'relation'
+    edits = []
+    for _open, close_idx, _catches, ci, _call, _cls in flagged:
+        spans = _catch_clause_spans(src, close_idx)
+        if ci >= len(spans):
+            continue
+        params, body_start, _body_end = spans[ci]
+        var = params.strip().split()[-1] if params.strip() else ''
+        if not re.match(r'^[A-Za-z_]\w*$', var):
+            continue
+        tests = ' || '.join(
+            f'__rpc.equals("{c}") || __rpc.endsWith(".{c}") '
+            f'|| __rpc.endsWith("${c}")' for c in sorted(names))
+        guard = (
+            ' for (StackTraceElement __rpf : ' + var + '.getStackTrace()) {'
+            ' String __rpc = __rpf.getClassName();'
+            ' if ((' + tests + ')'
+            ' && !"<init>".equals(__rpf.getMethodName()))'
+            ' throw new RuntimeException("relation ' + slug + ' violated:'
+            ' unexpected " + ' + var + '.getClass().getName() + " thrown by'
+            ' the patch-changed class on a valid-by-construction input: " + '
+            + var + '.getMessage()); }')
+        edits.append((body_start, guard))
+    if not edits:
+        return None
+    for pos, guard in sorted(edits, reverse=True):
+        src = src[:pos] + guard + src[pos:]
+    return src
+
+
+# ---------------------------------------------------------------------------
+# 8.35 Mechanism B: a rejection probe that never runs after the receiver's
+# LAST state change.
+#
+# A documented rejection depends only on the probe being absent/invalid,
+# never on unrelated receiver state — so the probe must hold in EVERY state
+# the receiver passes through, and a check that probes once on the freshly
+# built receiver and only then mutates it has tested exactly the state a
+# state-conditional patch still gets right. This is the ordering half of the
+# receiver-state gap (constant_receiver_state is the shape half): the
+# container may be perfectly fuzz-shaped and the probe still never sees the
+# shape the fuzzing produced.
+#
+# Advisory, like constant_receiver_state: the check may be sound and may
+# still catch something else, so the screen DEMOTES and records it rather
+# than dropping. Textual ordering is the approximation — a probe inside a
+# loop that mutates after it does re-run on the next iteration and is
+# nonetheless flagged; a demotion, not a drop, is the right weight for that.
+
+def probe_before_last_mutation(check_source: str) -> Optional[str]:
+    """Return a reason string when a rejection-contract probe on a locally
+    constructed receiver is followed by a state-changing call on that SAME
+    receiver, with no probe after it; None otherwise (including when the
+    check has no rejection probe at all)."""
+    src = strip_comments(check_source or '')
+    if not src.strip():
+        return None
+    built = _constructed_locals(src)
+    if not built:
+        return None
+    probes = []                       # (pos, receiver, call text)
+    for open_idx, close_idx, catches in _try_blocks(src):
+        if not any(any(e in params for e in _REJECTION_EXC_SUBSTRINGS)
+                   for params, _b in catches):
+            continue
+        body = src[open_idx + 1:close_idx]
+        for m in re.finditer(r'\b(\w+)\s*\.\s*(\w+)\s*\(', body):
+            if m.group(1) in built:
+                probes.append((open_idx + 1 + m.start(), m.group(1),
+                               f'{m.group(1)}.{m.group(2)}(...)'))
+    if not probes:
+        return None
+    for recv in sorted({p[1] for p in probes}):
+        own = [p for p in probes if p[1] == recv]
+        last_probe = max(p[0] for p in own)
+        call = own[-1][2]
+        after = []
+        for m in re.finditer(r'\b(\w+)\s*\.\s*(\w+)\s*\(', src):
+            if (m.group(1) == recv and m.start() > last_probe
+                    and m.group(2).lower().startswith(_MUTATOR_PREFIXES)):
+                after.append(f'`{recv}.{m.group(2)}(...)`')
+        if after:
+            return (f'the rejection probe `{call}` runs BEFORE the last '
+                    f'state change of its receiver `{recv}` '
+                    f'({", ".join(sorted(set(after))[:3])}) and is never '
+                    f're-run afterwards, so it only ever observes the '
+                    f'pre-mutation state. A correct rejection holds in every '
+                    f'receiver state, and a patch that makes it conditional '
+                    f'on the container contents/size/occupied slots diverges '
+                    f'only in the MUTATED states — which this check never '
+                    f'probes. Re-run the probe after each state-changing '
+                    f'call (mutate, then probe again) and assert the same '
+                    f'documented outcome each time.')
+    return None

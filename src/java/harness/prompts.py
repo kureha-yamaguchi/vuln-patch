@@ -604,7 +604,17 @@ class PromptBuilder:
         had to guess the preconditions. This block closes the gap. It
         AUGMENTS the rule; when javadoc is absent (undocumented code,
         OSS-Fuzz targets) it renders empty and the rule stands alone —
-        never replaced."""
+        never replaced.
+
+        It also carries the ORDERING rule for rejection oracles (8.35
+        Mechanism B): a documented rejection must be re-probed after every
+        state-changing call, with the mutation target drawn from the fuzzer.
+        This is the harness-channel twin of the relation channel's
+        REJECTION INDEPENDENCE standing strategy, which harness-borne
+        rejection oracles never received — a probe placed before the
+        state-building mutations only ever observes the state a
+        state-conditional patch still gets right, so it is silent on both
+        builds however well the container itself is fuzzed."""
         if not javadocs:
             return ''
         lines: List[str] = []
@@ -625,6 +635,26 @@ class PromptBuilder:
             " constraints BY CONSTRUCTION (order/clamp/force them valid"
             " before the call) and assert only on those:",
         ]
+        rejection_ordering = (
+            "REJECTION ORACLES — RE-PROBE AFTER EVERY STATE CHANGE. When you"
+            " assert a documented rejection (asking for something absent,"
+            " invalid or out of range MUST throw), run that probe again AFTER"
+            " every call that changes the receiver's state — installing,"
+            " registering, adding, removing, clearing — not once on the"
+            " freshly built object. Mutate, then probe; mutate again, then"
+            " probe again, asserting the SAME documented outcome each time. A"
+            " correct rejection depends only on the probe itself being absent"
+            " or invalid, never on unrelated receiver state, so it must hold"
+            " in every state the object passes through; a patch that makes the"
+            " rejection conditional on the container's contents, its size, or"
+            " which slots are occupied diverges ONLY in the mutated states, so"
+            " a probe placed before the mutations is silent on the buggy and"
+            " the patched build alike. Draw WHICH slot/key/index each mutation"
+            " targets, and HOW MANY mutations happen, from the"
+            " FuzzedDataProvider — never from literals: fixed targets rebuild"
+            " one shape every iteration, and the states where such a patch"
+            " misbehaves (a gap between filled slots, an emptied container, a"
+            " larger one) are never reached.")
         total = 0
         for s in lines:
             if total + len(s) > max_chars:
@@ -633,6 +663,7 @@ class PromptBuilder:
                 break
             parts.append(f"  - {s}")
             total += len(s)
+        parts.append(rejection_ordering)
         return '\n'.join(parts)
 
     def _failure_test_block(self, failure_tests: List[FailureTest],

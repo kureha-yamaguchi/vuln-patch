@@ -1548,6 +1548,11 @@ def main():
 
     synthesized_relations = []
     _all_candidates = []
+    # The classes this patch changed — read off the diff headers below and
+    # handed to the screen so the 8.35 Mechanism-A normalisation knows which
+    # calls are the PROBE tier. Empty (no synthesis, no diff headers) leaves
+    # that step inert.
+    _patched_classes: list = []
     if bug_kind == "semantic" and args.synthesize_relations:
         if context_degraded:
             print("  [synth] skipped: no touched function extracted "
@@ -1566,6 +1571,19 @@ def main():
                 r'^\+\+\+\s+.*?/([A-Za-z_]\w*)\.java',
                 context.patch_text or '', re.MULTILINE)))
             class_name = _syn_cls[0] if _syn_cls else ''
+            _patched_classes = list(_syn_cls)
+            # A patch to a base class is probed through its public subclass
+            # (the dataset's normal delegation shape), so the probe tier
+            # counts same-tree subtypes too — else the tier misses exactly
+            # the delegating probes it exists for (Chart-19's shape).
+            if _patched_classes:
+                from java.parsing.java_source import subclasses_in_tree
+                _sub_cls = subclasses_in_tree(selection.buggy_dir,
+                                              _patched_classes)
+                if _sub_cls:
+                    print(f"  [synth] probe tier includes patched-class "
+                          f"subtypes: {_sub_cls}")
+                    _patched_classes += _sub_cls
             synthesizer = RelationSynthesizer(
                 HarnessGenerator(model=synth_model,
                                  temperature=0.3, top_p=1.0),
@@ -1793,6 +1811,7 @@ def main():
                     max_keep=12,
                     repair_fn=_repair,
                     runs=args.screen_runs,
+                    patched_classes=_patched_classes,
                 )
                 record_event('deterministic', method='screening-survivors',
                              output={'kept': [getattr(r, 'name', '?')
@@ -1832,7 +1851,8 @@ def main():
                         jazzer_api_jar=jazzer_api_jar,
                         trigger_literals=_trig_lits,
                         max_keep=12, repair_fn=_repair,
-                                                runs=args.screen_runs),
+                        runs=args.screen_runs,
+                        patched_classes=_patched_classes),
                     max_extra_rounds=2,
                     min_extra_rounds=1,
                 )
