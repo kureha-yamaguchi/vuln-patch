@@ -1701,6 +1701,58 @@ copied surgically. DO NOT push-to-vm until the invdiv suite has
 launched or completed — p1a changes replay behavior and would
 contaminate the A/B.**
 
+### 8.36 DIFFCOV REACH MEASUREMENT — first instrumented run, read 2026-08-09 (suite `diffcov_reach_20260808_233005`, archived; 744,829 tokens, git a2cdaad)
+**THE MEASUREMENT: every leg reaches its patch-changed methods — reach
+is nowhere the bottleneck.** Per-harness `[diffcov]` entry counts over
+the patched-side fuzz (5 harnesses per leg; ranges verbatim):
+- Chart-19-o `AbstractObjectList#indexOf(Object)`: 862,812–1,200,000.
+  Outcome TP THIS draw — and by exactly the 8.35 mechanism: this draw
+  instantiated the rejection-independence companion
+  (`categoryplot-range-axis-index-null-throws-independent-of-sta`,
+  fires 7406/20000 fuzzed on patched). The invdiv lottery re-confirmed:
+  companion present = catch, absent = miss; never the input.
+- **Lang-63-o `DurationFormatUtils#reduceAndCorrect(Calendar,Calendar,
+  int,int)`: 1,778,791–2,395,015 entries — and STILL FN.** Zero harness
+  crashes on patched, zero relation-replay firings. ~2M entries into
+  the changed method per harness with nothing reported is the
+  strongest possible evidence that this leg's miss is oracle-side
+  (which observable is checked / how the check can report), not
+  input-side.
+- Lang-41-o `ClassUtils#getShortClassName(Class)` 158,331–2,600,000 +
+  `ClassUtils#getPackageName(Class)` 100,000–1,799,396 (both changed
+  methods reached). TP this draw (unstable leg, caught here).
+- Math-2-o `AbstractIntegerDistribution#inverseCumulativeProbability
+  (double)`: 4,118–78,758. TP — positive control good (known-catch leg
+  caught with counters live).
+- Math-65-c `AbstractLeastSquaresOptimizer#getChiSquare()`:
+  12,609–100,001. FP this draw — read as the leg's KNOWN flip (the
+  8.29 variance-baseline attribution nuisance), NOT a diffcov
+  perturbation: the conviction is a relation firing DETERMINISTICALLY
+  on the trigger literals (2/2 replays; input-independent, so counter
+  timing can't select it), the instrumented tree passed trigger tests,
+  and the trace contains ZERO `[diffcov] method=` lines (the JVM's
+  stderr dump never enters recorded output or prompts — checked). A
+  paired flag-off draw would settle it definitively if it ever
+  matters; not spent now.
+**Instrumentation validated end-to-end on real legs:** plans mapped
+correctly on all 5 patches (incl. Lang-41's two changed methods and
+zero unmapped lines everywhere), counts collected per harness into
+result.jsonl, summary unaffected, no prompt contamination.
+**WHAT THE READ MEANS (with its bound stated):** diffcov counts method
+ENTRIES, not distinguishing trajectories — hits>0 does not prove the
+distinguishing input-state occurred. But it ELIMINATES "no generated
+input ever entered the changed code," which was the seeder's entire
+premise (8.32's "patched-side input search", witness-study caveat (b)).
+Measured verdict across the actual miss set: reach saturated, signal
+absent. The recall bottleneck is oracle-side everywhere we can measure,
+generalising 8.35 beyond Chart-19. THE SEEDER IS PARKED — no
+motivating leg remains in the measured set; revisit only if a future
+diffcov read shows a zero on some leg.
+**NEXT MECHANISM (unchanged from 8.35, now with its denominator):
+reportable patched-only exceptions first, rejection-probe-after-
+mutation second** — both gated designs, both-signs guard fixtures +
+clean-leg hard-stop, pre-registered before any build.
+
 ### 8.35 DRAW-05 ROUTING RE-READ — FORK-ORACLE (2026-08-09); the 8.32 flag is RESOLVED
 **Full evidence: `docs/draw05-routing-reread-2026-08-09.md`** (Opus desk
 read; every load-bearing claim re-verified independently against the
