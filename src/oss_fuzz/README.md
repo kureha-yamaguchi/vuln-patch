@@ -16,6 +16,7 @@ This is the C/C++ version of `src/java` (Defects4J + Jazzer). It shares that pip
 | 2. Find a project *(optional)* | `targets.py` | With `--list-candidates` / `--auto-project`: scan the checkout for C/C++ projects that have a disclosed bug. |
 | 3. Check the project | `ossfuzz.py` | Read its `project.yaml` and `Dockerfile`. Reject anything not C/C++, not libFuzzer, or missing the sanitizer. A python project or a typo stops here. |
 | 4. Pick a bug | `osv.py` | Ask OSV for the project's bugs, newest first. Keep ones with a fix commit. Pull the crash type and crash stack out of the text. |
+| 4b. Classify it | `bugclass.py` | Crashing or semantic — i.e. will a sanitizer report a sibling of this bug, or must the harness notice it itself? Decides the prompt's oracle contract, a pre-build gate, the fuzzing flags and how a HEAD finding is reported. |
 | 5. Get the code | `ossfuzz.py` | Clone the project's own repo, then make two checkouts: `vuln` (the commit before the fix) and `head` (latest). |
 | 6. Work out what the fix touched | `analysis.py` | Diff the two commits, list the changed functions, and expand them into the surrounding call graph. This is what the prompt steers toward. |
 | 7. Decide how to compile | `ossfuzz.py` | Choose `crib` or `overwrite` (see below) — before pulling the Docker image, so an impossible choice fails early. |
@@ -38,16 +39,73 @@ attempts are used up:
    `helper.py build_fuzzers`.
 4. It is fuzzed briefly (`--verify-timeout`) against that vulnerable build.
 
-A harness is **accepted only if it crashes the vulnerable build** — compiling is
-not enough. If the build fails, the compiler errors go back to the model as a
-fix-it turn. If it builds but does not crash, the next prompt is steered
-somewhere new, away from what earlier harnesses already covered. If the *build
-environment* is broken (nothing was ever compiled) the run stops immediately
-rather than blaming the model.
+A harness is **accepted only if it triggers on the vulnerable build** —
+compiling is not enough. If the build fails, the compiler errors go back to the
+model as a fix-it turn. If it builds but does not trigger, the next prompt is
+steered somewhere new, away from what earlier harnesses already covered. If the
+*build environment* is broken (nothing was ever compiled) the run stops
+immediately rather than blaming the model.
 
 Exit codes: **0** = ran fine, no siblings. **2** = `RUN ABORTED`, the
-environment is broken — this is not a result about the fix. **3** = siblings
-found.
+environment is broken — this is not a result about the fix. **3** = confirmed
+siblings found. **4** = only unconfirmed oracle claims (see below).
+
+## Crashing vs semantic bugs
+
+Not every OSS-Fuzz bug is a crash, and the difference decides what a *working
+harness* even is. The pipeline asks one question about each record — **what
+would notice this bug?** — and branches on the answer (`bugclass.py`, the C
+analogue of the Java front-end's `classify_exceptions`).
+
+| Bug kind | Oracle | Example crash types | What the harness must do |
+|---|---|---|---|
+| crashing | `sanitizer` | Heap-buffer-overflow, Use-after-free, Undefined-shift, SEGV, Timeout, Direct-leak | Reach the fault. The runtime supplies the verdict. |
+| semantic | `project-assert` | `ASSERT: idx < len`, CHECK failure, Fatal error, Unreachable code | Reach a *state* the invariant does not hold in. The library aborts by itself. |
+| semantic | `harness` | Incorrect-result | Carry its own check: nothing else will ever notice. |
+| unknown | `sanitizer` | (record has no crash type) | Same as crashing, but printed as `unknown` so you can override. |
+
+Getting this wrong is expensive in a way that looks like a result. A harness for
+an `Incorrect-result` bug written to the crashing template compiles, runs, and
+returns 0 for every input — so the trigger gate rejects it, every attempt, until
+the budget is gone, and the run reports "0 siblings" as if the method had been
+tested.
+
+What changes per kind:
+
+- **The prompt.** Wrong-value bugs get a mandatory oracle contract instead of
+  the optional metamorphic nudge: pick a relation true of *any* correct
+  implementation (round-trip, idempotence, two API paths that must agree, a
+  documented postcondition), compute both sides from real library calls, and
+  report violations as `[oracle:<id>]` + `abort()`. Invariant bugs are told the
+  opposite — don't write a check, the library has one; build the state that
+  breaks it, and mind that `-DNDEBUG` would delete the asserts entirely.
+- **A pre-build gate.** For harness-oracle bugs, a harness with no tagged,
+  aborting alarm is rejected from its source before Docker is invoked
+  (`campaign.oracle_tag_missing`). It cannot fail, so building it would spend a
+  compile plus a verify run to reach a verdict indistinguishable from an honest
+  miss.
+- **Signatures.** Every oracle alarm and every failed assert reaches libFuzzer
+  as the same `deadly signal`. Since the variant-analysis steering is fed the
+  signatures found so far and told to aim elsewhere, they get their own forms
+  (`oracle:<id>@frame`, `assert:<expr>`) — otherwise the model is told it has
+  covered ground it has not.
+- **Fuzzing flags.** Timeout/OOM bugs only reproduce under ClusterFuzz's
+  per-input limits (`-timeout=25 -rss_limit_mb=2560`); libFuzzer's own defaults
+  are loose enough that the bug never fires.
+- **The report.** A crash on HEAD that a *sanitizer* (or the project's own
+  assert) reports is a sibling. A crash that only the harness's own oracle
+  reports is a **claim**: true if and only if the relation it asserts is true,
+  which nothing in this pipeline can establish. Claims are listed separately,
+  excluded from the sibling count, and exit 4 rather than 3. Read the harness
+  before reporting one upstream.
+
+`--bug-kind {auto,crashing,semantic}` overrides the classification;
+`--skip-semantic` skips non-crashing records during target selection (before
+the clone), mirroring the Java front-end's `--skip_semantic`. The `found_by`
+field on every finding records which oracle *actually* fired, which is not
+always the predicted one — a harness aimed at a wrong-value bug that trips ASan
+found a memory bug instead. That is a real finding, but it is not evidence
+about this fix.
 
 ### What it shares with the harness-generation pipeline
 
@@ -62,7 +120,9 @@ called through a deliberately small interface:
 
 What is specific to C/C++ and therefore lives here: the prompt wording and byte
 handling for `LLVMFuzzerTestOneInput` (`prompts.py`), the diff analysis
-(`analysis.py`), and everything that builds and runs harnesses (`ossfuzz.py`).
+(`analysis.py`), the crashing/semantic classification (`bugclass.py` — same
+split as the Java front-end, but read off ClusterFuzz crash types rather than
+JUnit throwables), and everything that builds and runs harnesses (`ossfuzz.py`).
 
 The rule for accepting a harness — crashes the vulnerable build, not just
 compiles — is the same as in the Java pipeline, and `campaign.py` is the only
@@ -268,11 +328,15 @@ is not run under ASan, where the harness would compile and never crash.
 python src/oss_fuzz/tests/test_offline.py     # or: pytest src/oss_fuzz/tests
 ```
 
-40 tests, no Docker, network, or LLM needed. They cover bug selection, crash
+48 tests, no Docker, network, or LLM needed. They cover bug selection, crash
 parsing and sanitizer choice, `project.yaml` parsing, the checkout and project
 checks, candidate discovery, diff analysis, both compile strategies (including
 that `overwrite` restores the tree exactly and never edits `build.sh`), crash
 detection, prompt assembly, and that the steering matches the Java pipeline's.
+The crashing/semantic split is covered end to end: classification over
+ClusterFuzz's crash-type vocabulary, evidence ranking in `finding_oracle`,
+signature separation, the pre-build oracle gate firing on semantic runs and
+staying out of the way on crashing ones.
 
 ## Limits and gotchas
 
@@ -317,6 +381,13 @@ detection, prompt assembly, and that the steering matches the Java pipeline's.
   extra (`uv sync --extra introspector`). Without it, or on timeout, a simpler
   brace-matching fallback is used, and the run prints which one it used. Either
   way this only steers the prompt — the crash test decides what is accepted.
+- **A harness oracle can be wrong.** For semantic bugs the harness asserts a
+  relation it chose itself, and a relation that is not universally true fires on
+  the vulnerable build *and* on HEAD — which looks exactly like a sibling. The
+  pre-build gate only checks that an alarm exists and can stop the process, not
+  that it is sound; there is no C-side equivalent of the Java pipeline's
+  soundness and attribution judges yet. That is why oracle findings are reported
+  as claims and exit 4.
 - **HEAD may not build.** If the project's API changed between the fix and now,
   a harness may not compile against HEAD. Those are skipped and reported, not
   counted as clean.

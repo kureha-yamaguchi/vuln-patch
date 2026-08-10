@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import config
 from typing import List
 
+from oss_fuzz.bugclass import SEMANTIC, ORACLE_HARNESS, classify_forced
 from oss_fuzz.osv import OsvClient, CveTarget, rank_records
 from oss_fuzz.ossfuzz import OssFuzz
 from oss_fuzz.analysis import DiffAnalyzer
@@ -73,6 +74,17 @@ def parse_args():
     p.add_argument("--sanitizer", default=None,
                    help="address/undefined/memory (default: the CVE's own, "
                         "else config.OSS_FUZZ_SANITIZER)")
+    p.add_argument("--bug-kind", choices=("auto", "crashing", "semantic"),
+                   default="auto",
+                   help="override how the bug manifests. 'crashing' = a "
+                        "sanitizer reports it; 'semantic' = it does not crash, "
+                        "so the harness must carry its own oracle. Default "
+                        "'auto' reads the OSV record's crash type "
+                        "(see oss_fuzz/bugclass.py)")
+    p.add_argument("--skip-semantic", action="store_true",
+                   help="only run on crashing bugs: skip OSV records whose "
+                        "crash type says no sanitizer would report a sibling. "
+                        "Mirrors the Java front-end's --skip_semantic")
     p.add_argument("--max-target-tries", type=int, default=5,
                    help="how many OSV records (newest first) to try before "
                         "giving up on finding one whose fix diff touches C/C++ "
@@ -168,14 +180,17 @@ def _fail(msg: str, dry_run: bool) -> None:
 def _print_candidates(cands) -> None:
     print(f"\n{len(cands)} candidate project(s) — newest first:\n")
     print(f"  {'project':<24} {'lang':<5} {'advisory':<18} {'published':<11} "
-          "crash type")
+          f"{'kind':<9} crash type")
     for c in cands:
         # Most OSS-Fuzz records have no CVE, so show whichever id exists and
         # the crash type — that, not the id, is what tells you if the bug class
-        # matches the sanitizer you are about to run.
+        # matches the sanitizer you are about to run. The kind column says
+        # whether a sanitizer will report a sibling at all, which decides
+        # whether the run needs a harness-written oracle.
         advisory = c.cve_id or c.target.osv_id
         print(f"  {c.project:<24} {c.language:<5} {advisory:<18} "
-              f"{c.published[:10]:<11} {c.target.crash_type or '-'}")
+              f"{c.published[:10]:<11} {c.target.bug_class.kind:<9} "
+              f"{c.target.crash_type or '-'}")
     print("\nRun one with:  uv run -m oss_fuzz.run --project <project>")
 
 
@@ -270,6 +285,13 @@ def main():
         print(f"fixed commit : {cand.fixed_commit}")
         if cand.crash_type:
             print(f"crash type   : {cand.crash_type}")
+        print(f"bug kind     : {cand.bug_class.describe()}")
+        # Semantic bugs cost the same clone, build and LLM budget as crashing
+        # ones but answer a different question, so a suite measuring the
+        # crash-gated method can exclude them here — before the clone.
+        if args.skip_semantic and cand.bug_class.is_semantic:
+            print("  SKIPPED: --skip-semantic and this bug does not crash")
+            continue
         if cand.crash_state:
             print(f"crash state  : {' <- '.join(cand.crash_state)}")
         if cand.report_url:
@@ -307,19 +329,30 @@ def main():
               "next-newest record.")
 
     if target is None:
+        extra = (" or was skipped as semantic (--skip-semantic)"
+                 if args.skip_semantic else "")
         sys.exit(
             f"None of the {tries} newest OSV record(s) for '{args.project}' has "
-            "a fix diff that touches C/C++ source, so no steered prompt is "
-            "possible.\n  Raise --max-target-tries, pick another --project "
-            "(--list-candidates), or pass --allow-empty-context to run "
-            "unsteered anyway.")
+            "a fix diff that touches C/C++ source" + extra + ", so no steered "
+            "prompt is possible.\n  Raise --max-target-tries, pick another "
+            "--project (--list-candidates), or pass --allow-empty-context to "
+            "run unsteered anyway.")
 
     sanitizer = (args.sanitizer or target.sanitizer
                  or config.OSS_FUZZ_SANITIZER)
+    # How this bug manifests decides the prompt's oracle contract, the
+    # campaign's pre-build gate, the fuzzing flags and how a HEAD finding is
+    # reported. Everything downstream reads it from here.
+    bug_class = (target.bug_class if args.bug_kind == "auto"
+                 else classify_forced(args.bug_kind, target.crash_type))
     ext = of.harness_ext(target.language)
     print(f"\nselected     : {target.osv_id} "
           f"{target.cve_id or '(no CVE)'}  [{target.language}]")
     print(f"sanitizer    : {sanitizer}")
+    print(f"bug kind     : {bug_class.describe()}")
+    if bug_class.needs_harness_oracle:
+        print("               → harnesses must carry a tagged [oracle:<id>] "
+              "check; findings are claims, not sanitizer reports")
 
     # How the harness will be compiled. Decided here, before build_image, because
     # a demanded-but-impossible strategy should fail before pulling gigabytes.
@@ -360,7 +393,7 @@ def main():
         vc_out = of.reproduce(args.project, target.fuzz_target,
                               args.reproducer, sanitizer)
         print(f"  vuln build: {'CRASH' if vc_out.triggered else 'no crash'} "
-              f"({vc_out.crash_reason})")
+              f"({vc_out.crash_reason}, found by {vc_out.found_by})")
 
     # 5) Campaign: generate + build + trigger-gate on the vulnerable build.
     prompt_builder = LibFuzzerPromptBuilder(language=target.language)
@@ -378,7 +411,7 @@ def main():
             found_signatures=signatures, harness_name=harness_label,
             reproducer_hint=repro_hint,
             crash_type=target.crash_type, crash_state=target.crash_state,
-            harness_ext=placement.ext)
+            harness_ext=placement.ext, bug_class=bug_class)
 
     if args.dry_run:
         generator = _StubGenerator()
@@ -389,7 +422,8 @@ def main():
         generator=generator, oss_fuzz=of, project=args.project,
         vuln_checkout=vuln, sanitizer=sanitizer, ext=ext, placement=placement,
         target_successes=args.target_successes,
-        max_attempts=args.max_attempts, verify_seconds=args.verify_timeout)
+        max_attempts=args.max_attempts, verify_seconds=args.verify_timeout,
+        bug_class=bug_class)
     result = campaign.run(prompt_factory)
 
     print(f"\n== campaign: {result.achieved}/{result.target_successes} "
@@ -400,7 +434,8 @@ def main():
     if result.infra_error and result.achieved == 0:
         _emit(args.results_json, project=args.project, osv_id=target.osv_id,
               cve=target.cve_id, sanitizer=sanitizer, attempts=result.attempts,
-              harnesses_accepted=0, siblings=[],
+              bug_kind=bug_class.kind, oracle=bug_class.oracle,
+              harnesses_accepted=0, siblings=[], oracle_claims=[],
               infra_error=result.infra_error)
         # Exit 2 (not 1, and not 0) so a suite can tell "environment broken"
         # from "ran and found nothing" (0) and from a usage error (1).
@@ -428,7 +463,8 @@ def main():
         print(f"\nnote: HEAD's harness is {head_placement.rel_path} "
               f"(vuln used {placement.rel_path})")
 
-    siblings = []
+    siblings = []   # runtime-confirmed: a sanitizer or the project's own check
+    claims = []     # the harness's own oracle fired; true only if it is right
     for gen in result.successful if head_placement else []:
         print(f"\n-- HEAD run: {gen.harness_name} --")
         out_bin = of.build_harness(args.project, head, gen.harness_name,
@@ -439,42 +475,76 @@ def main():
             continue
         outcome = of.run_fuzzer(args.project,
                                 head_placement.runtime_name(gen.harness_name),
-                                args.fuzz_timeout, sanitizer)
+                                args.fuzz_timeout, sanitizer,
+                                bug_class=bug_class)
         if outcome.triggered:
-            print(f"  *** SIBLING BUG on HEAD *** [{outcome.signature}] "
+            # A sanitizer report on HEAD is a bug, full stop. A harness's own
+            # oracle firing is a bug *if the relation it asserts is true*, and
+            # nothing here can decide that — reporting the two as one number
+            # would put unreviewed claims into the sibling count.
+            label = ("SIBLING BUG CLAIM (needs triage)" if outcome.needs_triage
+                     else "SIBLING BUG on HEAD")
+            print(f"  *** {label} *** [{outcome.signature}] "
+                  f"found by {outcome.found_by} "
                   f"artifact={outcome.artifact_path}")
-            siblings.append({"harness": gen.harness_name,
-                             "signature": outcome.signature,
-                             "artifact": outcome.artifact_path})
+            (claims if outcome.needs_triage else siblings).append({
+                "harness": gen.harness_name,
+                "signature": outcome.signature,
+                "found_by": outcome.found_by,
+                "artifact": outcome.artifact_path})
         else:
             print("  clean on HEAD (fix covers this variant)")
 
     # 7) Report.
     print("\n" + "#" * 50)
-    print(f"{target.cve_id or target.osv_id}: {len(siblings)} sibling(s) on "
-          f"HEAD from {result.achieved} harness(es)")
+    print(f"{target.cve_id or target.osv_id} [{bug_class.kind}]: "
+          f"{len(siblings)} confirmed sibling(s) on HEAD from "
+          f"{result.achieved} harness(es)")
     for s in siblings:
         print(f"  - {s['harness']}: {s['signature']}  ({s['artifact']})")
+    if claims:
+        print(f"\n{len(claims)} unconfirmed oracle claim(s) — each one is only "
+              "as good as the relation its harness asserts; read the harness "
+              "before reporting any of these upstream:")
+        for c in claims:
+            print(f"  - {c['harness']}: {c['signature']}  ({c['artifact']})")
     print("#" * 50)
 
     _emit(args.results_json, cve=target.cve_id, project=args.project,
           osv_id=target.osv_id, sanitizer=sanitizer,
-          crash_type=target.crash_type, vuln_commit=vuln_commit,
+          crash_type=target.crash_type, bug_kind=bug_class.kind,
+          oracle=bug_class.oracle, vuln_commit=vuln_commit,
           head_commit=head_commit, harnesses_accepted=result.achieved,
-          attempts=result.attempts, siblings=siblings)
+          attempts=result.attempts, siblings=siblings,
+          oracle_claims=claims)
 
     if not args.dry_run:
         of.cleanup_checkouts(repo)
-    sys.exit(0 if not siblings else 3)
+    # 3 stays "the fix missed something, confirmed by the runtime". Oracle
+    # claims get their own code rather than being folded into 3 (which would
+    # inflate the headline result with unreviewed relations) or into 0 (which
+    # would hide the only findings a semantic run can produce).
+    if siblings:
+        sys.exit(3)
+    sys.exit(4 if claims else 0)
 
 
 class _StubGenerator:
     """Deterministic stand-in for the LLM under --dry-run: returns a minimal
-    well-formed harness so the whole control flow can be exercised offline."""
+    well-formed harness so the whole control flow can be exercised offline.
+
+    It carries a tagged, aborting oracle it never actually reaches, so that
+    --dry-run also exercises the semantic path: without one, the pre-build
+    oracle gate would reject every stub harness and a semantic wiring check
+    would never reach the build at all."""
     def generate(self, messages):
         return ('```c\n#include <stdint.h>\n#include <stddef.h>\n'
+                '#include <stdio.h>\n#include <stdlib.h>\n'
                 'int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)'
-                ' {\n  (void)data; (void)size; return 0;\n}\n```')
+                ' {\n  (void)data;\n'
+                '  if (size == (size_t)-1) {\n'
+                '    fprintf(stderr, "[oracle:stub] unreachable\\n");\n'
+                '    abort();\n  }\n  return 0;\n}\n```')
 
 
 if __name__ == "__main__":

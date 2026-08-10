@@ -13,6 +13,7 @@ from typing import Dict, List, Optional
 
 from variant import variant_analysis_directive
 from oss_fuzz.analysis import PatchContext, TouchedFunction
+from oss_fuzz.bugclass import BugClass, ORACLE_HARNESS, ORACLE_PROJECT_ASSERT
 
 
 class LibFuzzerPromptBuilder:
@@ -26,7 +27,19 @@ class LibFuzzerPromptBuilder:
               reproducer_hint: Optional[str] = None,
               crash_type: Optional[str] = None,
               crash_state: Optional[List[str]] = None,
-              harness_ext: Optional[str] = None) -> List[Dict[str, str]]:
+              harness_ext: Optional[str] = None,
+              bug_class: Optional[BugClass] = None) -> List[Dict[str, str]]:
+        """``bug_class`` decides what a *failing* harness even looks like.
+
+        For a crashing bug the harness only has to reach the fault; the
+        sanitizer supplies the verdict, so the metamorphic block stays the
+        optional extra it has always been. For a semantic bug there is no
+        verdict unless the harness (or the project's own assert) provides one,
+        and a harness written to the crashing template would run clean forever
+        — compiling, reaching the code, and being rejected by the trigger gate
+        on every attempt. None keeps the crashing wording, which is what every
+        caller predating the split expects.
+        """
         # The extension the harness will be SAVED as decides which language the
         # model must write, and that is not always the project's language: the
         # overwrite placement replaces an existing harness file in place and
@@ -35,11 +48,12 @@ class LibFuzzerPromptBuilder:
         is_c = ((harness_ext == ".c") if harness_ext
                 else context.language.lower() == "c")
         lang_label = "C" if is_c else "C++"
-        sections: List[str] = [self._intro(lang_label)]
+        sections: List[str] = [self._intro(lang_label, bug_class)]
 
         sections.append(self._patch_block(context.patch_text))
         if crash_type or crash_state:
-            sections.append(self._original_crash_block(crash_type, crash_state))
+            sections.append(self._original_crash_block(crash_type, crash_state,
+                                                       bug_class))
         for fn in context.functions:
             sections.append(self._function_block(fn))
         if context.headers:
@@ -52,13 +66,24 @@ class LibFuzzerPromptBuilder:
                 context.root_cause_reachable,
                 covered_functions, found_signatures))
 
-        sections.append(self._metamorphic_block())
+        # The oracle section is the fork. Crashing bugs keep the optional
+        # metamorphic nudge; semantic bugs get a mandatory contract instead,
+        # because for them the oracle IS the harness's reason to exist.
+        oracle = bug_class.oracle if bug_class else None
+        if oracle == ORACLE_HARNESS:
+            sections.append(self._required_oracle_block(is_c))
+        elif oracle == ORACLE_PROJECT_ASSERT:
+            sections.append(self._project_invariant_block(crash_type))
+        else:
+            sections.append(self._metamorphic_block())
+
         sections.append(self._byte_carving_reference())
         if reproducer_hint:
             sections.append(
                 "A known crashing input for the ORIGINAL bug (bytes shown as "
                 f"context, not to be hardcoded):\n{reproducer_hint}")
-        sections.append(self._skeleton(is_c, harness_name, harness_ext))
+        sections.append(self._skeleton(is_c, harness_name, harness_ext,
+                                       bug_class))
 
         system = (
             f"You are an expert {lang_label} security engineer writing "
@@ -69,16 +94,34 @@ class LibFuzzerPromptBuilder:
             {"role": "user", "content": "\n\n".join(sections)},
         ]
 
-    def _intro(self, lang_label: str) -> str:
-        return (
+    def _intro(self, lang_label: str,
+               bug_class: Optional[BugClass] = None) -> str:
+        base = (
             f"Write a single {lang_label} libFuzzer harness that exercises the "
             "code region a security fix touched, to discover a SIBLING bug the "
             "fix may have missed. The harness must define "
             "`int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)` and "
             "call the project's real public API — never re-implement it.")
+        if bug_class and bug_class.oracle == ORACLE_HARNESS:
+            return base + (
+                "\n\nTHIS BUG DOES NOT CRASH. It is a wrong-value bug: the "
+                "library returns successfully and returns the wrong answer, so "
+                "AddressSanitizer, UBSan and libFuzzer will all report a clean "
+                "run no matter how well you reach the code. A harness that "
+                "only calls the API is worthless here — the check you write IS "
+                "the harness.")
+        if bug_class and bug_class.oracle == ORACLE_PROJECT_ASSERT:
+            return base + (
+                "\n\nThis bug is not memory corruption: it is an INVARIANT the "
+                "library checks itself and that a bad input can falsify. The "
+                "library aborts when that happens, so you do not need to write "
+                "a check — you need to construct a state the invariant does "
+                "not hold in, reached along a path the fix did not harden.")
+        return base
 
     def _original_crash_block(self, crash_type: Optional[str],
-                              crash_state: Optional[List[str]]) -> str:
+                              crash_state: Optional[List[str]],
+                              bug_class: Optional[BugClass] = None) -> str:
         """The original bug's crash type and crashing frames, straight from the
         OSV record. The frames are the call path the harness has to re-enter,
         which is more direct evidence than the diff alone: the diff says what
@@ -86,13 +129,24 @@ class LibFuzzerPromptBuilder:
         lines = ["The ORIGINAL bug this fix addressed, as reported by OSS-Fuzz:"]
         if crash_type:
             lines.append(f"  crash type : {crash_type}")
+        if bug_class and bug_class.is_semantic:
+            lines.append(f"  detected by: {bug_class.oracle} — a sanitizer "
+                         "will NOT report a sibling of this bug")
         if crash_state:
             lines.append("  crash stack (innermost first): "
                          + " <- ".join(crash_state))
-            lines.append(
-                f"Drive execution into `{crash_state[0]}` via the public API. "
-                "Reaching that frame is necessary but NOT sufficient — the "
-                "point is to reach it along a path the fix did not harden.")
+            # For a semantic bug the frames are where the wrong value surfaced,
+            # not where memory was corrupted, so "reach it" is only half the
+            # instruction — the oracle has to be able to see the result there.
+            reach = (f"Drive execution into `{crash_state[0]}` via the public "
+                     "API. Reaching that frame is necessary but NOT sufficient "
+                     "— the point is to reach it along a path the fix did not "
+                     "harden.")
+            if bug_class and bug_class.oracle == ORACLE_HARNESS:
+                reach += (" Your oracle must observe a value that this frame "
+                          "computes; a check on something it cannot influence "
+                          "proves nothing about this fix.")
+            lines.append(reach)
         return "\n".join(lines)
 
     def _patch_block(self, patch_text: str) -> str:
@@ -124,7 +178,9 @@ class LibFuzzerPromptBuilder:
         ])
 
     def _metamorphic_block(self) -> str:
-        # Language-neutral version of the Java metamorphic hint.
+        # Language-neutral version of the Java metamorphic hint. Stays OPTIONAL
+        # for crashing bugs: the sanitizer is already a complete oracle there,
+        # and a mandatory relation would only add false-alarm surface.
         return "\n".join([
             "METAMORPHIC CHECK (optional, catches wrong-output bugs that never "
             "crash): if the patched function has a natural relation — "
@@ -137,19 +193,112 @@ class LibFuzzerPromptBuilder:
             "report false positives.",
         ])
 
+    def _required_oracle_block(self, is_c: bool) -> str:
+        """The mandatory contract for a wrong-value bug.
+
+        Two requirements beyond the optional metamorphic hint. First, the
+        oracle is not optional — without it the harness cannot fail. Second,
+        every alarm must be tagged ``[oracle:<id>]``, mirroring the Java
+        pipeline's named-alarm gate: an untagged alarm reaches the runner as
+        the same "deadly signal" as every other harness's, and the campaign
+        steers on those signatures, so untagged alarms would tell the model it
+        had covered ground it had not. ``campaign.oracle_tag_missing`` enforces
+        the tag before the harness is ever built.
+        """
+        trap = "abort()" if is_c else "std::abort()"
+        return "\n".join([
+            "REQUIRED ORACLE — the harness must be able to fail.",
+            "Pick a relation that holds for ANY correct implementation of the "
+            "patched code, compute both sides from real library calls on the "
+            "fuzzed input, and report a violation. Usable relations, best "
+            "first:",
+            "  - round-trip:  decode(encode(x)) == x, parse(print(v)) == v;",
+            "  - idempotence: normalise(normalise(x)) == normalise(x);",
+            "  - equivalence: two API paths that must agree (a convenience "
+            "wrapper vs the primitive it wraps, streaming vs one-shot, "
+            "different-but-equivalent inputs);",
+            "  - invariants:  a documented postcondition of the touched "
+            "function (length/ordering/range/consistency of an out-parameter).",
+            "",
+            "Report EXACTLY like this, so the runner can attribute the alarm:",
+            '  fprintf(stderr, "[oracle:round-trip] decode(encode(x)) != x: '
+            'got %zu want %zu\\n", got, want);',
+            f"  {trap};",
+            "Rules:",
+            "  - every distinct check gets its OWN short id: [oracle:<id>]. "
+            "Reuse of one id for two different checks makes them "
+            "indistinguishable in the results;",
+            "  - only compare after checking the library ACCEPTED the input "
+            "(error return, NULL, negative status → `return 0;`). An alarm on "
+            "a rejected input is a false positive, and false positives are "
+            "worse than no harness: they are reported as unfixed bugs;",
+            "  - never assert something the documentation does not promise "
+            "(iteration order, exact error codes, padding bytes);",
+            "  - do not compare against a value you computed by "
+            "re-implementing the library. Both sides must come from real "
+            "library calls.",
+        ])
+
+    def _project_invariant_block(self, crash_type: Optional[str]) -> str:
+        """For bugs whose oracle is the project's own assert/CHECK.
+
+        Nothing has to be written — the library already aborts — so the job is
+        purely reachability, with the invariant itself as the steering target.
+        ClusterFuzz puts the failing expression in the crash type ("ASSERT:
+        idx < len"), which is the most specific instruction available.
+        """
+        lines = [
+            "ORACLE — the library checks this itself.",
+            "The original bug was a violated internal invariant: the library "
+            "aborts when it does not hold, and libFuzzer records that abort. "
+            "You do NOT need to write a check.",
+        ]
+        if crash_type:
+            lines.append(f"The invariant that failed was reported as: "
+                         f"`{crash_type}`.")
+        lines += [
+            "So aim at STATE, not at memory: build inputs that put the touched "
+            "code into a configuration its preconditions do not cover — "
+            "empty/degenerate values, sizes at and just past internal limits, "
+            "a second call that reuses state left by the first, an "
+            "out-of-order API sequence the fix did not consider.",
+            "Two cautions specific to this class:",
+            "  - if the build defines NDEBUG the asserts are gone and nothing "
+            "will fire, however good the input; prefer API paths whose checks "
+            "are unconditional (explicit `if (...) abort()` / CHECK / fatal "
+            "error paths) when the touched code offers both;",
+            "  - you MAY additionally add your own tagged check "
+            "(`[oracle:<id>]` + abort()) if you can see a postcondition the "
+            "library does not verify — but the project's own invariant is the "
+            "primary target.",
+        ]
+        return "\n".join(lines)
+
     def _skeleton(self, is_c: bool, harness_name: str,
-                  harness_ext: Optional[str] = None) -> str:
+                  harness_ext: Optional[str] = None,
+                  bug_class: Optional[BugClass] = None) -> str:
         if is_c:
             head = ("#include <stdint.h>\n#include <stddef.h>\n"
-                    "#include <stdlib.h>\n#include <string.h>\n"
+                    "#include <stdlib.h>\n#include <stdio.h>\n"
+                    "#include <string.h>\n"
                     "/* #include the project headers you call */\n")
         else:
-            head = ("#include <cstdint>\n#include <cstddef>\n#include <cstring>\n"
+            head = ("#include <cstdint>\n#include <cstddef>\n#include <cstdio>\n"
+                    "#include <cstdlib>\n#include <cstring>\n"
                     "// #include the project headers you call\n")
         sig = ('extern "C" ' if not is_c else "") + \
             "int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {"
         ext = harness_ext or (".c" if is_c else ".cc")
         fence = "c" if is_c else "cpp"
+        oracle = bug_class.oracle if bug_class else None
+        if oracle == ORACLE_HARNESS:
+            step3 = ("    // 3) REQUIRED: compare both sides, "
+                     "[oracle:<id>] + abort() on violation")
+        elif oracle == ORACLE_PROJECT_ASSERT:
+            step3 = ("    // 3) no check needed — the library's own invariant "
+                     "aborts")
+        else:
+            step3 = "    // 3) (optional) metamorphic check"
         return "\n".join([
             "Output ONLY a single fenced code block containing the complete "
             f"translation unit (it will be saved as {harness_name}{ext} and "
@@ -160,7 +309,7 @@ class LibFuzzerPromptBuilder:
             head + sig,
             "    // 1) carve inputs from (data, size)",
             "    // 2) call the real API in the touched region",
-            "    // 3) (optional) metamorphic check",
+            step3,
             "    return 0;",
             "}",
             "```",

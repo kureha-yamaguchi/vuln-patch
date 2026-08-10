@@ -32,6 +32,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 import config
+from oss_fuzz.bugclass import BugClass, classify
 
 _CVE_PREFIX = "CVE-"
 
@@ -183,6 +184,13 @@ class CveTarget:
     @property
     def has_cve(self) -> bool:
         return self.cve_id.startswith(_CVE_PREFIX)
+
+    @property
+    def bug_class(self) -> "BugClass":
+        """Crashing or semantic — i.e. whether a sanitizer will report this bug
+        at all, or the harness has to notice it itself. Derived, not stored, so
+        it cannot go stale against ``crash_type``; see ``bugclass``."""
+        return classify(self.crash_type)
 
     @property
     def is_usable(self) -> bool:

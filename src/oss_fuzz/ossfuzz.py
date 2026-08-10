@@ -55,11 +55,14 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 import config
+from oss_fuzz.bugclass import (BugClass, ORACLE_HARNESS,
+                               ORACLE_PROJECT_ASSERT, ORACLE_SANITIZER)
 
-# libFuzzer / sanitizer crash markers. A positive requires one of these (or a
-# persisted crash artifact) so infra/build errors — which also exit nonzero —
-# are not mistaken for findings.
-_CRASH_MARKERS = (
+# Sanitizer reports proper: the runtime found the fault and explained it. These
+# are the strongest evidence available and outrank everything below, because
+# they cannot be produced by harness code deciding for itself that something
+# looked wrong.
+_SANITIZER_REPORT_MARKERS = (
     "ERROR: AddressSanitizer",
     "ERROR: LeakSanitizer",
     "ERROR: MemorySanitizer",
@@ -67,8 +70,6 @@ _CRASH_MARKERS = (
     "SUMMARY: MemorySanitizer",
     "SUMMARY: UndefinedBehaviorSanitizer",
     "runtime error:",              # UBSan
-    "ERROR: libFuzzer: deadly signal",
-    "ERROR: libFuzzer: timeout",
     "SEGV on unknown address",
     "==ERROR==",
     "AddressSanitizer: heap-buffer-overflow",
@@ -77,12 +78,53 @@ _CRASH_MARKERS = (
     "AddressSanitizer: global-buffer-overflow",
 )
 
+# The process died but nothing explained why in sanitizer terms — libFuzzer
+# noticed the signal, the timeout or the RSS limit. Still runtime-detected, so
+# still a sanitizer-class finding, but it is also what an abort() from an
+# assert or from a harness oracle looks like from the outside, which is why the
+# two sets are kept apart: the markers below only decide *whether* something
+# fired, never *what*.
+_RUNTIME_ABORT_MARKERS = (
+    "ERROR: libFuzzer: deadly signal",
+    "ERROR: libFuzzer: timeout",
+    "ERROR: libFuzzer: out-of-memory",
+    "ERROR: libFuzzer: fuzz target exited",
+)
+
+_CRASH_MARKERS = _SANITIZER_REPORT_MARKERS + _RUNTIME_ABORT_MARKERS
+
+# The project's own invariant checks. glibc's assert prints
+# "f.c:12: fn: Assertion `x > 0' failed."; absl/glog print "Check failed: ...".
+# Matched case-insensitively against the whole run output.
+_ASSERT_MARKERS = (
+    "assertion `",
+    "assertion failed",
+    "check failed:",
+    "check failure:",
+    "fatal error:",
+)
+
+# A harness-supplied oracle alarm, e.g.
+#     fprintf(stderr, "[oracle:round-trip] decode(encode(x)) != x\n"); abort();
+# The tag is mandatory for semantic bugs (see campaign.oracle_tag_missing) and
+# is what makes one harness's claim distinguishable from another's — the
+# variant-analysis steering feeds on those signatures, and "deadly signal" is
+# the same string for every oracle in every harness.
+_ORACLE_TAG_RE = re.compile(r"\[oracle:\s*([A-Za-z0-9_.\-]{1,48})\s*\]")
+
 # First sanitizer/summary line makes a decent stable signature.
 _SIG_RE = re.compile(
     r"(?:ERROR|SUMMARY):\s*"
     r"(AddressSanitizer|MemorySanitizer|UndefinedBehaviorSanitizer|libFuzzer):\s*"
     r"([A-Za-z0-9 _\-]+)"
 )
+
+# The assert text itself is the signature for a project-assert finding: two
+# different violated invariants are two different bugs, and both would
+# otherwise reduce to "libFuzzer: deadly signal".
+_ASSERT_SIG_RE = re.compile(
+    r"(?:Assertion\s+`([^']{1,80})'\s+failed"
+    r"|Check\s+fail(?:ed|ure):\s*([^\n]{1,80}))", re.IGNORECASE)
 
 
 # OSS-Fuzz's own defaults for keys a project.yaml omits, taken from the
@@ -262,26 +304,86 @@ class RunOutcome:
     crash_reason: Optional[str] = None
     signature: Optional[str] = None
     artifact_path: Optional[str] = None
+    # What noticed the failure: 'sanitizer' | 'project-assert' | 'harness'
+    # (bugclass.ORACLE_*), or None when nothing did. A harness-supplied alarm
+    # is a claim about correctness rather than a memory-safety report, and the
+    # two must not be merged in the results — see finding_oracle.
+    found_by: Optional[str] = None
 
     @property
     def combined(self) -> str:
         return f"{self.stdout}\n{self.stderr}"
 
+    @property
+    def needs_triage(self) -> bool:
+        """A finding only the harness's own oracle saw. Real if the relation it
+        asserts is real, which no part of this pipeline can prove — so it is
+        reported as a claim, never counted as a confirmed sibling."""
+        return self.found_by == ORACLE_HARNESS
+
+
+def finding_oracle(output: str) -> Optional[str]:
+    """*What noticed* the failure in this run output, or None if nothing did.
+
+    The same taxonomy as ``bugclass.BugClass.oracle``, but observed rather than
+    predicted — and the two are worth comparing. A semantic bug whose harness
+    fires ASan found a memory bug, not the wrong-value bug it was aimed at; a
+    crashing bug whose only evidence is a harness alarm found nothing a
+    sanitizer would confirm. Both are real outcomes and both are mis-read if
+    the run only records "triggered: true".
+
+    Precedence is by strength of evidence: a sanitizer report cannot be
+    manufactured by harness code, so it wins even when an oracle tag is also
+    present (a harness that logs a tag per input and then hits a real overflow).
+    An oracle tag beats a bare assert marker because a harness alarm that
+    quotes an assertion in its message would otherwise be misattributed to the
+    project.
+    """
+    if any(m in output for m in _SANITIZER_REPORT_MARKERS):
+        return ORACLE_SANITIZER
+    if _ORACLE_TAG_RE.search(output):
+        return ORACLE_HARNESS
+    low = output.lower()
+    if any(m in low for m in _ASSERT_MARKERS):
+        return ORACLE_PROJECT_ASSERT
+    if any(m in output for m in _RUNTIME_ABORT_MARKERS):
+        return ORACLE_SANITIZER
+    return None
+
 
 def crash_signature(output: str) -> Optional[str]:
-    """Distil a sanitizer report into a stable-ish signature so the campaign
-    can tell a *different* bug from a re-find of the same one. C analogue of
-    the Java crash_signature (exception@frame)."""
+    """Distil a run's failure into a stable-ish signature so the campaign can
+    tell a *different* bug from a re-find of the same one. C analogue of the
+    Java crash_signature (exception@frame).
+
+    Signatures are also the steering input: ``variant_analysis_directive`` is
+    handed the crashes found so far and told to aim elsewhere. That only works
+    if distinct findings produce distinct strings, which is why the two
+    non-sanitizer classes get their own forms — every harness oracle and every
+    violated assert reaches libFuzzer as the identical "deadly signal", and
+    collapsing them would tell the model it had already covered ground it had
+    not.
+    """
+    mo = _ORACLE_TAG_RE.search(output)
+    if mo and not any(m in output for m in _SANITIZER_REPORT_MARKERS):
+        return f"oracle:{mo.group(1)}{_frame_suffix(output)}"
+
+    ma = _ASSERT_SIG_RE.search(output)
+    if ma and not any(m in output for m in _SANITIZER_REPORT_MARKERS):
+        what = (ma.group(1) or ma.group(2) or "").strip()
+        return f"assert:{what}" if what else "assert"
+
     m = _SIG_RE.search(output)
     if not m:
         return None
     kind, what = m.group(1), m.group(2).strip()
-    # Attach the top project frame if libFuzzer printed one (#N ... in file).
-    frame = None
+    return f"{kind}:{what}{_frame_suffix(output)}"
+
+
+def _frame_suffix(output: str) -> str:
+    """``@<top frame>`` if libFuzzer printed a stack (#N 0x... in sym)."""
     fm = re.search(r"#\d+\s+0x[0-9a-f]+\s+in\s+([^\s]+)", output)
-    if fm:
-        frame = fm.group(1)
-    return f"{kind}:{what}@{frame}" if frame else f"{kind}:{what}"
+    return f"@{fm.group(1)}" if fm else ""
 
 
 # helper.py failures that are NOT the harness's fault. These exit nonzero just
@@ -364,6 +466,18 @@ def _looks_like_crash(returncode: int, combined: str) -> Optional[str]:
     for marker in _CRASH_MARKERS:
         if marker in combined:
             return f"output marker: {marker!r}"
+    # Semantic classes fail without any sanitizer saying so. Both normally
+    # reach libFuzzer as a deadly signal and are caught above, but not always:
+    # a target built with -error_exitcode, or one whose oracle calls exit()
+    # rather than abort(), leaves only its own message behind. Missing those
+    # would silently reject a harness that did exactly what it was asked to do.
+    mo = _ORACLE_TAG_RE.search(combined)
+    if mo:
+        return f"harness oracle alarm: [oracle:{mo.group(1)}]"
+    low = combined.lower()
+    for marker in _ASSERT_MARKERS:
+        if marker in low:
+            return f"project invariant failed: {marker!r}"
     return None
 
 
@@ -1088,12 +1202,18 @@ class OssFuzz:
         return out_bin
 
     def run_fuzzer(self, project: str, harness_name: str, seconds: int,
-                   sanitizer: str, corpus: Optional[str] = None) -> RunOutcome:
+                   sanitizer: str, corpus: Optional[str] = None,
+                   bug_class: Optional[BugClass] = None) -> RunOutcome:
         args = ["run_fuzzer", "--sanitizer", sanitizer]
         if corpus:
             args += ["--corpus-dir", corpus]
         args += [project, harness_name, "--",
                  f"-max_total_time={seconds}", "-print_final_stats=1"]
+        # Timeout/OOM bugs are only observable under the per-input limits they
+        # were found with; libFuzzer's own defaults are loose enough that the
+        # bug simply never fires. Every other class adds nothing here.
+        if bug_class:
+            args += bug_class.libfuzzer_flags()
         timed_out = False
         try:
             proc = self._helper(*args, timeout=seconds + 120)
@@ -1118,14 +1238,18 @@ class OssFuzz:
         # A persisted crash-* artifact is the strongest signal.
         artifact = self._find_artifact(project)
         reason = None if timed_out else _looks_like_crash(rc, combined)
+        found_by = None if timed_out else finding_oracle(combined)
         if artifact and reason is None:
             reason = f"crash artifact: {os.path.basename(artifact)}"
+            # An artifact with no readable report still means libFuzzer stopped
+            # on an input, which is a runtime detection like any other.
+            found_by = found_by or ORACLE_SANITIZER
         triggered = reason is not None
         return RunOutcome(
             triggered=triggered, timed_out=timed_out, returncode=rc,
             stdout=out, stderr=err, crash_reason=reason,
             signature=crash_signature(combined) if triggered else None,
-            artifact_path=artifact,
+            artifact_path=artifact, found_by=found_by if triggered else None,
         )
 
     def _find_artifact(self, project: str) -> Optional[str]:

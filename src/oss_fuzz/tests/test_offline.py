@@ -1036,11 +1036,13 @@ def test_campaign_runs_the_replaced_targets_name_under_overwrite():
                           sanitizer, placement=None):
             return "/out/xml"
 
-        def run_fuzzer(self, project, harness_name, seconds, sanitizer):
+        def run_fuzzer(self, project, harness_name, seconds, sanitizer,
+                       bug_class=None):
             ran.append(harness_name)
             from oss_fuzz.ossfuzz import RunOutcome
             return RunOutcome(triggered=True, timed_out=False, returncode=1,
-                              crash_reason="ASan", signature="sig")
+                              crash_reason="ASan", signature="sig",
+                              found_by="sanitizer")
 
     placement = HarnessPlacement(mode="overwrite", ext=".c",
                                  rel_path="fuzz/xml.c", target_name="xml")
@@ -1070,6 +1072,246 @@ def test_prompt_language_follows_the_overwritten_file_extension():
                       harness_name="vp_harness")[1]["content"]
     assert "```cpp" in default, default[-800:]
     print("ok  prompt language follows the overwritten extension")
+
+
+def test_bugclass_splits_crashing_from_semantic():
+    """The classification the whole split rests on, over ClusterFuzz's real
+    crash-type vocabulary."""
+    from oss_fuzz.bugclass import (classify, CRASHING, SEMANTIC, UNKNOWN,
+                                   ORACLE_HARNESS, ORACLE_PROJECT_ASSERT,
+                                   ORACLE_SANITIZER)
+    # Memory safety and UB: the runtime is the oracle, as before.
+    for ct in ("Heap-buffer-overflow READ 4", "Heap-use-after-free WRITE 1",
+               "Undefined-shift", "Use-of-uninitialized-value",
+               "Null-dereference READ", "Index-out-of-bounds",
+               "Direct-leak", "Stack-overflow"):
+        bc = classify(ct)
+        assert bc.kind == CRASHING and bc.oracle == ORACLE_SANITIZER, (ct, bc)
+        assert not bc.needs_harness_oracle and not bc.resource, (ct, bc)
+
+    # The project checks it itself: semantic, but no harness oracle needed.
+    for ct in ("ASSERT: idx < len", "CHECK failure: ptr != nullptr",
+               "Fatal error: bad state", "Unreachable code",
+               "Security check failure"):
+        bc = classify(ct)
+        assert bc.kind == SEMANTIC, (ct, bc)
+        assert bc.oracle == ORACLE_PROJECT_ASSERT, (ct, bc)
+        assert not bc.needs_harness_oracle, (ct, bc)
+
+    # Nothing observes it: the harness must bring the oracle.
+    for ct in ("Incorrect-result", "Wrong result in decode"):
+        bc = classify(ct)
+        assert bc.kind == SEMANTIC and bc.oracle == ORACLE_HARNESS, (ct, bc)
+        assert bc.needs_harness_oracle, (ct, bc)
+
+    # Resource bugs are runtime-detected, but only under the limits they were
+    # found with — libFuzzer's own defaults are far looser.
+    for ct in ("Timeout", "Out-of-memory (exceeds 2560 MB)"):
+        bc = classify(ct)
+        assert bc.kind == CRASHING and bc.resource, (ct, bc)
+        assert any(f.startswith("-timeout=") for f in bc.libfuzzer_flags()), bc
+    assert classify("Heap-buffer-overflow").libfuzzer_flags() == []
+
+    # An unreadable record keeps the pre-split behaviour, but says so.
+    bc = classify(None)
+    assert bc.kind == UNKNOWN and bc.oracle == ORACLE_SANITIZER, bc
+    assert not bc.needs_harness_oracle, bc
+    print("ok  bug class: crashing vs semantic vs unknown")
+
+
+def test_bugclass_reaches_the_target_from_the_osv_record():
+    """CveTarget derives its class from the crash type it already parses, so
+    the two cannot drift apart."""
+    rec = {
+        "id": "OSV-2025-1", "published": "2025-01-01",
+        "affected": [{"ranges": [{"type": "GIT",
+                                  "repo": "https://example/x",
+                                  "events": [{"fixed": "abc"}]}]}],
+        "details": "OSS-Fuzz report: x\n```\nCrash type: Incorrect-result\n"
+                   "Crash state:\nxmlDecode\n```",
+    }
+    t = CveTarget.from_osv("demo", rec)
+    assert t.crash_type == "Incorrect-result"
+    assert t.bug_class.is_semantic and t.bug_class.needs_harness_oracle
+    # And a plain memory bug stays on the old path.
+    rec["details"] = rec["details"].replace("Incorrect-result",
+                                            "Heap-buffer-overflow READ 4")
+    assert CveTarget.from_osv("demo", rec).bug_class.is_crashing
+    print("ok  bug class rides along on the OSV target")
+
+
+def test_finding_oracle_ranks_evidence():
+    """What NOTICED the failure, which is not the same question as whether one
+    happened. Precedence matters: harness code can print anything, but it
+    cannot fake an ASan report."""
+    from oss_fuzz.ossfuzz import finding_oracle
+    asan = "==1==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x1"
+    assert finding_oracle(asan) == "sanitizer"
+    # A tagged alarm plus the deadly signal its abort() produced.
+    oracle_out = ("[oracle:round-trip] decode(encode(x)) != x\n"
+                  "==1==ERROR: libFuzzer: deadly signal")
+    assert finding_oracle(oracle_out) == "harness"
+    # A sanitizer report outranks a tag left over from an earlier input.
+    assert finding_oracle(oracle_out + "\n" + asan) == "sanitizer"
+    assert finding_oracle(
+        "x.c:12: f: Assertion `n > 0' failed.\n"
+        "==1==ERROR: libFuzzer: deadly signal") == "project-assert"
+    # Runtime-detected but unexplained is still the runtime's finding.
+    assert finding_oracle("==1==ERROR: libFuzzer: timeout") == "sanitizer"
+    assert finding_oracle("Done 1000 runs in 3 second(s)") is None
+    print("ok  finding oracle ranks evidence by strength")
+
+
+def test_signatures_distinguish_semantic_findings():
+    """Steering feeds on signatures. Every oracle and every assert reaches
+    libFuzzer as the same 'deadly signal', so without their own signature
+    forms the model would be told it had covered ground it had not."""
+    deadly = "\n==1==ERROR: libFuzzer: deadly signal\n#1 0x4 in parse_attr\n"
+    a = crash_signature("[oracle:round-trip] mismatch" + deadly)
+    b = crash_signature("[oracle:idempotence] mismatch" + deadly)
+    assert a != b, (a, b)
+    assert a.startswith("oracle:round-trip") and "parse_attr" in a, a
+    s = crash_signature("t.c:9: f: Assertion `i < n' failed." + deadly)
+    assert s == "assert:i < n", s
+    # A real sanitizer report is unchanged by any of this.
+    assert crash_signature(
+        "==1==ERROR: AddressSanitizer: heap-buffer-overflow\n"
+        "#0 0x1 in xmlParse") == "AddressSanitizer:heap-buffer-overflow@xmlParse"
+    print("ok  semantic findings get distinguishable signatures")
+
+
+def test_trigger_gate_sees_alarms_no_sanitizer_reports():
+    """An oracle that exits without a signal, or an assert on a build where
+    libFuzzer prints nothing extra, still has to count as a trigger."""
+    assert _looks_like_crash(1, "[oracle:len] 3 != 4\n") is not None
+    assert _looks_like_crash(1, "a.c:1: f: Assertion `x' failed.\n") is not None
+    assert _looks_like_crash(0, "Done 500 runs\n") is None
+    print("ok  trigger gate sees non-sanitizer alarms")
+
+
+def test_semantic_prompt_requires_a_tagged_oracle():
+    from oss_fuzz.bugclass import classify
+    ctx = _ctx_for_prompt()
+    b = LibFuzzerPromptBuilder(language="c")
+
+    def build(bug_class):
+        return b.build(context=ctx, covered_functions=[], found_signatures=[],
+                       harness_name="h", harness_ext=".c",
+                       crash_type=bug_class.crash_type if bug_class else None,
+                       bug_class=bug_class)[1]["content"]
+
+    wrong_value = build(classify("Incorrect-result"))
+    assert "REQUIRED ORACLE" in wrong_value
+    assert "[oracle:" in wrong_value
+    assert "THIS BUG DOES NOT CRASH" in wrong_value
+    assert "METAMORPHIC CHECK (optional" not in wrong_value
+
+    invariant = build(classify("ASSERT: idx < len"))
+    assert "the library checks this itself" in invariant
+    assert "ASSERT: idx < len" in invariant
+    assert "REQUIRED ORACLE" not in invariant
+
+    # Crashing bugs — and callers that pass nothing — keep the old wording.
+    for crashing in (build(classify("Heap-buffer-overflow READ 4")),
+                     build(None)):
+        assert "METAMORPHIC CHECK (optional" in crashing
+        assert "REQUIRED ORACLE" not in crashing
+        assert "THIS BUG DOES NOT CRASH" not in crashing
+    print("ok  prompt oracle contract follows the bug class")
+
+
+def test_campaign_rejects_a_harness_that_cannot_fail():
+    """A semantic harness with no oracle is rejected from the source, before
+    the Docker build — the alternative costs a build and a verify run to reach
+    a verdict indistinguishable from an honest miss."""
+    from oss_fuzz.campaign import HarnessCampaign, oracle_tag_missing
+    from oss_fuzz.bugclass import classify
+    from oss_fuzz.ossfuzz import RunOutcome
+
+    assert oracle_tag_missing("int LLVMFuzzerTestOneInput(){return 0;}")
+    assert oracle_tag_missing('fprintf(stderr, "[oracle:x] bad\\n");') \
+        is not None                      # tagged but never stops
+    assert oracle_tag_missing(
+        'fprintf(stderr, "[oracle:x] bad\\n"); abort();') is None
+
+    replies = [
+        # 1: reaches the code, cannot fail — must not be built.
+        "```c\nint LLVMFuzzerTestOneInput(const uint8_t *d, size_t s)"
+        "{ parse(d, s); return 0; }\n```",
+        # 2: carries a tagged, aborting oracle.
+        '```c\nint LLVMFuzzerTestOneInput(const uint8_t *d, size_t s)'
+        '{ if (parse(d,s) != reparse(d,s)) { '
+        'fprintf(stderr, "[oracle:round-trip] mismatch\\n"); abort(); } '
+        'return 0; }\n```',
+    ]
+    built, asked = [], []
+
+    class _Gen:
+        def generate(self, messages):
+            asked.append(messages)
+            return replies[min(len(asked) - 1, len(replies) - 1)]
+
+    class _Of:
+        last_build_stderr = ""
+        last_build_infra_error = None
+
+        def build_harness(self, project, checkout, name, source, ext,
+                          sanitizer, placement=None):
+            built.append(name)
+            return "/out/" + name
+
+        def run_fuzzer(self, project, harness_name, seconds, sanitizer,
+                       bug_class=None):
+            return RunOutcome(triggered=True, timed_out=False, returncode=1,
+                              crash_reason="oracle", signature="oracle:rt",
+                              found_by="harness")
+
+    camp = HarnessCampaign(generator=_Gen(), oss_fuzz=_Of(), project="demo",
+                           vuln_checkout=None, sanitizer="address", ext=".c",
+                           target_successes=1, max_attempts=3,
+                           bug_class=classify("Incorrect-result"))
+    res = camp.run(lambda covered, sigs: [{"role": "user", "content": "x"}])
+    assert res.achieved == 1, res
+    assert built == ["vp_harness_2"], built    # attempt 1 never reached a build
+    assert res.successful[0].found_by == "harness"
+    print("ok  campaign rejects a semantic harness that cannot fail")
+
+
+def test_crashing_campaign_is_unchanged_by_the_split():
+    """The oracle gate must not touch crashing runs: their harnesses are not
+    supposed to carry a check at all."""
+    from oss_fuzz.campaign import HarnessCampaign
+    from oss_fuzz.bugclass import classify
+    from oss_fuzz.ossfuzz import RunOutcome
+    built = []
+
+    class _Gen:
+        def generate(self, messages):
+            return ("```c\nint LLVMFuzzerTestOneInput(const uint8_t *d, "
+                    "size_t s){ parse(d, s); return 0; }\n```")
+
+    class _Of:
+        last_build_stderr = ""
+        last_build_infra_error = None
+
+        def build_harness(self, project, checkout, name, source, ext,
+                          sanitizer, placement=None):
+            built.append(name)
+            return "/out/" + name
+
+        def run_fuzzer(self, project, harness_name, seconds, sanitizer,
+                       bug_class=None):
+            return RunOutcome(triggered=True, timed_out=False, returncode=1,
+                              crash_reason="ASan", signature="sig",
+                              found_by="sanitizer")
+
+    camp = HarnessCampaign(generator=_Gen(), oss_fuzz=_Of(), project="demo",
+                           vuln_checkout=None, sanitizer="address", ext=".c",
+                           target_successes=1, max_attempts=2,
+                           bug_class=classify("Heap-buffer-overflow READ 4"))
+    assert camp.run(lambda c, s: [{"role": "user", "content": "x"}]).achieved == 1
+    assert built == ["vp_harness_1"], built
+    print("ok  crashing campaign unaffected by the oracle gate")
 
 
 def _ctx_for_prompt():
