@@ -1833,6 +1833,13 @@ mechanism (candidate: screen formula relations against the BUGGY
 build's own getter at NON-trigger inputs — a correctly-stated formula
 must hold there — with the desk read's Qᵀ caveat examined first).
 USER-GATED: nothing built until the design round is approved.
+**Same-day note — divcap VM smoke PASSED:** the divcap-instrumented
+Lang-63 tree compiles through the pipeline's own builder
+(`defects4j compile` inside `build_patched_dir`, which raises on
+failure); plan maps `DurationFormatUtils#reduceAndCorrect` with
+`observable: ret`, zero skips. The §8 compile risk (rewritten return
+statements) is cleared on the target leg; runtime `[divobs]` validation
+belongs to the divcap roll, still user-gated.
 
 ### 8.41 THE FLAGSHIP SWEEP — R tripled on the identical suite; two regressions, both wearing the new route's message (run `full30v3_20260810_154612`, archived; 3,973,145 tokens)
 **The honest baseline is `full30v2_20260720_013044` — the IDENTICAL cases
