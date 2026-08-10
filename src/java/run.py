@@ -84,6 +84,34 @@ def _extract_oracle_msg(output, oid, cap=20000):
     return seg.strip() or None
 
 
+def _admitted_for(fired, class_ctx, check_src):
+    """The admitted reference for THIS firing's own observable, plus an event.
+
+    p1b step 1: admission is now a per-observable store
+    (`_reference_impl_fact._admitted_by_method`), so the verdict gate must
+    say WHICH reference it is reading and why that one. The lookup is
+    recorded at every call — a gate that abstained because the leg admitted
+    nothing and a gate that abstained because the leg admitted a reference
+    for some OTHER observable are different findings, and the archive could
+    not tell them apart.
+    """
+    from java.relations.reference_impl import admitted_reference_for
+    from llm import record_event as _re
+    rec, why = admitted_reference_for(
+        getattr(_reference_impl_fact, '_admitted_by_method', None),
+        fired, '\n\n'.join(class_ctx) if class_ctx else '',
+        check_source=check_src)
+    _re('deterministic', method='reference-admission-lookup',
+        target=(fired or '')[:80],
+        output=('admitted reference found' if rec else
+                'no admitted reference for this firing'),
+        reason=why,
+        detail={'admitted': sorted(
+            getattr(_reference_impl_fact, '_admitted_by_method', None) or {}),
+            'used': (rec or {}).get('method')})
+    return rec, why
+
+
 def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
                          buggy_dir, patch_path, trusted_values,
                          package=None, imports=None, check_source=None):
@@ -100,6 +128,7 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     """
     from llm import record_event as _re, HarnessGenerator as _HG
     from java.relations.reference_impl import (
+        admission_key, admit_reference,
         disputed_observables, pin_check, pins_for_disputed,
         reference_comparison_fact, screen_reference, test_corroboration_pins,
         too_thin_to_screen)
@@ -137,6 +166,12 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     memo = getattr(_reference_impl_fact, '_memo', None)
     if memo is None:
         memo = _reference_impl_fact._memo = {}
+    # THE ADMISSION STORE, one slot PER OBSERVABLE (p1b step 1). Same
+    # lifetime argument as the memo: one process = one leg, so function-level
+    # storage is run-local by construction and nothing pools across runs.
+    store = getattr(_reference_impl_fact, '_admitted_by_method', None)
+    if store is None:
+        store = _reference_impl_fact._admitted_by_method = {}
 
     def _attempt(method):
         """One candidate, full chain; a fact or None. Every early exit is
@@ -412,14 +447,56 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         if not pin_ok:
             return None
 
-        # ADMISSION is complete (screen + corroboration + pin). Store the
-        # admitted values for the 8.25 verdict gate — one process = one leg,
-        # so function-level storage is run-local by construction, like _memo.
-        # Stored at admission, not at fact emission: the gate needs the
-        # reference's validated VALUES, which stand even if the patched twin
-        # later fails and no fact is emitted.
-        _reference_impl_fact._admitted = {'method': method, 'obs': obs,
-                                          'buggy': buggy_obs}
+        # ADMISSION is complete (screen + corroboration + pin). Stored at
+        # admission, not at fact emission: the gate needs the reference's
+        # validated VALUES, which stand even if the patched twin later fails
+        # and no fact is emitted.
+        #
+        # ONE SLOT PER OBSERVABLE (p1b step 1). The record carries what
+        # re-evaluating this reference at a FIRING's state will need, so the
+        # gate build never has to recompute — and never gets to disagree with
+        # the screen about what the reference's arguments mean.
+        #
+        # `fields_read_by` is read again here rather than hoisted out of the
+        # mapper call above: it is a pure regex read of the same context, and
+        # the mapper's call site is pinned literally by a seam test that
+        # exists because production once ran a whole roll with the read-order
+        # argument silently missing.
+        _read_fields = [n for _t, n in fields_read_by(ctx, method, _canon)]
+        _admitted_record = {
+            'method': method, 'obs': obs, 'buggy': buggy_obs,
+            # for re-evaluation at a firing's state (design §3)
+            'src': src, 'sig': sig, 'mapping': list(mapping),
+            'matched': dict(matched),
+            # for the standing sentence the fact writes
+            'screen_why': screen_why, 'screened': len(off),
+            'siblings': list(siblings),
+            # §2.7 material: which fields the DISPUTED METHOD's own body
+            # reads. Recorded, NOT gated on — the design places that rule at
+            # the gate ("p1b is where a wrong binding turns into a verdict"),
+            # and screening on it here would change what admissions the
+            # coverage roll is measuring. `None` means the body is not
+            # visible, which is undetermined and never a failure.
+            'fields_read': _read_fields,
+            'reads_what_method_reads': (
+                None if not _read_fields
+                else all(f in _read_fields for f in mapping)),
+            # the compiled reference directory is NOT plumbed out of
+            # run_reference yet; the gate build adds it (see the addendum).
+            'ref_dir': None,
+        }
+        _stored, _store_why = admit_reference(store, method, _admitted_record)
+        _re('deterministic', method='reference-impl', target=method,
+            output=('admission STORED for observable '
+                    f'`{admission_key(method)}`' if _stored else
+                    'admission SET ASIDE — duplicate observable (keep-first)'),
+            reason=_store_why,
+            detail={'observable': admission_key(method),
+                    'admitted_observables': sorted(store),
+                    'mapping': list(mapping),
+                    'fields_read': _read_fields,
+                    'reads_what_method_reads':
+                        _admitted_record['reads_what_method_reads']})
 
         # THE OTHER SIDE OF THE FACT: the SAME twin on the PATCHED build.
         try:
@@ -4153,9 +4230,9 @@ def main():
                         # nothing.
                         from java.relations.reference_impl import (
                             reference_verdict_gate)
+                        _arec, _awhy = _admitted_for(fired, class_ctx, src)
                         _gv, _gwhy = reference_verdict_gate(
-                            fired,
-                            getattr(_reference_impl_fact, '_admitted', None))
+                            fired, _arec, lookup_why=_awhy)
                         record_event(
                             'deterministic', method='reference-verdict-gate',
                             target=(fired or '')[:80],
@@ -4552,9 +4629,9 @@ def main():
                         # by construction).
                         from java.relations.reference_impl import (
                             reference_verdict_gate)
+                        _arec2, _awhy2 = _admitted_for(_fired, class_ctx, _src)
                         _gv, _gwhy = reference_verdict_gate(
-                            _fired,
-                            getattr(_reference_impl_fact, '_admitted', None))
+                            _fired, _arec2, lookup_why=_awhy2)
                         record_event(
                             'deterministic', method='reference-verdict-gate',
                             target=f['name'],

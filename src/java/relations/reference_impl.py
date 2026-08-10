@@ -280,11 +280,144 @@ def _pin_matches(printed: str, expected: str, tol) -> bool:
     return False
 
 
-def reference_verdict_gate(fired_msg, admitted) -> Tuple[str, str]:
+# ---------------------------------------------------------------------------
+# THE ADMISSION STORE (p1b step 1 — docs/p1b-design-2026-08-11.md §3).
+#
+# What it replaces: admission was ONE attribute on the chain function,
+# overwritten by every successful attempt, so a leg that admitted three
+# references kept only the last. Measured in the archive: `stack_confirm/05`
+# admitted `getChiSquare`, `getPointRef` and `getValueRef` and kept
+# `getValueRef`; `mechb/09` has the same shape. The gate then compared a
+# chi-square firing against a `getPoint` reference and abstained on "no shared
+# observable" — 36 of the archive's 221 abstentions carry that reason.
+#
+# The store is a plain dict keyed by `observable_key(method)`, so `chiSquare`
+# and `getChiSquare` are ONE slot — the same normalization the gate, the
+# observable matcher and `_methods_named_by` have used since P0.
+# ---------------------------------------------------------------------------
+
+SAME_OBSERVABLE_RULE = 'keep-first'
+NO_REFERENCE_FOR_THIS_OBSERVABLE = 'no-reference-for-this-observable'
+
+
+def admission_key(method) -> str:
+    """The store slot an observable name belongs to."""
+    from java.relations.reference_run import observable_key
+    return observable_key(method)
+
+
+def admit_reference(store: Dict[str, dict], method: str, record: dict
+                    ) -> Tuple[bool, str]:
+    """Retain `record` under the observable it is a reference FOR.
+
+    `(stored, why)`; `store` is mutated in place. Pure, never raises.
+
+    SAME OBSERVABLE, SECOND REFERENCE -> KEEP-FIRST, and that is the
+    conservative rule here for three reasons, none of them taste:
+
+      * **Admission is binary, so "best" would have to be invented.** A
+        record is in this store only because it passed the screen (>=3
+        shared sibling observables reproduced against the buggy build), the
+        corroboration attribution and the pin check. Nothing the chain
+        computes ORDERS two references that all passed; picking by screened-
+        sibling count or by arrival time would be a preference the screen
+        does not express, applied to decide which implementation gets to
+        void a conviction.
+      * **Keep-first makes the store append-only.** A record never changes
+        after it is written. The gate is called at BOTH judge doors,
+        interleaved with further admissions, so under keep-last the same
+        firing could read a different reference depending on WHEN it looked
+        — a wrong answer that depends on door ordering is the hardest kind
+        to see in a trace.
+      * **The first admission is already the highest-ranked candidate.**
+        `disputed_observables` ranks candidates by signal strength (named by
+        the message AND called by the check first) and the chain attempts
+        them in that order. Overwriting the first admitted reference with a
+        later candidate's is the single-slot defect in miniature.
+
+    The set-aside record is not silently dropped: the caller records the
+    duplicate as its own event, so the class stays countable.
+    """
+    key = admission_key(method)
+    prior = (store or {}).get(key)
+    if prior is not None:
+        return False, (
+            f'`{key}` already has an admitted reference this leg (from '
+            f'`{prior.get("method")}`) — KEEP-FIRST: the incumbent stands and '
+            f'this reference from `{method}` is set aside. Admission is a '
+            f'binary verdict, not a score, so nothing orders two admitted '
+            f'references; keeping the first also keeps the store append-only, '
+            f'which is what makes the two judge doors read the same reference '
+            f'for the same observable')
+    store[key] = record
+    return True, (
+        f'reference for `{key}` (from `{method}`) admitted and RETAINED under '
+        f'its own observable; the leg now holds {sorted(store)}')
+
+
+def admitted_reference_for(store, fired_msg, code_context,
+                           check_source=None) -> Tuple[Optional[dict], str]:
+    """The admitted record for the observable THIS firing disputes.
+
+    `(record_or_None, why)`. Pure, never raises. Resolution reuses the
+    chain's own detector — `disputed_observables(fired, ctx,
+    check_source=...)`, normalized through `admission_key` — so the gate and
+    the chain cannot disagree about what a firing is about.
+
+    ONE BACK-COMPAT PASS-THROUGH, recorded rather than hidden. When the
+    lookup misses and the leg admitted exactly ONE reference, that record is
+    returned anyway, with a reason that says SUBSTITUTED. That is byte-for-
+    byte what the single slot did, and it keeps this step a pure repair of
+    the RETENTION defect: every archived single-admission leg reads exactly
+    as it did before. The honest reading is
+    `no-reference-for-this-observable` (design §3: "substituting a reference
+    for a DIFFERENT observable is not a fallback; it is the current bug"),
+    and the p1b gate build is where it becomes one — the substitution event
+    exists so the coverage roll can count, before that, how often the honest
+    lookup would have differed.
+    """
+    store = store or {}
+    if not store:
+        return None, 'no admitted reference for this leg'
+    try:
+        disputed = disputed_observables(fired_msg, code_context,
+                                        check_source=check_source)
+    except Exception:                            # pragma: no cover - defensive
+        disputed = []
+    for name in disputed:
+        rec = store.get(admission_key(name))
+        if rec is not None:
+            return rec, (
+                f'admitted reference for `{admission_key(name)}` — the '
+                f'observable this firing itself disputes (from '
+                f'`{rec.get("method")}`)')
+    _asked = disputed[:4] or ['<none resolvable>']
+    if len(store) == 1:
+        (only_key, only_rec), = store.items()
+        return only_rec, (
+            f'SUBSTITUTED: this firing disputes {_asked} and the leg\'s one '
+            f'admitted reference is for `{only_key}`. Passed through '
+            f'unchanged — a single-admission leg reads byte-for-byte as it '
+            f'did before the store was split by observable. The honest '
+            f'reading is {NO_REFERENCE_FOR_THIS_OBSERVABLE}')
+    return None, (
+        f'{NO_REFERENCE_FOR_THIS_OBSERVABLE}: this firing disputes {_asked}; '
+        f'this leg admitted {sorted(store)}. Substituting a reference for a '
+        f'DIFFERENT observable is the defect, not a fallback')
+
+
+def reference_verdict_gate(fired_msg, admitted, lookup_why=None
+                           ) -> Tuple[str, str]:
     """8.25 phase 1: `('void'|'corroborate'|'abstain', why)` on a KEPT
     conviction. Deterministic — the judge is not consulted (roll 12: nine
     deliveries of the fact, zero engagements; fifth negative on the
     persuasion axis. The user's decision: stop persuading).
+
+    `admitted` is ONE admission record — the caller looks it up by the
+    firing's own observable (`admitted_reference_for`) and passes that
+    lookup's reason as `lookup_why`, so a no-record abstention says WHICH
+    observable went unmatched instead of the flat "no admitted reference for
+    this leg". With a record in hand the reading is unchanged.
 
     THE PREDICATE NEEDS NO STATE RECOVERY. The firing message prints the
     observable values the relation fired ON (the 8.3/8.4 recorders), and an
@@ -322,7 +455,10 @@ def reference_verdict_gate(fired_msg, admitted) -> Tuple[str, str]:
     obs = (admitted or {}).get('obs') or {}
     buggy = (admitted or {}).get('buggy') or {}
     if not fired_msg or not obs:
-        return 'abstain', 'no admitted reference for this leg'
+        # The lookup's own reason survives ONLY where there is no record to
+        # read; a firing with no message abstains in today's words exactly.
+        return 'abstain', ((lookup_why if (lookup_why and not obs) else None)
+                           or 'no admitted reference for this leg')
     # Harness firings echo the method CALL (`getChiSquare()=6.25...`), and
     # the k=v parser requires a bare identifier before `=` — ladder1g's
     # second patched firing carried the reference's exact value behind that

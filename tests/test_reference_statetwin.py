@@ -149,8 +149,12 @@ def _mk_failure_test():
 
 
 def _run_chain(monkeypatch, twin_outputs, ref_output, generated=REFERENCE_REPLY,
-               ctx=None, fired=None):
-    """Drive run._reference_impl_fact with stubbed generator and JVM."""
+               ctx=None, fired=None, keep_store=False):
+    """Drive run._reference_impl_fact with stubbed generator and JVM.
+
+    `keep_store` leaves the per-observable admission store standing, which is
+    how a LEG looks: several firings, one process, one store.
+    """
     from java import run as runmod
     events = []
     monkeypatch.setattr(
@@ -179,6 +183,8 @@ def _run_chain(monkeypatch, twin_outputs, ref_output, generated=REFERENCE_REPLY,
         def build_patched_dir(self, b, p): return '/patched'
     monkeypatch.setattr(runmod, 'PatchedProjectBuilder', FakePPB)
     runmod._reference_impl_fact._memo = {}
+    if not keep_store:
+        runmod._reference_impl_fact._admitted_by_method = {}
 
     fact = runmod._reference_impl_fact(
         args=types.SimpleNamespace(model='m', reference_impl=True),
@@ -2034,3 +2040,199 @@ def test_replay_record_persists_untruncated_fired_lines():
     # (the full-pipeline site and the rulegen-only site).
     assert src.count("'fired_lines': f.get('fired_lines', [])") == 1
     assert src.count("'fired_lines': x.get('fired_lines', [])") == 1
+
+
+# ---------------------------------------------------------------------------
+# p1b step 1: THE ADMISSION STORE (docs/p1b-design-2026-08-11.md §3).
+#
+# The defect: admission was ONE attribute, overwritten by every successful
+# attempt. Archived shapes, verbatim from the coverage table — stack_confirm/05
+# admitted getChiSquare, getPointRef and getValueRef and kept getValueRef;
+# mechb/09 the same. The gate then compared a chi-square firing against a
+# getPoint reference. These tests pin the retention, the same-observable rule,
+# the lookup, and the byte-for-byte behaviour of a single-admission leg.
+# ---------------------------------------------------------------------------
+
+# The Chart-19 shape from the coverage table: every admission on those legs is
+# `getLowerMargin`, while every conviction disputes `getRangeAxisIndex`.
+PLOT_CTX = ('public class CategoryPlot {\n'
+            '  public int getRangeAxisIndex(ValueAxis axis) { return 0; }\n'
+            '  public double getLowerMargin() { return 0.0; }\n'
+            '}')
+
+
+def _rec(method, **kw):
+    r = {'method': method, 'obs': {method: ['1.0']}, 'buggy': {method: ['2.0']}}
+    r.update(kw)
+    return r
+
+
+def test_the_store_keeps_one_reference_per_observable():
+    # stack_confirm/05's own shape: three admissions on one leg, none lost.
+    from java.relations.reference_impl import admit_reference
+    store = {}
+    for m in ('getChiSquare', 'getPointRef', 'getValueRef'):
+        stored, why = admit_reference(store, m, _rec(m))
+        assert stored, why
+    assert sorted(store) == ['chisquare', 'pointref', 'valueref']
+    assert store['chisquare']['method'] == 'getChiSquare'
+    # …and the last admission did not displace the first, which is the bug.
+    assert len(store) == 3
+
+
+def test_the_same_observable_rule_is_keep_first():
+    # `chiSquare` and `getChiSquare` are ONE slot (observable_key, since P0).
+    # Admission is a binary verdict, so nothing orders two admitted
+    # references — the incumbent stands and the duplicate is SET ASIDE with
+    # its reason, never silently dropped.
+    from java.relations.reference_impl import (SAME_OBSERVABLE_RULE,
+                                               admit_reference)
+    assert SAME_OBSERVABLE_RULE == 'keep-first'
+    store = {}
+    assert admit_reference(store, 'getChiSquare', _rec('getChiSquare'))[0]
+    stored, why = admit_reference(store, 'chiSquare', _rec('chiSquare'))
+    assert stored is False
+    assert 'KEEP-FIRST' in why and 'getChiSquare' in why
+    assert len(store) == 1
+    assert store['chisquare']['method'] == 'getChiSquare'   # unchanged
+
+
+def test_lookup_is_by_the_firings_own_observable():
+    from java.relations.reference_impl import (admit_reference,
+                                               admitted_reference_for)
+    ctx = CTX + '\n' + PLOT_CTX
+    store = {}
+    admit_reference(store, 'getChiSquare', _rec('getChiSquare'))
+    admit_reference(store, 'getLowerMargin', _rec('getLowerMargin'))
+    # The firing's own observable resolves to its own reference.
+    rec, why = admitted_reference_for(
+        store, '[oracle:x] semantic mismatch: getChiSquare expected=3.25 '
+               'actual=9.99', ctx)
+    assert rec['method'] == 'getChiSquare'
+    assert 'chisquare' in why
+    # The Chart-19 shape: the leg admitted something, but not for THIS
+    # dispute. Substitution is the defect, not a fallback.
+    rec, why = admitted_reference_for(
+        store, '[relfire] relation r violated: getRangeAxisIndex=-1 '
+               'expected=0', ctx)
+    assert rec is None
+    assert 'no-reference-for-this-observable' in why
+    assert 'lowermargin' in why          # the reason names what WAS admitted
+    # An empty store says so in today's words.
+    assert admitted_reference_for({}, 'anything', ctx) == (
+        None, 'no admitted reference for this leg')
+
+
+def test_a_single_reference_leg_reads_byte_for_byte_as_before():
+    # Back-compat, the whole point of doing the store before the gate: on a
+    # leg that admitted exactly one reference — every archived leg that
+    # admitted anything at all, bar four — the verdict is unchanged.
+    from java.relations.reference_impl import (admitted_reference_for,
+                                               reference_verdict_gate)
+    store = {'chisquare': ADMITTED_M65}
+    # (a) the firing disputes the admitted observable: same record, same void.
+    rec, why = admitted_reference_for(store, ROLL12_FIRING, CTX)
+    assert rec is ADMITTED_M65
+    assert reference_verdict_gate(ROLL12_FIRING, rec, lookup_why=why) == \
+        reference_verdict_gate(ROLL12_FIRING, ADMITTED_M65)
+    # (b) the firing disputes something else: the one record is still passed
+    # through (today's bytes) and the pass-through SAYS it substituted.
+    legacy = '[oracle:x] violation: rms=0.09931552348327041 threshold=0.5'
+    rec, why = admitted_reference_for(store, legacy, CTX)
+    assert rec is ADMITTED_M65
+    assert 'SUBSTITUTED' in why and 'no-reference-for-this-observable' in why
+    assert reference_verdict_gate(legacy, rec, lookup_why=why) == \
+        reference_verdict_gate(legacy, ADMITTED_M65)
+
+
+def test_the_gate_abstention_names_the_unmatched_observable():
+    # 8.39's lesson: a guard that was ACTIVE and found nothing must be
+    # distinguishable from a guard that never had an input.
+    from java.relations.reference_impl import reference_verdict_gate
+    v, why = reference_verdict_gate(
+        ROLL12_FIRING, None,
+        lookup_why='no-reference-for-this-observable: disputes [getRMS]')
+    assert v == 'abstain' and 'getRMS' in why
+    # Two positional arguments behave exactly as they did.
+    assert reference_verdict_gate(ROLL12_FIRING, None) == (
+        'abstain', 'no admitted reference for this leg')
+    # A record present + a lookup reason: the reading, never the reason.
+    assert reference_verdict_gate(ROLL12_FIRING, ADMITTED_M65,
+                                  lookup_why='ignored')[0] == 'void'
+
+
+def test_the_chain_writes_the_per_observable_store_not_a_single_slot(
+        monkeypatch):
+    from java import run as runmod
+    fact, events, calls = _run_chain(
+        monkeypatch, [BUGGY_TWIN, PATCHED_TWIN], REF_OK)
+    assert fact is not None
+    store = runmod._reference_impl_fact._admitted_by_method
+    assert sorted(store) == ['chisquare']
+    rec = store['chisquare']
+    # The record carries what re-evaluating this reference at a FIRING's
+    # state needs, so the gate build never recomputes it and can never
+    # disagree with the screen about what the arguments mean.
+    assert rec['method'] == 'getChiSquare'
+    assert rec['obs'] and rec['buggy']
+    assert rec['mapping'] == ['residuals', 'residualsWeights']
+    assert 'compute_getChiSquare' in rec['src']
+    assert rec['sig'] and rec['matched'].get('getChiSquare')
+    assert rec['screened'] >= 3 and rec['screen_why']
+    # §2.7 material is RECORDED and not gated on at admission.
+    assert 'fields_read' in rec and 'reads_what_method_reads' in rec
+    # The overwritable single slot is gone.
+    assert not hasattr(runmod._reference_impl_fact, '_admitted')
+    assert any('admission STORED' in (o or '') for o, _ in events)
+
+
+# One leg, two firings, two different disputed observables — the shape that
+# lost a reference every time before this. The second reference reproduces
+# the buggy build on its own siblings and diverges only on getRMS.
+RMS_BUGGY_TWIN = ({'__construct0': ['OK'],
+                   '__param_residuals': ['[1.0, 2.0]'],
+                   '__param_residualsWeights': ['[1.0, 1.0]'],
+                   'getChiSquare': ['5.0'], 'getRMS': ['9.9'],
+                   'getCost': ['2.2'], 'getRows': ['2']}, 'twin ran')
+RMS_PATCHED_TWIN = ({'__construct0': ['OK'],
+                     'getChiSquare': ['5.0'], 'getRMS': ['1.5'],
+                     'getCost': ['2.2'], 'getRows': ['2']}, 'twin ran')
+RMS_REF_OK = ({'getChiSquare': ['5.0'], 'getRMS': ['1.5'],
+               'getCost': ['2.2'], 'getRows': ['2']}, 'ran, 4 observables')
+
+
+def test_a_leg_that_admits_two_observables_keeps_both(monkeypatch):
+    from java import run as runmod
+    f1, _e1, _c1 = _run_chain(monkeypatch, [BUGGY_TWIN, PATCHED_TWIN], REF_OK)
+    assert f1 is not None
+    f2, e2, _c2 = _run_chain(
+        monkeypatch, [RMS_BUGGY_TWIN, RMS_PATCHED_TWIN], RMS_REF_OK,
+        fired='[oracle:y] semantic mismatch: getRMS expected=1.5 actual=9.9',
+        keep_store=True)
+    assert f2 is not None, [e for e in e2][-4:]
+    store = runmod._reference_impl_fact._admitted_by_method
+    assert sorted(store) == ['chisquare', 'rms'], store
+    assert store['chisquare']['method'] == 'getChiSquare'
+    assert store['rms']['method'] == 'getRMS'
+    # And each firing now reads ITS OWN reference, which is the repair.
+    from java.relations.reference_impl import admitted_reference_for
+    rec, _why = admitted_reference_for(
+        store, '[oracle:y] semantic mismatch: getRMS expected=1.5 actual=9.9',
+        CTX)
+    assert rec['method'] == 'getRMS'
+
+
+def test_both_doors_look_the_reference_up_by_the_firings_observable():
+    src = open(Path(__file__).resolve().parents[1] / 'src' / 'java'
+               / 'run.py').read()
+    # The overwritable slot is gone from production entirely.
+    assert "'_admitted', None" not in src
+    assert src.count("'_admitted_by_method', None") == 3   # reader + 2 detail
+    # Both gate calls read a record resolved from the FIRING, and each door
+    # uses its own firing and its own check source (the one-door lesson).
+    assert src.count('_admitted_for(') == 3                # def + 2 doors
+    assert '_admitted_for(fired, class_ctx, src)' in src
+    assert '_admitted_for(_fired, class_ctx, _src)' in src
+    assert src.count('_gv, _gwhy = reference_verdict_gate(') == 2
+    assert src.count('lookup_why=_awhy)') == 1
+    assert src.count('lookup_why=_awhy2)') == 1
