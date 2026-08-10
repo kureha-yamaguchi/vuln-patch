@@ -1553,6 +1553,7 @@ def main():
     # calls are the PROBE tier. Empty (no synthesis, no diff headers) leaves
     # that step inert.
     _patched_classes: list = []
+    _doc_exc: dict = {}
     if bug_kind == "semantic" and args.synthesize_relations:
         if context_degraded:
             print("  [synth] skipped: no touched function extracted "
@@ -1592,6 +1593,24 @@ def main():
                                  detail={'patched_classes': _syn_cls,
                                          'subtypes': _sub_cls})
                     _patched_classes += _sub_cls
+            # Documented-exception guard (prereg addendum 2026-08-10): an
+            # exception the docs permit for the throwing method is a
+            # rejection, not a tier-2 violation (Math-65's
+            # OptimizationException on non-convergence).
+            if _patched_classes:
+                from java.parsing.java_source import (
+                    documented_exceptions_in_tree)
+                _doc_exc = documented_exceptions_in_tree(
+                    selection.buggy_dir, _patched_classes)
+                if _doc_exc:
+                    _doc_view = {f'{c}#{m}': x
+                                 for (c, m), x in sorted(_doc_exc.items())}
+                    print(f"  [synth] documented exceptions on probe tier: "
+                          f"{_doc_view}")
+                    record_event('deterministic', method='synth',
+                                 target='probe-tier',
+                                 output=f'documented exceptions: {_doc_view}',
+                                 detail={'documented': _doc_view})
             synthesizer = RelationSynthesizer(
                 HarnessGenerator(model=synth_model,
                                  temperature=0.3, top_p=1.0),
@@ -1820,6 +1839,7 @@ def main():
                     repair_fn=_repair,
                     runs=args.screen_runs,
                     patched_classes=_patched_classes,
+                    documented_exceptions=_doc_exc,
                 )
                 record_event('deterministic', method='screening-survivors',
                              output={'kept': [getattr(r, 'name', '?')
@@ -1860,7 +1880,8 @@ def main():
                         trigger_literals=_trig_lits,
                         max_keep=12, repair_fn=_repair,
                         runs=args.screen_runs,
-                        patched_classes=_patched_classes),
+                        patched_classes=_patched_classes,
+                        documented_exceptions=_doc_exc),
                     max_extra_rounds=2,
                     min_extra_rounds=1,
                 )

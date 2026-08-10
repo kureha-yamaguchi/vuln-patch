@@ -222,7 +222,12 @@ def test_relation_screen_entry_points_and_primitives():
         'timeout_seconds', 'max_keep', 'repair_fn',
         # 8.35 Mechanism A: the patch-changed classes, appended so every
         # existing positional call site is untouched. Omitted => inert.
-        'patched_classes']
+        'patched_classes',
+        # Documented-exception guard (prereg addendum 2026-08-10):
+        # {(class, method): [exception names]} the docs permit — those fall
+        # through as rejections instead of tier-2 alarms. Omitted => guard
+        # unchanged.
+        'documented_exceptions']
 
     replay_params = list(
         inspect.signature(rs.replay_on_patched).parameters)

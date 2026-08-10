@@ -1800,6 +1800,90 @@ def subclasses_in_tree(root_dir, class_names, max_rounds=4):
     return sorted(known - set(_patched_class_names(class_names)))
 
 
+def documented_exceptions_in_tree(root_dir, class_names):
+    """{(class simple name, method name): [exception simple names]} for
+    every method of `class_names` found under `root_dir`, from `throws`
+    clauses and `@throws`/`@exception` javadoc tags. Test trees skipped.
+
+    Exists for the tier-2 documented-exception guard (prereg addendum
+    2026-08-10): an exception the documentation PERMITS for the throwing
+    method is a legitimate outcome of a correct implementation (Math-65's
+    `OptimizationException` on non-convergence), not a reportable
+    violation — the discriminator between that false alarm and Chart-19's
+    genuine catch (whose added throw no documentation permits)."""
+    import javalang
+    wanted = _patched_class_names(class_names)
+    out = {}
+    for dirpath, dirnames, files in os.walk(root_dir):
+        dirnames[:] = [d for d in dirnames
+                       if d not in ('test', 'tests') and not d.startswith('.')]
+        for fname in files:
+            if not fname.endswith('.java') or fname[:-5] not in wanted:
+                continue
+            try:
+                with open(os.path.join(dirpath, fname),
+                          encoding='utf-8', errors='replace') as fh:
+                    text = fh.read()
+            except OSError:
+                continue
+            try:
+                tree = javalang.parse.parse(text)
+            except Exception:
+                continue
+            for _path, node in tree:
+                if not isinstance(node, javalang.tree.MethodDeclaration):
+                    continue
+                excs = set()
+                for t in (getattr(node, 'throws', None) or []):
+                    excs.add(str(t).rsplit('.', 1)[-1])
+                doc = getattr(node, 'documentation', '') or ''
+                for m in re.finditer(r'@(?:throws|exception)\s+([\w.]+)',
+                                     doc):
+                    excs.add(m.group(1).rsplit('.', 1)[-1])
+                if excs:
+                    key = (fname[:-5], node.name)
+                    out[key] = sorted(set(out.get(key, [])) | excs)
+    return out
+
+
+def _class_name_tests(var: str, cls: str) -> str:
+    """Java boolean expression: does the name in `var` denote `cls` (simple
+    name match, package- and nesting-qualified forms included)."""
+    return (f'{var}.equals("{cls}") || {var}.endsWith(".{cls}") '
+            f'|| {var}.endsWith("${cls}")')
+
+
+def documented_exception_test(exc_var: str, frame_var: str, flag: str,
+                              documented) -> str:
+    """Java statements setting `boolean {flag}` true when the exception in
+    `exc_var` is of a type (or subtype — runtime hierarchy walk by name)
+    that `documented` permits for the method of the frame in `frame_var`.
+
+    Shared by the shipped stack-frame guard and the replay-study transform
+    so the two can never disagree about what counts as documented. Empty
+    `documented` yields '' (guard behaviour unchanged)."""
+    if not documented:
+        return ''
+    parts = []
+    for (cls, meth), excs in sorted(documented.items()):
+        if not excs:
+            continue
+        name_tests = ' || '.join(
+            f'__rpn.equals("{x}") || __rpn.endsWith(".{x}") '
+            f'|| __rpn.endsWith("${x}")' for x in excs)
+        parts.append(
+            f' if (!{flag} && '
+            f'({_class_name_tests(f"{frame_var}.getClassName()", cls)})'
+            f' && "{meth}".equals({frame_var}.getMethodName())) {{'
+            f' for (Class __rpk = {exc_var}.getClass(); __rpk != null;'
+            f' __rpk = __rpk.getSuperclass()) {{'
+            f' String __rpn = __rpk.getName();'
+            f' if ({name_tests}) {{ {flag} = true; break; }} }} }}')
+    if not parts:
+        return ''
+    return f' boolean {flag} = false;' + ''.join(parts)
+
+
 def _patched_receivers(src: str, names) -> dict:
     """{local var -> class} for locals whose STATIC type is a patch-changed
     class: declared (`Foo f = ...`, `Foo f;`) or assigned (`f = new Foo(...)`,
@@ -1945,7 +2029,8 @@ def _catch_clause_spans(src: str, close_idx: int):
 
 
 def rethrow_patched_probe(check_source: str, patched_classes,
-                          relation_name: str = '') -> Optional[str]:
+                          relation_name: str = '',
+                          documented_exceptions=None) -> Optional[str]:
     """Return `check_source` with a tier-2 rethrow inserted at the head of
     every swallowing broad catch that absorbs a patch-changed-class probe —
     or None when nothing could be rewritten.
@@ -1956,7 +2041,13 @@ def rethrow_patched_probe(check_source: str, patched_classes,
     — a setup failure elsewhere, an argument another class rejected, a
     constructor refusing its arguments — still falls through to the original
     catch body and is skipped, exactly as before. Comments are stripped (the
-    rewrite works on the lexed source); the code is otherwise untouched."""
+    rewrite works on the lexed source); the code is otherwise untouched.
+
+    `documented_exceptions` ({(class, method): [exception names]}, from
+    `documented_exceptions_in_tree`) arms the documented-exception guard:
+    when the innermost patched-class frame's method documents the thrown
+    type (or a supertype), the exception is a REJECTION and falls through
+    to the original catch body instead of rethrowing."""
     src = strip_comments(check_source or '')
     names = _patched_class_names(patched_classes)
     if not src.strip() or not names:
@@ -1977,15 +2068,33 @@ def rethrow_patched_probe(check_source: str, patched_classes,
         tests = ' || '.join(
             f'__rpc.equals("{c}") || __rpc.endsWith(".{c}") '
             f'|| __rpc.endsWith("${c}")' for c in sorted(names))
-        guard = (
-            ' for (StackTraceElement __rpf : ' + var + '.getStackTrace()) {'
-            ' String __rpc = __rpf.getClassName();'
-            ' if ((' + tests + ')'
-            ' && !"<init>".equals(__rpf.getMethodName()))'
-            ' throw new RuntimeException("relation ' + slug + ' violated:'
+        alarm = (
+            'throw new RuntimeException("relation ' + slug + ' violated:'
             ' unexpected " + ' + var + '.getClass().getName() + " thrown by'
             ' the patch-changed class on a valid-by-construction input: " + '
-            + var + '.getMessage()); }')
+            + var + '.getMessage());')
+        doc_test = documented_exception_test(
+            var, '__rpf', '__rpdoc', documented_exceptions)
+        if doc_test:
+            # The innermost patched-class frame decides: documented type
+            # (or supertype) for that frame's method -> rejection, fall
+            # through to the original catch body; undocumented -> alarm.
+            guard = (
+                ' for (StackTraceElement __rpf : ' + var
+                + '.getStackTrace()) {'
+                ' String __rpc = __rpf.getClassName();'
+                ' if ((' + tests + ')'
+                ' && !"<init>".equals(__rpf.getMethodName())) {'
+                + doc_test
+                + ' if (!__rpdoc) ' + alarm
+                + ' break; } }')
+        else:
+            guard = (
+                ' for (StackTraceElement __rpf : ' + var + '.getStackTrace()) {'
+                ' String __rpc = __rpf.getClassName();'
+                ' if ((' + tests + ')'
+                ' && !"<init>".equals(__rpf.getMethodName()))'
+                ' ' + alarm + ' }')
         edits.append((body_start, guard))
     if not edits:
         return None

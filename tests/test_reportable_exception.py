@@ -430,3 +430,86 @@ def test_subtype_receiver_probe_is_flagged_and_rewritten():
     assert out is not None
     guard = out.split("getStackTrace()", 1)[1]
     assert '"Base"' in guard and '"Sub"' in guard
+
+
+# --- documented-exception guard (prereg addendum 2026-08-10: an exception
+# the docs permit for the throwing method is a rejection, not a tier-2
+# violation — the Math-65 near-miss class) ---------------------------------
+
+def _doc_tree(tmp_path):
+    src = tmp_path / "source" / "org" / "x"
+    src.mkdir(parents=True)
+    (src / "Solver.java").write_text(
+        "package org.x;\n"
+        "public class Solver {\n"
+        "    /**\n"
+        "     * Runs the solve loop.\n"
+        "     * @throws ConvergenceException when the iteration limit is\n"
+        "     * exceeded\n"
+        "     */\n"
+        "    public double solve(double x) throws java.io.IOException {\n"
+        "        return x;\n"
+        "    }\n"
+        "    public int lookup(Object o) { return -1; }\n"
+        "}\n")
+    return tmp_path
+
+
+def test_documented_exceptions_extraction(tmp_path):
+    from java.parsing.java_source import documented_exceptions_in_tree
+
+    docs = documented_exceptions_in_tree(str(_doc_tree(tmp_path)), ["Solver"])
+    # throws clause AND @throws tag, simple names; the undocumented method
+    # has no entry at all.
+    assert docs == {("Solver", "solve"):
+                    ["ConvergenceException", "IOException"]}
+
+
+_SOLVER_PROBE = (
+    "Solver s;\n"
+    "double r;\n"
+    "try { s = new Solver(); r = s.solve(1.0); }\n"
+    "catch (Exception e) { return; }\n"
+    "if (r != 1.0) throw new RuntimeException(\"relation d violated: \" + r);\n"
+)
+
+
+def test_guard_spares_documented_exception_and_alarms_others():
+    docs = {("Solver", "solve"): ["ConvergenceException"]}
+    out = rethrow_patched_probe(_SOLVER_PROBE, ["Solver"],
+                                relation_name="d",
+                                documented_exceptions=docs)
+    assert out is not None
+    guard = out.split("getStackTrace()", 1)[1]
+    # The documented check keys on the throwing frame's method and walks
+    # the runtime hierarchy by name; the alarm is conditional on it.
+    assert '"solve".equals(__rpf.getMethodName())' in guard
+    assert 'ConvergenceException' in guard
+    assert 'getSuperclass()' in guard
+    assert 'if (!__rpdoc) throw new RuntimeException("relation d violated:' \
+        in guard
+
+
+def test_guard_unchanged_when_nothing_is_documented():
+    out_plain = rethrow_patched_probe(_SOLVER_PROBE, ["Solver"],
+                                      relation_name="d")
+    out_empty = rethrow_patched_probe(_SOLVER_PROBE, ["Solver"],
+                                      relation_name="d",
+                                      documented_exceptions={})
+    assert out_plain == out_empty
+    assert '__rpdoc' not in out_plain
+
+
+def test_guard_alarms_on_undocumented_method_of_same_class():
+    """Chart-19's shape: the map may document OTHER methods; a frame in an
+    undocumented method must still alarm."""
+    docs = {("Solver", "solve"): ["ConvergenceException"]}
+    check = _SOLVER_PROBE.replace("r = s.solve(1.0);",
+                                  "r = s.lookup(null);")
+    out = rethrow_patched_probe(check, ["Solver"], relation_name="d",
+                                documented_exceptions=docs)
+    guard = out.split("getStackTrace()", 1)[1]
+    # __rpdoc only becomes true inside the solve-keyed block; for a lookup
+    # frame it stays false and the alarm fires.
+    assert guard.count('"solve".equals') == 1
+    assert 'if (!__rpdoc) throw new RuntimeException' in guard

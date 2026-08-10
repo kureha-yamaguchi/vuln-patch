@@ -82,3 +82,36 @@ Phase 2 (small LLM spend): new patched-only firings go through
 **Bound stated up front:** replaying archived relations tests Mechanism A
 only. Mechanism B and the un-invented relations of past draws are outside
 what a replay can show; the next fresh roll carries them.
+
+---
+
+## Addendum (2026-08-10, registered before the build): documented-exception guard
+
+The 8.38 roll showed the tier-2 rule fires on DOCUMENTED exceptions
+(Math-65-c: 14 tier-2 firings, all `OptimizationException` on
+"maximal number of iterations exceeded" — an outcome the javadoc
+explicitly permits a correct implementation; all five verdicts were
+saved by the judge alone). Fix, per the compute-the-fact rule:
+
+- Mechanically extract, from the buggy checkout, the documented
+  exceptions of every method of the patched classes + subtype closure
+  (`throws` clauses + `@throws`/`@exception` javadoc tags).
+- The tier-2 guard (shipped stack-frame guard AND the study transform,
+  one shared generator) treats a thrown exception as a REJECTION when
+  the innermost patched-class frame's method documents that type (or a
+  supertype — runtime hierarchy walk by name). Undocumented → violation,
+  as before. One matching prompt sentence.
+- Symmetric cost accepted: an overfit patch that adds a throw of a
+  documented type on the wrong input reverts to status quo (the
+  rejection-independence companion's territory). Fail-closed toward
+  precision.
+
+**Gates (judged on a full re-run of the rex replay over all four
+archived suites — invdiv, varbase, diffcov_reach, mechb roll — zero
+LLM):**
+- G-D1 (the fix works): mechb Math-65-c tier-2 firings 14 → 0.
+- G-D2 (no recall paid): every previously-observed Chart-19 tier-2
+  firing (11 in the original study + the mechb roll's live ones) still
+  fires — `indexOf` documents nothing, so any loss is a bug in the
+  guard, not the trade-off.
+- G-D3: full pytest green; no verifier/judge/gate code touched.

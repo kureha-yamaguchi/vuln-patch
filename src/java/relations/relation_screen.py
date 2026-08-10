@@ -464,6 +464,7 @@ def screen_relations(candidates: List,
                      max_keep: int = 3,
                      repair_fn=None,
                      patched_classes: Optional[List[str]] = None,
+                     documented_exceptions: Optional[dict] = None,
                      ) -> List:
     """Screen each candidate on the buggy build; return the survivors
     (ranked: selective-firing first, silent second), capped at `max_keep`
@@ -539,7 +540,8 @@ def screen_relations(candidates: List,
             if _swallow is not None:
                 _rewritten = rethrow_patched_probe(
                     getattr(rel, 'check', ''), patched_classes,
-                    relation_name=name)
+                    relation_name=name,
+                    documented_exceptions=documented_exceptions)
                 if _rewritten:
                     try:
                         rel.check = _rewritten

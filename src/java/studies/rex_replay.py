@@ -828,13 +828,50 @@ _TIER2_CATCH = (
     '"relation {name} violated: unexpected " + {v}.getClass().getName()'
     ' + " on valid-by-construction input: " + {v}.getMessage()); }}')
 
+
+def _tier2_catch(v, name, target_names, documented):
+    """The tier-2 catch for one isolated probe statement.
+
+    With a `documented` map ({(class, method): [exception names]}, prereg
+    addendum 2026-08-10), the catch walks the stack to the INNERMOST
+    patched-class frame — same semantics as the shipped guard — and treats
+    a type the docs permit for that frame's method as a rejection
+    (return); everything else, including exceptions with no patched frame
+    at all, still alarms exactly like the original template. The
+    documented decision itself comes from the SHARED generator in
+    java_source so study and ship cannot disagree."""
+    if not documented:
+        return _TIER2_CATCH.format(v=v, name=name)
+    from java.parsing.java_source import (_class_name_tests,
+                                          documented_exception_test)
+    doc_test = documented_exception_test(v, '__rpdf', '__rpdoc', documented)
+    if not doc_test:
+        return _TIER2_CATCH.format(v=v, name=name)
+    name_tests = ' || '.join(_class_name_tests('__rpdc', c)
+                             for c in sorted(target_names))
+    return (
+        ' catch (Exception ' + v + ') {'
+        ' for (StackTraceElement __rpdf : ' + v + '.getStackTrace()) {'
+        ' String __rpdc = __rpdf.getClassName();'
+        ' if ((' + name_tests + ')'
+        ' && !"<init>".equals(__rpdf.getMethodName())) {'
+        + doc_test
+        + ' if (__rpdoc) return;'
+        ' break; } }'
+        ' throw new RuntimeException('
+        '"relation ' + name + ' violated: unexpected " + '
+        + v + '.getClass().getName()'
+        + ' + " on valid-by-construction input: " + '
+        + v + '.getMessage()); }')
+
 _ESCAPE_GUARD = (
     ' if ({v} instanceof RuntimeException'
     ' && String.valueOf({v}.getMessage()).indexOf("violated") >= 0)'
     ' {{ throw (RuntimeException) {v}; }}')
 
 
-def transform_check(check, name, var_types, target_names, target_fq):
+def transform_check(check, name, var_types, target_names, target_fq,
+                    documented=None):
     """Rewrite the tier-2 catches of one relation check body.
 
     Returns (new_check_or_None, status, detail). `status` is one of
@@ -893,7 +930,7 @@ def transform_check(check, name, var_types, target_names, target_fq):
                 prefix = f'{d.group(1).strip()} {d.group(2)}; '
                 body = f'{d.group(2)} = {d.group(3).strip()};'
             repl = (prefix + 'try { ' + body + ' }'
-                    + _TIER2_CATCH.format(v=v, name=name))
+                    + _tier2_catch(v, name, target_names, documented))
             edits.append((s, e, repl))
             wrapped.append(calls)
     if not edits:
@@ -985,13 +1022,21 @@ def cmd_run(args):
         # `defects4j compile` for a shared checkout (Math-2 has two patches)
         builder.test_classpath(sel.buggy_dir)
         builder.test_classpath(patched_dir)
+        from java.parsing.java_source import documented_exceptions_in_tree
+        documented = documented_exceptions_in_tree(sel.buggy_dir,
+                                                   sorted(names))
         build_info[patch_path] = {
             'tag': tag, 'buggy_dir': sel.buggy_dir,
             'patched_dir': patched_dir, 'patched_class': fq,
             'subclass_names': sorted(names),
+            'documented': documented,
         }
         print(f'  patched class {fq}; receiver types that count: '
               f'{sorted(names)}')
+        if documented:
+            print(f'  documented exceptions (tier-2 rejections): '
+                  + '; '.join(f'{c}#{m}: {x}'
+                              for (c, m), x in sorted(documented.items())))
 
     results_lock = threading.Lock()
     results_path = out_dir / 'results.jsonl'
@@ -1032,7 +1077,8 @@ def cmd_run(args):
                 new_check, status, detail = transform_check(
                     rel['check'], name,
                     declared_types(rel['check']),
-                    set(info['subclass_names']), info['patched_class'])
+                    set(info['subclass_names']), info['patched_class'],
+                    documented=info['documented'])
                 base['transform_status'] = status
                 base['transform_detail'] = detail
                 if new_check is None:
