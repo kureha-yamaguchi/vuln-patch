@@ -1583,6 +1583,14 @@ def main():
                 if _sub_cls:
                     print(f"  [synth] probe tier includes patched-class "
                           f"subtypes: {_sub_cls}")
+                    # Into the trace, not just stdout: run.log is deleted on
+                    # success (one-file policy), which made the 8.38 roll's
+                    # adherence read unrecoverable from artifacts.
+                    record_event('deterministic', method='synth',
+                                 target='probe-tier',
+                                 output=f'subtypes counted: {_sub_cls}',
+                                 detail={'patched_classes': _syn_cls,
+                                         'subtypes': _sub_cls})
                     _patched_classes += _sub_cls
             synthesizer = RelationSynthesizer(
                 HarnessGenerator(model=synth_model,
