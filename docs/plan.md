@@ -1832,6 +1832,24 @@ invention/screen time, not evidence completeness, and needs its own
 mechanism (candidate: screen formula relations against the BUGGY
 build's own getter at NON-trigger inputs — a correctly-stated formula
 must hold there — with the desk read's Qᵀ caveat examined first).
+**RESOLVED same day (trace read, leg 03, steps [273]-[280]): the
+convicting relations ride the DIRECTION-CONFIRMED BYPASS.** Both kept
+convictions enter `cycle6_gates_entry` with reason "direction-confirmed
+firing (mechanical buggy-build catch) — 5C/6B/6C all skipped by
+design": they fire on the failing test's own inputs on the BUGGY build,
+which the pipeline treats as the strongest evidence class and exempts
+from the value-comparison gates — the exact gates the shadow-isolation
+hook lives behind. The fix never had a lane. And the direction
+confirmation is SPURIOUS here: the same relations carry
+`[fact:rate-indiscriminate]` (buggy 51%/83%, patched 46%/49% of random
+inputs) — they fire everywhere because the formula they recompute
+cannot match the getter's Q^T-transformed state (8.40 desk read), and
+the buggy trigger inputs merely also violate it. THE SHARP NEXT DESIGN:
+direction-confirmed + rate-indiscriminate must NOT skip the gates —
+route through the value path instead (a dismissal is NOT added; genuine
+convictions survive value comparison, indiscriminate ones meet the
+fires-on-both facts). Mechanical, uses two facts already stamped,
+replay-validatable both signs on archived runs before any live roll.
 USER-GATED: nothing built until the design round is approved.
 **Same-day note — divcap VM smoke PASSED:** the divcap-instrumented
 Lang-63 tree compiles through the pipeline's own builder
