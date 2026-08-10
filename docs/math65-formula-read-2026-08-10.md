@@ -761,3 +761,36 @@ Gates:
   redesign, not ship.
 - **G-S3:** full pytest green; no judge/verifier prompt changes; the
   dismissal path activates ONLY on the two affirmative readings.
+
+---
+
+## Pre-registration round 2 (2026-08-10, after 8.42) — the bypass qualifier + isolation re-aim
+
+Build A — **the bypass qualifier (the proven leak):** a firing that is
+BOTH direction-confirmed AND `[fact:rate-indiscriminate]` no longer
+skips gates 5C/6B/6C — it routes through the ordinary value path. NO
+new dismissal logic: genuine convictions survive value comparison;
+indiscriminate ones meet the existing fires-on-both/value facts. A
+firing that is direction-confirmed WITHOUT the rate fact is untouched.
+Build B — **isolation re-aim:** the shadow-isolation hook targets every
+CONVICTING relation of a firing (not `sorted(fired_ids)[0]`), and gains
+a pairwise-agreement reading (two shared observable keys, no expected
+yardstick: identical pairs on both builds → dismissal-eligible reading;
+differing pairs → recorded fact).
+
+Gates (replay first, zero/low LLM, before any live roll):
+- **G-B1:** the 9 archived Math-65 FP legs' convictions (varbase 01 ×2
+  relations, mechb 07-09, stack_confirm 04-06, gs1 01-03), re-run
+  through the verdict path under the reroute, convert to dismissal in
+  the majority (the firings are rate-indiscriminate + fires-on-both by
+  measurement; prediction: all whose archived evidence carries both
+  facts convert).
+- **G-B2 (no genuine catch lost):** enumerate EVERY archived TP
+  conviction that used the direction-confirmed bypass AND carries the
+  rate fact; each must survive the value path. TPs without the rate
+  fact are untouched by construction and listed as such.
+- **G-B3:** full pytest green; no judge-prompt changes; reroute
+  activates only on the doubly-flagged combination.
+- Chart-7-c/Chart-26-c: the replay REPORTS whether their convictions
+  are doubly-flagged (in reach) or not (→ the valid-by-construction
+  probe becomes the named next design).
