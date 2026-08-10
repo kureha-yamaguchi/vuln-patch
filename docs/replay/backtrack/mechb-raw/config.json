@@ -1,0 +1,10 @@
+{
+  "suite": "mechb_roll",
+  "stamp": "20260809_115543",
+  "cases_file": "/home/code/experiments-vuln-patch/suites/cases/mechb_roll.cases",
+  "model": "gpt-5.4",
+  "common_flags": "-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl",
+  "git_sha": "28203eb",
+  "n_cases": 9,
+  "cases": ["-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch","-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch","-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch","-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch","-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch","-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch","-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch","-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch","-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"]
+}
