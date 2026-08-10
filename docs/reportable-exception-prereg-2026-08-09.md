@@ -115,3 +115,29 @@ LLM):**
   fires — `indexOf` documents nothing, so any loss is a bug in the
   guard, not the trade-off.
 - G-D3: full pytest green; no verifier/judge/gate code touched.
+
+### Gate correction (2026-08-10, after the first validation run `rexd_20260810`)
+
+G-D2 PASSED (all 11 archived Chart-19 tier-2 firings survive, verbatim
+relation set). G-D1 came back "0" VACUOUSLY: every mechb relation is
+`untouched-already-reports` — the roll's relations were written by the
+new prompt already in tier-2 shape, the study transform only retrofits
+blanket catches, so the guard never touched the exact relations that
+false-alarmed. That is a coverage hole in the shipped fix too: an
+LLM-WRITTEN tier-2 catch carries no mechanical documented-exception
+protection (prompt sentence + judge only).
+
+Extension, registered before building it: the shared documented check is
+also INSERTED at the head of any broad catch whose body rethrows a
+`violated: unexpected` alarm (the tier-2 signature) — documented type at
+the innermost patched-class frame returns (rejection) before the LLM's
+rethrow; undocumented and no-patched-frame cases fall through unchanged.
+Applied in the screen (new normalisation branch, recorded per relation)
+and in the study transform (new status `doc-guarded`, executed).
+
+Corrected gates, judged on a mechb-only study re-run:
+- **G-D1':** mechb Math-65-c doc-guarded relations replay with ZERO
+  tier-2 patched-only firings (the live roll produced 14).
+- **G-D2':** mechb Chart-19-o doc-guarded relations STILL fire tier-2
+  on the patched build (indexOf documents nothing) — the guard must not
+  eat the genuine catch while sparing the documented one.

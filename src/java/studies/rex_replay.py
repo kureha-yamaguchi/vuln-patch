@@ -896,6 +896,18 @@ def transform_check(check, name, var_types, target_names, target_fq,
             continue
         if any('throw' in _mask(check[c['body_open']:c['body_end']])
                for c in cs):
+            # Gate correction (prereg 2026-08-10): an LLM-written tier-2
+            # catch rethrows unconditionally — insert the shared documented
+            # check so a documented exception returns as a rejection while
+            # everything else still reaches the relation's own rethrow.
+            if documented:
+                from java.parsing.java_source import guard_llm_tier2
+                guarded = guard_llm_tier2(check, sorted(target_names),
+                                          documented)
+                if guarded is not None:
+                    return (guarded, 'doc-guarded',
+                            'LLM-written tier-2 catch: documented-exception '
+                            'check inserted at the catch head')
             return (None, 'untouched-already-reports',
                     'a broad catch already throws — the check already '
                     'reports what the call under test does')
@@ -1029,7 +1041,10 @@ def cmd_run(args):
             'tag': tag, 'buggy_dir': sel.buggy_dir,
             'patched_dir': patched_dir, 'patched_class': fq,
             'subclass_names': sorted(names),
-            'documented': documented,
+            # String-keyed so the summary's json.dump can carry it; the
+            # transform call site converts back to (class, method) tuples.
+            'documented': {f'{c}#{m}': x
+                           for (c, m), x in sorted(documented.items())},
         }
         print(f'  patched class {fq}; receiver types that count: '
               f'{sorted(names)}')
@@ -1078,7 +1093,8 @@ def cmd_run(args):
                     rel['check'], name,
                     declared_types(rel['check']),
                     set(info['subclass_names']), info['patched_class'],
-                    documented=info['documented'])
+                    documented={tuple(k.split('#', 1)): v
+                                for k, v in info['documented'].items()})
                 base['transform_status'] = status
                 base['transform_detail'] = detail
                 if new_check is None:

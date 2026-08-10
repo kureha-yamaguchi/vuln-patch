@@ -513,3 +513,53 @@ def test_guard_alarms_on_undocumented_method_of_same_class():
     # frame it stays false and the alarm fires.
     assert guard.count('"solve".equals') == 1
     assert 'if (!__rpdoc) throw new RuntimeException' in guard
+
+
+# --- path-b: LLM-written tier-2 catches get the documented check inserted
+# (gate correction 2026-08-10: the mechb roll's relations were already in
+# tier-2 shape, so the rewrite path never touched them) --------------------
+
+_LLM_TIER2 = (
+    "Solver s;\n"
+    "double r;\n"
+    "try { s = new Solver(); } catch (Exception e) { return; }\n"
+    "try { r = s.solve(1.0); }\n"
+    "catch (Exception e) { throw new RuntimeException(\"relation d violated:"
+    " unexpected \" + e.getClass().getName() + \" on valid-by-construction"
+    " input: \" + e.getMessage()); }\n"
+    "if (r != 1.0) throw new RuntimeException(\"relation d violated: \" + r);\n"
+)
+
+
+def test_llm_tier2_catch_gains_documented_head():
+    from java.parsing.java_source import guard_llm_tier2
+
+    docs = {("Solver", "solve"): ["ConvergenceException"]}
+    out = guard_llm_tier2(_LLM_TIER2, ["Solver"], docs)
+    assert out is not None
+    head = out.split('catch (Exception e) {', 2)[2]
+    # documented -> return BEFORE the relation's own rethrow, which stays.
+    assert head.index('if (__rpgdoc) return;') < head.index(
+        'throw new RuntimeException("relation d violated: unexpected')
+    assert 'ConvergenceException' in head
+    # the setup catch-and-return is untouched (no violated/unexpected body)
+    setup = out.split('catch (Exception e) {', 2)[1]
+    assert '__rpgdoc' not in setup
+
+
+def test_llm_tier2_guard_inert_without_documented_map():
+    from java.parsing.java_source import guard_llm_tier2
+
+    assert guard_llm_tier2(_LLM_TIER2, ["Solver"], {}) is None
+    assert guard_llm_tier2(_LLM_TIER2, [], {("Solver", "solve"): ["X"]}) \
+        is None
+
+
+def test_llm_tier2_guard_skips_plain_value_comparisons():
+    """A broad catch that only returns, and a violated throw OUTSIDE any
+    catch, must not be touched — only the tier-2 'violated: unexpected'
+    catch shape is guarded."""
+    from java.parsing.java_source import guard_llm_tier2
+
+    docs = {("Solver", "solve"): ["ConvergenceException"]}
+    assert guard_llm_tier2(_SOLVER_PROBE, ["Solver"], docs) is None

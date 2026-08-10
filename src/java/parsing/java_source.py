@@ -1884,6 +1884,64 @@ def documented_exception_test(exc_var: str, frame_var: str, flag: str,
     return f' boolean {flag} = false;' + ''.join(parts)
 
 
+def guard_llm_tier2(check_source: str, patched_classes,
+                    documented_exceptions) -> Optional[str]:
+    """Insert the documented-exception check at the head of every broad
+    catch whose body rethrows a `violated: unexpected` alarm (the tier-2
+    signature, as written by the LLM under the new prompt) — or None when
+    there is nothing to guard.
+
+    The gate-correction case (prereg 2026-08-10): a relation the prompt
+    already shaped into tier-2 rethrows UNCONDITIONALLY, so a documented
+    exception (Math-65's OptimizationException on non-convergence) alarms
+    with no mechanical protection. The inserted head walks to the
+    innermost patched-class frame — same semantics as the rewrite guard,
+    same shared `documented_exception_test` — and RETURNS (rejection) when
+    that frame's method documents the thrown type; undocumented types and
+    exceptions with no patched frame fall through to the LLM's own rethrow
+    unchanged."""
+    src = strip_comments(check_source or '')
+    names = _patched_class_names(patched_classes)
+    if not src.strip() or not names or not documented_exceptions:
+        return None
+    edits = []
+    for _open, close_idx, catches in _try_blocks(src):
+        if not catches:
+            continue
+        spans = _catch_clause_spans(src, close_idx)
+        for params, body_start, body_end in spans:
+            if not _BROAD_CATCH_RE.search(params):
+                continue
+            body = src[body_start:body_end]
+            if 'violated' not in body or 'unexpected' not in body \
+                    or 'throw' not in body:
+                continue
+            var = params.strip().split()[-1] if params.strip() else ''
+            if not re.match(r'^[A-Za-z_]\w*$', var):
+                continue
+            doc_test = documented_exception_test(
+                var, '__rpgf', '__rpgdoc', documented_exceptions)
+            if not doc_test:
+                continue
+            tests = ' || '.join(_class_name_tests('__rpgc', c)
+                                for c in sorted(names))
+            head = (
+                ' for (StackTraceElement __rpgf : ' + var
+                + '.getStackTrace()) {'
+                ' String __rpgc = __rpgf.getClassName();'
+                ' if ((' + tests + ')'
+                ' && !"<init>".equals(__rpgf.getMethodName())) {'
+                + doc_test
+                + ' if (__rpgdoc) return;'
+                ' break; } }')
+            edits.append((body_start, head))
+    if not edits:
+        return None
+    for pos, head in sorted(edits, reverse=True):
+        src = src[:pos] + head + src[pos:]
+    return src
+
+
 def _patched_receivers(src: str, names) -> dict:
     """{local var -> class} for locals whose STATIC type is a patch-changed
     class: declared (`Foo f = ...`, `Foo f;`) or assigned (`f = new Foo(...)`,

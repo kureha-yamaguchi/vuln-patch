@@ -44,6 +44,7 @@ from llm import record_event
 from java.execution.fuzz_runner import run_jazzer
 from java.parsing.java_source import (boolean_swallow, constant_receiver_state,
                          library_subclass, negative_modulo_index,
+                         guard_llm_tier2,
                          patched_probe_swallowed, probe_before_last_mutation,
                          rethrow_patched_probe, violation_swallowed)
 # Fire ratio above which a relation is out-of-domain: the buggy build is
@@ -565,6 +566,30 @@ def screen_relations(candidates: List,
                     record_event('deterministic', method='screen', target=name,
                                  output='demoted',
                                  reason=f'patched probe swallowed: {_swallow}')
+            else:
+                # Gate correction (prereg 2026-08-10): an LLM-WRITTEN tier-2
+                # catch rethrows unconditionally, so a DOCUMENTED exception
+                # (a solver's declared non-convergence throw) alarms on a
+                # correct patch with only the prompt and the judge in the
+                # way. Insert the shared documented check at the head of
+                # such catches; documented -> rejection, everything else
+                # falls through to the relation's own rethrow unchanged.
+                _guarded = guard_llm_tier2(getattr(rel, 'check', ''),
+                                           patched_classes,
+                                           documented_exceptions)
+                if _guarded:
+                    try:
+                        rel.check = _guarded
+                        rel.tier2_doc_guarded = True
+                    except Exception:
+                        pass
+                    print(f"  [screen] {name}: TIER-2 DOC-GUARDED "
+                          f"(documented exceptions return as rejections)")
+                    record_event('deterministic', method='screen',
+                                 target=name, output='tier2-doc-guarded',
+                                 reason='documented exceptions of the '
+                                        'patched class return as rejections '
+                                        'before the tier-2 rethrow')
         # P0.2 self-swallow lint: an alarm thrown inside the check's own
         # catch-everything block is caught and discarded before the
         # counting wrapper can see it — the check then measures 0/20,000
