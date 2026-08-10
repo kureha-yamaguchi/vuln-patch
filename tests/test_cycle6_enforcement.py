@@ -490,8 +490,10 @@ def test_confirmed_gate_returns_the_original_verdict_on_a_parse_error(
 
 
 def test_gates_are_skipped_when_the_firing_is_direction_confirmed():
+    """Singly flagged — direction-confirmed, no rate fact: the bypass stands,
+    byte for byte. This blob would be dropped by 6C if the gates ran."""
     v = _StubVerifier(fd_results=[_DUTY_NO])
-    ok, why = _adjudicate(v, _HUNDRED_PCT, is_direction_confirmed=True)
+    ok, why = _adjudicate(v, _muted("identical"), is_direction_confirmed=True)
     assert ok is True and v.fd_calls == 0
 
 

@@ -799,6 +799,22 @@ def _vals_match(a, b):
     return _close(a, b)
 
 
+def _key_values_match(p_vals, b_vals):
+    """True when every value one build printed for a key has its own distinct
+    partner on the other build — the multiset-with-floor rule
+    ``compare_fired_values`` has always used for a repeated key. Extracted so
+    the pairwise-agreement reading below compares a key exactly as the
+    cross-build comparison does. Pure."""
+    remaining = list(b_vals)
+    for a in p_vals:
+        hit = next((i for i, b in enumerate(remaining) if _vals_match(a, b)),
+                   None)
+        if hit is None:
+            return False
+        remaining.pop(hit)
+    return True
+
+
 def compare_fired_values(patched_msg, buggy_msg):
     """Compare the observed values of the SAME check firing on both builds.
 
@@ -823,13 +839,8 @@ def compare_fired_values(patched_msg, buggy_msg):
     shared = [k for k in p_kv if k in b_kv]
     if shared:
         for k in shared:
-            pv, bv = list(p_kv[k]), list(b_kv[k])
-            for a in pv:
-                hit = next((i for i, b in enumerate(bv)
-                            if _vals_match(a, b)), None)
-                if hit is None:
-                    return "different"
-                bv.pop(hit)
+            if not _key_values_match(p_kv[k], b_kv[k]):
+                return "different"
         return "identical"
 
     p_nums = _observed_numbers(patched_msg)
@@ -879,13 +890,26 @@ def compare_fired_values(patched_msg, buggy_msg):
 # Anything else — no buggy message, no single agreed expected value, more than
 # one observable differing, a non-finite number, distances too close to call —
 # is AMBIGUOUS, and ambiguous changes nothing at all.
+#
+# BUILD B (pre-registration round 2) adds the AGREEMENT shape. An agreement
+# check prints two or more observables and asserts they agree with EACH OTHER,
+# so it states no `expected=` yardstick and (ii) has nothing to measure
+# against: gs1's two `fired` isolation readings both died here, ambiguous with
+# real numbers in hand. For that shape the observables ARE the reading:
+#
+#   * every shared observable equal on both builds -> IDENTICAL, the same
+#     reading and the same dismissal as (i) — the patch changed nothing this
+#     check looks at;
+#   * any of them differing -> BUGGY-DIFFERS, a recorded fact and NOTHING
+#     else. Without a yardstick there is no direction to read, so it may not
+#     dismiss (and it is not a conviction rule either).
 # ---------------------------------------------------------------------------
 
 ISOLATION_FACT_TAG = '[fact:isolation-reading]'
 
 #: The readings `isolated_value_reading` can return. The first two dismiss.
 ISOLATION_READINGS = ('identical', 'patched-closer', 'buggy-closer',
-                      'ambiguous')
+                      'buggy-differs', 'ambiguous')
 _ISOLATION_DISMISSING = frozenset({'identical', 'patched-closer'})
 
 # A key naming the check's own reference value (what it says the answer should
@@ -947,6 +971,35 @@ def isolated_value_reading(patched_msg, buggy_msg):
                          '(expected/tolerance), which are equal on both '
                          'builds by construction — no observed value was '
                          'compared')
+        return out
+
+    # PAIRWISE AGREEMENT (build B): two or more shared observables and NO
+    # stated expected value on either side. The check is comparing its own
+    # observables with each other, so the closeness reading below can never
+    # run — but the observables themselves still answer the only question the
+    # isolation asks, "did the patch change what this check sees here?".
+    if not [k for k in shared if _EXPECTED_KEY_RE.search(k)] \
+            and len(observable_keys) >= 2:
+        differing = [k for k in observable_keys
+                     if not _key_values_match(p_kv[k], b_kv[k])]
+        out['key'] = ', '.join(observable_keys)
+        pairs = '; '.join(
+            '%s: patched %s, buggy %s'
+            % (k, _num(p_kv[k][0]) if len(p_kv[k]) == 1 else p_kv[k],
+               _num(b_kv[k][0]) if len(b_kv[k]) == 1 else b_kv[k])
+            for k in observable_keys)
+        if not differing:
+            out['reading'] = 'identical'
+            out['detail'] = ('the check states no expected value and compares '
+                             '%d observables with each other; every one of '
+                             'them reads the same on both builds (%s)'
+                             % (len(observable_keys), pairs))
+            return out
+        out['reading'] = 'buggy-differs'
+        out['detail'] = ('the check states no expected value and compares %d '
+                         'observables with each other; %d of them read '
+                         'differently on the two builds (%s)'
+                         % (len(observable_keys), len(differing), pairs))
         return out
 
     exp_keys = [k for k in shared
@@ -1015,12 +1068,14 @@ def isolation_reading_fact(reading, oracle_ids=None):
     the fail-closed rule — an unresolved measurement must leave the evidence
     byte-for-byte as it was).
 
-    Every version names BOTH observed values and the check's own expected
-    value, so the judge reads the arithmetic rather than a conclusion. Pure."""
+    Every version names BOTH builds' observed values, and the check's own
+    expected value whenever it stated one, so the judge reads the arithmetic
+    rather than a conclusion. Pure."""
     if not isinstance(reading, dict):
         return None
     name = reading.get('reading')
-    if name not in _ISOLATION_DISMISSING and name != 'buggy-closer':
+    if name not in _ISOLATION_DISMISSING \
+            and name not in ('buggy-closer', 'buggy-differs'):
         return None
     who = (", ".join(sorted(oracle_ids)) if oracle_ids else "this check")
     head = ("[isolation fact] " + ISOLATION_FACT_TAG + " the buggy-side "
@@ -1039,6 +1094,16 @@ def isolation_reading_fact(reading, oracle_ids=None):
                 + "). The patch did not change what this check measures at "
                   "this input, so the firing reports pre-existing behaviour, "
                   "not the patch.")
+    if name == 'buggy-differs':
+        return (head + "The check fires on the buggy build at this input too. "
+                "It states no expected value — it compares its own "
+                "observables (" + key + ") with each other — and those read "
+                "DIFFERENTLY on the two builds: "
+                + str(reading.get('detail') or '') + ". So the patch did "
+                "change what this check sees at this input; with no expected "
+                "value stated there is no yardstick saying which build is "
+                "closer to right, so this arithmetic settles nothing on its "
+                "own — it is recorded so the direction is not guessed.")
     exp = _num(reading.get('expected'))
     if name == 'patched-closer':
         return (head + "The check fires on the buggy build at this input too, "

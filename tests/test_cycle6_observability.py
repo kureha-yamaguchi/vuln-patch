@@ -304,13 +304,27 @@ def test_6c_records_the_family_duty_escape(events):
 
 
 def test_adjudicate_records_that_the_gates_were_skipped(events):
-    """direction-confirmed skips 5C/6B/6C entirely. Without this event a trace
-    with no 6B/6C step is ambiguous between 'skipped by design' and 'the code
-    never ran' — which is exactly the night20c ambiguity."""
+    """direction-confirmed WITHOUT the rate fact skips 5C/6B/6C entirely.
+    Without this event a trace with no 6B/6C step is ambiguous between
+    'skipped by design' and 'the code never ran' — which is exactly the
+    night20c ambiguity."""
     v = _StubVerifier()
-    _adjudicate(v, _INDISCRIMINATE, is_direction_confirmed=True)
+    _adjudicate(v, _CATCH, is_direction_confirmed=True)
     assert one(events, 'cycle6_gates_entry')['output'] == 'skipped'
     assert 'cycle6_6B_indiscriminate_considered' not in methods(events)
+
+
+def test_adjudicate_records_the_rerouted_bypass_and_names_both_flags(events):
+    """Build A: direction-confirmed AND rate-indiscriminate runs the gates,
+    and the entry event says which two flags sent it there — otherwise a trace
+    cannot tell a reroute from an ordinary non-confirmed firing."""
+    v = _StubVerifier()
+    _adjudicate(v, _INDISCRIMINATE, is_direction_confirmed=True)
+    entry = one(events, 'cycle6_gates_entry')
+    assert entry['output'] == 'running'
+    assert 'direction-confirmed' in entry['reason']
+    assert ef.RATE_INDISCRIMINATE_FACT_TAG in entry['reason']
+    assert 'cycle6_6B_indiscriminate_considered' in methods(events)
 
 
 def test_adjudicate_records_that_the_gates_ran(events):

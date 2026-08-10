@@ -64,6 +64,69 @@ def _target_of(fired):
         return 'firing'
 
 
+def direction_confirmed_bypass(is_direction_confirmed, evidence_text):
+    """BUILD A — the bypass qualifier. Does this firing skip 5C/6B/6C?
+
+    Pre-registered in ``docs/math65-formula-read-2026-08-10.md``
+    ("Pre-registration round 2"), after plan item 8.42 read leg 03's trace and
+    found the two kept Math-65 convictions entering ``cycle6_gates_entry`` with
+    ``skipped``: they are direction-confirmed, so every value gate was skipped
+    by design — the gates the shadow-isolation reading lives behind. The same
+    firings carry ``[fact:rate-indiscriminate]`` (measured buggy 51%/83%,
+    patched 46%/49%), which says the direction confirmation is SPURIOUS: the
+    check fires on the trigger inputs because it fires on nearly everything,
+    not because it is aimed at the defect.
+
+    So the bypass is qualified by exactly one conjunction:
+
+      * direction-confirmed AND NOT rate-indiscriminate -> bypass, byte for
+        byte as before. This is the reliable case the exemption was written
+        for: a check that fires on the buggy build at the failing test's own
+        inputs and is selective elsewhere.
+      * direction-confirmed AND rate-indiscriminate -> NO bypass. The firing
+        routes through the ordinary value path (5C -> 6B -> 6C), exactly as a
+        non-direction-confirmed firing does. Nothing new can drop it: the
+        gates are the shipped ones, each with its family-duty escape.
+      * not direction-confirmed -> the gates run, as they always have.
+
+    Returns ``(bypass, reason)``; the reason is the ``cycle6_gates_entry``
+    wording, naming both flags on the rerouted path.
+
+    TAG-ONLY, deliberately: the rate fact is read through ``fact_tags``, so
+    only evidence carrying the literal ``[fact:rate-indiscriminate]`` tag
+    reroutes. ``rate_profile``'s prose fallback is NOT consulted — untagged or
+    replayed evidence keeps the old bypass unchanged rather than being
+    rerouted on a keyword match.
+
+    FAILS toward TODAY'S behaviour: any exception reading the evidence leaves
+    the bypass in place. Pure."""
+    if not is_direction_confirmed:
+        return False, None
+    try:
+        from java.relations.evidence_facts import (
+            RATE_INDISCRIMINATE_FACT_TAG, fact_tags)
+        # `fact_tags` returns the bare, lowercased tag names — the same
+        # membership idiom `confirmed_fires_on_both_verdict` uses.
+        indiscriminate = 'rate-indiscriminate' in fact_tags(evidence_text)
+    except Exception as e:  # pragma: no cover - defensive
+        return True, ('direction-confirmed firing (mechanical buggy-build '
+                      'catch) — 5C/6B/6C all skipped by design; the '
+                      'rate-indiscriminate qualifier could not be read '
+                      f'({type(e).__name__}: {e}), so the bypass stands')
+    if indiscriminate:
+        return False, ('direction-confirmed AND '
+                       + RATE_INDISCRIMINATE_FACT_TAG
+                       + ' — the bypass does NOT apply: a check that condemns '
+                         'the known-broken build on a large share of random '
+                         'inputs also fires on the trigger inputs by '
+                         'construction, so the direction confirmation is not '
+                         'evidence that it is aimed at the defect. Routing '
+                         'through the ordinary value path (5C -> 6B -> 6C), '
+                         'exactly as a non-direction-confirmed firing')
+    return True, ('direction-confirmed firing (mechanical buggy-build catch) '
+                  '— 5C/6B/6C all skipped by design')
+
+
 def _guarded_verify(verifier, verify_kwargs, pinned=None,
                     evidence_profile=None):
     """Cycle-5B recall-side dismissal lint. Run the soundness judge, and when
@@ -437,9 +500,10 @@ def adjudicate(verifier, *, harness_source, fired_assertion, trusted_values,
          gates — 6B ``_indiscriminate_rate_gate`` (measured buggy-side fire
          rate at/above the intrinsic bar) and 6C
          ``_confirmed_fires_on_both_gate`` (a confirmed fires-on-both whose
-         VALUE comparison came back identical). All three are skipped when the
-         firing is direction-confirmed — a mechanical buggy-build catch — and
-         all three share ONE family-duty answer via ``fd_state``, seeded from
+         VALUE comparison came back identical). All three are skipped when
+         ``direction_confirmed_bypass`` says so — a mechanical buggy-build
+         catch that is NOT also rate-indiscriminate (build A) — and all three
+         share ONE family-duty answer via ``fd_state``, seeded from
          ``fd_prior``, so ``verifier.family_duty`` is asked at most once per
          firing.
 
@@ -465,14 +529,15 @@ def adjudicate(verifier, *, harness_source, fired_assertion, trusted_values,
     # ladder ran at all for this firing. Without it a trace with no 6B/6C event
     # is ambiguous between "direction-confirmed, gates deliberately skipped"
     # and "this code never executed".
+    _bypass, _bypass_why = direction_confirmed_bypass(
+        is_direction_confirmed, concrete_evidence)
     _ev('cycle6_gates_entry', target=_target_of(fired_assertion),
-        output=('skipped' if is_direction_confirmed else 'running'),
-        reason=('direction-confirmed firing (mechanical buggy-build catch) — '
-                '5C/6B/6C all skipped by design'
-                if is_direction_confirmed else
-                f'running 5C -> 6B -> 6C; base verdict ok={bool(ok)}, '
-                f'fd_prior={fd_prior}'))
-    if not is_direction_confirmed:
+        output=('skipped' if _bypass else 'running'),
+        reason=(_bypass_why if _bypass else
+                ((_bypass_why + '; ') if _bypass_why else '')
+                + f'running 5C -> 6B -> 6C; base verdict ok={bool(ok)}, '
+                  f'fd_prior={fd_prior}'))
+    if not _bypass:
         fd_state = {'value': fd_prior, 'why': None}
         for _gate in (_terminal_identical_gate,
                       _indiscriminate_rate_gate,

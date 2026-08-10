@@ -3518,63 +3518,82 @@ def main():
                                 isolated_value_reading as _ivr,
                                 isolation_dismisses as _idis,
                                 isolation_reading_fact as _irf)
-                            # One firing names one check in the overwhelming
-                            # majority of cases; when it names several the
-                            # first by name is isolated (one extra Jazzer run
-                            # per firing is the budget, not one per id).
-                            _iso_target = sorted(_fired_ids)[0]
-                            _iso_status, _iso_msg = "isolate_failed", None
-                            try:
-                                (_iso_status, _iso_msg,
-                                 _iso_out) = fr.replay_input_isolated(
-                                    r.harness_path, r.class_name, buggy_cp,
-                                    r.artifact_path, _iso_target,
-                                    builder=builder,
-                                    buggy_dir=selection.buggy_dir)
-                            except Exception as _iexc:
-                                print(f"      [isolated-replay] unavailable "
-                                      f"({_iexc}) — UNKNOWN kept")
-                            _iso_read = _ivr(fired, _iso_msg)
-                            print(f"      [isolated-replay] "
-                                  f"target={_iso_target} "
-                                  f"status={_iso_status} "
-                                  f"reading={_iso_read['reading']}")
-                            record_event(
-                                'deterministic',
-                                method='isolated-buggy-replay',
-                                target=_iso_target,
-                                output=(f'status={_iso_status}; '
-                                        f'reading={_iso_read["reading"]}'),
-                                reason=_iso_read['detail'],
-                                detail={
-                                    'status': _iso_status,
-                                    'shadowed': _shadowed,
-                                    'buggy_replay_status': _breplay_status,
-                                    'buggy_msg': (_iso_msg or '')[:800],
-                                    'reading': _iso_read['reading'],
-                                    'key': _iso_read['key'],
-                                    'expected': _iso_read['expected'],
-                                    'patched_value': _iso_read['patched'],
-                                    'buggy_value': _iso_read['buggy'],
-                                })
-                            _iso_fact = _irf(_iso_read, _fired_ids)
-                            if _iso_fact and _idis(_iso_read):
+                            # BUILD B (pre-registration round 2): isolate EVERY
+                            # relation this firing names, one Jazzer run each.
+                            # The first version isolated `sorted(_fired_ids)[0]`
+                            # only, on the reasoning that a firing names one
+                            # check; gs1 leg 03 disproved it — the leg's two
+                            # KEPT convictions carried no isolation event at
+                            # all, because the single target chosen by name was
+                            # a different check. A reading that never looks at
+                            # the convicting relation cannot reach it.
+                            _iso_drop = None
+                            for _iso_target in sorted(_fired_ids):
+                                _iso_status, _iso_msg = "isolate_failed", None
+                                try:
+                                    (_iso_status, _iso_msg,
+                                     _iso_out) = fr.replay_input_isolated(
+                                        r.harness_path, r.class_name, buggy_cp,
+                                        r.artifact_path, _iso_target,
+                                        builder=builder,
+                                        buggy_dir=selection.buggy_dir)
+                                except Exception as _iexc:
+                                    print(f"      [isolated-replay] "
+                                          f"unavailable ({_iexc}) — "
+                                          f"UNKNOWN kept")
+                                _iso_read = _ivr(fired, _iso_msg)
                                 print(f"      [isolated-replay] "
-                                      f"auto-dismissed firing: "
-                                      f"{(fired or '')[:90]}")
-                                drop_reasons.append((fired, _iso_fact))
+                                      f"target={_iso_target} "
+                                      f"status={_iso_status} "
+                                      f"reading={_iso_read['reading']}")
+                                record_event(
+                                    'deterministic',
+                                    method='isolated-buggy-replay',
+                                    target=_iso_target,
+                                    output=(f'status={_iso_status}; '
+                                            f'reading={_iso_read["reading"]}'),
+                                    reason=_iso_read['detail'],
+                                    detail={
+                                        'status': _iso_status,
+                                        'shadowed': _shadowed,
+                                        'buggy_replay_status': _breplay_status,
+                                        'buggy_msg': (_iso_msg or '')[:800],
+                                        'reading': _iso_read['reading'],
+                                        'key': _iso_read['key'],
+                                        'expected': _iso_read['expected'],
+                                        'patched_value': _iso_read['patched'],
+                                        'buggy_value': _iso_read['buggy'],
+                                        'targets': sorted(_fired_ids),
+                                    })
+                                # The fact names the relation it was measured
+                                # on, not every id the firing mentions: with
+                                # one run per id each reading belongs to one
+                                # check.
+                                _iso_fact = _irf(_iso_read, {_iso_target})
+                                if _iso_fact and _idis(_iso_read):
+                                    print(f"      [isolated-replay] "
+                                          f"auto-dismissed firing: "
+                                          f"{(fired or '')[:90]}")
+                                    _iso_drop = _iso_fact
+                                    # The firing is going; the remaining ids
+                                    # would cost a Jazzer run each for evidence
+                                    # nothing will read.
+                                    break
+                                if _iso_fact:
+                                    # A stated direction (the buggy build
+                                    # closer to the check's own expected value,
+                                    # or an agreement check reading differently
+                                    # on the two builds): a fact, dismissing
+                                    # nothing. Delivered the way every other
+                                    # computed fact is — into the concrete
+                                    # evidence the judge reads, not only the
+                                    # note list.
+                                    _fact_notes.append(_iso_fact)
+                                    evid = ((evid + "\n" + _iso_fact) if evid
+                                            else _iso_fact)
+                            if _iso_drop:
+                                drop_reasons.append((fired, _iso_drop))
                                 continue
-                            if _iso_fact:
-                                # Corroborating direction (the buggy build is
-                                # the one closer to the check's own expected
-                                # value): stated as a fact, dismissing
-                                # nothing. Delivered the way every other
-                                # computed fact is — into the concrete
-                                # evidence the judge reads, not only the note
-                                # list.
-                                _fact_notes.append(_iso_fact)
-                                evid = ((evid + "\n" + _iso_fact) if evid
-                                        else _iso_fact)
                     # The firing INPUT itself, verbatim (batch6 Lang-27-c:
                     # attribution ruled 'duty to fix' on a defect-type
                     # crash without ever seeing that the input was fuzzer
