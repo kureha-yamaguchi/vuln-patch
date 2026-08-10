@@ -1792,6 +1792,53 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.39 DOCUMENTED-EXCEPTION GUARD — built against the 8.38 near-miss, two-round replay-validated, SHIPPED (2026-08-10)
+**Pre-registration + gate correction:** two dated addenda in
+`docs/reportable-exception-prereg-2026-08-09.md`, each written BEFORE its
+build round.
+**THE MECHANICAL FACT (per the compute-the-fact rule):**
+`documented_exceptions_in_tree` extracts, from the buggy checkout, every
+method's documented exceptions (`throws` clauses + `@throws`/`@exception`
+tags) for the patched classes + subtype closure. The tier-2 guard decides
+at the INNERMOST patched-class frame: thrown type (or supertype — runtime
+hierarchy walk by name) documented for that frame's method → REJECTION,
+falls through; undocumented → alarm, unchanged. ONE shared generator
+(`documented_exception_test`) feeds the shipped guard AND the study
+transform. Prompt gains the matching sentence.
+**ROUND 1 (full re-run, all 4 suites, 38 legs, 443 relations, zero LLM;
+`rexd_20260810`, archived):** G-D2 PASS — all 11 archived Chart-19 tier-2
+firings survive, verbatim relation set. G-D1 VACUOUS — every mechb
+relation was already LLM-written in tier-2 shape
+(`untouched-already-reports`), so the retrofit path never touched the
+exact relations that false-alarmed. THAT is the real finding: path (b),
+an LLM-written tier-2 catch, had no mechanical protection (prompt +
+judge only).
+**ROUND 2 (path-b guard + mechb-only re-run; `rexd_mechb_20260810`,
+archived):** `guard_llm_tier2` inserts the shared documented check at the
+head of any broad catch that rethrows `violated: unexpected` —
+documented → return (rejection) BEFORE the relation's own rethrow;
+undocumented / no-patched-frame → unchanged. Wired into the live screen
+(`tier2-doc-guarded` event) and the study (status `doc-guarded`,
+executed). 56 doc-guarded relations executed:
+- **G-D1' PASS:** Math-65-c (30 relations, the legs that fired 14 live
+  tier-2 false alarms): ZERO firing messages containing "unexpected".
+  The extraction had the right entries at the right depth —
+  `incrementIterationsCounter → OptimizationException` is the actual
+  innermost throw site of "maximal number of iterations exceeded".
+- **G-D2' PASS:** Chart-19-o doc-guarded relations still fire tier-2
+  patched-only (3 firings, legs 01/02, `unexpected
+  java.lang.IllegalArgumentException` — indexOf documents nothing).
+- Recorded, out of scope: 12 patched-only VALUE-comparison firings on
+  Math-65-c — the known 8.29 unsound-relation instability, present in
+  the live roll too; the guard can only suppress firings, never create
+  them.
+**Also fixed en route:** study summary tuple-key crash (round-1 VM
+summary regenerated from canonical results.jsonl, noted in the file);
+884 passed, 7 skipped. **The accepted trade-off stands:** an overfit
+patch adding a throw of a DOCUMENTED type on wrong input is tier-2
+invisible (rejection-independence companion's territory — Mechanism B
+covers that direction).
+
 ### 8.37 REPORTABLE PATCHED-ONLY EXCEPTIONS — built, replay-validated, SHIPPED (2026-08-09)
 **Pre-registration:** `docs/reportable-exception-prereg-2026-08-09.md`
 (gates written before any code). **Build:**
