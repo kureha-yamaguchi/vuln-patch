@@ -648,6 +648,21 @@ def parse_args():
                              "docs/witness-study-2026-08-08.md. OFF by "
                              "default; the counts feed no prompt, no "
                              "verifier evidence, and no gate or verdict.")
+    parser.add_argument("--divcap", action="store_true",
+                        default=config.DIVCAP,
+                        help="Divergence capture at the diff boundary. Build "
+                             "the patched AND the buggy sources with an "
+                             "observation call in every patch-changed method "
+                             "(their own _divcap directories), run the bug's "
+                             "own trigger tests through both, and hand "
+                             "relation SYNTHESIS the observables whose value "
+                             "moved. Steers which observable the invented "
+                             "relations target; the values are NOT "
+                             "expectations (the prompt forbids it and the "
+                             "screen demotes a check that anchors on one). "
+                             "OFF by default; feeds no verifier evidence and "
+                             "no gate or verdict. See "
+                             "docs/divcap-build-2026-08-10.md.")
     parser.add_argument("--results_json", type=str, default=None,
                         metavar="PATH",
                         help="append a one-line JSON record describing this "
@@ -697,6 +712,42 @@ def _record_diffcov(runner, fuzz_results, record_extras) -> None:
                      detail=rec)
     if records:
         record_extras['diffcov'] = records
+
+
+def _record_divcap(result, record_extras) -> None:
+    """Persist this leg's divergence capture into result.jsonl (`divcap`)
+    and the trace, and return nothing — the caller already holds the records
+    it needs to feed synthesis.
+
+    THE BOUNDARY, stated where the records are collected: the divergences go
+    to the relation-SYNTHESIS prompt (that is the mechanism) and to the run
+    artifacts. They are deliberately NOT passed to the relation verifier's
+    evidence, to the judge, or to any gate or verdict computation. A
+    divergence is not evidence of a defect — a correct patch diverges from
+    the buggy build too — so a decision that consumed one would be reading a
+    signal that means nothing about correctness. The only thing that crosses
+    into judge-visible territory is the screen's anti-anchoring DEMOTION
+    note, which is a statement about the relation, not about the patch.
+    """
+    if not result:
+        return
+    plan = result.get('plan')
+    if plan:
+        record_extras['divcap_methods'] = plan
+    divergences = [d.as_dict() for d in (result.get('divergences') or [])]
+    record_extras['divcap'] = {
+        'status': result.get('status'),
+        'buggy_observations': result.get('buggy_observations', 0),
+        'patched_observations': result.get('patched_observations', 0),
+        'divergences': divergences,
+    }
+    record_event('deterministic', method='divcap',
+                 target='diff-boundary observation',
+                 output=(f"{len(divergences)} divergence(s) from "
+                         f"{result.get('buggy_observations', 0)} buggy / "
+                         f"{result.get('patched_observations', 0)} patched "
+                         f"observation(s) — {result.get('status')}"),
+                 detail={'divergences': divergences})
 
 
 def _emit_record(path, *, label, status, selection=None,
@@ -1546,6 +1597,30 @@ def main():
                 if jd and jd not in touched_javadocs:
                     touched_javadocs.append(jd)
 
+    # 4.55) --divcap: what does the patch actually MOVE? Runs before
+    #       synthesis because its whole purpose is to steer which observable
+    #       the invented relations target — after synthesis it would be a
+    #       measurement, not a mechanism. Fail-soft: any build/run failure
+    #       leaves `_divergences` empty and the prompt byte-identical.
+    _divergences: list = []
+    _divergence_values: list = []
+    if (getattr(args, 'divcap', False) and bug_kind == "semantic"
+            and not context_degraded):
+        print("\n" + "#" * 18 + " divergence capture " + "#" * 18)
+        from java.execution import divcap as _divcap_mod
+        _divcap_result = _divcap_mod.collect_divergences(
+            selection.buggy_dir, selection.patch_path,
+            top_k=config.DIVCAP_TOP_K)
+        _divergences = _divcap_result.get('divergences') or []
+        _divergence_values = _divcap_mod.buggy_side_values(_divergences)
+        _record_divcap(_divcap_result, record_extras)
+        print(f"  [divcap] {len(_divergences)} divergence(s) "
+              f"({_divcap_result.get('status')})")
+        for _d in _divergences:
+            print(f"  [divcap] {_d.method_id} {_d.observable}: "
+                  f"{_d.buggy_value} -> {_d.patched_value} "
+                  f"on {_d.input_shape} (x{_d.count})")
+
     synthesized_relations = []
     _all_candidates = []
     # The classes this patch changed — read off the diff headers below and
@@ -1688,7 +1763,8 @@ def main():
                 source_imports=context.source_imports,
                 trigger_test_block=trigger_test_block,
                 trigger_methods=trigger_methods,
-                max_rules=getattr(args, 'synth_max_rules', 8))
+                max_rules=getattr(args, 'synth_max_rules', 8),
+                divergences=_divergences)
             if candidates:
                 print(f"  [synth] {len(candidates)} candidate relation(s) "
                       f"({synth_model}): "
@@ -1840,6 +1916,7 @@ def main():
                     runs=args.screen_runs,
                     patched_classes=_patched_classes,
                     documented_exceptions=_doc_exc,
+                    divergence_values=_divergence_values,
                 )
                 record_event('deterministic', method='screening-survivors',
                              output={'kept': [getattr(r, 'name', '?')
@@ -1869,7 +1946,8 @@ def main():
                         source_imports=context.source_imports,
                         trigger_test_block=trigger_test_block,
                         trigger_methods=trigger_methods,
-                        max_rules=getattr(args, 'synth_max_rules', 8)),
+                        max_rules=getattr(args, 'synth_max_rules', 8),
+                        divergences=_divergences),
                     screen_round=lambda cands: screen_relations(
                         cands, builder=builder,
                         buggy_dir=selection.buggy_dir,
@@ -1881,7 +1959,8 @@ def main():
                         max_keep=12, repair_fn=_repair,
                         runs=args.screen_runs,
                         patched_classes=_patched_classes,
-                        documented_exceptions=_doc_exc),
+                        documented_exceptions=_doc_exc,
+                        divergence_values=_divergence_values),
                     max_extra_rounds=2,
                     min_extra_rounds=1,
                 )

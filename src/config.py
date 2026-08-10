@@ -243,6 +243,28 @@ DIFFCOV = os.getenv('VULNPATCH_DIFFCOV', '').strip().lower() in (
 # from native code — neither runs JVM shutdown hooks.
 DIFFCOV_FLUSH_SECONDS = float(os.getenv('DIFFCOV_FLUSH_SECONDS', '2'))
 
+# --- divergence capture (--divcap) -----------------------------------------
+# Run the bug's own trigger tests through TWO instrumented builds (buggy and
+# patched) and record, per patch-changed method, the observable at the diff
+# boundary. The pairs whose value MOVED are handed to relation SYNTHESIS as
+# facts about WHICH observable the patch touches. OFF by default: with it on
+# two extra trees are materialised and compiled.
+# The values steer attention, never expectations — see
+# docs/divcap-build-2026-08-10.md and the soundness rule in divcap.py.
+DIVCAP = os.getenv('VULNPATCH_DIVCAP', '').strip().lower() in (
+    '1', 'true', 'yes', 'on')
+
+DIVCAP_FLUSH_SECONDS = float(os.getenv('DIVCAP_FLUSH_SECONDS', '2'))
+
+# Distinct argument tuples watched per changed method. Capped COUNT, never
+# capped width: the 8.31 truncation read (a value cut mid-array is a value
+# nobody can pair, and the capped copy was the only copy).
+DIVCAP_MAX_SHAPES = int(os.getenv('DIVCAP_MAX_SHAPES', '64'))
+
+# Divergences handed to synthesis, ranked by distinct-shape diversity first
+# and frequency second (pre-registration decision 3).
+DIVCAP_TOP_K = int(os.getenv('DIVCAP_TOP_K', '8'))
+
 # --- drr patch dataset -----------------------------------------------------
 DRR_CORRECT_DIR     = '../drr/Patches/Dcorrect'
 DRR_OVERFITTING_DIR = '../drr/Patches/Doverfitting'

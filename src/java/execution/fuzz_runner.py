@@ -746,13 +746,17 @@ class PatchedProjectBuilder:
     """
 
     def __init__(self, patched_root: str = config.D4J_CHECKOUT_ROOT,
-                 diffcov: bool = False):
+                 diffcov: bool = False, divcap: bool = False):
         self.patched_root = patched_root
         # --diffcov: inject a hit counter into every patch-changed method
         # before compiling. Off by default; when off nothing below runs and
         # the build is byte-for-byte the one it always was.
         self.diffcov = diffcov
         self.diffcov_plan = None
+        # --divcap: inject the divergence-observation calls instead (same
+        # station, same flag discipline, its own directory). Off by default.
+        self.divcap = divcap
+        self.divcap_plan = None
         self._classpath_cache: dict = {}
 
     def build_patched_dir(self, buggy_dir: str, patch_path: str,
@@ -770,6 +774,8 @@ class PatchedProjectBuilder:
                 self._apply_patch(patched_dir, patch_path)
                 if self.diffcov:
                     self._instrument(patched_dir, patch_path)
+                if self.divcap:
+                    self._instrument_divcap(patched_dir, patch_path)
                 subprocess.run(
                     ['defects4j', 'compile'],
                     cwd=patched_dir, check=True,
@@ -779,6 +785,8 @@ class PatchedProjectBuilder:
                 raise
         if self.diffcov and self.diffcov_plan is None:
             self._load_diffcov_plan(patched_dir)
+        if self.divcap and self.divcap_plan is None:
+            self._load_divcap_plan(patched_dir)
         if verify_trigger:
             self._verify_trigger_tests(buggy_dir, patched_dir)
         return patched_dir
@@ -812,6 +820,64 @@ class PatchedProjectBuilder:
                 self.diffcov_plan = json.load(fh)
         except (OSError, ValueError):
             self.diffcov_plan = None
+
+    # ---- divergence capture (--divcap) ---------------------------------
+
+    def _instrument_divcap(self, patched_dir: str, patch_path: str) -> None:
+        """Inject the observation calls into the patched WORKING COPY, after
+        the patch applied and before it is compiled. Best-effort, exactly
+        like the diffcov twin: a failure leaves the build uninstrumented
+        rather than costing the run its patched tree."""
+        from java.execution import divcap as divcap_mod
+        try:
+            plan = divcap_mod.instrument_patched_dir(
+                patched_dir, patch_path, config.DIVCAP_FLUSH_SECONDS,
+                config.DIVCAP_MAX_SHAPES)
+        except Exception as exc:
+            print(f"  [divcap] instrumentation skipped: {exc}")
+            return
+        self.divcap_plan = plan.as_dict()
+        print(f"  [divcap] instrumented {len(plan.targets)} changed "
+              f"method(s); {len(plan.skipped)} without a capturable "
+              f"observable")
+
+    def _load_divcap_plan(self, patched_dir: str) -> None:
+        from java.execution import divcap as divcap_mod
+        try:
+            with open(os.path.join(patched_dir,
+                                   divcap_mod.PLAN_FILE)) as fh:
+                self.divcap_plan = json.load(fh)
+        except (OSError, ValueError):
+            self.divcap_plan = None
+
+    def build_divcap_buggy_dir(self, buggy_dir: str,
+                               patched_dir: str) -> str:
+        """The BUGGY twin of the instrumented patched build: the unpatched
+        sources, the same methods watched, compiled.
+
+        The signature list comes from the patched tree (that is where the
+        diff maps), so a method the patch ADDED simply has no counterpart
+        here and is recorded as unfound rather than guessed at. Same
+        idempotence and same clean-up-on-failure rule as the patched build:
+        a half-built tree left behind would be reused as "already built" and
+        the capture would come back silently empty."""
+        from java.execution import divcap as divcap_mod
+        target = os.path.join(
+            self.patched_root,
+            f'{os.path.basename(buggy_dir.rstrip("/"))}_divcap_buggy')
+        if not os.path.isdir(target):
+            print(f"Copying {buggy_dir} → {target}")
+            try:
+                shutil.copytree(buggy_dir, target)
+                divcap_mod.instrument_dir(
+                    target, divcap_mod.read_wanted(patched_dir),
+                    config.DIVCAP_FLUSH_SECONDS, config.DIVCAP_MAX_SHAPES)
+                subprocess.run(['defects4j', 'compile'],
+                               cwd=target, check=True)
+            except BaseException:
+                shutil.rmtree(target, ignore_errors=True)
+                raise
+        return target
 
     # ---- P0.1b: trigger-test safety net --------------------------------
 
@@ -991,7 +1057,8 @@ class PatchedProjectBuilder:
         # idempotent on directory existence alone, so sharing the path would
         # let a cached uninstrumented tree be reused as "already built" and
         # the measurement would silently come back empty.
-        suffix = '_diffcov' if self.diffcov else ''
+        suffix = ('_diffcov' if self.diffcov else '') + (
+            '_divcap' if self.divcap else '')
         return os.path.join(self.patched_root,
                             f'{base}_patched_{patch_stem}{suffix}')
 

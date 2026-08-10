@@ -2225,3 +2225,107 @@ def probe_before_last_mutation(check_source: str) -> Optional[str]:
                     f'call (mutate, then probe again) and assert the same '
                     f'documented outcome each time.')
     return None
+
+
+# ---------------------------------------------------------------------------
+# Anti-anchoring lint (--divcap): a relation whose expected literal is a value
+# the BUGGY build produced.
+#
+# The divergence facts handed to synthesis name the observable the patch
+# moves and show what it moved FROM and TO. The known temptation, named in the
+# design before the mechanism was built: a model shown "before the patch this
+# returned X, after it returns Y" writes `expected X`. That asserts the
+# behaviour of code known to be wrong, so it fires on every correct patch and
+# stays silent on the overfits that reproduce it.
+#
+# DEMOTE, never drop (pre-registration decision 4): an expected literal can
+# coincide with a buggy-side value legitimately — a documented -1, an
+# empty string, a size of 0 — and dropping would delete sound checks to
+# punish a coincidence. The demotion names the matched value so the reader
+# (and the judge, which sees the screen note) can tell the two apart.
+#
+# Scope, stated honestly: every literal in a comparison anywhere in the check
+# body, not only the one compared against the probe result. Deciding
+# mechanically which value IS the probe result is exactly the analysis this
+# codebase has repeatedly got wrong on real check shapes, and the cost of the
+# wider net is a note on a sound check, not a lost check.
+
+_COMPARISON_LITERAL_RES = (
+    # `x == "09"`, `n != -2`, `"09" == x`
+    re.compile(r'(?:==|!=)\s*(' + _STRING_LITERAL_RE.pattern + r')'),
+    re.compile(r'(?:==|!=)\s*(-?\d[\w.]*)'),
+    re.compile(r'(' + _STRING_LITERAL_RE.pattern + r')\s*(?:==|!=)'),
+    re.compile(r'(-?\d[\w.]*)\s*(?:==|!=)'),
+    # `a.equals("09")`, `a.compareTo(-2)`
+    re.compile(r'\.\s*(?:equals|equalsIgnoreCase|compareTo|contentEquals)'
+               r'\s*\(\s*(' + _STRING_LITERAL_RE.pattern + r')\s*\)'),
+    re.compile(r'\.\s*(?:equals|equalsIgnoreCase|compareTo|contentEquals)'
+               r'\s*\(\s*(-?\d[\w.]*)\s*\)'),
+    # `"09".equals(x)` — the null-safe idiom, and the shape a model writes
+    # most often when it anchors on a value it was shown.
+    re.compile(r'(' + _STRING_LITERAL_RE.pattern + r')\s*\.\s*'
+               r'(?:equals|equalsIgnoreCase|compareTo|contentEquals)\s*\('),
+)
+
+
+def _numeric(text: str):
+    """`text` as a float, or None. `-2`, `-2.0`, `-2L`, `1e3d` all compare
+    equal to each other — a relation written `-2L` anchors on a logged `-2`
+    just as much as one written `-2`."""
+    body = re.sub(r'[lLfFdD]$', '', (text or '').strip())
+    try:
+        return float(body)
+    except (TypeError, ValueError):
+        return None
+
+
+def comparison_literals(check_source: str) -> List[str]:
+    """Every literal the check compares something against, unquoted."""
+    src = strip_comments(check_source or '')
+    out: List[str] = []
+    for pattern in _COMPARISON_LITERAL_RES:
+        for raw in pattern.findall(src):
+            lit = raw.strip()
+            if lit.startswith('"') and lit.endswith('"') and len(lit) >= 2:
+                lit = lit[1:-1]
+            if lit and lit not in out:
+                out.append(lit)
+    return out
+
+
+def anchors_buggy_value(check_source: str,
+                        buggy_values) -> Optional[str]:
+    """Return a reason string when the check compares against a literal equal
+    to a value the BUGGY build produced where the patched build produced a
+    different one; None otherwise.
+
+    `buggy_values` are the bare (untagged) buggy-side values of this leg's
+    divergences — so a match is by construction a value that MOVED, which is
+    what makes anchoring on it wrong rather than merely unlucky.
+    """
+    wanted = [str(v) for v in (buggy_values or []) if str(v) != '']
+    if not wanted:
+        return None
+    found = comparison_literals(check_source)
+    if not found:
+        return None
+    numeric_wanted = [(v, _numeric(v)) for v in wanted]
+    for lit in found:
+        lit_num = _numeric(lit)
+        for value, value_num in numeric_wanted:
+            if lit == value or (lit_num is not None
+                                and lit_num == value_num):
+                return (f'the check compares against the literal `{lit}`, '
+                        f'which is the value the PRE-PATCH build produced at '
+                        f'the changed code (the post-patch build produced a '
+                        f'different one there). The recorded values name '
+                        f'WHICH observable the patch moves; they are not the '
+                        f'contract. A relation that expects the pre-patch '
+                        f'value asserts code known to be wrong, so it fires '
+                        f'on a correct fix and stays quiet on an overfit that '
+                        f'reproduces it. If `{lit}` is what the DOCUMENTATION '
+                        f'states for this input the check may well be sound — '
+                        f'that coincidence is why this is a demotion and not '
+                        f'a drop — but the citation has to be the doc, not '
+                        f'the observation.')
+    return None

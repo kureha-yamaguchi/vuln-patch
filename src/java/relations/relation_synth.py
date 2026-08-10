@@ -437,6 +437,71 @@ _FOCUSED_PASSES = [
 ]
 
 
+# --divcap evidence block. Rendered ONLY when the divergence capture
+# actually produced divergences, so a run without the flag (and a run with
+# the flag that observed nothing) sees a byte-identical prompt.
+#
+# The values are shown deliberately (pre-registration decision 1) — an
+# observable named without its magnitudes is not enough to aim a relation at
+# the right input region. What the block has to buy back is the anchoring
+# temptation, which is what the second half of it is for: neither side is
+# ground truth, and the contract still comes only from documentation. The
+# screen's anti-anchoring lint is the mechanical backstop.
+_DIVERGENCE_HEADER = (
+    "OBSERVED DIVERGENCES AT THE CHANGED CODE (mechanical measurement, NOT a"
+    " specification). The pipeline ran the same inputs through the build"
+    " WITHOUT the patch and the build WITH it, and recorded, at each method"
+    " the patch changed, the value of the named observable. Listed below are"
+    " the observables whose value MOVED, with the input tuple they moved on."
+    " This tells you WHICH observable of WHICH method the patch actually"
+    " changes, and on what shape of input — that is the only thing it tells"
+    " you:")
+_DIVERGENCE_RULES = (
+    "HOW TO USE THIS — the difference between a sound relation and a false"
+    " accusation:\n"
+    "  * USE it to CHOOSE the observable and the input region your relations"
+    " target. An observable listed here is one the patch demonstrably moves;"
+    " a relation that never reads it cannot tell the two builds apart, which"
+    " is how whole sets of otherwise-sound relations end up silent.\n"
+    "  * DO NOT use either recorded value as an expected value, in any"
+    " relation, ever. Neither side is ground truth. The value from the build"
+    " WITHOUT the patch is the value of code KNOWN TO BE WRONG here; the"
+    " value from the build WITH it is the value of the very code you are"
+    " being asked to judge. A check that asserts either one is asserting an"
+    " implementation instead of a contract: it fires on a correct fix and"
+    " goes quiet on a wrong one. This is checked mechanically at screening —"
+    " a check whose expected literal equals a recorded pre-patch value is"
+    " demoted and the match is reported.\n"
+    "  * Every relation must still assert the DOCUMENTED contract of the"
+    " observable you nominate — the javadoc formula, the declared @throws,"
+    " the documented range, the documented family agreement — exactly as"
+    " required everywhere else in these instructions. If the nominated"
+    " observable has no documented contract you can assert, nominate a"
+    " different observable; never fall back to the recorded values.\n"
+    "  * A value MOVING is expected of a correct fix — that is what fixing"
+    " is. Divergence here is not evidence of a defect and must never be"
+    " reported as one.")
+
+
+def divergence_block(divergences) -> str:
+    """The --divcap evidence block, or '' when there is nothing to show."""
+    rows = []
+    for d in (divergences or []):
+        # Either the artifact dicts or the divcap.Divergence records; the
+        # dataclass knows how to become the former.
+        row = d if isinstance(d, dict) else d.as_dict()
+        rows.append(
+            f"    method={row.get('method')}"
+            f" observable={row.get('observable')}"
+            f" input={row.get('input_shape')}"
+            f" value_without_the_patch={row.get('buggy_value')}"
+            f" value_with_the_patch={row.get('patched_value')}")
+    if not rows:
+        return ''
+    return (_DIVERGENCE_HEADER + "\n<divergences>\n" + "\n".join(rows)
+            + "\n</divergences>\n" + _DIVERGENCE_RULES)
+
+
 def _unflatten_check(check: str) -> str:
     """Recover a check the model double-escaped in its JSON. Sometimes the
     whole snippet arrives as ONE physical line with literal `\\n`/`\\t`
@@ -531,6 +596,7 @@ class RelationSynthesizer:
                    trigger_test_block: str = '',
                    trigger_methods: Optional[List[str]] = None,
                    max_rules: int = 4,
+                   divergences: Optional[List] = None,
                    ) -> List[Relation]:
         """Propose candidate relations for the patched method(s).
 
@@ -687,6 +753,9 @@ class RelationSynthesizer:
         if trigger_summary:
             ctx.append("The reported failure on the buggy code: "
                        + trigger_summary)
+        _div = divergence_block(divergences)
+        if _div:
+            ctx.append(_div)
         ctx_str = "\n".join(ctx)
 
         # FOCUSED (per-source) synthesis: several narrow passes unioned,

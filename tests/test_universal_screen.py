@@ -227,7 +227,10 @@ def test_relation_screen_entry_points_and_primitives():
         # {(class, method): [exception names]} the docs permit — those fall
         # through as rejections instead of tier-2 alarms. Omitted => guard
         # unchanged.
-        'documented_exceptions']
+        'documented_exceptions',
+        # --divcap anti-anchoring lint: the pre-patch values of this leg's
+        # divergences, appended for the same reason. Omitted => inert.
+        'divergence_values']
 
     replay_params = list(
         inspect.signature(rs.replay_on_patched).parameters)

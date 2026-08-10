@@ -42,7 +42,8 @@ from typing import List, Optional
 from java.harness.build import HarnessBuilder
 from llm import record_event
 from java.execution.fuzz_runner import run_jazzer
-from java.parsing.java_source import (boolean_swallow, constant_receiver_state,
+from java.parsing.java_source import (anchors_buggy_value, boolean_swallow,
+                         constant_receiver_state,
                          library_subclass, negative_modulo_index,
                          guard_llm_tier2,
                          patched_probe_swallowed, probe_before_last_mutation,
@@ -466,6 +467,7 @@ def screen_relations(candidates: List,
                      repair_fn=None,
                      patched_classes: Optional[List[str]] = None,
                      documented_exceptions: Optional[dict] = None,
+                     divergence_values: Optional[List[str]] = None,
                      ) -> List:
     """Screen each candidate on the buggy build; return the survivors
     (ranked: selective-firing first, silent second), capped at `max_keep`
@@ -479,7 +481,11 @@ def screen_relations(candidates: List,
     fenced behind a blanket catch-and-return has its outcome swallowed
     before the counting wrapper can see it, and is rewritten to re-throw.
     Empty/omitted, that step is inert and screening is byte-for-byte what
-    it was."""
+    it was.
+
+    `divergence_values` (--divcap only, the buggy-side values of this leg's
+    divergences) arms the anti-anchoring lint. Empty/omitted — which is
+    every run that does not pass --divcap — that step is inert too."""
     confirmed, confirmed_flaky, selective, silent, high_ratio = (
         [], [], [], [], [])
 
@@ -679,6 +685,28 @@ def screen_relations(candidates: List,
             record_event('deterministic', method='screen',
                          target=name, output='demoted',
                          reason=f'probe before last mutation: {probeorder}')
+        # Anti-anchoring lint (--divcap). Synthesis was shown which observable
+        # the patch moves and what it moved FROM; a relation that then expects
+        # the FROM value is asserting the pre-patch behaviour. DEMOTED, never
+        # a drop: the coincidence case (a documented -1, an empty string) is
+        # real, and the demotion text names the matched value so it can be
+        # told apart. Inert without --divcap.
+        if divergence_values:
+            anchored = anchors_buggy_value(getattr(rel, 'check', ''),
+                                           divergence_values)
+            if anchored is not None:
+                print(f"  [screen] {name}: ANCHORED ON A PRE-PATCH VALUE — "
+                      f"{anchored} — DEMOTED (kept, anchor recorded)")
+                try:
+                    rel.screen_demotion = (getattr(rel, 'screen_demotion', '')
+                                           + ' | ANCHORED-ON-PRE-PATCH-VALUE: '
+                                           + anchored)
+                except Exception:
+                    pass
+                record_event('deterministic', method='screen',
+                             target=name, output='demoted',
+                             reason=f'anchored on a pre-patch value: '
+                                    f'{anchored}')
         cls = f'RelScreen{i}'
         src = _screen_harness_source(package, imports or [], cls,
                                      getattr(rel, 'check', ''))
