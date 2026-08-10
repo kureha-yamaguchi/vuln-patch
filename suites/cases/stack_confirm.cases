@@ -1,0 +1,62 @@
+# FULL-STACK LIVE CONFIRM (8.40). 9 runs (3 legs x 3 draws), PARALLEL=6,
+# -n 5 -m 12 (n HELD at 5 per 8.32), NO --diffcov: flag-identical to
+# mechb_roll_20260809_115543 and varbase_20260808_183839, which are the
+# two comparison baselines.
+#
+# WHY THIS ROLL: the shipped stack — tier-2 rethrow + subtype closure
+# (8.37) + Mechanism B ordering (8.38) + the DOCUMENTED-EXCEPTION GUARD,
+# both paths (8.39: retrofit rewrite AND guard_llm_tier2 on LLM-written
+# tier-2 catches) — has never run TOGETHER live. The doc guard in
+# particular is only replay-validated; this is its first live draw.
+#
+# LEGS: Chart-19-o x3 (both conviction routes should now be live and
+# guarded), Math-65-c x3 (the doc-guard target: the 8.38 roll produced 14
+# live tier-2 false alarms here; the guard must zero them WITHOUT touching
+# the leg's separate 8.29 value-comparison instability), Lang-41-o x3
+# (unstable overfit leg outside the mechanism-design set — a
+# generalisation read, no prediction registered).
+#
+# THE PRE-REGISTERED READ — per draw, numbers pasted verbatim, RECORDED
+# NOT BANKED:
+#
+# (1) DOC GUARD LIVE (the headline). Math-65-c: count tier-2 firings
+#     (message contains "violated: unexpected"). PREDICTION: ZERO in every
+#     draw (replay G-D1' said the 14 disappear). Any tier-2 firing on
+#     Math-65-c = the guard failed live -> hard stop on 8.39's ship
+#     status. Value-comparison firings/flips are the KNOWN 8.29
+#     instability: recorded, NOT a stop, NOT attributed to the guard.
+#     Check the `[synth] documented exceptions on probe tier:` trace event
+#     appears and lists OptimizationException on the optimizer methods,
+#     and per-relation `tier2-doc-guarded` screen events fire where
+#     LLM-written tier-2 catches exist.
+#
+# (2) CHART-19 BOTH ROUTES, GUARD COST CHECK. Does the tier-2 route still
+#     convict (`violated: unexpected IllegalArgumentException ... Null
+#     'object' argument`)? PREDICTION: yes wherever a null-absent relation
+#     is invented (indexOf documents nothing; replay G-D2/G-D2' both
+#     passed). Is the Mechanism-B companion present (mutate-then-probe)?
+#     Baseline: mechb roll had 3/3 by shape. TP expected 3/3.
+#
+# (3) LANG-41 GENERALISATION READ (no prediction). Outcome per draw; if
+#     caught, WHICH route (tier-2 / companion / value relation / harness
+#     oracle); if missed, whether any tier-2 or doc-guard event appears at
+#     all. This leg was TP in diffcov_reach and in the ladder history is
+#     unstable — 3 draws give the first post-stack instability read.
+#
+# FAIL-CLOSED CHECKS, hard stops: any gate VOID on an overfit leg; any
+# Math-65-c tier-2 ("violated: unexpected") firing per (1). Everything
+# else: recorded only. Adherence lines now live in the TRACE (2d138db),
+# not run.log.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-19-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-41-Arja-plausible.patch"
+)
