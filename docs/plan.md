@@ -1792,6 +1792,37 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.43 G-B REPLAY — BOTH GATES FAILED; reroute DISABLED per prereg (study `vreplay_gb_20260810`, archived; 1,494,538 tokens)
+**Full study: `docs/gb-replay-study-2026-08-10.md`** (282 gate-entry
+events across 61 archived legs enumerated; 75 relation convictions; 36
+doubly-flagged = 17 FP + 19 TP; 4 bypass-only; 35 gates-already-ran).
+- **G-B1 FAIL: 0/17 conversions.** Computable before spending: no
+  archived blob carries `[fact:fires-on-both-confirmed]`, 5C reads
+  identical nowhere, every FP buggy rate is under 6B's 0.95 bar (max
+  0.90595). The reroute+isolation pair can ONLY be validated live —
+  the value facts it depends on do not exist in archived evidence.
+- **G-B2 FAIL: 1/19 genuine catches LOST** — varbase/10's only
+  conviction (`categoryplot-null-rangeaxis-rejected-independent-of-
+  state`, buggy 20000/20000) killed by the 6B-INDISCRIMINATE terminal
+  on family-duty NO, kept 1/3; the leg flips to a miss in 2/3 repeats.
+  Same-shaped varbase/12 survived 3/3 on family-duty YES — the saving
+  distinction is an LLM judgment, exactly what the compute-the-fact
+  rule distrusts.
+- **Chart-7-c / Chart-26-c: NOT doubly-flagged** (their convictions ran
+  the gates already; Chart-26-c carries no rate measurement) — **the
+  valid-by-construction probe is confirmed as the next design** for
+  that FP class.
+**ACTION (per the prereg's redesign clause): the reroute is DISABLED**
+— `config.REROUTE_INDISCRIMINATE_BYPASS`, default OFF; the predicate
+returns the old bypass byte-for-byte; flipped only inside a future
+pre-registered validation. Build B (isolation re-aim + agreement
+reading) STAYS — strictly additive, zero wrong dismissals. 1005
+passed, 7 skipped. The Math-65 FP class remains OPEN with two candidate
+designs, both requiring a live-pair validation roll: (i) reroute +
+re-aimed isolation together (the value facts arrive live), gated on a
+mechanical replacement for the family-duty escape; (ii) formula-
+soundness screening at invention time. USER-GATED.
+
 ### 8.42 G-S1 LIVE ROLL — GATE FAILED; the fix is safe but did not convert (run `gs1_isolation_20260810_175503`, archived; 1,298,048 tokens)
 **Outcomes:** Math-65-c FP/FP/FP, Chart-26-c FP, Chart-7-c TN (no
 isolation events on either Chart leg — the TN is a lottery draw, not

@@ -314,7 +314,9 @@ def test_adjudicate_records_that_the_gates_were_skipped(events):
     assert 'cycle6_6B_indiscriminate_considered' not in methods(events)
 
 
-def test_adjudicate_records_the_rerouted_bypass_and_names_both_flags(events):
+def test_adjudicate_records_the_rerouted_bypass_and_names_both_flags(events, monkeypatch):
+    import config
+    monkeypatch.setattr(config, "REROUTE_INDISCRIMINATE_BYPASS", True)
     """Build A: direction-confirmed AND rate-indiscriminate runs the gates,
     and the entry event says which two flags sent it there — otherwise a trace
     cannot tell a reroute from an ordinary non-confirmed firing."""

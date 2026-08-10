@@ -347,3 +347,10 @@ OSS_FUZZ_BUILD_TIMEOUT = int(os.getenv('OSS_FUZZ_BUILD_TIMEOUT', '5400'))
 # OSS-Fuzz's disclosed bugs land here via google/oss-fuzz-vulns, which is why
 # OSV — not the oss-fuzz repo — is the CVE source of truth.
 OSV_API_URL = os.getenv('OSV_API_URL', 'https://api.osv.dev/v1')
+# --- 8.43: direction-confirmed bypass reroute (DISABLED) --------------------
+# The G-B replay failed both gates (0/17 FP conversions offline; 1/19
+# genuine catches lost to the 6B terminal). The doubly-flagged reroute in
+# judge_decision.direction_confirmed_bypass is OFF until redesigned; flip
+# only inside a pre-registered validation run.
+REROUTE_INDISCRIMINATE_BYPASS = os.getenv(
+    'VULNPATCH_REROUTE_BYPASS', '').strip().lower() in ('1', 'true', 'on')

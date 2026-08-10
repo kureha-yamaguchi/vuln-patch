@@ -102,6 +102,15 @@ def direction_confirmed_bypass(is_direction_confirmed, evidence_text):
     the bypass in place. Pure."""
     if not is_direction_confirmed:
         return False, None
+    # 8.43: the G-B replay FAILED both gates (0/17 conversions offline —
+    # the value facts conversion depends on only exist in a LIVE run —
+    # and 1/19 genuine catches LOST to the 6B terminal). Per the prereg
+    # ("a single genuine catch lost = redesign, not ship") the reroute is
+    # DISABLED by default; the predicate stays for the redesigned round.
+    import config as _cfg
+    if not getattr(_cfg, 'REROUTE_INDISCRIMINATE_BYPASS', False):
+        return True, ("direction-confirmed firing (mechanical buggy-build "
+                      "catch) — 5C/6B/6C all skipped by design")
     try:
         from java.relations.evidence_facts import (
             RATE_INDISCRIMINATE_FACT_TAG, fact_tags)

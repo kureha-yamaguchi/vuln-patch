@@ -81,7 +81,9 @@ def _adjudicate(v, evidence, is_direction_confirmed=False):
 # A1 — the routing predicate itself, on the three combinations.
 # ---------------------------------------------------------------------------
 
-def test_doubly_flagged_does_not_bypass():
+def test_doubly_flagged_does_not_bypass(monkeypatch):
+    import config
+    monkeypatch.setattr(config, "REROUTE_INDISCRIMINATE_BYPASS", True)
     bypass, reason = direction_confirmed_bypass(True, _INDISCRIMINATE)
     assert bypass is False
     # The entry event has to say WHICH two flags sent it down the value path,
@@ -123,6 +125,8 @@ def test_the_qualifier_reads_the_TAG_and_not_the_prose():
 
 
 def test_the_qualifier_fails_toward_todays_behaviour(monkeypatch):
+    import config
+    monkeypatch.setattr(config, "REROUTE_INDISCRIMINATE_BYPASS", True)
     monkeypatch.setattr(ef, 'fact_tags',
                         lambda t: (_ for _ in ()).throw(ValueError("boom")))
     bypass, reason = direction_confirmed_bypass(True, _INDISCRIMINATE)
@@ -134,7 +138,9 @@ def test_the_qualifier_fails_toward_todays_behaviour(monkeypatch):
 # A2 — the same three combinations end to end through `adjudicate`.
 # ---------------------------------------------------------------------------
 
-def test_the_doubly_flagged_firing_meets_the_existing_value_gates():
+def test_the_doubly_flagged_firing_meets_the_existing_value_gates(monkeypatch):
+    import config
+    monkeypatch.setattr(config, "REROUTE_INDISCRIMINATE_BYPASS", True)
     """6B's own rule, on a firing that used to skip it entirely."""
     v = _StubVerifier(fd_results=[_DUTY_NO])
     ok, why = _adjudicate(v, _INDISCRIMINATE, is_direction_confirmed=True)
@@ -154,7 +160,9 @@ def test_the_reroute_adds_no_dismissal_of_its_own():
     assert v.fd_calls == 0
 
 
-def test_the_family_duty_escape_survives_the_reroute():
+def test_the_family_duty_escape_survives_the_reroute(monkeypatch):
+    import config
+    monkeypatch.setattr(config, "REROUTE_INDISCRIMINATE_BYPASS", True)
     v = _StubVerifier(fd_results=[_DUTY_YES])
     ok, _ = _adjudicate(v, _INDISCRIMINATE, is_direction_confirmed=True)
     assert ok is True and v.fd_calls == 1
@@ -306,3 +314,15 @@ def test_the_hook_still_has_exactly_one_dismissal_path():
     assert block.count('_idis(') == 1
     assert 'args.' not in block          # no flag consulted
     assert 'kept_reason' not in block    # nothing here can convict
+
+
+def test_reroute_is_disabled_by_default_after_gb_failure():
+    """8.43: G-B failed both gates (1/19 genuine catches lost), so the
+    doubly-flagged reroute is OFF unless config.REROUTE_INDISCRIMINATE_BYPASS
+    is set inside a pre-registered validation run."""
+    from java.relations.judge_decision import direction_confirmed_bypass
+
+    bypass, reason = direction_confirmed_bypass(
+        True, "evidence with [fact:rate-indiscriminate] stamped")
+    assert bypass is True
+    assert "skipped by design" in reason
