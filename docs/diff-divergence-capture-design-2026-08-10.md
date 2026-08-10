@@ -98,3 +98,38 @@ correct-leg canaries; and the honest prediction that Lang-63 converts
 only if its divergence is reachable AND the nominated observable has a
 documented contract to assert — either half can fail independently, and
 the read must say which.
+
+---
+
+## Pre-registration (2026-08-10 — user approved the design; build authorized)
+
+Decisions taken (fail-closed defaults where the design left them open):
+1. **Approved:** divergence facts from the patched build may steer
+   invention. Same legitimacy class as replay-relations-on-patched; the
+   soundness rule above (attention, never oracles) is the boundary.
+2. **Capture scope v1: the changed methods only** (diffcov's mapping,
+   reused verbatim). Direct callers recorded as a named future extension,
+   not built — one variable per mechanism.
+3. **K=8 divergences**, ranked by DISTINCT consumed-input shape first
+   (diversity), frequency second. Whole values, typed, capped count not
+   capped width (the 8.31 truncation lesson).
+4. **Anti-anchoring lint: DEMOTE + judge-visible fact**, not drop — an
+   expected literal can coincide with a buggy-side value legitimately
+   (e.g. a documented -1), so a drop would delete sound checks on a
+   coincidence. The demotion text names the matched value.
+
+Flag: `--divcap`, DEFAULT OFF (like --diffcov). Nothing changes for any
+run that does not opt in — including the flagship sweep now queued.
+
+Gates for the first validation roll (a LATER, separate launch — nothing
+in this build turns the flag on):
+- G-V1 (both signs): with --divcap on, the frozen guard fixtures decide
+  identically through unchanged decision code; full pytest green.
+- G-V2 (correct-leg canaries): Math-65-c and Chart-26-c with the flag on
+  produce ZERO relations asserting a logged buggy-side value that the
+  lint failed to demote (hand-checked in the trace).
+- G-V3 (the honest Lang-63 prediction, either half may fail
+  independently and the read must say which): (i) the capture logs a
+  divergence for reduceAndCorrect at all; (ii) a relation targeting the
+  nominated observable appears in invention. Conversion to TP is the
+  hoped outcome, NOT the gate.
