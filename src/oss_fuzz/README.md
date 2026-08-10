@@ -2,21 +2,13 @@
 
 Finds bugs that a security fix left behind.
 
-For an OSS-Fuzz project, this picks a recently disclosed bug, checks out the
-code as it was **just before the fix**, and asks an LLM to write libFuzzer
-harnesses that crash there. Harnesses that do are then run against **today's
-code**. If one still crashes, the fix missed something — we call that a
-*sibling bug*.
+For an OSS-Fuzz project, this picks a recently disclosed bug, checks out the code as it was **just before the fix**, and asks an LLM to write libFuzzer harnesses that crash there. Harnesses that do are then run against **today's code**. If one still crashes, the fix missed something — we call that a *sibling bug*.
 
-This is the C/C++ version of `src/java` (Defects4J + Jazzer). It shares that
-pipeline's LLM code and, importantly, its steering logic, so the research
-method stays the same in both. It does not use the out-of-date `src/linux`.
+This is the C/C++ version of `src/java` (Defects4J + Jazzer). It shares that pipeline's LLM code and, importantly, its steering logic, so the research method stays the same in both. It does not use the out-of-date `src/linux`.
 
 ## How a run works
 
-`oss_fuzz/run.py` is the only entry point. Everything happens in one process,
-in this order. Cheap checks come first, so a run that cannot possibly work
-fails before it costs you a clone, a Docker image, or LLM tokens.
+`oss_fuzz/run.py` is the only entry point. Everything happens in one process, in this order. Cheap checks come first, so a run that cannot possibly work fails before it costs you a clone, a Docker image, or LLM tokens.
 
 | Step | File | What happens |
 |---|---|---|
