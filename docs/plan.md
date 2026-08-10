@@ -1701,6 +1701,97 @@ copied surgically. DO NOT push-to-vm until the invdiv suite has
 launched or completed — p1a changes replay behavior and would
 contaminate the A/B.**
 
+### 8.38 MECHANISM-A/B FRESH ROLL — read 2026-08-10 (suite `mechb_roll_20260809_115543`, archived; git_sha 28203eb, 9 runs, PARALLEL=6, 50 min)
+Pre-registration written into `suites/cases/mechb_roll.cases` and committed
+BEFORE launch. `-n 5 -m 12`, no `--diffcov` (one variable per roll).
+Invention baseline is `varbase_20260808_183839` (same flags); invdiv ran
+`-n 8` and is NOT flag-comparable.
+**Outcomes (recorded, non-comparable — Chart-19 gained a second route this
+roll):** Chart-19-o TP/TP/TP · Lang-63-o FN/FN/FN · Math-65-c FP/FP/FP.
+`TP=3 FN=3 FP=3 TN=0`.
+
+**HARD STOPS: neither triggers, but one came close and the near-miss is the
+headline.**
+- Zero `conviction VOIDED` on every leg.
+- **Math-65-c produced 14 tier-2 firings across draws 07 and 09** — Mechanism
+  A firing on a CORRECT patch. They did NOT convict: both convictions are
+  value-comparison relations (`chiSquare_matches_weighted_residual_formula`,
+  `rms_matches_weighted_residual_mean`, both deterministic on the trigger
+  literals), i.e. the leg's known 8.29 instability. The pre-registered
+  criterion is a tier-2 *conviction*; by its letter this is not a stop.
+- **Why they did not convict: the judge dismissed every one of them**, citing
+  the documented throw. Verbatim: *"a correct implementation is explicitly
+  allowed to throw `OptimizationException` when the algorithm does not
+  converge (including exceeding the iteration limit), so this valid-input run
+  could legitimately produce the observed `OptimizationException`"* — five
+  separate UNSOUND verdicts of that shape, all on
+  `maximal number of iterations (1,000) exceeded`.
+- **Stated plainly for the design session:** Mechanism A treats a documented,
+  legitimate exception (non-convergence on fuzzed input) as a reportable
+  violation on a correct patch. It was caught by the judge, not by the
+  mechanism's own guard, and whether a tier-2 firing survives screening is a
+  lottery. The replay study's G-P=0 did not predict this because archived
+  legs' relations never called `optimize` inside a tier-2 probe. This is a
+  false-alarm GENERATOR on correct patches with one layer of defence behind
+  it.
+
+**(1) MECHANISM A LIVE — confirmed, in 2 of 3 Chart-19 draws.** The predicted
+route fires verbatim, on `ObjectList` receivers (the subtype closure working
+— the diff header names `AbstractObjectList`):
+
+    [relfire] relation indexOf-null-absent-is-minus-one violated: unexpected
+    java.lang.IllegalArgumentException on valid-by-construction input:
+    Null 'object' argument. __consumed=i:0 __rcvstate list:ObjectList size…
+
+Draw 01: 2 tier-2 firings · draw 02: 2 · **draw 03: 0** — and draw 03 is
+still TP, via Mechanism B's route instead (below). The prediction was "every
+draw that writes a null-absent relation"; draw 03 wrote none, so the
+prediction is not contradicted, but the route is not universal across draws.
+
+**(2) MECHANISM B — the ordering rule landed in invention, verbatim to
+spec.** Draw 03 invented
+`categoryplot-null-range-axis-index-throws-after-mutations`, whose contract
+states *"this rejection must be independent of the plot's current range-axis
+contents, so it must still throw after state-changing setRangeAxis calls"*
+and whose check does exactly that: probe on the fresh plot, then
+`for (int k=0;k<m;k++) { plot.setRangeAxis(idx, new NumberAxis(...)); probe; }`
+with **both `m = data.consumeInt(1,4)` and `idx = data.consumeInt(0,5)` drawn
+from the fuzzer, not literals** — the mutate-then-probe ordering AND the
+fuzzer-drawn target, both as written in the prompt. Draw 01 invented
+`categoryPlot-null-rangeAxis-rejected-in-all-states`. The companion is
+present in 3 of 3 draws (baseline: 2 of 3), though under new names — the
+baseline's `…-independent-of-state` string no longer matches, so any future
+comparison must match on shape, not name.
+Screen outcomes per Chart-19 draw: `tier2-rewritten` 6/11/7, `demoted`
+1/4/6, `kept` 11/18/12. Lang-63: no rewrites except 1 in draw 06. Math-65:
+none.
+
+**(3) LANG-63 — nothing moved, and the failure is now sharper.** FN in all
+three draws, zero harness crashes on patched, **zero kept replay relations in
+any draw**, zero tier-2 firings. 8.37 predicted nothing for it and nothing is
+what happened. Combined with 8.36's ~2M `reduceAndCorrect` entries per
+harness, Lang-63 remains: reach saturated, invention absent, and now the
+ordering prompt demonstrably does not reach it either — the rejection-probe
+framing has no purchase on a leg whose defect is not a rejection contract.
+
+**PROCESS DEFECT FOUND, and it invalidates part of 8.37 §5's read as
+written.** The pre-registration asks for `[screen] … PROBE BEFORE LAST
+MUTATION — DEMOTED` and `[synth] probe tier includes …` counters. **Those are
+`print()` to stdout, which `run_suite.sh:171-179` redirects to
+`$rundir/run.log` — and the one-file policy DELETES run.log on success.** They
+appear in no archived artifact of any successful leg, and are absent from the
+suite log too (verified: 0 occurrences of `[synth]`, `[screen]`, `probe
+tier`, `PROBE BEFORE LAST MUTATION`, `PATCHED-PROBE SWALLOWED`). The
+adherence counters 8.37 §5 specifies cannot be read from a successful run.
+The substantive read above was recovered from a different channel — screen
+decisions appear as trace SECTIONS (`## [n] ⚙️ screen · <name>` with
+`**output:** tier2-rewritten|demoted|kept|dropped`) and check bodies appear
+verbatim in the synthesis output. Either route the lint lines into the trace
+recorder, or restate §5 against the section outputs.
+**CLOSED:** the per-run sha gap filed at 8.29 is fixed — `result.jsonl` now
+carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
+`GITSHA`.
+
 ### 8.37 REPORTABLE PATCHED-ONLY EXCEPTIONS — built, replay-validated, SHIPPED (2026-08-09)
 **Pre-registration:** `docs/reportable-exception-prereg-2026-08-09.md`
 (gates written before any code). **Build:**
