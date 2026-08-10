@@ -1792,6 +1792,47 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.41 THE FLAGSHIP SWEEP — R tripled on the identical suite; two regressions, both wearing the new route's message (run `full30v3_20260810_154612`, archived; 3,973,145 tokens)
+**The honest baseline is `full30v2_20260720_013044` — the IDENTICAL cases
+file, flags and model** (final30B ran a DIFFERENT leg set; its aggregate
+is not comparable — caught before any cross-set claim was written).
+Same 30 legs, July 20 vs today:
+- **July 20: TP=3 FN=13 FP=1 TN=13 — P=0.75 R=0.19 F1=0.30**
+- **Today: TP=10 FN=6 FP=3 TN=11 — P=0.77 R=0.62 F1=0.69**
+**SEVEN misses converted** (Closure-62, Closure-73, Closure-92, Lang-27,
+Lang-50, Math-2, Math-53 — all overfit legs the July stack missed);
+Lang-27-c's FP unchanged (the known benign generic-exception leak);
+unmoved FNs: Chart-3, Closure-33, Lang-60, Math-57, Time-11 (expected
+permanent, cross-thread), and Lang-41 — FN here at n=3/m=8 though TP
+3/3 at n=5/m=12 in 8.40 (budget-lottery, recorded not chased).
+**TWO TN→FP REGRESSIONS, and the read that matters: both carry the
+unexpected-exception route's message shape.** Chart-7-c's KEPT
+conviction fires `[relfire] relation clone_preserves_series_observables
+violated: unexpected java.lang.IndexOutOfBoundsException from clone on
+valid-by-construction input`; Chart-26-c's fired set carries
+`area-chart-draw-null-info-no-exception ... unexpected
+java.lang.StringIndexOutOfBoundsException on valid-by-construction
+input` (its kept conviction is `draw-does-not-mutate-axis-appearance`).
+**The weak joint is named: the VALID-BY-CONSTRUCTION premise.** The
+documented-exception guard covers documented throws; an UNDOCUMENTED
+runtime exception on an input the relation wrongly declared valid
+(empty strings, degenerate ranges) becomes an accusation. The intended
+backstop is buggy-side attribution — and these convictions surviving
+suggests the same SHADOWING hole 8.40 diagnosed (the sweep ran WITHOUT
+the shadow-isolation fix, which was built during it). Chart-7-c and
+Chart-26-c therefore JOIN G-S1.
+**G-S1 adapted (recorded here before launch):** the archived legs'
+crash artifacts were pruned with co/, so the prereg's archived-replay
+form is impossible; the equivalent live form is a fresh mini-roll at
+n=5/m=12 with the fix live — Math-65-c ×3 (the original gate) plus
+Chart-7-c and Chart-26-c ×1 each. Read: when a shadowed/unknown
+conviction occurs, does the `[fact:isolation-reading]` appear and the
+arithmetic dismissal fire? Plus the standing clean-leg checks. The n=1
+Chart legs are a lottery draw each — their read is the mechanism
+events, not the outcome.
+**Cost note:** 3,973,145 tokens (vs 6.0M for final30B's set, 2.98M for
+the July run of this suite).
+
 ### 8.40 FULL-STACK LIVE CONFIRM — every pre-registered prediction hit (roll `stack_confirm_20260810_140852`, archived; 2,531,533 tokens)
 **Outcomes:** Chart-19-o TP/TP/TP, Lang-41-o TP/TP/TP, Math-65-c
 FP/FP/FP. R=1.00 on the overfit legs, zero FN. Read per the

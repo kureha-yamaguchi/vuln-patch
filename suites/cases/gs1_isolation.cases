@@ -1,0 +1,35 @@
+# G-S1 LIVE FORM (8.41): shadow-isolation fix's first live roll. 5 runs,
+# PARALLEL=5, n=5/m=12 (the going-forward flags). The prereg's
+# archived-replay form is impossible (crash artifacts pruned with co/),
+# so the gate runs live, per the adaptation recorded in plan 8.41.
+#
+# LEGS: Math-65-c x3 (the original G-S1 gate: 6 consecutive FP draws,
+# all shadowed-unknown formula convictions — the fix must produce
+# [fact:isolation-reading] and dismiss when the arithmetic reads
+# identical/patched-closer); Chart-7-c and Chart-26-c x1 each (the 8.41
+# sweep regressions whose convictions wear the unexpected-exception
+# message on "valid-by-construction" inputs — n=1 each, so their read is
+# the MECHANISM EVENTS, not the outcome).
+#
+# READ, per draw (verbatim numbers, recorded not banked):
+# (1) Every shadowed/unknown convicting firing must show an
+#     `isolated-buggy-replay` event; status/reading recorded per firing.
+# (2) Dismissals: which firings read identical/patched-closer and were
+#     terminally dismissed; which read buggy-closer (fact recorded,
+#     conviction allowed to stand).
+# (3) OUTCOMES: Math-65-c draws that end in correct dismissal (G-S1
+#     letter: >=... the prereg says >=3 of the archived legs convert;
+#     live form: count of 3 draws ending TN, expectation >=2 given the
+#     desk read's 3-outright/1-likely/2-remain split).
+# (4) HARD STOP unchanged: any tier-2 "violated: unexpected" firing on
+#     Math-65-c (doc guard regression). Chart legs: record whether the
+#     isolation reading resolves their unexpected-exception firings.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-65-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Chart/patch1-Chart-7-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+)
