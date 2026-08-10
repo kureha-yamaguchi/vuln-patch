@@ -845,6 +845,226 @@ def compare_fired_values(patched_msg, buggy_msg):
 
 
 # ---------------------------------------------------------------------------
+# SHADOW ISOLATION — read the buggy-side value that a sibling oracle hid.
+#
+# The full-harness buggy replay runs every oracle. When a DIFFERENT one throws
+# first the JVM dies there, the firing check's own message is never printed,
+# `compare_fired_values` gets nothing, and the value verdict stays "unknown" —
+# which is exactly the state in which the judge is told to fall back on the
+# check's stated contract, so a check with a javadoc quotation keeps. The
+# isolated re-replay (oracle_mute.instrument_for_counting under record_firing,
+# driven by FuzzRunner.replay_input_isolated) recovers the missing message.
+# This block is the ARITHMETIC on the two messages, and nothing else: no
+# heuristics, no prose reading, two numbers and a subtraction.
+#
+# Two readings dismiss, and only these two:
+#
+#   (i)  IDENTICAL — the buggy value equals the patched value. The patch did
+#        not change the value this check observes at this input, so the firing
+#        cannot be about the patch. Uses `compare_fired_values`, the module's
+#        one existing cross-build value normalisation (shared key=value pairs,
+#        `_close` rounding floor, NaN/Infinity safe), plus ONE precondition it
+#        does not carry: at least one shared key must be an OBSERVED key, so a
+#        pair of messages that share only their `expected=`/`tol=` reference
+#        keys — equal on both builds by construction — can never read
+#        identical.
+#
+#   (ii) PATCHED-CLOSER — both builds violate, with different values, and the
+#        patched value is STRICTLY closer to the check's OWN stated expected
+#        value than the buggy value is. The check's own yardstick says the
+#        patch moved this observable toward correctness.
+#
+# The mirror of (ii), BUGGY-CLOSER, is stated as a fact and dismisses nothing:
+# it is corroborating evidence for the conviction, not a conviction rule.
+# Anything else — no buggy message, no single agreed expected value, more than
+# one observable differing, a non-finite number, distances too close to call —
+# is AMBIGUOUS, and ambiguous changes nothing at all.
+# ---------------------------------------------------------------------------
+
+ISOLATION_FACT_TAG = '[fact:isolation-reading]'
+
+#: The readings `isolated_value_reading` can return. The first two dismiss.
+ISOLATION_READINGS = ('identical', 'patched-closer', 'buggy-closer',
+                      'ambiguous')
+_ISOLATION_DISMISSING = frozenset({'identical', 'patched-closer'})
+
+# A key naming the check's own reference value (what it says the answer should
+# be) rather than an observation of the build. Equal on both builds by
+# construction, so it can neither prove identity nor serve as the observable.
+_EXPECTED_KEY_RE = re.compile(r'expect', re.I)
+# A key naming the check's tolerance. Also build-independent; excluded from the
+# observable search so a message carrying `tol=` cannot be read as a value.
+_TOLERANCE_KEY_RE = re.compile(r'^(?:tol|eps)|tolerance|epsilon', re.I)
+
+
+def _reference_key(key):
+    """True when `key` names the check's own reference/tolerance rather than
+    something it observed on the build."""
+    return bool(_EXPECTED_KEY_RE.search(key or '')
+                or _TOLERANCE_KEY_RE.search(key or ''))
+
+
+def _finite(x):
+    return x is not None and not math.isnan(x) and not math.isinf(x)
+
+
+def isolated_value_reading(patched_msg, buggy_msg):
+    """Compare a check's patched-side firing with its ISOLATED buggy-side
+    reading of the same input, arithmetically.
+
+    Returns a dict — never raises, never guesses:
+
+      ``reading``  one of ``ISOLATION_READINGS`` (see the block comment).
+      ``key``      the observable key both messages carry, when one was found.
+      ``patched``  / ``buggy`` / ``expected``  the three numbers, when parsed.
+      ``detail``   one plain sentence naming what was seen or what was missing.
+
+    Pure."""
+    out = {'reading': 'ambiguous', 'key': None, 'patched': None,
+           'buggy': None, 'expected': None, 'detail': ''}
+    if not patched_msg or not buggy_msg:
+        out['detail'] = ('no isolated buggy-side message to compare against '
+                         'the patched firing')
+        return out
+
+    p_kv, b_kv = _kv_values(patched_msg), _kv_values(buggy_msg)
+    shared = [k for k in p_kv if k in b_kv]
+    observable_keys = [k for k in shared if not _reference_key(k)]
+
+    if compare_fired_values(patched_msg, buggy_msg) == 'identical':
+        if (str(patched_msg).strip() == str(buggy_msg).strip()
+                or observable_keys):
+            out['reading'] = 'identical'
+            if observable_keys:
+                k = observable_keys[0]
+                out['key'] = k
+                out['patched'] = p_kv[k][0]
+                out['buggy'] = b_kv[k][0]
+            out['detail'] = ('the isolated buggy-side reading carries the '
+                             'same observed value(s) as the patched firing')
+            return out
+        out['detail'] = ('the two messages agree only on reference keys '
+                         '(expected/tolerance), which are equal on both '
+                         'builds by construction — no observed value was '
+                         'compared')
+        return out
+
+    exp_keys = [k for k in shared
+                if _EXPECTED_KEY_RE.search(k)
+                and len(p_kv[k]) == 1 and len(b_kv[k]) == 1]
+    if len(exp_keys) != 1:
+        out['detail'] = ('the check prints %d single-valued expected key(s); '
+                         'a closeness reading needs exactly one'
+                         % len(exp_keys))
+        return out
+    k_exp = exp_keys[0]
+    p_exp, b_exp = p_kv[k_exp][0], b_kv[k_exp][0]
+    if not (_finite(p_exp) and _finite(b_exp) and _vals_match(p_exp, b_exp)):
+        out['detail'] = ('the two builds do not state the same expected '
+                         'value, so there is no shared yardstick to measure '
+                         'closeness against')
+        return out
+    out['expected'] = p_exp
+
+    differing = [k for k in observable_keys
+                 if len(p_kv[k]) == 1 and len(b_kv[k]) == 1
+                 and not _vals_match(p_kv[k][0], b_kv[k][0])]
+    if len(differing) != 1:
+        out['detail'] = ('%d observed key(s) differ between the two builds; '
+                         'a closeness reading needs exactly one'
+                         % len(differing))
+        return out
+    k = differing[0]
+    p_val, b_val = p_kv[k][0], b_kv[k][0]
+    if not (_finite(p_val) and _finite(b_val)):
+        out['detail'] = ('the observed value is NaN or infinite on at least '
+                         'one build, so distances are not comparable')
+        return out
+    out['key'], out['patched'], out['buggy'] = k, p_val, b_val
+
+    d_p, d_b = abs(p_val - p_exp), abs(b_val - p_exp)
+    if _close(d_p, d_b):
+        out['detail'] = ('both builds sit the same distance from the '
+                         'expected value, so neither is closer')
+        return out
+    out['reading'] = 'patched-closer' if d_p < d_b else 'buggy-closer'
+    out['detail'] = ('patched is %.6g from expected, buggy is %.6g'
+                     % (d_p, d_b))
+    return out
+
+
+def isolation_dismisses(reading):
+    """True when an `isolated_value_reading` result terminally dismisses the
+    firing. Accepts the dict or the bare reading string. Pure."""
+    name = reading.get('reading') if isinstance(reading, dict) else reading
+    return name in _ISOLATION_DISMISSING
+
+
+def _num(x):
+    """A number formatted for a fact sentence, or '?' when absent.
+
+    `repr` on a float is the shortest string that round-trips, so the fact
+    quotes the value the harness printed rather than a re-rounded copy of it
+    — the judge must be able to match the number against the firing."""
+    return '?' if x is None else repr(float(x))
+
+
+def isolation_reading_fact(reading, oracle_ids=None):
+    """The mechanical fact for a resolved isolated buggy-side reading, or None
+    when the reading resolved nothing (ambiguous readings state nothing, per
+    the fail-closed rule — an unresolved measurement must leave the evidence
+    byte-for-byte as it was).
+
+    Every version names BOTH observed values and the check's own expected
+    value, so the judge reads the arithmetic rather than a conclusion. Pure."""
+    if not isinstance(reading, dict):
+        return None
+    name = reading.get('reading')
+    if name not in _ISOLATION_DISMISSING and name != 'buggy-closer':
+        return None
+    who = (", ".join(sorted(oracle_ids)) if oracle_ids else "this check")
+    head = ("[isolation fact] " + ISOLATION_FACT_TAG + " the buggy-side "
+            "reading for " + who + " was SHADOWED in the full-harness replay "
+            "(a sibling check ended the run before it could report), so it "
+            "was recomputed in ISOLATION: the harness was rebuilt against the "
+            "BUGGY build with every other check silenced — nothing left that "
+            "could stop the run first — and this exact firing input was "
+            "replayed through it. ")
+    key = reading.get('key') or 'the observed value'
+    if name == 'identical':
+        return (head + "The check fires on the buggy build at this input too, "
+                "and reports the SAME value it reported on the patched build ("
+                + key + ": buggy " + _num(reading.get('buggy'))
+                + ", patched " + _num(reading.get('patched'))
+                + "). The patch did not change what this check measures at "
+                  "this input, so the firing reports pre-existing behaviour, "
+                  "not the patch.")
+    exp = _num(reading.get('expected'))
+    if name == 'patched-closer':
+        return (head + "The check fires on the buggy build at this input too, "
+                "with a DIFFERENT value, and the patched build's value is "
+                "strictly CLOSER to the check's own expected value than the "
+                "buggy build's is (" + key + ": expected " + exp
+                + ", patched " + _num(reading.get('patched'))
+                + ", buggy " + _num(reading.get('buggy')) + "; "
+                + str(reading.get('detail') or '') + "). By the check's own "
+                "yardstick the patch moved this observable toward the value "
+                "the check demands, so this firing is not evidence that the "
+                "patch broke it.")
+    return (head + "The check fires on the buggy build at this input too, "
+            "with a DIFFERENT value, and the BUGGY build's value is closer to "
+            "the check's own expected value than the patched build's is ("
+            + key + ": expected " + exp
+            + ", patched " + _num(reading.get('patched'))
+            + ", buggy " + _num(reading.get('buggy')) + "; "
+            + str(reading.get('detail') or '') + "). By the check's own "
+            "yardstick the patch moved this observable AWAY from the value "
+            "the check demands. That is corroborating arithmetic only — it "
+            "decides nothing by itself, and whether the check's expected "
+            "value is the right one to demand is still yours to judge.")
+
+
+# ---------------------------------------------------------------------------
 # Spec J (cycle-3) — re-armed mechanical identical-drop with the trigger-input
 # exemption. Two pure flags decide the ladder in run.py; both share ONE
 # distinctiveness rule so a trivially-common literal (a bare 0/1, a two-char

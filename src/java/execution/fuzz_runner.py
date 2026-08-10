@@ -1834,6 +1834,116 @@ class FuzzRunner:
             return "error", None, out, diverted
         return "clean", set(), out, diverted
 
+    def replay_input_isolated(self,
+                              harness_path: str,
+                              class_name: str,
+                              project_cp: str,
+                              input_file: str,
+                              target_id: str,
+                              builder=None,
+                              buggy_dir: str = None,
+                              timeout_seconds: int = 30,
+                              variant_tag: str = "0"
+                              ) -> Tuple[str, Optional[str], str]:
+        """Replay ONE input against an ISOLATED build of the harness — only the
+        `target_id` check can raise — and report `(status, message, output)`.
+
+        The muted replay silences the shadowing checks it has SEEN fire, one
+        pass at a time, and gives up when the mute set stops growing. This does
+        the whole job in one shot: `oracle_mute.instrument_for_counting`
+        (M-v2) mutes EVERY sibling alarm — tagged or untagged — and turns the
+        target's own throw into a tally that also PRINTS its message, so
+        nothing in the harness can end the run before the target speaks and
+        the target's own throw cannot end it either. What comes back is the
+        value the check observed on `project_cp` at this exact input, which is
+        the reading a shadowed replay never produces.
+
+        `status` is one of:
+          * "fired"          — the target's alarm was reached; `message` is
+            its text (the first `[relfire]` line, marker stripped).
+          * "silent"         — the isolated run completed and the target never
+            fired; `message` None. Evidence, but not a value.
+          * "error"          — run_jazzer raised, timed out, or exited nonzero
+            without producing the target's message; `message` None.
+          * "isolate_failed" — no `builder`/`buggy_dir`, the harness source
+            could not be read, the transform did not apply (no such target id,
+            no entrypoint), or the isolated variant did not COMPILE.
+
+        Every non-"fired" status carries `message=None`, so a caller can only
+        ever reason from a reading it actually obtained. Same never-manufacture
+        rule as the rest of this class: an ambiguous outcome is a failure
+        status, never a clean reading."""
+        if builder is None or buggy_dir is None or not target_id:
+            return "isolate_failed", None, ''
+
+        from java.execution.oracle_mute import instrument_for_counting
+        from java.relations.relation_screen import harvest_relfire_lines
+
+        src_path = harness_path
+        if os.path.isdir(harness_path):
+            javas = glob.glob(os.path.join(harness_path, '*.java'))
+            if not javas:
+                return "isolate_failed", None, ''
+            src_path = javas[0]
+        try:
+            with open(src_path, encoding='utf-8', errors='replace') as fh:
+                source = fh.read()
+        except OSError as exc:
+            print(f"  (isolated replay: could not read harness source: {exc})")
+            return "isolate_failed", None, ''
+
+        try:
+            isolated = instrument_for_counting(source, target_id,
+                                               record_firing=True)
+        except Exception as exc:
+            print(f"  (isolation transform raised: {exc})")
+            return "isolate_failed", None, ''
+        if not isolated:
+            return "isolate_failed", None, ''
+
+        harness_dir = os.path.dirname(os.path.abspath(src_path))
+        fuzz_root = os.path.join(os.path.abspath(buggy_dir), 'fuzz')
+        rel = os.path.relpath(harness_dir, fuzz_root)
+        if rel.startswith('..') or os.path.isabs(rel):
+            rel = os.path.basename(os.path.normpath(harness_dir)) or 'harness'
+        try:
+            build_result = builder.build(
+                isolated, buggy_dir,
+                os.path.join(rel, 'isolated_%s' % variant_tag))
+        except Exception as exc:
+            print(f"  (isolated variant build raised: {exc})")
+            return "isolate_failed", None, ''
+        if not build_result.compiled:
+            # Expected sometimes: replacing a guaranteed throw can break
+            # Java's definite-return analysis, exactly as muting one can.
+            return "isolate_failed", None, ''
+
+        try:
+            outcome = run_jazzer(
+                jazzer_standalone_jar=self.jazzer_standalone_jar,
+                target_class=build_result.class_name,
+                harness_dir=os.path.dirname(build_result.harness_path),
+                project_cp=project_cp,
+                timeout_seconds=timeout_seconds,
+                expected_exceptions=self.expected_exceptions,
+                jazzer_api_jar=self.jazzer_api_jar,
+                input_file=input_file,
+            )
+        except Exception as exc:
+            print(f"  (isolated single-input replay failed: {exc})")
+            return "error", None, ''
+
+        out = outcome.combined_output
+        lines = harvest_relfire_lines(out, cap=1)
+        if lines:
+            msg = lines[0][len('[relfire]'):].strip()
+            if msg:
+                return "fired", msg, out
+            return "error", None, out
+        if outcome.timed_out or outcome.returncode != 0:
+            return "error", None, out
+        return "silent", None, out
+
 
 # ---------------------------------------------------------------------------
 # Cycle-6 item 4, PART A — iterate the mute set instead of giving up after one

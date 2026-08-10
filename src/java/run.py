@@ -3277,6 +3277,10 @@ def main():
                             _fired_ids and (_breplay_ids or set())
                             and not (_fired_ids & (_breplay_ids or set()))
                             and not _bt_defect)
+                        # The muted ladder's own value verdict, hoisted so the
+                        # shadow-isolation reading below can see whether the
+                        # muted re-replay already resolved the value question.
+                        _mvv_seen = "unknown"
                         if _shadowed:
                             try:
                                 from java.execution.fuzz_runner import (
@@ -3329,6 +3333,7 @@ def main():
                                         _mpe = fired
                                 except Exception:
                                     _mvv = "unknown"
+                                _mvv_seen = _mvv
                                 # 8.3 (mirror): the MUTED buggy-side replay is
                                 # the other path that computes observed values
                                 # and dropped them. Recording on only one of
@@ -3482,6 +3487,94 @@ def main():
                             except Exception as _mexc:
                                 print(f"      [muted-replay] unavailable "
                                       f"({_mexc}) — UNKNOWN note kept")
+                        # SHADOW-ISOLATION READING. Pre-registered in
+                        # docs/math65-formula-read-2026-08-10.md; built
+                        # because six consecutive Math-65 legs convicted a
+                        # correct patch on relations whose buggy-side value
+                        # was never read.
+                        #
+                        # Arm it when the value verdict is STILL unknown after
+                        # the plain and muted replays AND the full-harness
+                        # buggy replay did not run clean. That pair is the
+                        # mechanical signature of a PREVENTED reading: some
+                        # check ended that run (the muted ladder is allowed to
+                        # give up the moment its mute set stops growing) and
+                        # this check's own message was never printed. A CLEAN
+                        # buggy replay is excluded deliberately — there the
+                        # check demonstrably did not fire on the buggy build,
+                        # which is the catch signal, not a shadowed reading.
+                        #
+                        # The isolated variant silences every sibling alarm in
+                        # ONE shot and keeps only this check's own throw (as a
+                        # printed message, not a fatal one), so nothing left in
+                        # the harness can speak before it. Then two numbers
+                        # decide; anything they cannot decide leaves the
+                        # verdict, the notes and the evidence exactly as today.
+                        _iso_vv = (_mvv_seen if _mvv_seen != "unknown"
+                                   else _value_verdict)
+                        if (_fired_ids and _iso_vv == "unknown"
+                                and _breplay_status != "clean"):
+                            from java.relations.evidence_facts import (
+                                isolated_value_reading as _ivr,
+                                isolation_dismisses as _idis,
+                                isolation_reading_fact as _irf)
+                            # One firing names one check in the overwhelming
+                            # majority of cases; when it names several the
+                            # first by name is isolated (one extra Jazzer run
+                            # per firing is the budget, not one per id).
+                            _iso_target = sorted(_fired_ids)[0]
+                            _iso_status, _iso_msg = "isolate_failed", None
+                            try:
+                                (_iso_status, _iso_msg,
+                                 _iso_out) = fr.replay_input_isolated(
+                                    r.harness_path, r.class_name, buggy_cp,
+                                    r.artifact_path, _iso_target,
+                                    builder=builder,
+                                    buggy_dir=selection.buggy_dir)
+                            except Exception as _iexc:
+                                print(f"      [isolated-replay] unavailable "
+                                      f"({_iexc}) — UNKNOWN kept")
+                            _iso_read = _ivr(fired, _iso_msg)
+                            print(f"      [isolated-replay] "
+                                  f"target={_iso_target} "
+                                  f"status={_iso_status} "
+                                  f"reading={_iso_read['reading']}")
+                            record_event(
+                                'deterministic',
+                                method='isolated-buggy-replay',
+                                target=_iso_target,
+                                output=(f'status={_iso_status}; '
+                                        f'reading={_iso_read["reading"]}'),
+                                reason=_iso_read['detail'],
+                                detail={
+                                    'status': _iso_status,
+                                    'shadowed': _shadowed,
+                                    'buggy_replay_status': _breplay_status,
+                                    'buggy_msg': (_iso_msg or '')[:800],
+                                    'reading': _iso_read['reading'],
+                                    'key': _iso_read['key'],
+                                    'expected': _iso_read['expected'],
+                                    'patched_value': _iso_read['patched'],
+                                    'buggy_value': _iso_read['buggy'],
+                                })
+                            _iso_fact = _irf(_iso_read, _fired_ids)
+                            if _iso_fact and _idis(_iso_read):
+                                print(f"      [isolated-replay] "
+                                      f"auto-dismissed firing: "
+                                      f"{(fired or '')[:90]}")
+                                drop_reasons.append((fired, _iso_fact))
+                                continue
+                            if _iso_fact:
+                                # Corroborating direction (the buggy build is
+                                # the one closer to the check's own expected
+                                # value): stated as a fact, dismissing
+                                # nothing. Delivered the way every other
+                                # computed fact is — into the concrete
+                                # evidence the judge reads, not only the note
+                                # list.
+                                _fact_notes.append(_iso_fact)
+                                evid = ((evid + "\n" + _iso_fact) if evid
+                                        else _iso_fact)
                     # The firing INPUT itself, verbatim (batch6 Lang-27-c:
                     # attribution ruled 'duty to fix' on a defect-type
                     # crash without ever seeing that the input was fuzzer

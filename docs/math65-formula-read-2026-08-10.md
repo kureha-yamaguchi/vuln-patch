@@ -725,3 +725,39 @@ n=6.
    rates overlap completely (Math-65 40-91%, Chart-19 0-100%). The fix
    above works at replay time instead. If a screen-time separator exists,
    this read did not find it.
+
+---
+
+## Pre-registration — the shadow-isolation fix (2026-08-10, registered before the build)
+
+Build the recommended fix, exactly as scoped above:
+- When the FULL-harness buggy-side value replay returns
+  `value_verdict=unknown` for a convicting relation firing, recompile a
+  SINGLE-relation harness (only that relation's check body — reuse
+  `measure_single_check` / the M-v2 instrumentation) against the buggy
+  build and run ONLY the crashing input, so no sibling oracle can shadow
+  the reading.
+- TERMINAL dismissal on exactly two affirmative arithmetic readings:
+  (i) the buggy value is identical to the patched value; (ii) the
+  patched value is strictly closer to the check's own `expected` than
+  the buggy value. ANY other outcome (isolation fails to compile, input
+  does not fire, values absent, readings ambiguous) stays
+  `value_verdict=unknown` and changes NOTHING — fail-closed in the
+  direction of the current behaviour.
+- The isolation reading is recorded as a mechanical fact in the evidence
+  (per the compute-the-fact rule), visible to the judge either way.
+
+Gates:
+- **G-S1 (the fix works):** on the 6 archived Math-65 FP legs
+  (mechb 07-09, stack_confirm 04-06), replaying the verdict with the
+  isolation reading converts ≥3 legs to correct dismissal (the desk
+  read's own prediction: 3 outright, 1 likely, 2 remain — family B needs
+  its separate read). Requires the VM; runs AFTER the flagship sweep
+  completes (no push-to-vm until then).
+- **G-S2 (no genuine catch killed):** for every row of the 67-row guard
+  population that carries actual/expected values, neither arithmetic
+  dismissal condition holds — checked offline, mechanically, before any
+  VM run. A single genuine catch that either condition would dismiss =
+  redesign, not ship.
+- **G-S3:** full pytest green; no judge/verifier prompt changes; the
+  dismissal path activates ONLY on the two affirmative readings.

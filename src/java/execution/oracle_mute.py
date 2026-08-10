@@ -267,6 +267,21 @@ _COUNT_INCR = (
     '\n        }')
 
 
+# Replacement for the TARGET alarm throw under `record_firing`: tally, then
+# run the original throw statement verbatim inside a local try so its message
+# can be caught and printed instead of ending the run. `%s` is the original
+# statement text, spliced unchanged (no message expression is re-parsed). The
+# `[relfire]` marker is relation_screen's, so its existing harvester reads the
+# line without a second format to keep in step. Capped at five prints, like
+# the recording screen wrapper.
+_RECORD_FIRING = (
+    '{ __vpViolated++;'
+    ' try { %s }'
+    ' catch (Throwable __vpAlarm) {'
+    ' if (__vpViolated <= 5) System.err.println("[relfire] "'
+    ' + String.valueOf(__vpAlarm.getMessage())); } }')
+
+
 def _match_brace(src: str, open_idx: int) -> int:
     """Index of the `}` closing `src[open_idx]` ('{'), or -1. Comment- and
     literal-aware (unlike java_source.match_brace), reusing this module's own
@@ -318,7 +333,8 @@ def _class_open_brace_enclosing(src: str, target_idx: int) -> int:
     return best
 
 
-def instrument_for_counting(java_source: str, target_id: str):
+def instrument_for_counting(java_source: str, target_id: str,
+                            record_firing: bool = False):
     """Return `java_source` rewritten into a COUNTING harness that measures how
     often the `target_id` oracle's claim is violated on a build, or None when
     the harness can't be instrumented (fail-open at the call site).
@@ -337,6 +353,16 @@ def instrument_for_counting(java_source: str, target_id: str):
         periodic print of the same line are injected at the top of
         fuzzerTestOneInput — copied from relation_screen's wrapper so its
         `_STATS_RE` parses the output unchanged.
+
+    `record_firing` (shadow-isolation) keeps the target's alarm MESSAGE. A
+    tally answers "how often", but a shadowed buggy-side reading needs "with
+    what value", and the value only exists inside the message the alarm would
+    have thrown. So the target's throw becomes the tally PLUS the original
+    throw statement executed inside a local `try`, its message caught and
+    printed as a `[relfire] <message>` line (the same marker
+    `relation_screen.harvest_relfire_lines` already harvests) and capped at the
+    first five firings. The statement itself is spliced verbatim, so no
+    message expression is re-parsed and no new source transform is introduced.
 
     Returns None if fuzzerTestOneInput, its enclosing class brace, or a throw
     carrying `target_id` cannot be located. The class name is kept (the variant
@@ -375,7 +401,11 @@ def instrument_for_counting(java_source: str, target_id: str):
     edits = []
     for start, semi, oracle_id in alarms:
         if oracle_id == target_id:
-            edits.append((start, semi + 1, '{ __vpViolated++; }'))
+            if record_firing:
+                edits.append((start, semi + 1, _RECORD_FIRING % (
+                    java_source[start:semi + 1])))
+            else:
+                edits.append((start, semi + 1, '{ __vpViolated++; }'))
         else:
             cid = oracle_id if oracle_id is not None else 'all'
             edits.append((start, semi + 1, '; /* muted:%s */' % cid))
