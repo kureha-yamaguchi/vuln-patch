@@ -1792,6 +1792,17 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.44 P1B STEP-2 COVERAGE ROLL — store works, coverage thin (run p1b_coverage_20260810_205658, archived; 1,453,909 tokens)
+Outcomes Math-65-c FP/TN/FP, Chart legs TN (no gate built yet — expected).
+THE MEASUREMENT: admissions now record per observable — but ONE admission
+per Math-65 leg (leg 03: chisquare = the contested observable; legs 01/02:
+valueref only), ZERO rms references anywhere, zero SUBSTITUTED events,
+zero admissions on the Chart legs. Read: the p1b gate as designed would be
+evaluable on ~1/3 of Math-65 draws for chi convictions and never for rms.
+STEP 3 therefore includes admission-side WIDENING (request/screen a
+reference per contested getter, not one per leg) before or with the gate;
+the referee prereg stands. USER-GATED as before.
+
 ### 8.43 G-B REPLAY — BOTH GATES FAILED; reroute DISABLED per prereg (study `vreplay_gb_20260810`, archived; 1,494,538 tokens)
 **Full study: `docs/gb-replay-study-2026-08-10.md`** (282 gate-entry
 events across 61 archived legs enumerated; 75 relation convictions; 36
