@@ -1792,6 +1792,48 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.42 G-S1 LIVE ROLL — GATE FAILED; the fix is safe but did not convert (run `gs1_isolation_20260810_175503`, archived; 1,298,048 tokens)
+**Outcomes:** Math-65-c FP/FP/FP, Chart-26-c FP, Chart-7-c TN (no
+isolation events on either Chart leg — the TN is a lottery draw, not
+attributable). **Zero conversions; the gate's letter fails.**
+**The mechanism-level read (the roll's real value — every failure now
+has a name):** the hook ARMED and ran 8 isolation attempts across the
+Math-65 legs; zero dismissals, zero facts, all readings `ambiguous`:
+- `silent` ×3 — the isolated relation does not fire on the buggy build
+  at that input; no message, no arithmetic. Fail-closed held; the FP
+  stands.
+- `fired` ×2 but ambiguous — `chi-vs-rms` is an AGREEMENT check: it
+  prints two observables and NO `expected=` key, so the closeness
+  reading has no yardstick; and its buggy values differ from patched
+  (not identical). A pairwise-agreement reading shape is missing.
+- `isolate_failed` ×2 — rebuild/replay infrastructure failures,
+  unexamined.
+- **The decisive gap: the isolated targets were NOT the convicting
+  relations.** Leg 03's kept convictions
+  (`rms_matches_root_mean_weighted_residual_square`,
+  `chiSquare_matches_weighted_residual_formula`) have NO isolation
+  events — either their verdicts were not `unknown` (evidence complete,
+  judge convicted anyway — the deeper class isolation cannot touch by
+  construction) or the hook's first-fired-id targeting missed them.
+- Chart-26-c convicted via `jfreechart_draw_acceptsNullInfo` with no
+  isolation event at all — complete-evidence path, the
+  valid-by-construction joint, out of the fix's reach as built.
+**VERDICT:** the shadow-isolation mechanism stays (zero wrong
+dismissals, strictly additive evidence) but is INSUFFICIENT for the
+Math-65/Chart-26 FP classes. The next design round must decide among:
+(a) retarget the hook to the CONVICTING relation(s), all of them, not
+`sorted(fired_ids)[0]`; (b) add a pairwise-agreement reading (two
+shared observable keys, no expected yardstick); (c) the harder truth —
+part of the class flows through COMPLETE evidence that the judge keeps
+(formula relations whose recomputation cannot match the getter's
+Qᵀ-transformed state, per the 8.40 desk read; acceptance checks on
+inputs wrongly declared valid): that is relation-SOUNDNESS at
+invention/screen time, not evidence completeness, and needs its own
+mechanism (candidate: screen formula relations against the BUGGY
+build's own getter at NON-trigger inputs — a correctly-stated formula
+must hold there — with the desk read's Qᵀ caveat examined first).
+USER-GATED: nothing built until the design round is approved.
+
 ### 8.41 THE FLAGSHIP SWEEP — R tripled on the identical suite; two regressions, both wearing the new route's message (run `full30v3_20260810_154612`, archived; 3,973,145 tokens)
 **The honest baseline is `full30v2_20260720_013044` — the IDENTICAL cases
 file, flags and model** (final30B ran a DIFFERENT leg set; its aggregate
