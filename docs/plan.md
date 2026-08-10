@@ -1792,6 +1792,52 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.40 FULL-STACK LIVE CONFIRM — every pre-registered prediction hit (roll `stack_confirm_20260810_140852`, archived; 2,531,533 tokens)
+**Outcomes:** Chart-19-o TP/TP/TP, Lang-41-o TP/TP/TP, Math-65-c
+FP/FP/FP. R=1.00 on the overfit legs, zero FN. Read per the
+pre-registration in `suites/cases/stack_confirm.cases`:
+- **(1) DOC GUARD LIVE — PASS, the hard-stop stayed silent.** Math-65-c:
+  ZERO `violated: unexpected` firings in any draw's result. The guard
+  was demonstrably ACTIVE, not idle: draws 05/06 record 12 and 9
+  `tier2-doc-guarded` screen events (LLM-written tier-2 catches around
+  optimizer calls, each given the documented head), draw 04 wrote no
+  tier-2 catches (invention lottery) and is equally clean. The
+  `[synth] documented exceptions on probe tier` trace event present in
+  all three. The 8.38 false-alarm class (14 live firings) is CLOSED at
+  the mechanism level, confirmed live.
+- **(2) CHART-19 BOTH ROUTES — 3/3, the lottery is gone.** Every draw
+  convicts through MULTIPLE kept relations: the tier-2 null-absent
+  route fires deterministically on the trigger literals in all three
+  draws (1 tier-2 firing per result), and draws 01/02 ALSO carry the
+  Mechanism-B companion firing on fuzzed inputs (7933/20000 and
+  10024/20000). Subtype-closure adherence event present 3/3. Compare
+  invdiv (1 catch in 3 draws) and varbase (1-2 of 3): this leg is now
+  deterministic.
+- **(3) LANG-41 — TP 3/3, via the sibling-agreement route** (Class-vs-
+  String overload agreement relations, deterministic on trigger
+  literals, in every draw; zero tier-2 involved). First stable read on
+  this historically unstable leg.
+**THE FLAG THIS ROLL RAISES (recorded, not acted on): Math-65-c is now
+FP in 6 CONSECUTIVE draws under the new stack** (mechb 3 + these 3) vs
+a coin-flip in varbase. All six convictions are the same class:
+chi-square/RMS DOCUMENTED-FORMULA relations firing deterministically on
+the trigger literals of the CORRECT build (e.g.
+`chiSquare_matches_documented_sum_over_inverse_weights`,
+`rms_matches_documented_weighted_residual_formula`). Zero are tier-2;
+the doc guard neither causes nor can catch them (they throw the
+comparison, not the exception). This is the 8.29 instability hardened
+into a systematic FP generator — plausibly the formula relations
+mis-state the javadoc formula (weight vs inverse-weight) and the
+correct fix diverges from the mis-statement deterministically. THE NEXT
+PRECISION TARGET, needs its own desk read + pre-registration; nothing
+built against n=6 without reading the six relation bodies against the
+actual javadoc first.
+**Standing next steps:** (a) the Math-65 formula-relation desk read;
+(b) the Lang-63 divergence-capture design
+(`docs/diff-divergence-capture-design-2026-08-10.md`, user decisions
+pending); (c) the full 24-leg flagship sweep as the milestone
+before/after once (a) settles.
+
 ### 8.39 DOCUMENTED-EXCEPTION GUARD — built against the 8.38 near-miss, two-round replay-validated, SHIPPED (2026-08-10)
 **Pre-registration + gate correction:** two dated addenda in
 `docs/reportable-exception-prereg-2026-08-09.md`, each written BEFORE its
