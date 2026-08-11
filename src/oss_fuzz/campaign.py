@@ -137,6 +137,8 @@ class HarnessCampaign:
         # None keeps the pre-split behaviour: assume a sanitizer is the oracle,
         # gate on "it crashed", require nothing of the harness's own checks.
         self.bug_class = bug_class
+        # The stock-build question is asked at most once per campaign; see run().
+        self._stock_checked = False
 
     def run(self, prompt_factory: Callable[[List[str], List[str]],
                                            List[Dict[str, str]]]) -> CampaignResult:
@@ -198,7 +200,22 @@ class HarnessCampaign:
                     print(f"  ABORTING: this is an infrastructure failure, not "
                           f"a harness problem:\n    {infra}")
                     break
+                # Read before the stock build below, which overwrites it.
                 stderr = getattr(self.of, "last_build_stderr", "") or ""
+                # The diagnostics can look like a harness bug and still not be
+                # one: the tree may not build at all. Ask the project's own
+                # build, once, on the first failure — the answer cannot change
+                # across attempts, and getting it wrong costs every remaining
+                # attempt (the 20260811 run: 15/15 on two projects).
+                if not self._stock_checked:
+                    self._stock_checked = True
+                    stock = self.of.stock_build_error(
+                        self.project, self.vuln, self.sanitizer)
+                    if stock:
+                        result.infra_error = stock
+                        print(f"  ABORTING: this is an infrastructure failure, "
+                              f"not a harness problem:\n    {stock}")
+                        break
                 print("  build failed; feeding compiler errors back")
                 repair_context = (
                     "Your harness did not compile. Fix it and re-output the "

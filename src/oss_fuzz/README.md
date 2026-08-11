@@ -495,6 +495,13 @@ staying out of the way on crashing ones.
 - **HEAD may not build.** If the project's API changed between the fix and now,
   a harness may not compile against HEAD. Those are skipped and reported, not
   counted as clean.
+- **The vulnerable checkout may not build either.** `build.sh` comes from
+  OSS-Fuzz HEAD but the checkout is years old, so the two can disagree about
+  what files exist — llamacpp's current `build.sh` compiles `fuzzers/*.cpp`,
+  absent at a 2024 commit. That looks like an ordinary compile error, so the
+  first build failure triggers one build of the *untouched* checkout: if that
+  fails too, the campaign aborts as an infrastructure error instead of asking
+  the model to repair a harness that was never at fault.
 
 ## Responsible disclosure
 

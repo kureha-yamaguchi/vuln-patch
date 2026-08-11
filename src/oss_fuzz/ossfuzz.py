@@ -478,6 +478,14 @@ def _build_error_excerpt(combined: str, limit: int = 2500) -> str:
     return excerpt[-limit:]
 
 
+def _first_error_line(text: str) -> str:
+    """The first line of ``text`` that names an error, for one-line reports."""
+    for ln in text.splitlines():
+        if re.search(r"\berror\b", ln, re.IGNORECASE):
+            return ln.strip()[:200]
+    return "see the build log"
+
+
 def _infra_error(combined: str) -> Optional[str]:
     """The infrastructure failure in ``combined``, or None if it looks like a
     genuine compile failure the model could plausibly fix."""
@@ -1117,6 +1125,32 @@ class OssFuzz:
         # that was never compiled.
         self.last_build_infra_error = _infra_error(combined)
         return False
+
+    def stock_build_error(self, project: str, checkout: Checkout,
+                          sanitizer: str) -> Optional[str]:
+        """Why the project's OWN build of ``checkout`` fails, or None if it
+        builds.
+
+        Answers the question compiler output alone cannot: was it our harness at
+        all? Both placement strategies restore what they touched (the base
+        harness, or build.sh) before returning, so this compiles the tree as
+        upstream would. Any generated harness left in the checkout is a file no
+        build rule mentions.
+
+        Worth a build because the pattern lists above cannot keep up: llamacpp's
+        build.sh at oss-fuzz HEAD compiles ``fuzzers/*.cpp``, which do not exist
+        at a 2024 vuln commit, and that failure looks like an ordinary
+        ``clang++: error:``. A tree that does not build without us cannot be
+        repaired by rewriting the harness.
+        """
+        if self.dry_run:
+            return None
+        print("  checking whether the project builds without our harness")
+        if self._run_build(project, checkout, sanitizer, "stock"):
+            return None
+        return (f"the project's own build of the {checkout.label} checkout "
+                f"fails with no harness of ours in it: "
+                f"{_first_error_line(self.last_build_stderr)}")
 
     def _build_harness_overwrite(self, project: str, checkout: Checkout,
                                  harness_name: str, harness_source: str,

@@ -679,6 +679,67 @@ def test_campaign_aborts_on_infra_error_without_burning_attempts():
     print("ok  campaign aborts on infra error")
 
 
+def test_campaign_aborts_when_the_project_does_not_build_without_us():
+    """A compile error the model cannot possibly fix, because the tree is broken.
+
+    llamacpp's build.sh at oss-fuzz HEAD compiles fuzzers/*.cpp, absent at the
+    2024 vuln commit: 'clang++: error: no such file or directory'. That matches
+    no infra pattern and reads as an ordinary compile error, so the 20260811 run
+    fed it back 15 times. One stock build settles it.
+    """
+    from oss_fuzz.campaign import HarnessCampaign
+
+    calls = []
+
+    class _Gen:
+        def generate(self, messages):
+            calls.append(1)
+            return ("```c\nint LLVMFuzzerTestOneInput(const unsigned char *d, "
+                    "unsigned long s){return 0;}\n```")
+
+    class _Of:
+        last_build_stderr = ("clang++: error: no such file or directory: "
+                             "'fuzzers/fuzz_json_to_grammar.cpp'")
+        last_build_infra_error = None    # looks repairable; it is not
+        stock_builds = 0
+
+        def build_harness(self, *a, **k):
+            return None
+
+        def stock_build_error(self, project, checkout, sanitizer):
+            _Of.stock_builds += 1
+            return "the project's own build of the vuln checkout fails"
+
+    of = _Of()
+    camp = HarnessCampaign(generator=_Gen(), oss_fuzz=of, project="llamacpp",
+                           vuln_checkout=None, sanitizer="address", ext=".cc",
+                           target_successes=3, max_attempts=15)
+    res = camp.run(lambda covered, sigs: [{"role": "user", "content": "x"}])
+    assert res.infra_error and res.achieved == 0
+    assert res.attempts == 1, res.attempts
+    assert len(calls) == 1, calls
+    assert _Of.stock_builds == 1, _Of.stock_builds
+
+    # And when the tree DOES build, the failure really is the harness's: keep
+    # repairing, and do not pay for the stock build again on every attempt.
+    class _OfOk(_Of):
+        stock_builds = 0
+
+        def stock_build_error(self, project, checkout, sanitizer):
+            _OfOk.stock_builds += 1
+            return None
+
+    calls.clear()
+    camp = HarnessCampaign(generator=_Gen(), oss_fuzz=_OfOk(),
+                           project="capstone", vuln_checkout=None,
+                           sanitizer="address", ext=".cc", target_successes=3,
+                           max_attempts=4)
+    res = camp.run(lambda covered, sigs: [{"role": "user", "content": "x"}])
+    assert res.infra_error is None and res.attempts == 4, res
+    assert _OfOk.stock_builds == 1, _OfOk.stock_builds
+    print("ok  campaign aborts when the stock build fails too")
+
+
 def test_checkout_is_self_contained_for_docker_mounting():
     """A checkout must work as a git repo with only its own directory present.
 
