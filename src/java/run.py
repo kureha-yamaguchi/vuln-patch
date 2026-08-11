@@ -112,8 +112,23 @@ def _admitted_for(fired, class_ctx, check_src):
     return rec, why
 
 
+def _patched_method_names(context) -> list:
+    """The methods the PATCH changed, off the pipeline's own diff read.
+
+    `TargetAnalyzer.analyze` maps each changed line to its smallest enclosing
+    declaration (`bug_context/analysis.py:_enclosing_methods`, with the regex
+    fallback behind it) and every downstream stage that keys on "the patched
+    method" already reads this list. READ 2's Fix 2 needs exactly that set and
+    computes nothing new. Empty when the context is degraded, which leaves the
+    off-defect screen reading as it did before the fix.
+    """
+    return [fn.func_name for fn in (getattr(context, 'functions', None) or [])
+            if getattr(fn, 'func_name', None)]
+
+
 def _widen_admissions(*, args, checks, class_ctx, failure_tests, builder,
-                      buggy_dir, patch_path, package=None, imports=None):
+                      buggy_dir, patch_path, package=None, imports=None,
+                      patched_methods=None):
     """p1b step 3 part 1: one reference per CONTESTED OBSERVABLE, not one per
     leg. Returns the store's observable keys after widening.
 
@@ -141,14 +156,23 @@ def _widen_admissions(*, args, checks, class_ctx, failure_tests, builder,
     if store is None:
         store = _reference_impl_fact._admitted_by_method = {}
     cap = getattr(config, 'P1B_MAX_REFERENCES', 3)
-    targets, why = widening_targets(store, checks, ctx, cap)
+    # READ 2 Fix 1: the enumeration is scoped to the patched class's own
+    # no-argument readers, and what that scope DROPPED is recorded here —
+    # a rank spent on a constructor or a collaborator's method is the thing
+    # that kept `getRMS` (rank 8) behind a cap of 3.
+    _excluded = []
+    targets, why = widening_targets(store, checks, ctx, cap,
+                                    excluded=_excluded)
     _re('deterministic', method='reference-widening', target='enumerate',
         output=(f'{len(targets)} observable(s) to widen onto' if targets
                 else 'nothing to widen'),
         reason=why,
         detail={'targets': [admission_key(t) for t in targets],
                 'already_admitted': sorted(store), 'cap': cap,
-                'checks_read': len([c for c in (checks or []) if c])})
+                'checks_read': len([c for c in (checks or []) if c]),
+                'excluded': [{'key': e['key'], 'why': e['why']}
+                             for e in _excluded][:12],
+                'excluded_count': len(_excluded)})
     for method in targets:
         key = admission_key(method)
         _re('deterministic', method='reference-widening', target=method,
@@ -162,7 +186,8 @@ def _widen_admissions(*, args, checks, class_ctx, failure_tests, builder,
                 failure_tests=failure_tests, builder=builder,
                 buggy_dir=buggy_dir, patch_path=patch_path,
                 trusted_values=[], package=package, imports=imports,
-                check_source=None, target_methods=[method])
+                check_source=None, target_methods=[method],
+                patched_methods=patched_methods)
         except Exception as exc:
             _re('deterministic', method='reference-widening', target=method,
                 output=f'widening REJECTED for observable `{key}`',
@@ -268,7 +293,7 @@ def _firing_state_reading(fired, admitted, evidence, builder, buggy_dir):
 def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
                          buggy_dir, patch_path, trusted_values,
                          package=None, imports=None, check_source=None,
-                         target_methods=None):
+                         target_methods=None, patched_methods=None):
     """8.2: generate, screen and compare an independent reference. Fact or None.
 
     Every exit records an event with its REASON. A step that produced nothing
@@ -303,9 +328,9 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     _reference_impl_fact._last_outcome = _outcomes
     from java.relations.reference_impl import (
         admission_key, admit_reference,
-        disputed_observables, pin_check, pins_for_disputed,
-        reference_comparison_fact, screen_reference, test_corroboration_pins,
-        too_thin_to_screen)
+        disputed_observables, exempt_patch_touched, pin_check,
+        pins_for_disputed, reference_comparison_fact, screen_reference,
+        test_corroboration_pins, too_thin_to_screen)
     from java.relations.reference_gen import (
         ImplementationLeak, build_reference_prompt, sibling_observables,
         strip_bodies)
@@ -378,12 +403,26 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
                 detail={'parsed': sorted(declaring)[:6]})
             return None
         siblings = sibling_observables(ctx, method, declaring_types=declaring)
+        # READ 2 Fix 2: an observable the PATCH CHANGED is on-defect for every
+        # reference on this class, not only for a reference aimed at it. It
+        # comes out of the screening surface here, once, so the early count
+        # bar and `screen_reference`'s own count cannot disagree about what
+        # the off-defect set is. `siblings` itself is untouched — the twin
+        # still prints them, the corroboration pins still attach to them.
+        screened_siblings, _exempted = exempt_patch_touched(siblings,
+                                                            patched_methods)
         _re('deterministic', method='reference-impl', target=method,
             output='screening surface resolved',
             reason=f'{len(siblings)} computed sibling observable(s) on the '
                    f'receiver\'s own type (stored settings excluded — they '
-                   f'agree for free)',
+                   f'agree for free)'
+                   + (f'; {len(_exempted)} of them PATCH-TOUCHED '
+                      f'({_exempted}) and therefore not screened on — the '
+                      f'buggy build is the wrong answer key where the defect '
+                      f'lives' if _exempted else ''),
             detail={'siblings': siblings[:8],
+                    'patch_touched_exempted': _exempted,
+                    'screened_siblings': screened_siblings[:8],
                     'declaring_types': sorted(declaring)[:4]})
 
         try:
@@ -473,7 +512,7 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         # siblings are known the moment the observables are matched, and the
         # run can only shrink that set. The late path bought the twin build and
         # two JVM runs before `screen_reference` said "1 shared; 3 required".
-        thin, thin_why = too_thin_to_screen(matched, siblings)
+        thin, thin_why = too_thin_to_screen(matched, screened_siblings)
         _re('deterministic', method='reference-impl', target=method,
             output=('reference too thin to screen — DISCARDED' if thin else
                     'screen bar reachable'), reason=thin_why)
@@ -578,7 +617,7 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         # disputed point is on-defect by definition and cannot vouch for itself.
         buggy_obs = {k: v for k, v in buggy_vals.items()
                      if not k.startswith('__')}
-        off = [k for k in siblings if k in obs and k in buggy_obs]
+        off = [k for k in screened_siblings if k in obs and k in buggy_obs]
         # OPTION B (user decision 2026-08-07): a sibling the failing test itself
         # shows diverging is a rigged screen question — the buggy build is the
         # wrong answer key there. The pin attaches only where the failure
@@ -601,7 +640,8 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
             output=('screen ADMITTED' if ok else 'screen DISCARDED'),
             reason=screen_why,
             detail={'construct': (buggy_vals.get('__construct0') or ['?'])[0],
-                    'off_defect_shared': len(off)})
+                    'off_defect_shared': len(off),
+                    'off_defect_exempted': _exempted})
         if not ok:
             return None
 
@@ -2280,7 +2320,8 @@ def main():
                     class_ctx=class_ctx, failure_tests=failure_tests,
                     builder=builder, buggy_dir=selection.buggy_dir,
                     patch_path=selection.patch_path,
-                    package=context.package, imports=context.source_imports)
+                    package=context.package, imports=context.source_imports,
+                    patched_methods=_patched_method_names(context))
             except Exception as _wexc:
                 print(f"  [widening] admission widening unavailable "
                       f"({_wexc}) — the leg keeps whatever it had")
@@ -4422,7 +4463,8 @@ def main():
                             trusted_values=trusted_values,
                             package=context.package,
                             imports=context.source_imports,
-                            check_source=src)
+                            check_source=src,
+                            patched_methods=_patched_method_names(context))
                         if _ref_fact:
                             print("      [reference-impl] fact attached")
                             _fact_notes.append(_ref_fact)
@@ -4827,7 +4869,8 @@ def main():
                             trusted_values=_tvals,
                             package=context.package,
                             imports=context.source_imports,
-                            check_source=_src)
+                            check_source=_src,
+                            patched_methods=_patched_method_names(context))
                         if _ref_fact2:
                             print("      [reference-impl] fact attached "
                                   "(replay track)")

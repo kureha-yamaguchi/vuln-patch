@@ -105,6 +105,41 @@ def too_thin_to_screen(matched_keys, siblings):
                    f'the screen to decide')
 
 
+def exempt_patch_touched(off_defect_keys, patched_methods
+                         ) -> Tuple[List[str], List[str]]:
+    """`(kept, exempted)` — the off-defect screening set with every
+    PATCH-TOUCHED observable removed. Order preserved. Pure.
+
+    READ 2 §2.2 measured the failure this fixes. `off_defect_keys` is "the
+    receiver's siblings minus the reference's own target", so for a reference
+    for `getRMS` the observable the patch CHANGED (`getChiSquare`) stayed in
+    the set — and a correct `getRMS` reference necessarily computes
+    chi-square correctly, therefore necessarily disagrees with the buggy
+    build there. Eleven archived `getRMS` candidates were discarded with the
+    same line, the same two numbers, for being right:
+
+        reference disagrees with the buggy build on off-defect observable
+        `getChiSquare` (['6.253505411815327'] vs ['1.5633763529538318'])
+
+    The defect observable is on-defect for EVERY reference on that class, not
+    only for a reference aimed at it, and the buggy build is the wrong answer
+    key there by construction. Every other off-defect key is screened exactly
+    as before.
+
+    `patched_methods` is the pipeline's own diff-derived set (the touched
+    functions `TargetAnalyzer` reads off the patch headers). Empty or missing
+    -> nothing is exempted and the screen reads byte for byte as it does
+    today, which is the fail-closed direction.
+    """
+    touched = {admission_key(m) for m in (patched_methods or ()) if m}
+    if not touched:
+        return list(off_defect_keys or ()), []
+    kept, exempted = [], []
+    for k in (off_defect_keys or ()):
+        (exempted if admission_key(k) in touched else kept).append(k)
+    return kept, exempted
+
+
 def disputed_observables(fired_msg: str, code_context: str,
                          check_source: Optional[str] = None) -> List[str]:
     """Methods the firing (or its check) names that the context DECLARES.
@@ -419,8 +454,77 @@ def admitted_reference_for(store, fired_msg, code_context,
 # about, not of how the asking works.
 # ---------------------------------------------------------------------------
 
-def observables_probed_by(check_sources, code_context) -> List[str]:
-    """Every observable the kept checks probe, ranked, deduped per slot.
+#: The context assembler labels the patched class's own block
+#: (`bug_context/code_context.py`: `<class name="X" role="patched">`). It is
+#: the same marker `reference_gen.sibling_observables` scopes on, so the
+#: widening and the screening surface now agree about which class is ours.
+_PATCHED_CLASS_RE = re.compile(
+    r'<class\b[^>]*\brole="patched"[^>]*>(.*?)</class>', re.S)
+
+#: Tokens that can sit immediately before a method NAME without being its
+#: return type. A modifier there means a CONSTRUCTOR (`protected
+#: AbstractLeastSquaresOptimizer() {`), and `void` means the call reports no
+#: value — neither is a reader, and both consumed widening ranks before READ 2.
+_NOT_A_READER_RETURN = frozenset({
+    'public', 'protected', 'private', 'static', 'final', 'abstract',
+    'synchronized', 'native', 'strictfp', 'default', 'transient', 'volatile',
+    'void'}) | _NOT_A_RETURN_TYPE
+
+
+def patched_class_scope(code_context) -> str:
+    """The `role="patched"` class block(s) of the context, concatenated.
+
+    Empty string when the context carries no such block — the caller then
+    knows the scope could not be resolved and leaves the list unscoped rather
+    than silently emptying it.
+    """
+    return '\n'.join(_PATCHED_CLASS_RE.findall(str(code_context or '')))
+
+
+def _no_arg_declared(scope, name, readers_only=True) -> bool:
+    """`name` is declared in `scope` with an EMPTY parameter list.
+
+    `_method_declared`'s regex with `\\(\\s*\\)` instead of `\\([^)]*\\)`, plus
+    the reader filter: the token before the name must be a RETURN TYPE, so a
+    constructor (modifier before the name) and a `void` method are not readers.
+    """
+    if not scope or not name:
+        return False
+    pat = re.compile(
+        r'([A-Za-z_$][\w$]*|[\]>])\s+' + re.escape(name)
+        + r'\s*\(\s*\)\s*(?:throws\s+[\w.$\s,]*?)?[{;]')
+    reject = _NOT_A_READER_RETURN if readers_only else _NOT_A_RETURN_TYPE
+    for m in pat.finditer(str(scope)):
+        if m.group(1) not in reject:
+            return True
+    return False
+
+
+def widening_scope_exclusion(scope, name) -> Optional[str]:
+    """WHY `name` is out of the widening's scope, or None when it is in.
+
+    One reason per mechanical cause, so the recorded event says which kind of
+    noise was dropped rather than only how much.
+    """
+    if _no_arg_declared(scope, name):
+        return None
+    if _no_arg_declared(scope, name, readers_only=False):
+        return ('the patched class declares `%s()` as a constructor or a void '
+                'method — it reports no observable value' % name)
+    if _method_declared(scope, name):
+        return ('the patched class declares `%s` with parameters — the '
+                'reference chain is generated per NO-ARGUMENT reader, and a '
+                'reference for it cannot be called from the twin at the '
+                'firing\'s own state' % name)
+    return ('the patched class does not declare `%s()` — it is a type name, a '
+            'name declared by another class in the context, or a call the '
+            'check makes on a collaborator' % name)
+
+
+def observables_probed_by(check_sources, code_context, excluded=None
+                          ) -> List[str]:
+    """Every observable the kept checks probe, ranked, deduped per slot, and
+    SCOPED to the patched class's own no-argument readers.
 
     Reuses `disputed_observables` unchanged, once per check, with the check
     source in BOTH positions: a check's own text is the "message" here, so
@@ -432,6 +536,25 @@ def observables_probed_by(check_sources, code_context) -> List[str]:
     best-first order — direction-confirmed survivors come back first from
     `screen_relations`, so the widening spends its cap on the checks most
     likely to convict. Pure.
+
+    THE SCOPE (READ 2 §2.3 Fix 1). Measured on the p1b_live draw: check #1
+    alone contributed ranks 0-7 of leg 01's list, four of them type and
+    constructor names (`_method_declared` accepts `protected
+    AbstractLeastSquaresOptimizer() {` as a declaration, and `_WORD_RE`
+    matches a class name wherever a check writes `new …Optimizer()`), so
+    `getRMS` sat at rank 8 behind a cap of 3 and was never requested. Leg 05
+    spent all three requests on `Axis`, `drawLabel` and `RectangleEdge` and
+    was told verbatim that the reference "omits the disputed observable".
+    Keeping only what the `role="patched"` block declares with an empty
+    parameter list drops every one of those and costs nothing that could
+    have been admitted: a reference is generated per no-argument reader, and
+    a name this class does not declare cannot pass the admission screen.
+
+    `excluded` (optional list) receives `{'name', 'key', 'why'}` for each
+    dropped name, in arrival order, so the caller's event can say what was
+    excluded and why. A context with no `role="patched"` block leaves the
+    list UNSCOPED and records that as the reason — scoping on a block that
+    is not there would empty the widening silently.
     """
     out: List[str] = []
     seen = set()
@@ -447,10 +570,26 @@ def observables_probed_by(check_sources, code_context) -> List[str]:
             if k not in seen:
                 seen.add(k)
                 out.append(n)
-    return out
+    scope = patched_class_scope(code_context)
+    if not scope:
+        if excluded is not None:
+            excluded.append({
+                'name': '*', 'key': '*',
+                'why': ('this class context carries no `role="patched"` '
+                        'block, so the patched class cannot be resolved and '
+                        'the probed list stands unscoped')})
+        return out
+    kept: List[str] = []
+    for n in out:
+        why = widening_scope_exclusion(scope, n)
+        if why is None:
+            kept.append(n)
+        elif excluded is not None:
+            excluded.append({'name': n, 'key': admission_key(n), 'why': why})
+    return kept
 
 
-def widening_targets(store, check_sources, code_context, cap
+def widening_targets(store, check_sources, code_context, cap, excluded=None
                      ) -> Tuple[List[str], str]:
     """`(targets, why)` — observables to request a reference for, capped.
 
@@ -462,15 +601,25 @@ def widening_targets(store, check_sources, code_context, cap
 
     Pure, never raises. An empty list is a result with a reason, never a
     silent no-op.
+
+    `excluded` (optional list) is handed straight to `observables_probed_by`
+    and receives everything the patched-class scope dropped; the reason string
+    reports how many that was.
     """
     store = store or {}
-    probed = observables_probed_by(check_sources, code_context)
+    excl = [] if excluded is None else excluded
+    probed = observables_probed_by(check_sources, code_context, excluded=excl)
+    dropped = len([e for e in excl if e.get('name') != '*'])
+    scoped = (f'{dropped} further name(s) the checks probe are outside the '
+              f'patched class\'s no-argument readers and were excluded '
+              f'({[e["key"] for e in excl if e.get("name") != "*"][:6]})')
     fresh = [n for n in probed if admission_key(n) not in store]
     room = max(0, int(cap) - len(store))
     targets = fresh[:room]
     if not probed:
-        return [], ('the kept checks name no method this class context '
-                    'declares — nothing to request a reference for')
+        return [], ('the kept checks name no no-argument reader of the '
+                    'patched class — nothing to request a reference for; '
+                    + scoped)
     if not fresh:
         return [], (f'every observable the kept checks probe '
                     f'({[admission_key(n) for n in probed][:6]}) already has '
@@ -480,10 +629,11 @@ def widening_targets(store, check_sources, code_context, cap
                     f'reference(s) {sorted(store)}, at the cap of {cap}; '
                     f'{len(fresh)} probed observable(s) go unrequested')
     return targets, (
-        f'the kept checks probe {[admission_key(n) for n in probed][:6]}; '
+        f'the kept checks probe {[admission_key(n) for n in probed][:6]} '
+        f'among the patched class\'s no-argument readers; '
         f'{len(fresh)} of those have no admitted reference and {len(targets)} '
         f'fit under the per-leg cap of {cap} (the leg already holds '
-        f'{sorted(store)})')
+        f'{sorted(store)}); ' + scoped)
 
 
 # ---------------------------------------------------------------------------

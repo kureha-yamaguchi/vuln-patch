@@ -583,3 +583,132 @@ archived firing lines before anything else here is built.
   which this read did not open.
 * Whether `capture_receivers` fires at all on an LLM-written `FuzzHarness`.
   G-H2 is written to measure it rather than assume it.
+
+---
+
+# Addendum — READ 2's two fixes are BUILT (2026-08-11, same day)
+
+Code only, Mac only, no VM run and no commit. READ 1 is untouched: nothing
+here aims anything at the harness channel.
+
+## What was built
+
+**Fix 1 — the widening enumerates the patched class's own no-argument
+readers.** Station: `reference_impl.observables_probed_by` /
+`widening_targets`, called from `run._widen_admissions`.
+`patched_class_scope` reads the `role="patched"` block out of the class
+context (the same marker `reference_gen.sibling_observables` scopes on) and
+`_no_arg_declared` is `_method_declared`'s regex with `\(\s*\)` in place of
+`\([^)]*\)`, plus one added condition: the token before the name must be a
+RETURN TYPE. A modifier there means a CONSTRUCTOR and `void` means the call
+reports no value, so `protected AbstractLeastSquaresOptimizer() {` and
+`public void reset()` are both out. Arrival order inside the scope is
+unchanged, and so is the cap. `observables_probed_by` takes an optional
+`excluded` list and fills it with `{name, key, why}` — one of four mechanical
+reasons per dropped name — which `_widen_admissions` writes into the existing
+`reference-widening · enumerate` event as `excluded` / `excluded_count`. A
+context with NO `role="patched"` block is left unscoped and records that as
+the reason; scoping on a block that is not there would empty the widening
+silently.
+
+**Fix 2 — the patch-touched observable leaves the off-defect screen.**
+Station: `reference_impl.exempt_patch_touched`, called once in
+`run._reference_impl_fact._attempt` right after the screening surface
+resolves. The patched-method set is the pipeline's own diff read —
+`_patched_method_names(context)` returns `TargetAnalyzer`'s touched
+functions, the list every stage that keys on "the patched method" already
+uses — and it is passed at all three doors (harness, replay, widening).
+Matching is by `admission_key`, so `getChiSquare` and `chiSquare` are one
+slot. Empty set → nothing exempted and the screen reads byte for byte as
+before.
+
+The exemption is applied at BOTH count sites: `too_thin_to_screen(matched,
+screened_siblings)` and the `off = [k for k in screened_siblings …]` that
+feeds `screen_reference`. That is one decision, not two — `too_thin`'s whole
+premise is that "the shared siblings are exactly the off-defect keys the
+screen will count", and leaving it stale would have made the two counts
+disagree. `siblings` itself is untouched: the twin still prints them and the
+corroboration pins still attach to them. The exemption is recorded in the
+existing `screening surface resolved` event
+(`patch_touched_exempted`, `screened_siblings`) and in the existing screen
+event (`off_defect_exempted`).
+
+Files: `src/java/relations/reference_impl.py`, `src/java/run.py`,
+`tests/test_reference_statetwin.py`, `tests/test_read2_offline_gates.py`.
+
+## G-R1 — DISCHARGED offline
+
+`tests/test_read2_offline_gates.py` replays the enumeration on all five
+`p1b_live` legs' own archived contexts and checks. The reconstruction is
+validated first: with the role marker removed it returns each leg's LIVE
+target list exactly (`optimize/chisquare/valueref`, …/`pointref`,
+`add/maxmiddleindex/start`, `axis/drawlabel/rectangleedge`). Under Fix 1 the
+pinned table reproduces:
+
+| leg | targets under Fix 1 | eligible pool |
+|---|---|---|
+| 01 | chisquare, rms, evaluations | 7 |
+| 02 | chisquare, rms, covariances | 6 |
+| 03 | chisquare, rms, covariances | 8 |
+| 04 | maxmiddleindex, itemcount, minmiddleindex | 7 |
+| 05 | visible | 1 |
+
+`rms` enters on all three Math-65 legs with `P1B_MAX_REFERENCES` unchanged at
+3, and `optimize` / `add` / `axis` / `rectangleedge` / the four type names are
+absent from every leg's pool. One number differs from §2.3's table: leg 03's
+pool is 8, not 9 — that read's replay counted `AbstractLeastSquaresOptimizer`,
+the constructor, as eligible, and the built rule excludes constructors. No
+target changes. Second small correction: replaying leg 01 gives a fresh list
+of 16, where the live event's reason said 22; the archived `code_context` is
+not byte-identical to the live one, so the counts quoted here are replay
+counts. The target lists are identical either way, which is what G-R1 pinned.
+
+## G-R2 — DISCHARGED offline, and its "separate finding" clause fired
+
+First half holds by construction: `getChiSquare` is not in the off-defect set
+for any Math-65 reference any more, so not one of the 11 archived `getRMS`
+candidates can be discarded for it again. The sweep confirms all 11 have
+`touched == ['getChiSquare']` and that the exemption removes exactly that key.
+
+Second half: **all 11 then fail the COUNT bar, so Fix 2 alone admits no rms
+reference on any archived leg.** Every one of the 11 recorded
+`off_defect_shared: 3`; removing the patch-touched key leaves 2, and
+`MIN_SCREENED_OBSERVABLES` is 3, so the screen refuses with `only 2
+off-defect observable(s) shared; 3 required`. §2.3's risk note read the wrong
+quantity — it argued from Math-65's 7 declared siblings, but the binding
+number is what the GENERATED reference shares with the twin, and the archived
+`getRMS` references implemented 4 observables (`getRMS`, `getChiSquare`,
+`getCovariances`, `guessParametersErrors`) out of the 6 siblings the prompt
+named. The direction is fail-closed, which is the right sign, and the discard
+now happens at the early bar instead of after a twin build and two JVM runs.
+
+Safety side of the same sweep, also a test: 43 of the archive's 49 screen
+admissions sat exactly ON the count bar, so an exemption that reached them
+would delete them. None is reached — every archived admission is either FOR
+the patched observable (already excluded from its own off-defect set) or on a
+different class (`VectorialPointValuePair`, `CategoryAxis`) whose siblings the
+patch never touched.
+
+## What the next live roll must read
+
+* **G-R3 is now the open question, and the archive predicts it fails.** The
+  gate asks for `reference ADMITTED for observable 'rms'` on ≥2 of 3 Math-65
+  legs. That happens only if the reference the generator writes implements at
+  least 4 of the 6 named siblings **besides** `getChiSquare` — the archived
+  ones implemented 3 including it. Read the `reference observables matched`
+  event's `matched` map first; if it again carries 4 keys, the leg dies at
+  `reference too thin to screen — DISCARDED` and the finding is that the
+  binding constraint moved from the REQUEST to the reference's own
+  sibling coverage, not that Fix 1 or Fix 2 is wrong.
+* Grep list for the roll: `excluded_count` and `excluded` on the
+  `reference-widening · enumerate` event (what the scope dropped);
+  `patch_touched_exempted` on `screening surface resolved`;
+  `off_defect_exempted` on the screen event; `reference REQUESTED for
+  observable \`rms\``; `2 shared sibling observable(s)`.
+* G-R4 (the reading), G-R5 (Chart-19-o ×3, hard stop) and the LLM-call half of
+  G-R6 are unchanged and still need the live roll. The request half of G-R6 —
+  requests per leg ≤ `P1B_MAX_REFERENCES` — is discharged offline by the same
+  replay.
+* Read "admissions per leg", never "requests per leg": leg 05 honestly shrinks
+  to one target and legs whose patched observable takes arguments can shrink
+  to zero.

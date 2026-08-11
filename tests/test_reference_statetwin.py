@@ -1736,8 +1736,12 @@ def test_option_a_detects_declared_methods_and_declines_absent_ones():
 def test_chain_passes_the_check_source_at_both_doors():
     src = open(Path(__file__).resolve().parents[1] / 'src' / 'java'
                / 'run.py').read()
-    assert src.count('check_source=src)') == 1     # harness door
-    assert src.count('check_source=_src)') == 1    # replay door
+    # Read the two CALLS, not the whole file: `adjudicate` at each door takes
+    # the same keyword, and READ 2 Fix 2 added `patched_methods=` after it.
+    door1 = src[src.index('_ref_fact = _reference_impl_fact('):][:600]
+    door2 = src[src.index('_ref_fact2 = _reference_impl_fact('):][:600]
+    assert 'check_source=src,' in door1            # harness door
+    assert 'check_source=_src,' in door2           # replay door
     i = src.index('def _reference_impl_fact')
     body = src[i:i + 5000]
     assert 'check_source=check_source' in body
@@ -2443,6 +2447,272 @@ def test_the_chain_attempts_every_named_target(monkeypatch):
     assert out is None
     asked = [t for o, t in events if o == 'widening target requested']
     assert asked == ['getRMS', 'getChiSquare']
+
+
+# ---------------------------------------------------------------------------
+# READ 2 FIX 1 — the widening enumerates the PATCHED CLASS's own no-argument
+# readers (docs/p1b-aiming-and-rms-read-2026-08-11.md §2.1, §2.3).
+#
+# Measured cause of "no getRMS reference exists": the probed list is arrival
+# order across checks and check #1 alone contributed ranks 0-7 of leg 01's
+# list — four of them TYPE and CONSTRUCTOR names, because `_method_declared`
+# accepts `protected AbstractLeastSquaresOptimizer() {` as a declaration and
+# `_methods_named_by` matches a class name wherever a check writes `new
+# …Optimizer()`. `getRMS` sat at rank 8 behind a cap of 3. Leg 05 spent all
+# three requests on `Axis`, `drawLabel` and `RectangleEdge`.
+# ---------------------------------------------------------------------------
+
+# The context as the assembler labels it: the patched class in its own
+# role="patched" block, a collaborator in another. `Opt` declares a
+# constructor, a void reader-shaped method, an argument-taking method and
+# three no-argument readers.
+SCOPED_CTX = (
+    '<class name="Optim" role="patched">\n'
+    'public class Optim {\n'
+    '  protected Optim() { }\n'
+    '  public void reset() { }\n'
+    '  public double optimize(double[] target) { return 0.0; }\n'
+    '  public double getChiSquare() { return 0.0; }\n'
+    '  public double getRMS() { return 0.0; }\n'
+    '  public int getEvaluations() { return 0; }\n'
+    '}\n'
+    '</class>\n'
+    '<class name="Pair" role="collaborator">\n'
+    'public class Pair {\n'
+    '  public Pair() { }\n'
+    '  public double[] getValueRef() { return null; }\n'
+    '}\n'
+    '</class>')
+
+# One check with the live shape: it constructs the patched class by name,
+# calls the argument-taking method, reads a collaborator's observable, and
+# only then reads the two observables anyone wants a reference for.
+SCOPED_CHECK = (
+    'Optim opt = new Optim();\n'
+    'Pair pair = new Pair();\n'
+    'double c = opt.optimize(new double[] {1.0});\n'
+    'double[] v = pair.getValueRef();\n'
+    'double chi = opt.getChiSquare();\n'
+    'double rms = opt.getRMS();\n'
+    'int n = opt.getEvaluations();\n'
+    'opt.reset();\n'
+    'if (rms < 0) throw new RuntimeException('
+    '"relation rms-nonnegative violated: rms=" + rms);')
+
+
+def test_widening_scope_keeps_only_the_patched_class_no_arg_readers():
+    from java.relations.reference_impl import (admission_key,
+                                               observables_probed_by)
+    excluded = []
+    probed = observables_probed_by([SCOPED_CHECK], SCOPED_CTX,
+                                   excluded=excluded)
+    keys = [admission_key(n) for n in probed]
+    # Kept: the three no-argument readers, in ARRIVAL ORDER (unchanged rule).
+    assert keys == ['chisquare', 'rms', 'evaluations']
+    dropped = {e['key']: e['why'] for e in excluded}
+    # The constructor and the type names no longer consume ranks…
+    assert 'constructor or a void method' in dropped['optim']
+    assert 'does not declare' in dropped['pair']
+    # …nor does the argument-taking method…
+    assert 'with parameters' in dropped['optimize']
+    # …nor the void one…
+    assert 'constructor or a void method' in dropped['reset']
+    # …nor a reader that belongs to a COLLABORATOR, not to the patched class.
+    assert 'does not declare' in dropped['valueref']
+
+
+def test_the_scoped_enumeration_puts_rms_inside_the_unchanged_cap():
+    """The mechanism was the ordering, not the cap: `rms` enters at the same
+    P1B_MAX_REFERENCES the live run used."""
+    import config
+    from java.relations.reference_impl import admission_key, widening_targets
+    targets, why = widening_targets({}, [SCOPED_CHECK], SCOPED_CTX,
+                                    config.P1B_MAX_REFERENCES)
+    assert [admission_key(t) for t in targets] == ['chisquare', 'rms',
+                                                   'evaluations']
+    assert len(targets) <= config.P1B_MAX_REFERENCES
+    # The cap still binds, and the reason still reports what it dropped.
+    two, why2 = widening_targets({}, [SCOPED_CHECK], SCOPED_CTX, 2)
+    assert [admission_key(t) for t in two] == ['chisquare', 'rms']
+    assert 'outside the patched class\'s no-argument readers' in why2
+    assert 'optimize' in why2
+
+
+def test_a_context_with_no_patched_block_is_left_UNSCOPED_and_says_so():
+    """Scoping on a block that is not there would empty the widening
+    silently — the one failure this rule must not have."""
+    from java.relations.reference_impl import observables_probed_by
+    excluded = []
+    probed = observables_probed_by([CHECK_RMS, CHECK_CHI], CTX,
+                                   excluded=excluded)
+    assert 'getRMS' in probed and 'getChiSquare' in probed
+    assert excluded and excluded[0]['name'] == '*'
+    assert 'no `role="patched"` block' in excluded[0]['why']
+
+
+def test_the_enumerate_event_records_what_the_scope_excluded(monkeypatch):
+    from java import run as runmod
+    events = []
+    monkeypatch.setattr(
+        'llm.record_event',
+        lambda kind, **kw: events.append((kw.get('method'), kw.get('output'),
+                                          kw.get('detail') or {})),
+        raising=False)
+    monkeypatch.setattr(runmod, '_reference_impl_fact',
+                        lambda **kw: None, raising=False)
+    runmod._reference_impl_fact._admitted_by_method = {}
+    runmod._widen_admissions(
+        args=types.SimpleNamespace(model='m', reference_impl=True),
+        checks=[SCOPED_CHECK], class_ctx=[SCOPED_CTX],
+        failure_tests=[_mk_failure_test()], builder=object(),
+        buggy_dir='/buggy', patch_path='/p.patch')
+    enumerate_detail = [d for m, o, d in events
+                        if m == 'reference-widening' and 'widen' in (o or '')]
+    assert enumerate_detail
+    d = enumerate_detail[0]
+    assert d['targets'] == ['chisquare', 'rms', 'evaluations']
+    assert d['excluded_count'] == 5
+    assert {e['key'] for e in d['excluded']} == {
+        'optim', 'reset', 'optimize', 'pair', 'valueref'}
+    assert all(e['why'] for e in d['excluded'])
+
+
+# ---------------------------------------------------------------------------
+# READ 2 FIX 2 — the PATCH-TOUCHED observable leaves the off-defect screen
+# (§2.2, §2.3).
+#
+# Eleven archived `getRMS` candidates were discarded by the same line, the
+# same two numbers: "reference disagrees with the buggy build on off-defect
+# observable `getChiSquare` (['6.253505411815327'] vs ['1.5633763529538318'])".
+# Math-65's defect IS `getChiSquare`, so a correct `getRMS` reference must
+# disagree there — the screen discarded it for being right.
+# ---------------------------------------------------------------------------
+
+def test_the_patch_touched_observable_leaves_the_off_defect_set():
+    from java.relations.reference_impl import exempt_patch_touched
+    kept, exempted = exempt_patch_touched(
+        ['getChiSquare', 'getCovariances', 'getEvaluations',
+         'guessParametersErrors'], ['getChiSquare'])
+    assert kept == ['getCovariances', 'getEvaluations',
+                    'guessParametersErrors']
+    assert exempted == ['getChiSquare']
+    # Store-slot normalisation, the same one the admission store uses: the
+    # diff names the method, the screen may key it either way.
+    assert exempt_patch_touched(['chiSquare'], ['getChiSquare'])[1] == \
+        ['chiSquare']
+    assert exempt_patch_touched(['getChiSquare'], ['chiSquare'])[1] == \
+        ['getChiSquare']
+
+
+def test_no_patched_method_set_exempts_NOTHING():
+    """A degraded context (no touched function extracted) must leave the
+    screen reading byte for byte as it did — the fail-closed direction."""
+    from java.relations.reference_impl import exempt_patch_touched
+    off = ['getChiSquare', 'getCovariances', 'getRows']
+    assert exempt_patch_touched(off, None) == (off, [])
+    assert exempt_patch_touched(off, []) == (off, [])
+
+
+def test_disagreeing_with_buggy_on_the_PATCHED_observable_no_longer_rejects():
+    from java.relations.reference_impl import (exempt_patch_touched,
+                                               screen_reference)
+    siblings = ['getChiSquare', 'getCovariances', 'getEvaluations',
+                'guessParametersErrors']
+    ref = {'getChiSquare': ['6.253505411815327'], 'getCovariances': ['[1.0]'],
+           'getEvaluations': ['7'], 'guessParametersErrors': ['[0.004]']}
+    buggy = dict(ref, getChiSquare=['1.5633763529538318'])
+    # Today's set: discarded, naming the defect observable.
+    ok, why = screen_reference(ref, buggy, off_defect_keys=set(siblings))
+    assert ok is False and 'off-defect observable `getChiSquare`' in why
+    # With the patch-touched observable exempted: admitted on the rest.
+    off, _ex = exempt_patch_touched(siblings, ['getChiSquare'])
+    ok, why = screen_reference(ref, buggy, off_defect_keys=set(off))
+    assert ok is True and 'reproduces the buggy build on 3' in why
+
+
+def test_disagreeing_on_an_UNTOUCHED_observable_still_rejects():
+    """All other off-defect rejections are unchanged — this is the one
+    property that keeps the screen a screen."""
+    from java.relations.reference_impl import (exempt_patch_touched,
+                                               screen_reference)
+    siblings = ['getChiSquare', 'getCovariances', 'getEvaluations',
+                'guessParametersErrors']
+    ref = {'getChiSquare': ['6.25'], 'getCovariances': ['[1.0]'],
+           'getEvaluations': ['7'], 'guessParametersErrors': ['[0.004]']}
+    buggy = dict(ref, getChiSquare=['1.56'], getEvaluations=['999'])
+    off, _ex = exempt_patch_touched(siblings, ['getChiSquare'])
+    ok, why = screen_reference(ref, buggy, off_defect_keys=set(off))
+    assert ok is False and 'off-defect observable `getEvaluations`' in why
+
+
+def test_the_exemption_can_drop_a_leg_UNDER_the_count_bar_fail_closed():
+    """The measured cost of Fix 2, pinned so the live roll reads it: every
+    archived `getRMS` candidate shared exactly 3 off-defect observables, so
+    removing the patch-touched one leaves 2 and the screen refuses on the
+    COUNT bar instead of admitting. Fail-closed, and not what §2.3 predicted
+    from the 7 declared siblings — the binding quantity is what the
+    generated reference SHARES, not what the class declares."""
+    from java.relations.reference_impl import (MIN_SCREENED_OBSERVABLES,
+                                               exempt_patch_touched,
+                                               screen_reference)
+    siblings = ['getChiSquare', 'getCovariances', 'guessParametersErrors']
+    ref = {'getChiSquare': ['6.25'], 'getCovariances': ['[1.0]'],
+           'guessParametersErrors': ['[0.004]']}
+    buggy = dict(ref, getChiSquare=['1.56'])
+    off, exempted = exempt_patch_touched(siblings, ['getChiSquare'])
+    assert exempted == ['getChiSquare'] and len(off) == 2
+    ok, why = screen_reference(ref, buggy, off_defect_keys=set(off))
+    assert ok is False
+    assert f'2 off-defect observable(s) shared; ' \
+           f'{MIN_SCREENED_OBSERVABLES} required' in why
+
+
+def test_the_chain_screens_on_the_exempted_surface_at_BOTH_count_sites():
+    """One exemption, computed once: the early bar (`too_thin_to_screen`)
+    and `screen_reference`'s own count must not disagree about what the
+    off-defect set is."""
+    src = open(Path(__file__).resolve().parents[1] / 'src' / 'java'
+               / 'run.py').read()
+    assert 'screened_siblings, _exempted = exempt_patch_touched(' in src
+    assert 'too_thin_to_screen(matched, screened_siblings)' in src
+    assert 'off = [k for k in screened_siblings' in src
+    # `siblings` itself is untouched: the twin still prints them and the
+    # corroboration pins still attach to them.
+    assert 'build_state_twin_driver(\n' in src
+    assert '[method] + siblings' in src
+    # And the diff-derived set is what feeds it, at every door.
+    assert src.count('patched_methods=_patched_method_names(context)') == 3
+    assert "fn.func_name for fn in (getattr(context, 'functions'" in src
+
+
+def test_the_chain_records_the_exemption_in_its_existing_events(monkeypatch):
+    from java import run as runmod
+    events = []
+    monkeypatch.setattr(
+        'llm.record_event',
+        lambda kind, **kw: events.append((kw.get('output'), kw.get('reason'),
+                                          kw.get('detail') or {})),
+        raising=False)
+
+    class FakeHG:
+        def __init__(self, **kw): pass
+        def generate(self, msgs): return 'no class here'
+    monkeypatch.setattr('llm.HarnessGenerator', FakeHG, raising=False)
+    runmod._reference_impl_fact._memo = {}
+    runmod._reference_impl_fact._admitted_by_method = {}
+    runmod._reference_impl_fact(
+        args=types.SimpleNamespace(model='m', reference_impl=True),
+        fired='', class_ctx=[CTX], failure_tests=[_mk_failure_test()],
+        builder=object(), buggy_dir='/b', patch_path='/p.patch',
+        trusted_values=[], target_methods=['getRMS'],
+        patched_methods=['getChiSquare'])
+    surface = [(r, d) for o, r, d in events
+               if o == 'screening surface resolved']
+    assert surface
+    reason, detail = surface[0]
+    assert detail['patch_touched_exempted'] == ['getChiSquare']
+    assert 'getChiSquare' not in detail['screened_siblings']
+    assert 'PATCH-TOUCHED' in reason and 'wrong answer key' in reason
 
 
 # ---------------------------------------------------------------------------
