@@ -1,0 +1,18 @@
+# DIVCAP VALIDATION ROLL (prereg: docs/diff-divergence-capture-design-2026-08-10.md
+# gates G-V1..3) + valid-by-construction probe live canary (prereg:
+# docs/reportable-exception-prereg-2026-08-09.md, G-V2 live half).
+# READ: (1) Lang-63 two-part prediction, either half may fail independently:
+# (i) [divobs] divergence logged for reduceAndCorrect? (ii) invention targets
+# the nominated observable? Conversion hoped, NOT gated. (2) Safety: zero
+# un-demoted value-anchoring on any leg (anchors_buggy_value events); no FP
+# attributable to the flag. (3) Chart legs: valid-input-probe events must
+# appear at tier-2 convictions; same-type-on-buggy reading demotes.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl --divcap"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-63-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Chart/patch1-Chart-7-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+)
