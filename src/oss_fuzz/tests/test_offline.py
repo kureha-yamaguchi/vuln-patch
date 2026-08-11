@@ -1432,6 +1432,113 @@ def test_distinct_finding_pressure_appears_once_the_set_has_a_crash():
     print("ok  distinct-finding pressure appears only once the set has a crash")
 
 
+# --- project sampling -------------------------------------------------------
+# Built against a synthetic projects/ tree rather than the real checkout: that
+# tree is gitignored and moves upstream, so asserting on it would make these
+# tests machine-dependent and the selection itself is only reproducible for a
+# *fixed* tree anyway.
+_FAKE_PROJECTS = {
+    # name:            (language, main_repo, extra project.yaml lines, workdir)
+    "alpha":           ("c++", "https://github.com/x/alpha", "", "/src/alpha"),
+    "bravo":           ("c++", "https://github.com/x/bravo", "", "/src/bravo"),
+    "charlie":         ("c++", "https://github.com/x/charlie", "", "/src/charlie"),
+    "delta":           ("c++", "https://github.com/x/delta", "", "/src/delta"),
+    "echo":            ("c++", "https://github.com/x/echo", "", "/src/echo"),
+    "foxtrot":         ("c++", "https://github.com/x/foxtrot", "", "/src/foxtrot"),
+    # excluded, one per filter:
+    "a-c-project":     ("c", "https://github.com/x/c-proj", "", "/src/c-proj"),
+    "a-go-project":    ("go", "https://github.com/x/go-proj", "", "/src/go-proj"),
+    "an-hg-project":   ("c++", "https://hg.mozilla.org/thing", "", "/src/hg"),
+    "an-svn-project":  ("c++", "https://svn.code.sf.net/p/t/svn/", "", "/src/svn"),
+    "a-heptapod-one":  ("c++", "https://foss.heptapod.net/t/t", "", "/src/hept"),
+    "an-hg-repo-path": ("c++", "https://www.example.org/repo/hg", "", "/src/hgp"),
+    "a-disabled-one":  ("c++", "https://github.com/x/dis", "disabled: true\n", "/src/dis"),
+    "no-repo":         ("c++", "", "", "/src/norepo"),
+    "shared-workdir":  ("c++", "https://github.com/x/sw", "", "/src"),
+    "afl-only":        ("c++", "https://github.com/x/afl",
+                        "fuzzing_engines:\n  - afl\n", "/src/afl"),
+    "vulnerable-project": ("c++", "https://github.com/google/oss-fuzz", "", "/src/vp"),
+    "bad_example":     ("c++", "https://github.com/madler/zlib", "", "/src/zlib"),
+}
+
+_EXPECTED_POOL = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
+
+
+def _fake_oss_fuzz_tree():
+    """A projects/ tree with one project per eligibility outcome."""
+    import tempfile
+    root = tempfile.mkdtemp()
+    for name, (lang, repo, extra, workdir) in _FAKE_PROJECTS.items():
+        d = os.path.join(root, "projects", name)
+        os.makedirs(d)
+        with open(os.path.join(d, "project.yaml"), "w") as fh:
+            fh.write(f"language: {lang}\n")
+            if repo:
+                fh.write(f'main_repo: "{repo}"\n')
+            fh.write(extra)
+        with open(os.path.join(d, "Dockerfile"), "w") as fh:
+            fh.write(f"FROM base\nWORKDIR {workdir}\n")
+    return root
+
+
+def _pool(root):
+    from oss_fuzz.select_projects import eligible_projects
+    of = OssFuzz(oss_fuzz_dir=root, work_dir="/tmp/vp_test_wd")
+    return eligible_projects(of, ("c++",), "address", "libfuzzer")
+
+
+def test_selection_pool_excludes_every_undrivable_project():
+    pool, rejected = _pool(_fake_oss_fuzz_tree())
+    assert sorted(pool) == _EXPECTED_POOL, sorted(pool)
+    # Each exclusion is attributed, so a surprising pool size is explainable.
+    assert rejected["language"] == 1            # the 'c' one (go never reaches us)
+    assert rejected["disabled"] == 1
+    assert rejected["not-git"] == 4             # hg, svn, heptapod, /repo/hg
+    assert rejected["fixture"] == 2             # vulnerable-project, bad_example
+    assert rejected["unsupported"] == 3         # no main_repo, /src workdir, afl-only
+    print("ok  selection pool excludes non-C++, disabled, non-git, fixtures, unsupported")
+
+
+def test_selection_is_reproducible_for_a_fixed_tree():
+    from oss_fuzz.select_projects import select
+    pool, _ = _pool(_fake_oss_fuzz_tree())
+    assert select(pool, 4, 42) == select(pool, 4, 42)
+    # A different seed must actually reshuffle, or "seed 42" means nothing.
+    assert select(pool, 4, 42) != select(pool, 4, 7)
+    # Filesystem order must not leak in: the same set in any order selects alike.
+    assert select(list(reversed(pool)), 4, 42) == select(pool, 4, 42)
+    print("ok  selection is reproducible and order-independent")
+
+
+def test_raising_the_count_extends_the_selection():
+    # shuffle-then-take, not random.sample: growing -n must keep the earlier
+    # projects so a widened sweep is a superset of the narrower one.
+    from oss_fuzz.select_projects import select
+    pool, _ = _pool(_fake_oss_fuzz_tree())
+    assert select(pool, 5, 42)[:2] == select(pool, 2, 42)
+    # Asking for more than exists yields the whole pool, not an error.
+    assert sorted(select(pool, 999, 42)) == _EXPECTED_POOL
+    print("ok  raising the count extends rather than replaces the selection")
+
+
+def test_clonable_with_git_keeps_real_git_hosts():
+    from oss_fuzz.select_projects import clonable_with_git
+    # Gitiles/Gitea/git:// and self-hosted /git/ paths are real git: rejecting
+    # them would drop 21 of the pool's 26 non-GitHub projects.
+    for ok in ("https://chromium.googlesource.com/angle/angle",
+               "https://gitea.osgeo.org/geos/geos",
+               "git://people.freedesktop.org/~dvdhrm/libtsm",
+               "https://www.bearssl.org/git/BearSSL",
+               "https://github.com/madler/zlib"):
+        assert clonable_with_git(ok), ok
+    for bad in ("https://hg.mozilla.org/projects/nss",
+                "https://svn.code.sf.net/p/lame/svn/trunk/lame",
+                "https://foss.heptapod.net/graphicsmagick/graphicsmagick",
+                "https://www.mercurial-scm.org/repo/hg"):
+        assert not clonable_with_git(bad), bad
+    print("ok  git-clonability check keeps Gitiles/Gitea/git:// and drops hg/svn")
+
+
 def _ctx_for_prompt():
     from oss_fuzz.analysis import PatchContext
     return PatchContext(language="c++", patch_text="--- a\n+++ b\n",

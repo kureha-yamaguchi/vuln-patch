@@ -12,11 +12,20 @@
 #   logs/<project>.rc    its exit code (also the "already done" marker)
 #   results.jsonl        appended by the pipeline itself
 #   summary.md           status table
+#   projects.list        the resolved project list, reused when resuming
+#
+# The project list is not a checked-in file. oss_fuzz.select_projects samples it
+# from the OSS-Fuzz checkout, so NUM_PROJECTS/SELECT_SEED reproduce a sweep and
+# nobody has to maintain a list by hand. The resolved names are written to
+# projects.list in the run directory, and a resumed run reuses that file rather
+# than re-sampling -- otherwise pulling the checkout mid-sweep would silently
+# change which projects the run was about.
 #
 # Usage:
-#   ./run_ossfuzz_suite.sh                     # the default project list
+#   ./run_ossfuzz_suite.sh                     # 20 C++ projects, seed 42
 #   ./run_ossfuzz_suite.sh libxml2 expat       # just these
-#   ./run_ossfuzz_suite.sh -f suites/my.projects
+#   ./run_ossfuzz_suite.sh -f suites/my.projects            # an explicit list
+#   NUM_PROJECTS=5 SELECT_SEED=7 ./run_ossfuzz_suite.sh     # a different sample
 #   ./run_ossfuzz_suite.sh -d                  # dry run: no Docker/LLM/network
 #   ./run_ossfuzz_suite.sh -o runs/ossfuzz_20260810_120000   # resume that dir
 #
@@ -35,10 +44,12 @@ VERIFY_TIMEOUT="${VERIFY_TIMEOUT:-120}"     # secs per harness, vulnerable build
 FUZZ_TIMEOUT="${FUZZ_TIMEOUT:-600}"         # secs per accepted harness on HEAD
 MAX_TARGET_TRIES="${MAX_TARGET_TRIES:-8}"   # OSV records to walk per project
 PROJECT_TIMEOUT="${PROJECT_TIMEOUT:-7200}"  # hard wall-clock cap per project
+NUM_PROJECTS="${NUM_PROJECTS:-5}"          # projects to sample when none given
+SELECT_SEED="${SELECT_SEED:-42}"            # sampling seed; fixes which ones
 export OSS_FUZZ_DIR="${OSS_FUZZ_DIR:-$ROOT_DIR/oss-fuzz}"
 
 # --- 2. command line --------------------------------------------------------
-PROJECTS_FILE="$ROOT_DIR/suites/ossfuzz_cpp20.projects"
+PROJECTS_FILE=""                            # -f: an explicit list, else sample
 RUN_DIR=""
 DRY_RUN=0
 
@@ -53,22 +64,9 @@ while getopts "f:o:dh" opt; do
 done
 shift $((OPTIND - 1))
 
-# --- 3. build the project list ----------------------------------------------
-# Positional arguments win over the file, so one project can be re-run without
-# editing anything.
-PROJECTS=("$@")
-if [ "${#PROJECTS[@]}" -eq 0 ]; then
-  [ -f "$PROJECTS_FILE" ] || { echo "FATAL: no project list '$PROJECTS_FILE'" >&2; exit 1; }
-  while IFS= read -r line; do
-    line="${line%%#*}"                                # strip comments
-    line="${line//[[:space:]]/}"
-    [ -n "$line" ] && PROJECTS+=("$line")
-  done < "$PROJECTS_FILE"
-fi
-[ "${#PROJECTS[@]}" -gt 0 ] || { echo "FATAL: no projects to run" >&2; exit 1; }
-
-# --- 4. preflight -----------------------------------------------------------
+# --- 3. preflight -----------------------------------------------------------
 # Fail the whole sweep in seconds rather than one project at a time, hours in.
+# Environment only; the per-project checks wait until section 5 has a list.
 [ -f "$OSS_FUZZ_DIR/infra/helper.py" ] || {
   echo "FATAL: \$OSS_FUZZ_DIR ('$OSS_FUZZ_DIR') is not a google/oss-fuzz clone" >&2
   echo "  git clone --depth 1 https://github.com/google/oss-fuzz $ROOT_DIR/oss-fuzz" >&2
@@ -78,18 +76,56 @@ command -v uv >/dev/null || { echo "FATAL: uv not on PATH" >&2; exit 1; }
 if [ "$DRY_RUN" -eq 0 ]; then
   docker info >/dev/null 2>&1 || { echo "FATAL: Docker daemon not reachable" >&2; exit 1; }
 fi
-for p in "${PROJECTS[@]}"; do
-  [ -f "$OSS_FUZZ_DIR/projects/$p/project.yaml" ] || {
-    echo "FATAL: '$p' is not in the oss-fuzz checkout" >&2; exit 1; }
-done
 
-# --- 5. create the run directory --------------------------------------------
+# --- 4. create the run directory --------------------------------------------
 # -o an existing directory to resume: projects with a .rc there are skipped.
 [ -n "$RUN_DIR" ] || RUN_DIR="$ROOT_DIR/runs/ossfuzz_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$RUN_DIR/logs" || exit 1
 RUN_DIR="$(cd "$RUN_DIR" && pwd)"
 RESULTS="$RUN_DIR/results.jsonl"
 SUMMARY="$RUN_DIR/summary.md"
+PROJECTS_LIST="$RUN_DIR/projects.list"
+
+# --- 5. resolve the project list ---------------------------------------------
+# Precedence: positional args, then -f, then this run's own projects.list, then
+# a fresh sample. Positionals win so one project can be re-run without editing
+# anything; projects.list beats sampling so resuming a run cannot change what
+# the run was about, even if the OSS-Fuzz checkout moved underneath it.
+read_list() {                            # strip '#' comments and whitespace
+  while IFS= read -r line; do
+    line="${line%%#*}"
+    line="${line//[[:space:]]/}"
+    [ -n "$line" ] && PROJECTS+=("$line")
+  done < "$1"
+}
+
+PROJECTS=("$@")
+if [ "${#PROJECTS[@]}" -eq 0 ] && [ -n "$PROJECTS_FILE" ]; then
+  [ -f "$PROJECTS_FILE" ] || { echo "FATAL: no project list '$PROJECTS_FILE'" >&2; exit 1; }
+  read_list "$PROJECTS_FILE"
+fi
+if [ "${#PROJECTS[@]}" -eq 0 ] && [ -s "$PROJECTS_LIST" ]; then
+  echo "reusing the selection already recorded in $PROJECTS_LIST"
+  read_list "$PROJECTS_LIST"
+fi
+if [ "${#PROJECTS[@]}" -eq 0 ]; then
+  echo "sampling $NUM_PROJECTS C++ projects (seed $SELECT_SEED)"
+  # Names on stdout, provenance on stderr (so it lands in the terminal). The
+  # subshell cd is what lets 'uv run -m' resolve the package without moving
+  # this script's cwd, which section 6 still needs.
+  mapfile -t PROJECTS < <(cd "$ROOT_DIR/src" && uv run -m oss_fuzz.select_projects \
+                            -n "$NUM_PROJECTS" --seed "$SELECT_SEED")
+fi
+[ "${#PROJECTS[@]}" -gt 0 ] || { echo "FATAL: no projects to run" >&2; exit 1; }
+
+for p in "${PROJECTS[@]}"; do
+  [ -f "$OSS_FUZZ_DIR/projects/$p/project.yaml" ] || {
+    echo "FATAL: '$p' is not in the oss-fuzz checkout" >&2; exit 1; }
+done
+
+# Written before the first (long) project, so an interrupted sweep still records
+# what it set out to do.
+printf '%s\n' "${PROJECTS[@]}" > "$PROJECTS_LIST"
 
 # --- 6. run each project ----------------------------------------------------
 # The pipeline's exit code IS the result, so it is recorded per project:
@@ -146,6 +182,8 @@ done
   echo "# OSS-Fuzz crashing-bug suite — $(basename "$RUN_DIR")"
   echo
   echo "\`-n $TARGET_SUCCESSES -m $MAX_ATTEMPTS --skip-semantic\`, cap ${PROJECT_TIMEOUT}s/project."
+  echo
+  echo "Projects: ${#PROJECTS[@]} (seed $SELECT_SEED, oss-fuzz \`$(git -C "$OSS_FUZZ_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)\`)."
   echo
   echo "| project | status |"
   echo "|---|---|"

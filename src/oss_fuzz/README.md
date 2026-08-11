@@ -350,18 +350,40 @@ crashing bugs only:
 
 ```bash
 export OSS_FUZZ_DIR=$PWD/oss-fuzz OPENAI_API_KEY=sk-...
-./run_ossfuzz_suite.sh                  # the 20 C++ projects in suites/ossfuzz_cpp20.projects
+./run_ossfuzz_suite.sh                  # 20 sampled C++ projects, seed 42
+./run_ossfuzz_suite.sh libxml2 expat    # just these
 ./run_ossfuzz_suite.sh -d               # dry run: exercises the whole sweep without Docker or an LLM
-./run_ossfuzz_suite.sh -r runs/ossfuzz_20260810_120000   # resume an interrupted sweep
+./run_ossfuzz_suite.sh -o runs/ossfuzz_20260810_120000   # resume an interrupted sweep
+NUM_PROJECTS=5 SELECT_SEED=7 ./run_ossfuzz_suite.sh      # a different sample
 ```
 
-Everything lands in `runs/ossfuzz_<timestamp>/`: `config.txt` (flags, both git
-SHAs, model), `logs/<project>.log` for every run, the shared `results.jsonl`,
-and a `summary.md` rewritten after each project so it can be read while the
-sweep is still going. Each project's exit code is kept as its status, so
-`infra-error` (2) and `timeout` never get averaged in with a real `clean` (0).
-It runs projects sequentially on purpose — `helper.py` builds into one shared
-`build/out/` tree — so budget hours, not minutes, and start it under tmux.
+The project list is sampled. `oss_fuzz.select_projects` draws
+`NUM_PROJECTS` from the checkout's eligible C++ projects under `SELECT_SEED`, so
+a sweep is reproducible without a file anyone has to maintain:
+
+```bash
+cd src && uv run -m oss_fuzz.select_projects        # print the selection and why
+```
+
+Eligibility is `OssFuzz.check_support` — language, engine, sanitizer,
+`main_repo`, and the Dockerfile `WORKDIR` rule that makes `helper.py` refuse a
+local checkout — plus three exclusions of its own: `disabled: true`, OSS-Fuzz's
+own test fixtures (`vulnerable-project` and friends ship planted bugs), and
+`main_repo` URLs that `git clone` cannot handle (10 C++ projects are hg or svn).
+That leaves 378 of the checkout's 590 C/C++ projects at commit `8915eb62`.
+
+Reproducibility is per-checkout: the sample is a function of the seed *and* of
+`projects/`, so pulling OSS-Fuzz can change it. Both the seed and the checkout
+commit go into the run's `summary.md`; quote them together when reporting a run.
+
+Everything lands in `runs/ossfuzz_<timestamp>/`: `projects.list` (the resolved
+selection, written before the first project and reused on `-o` so a resumed
+sweep cannot silently re-sample), `logs/<project>.log` for every run, the shared
+`results.jsonl`, and `summary.md`. Each project's exit code is kept as its
+status, so `infra-error` (2) and `timeout` never get averaged in with a real
+`clean` (0). It runs projects sequentially on purpose — `helper.py` builds into
+one shared `build/out/` tree — so budget hours, not minutes, and start it under
+tmux.
 
 The project list is a plain data file; every entry in the default one was
 checked for `language: c++`, a Dockerfile WORKDIR that is not `$SRC`, and at
