@@ -141,3 +141,22 @@ Corrected gates, judged on a mechb-only study re-run:
 - **G-D2':** mechb Chart-19-o doc-guarded relations STILL fire tier-2
   on the patched build (indexOf documents nothing) — the guard must not
   eat the genuine catch while sparing the documented one.
+
+---
+
+## Pre-registration (2026-08-11): the valid-by-construction probe
+
+8.41's Chart-7-c/Chart-26-c FPs (confirmed NOT doubly-flagged in 8.43):
+a tier-2/unexpected-exception firing on an input the relation wrongly
+declared valid. Fix: before such a firing may convict, replay the SAME
+input through the SAME check compiled against the BUGGY build; if the
+buggy build raises the SAME exception type at the same patched-class
+frame, the input was never valid — record `[fact:input-invalid-on-both]`
+and DEMOTE the firing to a rejection (not terminal-dismiss; judge sees
+the fact). Different/no exception on buggy → fact states that
+(discriminating, conviction stands). Infrastructure failure → no fact,
+unchanged. Gates: G-V1 pytest green, no judge-prompt changes; G-V2
+(offline where archived inputs allow, else unit + live canary):
+Chart-7-c/Chart-26-c tier-2 firings read invalid-on-both; G-V3 zero
+demotions of any archived genuine tier-2 catch (the 11 Chart-19
+firings must all read discriminating — buggy returns -1, no throw).
