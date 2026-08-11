@@ -1151,9 +1151,23 @@ class OssFuzz:
                                run_name)
         if not self.dry_run and not os.path.exists(out_bin):
             # The build succeeded but named the binary something other than the
-            # source stem. Retrying cannot help, so abort rather than spend the
-            # attempt budget, and name what IS there so the fix is obvious.
+            # source stem. Often it merely decorated the stem — rawspeed's CMake
+            # names every target '<Stem>Fuzzer' — and a unique such target is
+            # safe to adopt: it is the binary built from the file we just
+            # overwrote. Recorded on the placement so run_fuzzer agrees, and so
+            # later attempts resolve it directly.
             avail = self._out_targets(project)
+            decorated = [t for t in avail if run_name in t]
+            if len(decorated) == 1:
+                print(f"  the build named it '{decorated[0]}', not "
+                      f"'{run_name}'; using that")
+                placement.target_name = decorated[0]
+                self.last_build_stderr = ""
+                return os.path.join(self.oss_fuzz_dir, "build", "out", project,
+                                    decorated[0])
+            # Ambiguous or absent: retrying cannot help, so abort rather than
+            # spend the attempt budget, and name what IS there so the fix is
+            # obvious.
             self.last_build_stderr = ""
             self.last_build_infra_error = (
                 f"the build produced no target named '{run_name}' (present: "

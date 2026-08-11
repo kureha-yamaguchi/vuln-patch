@@ -252,9 +252,11 @@ Three things `overwrite` has to get right:
 
 - **The binary keeps the replaced file's name**, not ours — the build system
   names it after the file it compiled. Asking `helper.py` to run
-  `vp_harness_3` would look for a target that does not exist. If the expected
-  name is missing after a successful build, the run stops and lists the names
-  that *are* there.
+  `vp_harness_3` would look for a target that does not exist. Some build systems
+  decorate the stem instead of using it verbatim (rawspeed's CMake compiles
+  `DngOpcodes.cpp` into `DngOpcodesFuzzer`); if exactly one built target embeds
+  the stem, that is the binary built from our file and it is adopted. Otherwise
+  the run stops and lists the names that *are* there.
 - **The file extension decides the language**, not the project's declared
   language. A C++ body written into a `.c` file will not compile, so the prompt
   follows the extension.

@@ -1018,36 +1018,66 @@ def test_overwrite_build_restores_the_original_harness_and_names_the_binary():
         print("ok  overwrite build restores the tree and names the binary 'xml'")
 
 
-def test_overwrite_build_aborts_when_the_expected_target_is_absent():
-    """A build that succeeds but produces no target under the inferred name is a
-    configuration problem, not a harness problem: abort, don't burn attempts."""
+def _overwrite_of(tmp, built):
+    """An OssFuzz whose build produces exactly ``built`` as targets."""
+    co_dir = os.path.join(tmp, "checkout")
+    _tree(co_dir, {"fuzz/xml.c": HARNESS_BODY})
+    co = Checkout(label="vuln", path=co_dir, commit="abc")
+    of_dir = _mk_oss_fuzz(tmp, "libxml2", LIBXML2_BUILD_SH)
+    of = OssFuzz(oss_fuzz_dir=of_dir, work_dir=os.path.join(tmp, "wd"))
+
+    def fake_build(project, checkout, sanitizer, log_tag):
+        out = os.path.join(of_dir, "build", "out", project)
+        os.makedirs(out, exist_ok=True)
+        for name in built:
+            path = os.path.join(out, name)
+            with open(path, "w") as fh:
+                fh.write("#!/bin/sh\n")
+            os.chmod(path, 0o755)
+        return True
+
+    of._run_build = fake_build
+    return of, co, of.plan_harness("libxml2", co, "xml", ".cc")
+
+
+def test_overwrite_build_adopts_a_decorated_target_name():
+    """rawspeed's CMake compiles DngOpcodes.cpp into 'DngOpcodesFuzzer'. The
+    stem cannot predict that, but a single built target embedding the stem is
+    the binary built from the file we overwrote, so adopt it rather than abort
+    the project (the 20260811 run died here)."""
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
-        co_dir = os.path.join(tmp, "checkout")
-        _tree(co_dir, {"fuzz/xml.c": HARNESS_BODY})
-        co = Checkout(label="vuln", path=co_dir, commit="abc")
-        of_dir = _mk_oss_fuzz(tmp, "libxml2", LIBXML2_BUILD_SH)
-        of = OssFuzz(oss_fuzz_dir=of_dir, work_dir=os.path.join(tmp, "wd"))
-        placement = of.plan_harness("libxml2", co, "xml", ".cc")
+        of, co, placement = _overwrite_of(tmp, ["xmlFuzzer", "htmlFuzzer"])
+        out_bin = of.build_harness("libxml2", co, "vp_harness_1", "SRC\n",
+                                   ".cc", "address", placement=placement)
+        assert out_bin and out_bin.endswith("xmlFuzzer"), out_bin
+        # run_fuzzer must ask for the same name, now and on later attempts.
+        assert placement.runtime_name("vp_harness_1") == "xmlFuzzer"
+        assert of.last_build_infra_error is None
+        print("ok  overwrite adopts a decorated target name")
 
-        def fake_build(project, checkout, sanitizer, log_tag):
-            out = os.path.join(of_dir, "build", "out", project)
-            os.makedirs(out, exist_ok=True)
-            other = os.path.join(out, "xml_differently_named")
-            with open(other, "w") as fh:
-                fh.write("#!/bin/sh\n")
-            os.chmod(other, 0o755)
-            return True
 
-        of._run_build = fake_build
+def test_overwrite_build_aborts_when_the_expected_target_is_absent():
+    """A build that succeeds but produces no target relatable to the inferred
+    name is a configuration problem, not a harness problem: abort, don't burn
+    attempts. Two targets embedding the stem are equally unresolvable."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        of, co, placement = _overwrite_of(tmp, ["totally_unrelated"])
         assert of.build_harness("libxml2", co, "vp_harness_1", "SRC\n", ".cc",
                                 "address", placement=placement) is None
         infra = of.last_build_infra_error
         assert infra and "no target named 'xml'" in infra, infra
-        assert "xml_differently_named" in infra, infra
+        assert "totally_unrelated" in infra, infra
         # Classified as infra, so nothing is fed back to the model as a compile
         # error it could never fix.
         assert of.last_build_stderr == ""
+
+    with tempfile.TemporaryDirectory() as tmp:
+        of, co, placement = _overwrite_of(tmp, ["xml_a", "xml_b"])
+        assert of.build_harness("libxml2", co, "vp_harness_1", "SRC\n", ".cc",
+                                "address", placement=placement) is None
+        assert of.last_build_infra_error, of.last_build_infra_error
         print("ok  overwrite aborts on a target-name mismatch")
 
 
