@@ -551,6 +551,16 @@ def test_infra_errors_are_not_mistaken_for_compile_errors():
              "/src/x/vp_harness_1.cc:5:1: fatal error: 'capstone.h' file not "
              "found")
     assert _infra_error(mixed) is None
+    # But an undefined reference from inside a prebuilt system archive is a
+    # toolchain mismatch: glibc 2.39's libm.a ifunc resolvers want
+    # _dl_x86_cpu_features, and wireshark's OWN fuzzshark targets fail this way,
+    # so no harness rewrite can help. Verified against the 20260811 run, which
+    # spent 15/15 attempts on it.
+    libm = ("/usr/bin/ld: /usr/lib/x86_64-linux-gnu/libm-2.39.a(s_ceil.o): in "
+            "function `__ceil_ifunc':\n"
+            "(.text+0x6): undefined reference to `_dl_x86_cpu_features'\n"
+            "clang++: error: linker command failed with exit code 1")
+    assert _infra_error(libm)
     print("ok  infra vs compile error classification")
 
 

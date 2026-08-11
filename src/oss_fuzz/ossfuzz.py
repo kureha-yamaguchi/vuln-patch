@@ -434,6 +434,17 @@ _INFRA_ERROR_RES = (
     re.compile(r"\[vuln-patch\] TIMEOUT: command exceeded \d+s.*"),
 )
 
+# An undefined reference from *inside* a prebuilt system archive is a toolchain
+# mismatch, not a harness bug: nothing in generated source changes what glibc's
+# own libm.a references. glibc 2.39 ships ifunc resolvers in libm.a that need
+# _dl_x86_cpu_features from a static libc, so a -no-pie link pulling libm.a
+# alone fails — wireshark's OWN fuzzshark targets fail exactly this way, and the
+# 20260811 run spent all 15 attempts "repairing" a harness that was never at
+# fault. ld names the referencing object on the 'in function' line and the
+# symbol on the next, so the two are matched separately.
+_SYSTEM_ARCHIVE_REF_RE = re.compile(
+    r"(/usr/(?:local/)?lib/\S*\.a)\([^)]*\): in function ")
+
 # If the output contains real compiler diagnostics, it IS a harness problem
 # even when an infra-looking line is also present.
 _COMPILER_DIAG_RE = re.compile(
@@ -470,6 +481,13 @@ def _build_error_excerpt(combined: str, limit: int = 2500) -> str:
 def _infra_error(combined: str) -> Optional[str]:
     """The infrastructure failure in ``combined``, or None if it looks like a
     genuine compile failure the model could plausibly fix."""
+    # Before the compiler-diagnostic gate, which counts every undefined
+    # reference as the harness's fault: this one cannot be.
+    m = _SYSTEM_ARCHIVE_REF_RE.search(combined)
+    if m and "undefined reference to" in combined:
+        return (f"the link failed on undefined references from the prebuilt "
+                f"system archive {m.group(1)}, which no harness source can "
+                f"affect (toolchain/base-image mismatch)")
     if _COMPILER_DIAG_RE.search(combined):
         return None
     for rx in _INFRA_ERROR_RES:
