@@ -1792,6 +1792,22 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.45 P1B LIVE ROLL (G-P5/6) — gate live and SAFE, but never aimed: the FPs changed channel (run p1b_live_20260811_012407, archived; 1,367,171 tokens)
+Outcomes Math-65-c FP/FP/FP, Chart legs TN. Widening WORKS partially:
+chisquare admitted 2/3 legs (was 1/3), valueref x2, pointref x1 — RMS
+still ZERO admissions ever. THE CENTRAL FINDING: all 12
+reference-firing-state events read NOT RUN — "no
+[fact:rate-indiscriminate] on this conviction" — because THIS draw's
+convictions are HARNESS-channel oracles ([oracle:circle-chisquare]
+FuzzerSecurityIssue), not relation-replay firings; the rate fact is
+stamped only on relation firings. The Math-65 FP lottery moved
+channels. The gate reads byte-for-byte as today when unaimed (safe,
+verified live). OPEN DESIGN QUESTIONS for the next round: (i) rate
+measurement + the firing-state reading for HARNESS-channel
+convictions; (ii) why no rms reference is ever admitted (the screen
+step rejects or never requests it — read the widening events); both
+desk-readable from this archive before any build. USER-GATED.
+
 ### 8.44 P1B STEP-2 COVERAGE ROLL — store works, coverage thin (run p1b_coverage_20260810_205658, archived; 1,453,909 tokens)
 Outcomes Math-65-c FP/TN/FP, Chart legs TN (no gate built yet — expected).
 THE MEASUREMENT: admissions now record per observable — but ONE admission
