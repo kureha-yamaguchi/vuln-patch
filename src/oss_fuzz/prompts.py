@@ -75,6 +75,13 @@ class LibFuzzerPromptBuilder:
                 context.root_cause_reachable,
                 covered_functions, found_signatures))
 
+        # The campaign refuses a harness that re-finds a listed crash, so say
+        # so: a gate the model cannot see spends attempts teaching it nothing.
+        # Only once the set HAS a finding — as the first harness's instruction
+        # it would read as "avoid the bug you were sent here to reach".
+        if found_signatures:
+            sections.append(self._distinct_finding_block(is_c))
+
         # The oracle section is the fork. Crashing bugs keep the optional
         # metamorphic nudge; semantic bugs get a mandatory contract instead,
         # because for them the oracle IS the harness's reason to exist.
@@ -194,6 +201,34 @@ class LibFuzzerPromptBuilder:
             "NUL-terminated).",
             "For C++ targets you MAY use "
             "`FuzzedDataProvider` from <fuzzer/FuzzedDataProvider.h> instead.",
+        ])
+
+    def _distinct_finding_block(self, is_c: bool) -> str:
+        """Two ways to be a new harness rather than another copy of an old one.
+
+        Stated as the two moves that are actually available, because "be
+        different" on its own tends to produce a re-skin: the same call sequence
+        with renamed locals, which reaches the same fault and is rejected. The
+        second move matters most on a set that has already found its crash —
+        it is the only way to add evidence without a second reachable fault,
+        and it is what the Java front-end's steering asks for in the same spot.
+        """
+        trap = "abort()" if is_c else "std::abort()"
+        return "\n".join([
+            "DISTINCT FINDING REQUIRED. The crashes listed above are already "
+            "in this set. A harness that reproduces one of them is REJECTED "
+            "however different its code, because it adds no evidence about "
+            "what the fix missed. Two ways to win:",
+            "  1. reach a DIFFERENT fault in the region — another crash type, "
+            "or the same type at a different innermost frame (a sibling "
+            "function, a different entry path into the touched code, a "
+            "different API-call order);",
+            "  2. keep this path and add a check no sanitizer performs: a "
+            "relation true of any correct implementation, reported as "
+            '`fprintf(stderr, "[oracle:<id>] <what disagreed>\\n"); '
+            f"{trap};`. This is the only way a set whose one reachable crash "
+            "is already found can still add evidence — and it is what catches "
+            "a fix that merely suppressed the reported symptom.",
         ])
 
     def _metamorphic_block(self, uncertain: bool = False) -> str:

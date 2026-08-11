@@ -153,6 +153,24 @@ compiles — is the same as in the Java pipeline, and `campaign.py` is the only
 thing that decides it. The static analysis only steers; it never decides whether
 a harness is good.
 
+One condition is on top of the Java rule: the crash has to be one the set does
+not already have. `-n 5` asks for five pieces of *evidence*, and without this a
+model that returns the same harness five different ways satisfies it with one —
+each copy then costing a HEAD build and being counted again in the sibling
+total. The gate compares the crash signature (already computed for steering), so
+it is a set lookup, and it fails open on a crash whose signature could not be
+read: an unreadable report is never treated as a duplicate, because failing
+closed there would let one unparseable crash stall the campaign to
+`--max-attempts`. When it fires, the model is told which two moves are open to
+it — reach a different fault, or keep the path and add a tagged `[oracle:<id>]`
+check — since a gate the model cannot see just spends attempts.
+
+Java has no such gate. It had the analogous one on check *families* and deleted
+it (2026-08-06) after 458 evaluations rejected nothing; only its prompt-side
+pressure survives. That is the likely outcome here too, which is why this gate
+is a string comparison rather than an analysis — cheap enough to be worth
+keeping even if it never fires, and it fixes the evidence count either way.
+
 **Steering is not byte-identical across the two front-ends, and no longer claims
 to be.** `variant.py` was extracted from the Java `PromptBuilder` so this
 front-end would not fork a second copy of the rule, but the Java side was never

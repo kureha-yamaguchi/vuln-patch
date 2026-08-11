@@ -1362,6 +1362,76 @@ def test_crashing_campaign_is_unchanged_by_the_split():
     print("ok  crashing campaign unaffected by the oracle gate")
 
 
+def test_campaign_refuses_a_harness_that_refinds_a_known_crash():
+    """`target_successes` is a count of EVIDENCE, so five harnesses that all
+    re-find one crash must not satisfy it. Each would also cost a HEAD build
+    and be counted again in the sibling total."""
+    from oss_fuzz.campaign import HarnessCampaign
+    from oss_fuzz.ossfuzz import RunOutcome
+    sigs = ["ASan:heap-buffer-overflow@parse",   # accepted: new
+            "ASan:heap-buffer-overflow@parse",   # refused: already have it
+            None,                                # accepted: unreadable, so we
+            None,                                #   cannot show it is a repeat
+            "ASan:heap-use-after-free@free_it"]  # accepted: new
+    built, prompts_seen = [], []
+
+    class _Gen:
+        def generate(self, messages):
+            prompts_seen.append(messages[-1]["content"])
+            return ("```c\nint LLVMFuzzerTestOneInput(const uint8_t *d, "
+                    "size_t s){ parse(d, s); return 0; }\n```")
+
+    class _Of:
+        last_build_stderr = ""
+        last_build_infra_error = None
+
+        def build_harness(self, project, checkout, name, source, ext,
+                          sanitizer, placement=None):
+            built.append(name)
+            return "/out/" + name
+
+        def run_fuzzer(self, project, harness_name, seconds, sanitizer,
+                       bug_class=None):
+            return RunOutcome(triggered=True, timed_out=False, returncode=1,
+                              crash_reason="ASan",
+                              signature=sigs[len(built) - 1],
+                              found_by="sanitizer")
+
+    camp = HarnessCampaign(generator=_Gen(), oss_fuzz=_Of(), project="demo",
+                           vuln_checkout=None, sanitizer="address", ext=".c",
+                           target_successes=4, max_attempts=5)
+    res = camp.run(lambda covered, sigs_: [{"role": "user", "content": "x"}])
+    assert res.attempts == 5, res.attempts
+    assert res.achieved == 4, [g.signature for g in res.successful]
+    # The duplicate is gone; the two unreadable ones survive (fail open).
+    assert [g.signature for g in res.successful] == [
+        "ASan:heap-buffer-overflow@parse", None, None,
+        "ASan:heap-use-after-free@free_it"]
+    # ...and the rejection told the model what to do instead.
+    assert "already found" in prompts_seen[2], prompts_seen[2]
+    print("ok  campaign refuses a harness that re-finds a known crash")
+
+
+def test_distinct_finding_pressure_appears_once_the_set_has_a_crash():
+    """The gate is invisible to the model unless the prompt says so — but as the
+    FIRST harness's instruction it would read as 'avoid the bug you were sent
+    to reach'."""
+    ctx = _ctx_for_prompt()
+    ctx.root_cause_reachable = ["demo_parse"]
+    b = LibFuzzerPromptBuilder(language="c")
+
+    def build(signatures):
+        return b.build(context=ctx, covered_functions=[],
+                       found_signatures=signatures, harness_name="h",
+                       harness_ext=".c")[1]["content"]
+
+    assert "DISTINCT FINDING REQUIRED" not in build([])
+    later = build(["ASan:heap-buffer-overflow@parse"])
+    assert "DISTINCT FINDING REQUIRED" in later
+    assert "[oracle:<id>]" in later     # the second way to win is spelled out
+    print("ok  distinct-finding pressure appears only once the set has a crash")
+
+
 def _ctx_for_prompt():
     from oss_fuzz.analysis import PatchContext
     return PatchContext(language="c++", patch_text="--- a\n+++ b\n",

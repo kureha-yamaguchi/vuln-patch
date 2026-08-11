@@ -5,7 +5,10 @@ harness, build it against the *vulnerable* checkout, and accept it only if it
 actually crashes there (the trigger gate). On a build failure we feed the
 compiler stderr back for repair; on a compile-but-no-crash we re-steer via the
 prompt factory toward an uncovered part of the root-cause region. Acceptance =
-"compiles AND triggers on the vulnerable build", exactly as in the Java flow.
+"compiles AND triggers on the vulnerable build", exactly as in the Java flow,
+AND finds a crash the set does not already have — see the distinct-finding gate
+in ``run``, without which ``target_successes`` counts harnesses rather than
+findings.
 """
 from __future__ import annotations
 
@@ -83,6 +86,14 @@ class CampaignResult:
 
     @property
     def signatures(self) -> List[str]:
+        """The distinct crashes the set has found, in acceptance order.
+
+        Distinct by construction — the campaign's distinct-finding gate refuses
+        a harness whose signature is already in here — which is what lets
+        ``achieved`` be read as a count of evidence rather than of harnesses.
+        It is also the steering input, so duplicates here would tell the model
+        the same ground twice and inflate what looks covered.
+        """
         return [g.signature for g in self.successful if g.signature]
 
     @property
@@ -202,6 +213,33 @@ class HarnessCampaign:
             outcome = self.of.run_fuzzer(
                 self.project, run_name, self.verify_seconds, self.sanitizer,
                 bug_class=self.bug_class)
+            if outcome.triggered and outcome.signature in result.signatures:
+                # Distinct-finding gate. Five harnesses that all re-find one
+                # crash satisfy `target_successes=5` while carrying one piece
+                # of evidence, and each one then costs a HEAD build and gets
+                # counted again in the sibling total. The signature is already
+                # computed, so this is a set lookup — cheap enough to be worth
+                # keeping even if it turns out to reject nothing, which is what
+                # happened to the Java front-end's analogous family gate
+                # (deleted 2026-08-06 after 458 inert evaluations).
+                #
+                # Only ever fires on a signature we could actually read: an
+                # unreadable one is None, never `in` the list, so it is
+                # accepted. Failing closed there would let one unparseable
+                # crash report stall the campaign to max_attempts.
+                print(f"  triggers, but re-finds a crash the set already has "
+                      f"[{outcome.signature}]; steering off it")
+                repair_context = (
+                    f"That harness works, but it reproduces "
+                    f"`{outcome.signature}` — a crash this set has already "
+                    "found, so it adds no new evidence about what the fix "
+                    "missed. Win a DIFFERENT way: either reach a different "
+                    "fault in the region (different crash type, or a different "
+                    "innermost frame), or keep this path and add a tagged "
+                    '`[oracle:<id>]` check that fires where no sanitizer does. '
+                    "Re-output the complete file as one code block.")
+                continue
+
             if outcome.triggered:
                 print(f"  ACCEPTED — triggers on vulnerable build "
                       f"[{outcome.signature or outcome.crash_reason}] "
