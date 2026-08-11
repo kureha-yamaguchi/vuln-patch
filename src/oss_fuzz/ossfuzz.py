@@ -1109,8 +1109,10 @@ class OssFuzz:
         # printing stderr alone loses the actual error. Persist everything and
         # surface the lines that matter.
         combined = f"{proc.stdout}\n{proc.stderr}"
+        # Project-qualified: work_dir is shared across a sweep, so without it the
+        # next project's attempt N silently overwrites this one's evidence.
         log_path = os.path.join(
-            self.work_dir, f"build_{checkout.label}_{log_tag}.log")
+            self.work_dir, f"build_{project}_{checkout.label}_{log_tag}.log")
         try:
             with open(log_path, "w") as fh:
                 fh.write(combined)
