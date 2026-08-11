@@ -1,0 +1,112 @@
+# HOLDOUT SUITE — the 27 side=holdout bugs of suites/splits/semantic_split.jsonl.
+# ASSEMBLED 2026-08-11; NOT YET RUN.
+#
+# RUN-ONCE / ANALYSE-ONLY (hard rule): this suite is run ONCE. Its output may
+# be ANALYSED — differences vs the dev numbers, per-error-class tallies — but
+# NOTHING may be learned from it: no code, prompt, threshold, or mechanism
+# change may be derived from holdout output. Findings go to the writeup only.
+#
+# LEG SELECTION: for each holdout bug, one -o leg (a patch whose overfitting
+# label is confirmed in suites/labels/verified_correct.jsonl) and one -c leg
+# (a confirmed-correct patch), where the labels provide them. Preference:
+# patch1 of the tool with the simplest provenance (plain probe divergence /
+# 0-div probe; deep-dive or timing-noise provenance only when it is the only
+# verified patch for that side). Everything in verified_incorrect.jsonl and
+# excluded.jsonl is dropped. All 35 patchfile paths verified present on the
+# VM (ssh hetzner, read-only) 2026-08-11.
+#
+# SKIPPED SIDES (no verified label for that side; one line each):
+#   Chart-8-o     no Doverfitting patch verified (overfit_legs=0 in split)
+#   Closure-31-o  no Doverfitting patch verified (overfit_legs=0)
+#   Closure-57-o  no Doverfitting patch verified (overfit_legs=0)
+#   Closure-115-o only Doverfitting patch (ssFix-plausible) is
+#                 verified_incorrect: equivalent_to_dev_fix — unusable
+#   Closure-126-o no Doverfitting patch verified (overfit_legs=0)
+#   Lang-21-o     no Doverfitting patch verified (overfit_legs=0)
+#   Lang-24-o     no Doverfitting patch verified (overfit_legs=0)
+#   Lang-38-o     no Doverfitting patch verified (overfit_legs=0)
+#   Math-25-o     no Doverfitting patch verified (overfit_legs=0)
+#   Math-34-o     no Doverfitting patch verified (overfit_legs=0)
+#   Math-41-o     no Doverfitting patch verified (overfit_legs=0)
+#   Math-75-o     no Doverfitting patch verified (overfit_legs=0)
+#   Math-99-o     no Doverfitting patch verified (overfit_legs=0)
+#   Time-15-o     no Doverfitting patch verified (overfit_legs=0)
+#   Time-19-o     no Doverfitting patch verified (overfit_legs=0)
+#   Chart-15-c    no Dcorrect patch verified (correct_legs=0 in split)
+#   Chart-25-c    no Dcorrect patch verified (correct_legs=0)
+#   Math-6-c      no Dcorrect patch verified (correct_legs=0)
+#   Math-88-c     no Dcorrect patch verified (correct_legs=0)
+#
+# SELECTION NOTES (provenance exceptions, recorded up front):
+# - Chart-25-o: only patch2 exists (patch2-Chart-25-Arja-plausible.patch);
+#   the one deviation from the patch1 preference.
+# - Closure-18-o (SequenceR) and Math-50-o (HDRepair): probe FALSE-ZERO
+#   legs certified by the 2026-07-21 deep-dive — the only verified overfits
+#   for those bugs. Their witnesses are conditional (Closure-18: spurious
+#   CIRCULAR_DEPENDENCY_ERROR only with closurePass on + dep-mgmt off;
+#   Math-50: TooManyEvaluations vs value divergence, 1218/4800). Expected
+#   hard legs, kept deliberately.
+# - Lang-55-c (Jaid patch1-Lang-55-Jaid.patch): StopWatch bug — probe
+#   value-div on this bug's other correct patches was certified TIMING
+#   NOISE; a value-relation FP here would land in that known class.
+#
+# THE PRE-REGISTERED READ (registered BEFORE launch; numbers pasted
+# verbatim afterwards, per the verbatim-numbers rule):
+# (1) AGGREGATE P/R vs the dev baseline P=0.77 / R=0.62 (diag-24, gpt-5.4).
+#     Read is the DIFFERENCE, with the caveat that this holdout skews
+#     correct-heavy (23c/12o) vs dev, so R rests on only 12 overfit legs.
+# (2) PER-FP-CLASS TALLY on the 23 -c legs, into the three known classes:
+#     (a) Math-65-type formula/indiscriminate relation FPs,
+#     (b) Chart-type valid-by-construction FPs,
+#     (c) generic-exception leaks (Lang-27-type).
+#     Plus a residual "new class" bucket — new classes are a writeup
+#     finding, NOT a fix ticket.
+# (3) PER-FN-FAMILY TALLY on the 12 -o legs, against the witness-study gap
+#     families (8.33): classify each miss by whether the ground-truth
+#     witness is patched-side-input-reach shaped (draw-05/8.32 family),
+#     cross-thread/state-carrying, or other; tally, no mechanism change.
+# (4) Fail-closed checks recorded as always (gate VOIDs on overfit legs);
+#     on the holdout even a hard stop is a WRITEUP FINDING, not a
+#     stop-and-fix.
+#
+# LEGS: 35 (12 -o + 23 -c). Expected cost at ~130k tokens/leg: ~4.55M tokens.
+# Flags: n=5/m=12, NO --divcap — identical COMMON to stack_confirm.cases.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/SketchFix/Chart/patch1-Chart-1-SketchFix-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Chart/patch1-Chart-1-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Chart/patch1-Chart-8-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-15-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch2-Chart-25-Arja-plausible.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/SequenceR/Closure/patch1-Closure-18-SequenceR.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-18-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-31-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Closure/patch1-Closure-57-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Closure/patch1-Closure-115-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-126-Jaid.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/ssFix/Lang/patch1-Lang-21-ssFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/ACS/Lang/patch1-Lang-24-ACS.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Elixir/Lang/patch1-Lang-38-Elixir.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Lang/patch1-Lang-55-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Lang/patch1-Lang-55-Jaid.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-6-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/ACS/Math/patch1-Math-25-ACS.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/SketchFix/Math/patch1-Math-33-SketchFix-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-33-CapGen.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Elixir/Math/patch1-Math-34-Elixir.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Math/patch1-Math-41-SimFix.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/HDRepair/Math/patch1-Math-50-HDRepair.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Math/patch1-Math-50-Arja.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Elixir/Math/patch1-Math-63-Elixir-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-63-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-71-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Math/patch1-Math-71-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-75-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-80-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-80-CapGen.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/SimFix/Math/patch1-Math-88-SimFix-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/ACS/Math/patch1-Math-99-ACS.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/ACS/Time/patch1-Time-15-ACS.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/HDRepair/Time/patch1-Time-19-HDRepair.patch"
+)
