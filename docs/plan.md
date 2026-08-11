@@ -1800,8 +1800,7 @@ reference-firing-state events read NOT RUN — "no
 [fact:rate-indiscriminate] on this conviction" — because THIS draw's
 convictions are HARNESS-channel oracles ([oracle:circle-chisquare]
 FuzzerSecurityIssue), not relation-replay firings; the rate fact is
-stamped only on relation firings. The Math-65 FP lottery moved
-channels. The gate reads byte-for-byte as today when unaimed (safe,
+stamped only on relation firings. CORRECTED SAME DAY (verified: 3/3 legs carry relation-replay-conviction flags; 7/12 events NOT RUN, 5 RAN and abstained): the channel claim was overstated — see docs/p1b-aiming-and-rms-read-2026-08-11.md, which supersedes this paragraph. The gate reads byte-for-byte as today when unaimed (safe,
 verified live). OPEN DESIGN QUESTIONS for the next round: (i) rate
 measurement + the firing-state reading for HARNESS-channel
 convictions; (ii) why no rms reference is ever admitted (the screen
