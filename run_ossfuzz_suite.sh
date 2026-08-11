@@ -14,18 +14,20 @@
 #   summary.md           status table
 #   projects.list        the resolved project list, reused when resuming
 #
-# The project list is not a checked-in file. oss_fuzz.select_projects samples it
-# from the OSS-Fuzz checkout, so NUM_PROJECTS/SELECT_SEED reproduce a sweep and
-# nobody has to maintain a list by hand. The resolved names are written to
-# projects.list in the run directory, and a resumed run reuses that file rather
-# than re-sampling -- otherwise pulling the checkout mid-sweep would silently
-# change which projects the run was about.
+# The project list is not a checked-in file. oss_fuzz.select_projects derives it
+# from the OSS-Fuzz checkout, so nobody has to maintain a list by hand: by
+# default it takes the projects whose newest disclosed OSV record is the most
+# recent (SELECT_ORDER=shuffle for the old seeded sample). The resolved names are
+# written to projects.list in the run directory, and a resumed run reuses that
+# file rather than re-selecting -- otherwise pulling the checkout, or OSV
+# disclosing a bug mid-sweep, would silently change what the run was about.
 #
 # Usage:
-#   ./run_ossfuzz_suite.sh                     # 5 sampled C++ projects, seed 42
+#   ./run_ossfuzz_suite.sh                     # the 5 freshest C++ projects
 #   ./run_ossfuzz_suite.sh libxml2 expat       # just these
 #   ./run_ossfuzz_suite.sh -f suites/my.projects            # an explicit list
-#   NUM_PROJECTS=20 SELECT_SEED=7 ./run_ossfuzz_suite.sh    # a bigger, different sample
+#   NUM_PROJECTS=20 ./run_ossfuzz_suite.sh                  # the 20 freshest
+#   SELECT_ORDER=shuffle SELECT_SEED=7 ./run_ossfuzz_suite.sh   # a random sample
 #   ./run_ossfuzz_suite.sh -d                  # dry run: no Docker/LLM/network
 #   ./run_ossfuzz_suite.sh -o runs/ossfuzz_20260810_120000   # resume that dir
 #
@@ -45,13 +47,39 @@ FUZZ_TIMEOUT="${FUZZ_TIMEOUT:-600}"         # secs per accepted harness on HEAD
 MAX_TARGET_TRIES="${MAX_TARGET_TRIES:-8}"   # OSV records to walk per project
 PROJECT_TIMEOUT="${PROJECT_TIMEOUT:-7200}"  # hard wall-clock cap per project
 MIN_FREE_GB="${MIN_FREE_GB:-40}"            # refuse to start below this
-NUM_PROJECTS="${NUM_PROJECTS:-5}"           # projects to sample when none given
-SELECT_SEED="${SELECT_SEED:-42}"            # sampling seed; fixes which ones
+NUM_PROJECTS="${NUM_PROJECTS:-5}"           # projects to select when none given
+# 'recent' takes the projects whose newest disclosed bug is the freshest, which
+# is what keeps a run off the source/build-recipe skew that costs a slot before
+# a harness is even written (llamacpp, 20260811). 'shuffle' is the old seeded
+# sample, for an unbiased look at the ecosystem; SELECT_SEED only bites there.
+SELECT_ORDER="${SELECT_ORDER:-recent}"      # recent | shuffle
+SELECT_SEED="${SELECT_SEED:-42}"            # shuffle seed; fixes which ones
 export OSS_FUZZ_DIR="${OSS_FUZZ_DIR:-$ROOT_DIR/oss-fuzz}"
 # Clones and vuln/HEAD worktrees. config.py defaults this to ~/.cache, which on
 # this box is the small root disk; a sweep needs tens of GB, so keep it on the
 # data disk. Kept outside $ROOT_DIR so it stays out of the git tree.
 export OSS_FUZZ_WORK_DIR="${OSS_FUZZ_WORK_DIR:-/datadrive/vuln-patch-cache/oss-fuzz}"
+
+# An OSS-fuzz project.yaml main_repo that has been deleted, renamed or made private is indistinguishable from one needing auth --
+# GitHub answers both by asking for a username -- so an unattended sweep parks on
+# a password prompt until it is killed. cryptofuzz is the live example: its repo
+# 404s, and no credential exists that would clone it.
+#   PROMPT=0      : fail immediately instead of prompting.
+#   credential.*  : blank the helper for every child git. ~/.gitconfig sets
+#                   'store' here, and a stale token in it answers the prompt with
+#                   'Invalid username or token', burying the real 404 behind an
+#                   auth error that sends you looking for credentials you do not
+#                   need. GIT_CONFIG_COUNT is git >= 2.31 (this box has 2.43).
+#   *_ASKPASS     : the third door, and the one the 20260811 sweep went through.
+#                   VS Code's integrated terminal exports GIT_ASKPASS pointing at
+#                   its own helper, which hands git a GitHub token; askpass is
+#                   consulted ahead of both settings above, so the run still got
+#                   'Invalid username or token' for a repo that simply 404s.
+#                   Cleared, the same clone says 'could not read Username',
+#                   which is git for 'that repo is gone'.
+export GIT_TERMINAL_PROMPT=0
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0=
+unset GIT_ASKPASS SSH_ASKPASS
 
 # --- 2. command line --------------------------------------------------------
 PROJECTS_FILE=""                            # -f: an explicit list, else sample
@@ -131,11 +159,16 @@ if [ "${#PROJECTS[@]}" -eq 0 ] && [ -s "$PROJECTS_LIST" ]; then
   read_list "$PROJECTS_LIST"
 fi
 if [ "${#PROJECTS[@]}" -eq 0 ]; then
-  echo "sampling $NUM_PROJECTS C++ projects (seed $SELECT_SEED)"
-  # A dry run promises no network, and the sampler's probes are network; the
-  # sample is then the unprobed one, which is the point of a wiring check.
-  SELECT_ARGS=(-n "$NUM_PROJECTS" --seed "$SELECT_SEED")
-  [ "$DRY_RUN" -eq 1 ] && SELECT_ARGS+=(--no-probe)
+  # A dry run promises no network. Both the probes and the recency ranking are
+  # network, so a dry run falls back to the seeded shuffle -- the point of a dry
+  # run is the wiring, and an unprobed sample exercises all of it.
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "selecting $NUM_PROJECTS C++ projects (dry run: seeded shuffle, seed $SELECT_SEED)"
+    SELECT_ARGS=(-n "$NUM_PROJECTS" --order shuffle --seed "$SELECT_SEED" --no-probe)
+  else
+    echo "selecting $NUM_PROJECTS C++ projects (order: $SELECT_ORDER)"
+    SELECT_ARGS=(-n "$NUM_PROJECTS" --order "$SELECT_ORDER" --seed "$SELECT_SEED")
+  fi
   # Names on stdout, provenance on stderr (so it lands in the terminal). The
   # subshell cd is what lets 'uv run -m' resolve the package without moving
   # this script's cwd, which section 6 still needs.

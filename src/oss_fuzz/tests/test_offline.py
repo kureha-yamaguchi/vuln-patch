@@ -4,6 +4,7 @@ or plain:  python src/oss_fuzz/tests/test_offline.py
 """
 import json
 import os
+import re
 import sys
 
 SRC = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -1805,6 +1806,120 @@ def test_clonable_with_git_keeps_real_git_hosts():
                 "https://www.mercurial-scm.org/repo/hg"):
         assert not clonable_with_git(bad), bad
     print("ok  git-clonability check keeps Gitiles/Gitea/git:// and drops hg/svn")
+
+
+def test_clone_cache_separates_repos_that_share_a_basename():
+    from oss_fuzz.ossfuzz import cache_name
+    # Real collisions in the C++ pool: same last path segment, different repos.
+    for a, b in (("https://github.com/cfengine/core",
+                  "https://git.libreoffice.org/core"),
+                 ("https://github.com/boostorg/json.git",
+                  "https://github.com/nlohmann/json.git"),
+                 ("https://git.code.sf.net/p/ibmswtpm2/tpm2",
+                  "https://chromium.googlesource.com/chromiumos/third_party/tpm2")):
+        assert cache_name(a) != cache_name(b), (a, b)
+    print("ok  clone cache separates repos sharing a basename")
+
+
+def test_clone_cache_still_shares_one_clone_per_repo():
+    from oss_fuzz.ossfuzz import cache_name
+    # llvm/llvm_libcxx/llvm_libcxxabi differ only by '.git'. Splitting them
+    # would mean three copies of a multi-GB checkout.
+    base = cache_name("https://github.com/llvm/llvm-project")
+    for same in ("https://github.com/llvm/llvm-project.git",
+                 "https://github.com/llvm/llvm-project/",
+                 "http://github.com/llvm/llvm-project",
+                 "https://GitHub.com/llvm/llvm-project"):
+        assert cache_name(same) == base, same
+    print("ok  clone cache shares one directory per repo")
+
+
+def test_clone_cache_name_stays_readable():
+    from oss_fuzz.ossfuzz import cache_name
+    # The basename leads: these paths are read by humans debugging a sweep.
+    name = cache_name("https://github.com/MozillaSecurity/cryptofuzz")
+    assert name.startswith("src__cryptofuzz__"), name
+    assert re.fullmatch(r"src__cryptofuzz__[0-9a-f]{8}", name), name
+    print("ok  clone cache name keeps the readable basename")
+
+
+def _osv_record(osv_id, published, fixed="deadbeef"):
+    """A minimal OSV record that ``select_from_records`` finds usable."""
+    return {"id": osv_id, "published": published,
+            "affected": [{"ranges": [{"type": "GIT", "repo": "https://x/y",
+                                      "events": [{"introduced": "0"},
+                                                 {"fixed": fixed}]}]}]}
+
+
+def test_recency_ranking_orders_projects_by_newest_disclosure():
+    """The whole point of --order recent: freshest bug first, and a project's
+    rank comes from its *newest* record, not its oldest or its record count."""
+    from oss_fuzz.select_projects import rank_by_recency
+    catalogue = {
+        # Two records, and the older one must not decide the project's rank.
+        "fresh":  [_osv_record("OSV-A", "2026-01-05T00:00:00Z"),
+                   _osv_record("OSV-B", "2019-01-01T00:00:00Z")],
+        "stale":  [_osv_record("OSV-C", "2020-06-01T00:00:00Z")],
+        "middle": [_osv_record("OSV-D", "2024-03-02T00:00:00Z")],
+        # Records, but none with a fix boundary: nothing to rank on.
+        "nofix":  [{"id": "OSV-E", "published": "2026-08-01T00:00:00Z"}],
+        "nobugs": [],
+    }
+    ranked, dropped = rank_by_recency(sorted(catalogue), catalogue.get, workers=4)
+
+    assert [name for name, _, _ in ranked] == ["fresh", "middle", "stale"], ranked
+    assert ranked[0][2] == "OSV-A", ranked[0]      # the record that won it
+    assert sorted(n for n, _ in dropped) == ["nobugs", "nofix"], dropped
+    assert all(why.startswith("no OSV record") for _, why in dropped), dropped
+    print("ok  recency ranking orders projects by their newest usable record")
+
+
+def test_recency_ranking_is_stable_and_fails_open():
+    """Two guarantees that only show up under concurrency and outages: a tie
+    must not depend on which thread finished first, and an OSV that will not
+    answer must not look like a project with no bugs."""
+    from oss_fuzz.select_projects import rank_by_recency
+    same_day = {f"p{i}": [_osv_record(f"OSV-{i}", "2026-02-02T00:00:00Z")]
+                for i in range(8)}
+    order = [rank_by_recency(sorted(same_day), same_day.get, workers=8)[0]
+             for _ in range(3)]
+    assert order[0] == order[1] == order[2], order
+    assert [n for n, _, _ in order[0]] == sorted(same_day), order[0]
+
+    def flaky(project):
+        if project == "down":
+            raise OSError("connection reset")
+        return [_osv_record("OSV-OK", "2026-05-05T00:00:00Z")]
+
+    ranked, dropped = rank_by_recency(["down", "up"], flaky, workers=2)
+    # Kept, so an outage cannot silently shrink the pool -- but ranked last,
+    # because "we could not ask" is not evidence of a fresh bug.
+    assert [n for n, _, _ in ranked] == ["up", "down"], ranked
+    assert dropped == [], dropped
+    print("ok  recency ranking breaks ties by name and fails open on an outage")
+
+
+def test_recent_selection_probes_only_the_candidates_it_reaches():
+    """The repo probe is the expensive half (a network round trip per project),
+    so it must run in rank order and stop as soon as -n are accepted."""
+    from oss_fuzz.select_projects import select_recent
+    catalogue = {n: [_osv_record(f"OSV-{n}", d)] for n, d in (
+        ("a", "2026-08-01T00:00:00Z"), ("b", "2026-07-01T00:00:00Z"),
+        ("c", "2026-06-01T00:00:00Z"), ("d", "2026-05-01T00:00:00Z"))}
+    asked = []
+
+    def probe(project):
+        asked.append(project)
+        return "main_repo is unreachable" if project == "b" else None
+
+    chosen, dropped = select_recent(catalogue, 2, catalogue.get, probe)
+    assert [n for n, _, _ in chosen] == ["a", "c"], chosen   # 'b' backfilled
+    assert dropped == [("b", "main_repo is unreachable")], dropped
+    assert asked == ["a", "b", "c"], asked                   # 'd' never probed
+    # Same prefix guarantee the shuffle order gives: raising -n extends.
+    assert select_recent(catalogue, 4, catalogue.get, lambda _: None)[0][:2] == \
+        select_recent(catalogue, 2, catalogue.get, lambda _: None)[0]
+    print("ok  recent selection probes in rank order and stops when full")
 
 
 def _ctx_for_prompt():

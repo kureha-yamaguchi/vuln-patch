@@ -44,6 +44,7 @@ tests exercise the wiring without Docker.
 """
 from __future__ import annotations
 
+import hashlib
 import os
 import platform
 import re
@@ -141,6 +142,32 @@ _DEFAULT_ENGINES = ("libfuzzer", "afl", "honggfuzz", "centipede")
 # the language check is what stops us burning a clone, a Docker image build and
 # an LLM budget on a target we could never compile a .c/.cc harness into.
 NATIVE_LANGUAGES = ("c", "c++")
+
+
+def cache_name(main_repo: str) -> str:
+    """Directory name for a cloned upstream repo: readable, unique per repo.
+
+    The basename alone collides. cfengine and libreoffice both end in ``/core``,
+    boost-json and nlohmann/json both in ``/json``, ibmswtpm2 and tpm2 both in
+    ``/tpm2`` -- so the second of a pair to run reuses the first's clone. The
+    ``has_commit`` guard in ``_clone_fix_source`` catches it, but only by
+    skipping the project and blaming the repo rather than the cache.
+
+    The hash is taken over a canonical form -- scheme dropped, host lowercased,
+    trailing ``/`` and ``.git`` stripped -- so URLs naming the same repo keep
+    sharing one clone. That is what the llvm projects need: llvm and llvm_libcxx
+    say ``llvm-project.git`` where llvm_libcxxabi says ``llvm-project``, and
+    splitting them would mean three copies of a multi-GB checkout.
+
+    The basename still leads, because these directory names are read by humans
+    while debugging a sweep; the digest only breaks ties.
+    """
+    url = main_repo.strip().rstrip("/")
+    url = url[:-4] if url.endswith(".git") else url
+    canon = re.sub(r"^[A-Za-z+]+://", "", url).lower()
+    digest = hashlib.sha256(canon.encode()).hexdigest()[:8]
+    name = re.sub(r"[^A-Za-z0-9_.-]", "_", url.split("/")[-1])
+    return f"src__{name}__{digest}"
 
 
 @dataclass
@@ -543,20 +570,22 @@ class OssFuzz:
         os.makedirs(self.work_dir, exist_ok=True)
 
     # -- low-level ---------------------------------------------------------
-    def _run(self, cmd: List[str], *, cwd: str = None,
-             timeout: int = None, check: bool = False) -> subprocess.CompletedProcess:
+    def _run(self, cmd: List[str], *, cwd: str = None, timeout: int = None,
+             check: bool = False,
+             env: dict = None) -> subprocess.CompletedProcess:
         printable = " ".join(cmd)
         print(f"  $ {printable}" + (f"   (cwd={cwd})" if cwd else ""))
         if self.dry_run:
             return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
-        proc = self._run_with_timeout(cmd, cwd=cwd, timeout=timeout)
+        proc = self._run_with_timeout(cmd, cwd=cwd, timeout=timeout, env=env)
         if check and proc.returncode != 0:
             sys.stderr.write(proc.stdout + "\n" + proc.stderr + "\n")
             raise RuntimeError(f"command failed ({proc.returncode}): {printable}")
         return proc
 
     def _run_with_timeout(self, cmd: List[str], *, cwd: str = None,
-                          timeout: int = None) -> subprocess.CompletedProcess:
+                          timeout: int = None,
+                          env: dict = None) -> subprocess.CompletedProcess:
         """``subprocess.run``, but a timeout actually takes effect.
 
         ``subprocess.run(timeout=...)`` kills only its direct child and then
@@ -571,7 +600,7 @@ class OssFuzz:
         """
         proc = subprocess.Popen(
             cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, start_new_session=True)
+            text=True, start_new_session=True, env=env)
         try:
             out, err = proc.communicate(timeout=timeout)
             return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
@@ -806,12 +835,23 @@ class OssFuzz:
 
     # -- git ---------------------------------------------------------------
     def clone_source(self, main_repo: str) -> str:
-        """Clone the upstream repo once into work_dir; return its path."""
-        name = re.sub(r"[^A-Za-z0-9_.-]", "_", main_repo.rstrip("/").split("/")[-1])
-        name = name[:-4] if name.endswith(".git") else name
-        repo = os.path.join(self.work_dir, f"src__{name}")
+        """Clone the upstream repo once into work_dir; return its path.
+
+        Non-interactive on purpose. A main_repo that has been deleted, renamed
+        or made private looks exactly like one that needs credentials -- GitHub
+        answers both by asking for a username -- so a plain ``git clone`` in an
+        unattended run parks on a password prompt until something kills it.
+        ``GIT_TERMINAL_PROMPT=0`` turns that into an immediate error, and the
+        blank credential helper stops a stale token in ~/.gitconfig's 'store'
+        from answering with 'Invalid username or token', which buries the real
+        404 under an auth error and sends the reader hunting for credentials
+        that do not exist. cryptofuzz is the live case.
+        """
+        repo = os.path.join(self.work_dir, cache_name(main_repo))
         if not os.path.isdir(os.path.join(repo, ".git")):
-            self._run(["git", "clone", main_repo, repo], check=not self.dry_run)
+            self._run(["git", "-c", "credential.helper=", "clone",
+                       main_repo, repo], check=not self.dry_run,
+                      env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
         return repo
 
     def has_commit(self, repo: str, commit: str) -> bool:
