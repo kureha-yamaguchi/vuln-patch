@@ -1672,6 +1672,123 @@ def test_raising_the_count_extends_the_selection():
     print("ok  raising the count extends rather than replaces the selection")
 
 
+def test_probed_selection_backfills_and_keeps_extending():
+    """Dropping a probed project must not reorder the ones after it, or the
+    'raising -n extends the selection' guarantee dies with the probes on."""
+    from oss_fuzz.select_projects import select, select_probed
+    pool, _ = _pool(_fake_oss_fuzz_tree())
+    unprobed = select(pool, 999, 42)
+    doomed = {unprobed[1], unprobed[2]}
+
+    def probe(name):
+        return "dead repo" if name in doomed else None
+
+    chosen, dropped = select_probed(pool, 3, 42, probe)
+    # The two bad picks are replaced by the next survivors, in order.
+    assert chosen == [p for p in unprobed if p not in doomed][:3], chosen
+    assert sorted(n for n, _ in dropped) == sorted(doomed), dropped
+    # Still a prefix relationship, which is the property worth protecting.
+    assert select_probed(pool, 2, 42, probe)[0] == chosen[:2]
+    # Probing nothing away must agree with the unprobed sample exactly.
+    assert select_probed(pool, 3, 42, lambda n: None)[0] == select(pool, 3, 42)
+    # A probe is only asked about projects the walk actually reaches.
+    asked = []
+    select_probed(pool, 2, 42, lambda n: asked.append(n))
+    assert len(asked) == 2, asked
+    print("ok  probed selection backfills without reordering")
+
+
+def test_probes_keep_a_project_when_they_cannot_get_an_answer():
+    """Fail open. A DNS blip or an OSV outage is not evidence that a project is
+    dead, and dropping one on that basis silently reshapes the sweep."""
+    import subprocess
+    import tempfile
+    from oss_fuzz.select_projects import (_REPO_GONE_RES, no_usable_bug,
+                                          repo_is_gone)
+
+    # git exits 128 for a deleted repo and a DNS failure alike, so only the
+    # message separates them. Both forges answer a deleted-or-private repo by
+    # asking for a username, which with prompts disabled reads as the first case.
+    for stderr, gone in (
+            ("fatal: could not read Username for 'https://github.com': "
+             "terminal prompts disabled", True),
+            ("remote: Repository not found.", True),
+            ("fatal: Authentication failed for 'https://x/'", True),
+            # ...and the transient ones, which must NOT drop the project.
+            ("fatal: unable to access 'https://x/': Could not resolve host: x",
+             False),
+            ("fatal: unable to access 'https://x/': Failed to connect", False),
+            ("error: RPC failed; curl 92 HTTP/2 stream 0 was not closed",
+             False)):
+        hit = any(rx.search(stderr) for rx in _REPO_GONE_RES)
+        assert hit is gone, (stderr, hit)
+
+    # A reachable repo is kept — a real ls-remote against a local one, so the
+    # probe's own plumbing (flags, env, exit code) is exercised without network.
+    with tempfile.TemporaryDirectory() as tmp:
+        subprocess.run(["git", "init", "-q", "--bare", tmp], check=True)
+        assert repo_is_gone(tmp) is None
+
+    # OSV: a record with a fix commit keeps the project, nothing drops it...
+    usable = [{"id": "OSV-1", "affected": [{"ranges": [{"type": "GIT",
+               "repo": "https://x/y", "events": [{"introduced": "0"},
+               {"fixed": "deadbeef"}]}]}]}]
+    assert no_usable_bug("p", lambda _: usable) is None
+    assert no_usable_bug("capnproto", lambda _: []) is not None
+    # ...and an OSV that will not answer keeps it, rather than guessing.
+    def boom(_):
+        raise OSError("connection reset")
+    assert no_usable_bug("p", boom) is None
+    print("ok  probes fail open when they cannot get an answer")
+
+
+def test_clone_falls_back_to_the_repo_that_has_the_fix_commit():
+    """cryptofuzz moved from guidovranken/ to MozillaSecurity/. OSS-Fuzz updated
+    project.yaml; OSV still names the old URL, which now 404s. The fix commit is
+    in the new repo, so the run must fall back to it instead of dying — and must
+    not accept a repo that merely clones but lacks the commit."""
+    from oss_fuzz.run import _clone_fix_source
+
+    OLD = "https://github.com/guidovranken/cryptofuzz"
+    NEW = "https://github.com/MozillaSecurity/cryptofuzz"
+
+    class _Of:
+        def __init__(self, clonable, having):
+            self.clonable, self.having, self.tried = clonable, having, []
+
+        def clone_source(self, url):
+            self.tried.append(url)
+            if url not in self.clonable:
+                raise RuntimeError("command failed (128): git clone")
+            return "/cache/" + url.rsplit("/", 1)[-1]
+
+        def has_commit(self, repo, commit):
+            return repo in self.having
+
+    class _Cand:
+        main_repo = OLD
+        fixed_commit = "0806bc7eaa7a0749585e368876ac723f69fa5e10"
+
+    # The OSV URL is dead, so the project.yaml one is used and recorded.
+    cand = _Cand()
+    of = _Of(clonable={NEW}, having={"/cache/cryptofuzz"})
+    assert _clone_fix_source(of, cand, NEW) == "/cache/cryptofuzz"
+    assert of.tried == [OLD, NEW], of.tried
+    assert cand.main_repo == NEW, cand.main_repo
+
+    # A repo that clones but does not carry the fix commit is not the right repo:
+    # parent_commit would resolve '<sha>~1' to a literal string and sail on.
+    of = _Of(clonable={OLD, NEW}, having=set())
+    assert _clone_fix_source(of, _Cand(), NEW) is None
+    assert of.tried == [OLD, NEW], of.tried
+
+    # One URL named twice is probed once.
+    of = _Of(clonable=set(), having=set())
+    assert _clone_fix_source(of, _Cand(), OLD) is None
+    assert of.tried == [OLD], of.tried
+    print("ok  clone falls back to the repo holding the fix commit")
+
+
 def test_clonable_with_git_keeps_real_git_hosts():
     from oss_fuzz.select_projects import clonable_with_git
     # Gitiles/Gitea/git:// and self-hosted /git/ paths are real git: rejecting

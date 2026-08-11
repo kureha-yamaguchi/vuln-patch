@@ -814,6 +814,19 @@ class OssFuzz:
             self._run(["git", "clone", main_repo, repo], check=not self.dry_run)
         return repo
 
+    def has_commit(self, repo: str, commit: str) -> bool:
+        """Whether ``commit`` is present in ``repo``.
+
+        ``parent_commit`` cannot answer this: it resolves with ``check=False``
+        and falls back to the literal ``'<sha>~1'`` string, so a missing commit
+        turns into a bad revision that only fails several steps later.
+        """
+        if self.dry_run:
+            return True
+        proc = self._run(
+            ["git", "-C", repo, "cat-file", "-e", f"{commit}^{{commit}}"])
+        return proc.returncode == 0
+
     def head_commit(self, repo: str) -> str:
         p = self._run(["git", "-C", repo, "rev-parse", "HEAD"])
         return (p.stdout or "HEAD").strip()

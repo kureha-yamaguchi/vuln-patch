@@ -380,9 +380,32 @@ own test fixtures (`vulnerable-project` and friends ship planted bugs), and
 `main_repo` URLs that `git clone` cannot handle (10 C++ projects are hg or svn).
 That leaves 378 of the checkout's 590 C/C++ projects at commit `8915eb62`.
 
-Reproducibility is per-checkout: the sample is a function of the seed *and* of
-`projects/`, so pulling OSS-Fuzz can change it. Both the seed and the checkout
-commit go into the run's `summary.md`; quote them together when reporting a run.
+Those checks all read files on disk, so two ways a project can be a dead end are
+invisible to them — and both cost an hour to discover. Each **sampled** project
+(never the whole pool) gets two network probes:
+
+| Probe | Asks | Cost | Caught in the 20260811 sweep |
+|---|---|---|---|
+| `repo_is_gone` | `git ls-remote` the `main_repo` — is the code still there? | <1s | — |
+| `no_usable_bug` | does OSV hold any record with a fix commit? | ~0.3s | `capnproto` (0 records) |
+
+A rejected project is replaced by the next one in shuffle order, so `-n`
+still extends rather than replaces a selection. **A probe that cannot get an
+answer keeps the project**: a DNS blip or an OSV outage is not evidence that a
+project is dead, and dropping one on that basis would silently reshape the sweep
+— a worse failure than the one being prevented. `--no-probe` turns both off for
+air-gapped runs, and the suite passes it under `-d`.
+
+The probes only remove projects that were never going to start. Two things still
+cannot be known without a clone — whether the fix commit's diff touches any
+C/C++ source, and whether the vulnerable checkout builds — so `no-target` does
+not disappear.
+
+Reproducibility is per-checkout: the sample is a function of the seed, of
+`projects/`, and now of the state of the outside world, so pulling OSS-Fuzz *or*
+a project moving hosts can change it. The seed and the checkout commit go into
+the run's `summary.md`, and the probe drops are printed with the selection; quote
+them together when reporting a run.
 
 Everything lands in `runs/ossfuzz_<timestamp>/`: `projects.list` (the resolved
 selection, written before the first project and reused on `-o` so a resumed
@@ -502,6 +525,14 @@ staying out of the way on crashing ones.
 - **HEAD may not build.** If the project's API changed between the fix and now,
   a harness may not compile against HEAD. Those are skipped and reported, not
   counted as clean.
+- **Two URLs can name the repo the fix landed in, and they go stale in opposite
+  ways.** The OSV record's is historically exact but frozen at disclosure;
+  `project.yaml`'s is maintained but can be a different repo. cryptofuzz needs
+  both — it moved from `guidovranken/` to `MozillaSecurity/`, OSS-Fuzz updated
+  `project.yaml`, OSV still names the old URL, and only the new one has the fix
+  commit. Each is tried in turn, and a repo that clones but lacks the fix commit
+  is rejected rather than checked out at a bad revision. If none serves it, that
+  is an environment failure (exit 2), not a result.
 - **The vulnerable checkout may not build either.** `build.sh` comes from
   OSS-Fuzz HEAD but the checkout is years old, so the two can disagree about
   what files exist — llamacpp's current `build.sh` compiles `fuzzers/*.cpp`,

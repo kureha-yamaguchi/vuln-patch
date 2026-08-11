@@ -132,11 +132,15 @@ if [ "${#PROJECTS[@]}" -eq 0 ] && [ -s "$PROJECTS_LIST" ]; then
 fi
 if [ "${#PROJECTS[@]}" -eq 0 ]; then
   echo "sampling $NUM_PROJECTS C++ projects (seed $SELECT_SEED)"
+  # A dry run promises no network, and the sampler's probes are network; the
+  # sample is then the unprobed one, which is the point of a wiring check.
+  SELECT_ARGS=(-n "$NUM_PROJECTS" --seed "$SELECT_SEED")
+  [ "$DRY_RUN" -eq 1 ] && SELECT_ARGS+=(--no-probe)
   # Names on stdout, provenance on stderr (so it lands in the terminal). The
   # subshell cd is what lets 'uv run -m' resolve the package without moving
   # this script's cwd, which section 6 still needs.
   mapfile -t PROJECTS < <(cd "$ROOT_DIR/src" && uv run -m oss_fuzz.select_projects \
-                            -n "$NUM_PROJECTS" --seed "$SELECT_SEED")
+                            "${SELECT_ARGS[@]}")
 fi
 [ "${#PROJECTS[@]}" -gt 0 ] || { echo "FATAL: no projects to run" >&2; exit 1; }
 

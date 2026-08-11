@@ -180,6 +180,54 @@ def _fail(msg: str, dry_run: bool) -> None:
     sys.exit(msg)
 
 
+def _abort_environment(msg: str) -> None:
+    """Exit 2: the environment is broken, so this is not a result about the fix.
+
+    A suite has to be able to tell "could not run" from "ran and found nothing"
+    (0) and from a usage error (1); collapsing the first into either of the
+    others reports a broken box as a clean sweep.
+    """
+    sys.stderr.write(f"\nRUN ABORTED — {msg}\n"
+                     "This is not a result about the fix; fix the environment "
+                     "and re-run.\n")
+    sys.exit(2)
+
+
+def _clone_fix_source(of, cand, project_yaml_repo):
+    """Clone the repo the fix landed in, or return None if none of them serve it.
+
+    Two URLs can name that repo and they go stale in opposite ways. The OSV
+    record carries the repo the fix landed in — historically exact, but frozen at
+    disclosure. ``project.yaml`` carries where OSS-Fuzz builds the project from
+    today — maintained, but it can be a different repo entirely. cryptofuzz needs
+    both: it moved from ``guidovranken/`` to ``MozillaSecurity/``, OSS-Fuzz
+    updated project.yaml, OSV still points at the old URL (which now 404s), and
+    the fix commit is present in the new repo.
+
+    So try each in turn, and require the fix commit to actually be there — a
+    fallback clone of a repo that lacks it would otherwise sail on with a bad
+    revision, since ``parent_commit`` resolves a missing commit to a literal
+    string.
+    """
+    seen = set()
+    for url in (cand.main_repo, project_yaml_repo):
+        if not url or url in seen:
+            continue
+        seen.add(url)
+        try:
+            repo = of.clone_source(url)
+        except RuntimeError as exc:
+            print(f"  cannot clone {url}: {exc}")
+            continue
+        if not of.has_commit(repo, cand.fixed_commit):
+            print(f"  {url} has no commit {cand.fixed_commit[:12]}; "
+                  "it is not the repo this fix landed in")
+            continue
+        cand.main_repo = url
+        return repo
+    return None
+
+
 def _print_candidates(cands) -> None:
     print(f"\n{len(cands)} candidate project(s) — newest first:\n")
     print(f"  {'project':<24} {'lang':<5} {'advisory':<18} {'published':<11} "
@@ -310,7 +358,24 @@ def main():
             print("  no main_repo resolvable from OSV or project.yaml; skipping")
             continue
 
-        repo = of.clone_source(cand.main_repo)
+        # An unclonable source is a broken environment, not a bad harness and
+        # not a usage error: the raw failure used to surface as an unhandled
+        # traceback under the suite's catch-all exit 1.
+        repo = _clone_fix_source(of, cand, sup.main_repo)
+        if repo is None:
+            reason = (f"no repo serving the fix commit "
+                      f"{(cand.fixed_commit or '')[:12]} for '{args.project}'")
+            _emit(args.results_json, project=args.project, osv_id=cand.osv_id,
+                  cve=cand.cve_id, sanitizer=cand.sanitizer or "",
+                  bug_kind=cand.bug_class.kind, oracle=cand.bug_class.oracle,
+                  attempts=0, harnesses_accepted=0, siblings=[],
+                  oracle_claims=[], infra_error=reason)
+            _abort_environment(
+                f"{reason}.\n  Tried: {cand.main_repo}"
+                + (f", {sup.main_repo}" if sup.main_repo != cand.main_repo
+                   else "")
+                + "\n  The repo may have moved or been deleted — check "
+                f"projects/{args.project}/project.yaml against upstream.")
         vc = of.parent_commit(repo, cand.fixed_commit)
         hc = of.head_commit(repo)
         print(f"vuln commit  : {vc}")
@@ -447,14 +512,8 @@ def main():
               bug_kind=bug_class.kind, oracle=bug_class.oracle,
               harnesses_accepted=0, siblings=[], oracle_claims=[],
               infra_error=result.infra_error)
-        # Exit 2 (not 1, and not 0) so a suite can tell "environment broken"
-        # from "ran and found nothing" (0) and from a usage error (1).
-        sys.stderr.write(
-            "\nRUN ABORTED — the build environment could not build any "
-            f"harness:\n  {result.infra_error}\n"
-            "This is not a result about the fix; fix the environment and "
-            "re-run.\n")
-        sys.exit(2)
+        _abort_environment("the build environment could not build any "
+                           f"harness:\n  {result.infra_error}")
 
     # 6) Run each accepted harness on HEAD. A crash here = sibling the fix missed.
     #    HEAD needs its own placement: under overwrite the harness file may have

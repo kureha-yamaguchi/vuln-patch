@@ -13,6 +13,15 @@ would spend sweep slots on projects that provably cannot build, which reads as
 a pipeline failure rather than what it is. The one filter added on top is
 ``disabled: true``, which OSS-Fuzz uses for projects it has stopped building.
 
+Those checks all read files on disk, so they cannot know that a repo has been
+deleted or that a project has no disclosed bugs -- both of which only surface an
+hour into a sweep. Two probes ask the outside world, on the sampled projects
+only (never the whole pool): ``repo_is_gone`` and ``no_usable_bug``. Each caught
+one project in the 20260811 sweep, and neither would have caught the other's:
+cryptofuzz has 19 usable OSV records behind a repo URL that 404s, capnproto has
+a healthy repo and no OSV records at all. A probe that cannot get an answer
+keeps the project -- see ``repo_is_gone``.
+
 Reproducibility has a boundary worth stating: the sample is a function of the
 seed *and* of the projects/ tree, so pulling the OSS-Fuzz checkout can change
 it. The provenance header written to stderr records the checkout commit for
@@ -31,9 +40,12 @@ Usage:
 import argparse
 import os
 import random
+import re
+import subprocess
 import sys
-from typing import List, Tuple
+from typing import Callable, List, Optional, Tuple
 
+from oss_fuzz.osv import select_from_records
 from oss_fuzz.ossfuzz import OssFuzz
 
 DEFAULT_COUNT = 20
@@ -81,6 +93,98 @@ def clonable_with_git(main_repo: str) -> bool:
                 or "/svn/" in path or path.rstrip("/").endswith("/repo/hg"))
 
 
+# Long enough for a slow forge, short enough that a whole sweep's preflight
+# stays seconds: a reachable repo answers in well under one.
+_PROBE_TIMEOUT = 20
+
+# ``ls-remote`` exits 128 for a deleted repo and for a DNS failure alike, so the
+# message is the only thing that separates them. These mean the URL will never
+# clone; anything else is treated as "could not tell". Both GitHub and GitLab
+# report a missing-or-private repo by asking for a username, which with prompts
+# disabled surfaces as 'could not read Username' — verified against a deleted
+# repo on each.
+_REPO_GONE_RES = (
+    re.compile(r"could not read Username", re.IGNORECASE),
+    re.compile(r"repository .*not found|repository not found", re.IGNORECASE),
+    re.compile(r"Authentication failed", re.IGNORECASE),
+    re.compile(r"access denied|permission denied", re.IGNORECASE),
+)
+
+
+def repo_is_gone(main_repo: str) -> Optional[str]:
+    """Why ``main_repo`` can never be cloned, or None to keep the project.
+
+    ``git ls-remote`` asks the server for a ref listing and downloads no
+    objects, so this costs a fraction of a second. cryptofuzz's project.yaml
+    still points at github.com/guidovranken/cryptofuzz, which 404s; the sweep
+    found out an hour in, from a clone that died mid-run.
+
+    Two git settings matter. Prompts off, or a missing repo *hangs* waiting for
+    a username instead of failing. Credential helpers off, because a stale token
+    in ~/.git-credentials answers that prompt with 'Invalid username or token'
+    and buries the real 404 — which is exactly what the 20260811 log shows.
+
+    Returns None when the answer is unclear. A timeout or a DNS failure is not
+    evidence that a repo is gone, and dropping a project on one flaky moment
+    would silently reshape the sweep — a worse failure than the one this fixes.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "-c", "credential.helper=", "ls-remote", "--exit-code",
+             main_repo, "HEAD"],
+            capture_output=True, text=True, timeout=_PROBE_TIMEOUT,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode == 0:
+        return None
+    for rx in _REPO_GONE_RES:
+        if rx.search(proc.stderr):
+            return f"main_repo is unreachable ({main_repo}): {rx.search(proc.stderr).group(0)}"
+    return None
+
+
+def no_usable_bug(project: str, fetch: Callable[[str], List[dict]]
+                  ) -> Optional[str]:
+    """Why ``project`` has no bug to work on, or None to keep it.
+
+    One OSV query, ~0.3s. capnproto is in the pool, builds fine and has a live
+    repo, but OSV holds no record for it at all, so a sweep slot on it can only
+    ever report 'no-target'.
+
+    Deliberately the same question the pipeline asks at step 4 and no narrower:
+    a public record with a fix commit. Whether the fix *diff* touches C/C++
+    source needs a clone, so projects will still stop there — this only removes
+    the ones that were never going to start. An unreachable OSV keeps the
+    project, for the reason given in ``repo_is_gone``.
+    """
+    try:
+        records = fetch(project)
+    except Exception:
+        return None
+    if select_from_records(project, records) is None:
+        return (f"no OSV record with a fix commit "
+                f"({len(records)} record(s) considered)")
+    return None
+
+
+def make_probe(of: OssFuzz, fetch: Callable[[str], List[dict]]
+               ) -> Callable[[str], Optional[str]]:
+    """Both probes as one callable: why to drop ``project``, or None to keep it.
+
+    Repo first — it is the cheaper question, and a dead repo makes the OSV one
+    moot.
+    """
+    def probe(project: str) -> Optional[str]:
+        main_repo = (of.project_yaml(project).get("main_repo") or "").strip()
+        if main_repo:
+            gone = repo_is_gone(main_repo)
+            if gone:
+                return gone
+        return no_usable_bug(project, fetch)
+    return probe
+
+
 def eligible_projects(of: OssFuzz, languages: Tuple[str, ...],
                       sanitizer: str, engine: str) -> Tuple[List[str], dict]:
     """Every project this front-end could actually drive, plus reject tallies.
@@ -116,15 +220,46 @@ def eligible_projects(of: OssFuzz, languages: Tuple[str, ...],
     return keep, rejected
 
 
-def select(projects: List[str], count: int, seed: int) -> List[str]:
-    """A deterministic sample of ``count`` projects.
+def shuffled(projects: List[str], seed: int) -> List[str]:
+    """The eligible projects in the order a sweep consumes them.
 
     Sorted first so the result depends on the set of eligible projects and not
     on the order the filesystem happened to hand them over.
     """
     pool = sorted(projects)
     random.Random(seed).shuffle(pool)
-    return pool[:count]
+    return pool
+
+
+def select(projects: List[str], count: int, seed: int) -> List[str]:
+    """A deterministic sample of ``count`` projects."""
+    return shuffled(projects, seed)[:count]
+
+
+def select_probed(projects: List[str], count: int, seed: int,
+                  probe: Callable[[str], Optional[str]]
+                  ) -> Tuple[List[str], List[Tuple[str, str]]]:
+    """The first ``count`` projects in shuffle order that ``probe`` accepts,
+    plus the (project, why) pairs it rejected.
+
+    Walking the same order the unprobed sample uses is what keeps ``-n``
+    extending rather than replacing a selection: skipping an entry never
+    reorders the ones after it, so the first 5 of a seed-42 run of 20 are still
+    the seed-42 run of 5. The sample is now a function of the seed, the checkout
+    *and* the state of the outside world — one input more than before, which the
+    provenance header says out loud.
+    """
+    chosen: List[str] = []
+    dropped: List[Tuple[str, str]] = []
+    for name in shuffled(projects, seed):
+        if len(chosen) >= count:
+            break
+        why = probe(name)
+        if why:
+            dropped.append((name, why))
+            continue
+        chosen.append(name)
+    return chosen, dropped
 
 
 def main(argv: List[str] = None) -> int:
@@ -145,6 +280,10 @@ def main(argv: List[str] = None) -> int:
                     help="OSS-Fuzz checkout (default $OSS_FUZZ_DIR)")
     ap.add_argument("-q", "--quiet", action="store_true",
                     help="suppress the provenance header on stderr")
+    ap.add_argument("--no-probe", dest="probe", action="store_false",
+                    help="skip the network probes (offline/air-gapped runs); "
+                         "sampled projects are then not checked for a live "
+                         "main_repo or any disclosed bug")
     args = ap.parse_args(argv)
 
     if args.count < 1:
@@ -170,7 +309,13 @@ def main(argv: List[str] = None) -> int:
             f"engine={args.engine}\n")
         return 1
 
-    chosen = select(pool, args.count, args.seed)
+    dropped: List[Tuple[str, str]] = []
+    if args.probe:
+        from oss_fuzz.osv import OsvClient       # deferred: only probing needs it
+        chosen, dropped = select_probed(pool, args.count, args.seed,
+                                        make_probe(of, OsvClient().query_project))
+    else:
+        chosen = select(pool, args.count, args.seed)
 
     if not args.quiet:
         # stderr so stdout stays a clean project-per-line list to read from.
@@ -186,9 +331,19 @@ def main(argv: List[str] = None) -> int:
             f" {rejected['unsupported']} unsupported,"
             f" {rejected['not-git']} non-git main_repo,"
             f" {rejected['fixture']} test fixture)\n")
+        if args.probe:
+            # Without this line, "asked for 5, got 5" hides that it walked 8.
+            sys.stderr.write(
+                f"# probes            : live main_repo + a disclosed bug; "
+                f"{len(chosen) + len(dropped)} probed, {len(dropped)} dropped\n")
+            for name, why in dropped:
+                sys.stderr.write(f"#   dropped {name}: {why}\n")
+        else:
+            sys.stderr.write("# probes            : off (--no-probe)\n")
         if len(chosen) < args.count:
             sys.stderr.write(
-                f"# NOTE: asked for {args.count}, pool holds only {len(pool)}\n")
+                f"# NOTE: asked for {args.count}, pool holds only {len(pool)}"
+                f"{' after probing' if args.probe else ''}\n")
 
     for name in chosen:
         print(name)
