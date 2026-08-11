@@ -291,6 +291,30 @@ uv run -m oss_fuzz.run --project libxml2 --cve CVE-2022-XXXXX \
     --reproducer ./testcase --sanitizer address
 ```
 
+### Running a batch of projects
+
+`run_ossfuzz_suite.sh` (repo root) sweeps a list of projects, one run each,
+crashing bugs only:
+
+```bash
+export OSS_FUZZ_DIR=$PWD/oss-fuzz OPENAI_API_KEY=sk-...
+./run_ossfuzz_suite.sh                  # the 20 C++ projects in suites/ossfuzz_cpp20.projects
+./run_ossfuzz_suite.sh -d               # dry run: exercises the whole sweep without Docker or an LLM
+./run_ossfuzz_suite.sh -r runs/ossfuzz_20260810_120000   # resume an interrupted sweep
+```
+
+Everything lands in `runs/ossfuzz_<timestamp>/`: `config.txt` (flags, both git
+SHAs, model), `logs/<project>.log` for every run, the shared `results.jsonl`,
+and a `summary.md` rewritten after each project so it can be read while the
+sweep is still going. Each project's exit code is kept as its status, so
+`infra-error` (2) and `timeout` never get averaged in with a real `clean` (0).
+It runs projects sequentially on purpose — `helper.py` builds into one shared
+`build/out/` tree — so budget hours, not minutes, and start it under tmux.
+
+The project list is a plain data file; every entry in the default one was
+checked for `language: c++`, a Dockerfile WORKDIR that is not `$SRC`, and at
+least one usable crashing OSV record.
+
 ### Trying it without Docker, network, or an LLM
 
 ```bash
