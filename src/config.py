@@ -354,3 +354,16 @@ OSV_API_URL = os.getenv('OSV_API_URL', 'https://api.osv.dev/v1')
 # only inside a pre-registered validation run.
 REROUTE_INDISCRIMINATE_BYPASS = os.getenv(
     'VULNPATCH_REROUTE_BYPASS', '').strip().lower() in ('1', 'true', 'on')
+# --- p1b step 3: admission WIDENING -----------------------------------------
+# 8.44 measured the binding constraint: ONE admitted reference per Math-65
+# leg (the leg asks about the observable its FIRST firing disputed and stops),
+# zero getRMS references anywhere, zero admissions on the Chart legs. The
+# firing-state gate is only evaluable where a reference exists for the
+# observable the conviction disputes, so step 3 requests one per CONTESTED
+# OBSERVABLE instead of one per leg.
+#
+# This is the cap on how many references a leg may hold, and therefore the
+# cap on what the widening may spend: at most this many generations and JVM
+# chains per leg (design §8.3's cost envelope, which assumes the reference is
+# compiled once per leg and only the driver is rebuilt per firing).
+P1B_MAX_REFERENCES = int(os.getenv('P1B_MAX_REFERENCES', '3'))

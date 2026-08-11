@@ -112,9 +112,163 @@ def _admitted_for(fired, class_ctx, check_src):
     return rec, why
 
 
+def _widen_admissions(*, args, checks, class_ctx, failure_tests, builder,
+                      buggy_dir, patch_path, package=None, imports=None):
+    """p1b step 3 part 1: one reference per CONTESTED OBSERVABLE, not one per
+    leg. Returns the store's observable keys after widening.
+
+    8.44 measured the constraint the gate runs into: the store retains every
+    admission, and there was only ever ONE admission per Math-65 leg to
+    retain, none of them `getRMS`, none at all on the Chart legs. The cause
+    is the request, not the store — the chain asks about the observable the
+    first firing it sees disputes and stops at the first fact. So the request
+    is re-aimed here, right after relation screening, where the KEPT checks
+    are known and before any judging has happened.
+
+    Nothing about admission changes: the same prompt (parameterised by target
+    method, which is what it always was), the same screen, the same
+    corroboration attribution, the same pin check, the same fail-closed
+    discards. Every attempt records requested -> admitted/rejected with the
+    chain's own reason, because a widening that asked and was refused and a
+    widening that never asked are different findings.
+
+    Fails OPEN: any error leaves the store exactly as it was.
+    """
+    from llm import record_event as _re
+    from java.relations.reference_impl import admission_key, widening_targets
+    ctx = '\n\n'.join(class_ctx) if class_ctx else ''
+    store = getattr(_reference_impl_fact, '_admitted_by_method', None)
+    if store is None:
+        store = _reference_impl_fact._admitted_by_method = {}
+    cap = getattr(config, 'P1B_MAX_REFERENCES', 3)
+    targets, why = widening_targets(store, checks, ctx, cap)
+    _re('deterministic', method='reference-widening', target='enumerate',
+        output=(f'{len(targets)} observable(s) to widen onto' if targets
+                else 'nothing to widen'),
+        reason=why,
+        detail={'targets': [admission_key(t) for t in targets],
+                'already_admitted': sorted(store), 'cap': cap,
+                'checks_read': len([c for c in (checks or []) if c])})
+    for method in targets:
+        key = admission_key(method)
+        _re('deterministic', method='reference-widening', target=method,
+            output=f'reference REQUESTED for observable `{key}`',
+            reason='a kept relation probes this observable and the leg holds '
+                   'no reference for it; the existing generation + screening '
+                   '+ admission chain runs unchanged, aimed at this method')
+        try:
+            _reference_impl_fact(
+                args=args, fired='', class_ctx=class_ctx,
+                failure_tests=failure_tests, builder=builder,
+                buggy_dir=buggy_dir, patch_path=patch_path,
+                trusted_values=[], package=package, imports=imports,
+                check_source=None, target_methods=[method])
+        except Exception as exc:
+            _re('deterministic', method='reference-widening', target=method,
+                output=f'widening REJECTED for observable `{key}`',
+                reason=f'the chain raised {type(exc).__name__}: {exc}'[:300])
+            continue
+        _step, _step_why = (
+            getattr(_reference_impl_fact, '_last_outcome', None) or {}
+        ).get(method, (None, ''))
+        _admitted = key in store
+        _re('deterministic', method='reference-widening', target=method,
+            output=(f'reference ADMITTED for observable `{key}`' if _admitted
+                    else f'widening REJECTED for observable `{key}`'),
+            reason=((store[key].get('screen_why') or 'admitted') if _admitted
+                    else (f'{_step} — {_step_why}' if _step else
+                          'the chain produced no admission and recorded no '
+                          'step for this target')),
+            detail={'admitted_observables': sorted(store),
+                    'last_step': _step})
+    return sorted(store)
+
+
+def _firing_state_reading(fired, admitted, evidence, builder, buggy_dir):
+    """p1b step 3 part 2: the admitted reference RE-EVALUATED at this firing's
+    own recorded receiver state. The reading dict, or None.
+
+    The decision logic is pure and lives in `relations/reference_state.py`;
+    this is the adapter that owns the JVM. It reuses the admission chain's own
+    driver builder (`build_reference_call_driver`, which hoists array literals
+    into static fields to stay under the JVM's 64KB bytecode-per-method cap)
+    and `run_reference`, and it hands `run_reference` the compiled-reference
+    directory the admission recorded, so a leg compiles its reference once and
+    rebuilds only the driver per firing.
+
+    Fails OPEN in the only direction that matters: any error returns None,
+    and a None reading leaves the verdict gate reading exactly as it does
+    today, byte for byte.
+    """
+    from llm import record_event as _re
+    from java.relations.reference_impl import firing_state_reading_applies
+    from java.relations.reference_state import (reference_firing_fact,
+                                                reference_firing_reading)
+    from java.relations.reference_run import (build_reference_call_driver,
+                                              observable_key, run_reference)
+    try:
+        applies, why = firing_state_reading_applies(evidence)
+        if not applies:
+            _re('deterministic', method='reference-firing-state',
+                target=(fired or '')[:80],
+                output='firing-state reading NOT RUN', reason=why)
+            return None
+        if not admitted:
+            _re('deterministic', method='reference-firing-state',
+                target=(fired or '')[:80],
+                output='firing-state reading NOT RUN',
+                reason='no-reference: this conviction carries '
+                       '[fact:rate-indiscriminate], but the leg admitted no '
+                       'reference for the observable it disputes')
+            return None
+        method = admitted.get('method')
+        declared = (admitted.get('matched') or {}).get(method) or method
+        runs = {'n': 0}
+
+        def _evaluate(literals, label):
+            runs['n'] += 1
+            try:
+                driver_src = build_reference_call_driver(
+                    'ReferenceImpl', [(method, declared)], list(literals))
+            except (ValueError, TypeError) as e:
+                return None, f'driver source invalid: {type(e).__name__}: {e}'
+            obs, run_why = run_reference(
+                builder, buggy_dir, admitted.get('src') or '', driver_src,
+                reference_dir=admitted.get('ref_dir') or None)
+            if not obs:
+                return None, run_why
+            by_key = {observable_key(k): v for k, v in obs.items()}
+            vals = by_key.get(observable_key(method)) or []
+            if not vals:
+                return None, (f'the reference ran but printed no value for '
+                              f'`{method}` (printed {sorted(obs)[:4]})')
+            return vals[0], run_why
+
+        reading = reference_firing_reading(fired, admitted, _evaluate)
+        _re('deterministic', method='reference-firing-state',
+            target=(fired or '')[:80],
+            output=f"reading: {reading.get('reading')}",
+            reason=reading.get('reason'),
+            detail={'observed': reading.get('observed'),
+                    'claimed': reading.get('claimed'),
+                    'reference': reading.get('reference'),
+                    'receiver': reading.get('receiver'),
+                    'jvm_runs': runs['n'],
+                    'fact': reference_firing_fact(reading),
+                    **(reading.get('detail') or {})})
+        return reading
+    except Exception as exc:                     # pragma: no cover - defensive
+        _re('deterministic', method='reference-firing-state',
+            target=(fired or '')[:80],
+            output='firing-state reading RAISED',
+            reason=f'{type(exc).__name__}: {exc}'[:300])
+        return None
+
+
 def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
                          buggy_dir, patch_path, trusted_values,
-                         package=None, imports=None, check_source=None):
+                         package=None, imports=None, check_source=None,
+                         target_methods=None):
     """8.2: generate, screen and compare an independent reference. Fact or None.
 
     Every exit records an event with its REASON. A step that produced nothing
@@ -125,8 +279,28 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     Fails CLOSED at every point: no disputed observable, prompt refused for an
     implementation leak, generation error, compile/run failure, screen discard,
     pin-check discard -> None.
+
+    `target_methods` (p1b step 3) NAMES the observables to attempt instead of
+    detecting them from `fired`. The chain is already per-method — the
+    reference prompt names its target through build_reference_prompt's
+    `method=` argument, "Implement `<method>` from its specification" — so
+    widening changes only which methods are asked about, never the asking.
+    With targets given, EVERY one is attempted (the detection path stops at
+    the first fact, because there its job is to produce a fact for one
+    firing; here the job is to fill the store).
     """
-    from llm import record_event as _re, HarnessGenerator as _HG
+    from llm import record_event as _record_event, HarnessGenerator as _HG
+    # The last `reference-impl` event per target, so the widening wrapper can
+    # say WHY an attempt was rejected without the 15 early exits inside
+    # `_attempt` each having to report twice. Reading the event the chain
+    # already records keeps one description of each failure.
+    _outcomes = {}
+
+    def _re(kind, **kw):
+        if kw.get('method') == 'reference-impl' and kw.get('target'):
+            _outcomes[kw['target']] = (kw.get('output'), kw.get('reason'))
+        return _record_event(kind, **kw)
+    _reference_impl_fact._last_outcome = _outcomes
     from java.relations.reference_impl import (
         admission_key, admit_reference,
         disputed_observables, pin_check, pins_for_disputed,
@@ -144,21 +318,28 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
         run_twin, test_package, types_declaring)
 
     ctx = '\n\n'.join(class_ctx) if class_ctx else ''
-    try:
-        # Stage 2 (Math-2): the fired MESSAGE may print only actual=/expected=
-        # while the check SOURCE calls the disputed method by name — the same
-        # artifact the judge receives, so scanning it adds no new authority.
-        disputed = disputed_observables(fired, ctx, check_source=check_source)
-    except Exception as e:
-        _re('deterministic', method='reference-impl', target='detect',
-            output=f'ERROR: {type(e).__name__}', reason=str(e)[:200])
-        return None
-    if not disputed:
-        _re('deterministic', method='reference-impl', target='detect',
-            output='no disputed observable',
-            reason='the firing (and its check) names no method the context '
-                   'declares; the mechanism has nothing to reimplement')
-        return None
+    if target_methods is not None:
+        disputed = [m for m in target_methods if m]
+        if not disputed:
+            return None
+    else:
+        try:
+            # Stage 2 (Math-2): the fired MESSAGE may print only
+            # actual=/expected= while the check SOURCE calls the disputed
+            # method by name — the same artifact the judge receives, so
+            # scanning it adds no new authority.
+            disputed = disputed_observables(fired, ctx,
+                                            check_source=check_source)
+        except Exception as e:
+            _re('deterministic', method='reference-impl', target='detect',
+                output=f'ERROR: {type(e).__name__}', reason=str(e)[:200])
+            return None
+        if not disputed:
+            _re('deterministic', method='reference-impl', target='detect',
+                output='no disputed observable',
+                reason='the firing (and its check) names no method the context '
+                       'declares; the mechanism has nothing to reimplement')
+            return None
 
     # The chain is expensive (a generation plus three JVM runs) and BOTH judge
     # doors may ask about the same method several times per leg. One process =
@@ -380,7 +561,14 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
             _re('deterministic', method='reference-impl', target=method,
                 output='driver source invalid — DISCARDED', reason=str(e)[:200])
             return None
-        obs, why = run_reference(builder, buggy_dir, src, driver_src)
+        # `out` carries the compiled-reference directory back out (p1b step 3;
+        # the addendum's §11.4 left it None). With it in the record, the gate
+        # re-evaluates this reference at a firing's state by rebuilding only
+        # the DRIVER — §8.3's cost envelope assumes one javac of the
+        # reference per leg, not one per firing.
+        _refout = {}
+        obs, why = run_reference(builder, buggy_dir, src, driver_src,
+                                 out=_refout)
         _re('deterministic', method='reference-impl', target=method,
             output=('reference ran' if obs else 'reference DISCARDED'), reason=why)
         if not obs:
@@ -481,9 +669,12 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
             'reads_what_method_reads': (
                 None if not _read_fields
                 else all(f in _read_fields for f in mapping)),
-            # the compiled reference directory is NOT plumbed out of
-            # run_reference yet; the gate build adds it (see the addendum).
-            'ref_dir': None,
+            # §2.1's type filter needs to know which receiver in a firing's
+            # `__rcvstate` line is the disputed method's own.
+            'declaring': sorted(declaring or ()),
+            # the compiled reference classes, so the gate rebuilds only the
+            # driver per firing (§8.3).
+            'ref_dir': _refout.get('ref_dir'),
         }
         _stored, _store_why = admit_reference(store, method, _admitted_record)
         _re('deterministic', method='reference-impl', target=method,
@@ -527,25 +718,33 @@ def _reference_impl_fact(*, args, fired, class_ctx, failure_tests, builder,
     # ORDERED, BOUNDED FALLBACK (stage-4 roll 2, rule 7): try up to three
     # candidates in the detector's ranked order; each attempt is memoized
     # individually, so across firings a leg spends at most one generation
-    # per distinct method and never revisits a failure.
-    for method in disputed[:3]:
+    # per distinct method and never revisits a failure. Widening (p1b step 3)
+    # attempts every NAMED target instead of stopping at the first fact —
+    # the store, not the fact, is what it is filling.
+    _widening = target_methods is not None
+    _first_fact = None
+    for method in disputed[:len(disputed) if _widening else 3]:
         if method in memo:
             if memo[method] is not None:
                 _re('deterministic', method='reference-impl', target=method,
                     output='memoized result reused',
                     reason='this disputed observable was already resolved '
                            'this leg')
-                return memo[method]
+                if not _widening:
+                    return memo[method]
+                _first_fact = _first_fact or memo[method]
             continue                     # known failure — try the next
         _re('deterministic', method='reference-impl', target=method,
-            output='disputed observable detected',
+            output=('widening target requested' if _widening
+                    else 'disputed observable detected'),
             detail={'candidates': disputed[:4], 'attempting': method})
         memo[method] = None      # every early exit inside leaves None
         fact = _attempt(method)
         memo[method] = fact
-        if fact:
+        if fact and not _widening:
             return fact
-    return None
+        _first_fact = _first_fact or fact
+    return _first_fact if not _widening else None
 
 
 def parse_args():
@@ -2065,6 +2264,26 @@ def main():
                   "candidates rather than injecting unscreened")
             synthesized_relations = []
         record_extras["synth_survivors"] = len(synthesized_relations)
+        # p1b step 3 part 1 — ADMISSION WIDENING, right after screening.
+        # This is the earliest point at which the KEPT checks are known, and
+        # it is before any judging, so every door that later looks a
+        # reference up by its firing's own observable finds whatever this
+        # produced. Bounded by config.P1B_MAX_REFERENCES per leg; fails open.
+        if (getattr(args, 'reference_impl', False) and synthesized_relations
+                and bug_kind == "semantic"
+                and not getattr(args, 'rulegen_only', False)):
+            try:
+                _widen_admissions(
+                    args=args,
+                    checks=[getattr(r, 'check', '') or ''
+                            for r in synthesized_relations],
+                    class_ctx=class_ctx, failure_tests=failure_tests,
+                    builder=builder, buggy_dir=selection.buggy_dir,
+                    patch_path=selection.patch_path,
+                    package=context.package, imports=context.source_imports)
+            except Exception as _wexc:
+                print(f"  [widening] admission widening unavailable "
+                      f"({_wexc}) — the leg keeps whatever it had")
 
     # RULE-GENERATION QUALITY MODE: replay the screened relations directly
     # against THIS leg's patched build, record what fired, and stop before
@@ -4231,8 +4450,12 @@ def main():
                         from java.relations.reference_impl import (
                             reference_verdict_gate)
                         _arec, _awhy = _admitted_for(fired, class_ctx, src)
+                        _fsr = _firing_state_reading(
+                            fired, _arec, evid, builder,
+                            selection.buggy_dir)
                         _gv, _gwhy = reference_verdict_gate(
-                            fired, _arec, lookup_why=_awhy)
+                            fired, _arec, lookup_why=_awhy,
+                            firing_reading=_fsr)
                         record_event(
                             'deterministic', method='reference-verdict-gate',
                             target=(fired or '')[:80],
@@ -4630,8 +4853,12 @@ def main():
                         from java.relations.reference_impl import (
                             reference_verdict_gate)
                         _arec2, _awhy2 = _admitted_for(_fired, class_ctx, _src)
+                        _fsr2 = _firing_state_reading(
+                            _fired, _arec2, _evid, builder,
+                            selection.buggy_dir)
                         _gv, _gwhy = reference_verdict_gate(
-                            _fired, _arec2, lookup_why=_awhy2)
+                            _fired, _arec2, lookup_why=_awhy2,
+                            firing_reading=_fsr2)
                         record_event(
                             'deterministic', method='reference-verdict-gate',
                             target=f['name'],

@@ -255,13 +255,19 @@ def test_production_chain_unmappable_signature_discards(monkeypatch):
 def test_wiring_both_doors_pass_patch_path():
     src = open('src/java/run.py').read()
     chunks = src.split('_reference_impl_fact(')[1:]
-    # def + memo attr + 2 call sites; a CALL passes args=args in its kwargs.
+    # def + memo/store attrs + 3 call sites; a CALL passes args=args in its
+    # kwargs. The third is p1b step 3's admission widening, which drives the
+    # SAME chain at a named target instead of a detected one.
     calls = [c[:700] for c in chunks if 'args=args' in c[:700]]
-    assert len(calls) == 2, f'expected exactly 2 call sites, got {len(calls)}'
-    for c in calls:
-        assert 'patch_path=selection.patch_path' in c
+    assert len(calls) == 3, f'expected exactly 3 call sites, got {len(calls)}'
+    doors = [c for c in calls if 'patch_path=selection.patch_path' in c]
+    assert len(doors) == 2, 'both judge doors must still call the chain'
+    for c in doors:
         assert 'package=context.package' in c
         assert 'imports=context.source_imports' in c
+    widening = [c for c in calls if c not in doors]
+    assert len(widening) == 1
+    assert 'target_methods=[method]' in widening[0]
 
 
 # ---------------------------------------------------------------------------
@@ -1664,7 +1670,7 @@ def test_gate_is_wired_on_both_doors():
     assert calls == 2, f'expected the gate on both doors, found {calls}'
     # Harness door: the void path records a drop reason, never a keep.
     i = src.index('fd_prior=_fd_consult_result')
-    harness = src[i:i + 1800]
+    harness = src[i:i + 2400]
     assert "reference-verdict-gate: " in harness
     assert harness.index("if _gv == 'void':") < harness.index('kept_reason =')
 
@@ -1733,7 +1739,7 @@ def test_chain_passes_the_check_source_at_both_doors():
     assert src.count('check_source=src)') == 1     # harness door
     assert src.count('check_source=_src)') == 1    # replay door
     i = src.index('def _reference_impl_fact')
-    body = src[i:i + 3000]
+    body = src[i:i + 5000]
     assert 'check_source=check_source' in body
 
 
@@ -2123,26 +2129,38 @@ def test_lookup_is_by_the_firings_own_observable():
         None, 'no admitted reference for this leg')
 
 
-def test_a_single_reference_leg_reads_byte_for_byte_as_before():
-    # Back-compat, the whole point of doing the store before the gate: on a
-    # leg that admitted exactly one reference — every archived leg that
-    # admitted anything at all, bar four — the verdict is unchanged.
+def test_the_single_record_substitution_is_gone():
+    # p1b step 3 (the §11 addendum's stated end point). Step 1 kept ONE
+    # back-compat pass-through so the step-2 coverage roll would measure
+    # admissions and not a changed gate: a lookup miss on a leg holding
+    # exactly one record returned that record and said SUBSTITUTED. 8.44
+    # counted zero such events, and the gate now evaluates the reference at
+    # the firing's own state, where a reference for a DIFFERENT observable is
+    # not a weaker answer but a wrong one.
+    import java.relations.reference_impl as ri
     from java.relations.reference_impl import (admitted_reference_for,
                                                reference_verdict_gate)
     store = {'chisquare': ADMITTED_M65}
-    # (a) the firing disputes the admitted observable: same record, same void.
+    # (a) the firing disputes the admitted observable: unchanged, still voids.
     rec, why = admitted_reference_for(store, ROLL12_FIRING, CTX)
     assert rec is ADMITTED_M65
     assert reference_verdict_gate(ROLL12_FIRING, rec, lookup_why=why) == \
         reference_verdict_gate(ROLL12_FIRING, ADMITTED_M65)
-    # (b) the firing disputes something else: the one record is still passed
-    # through (today's bytes) and the pass-through SAYS it substituted.
+    # (b) the firing disputes something else: an HONEST no-reference
+    # abstention, one of §1's named reasons, on a one-record leg too.
     legacy = '[oracle:x] violation: rms=0.09931552348327041 threshold=0.5'
     rec, why = admitted_reference_for(store, legacy, CTX)
-    assert rec is ADMITTED_M65
-    assert 'SUBSTITUTED' in why and 'no-reference-for-this-observable' in why
-    assert reference_verdict_gate(legacy, rec, lookup_why=why) == \
-        reference_verdict_gate(legacy, ADMITTED_M65)
+    assert rec is None
+    assert 'no-reference-for-this-observable' in why
+    assert 'SUBSTITUTED' not in why
+    v, gwhy = reference_verdict_gate(legacy, rec, lookup_why=why)
+    assert v == 'abstain' and 'no-reference-for-this-observable' in gwhy
+    # The special case is gone from the CODE, not merely unreachable on this
+    # input: no branch of the lookup is keyed on the store holding one record.
+    body = inspect.getsource(ri.admitted_reference_for)
+    body = body.split('"""')[2] if body.count('"""') >= 2 else body
+    assert 'SUBSTITUTED' not in body
+    assert 'len(store) == 1' not in body
 
 
 def test_the_gate_abstention_names_the_unmatched_observable():
@@ -2227,12 +2245,612 @@ def test_both_doors_look_the_reference_up_by_the_firings_observable():
                / 'run.py').read()
     # The overwritable slot is gone from production entirely.
     assert "'_admitted', None" not in src
-    assert src.count("'_admitted_by_method', None") == 3   # reader + 2 detail
+    # reader + 2 detail reads + the widening's own read of the same store
+    assert src.count("'_admitted_by_method', None") == 4
     # Both gate calls read a record resolved from the FIRING, and each door
     # uses its own firing and its own check source (the one-door lesson).
     assert src.count('_admitted_for(') == 3                # def + 2 doors
     assert '_admitted_for(fired, class_ctx, src)' in src
     assert '_admitted_for(_fired, class_ctx, _src)' in src
     assert src.count('_gv, _gwhy = reference_verdict_gate(') == 2
-    assert src.count('lookup_why=_awhy)') == 1
-    assert src.count('lookup_why=_awhy2)') == 1
+    assert src.count('lookup_why=_awhy,') == 1
+    assert src.count('lookup_why=_awhy2,') == 1
+
+
+# ---------------------------------------------------------------------------
+# p1b step 3 part 1: ADMISSION WIDENING (design §8.1; plan 8.44).
+#
+# 8.44's measurement, verbatim: "ONE admission per Math-65 leg (leg 03:
+# chisquare = the contested observable; legs 01/02: valueref only), ZERO rms
+# references anywhere". The store was not the constraint — the REQUEST was.
+# These pin the enumeration, the per-leg cap, and the event wording the
+# validation roll counts.
+# ---------------------------------------------------------------------------
+
+# Two kept checks over the same receiver, probing two different observables —
+# the shape whose second observable the leg never asked about.
+CHECK_RMS = ('Opt opt = new Opt();\n'
+             'double rms = opt.getRMS();\n'
+             'if (rms < 0) throw new RuntimeException('
+             '"relation rms-nonnegative violated: rms=" + rms);')
+CHECK_CHI = ('Opt opt = new Opt();\n'
+             'double chi = opt.getChiSquare();\n'
+             'if (chi < 0) throw new RuntimeException('
+             '"relation chi-nonnegative violated: chi=" + chi);')
+CHECK_COST = ('Opt opt = new Opt();\n'
+              'if (opt.getCost() < 0) throw new RuntimeException('
+              '"relation cost violated: cost=" + opt.getCost());')
+
+
+def test_widening_enumerates_the_observables_the_kept_checks_probe():
+    from java.relations.reference_impl import (observables_probed_by,
+                                               widening_targets)
+    probed = observables_probed_by([CHECK_RMS, CHECK_CHI], CTX)
+    assert 'getRMS' in probed and 'getChiSquare' in probed
+    # Deduped per STORE SLOT, not per spelling.
+    assert len(probed) == len({n.lower().lstrip('get') for n in probed})
+    targets, why = widening_targets({}, [CHECK_RMS, CHECK_CHI], CTX, 3)
+    assert [t for t in targets] == probed[:3]
+    assert 'no admitted reference' in why
+
+
+def test_widening_skips_observables_that_already_have_a_reference():
+    from java.relations.reference_impl import widening_targets
+    store = {'rms': _rec('getRMS')}
+    targets, why = widening_targets(store, [CHECK_RMS, CHECK_CHI], CTX, 3)
+    assert 'getRMS' not in targets and 'getChiSquare' in targets
+    # And a leg whose probed observables are all covered says so.
+    targets, why = widening_targets(store, [CHECK_RMS], CTX, 3)
+    assert targets == [] and 'already has an admitted reference' in why
+
+
+def test_widening_stops_at_the_per_leg_cap():
+    # The cap is on what the LEG MAY HOLD, so it bounds the spend however
+    # many times the widening runs (§8.3's envelope is per admitted
+    # reference per leg).
+    import config
+    from java.relations.reference_impl import widening_targets
+    assert config.P1B_MAX_REFERENCES == 3
+    checks = [CHECK_RMS, CHECK_CHI, CHECK_COST]
+    assert len(widening_targets({}, checks, CTX, 2)[0]) == 2
+    targets, why = widening_targets({'rms': _rec('getRMS')}, checks, CTX, 2)
+    assert len(targets) == 1
+    targets, why = widening_targets(
+        {'rms': _rec('getRMS'), 'chisquare': _rec('getChiSquare')},
+        checks, CTX, 2)
+    assert targets == []
+    assert 'at the cap of 2' in why and 'go unrequested' in why
+
+
+def _run_widening(monkeypatch, checks, twin_outputs, ref_output,
+                  generated=REFERENCE_REPLY, ctx=None, store=None, cap=None):
+    """Drive run._widen_admissions with the stubbed generator and JVM the
+    chain walkthrough already uses — same code path production runs."""
+    from java import run as runmod
+    events = []
+    monkeypatch.setattr(
+        'llm.record_event',
+        lambda kind, **kw: events.append(
+            (kw.get('method'), kw.get('output'), kw.get('reason'))),
+        raising=False)
+
+    class FakeHG:
+        def __init__(self, **kw): pass
+        def generate(self, msgs): return generated
+    monkeypatch.setattr('llm.HarnessGenerator', FakeHG, raising=False)
+
+    def fake_run_twin(builder, project_dir, twin_source, **kw):
+        return twin_outputs.pop(0) if twin_outputs else (None, 'no twin left')
+
+    def fake_run_reference(builder, buggy_dir, ref_src, driver_src, **kw):
+        if kw.get('out') is not None:
+            kw['out']['ref_dir'] = '/work/reference'
+        return ref_output
+    monkeypatch.setattr(rr, 'run_twin', fake_run_twin)
+    monkeypatch.setattr(rr, 'run_reference', fake_run_reference)
+
+    class FakePPB:
+        def build_patched_dir(self, b, p): return '/patched'
+    monkeypatch.setattr(runmod, 'PatchedProjectBuilder', FakePPB)
+    if cap is not None:
+        monkeypatch.setattr(runmod.config, 'P1B_MAX_REFERENCES', cap)
+    runmod._reference_impl_fact._memo = {}
+    runmod._reference_impl_fact._admitted_by_method = dict(store or {})
+    keys = runmod._widen_admissions(
+        args=types.SimpleNamespace(model='m', reference_impl=True),
+        checks=checks, class_ctx=[ctx if ctx is not None else CTX],
+        failure_tests=[_mk_failure_test()], builder=object(),
+        buggy_dir='/buggy', patch_path='/p.patch')
+    return keys, events, runmod._reference_impl_fact._admitted_by_method
+
+
+def test_widening_records_requested_then_admitted_with_the_reason(monkeypatch):
+    keys, events, store = _run_widening(
+        monkeypatch, [CHECK_CHI], [BUGGY_TWIN, PATCHED_TWIN], REF_OK)
+    wide = [(o, r) for m, o, r in events if m == 'reference-widening']
+    assert any('to widen onto' in (o or '') for o, _r in wide)
+    assert any('reference REQUESTED for observable `chisquare`' == o
+               for o, _r in wide)
+    assert any('reference ADMITTED for observable `chisquare`' == o
+               for o, _r in wide)
+    assert keys == ['chisquare'] and 'chisquare' in store
+    # The gate's re-evaluation needs the compiled reference; step 1 left this
+    # None on purpose and the addendum said step 3 must plumb it.
+    assert store['chisquare']['ref_dir'] == '/work/reference'
+    assert store['chisquare']['declaring']
+
+
+def test_widening_rejection_says_which_step_refused(monkeypatch):
+    # A reference the screen discards is REJECTED, with the chain's own
+    # reason — a widening that asked and was refused and a widening that
+    # never asked are different findings (8.39).
+    bad_ref = ({'getChiSquare': ['3.25'], 'getRMS': ['999.0'],
+                'getCost': ['2.2'], 'getRows': ['2']}, 'ran')
+    keys, events, store = _run_widening(
+        monkeypatch, [CHECK_CHI], [BUGGY_TWIN, PATCHED_TWIN], bad_ref)
+    wide = [(o, r) for m, o, r in events if m == 'reference-widening']
+    rejected = [r for o, r in wide
+                if o == 'widening REJECTED for observable `chisquare`']
+    assert rejected and 'screen DISCARDED' in rejected[0]
+    assert keys == [] and store == {}
+
+
+def test_widening_asks_for_every_target_not_only_the_first(monkeypatch):
+    # The defect 8.44 measured: the chain returns at the FIRST fact, so a leg
+    # probing two observables admitted one of them by arrival order.
+    from java import run as runmod
+    seen = []
+    real = runmod._reference_impl_fact
+
+    def spy(**kw):
+        seen.append(kw.get('target_methods'))
+        return None
+    monkeypatch.setattr(runmod, '_reference_impl_fact', spy)
+    spy._admitted_by_method = {}
+    monkeypatch.setattr('llm.record_event', lambda kind, **kw: None,
+                        raising=False)
+    runmod._widen_admissions(
+        args=types.SimpleNamespace(model='m', reference_impl=True),
+        checks=[CHECK_RMS, CHECK_CHI], class_ctx=[CTX],
+        failure_tests=[_mk_failure_test()], builder=object(),
+        buggy_dir='/buggy', patch_path='/p.patch')
+    assert seen == [['getRMS'], ['getChiSquare']] or \
+        seen == [['getChiSquare'], ['getRMS']], seen
+    assert runmod._reference_impl_fact is spy and real is not None
+
+
+def test_the_chain_attempts_every_named_target(monkeypatch):
+    # Same property one layer down: with targets named, the chain does not
+    # stop at the first fact — the store, not the fact, is what it fills.
+    from java import run as runmod
+    events = []
+    monkeypatch.setattr(
+        'llm.record_event',
+        lambda kind, **kw: events.append((kw.get('output'), kw.get('target'))),
+        raising=False)
+
+    class FakeHG:
+        def __init__(self, **kw): pass
+        def generate(self, msgs): return 'no class here'
+    monkeypatch.setattr('llm.HarnessGenerator', FakeHG, raising=False)
+    runmod._reference_impl_fact._memo = {}
+    runmod._reference_impl_fact._admitted_by_method = {}
+    out = runmod._reference_impl_fact(
+        args=types.SimpleNamespace(model='m', reference_impl=True),
+        fired='', class_ctx=[CTX], failure_tests=[_mk_failure_test()],
+        builder=object(), buggy_dir='/b', patch_path='/p.patch',
+        trusted_values=[], target_methods=['getRMS', 'getChiSquare'])
+    assert out is None
+    asked = [t for o, t in events if o == 'widening target requested']
+    assert asked == ['getRMS', 'getChiSquare']
+
+
+# ---------------------------------------------------------------------------
+# p1b step 3 part 2: THE FIRING-STATE READING (design §1, §2).
+#
+# Fixtures are the design's own recorded lines, not invented ones: §0.1's
+# hand-verified Math-65 exemplar and the four 8.31 abstain shapes.
+# ---------------------------------------------------------------------------
+
+# §0.1, verbatim and untruncated, from stack_confirm/06's result.jsonl.
+M65_EXEMPLAR_FIRING = (
+    'relation rms_matches_documented_mean_of_weighted_squares violated: '
+    'actual=1.0540925533463172 expected=1.3333333334015478 '
+    '__consumed=i:-2|i:-4|i:4|i:1|i:-50 '
+    '__rcvstate optimizer:LevenbergMarquardtOptimizer solvedCols=1 '
+    'diagR=[2.23606797749979] jacNorm=[2.23606797749979] '
+    'beta=[0.10557280900008412] permutation=[0] rank=1 lmPar=0.0 '
+    'lmDir=[2.0464373086829374E-10] initialStepBoundFactor=100.0 '
+    'costRelativeTolerance=1.0E-10 parRelativeTolerance=1.0E-10 '
+    'orthoTolerance=1.0E-10 qrRankingThreshold=2.2250738585072014E-308 '
+    'jacobian=[[2.23606797749979], [-1.0]] cols=1 rows=2 '
+    'targetValues=[-2.0, -4.0] residualsWeights=[4.0, 1.0] '
+    'point=[-2.6666666668030956] '
+    'objective=[-2.6666666668030956, -2.6666666668030956] '
+    'residuals=[-1.8303869531166583E-10, -1.490711984938847] '
+    'cost=1.8856180832605967 maxIterations=1000 iterations=30')
+
+# The binding that READS WHAT THE METHOD READS (§2.7's right-hand column).
+ADMITTED_RMS = {
+    'method': 'getRMS',
+    'sig': 'double[] residuals, double[] residualsWeights, int rows',
+    'mapping': ['residuals', 'residualsWeights', 'rows'],
+    'matched': {'getRMS': 'getRMS'},
+    'fields_read': ['residuals', 'residualsWeights', 'rows'],
+    'reads_what_method_reads': True,
+    'declaring': ['LevenbergMarquardtOptimizer'],
+    'src': 'public class ReferenceImpl { }',
+    'obs': {'getRMS': ['0.0']}, 'buggy': {'getRMS': ['0.0']},
+    'ref_dir': '/work/reference',
+}
+
+
+def _stub_documented_rms(literals, label):
+    """The documented getRMS formula in Python, standing in for the generated
+    Java — G-P1's zero-JVM oracle."""
+    import math
+    nums = [[float(v) for v in
+             re.findall(r'-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?', lit)]
+            for lit, _typ in literals]
+    residuals, weights, rows = nums[0], nums[1], nums[2][0]
+    s = sum(w * r * r for r, w in zip(residuals, weights))
+    return repr(math.sqrt(s / rows)), 'stubbed reference'
+
+
+def _never_evaluated(literals, label):
+    raise AssertionError('the reference must not be evaluated on this shape')
+
+
+def test_gp1_the_exemplar_reads_agrees_with_patched():
+    # The one case §0.1 verified BY HAND: the documented formula on the
+    # fields the METHOD reads reproduces the patched build's actual= to all
+    # seventeen printed digits, while the relation's expected= recomputes the
+    # residuals from targetValues − objective.
+    from java.relations.reference_impl import _values_agree
+    from java.relations.reference_state import reference_firing_reading
+    r = reference_firing_reading(M65_EXEMPLAR_FIRING, ADMITTED_RMS,
+                                 _stub_documented_rms)
+    assert r['reading'] == 'agrees-with-patched', r['reason']
+    assert _values_agree(r['reference'], '1.0540925533463172')
+    assert r['observed'] == '1.0540925533463172'
+    assert r['claimed'] == '1.3333333334015478'
+    assert r['receiver'] == 'optimizer'
+    assert r['reason'].startswith('agrees-with-patched:')
+
+
+def test_gp2_the_split_keeps_state_fields_out_of_the_observables():
+    # The live hazard the split repairs: the state printer emits name=value
+    # on the SAME line, so a k=v parser over the whole line reads residuals=,
+    # cost= and rows= as if the relation had observed them.
+    from java.relations.reference_state import (message_values,
+                                                split_firing_line)
+    message, consumed, state = split_firing_line(M65_EXEMPLAR_FIRING)
+    assert 'residuals=' not in message and 'cost=' not in message
+    assert consumed == 'i:-2|i:-4|i:4|i:1|i:-50'
+    assert state.startswith(' __rcvstate optimizer:')
+    observed, claimed, why = message_values(message)
+    assert (observed, claimed) == ('1.0540925533463172', '1.3333333334015478')
+    # …and the whole line WOULD have been misread.
+    from java.relations.evidence_facts import observed_values
+    assert 'residuals' in observed_values(M65_EXEMPLAR_FIRING)
+
+
+def test_gp2_uninitialised_receiver_abstains():
+    # 8.31, verbatim from mechp1b_20260808_215154/01. The three MAPPED fields
+    # are all non-null here, so java_literal's own null rule would let this
+    # evaluate cleanly and return a confident number from a state the
+    # optimizer never produced — which is why the rule reads the WHOLE object.
+    from java.relations.reference_state import (receiver_never_ran,
+                                                parse_state_blocks,
+                                                reference_firing_reading)
+    line = ('relation r violated: actual=1.0 expected=2.0 __consumed=i:0 '
+            '__rcvstate opt:LevenbergMarquardtOptimizer solvedCols=0 '
+            'diagR=null jacNorm=null beta=null permutation=null rank=0 '
+            'lmPar=0.0 lmDir=null jacobian=null cols=0 rows=1 '
+            'targetValues=null residualsWeights=[0.01] point=null '
+            'objective=null residuals=[-1000.0] cost=0.0 '
+            'maxIterations=1000 iterations=0')
+    block = parse_state_blocks(line[line.index(' __rcvstate'):])[0]
+    assert receiver_never_ran(block)
+    r = reference_firing_reading(line, ADMITTED_RMS, _never_evaluated)
+    assert r['reading'] == 'abstain'
+    assert r['reason'].startswith('receiver-never-ran:')
+
+
+def test_gp2_nan_from_an_uncomputed_cache_abstains():
+    # 8.31, verbatim from mechp1b_20260808_215154/02. NaN fed to the
+    # reference produces NaN, and NaN == NaN reads as agreement — an
+    # uncomputed cache could manufacture a dismissal out of two blanks.
+    from java.relations.reference_state import reference_firing_reading
+    admitted = dict(ADMITTED_RMS,
+                    method='getNumericalVariance',
+                    sig='double numericalVariance',
+                    mapping=['numericalVariance'],
+                    matched={'getNumericalVariance': 'getNumericalVariance'},
+                    fields_read=['numericalVariance'],
+                    declaring=['HypergeometricDistribution'])
+    line = ('relation v violated: actual=NaN expected=0.5 __consumed=i:1 '
+            '__rcvstate dist:HypergeometricDistribution '
+            'numberOfSuccesses=423253 populationSize=683894 '
+            'sampleSize=13108 numericalVariance=NaN '
+            'numericalVarianceIsCalculated=false')
+    r = reference_firing_reading(line, admitted, _never_evaluated)
+    assert r['reading'] == 'abstain'
+    assert r['reason'].startswith('non-finite-state:')
+    # The companion flag is RECORDED so the class stays countable, and gates
+    # nothing — the plain non-finite rule already covers it.
+    assert r['detail']['non_finite_companions'] == {
+        'numericalVarianceIsCalculated': 'false'}
+
+
+def test_gp2_truncated_array_abstains_and_is_never_shortened():
+    # Both corpus shapes: mid-array and mid-token. A shorter array changes
+    # rows, changes the sum, and produces a confident wrong number.
+    from java.relations.reference_state import (parse_state_blocks,
+                                                reference_firing_reading)
+    line = ('relation r violated: actual=1.0 expected=2.0 __consumed=i:1 '
+            '__rcvstate optimizer:LevenbergMarquardtOptimizer '
+            'residualsWeights=[4.0, 1.0] rows=2 iterations=30 '
+            'residuals=[-1.8303869531166583E-10, -1.490')
+    blocks = parse_state_blocks(line[line.index(' __rcvstate'):])
+    assert blocks[0]['truncated'] == ['residuals']
+    # The value is kept whole in the parse; it is refused by NAME, never cut
+    # down to a usable prefix.
+    assert blocks[0]['fields']['residuals'].endswith('-1.490')
+    r = reference_firing_reading(line, ADMITTED_RMS, _never_evaluated)
+    assert r['reading'] == 'abstain'
+    assert r['reason'].startswith('truncated-state:')
+    # Mid-TOKEN, the second recorded shape: `permutation=nul`.
+    mid = line.replace('residuals=[-1.8303869531166583E-10, -1.490',
+                       'residuals=[-1.0, -2.0] permutation=nul')
+    blocks = parse_state_blocks(mid[mid.index(' __rcvstate'):])
+    assert blocks[0]['truncated'] == ['permutation']
+
+
+def test_gp2_two_receivers_agree_then_disagree():
+    # The 8.31 corpus's opt1:/opt2: shape, and diffcov/01's three-block line.
+    # Rule 3 converts the ambiguity into a MEASUREMENT rather than a
+    # heuristic: same answer means the ambiguity is immaterial.
+    from java.relations.reference_state import reference_firing_reading
+    base = ('relation r violated: actual=1.0 expected=2.0 __consumed=i:1 '
+            '__rcvstate opt1:LevenbergMarquardtOptimizer '
+            'residuals=[1.0, 1.0] residualsWeights=[1.0, 1.0] rows=2 '
+            'iterations=5 '
+            '__rcvstate opt2:LevenbergMarquardtOptimizer '
+            'residuals=[{r2}] residualsWeights=[1.0, 1.0] rows=2 '
+            'iterations=5')
+    same = reference_firing_reading(base.format(r2='1.0, 1.0'), ADMITTED_RMS,
+                                    _stub_documented_rms)
+    assert same['reading'] == 'agrees-with-patched', same['reason']
+    diff = reference_firing_reading(base.format(r2='9.0, 9.0'), ADMITTED_RMS,
+                                    _stub_documented_rms)
+    assert diff['reading'] == 'abstain'
+    assert diff['reason'].startswith('ambiguous-receiver:')
+
+
+def test_gp2_a_receiver_of_another_type_is_not_the_disputed_one():
+    # Chart-19's shape: three receivers in one line, none of them the
+    # declaring type of the disputed method. Guessing here is the
+    # silent-wrong-input class match_parameters was hardened against.
+    from java.relations.reference_state import reference_firing_reading
+    line = ('relation r violated: actual=1.0 expected=2.0 __consumed=i:1 '
+            '__rcvstate domainAxis:CategoryAxis lowerMargin=0.05 '
+            '__rcvstate plot:CategoryPlot rangeAxisIndex=-1')
+    r = reference_firing_reading(line, ADMITTED_RMS, _never_evaluated)
+    assert r['reading'] == 'abstain'
+    assert r['reason'].startswith('no-matching-receiver:')
+    # And a receiver of the right TYPE that does not print the mapped fields
+    # abstains for the same reason, one filter later.
+    thin = ('relation r violated: actual=1.0 expected=2.0 __consumed=i:1 '
+            '__rcvstate opt:LevenbergMarquardtOptimizer iterations=5 '
+            'rows=2')
+    r = reference_firing_reading(thin, ADMITTED_RMS, _never_evaluated)
+    assert r['reason'].startswith('no-matching-receiver:')
+
+
+def test_section_2_7_parameters_must_be_fields_the_method_reads():
+    # The sharpest residual risk in the design, and its mitigation. On
+    # Math-65 the two plausible bindings give OPPOSITE verdicts:
+    # (residuals, residualsWeights, rows) reproduces the patched build;
+    # (targetValues, objective, residualsWeights) reproduces the relation.
+    # Both map onto real canonical fields; only one names fields the
+    # method's own body reads.
+    from java.relations.reference_state import reference_firing_reading
+    wrong = dict(ADMITTED_RMS,
+                 sig='double[] targetValues, double[] objective, '
+                     'double[] residualsWeights',
+                 mapping=['targetValues', 'objective', 'residualsWeights'],
+                 reads_what_method_reads=False)
+    r = reference_firing_reading(M65_EXEMPLAR_FIRING, wrong, _never_evaluated)
+    assert r['reading'] == 'abstain'
+    assert r['reason'].startswith('parameters-not-read-by-method:')
+    assert 'targetValues' in r['reason']
+    # None is UNDETERMINED (the body was not visible) and never a failure.
+    undet = dict(ADMITTED_RMS, reads_what_method_reads=None, fields_read=[])
+    assert reference_firing_reading(
+        M65_EXEMPLAR_FIRING, undet, _stub_documented_rms
+    )['reading'] == 'agrees-with-patched'
+
+
+def test_every_other_failure_path_abstains_with_its_own_reason():
+    # G-P4: prove the guard was ACTIVE, not merely silent. One reason per
+    # path, all inside the closed ABSTENTION_REASONS list.
+    from java.relations.reference_state import (ABSTENTION_REASONS,
+                                                reference_firing_reading)
+    def _named(r):
+        head = r['reason'].split(':')[0]
+        assert head in ABSTENTION_REASONS, r['reason']
+        return head
+    # no admitted record at all
+    assert _named(reference_firing_reading(M65_EXEMPLAR_FIRING, None,
+                                           _never_evaluated)) == 'no-reference'
+    # a line whose state was lost inside a quoted consumed payload
+    lost = 'relation r violated: actual=1.0 expected=2.0 __consumed=q:"junk'
+    assert _named(reference_firing_reading(
+        lost, ADMITTED_RMS, _never_evaluated)) == \
+        'state-lost-in-consumed-payload'
+    # nothing recorded at all (the pre-p1a and harness-track shape)
+    assert _named(reference_firing_reading(
+        'relation r violated: actual=1.0 expected=2.0', ADMITTED_RMS,
+        _never_evaluated)) == 'unmappable'
+    # a firing whose message resolves no claimed value
+    bare = (M65_EXEMPLAR_FIRING
+            .replace('expected=1.3333333334015478 ', ''))
+    assert _named(reference_firing_reading(
+        bare, ADMITTED_RMS, _never_evaluated)) == 'no-observable'
+    # a mapped field printing null — java_literal's own rule, the second layer
+    nulled = M65_EXEMPLAR_FIRING.replace(
+        'residuals=[-1.8303869531166583E-10, -1.490711984938847]',
+        'residuals=null').replace('iterations=30', 'iterations=30 ')
+    assert _named(reference_firing_reading(
+        nulled, ADMITTED_RMS, _never_evaluated)) == 'unmappable'
+    # a compile failure / driver timeout inside the JVM adapter
+    assert _named(reference_firing_reading(
+        M65_EXEMPLAR_FIRING, ADMITTED_RMS,
+        lambda lits, label: (None, 'driver did not compile'))) == \
+        'reference-unrunnable'
+    # the reference computes a third answer
+    third = reference_firing_reading(
+        M65_EXEMPLAR_FIRING, ADMITTED_RMS,
+        lambda lits, label: ('42.0', 'ran'))
+    assert third['reading'] == 'mutually-inconsistent'
+    # …and a difference below the rounding floor is a floor artefact, not a
+    # finding: dismissing there would be arithmetic noise.
+    degenerate = M65_EXEMPLAR_FIRING.replace(
+        'expected=1.3333333334015478', 'expected=1.0540925533463172')
+    assert reference_firing_reading(
+        degenerate, ADMITTED_RMS, _stub_documented_rms)['reading'] == \
+        'degenerate'
+
+
+def test_the_corroborating_reading_is_computed_and_named():
+    from java.relations.reference_state import (REFERENCE_FIRING_DISMISSING,
+                                                reference_firing_fact,
+                                                reference_firing_reading)
+    # A reference that sides with the RELATION against the patched build.
+    r = reference_firing_reading(
+        M65_EXEMPLAR_FIRING, ADMITTED_RMS,
+        lambda lits, label: ('1.3333333334015478', 'ran'))
+    assert r['reading'] == 'agrees-with-check'
+    assert 'advisory fact and changes no verdict' in r['reason']
+    # One terminal, and only one.
+    assert REFERENCE_FIRING_DISMISSING == frozenset({'agrees-with-patched'})
+    fact = reference_firing_fact(r)
+    assert '[fact:reference-at-firing-state]' in fact
+    assert 'getRMS' in fact and 'agrees-with-check' in fact
+    # No fact where nothing was computed — a hedged fact on an abstention is
+    # an uncited assertion with extra steps.
+    assert reference_firing_fact(
+        reference_firing_reading('', ADMITTED_RMS, _never_evaluated)) is None
+
+
+def test_consumed_never_supplies_a_parameter_and_is_recorded():
+    # §2.5, and the roll-8 finding it is built on: positional type matching
+    # fed a reference two same-typed arrays in the wrong order.
+    from java.relations.reference_state import (consumed_entries,
+                                                reference_firing_reading)
+    assert consumed_entries('i:-2|i:-4|q:"a|b]"|d:1.5') == [
+        ('i', '-2'), ('i', '-4'), ('q', '"<payload>"'), ('d', '1.5')]
+    r = reference_firing_reading(M65_EXEMPLAR_FIRING, ADMITTED_RMS,
+                                 _stub_documented_rms)
+    assert r['detail']['consumed'] == 'i:-2|i:-4|i:4|i:1|i:-50'
+    assert r['detail']['consumed_crosscheck'].startswith(
+        ('consumed-consistent', 'consumed-silent'))
+
+
+# ---------------------------------------------------------------------------
+# The GATE's use of the reading: one terminal, and it is the only one.
+# ---------------------------------------------------------------------------
+
+def test_gate_voids_only_on_agrees_with_patched():
+    from java.relations.reference_impl import reference_verdict_gate
+    from java.relations.reference_state import reference_firing_reading
+    reading = reference_firing_reading(M65_EXEMPLAR_FIRING, ADMITTED_RMS,
+                                       _stub_documented_rms)
+    v, why = reference_verdict_gate(M65_EXEMPLAR_FIRING, ADMITTED_RMS,
+                                    firing_reading=reading)
+    assert v == 'void'
+    assert why.startswith('agrees-with-patched:')
+
+
+def test_gate_corroboration_is_advisory_and_never_a_verdict():
+    # It is the direction that pushes toward accusation, so it is the
+    # direction that could create a false alarm — and at this site the
+    # finding is already kept, so it can do nothing anyway.
+    from java.relations.reference_impl import reference_verdict_gate
+    from java.relations.reference_state import reference_firing_reading
+    reading = reference_firing_reading(
+        M65_EXEMPLAR_FIRING, ADMITTED_RMS,
+        lambda lits, label: ('1.3333333334015478', 'ran'))
+    v, why = reference_verdict_gate(M65_EXEMPLAR_FIRING, ADMITTED_RMS,
+                                    firing_reading=reading)
+    assert v == 'abstain'
+    assert why.startswith('agrees-with-check:')
+
+
+def test_gate_reads_byte_for_byte_as_today_on_every_abstention():
+    from java.relations.reference_impl import reference_verdict_gate
+    from java.relations.reference_state import reference_firing_reading
+    for reading in (None, {},
+                    reference_firing_reading('', ADMITTED_RMS,
+                                             _never_evaluated),
+                    reference_firing_reading(
+                        M65_EXEMPLAR_FIRING, ADMITTED_RMS,
+                        lambda lits, label: ('42.0', 'ran'))):
+        assert reference_verdict_gate(ROLL12_FIRING, ADMITTED_M65,
+                                      firing_reading=reading) == \
+            reference_verdict_gate(ROLL12_FIRING, ADMITTED_M65)
+        assert reference_verdict_gate(ROLL12_FIRING, None,
+                                      firing_reading=reading) == \
+            reference_verdict_gate(ROLL12_FIRING, None)
+
+
+def test_the_reading_is_aimed_at_the_rate_indiscriminate_population_only():
+    # 8.42 and 8.43 both failed to convert this population with a RATE
+    # reading; the tag is read literally, exactly as the bypass reads it.
+    from java.relations.reference_impl import firing_state_reading_applies
+    yes, why = firing_state_reading_applies(
+        'some evidence\n[fact:rate-indiscriminate] both sides fire')
+    assert yes and 'rate-indiscriminate' in why
+    for other in ('', None, '[fact:rate-ambiguous] x',
+                  'the rate is indiscriminate, in prose'):
+        applies, why = firing_state_reading_applies(other)
+        assert applies is False
+        assert 'reads exactly as it does today' in why
+
+
+def test_gp3_no_genuine_catch_row_reads_agrees_with_patched():
+    # Referee B is the named member of this gate. The 67 rows carry no
+    # admitted reference, so every one reads `no-reference` — reported AS an
+    # abstention-by-reach result, never as a values-level exoneration.
+    import json
+    from java.relations.reference_state import reference_firing_reading
+    pop = Path(__file__).resolve().parents[1] / 'docs' / 'replay' / \
+        'backtrack' / 'guard_population.json'
+    if not pop.exists():
+        pytest.skip('genuine-catch guard not present')
+    rows = json.load(pop.open())
+    assert len(rows) == 67
+    readings = [reference_firing_reading(r.get('claim', ''), None,
+                                         _never_evaluated) for r in rows]
+    assert {x['reading'] for x in readings} == {'abstain'}
+    assert {x['reason'].split(':')[0] for x in readings} == {'no-reference'}
+
+
+def test_the_firing_state_reading_is_wired_at_both_doors_before_the_keep():
+    src = open(Path(__file__).resolve().parents[1] / 'src' / 'java'
+               / 'run.py').read()
+    assert src.count('_firing_state_reading(') == 3      # def + both doors
+    assert src.count('firing_reading=_fsr)') == 1        # harness door
+    assert src.count('firing_reading=_fsr2)') == 1       # replay door
+    # Each door reads its OWN firing and its OWN evidence (the one-door
+    # lesson) and the reading is computed BEFORE the gate decides.
+    for fired, evid, gate in (('fired, _arec, evid', '_fsr', 'firing_reading=_fsr)'),
+                              ('_fired, _arec2, _evid', '_fsr2',
+                               'firing_reading=_fsr2)')):
+        i = src.index(fired)
+        assert i < src.index(gate)
+    # p1b adds nothing to the 5C/6B/6C ladder, by the design's own decision.
+    jd = open(Path(__file__).resolve().parents[1] / 'src' / 'java'
+              / 'relations' / 'judge_decision.py').read()
+    assert 'reference_firing' not in jd and 'firing_reading' not in jd

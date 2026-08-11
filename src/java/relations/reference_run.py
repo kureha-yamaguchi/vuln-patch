@@ -303,26 +303,44 @@ def run_reference(builder,
                   reference_source: str,
                   driver_source: str,
                   timeout_seconds: int = 60,
-                  work_subdir: str = 'reference') -> Tuple[
+                  work_subdir: str = 'reference',
+                  reference_dir: Optional[str] = None,
+                  out: Optional[dict] = None) -> Tuple[
                       Optional[Dict[str, List[str]]], str]:
     """Compile the reference + driver and run them. `(observables, reason)`.
 
     `observables` is None on ANY failure — the caller must treat that as "no
     standing", never as "no difference found".
+
+    `reference_dir` names a directory holding an ALREADY-COMPILED
+    `ReferenceImpl` — a previous call's `out['ref_dir']`. The reference
+    compile is then skipped and only the DRIVER is rebuilt, which is what
+    lets a leg compile its reference once and re-evaluate it at many firing
+    states (p1b design §8.3: "the reference being compiled once per leg —
+    only the driver is rebuilt"). `out`, when given, is a dict this fills
+    with `ref_dir`. It is an out-parameter rather than a third return value
+    deliberately: every existing caller and every stubbed double in the
+    tests keeps its arity, so plumbing the directory out cannot change what
+    any of them do.
     """
-    try:
-        ref = builder.build(reference_source, buggy_dir,
-                            output_subdir=work_subdir)
-    except Exception as e:                       # pragma: no cover - defensive
-        return None, f'reference compile raised: {type(e).__name__}: {e}'
-    if not getattr(ref, 'compiled', False):
-        return None, _compile_failure_reason('reference', ref)
-    # The driver references the class the build() call above just produced.
-    # Its .class lands in the -d dir, which is NOT on build()'s compile
-    # classpath (roll 10: `cannot find symbol: class ReferenceImpl` with
-    # the class file sitting right there) — so hand that dir over
-    # explicitly. Same dir the runtime path already appends.
-    ref_dir = os.path.dirname(getattr(ref, 'harness_path', '') or '')
+    ref_dir = reference_dir or ''
+    if not ref_dir:
+        try:
+            ref = builder.build(reference_source, buggy_dir,
+                                output_subdir=work_subdir)
+        except Exception as e:                   # pragma: no cover - defensive
+            return None, f'reference compile raised: {type(e).__name__}: {e}'
+        if not getattr(ref, 'compiled', False):
+            return None, _compile_failure_reason('reference', ref)
+        # The driver references the class the build() call above just
+        # produced. Its .class lands in the -d dir, which is NOT on
+        # build()'s compile classpath (roll 10: `cannot find symbol: class
+        # ReferenceImpl` with the class file sitting right there) — so hand
+        # that dir over explicitly. Same dir the runtime path already
+        # appends.
+        ref_dir = os.path.dirname(getattr(ref, 'harness_path', '') or '')
+    if out is not None:
+        out['ref_dir'] = ref_dir
     try:
         drv = builder.build(driver_source, buggy_dir,
                             output_subdir=work_subdir,

@@ -364,17 +364,17 @@ def admitted_reference_for(store, fired_msg, code_context,
     check_source=...)`, normalized through `admission_key` — so the gate and
     the chain cannot disagree about what a firing is about.
 
-    ONE BACK-COMPAT PASS-THROUGH, recorded rather than hidden. When the
-    lookup misses and the leg admitted exactly ONE reference, that record is
-    returned anyway, with a reason that says SUBSTITUTED. That is byte-for-
-    byte what the single slot did, and it keeps this step a pure repair of
-    the RETENTION defect: every archived single-admission leg reads exactly
-    as it did before. The honest reading is
-    `no-reference-for-this-observable` (design §3: "substituting a reference
-    for a DIFFERENT observable is not a fallback; it is the current bug"),
-    and the p1b gate build is where it becomes one — the substitution event
-    exists so the coverage roll can count, before that, how often the honest
-    lookup would have differed.
+    NO SUBSTITUTION (p1b step 3, the §11 addendum's stated end point). Step 1
+    kept one back-compat pass-through: a lookup MISS on a leg holding exactly
+    one record returned that record anyway and said SUBSTITUTED, which was
+    byte-for-byte what the single slot did, so the step-2 coverage roll
+    measured admissions rather than a changed gate. That roll is done (8.44:
+    zero SUBSTITUTED events), and the gate now evaluates the reference at the
+    firing's own state, where reading a reference for a DIFFERENT observable
+    would not be a weaker answer but a wrong one. So a miss is a miss:
+    `no-reference-for-this-observable`, one of §1's named abstention reasons.
+    Design §3, verbatim: "substituting a reference for a different observable
+    is not a fallback; it is the current bug".
     """
     store = store or {}
     if not store:
@@ -392,22 +392,132 @@ def admitted_reference_for(store, fired_msg, code_context,
                 f'observable this firing itself disputes (from '
                 f'`{rec.get("method")}`)')
     _asked = disputed[:4] or ['<none resolvable>']
-    if len(store) == 1:
-        (only_key, only_rec), = store.items()
-        return only_rec, (
-            f'SUBSTITUTED: this firing disputes {_asked} and the leg\'s one '
-            f'admitted reference is for `{only_key}`. Passed through '
-            f'unchanged — a single-admission leg reads byte-for-byte as it '
-            f'did before the store was split by observable. The honest '
-            f'reading is {NO_REFERENCE_FOR_THIS_OBSERVABLE}')
     return None, (
         f'{NO_REFERENCE_FOR_THIS_OBSERVABLE}: this firing disputes {_asked}; '
         f'this leg admitted {sorted(store)}. Substituting a reference for a '
         f'DIFFERENT observable is the defect, not a fallback')
 
 
-def reference_verdict_gate(fired_msg, admitted, lookup_why=None
-                           ) -> Tuple[str, str]:
+# ---------------------------------------------------------------------------
+# ADMISSION WIDENING (p1b step 3 part 1 — design §8.1, plan 8.44).
+#
+# What 8.44 measured, and why this exists. The store repair retained every
+# admission, and then the coverage roll found there was nothing to retain:
+# ONE admission per Math-65 leg, ZERO getRMS references anywhere, zero
+# admissions on the Chart legs. The cause is upstream of the store — the
+# chain asks for a reference for the observable the FIRST firing it sees
+# disputes, and stops at the first success (`for method in disputed[:3] …
+# if fact: return fact`). A leg whose convictions dispute two observables
+# therefore gets a reference for one of them by arrival order.
+#
+# So the request is re-aimed: enumerate the observables the KEPT relations
+# probe, and ask for a reference for each one that has none yet. Nothing else
+# changes — same prompt, same screens, same fail-closed admission rules. The
+# generator is still asked for exactly one target method per request (it is
+# `build_reference_prompt(method=…)`, "Implement `<method>` from its
+# specification"), so widening is a question of WHICH methods get asked
+# about, not of how the asking works.
+# ---------------------------------------------------------------------------
+
+def observables_probed_by(check_sources, code_context) -> List[str]:
+    """Every observable the kept checks probe, ranked, deduped per slot.
+
+    Reuses `disputed_observables` unchanged, once per check, with the check
+    source in BOTH positions: a check's own text is the "message" here, so
+    the ranking degenerates to call order within a check, and the context's
+    declaration filter (`_method_declared`) is the same one the chain applies
+    to a firing. Nothing new parses Java.
+
+    Ordering is arrival order across checks, which is the screen's own
+    best-first order — direction-confirmed survivors come back first from
+    `screen_relations`, so the widening spends its cap on the checks most
+    likely to convict. Pure.
+    """
+    out: List[str] = []
+    seen = set()
+    for src in check_sources or []:
+        if not src:
+            continue
+        try:
+            names = disputed_observables(src, code_context, check_source=src)
+        except Exception:                        # pragma: no cover - defensive
+            names = []
+        for n in names:
+            k = admission_key(n)
+            if k not in seen:
+                seen.add(k)
+                out.append(n)
+    return out
+
+
+def widening_targets(store, check_sources, code_context, cap
+                     ) -> Tuple[List[str], str]:
+    """`(targets, why)` — observables to request a reference for, capped.
+
+    The cap is on WHAT THE LEG MAY HOLD, not on what this call may ask, so a
+    leg that already admitted two references may widen by one more. That is
+    the same quantity §8.3's cost envelope is stated in (one generation plus
+    one javac plus one JVM chain per admitted reference per leg) and it makes
+    the bound hold however many times the widening runs.
+
+    Pure, never raises. An empty list is a result with a reason, never a
+    silent no-op.
+    """
+    store = store or {}
+    probed = observables_probed_by(check_sources, code_context)
+    fresh = [n for n in probed if admission_key(n) not in store]
+    room = max(0, int(cap) - len(store))
+    targets = fresh[:room]
+    if not probed:
+        return [], ('the kept checks name no method this class context '
+                    'declares — nothing to request a reference for')
+    if not fresh:
+        return [], (f'every observable the kept checks probe '
+                    f'({[admission_key(n) for n in probed][:6]}) already has '
+                    f'an admitted reference this leg')
+    if not room:
+        return [], (f'the leg already holds {len(store)} admitted '
+                    f'reference(s) {sorted(store)}, at the cap of {cap}; '
+                    f'{len(fresh)} probed observable(s) go unrequested')
+    return targets, (
+        f'the kept checks probe {[admission_key(n) for n in probed][:6]}; '
+        f'{len(fresh)} of those have no admitted reference and {len(targets)} '
+        f'fit under the per-leg cap of {cap} (the leg already holds '
+        f'{sorted(store)})')
+
+
+# ---------------------------------------------------------------------------
+# THE FIRING-STATE READING'S ENTRY CONDITION (p1b step 3 part 2).
+# ---------------------------------------------------------------------------
+
+def firing_state_reading_applies(evidence) -> Tuple[bool, str]:
+    """`(applies, why)` — does this kept conviction get the §1 reading?
+
+    TAG-ONLY, and that is the whole predicate. `[fact:rate-indiscriminate]`
+    is the population 8.42 and 8.43 both failed to convert: a rate reading
+    that cannot separate "this check mis-states the arithmetic" from "this
+    check reports total breakage". Rate is the wrong instrument for that
+    question and 8.43's gates said so by finding nothing to read. The firing
+    state IS the instrument, and this is where it is aimed.
+
+    The tag is read literally, exactly as `direction_confirmed_bypass` reads
+    it — no rate is recomputed here, nothing is inferred from prose, and a
+    conviction without the tag reads as it does today, byte for byte. Pure.
+    """
+    from java.relations.evidence_facts import fact_tags
+    tags = fact_tags(evidence)
+    if 'rate-indiscriminate' in tags:
+        return True, ('this conviction carries [fact:rate-indiscriminate] — '
+                      'the population a rate reading structurally cannot '
+                      'resolve, so the reference is evaluated at the firing\'s '
+                      'own recorded state instead')
+    return False, ('no [fact:rate-indiscriminate] on this conviction; the '
+                   'firing-state reading is not aimed here and the gate reads '
+                   'exactly as it does today')
+
+
+def reference_verdict_gate(fired_msg, admitted, lookup_why=None,
+                           firing_reading=None) -> Tuple[str, str]:
     """8.25 phase 1: `('void'|'corroborate'|'abstain', why)` on a KEPT
     conviction. Deterministic — the judge is not consulted (roll 12: nine
     deliveries of the fact, zero engagements; fifth negative on the
@@ -450,8 +560,36 @@ def reference_verdict_gate(fired_msg, admitted, lookup_why=None
     at values the correct implementation does NOT produce, so it can only
     ever be abstained on, never voided. No admitted reference -> abstain:
     the gate consumes admission, never manufactures it.
+
+    `firing_reading` (p1b step 3) is the result of
+    `reference_state.reference_firing_reading` — the admitted reference
+    RE-EVALUATED at this firing's own recorded receiver state, which is the
+    input every archived abstention of the "a firing at a different input is
+    expected to differ" shape names as missing. It is computed by the caller
+    (it needs a JVM) and consumed here:
+
+      * `agrees-with-patched` -> VOID. The one terminal, and the only
+        terminal reading. An implementation derived from the documentation
+        alone, at the firing's own state, computes what the PATCHED BUILD
+        computed, so the relation's expected value is wrong there.
+      * `agrees-with-check` -> ABSTAIN, saying corroborated. Advisory, and it
+        MUST be: it is the direction that pushes toward accusation, so it is
+        the direction that could create a false alarm. At this site it also
+        cannot do anything — the finding is already kept — so making it a
+        fact and not a verdict costs nothing and closes the only route by
+        which p1b could add a conviction. It does NOT fall through to the
+        test-state reading below, because falling through could void a
+        firing an independent implementation just sided with.
+      * anything else (every abstention reason, `degenerate`,
+        `mutually-inconsistent`, and no reading at all) -> the test-state
+        reading below runs unchanged, byte for byte.
     """
     from java.relations.reference_run import observable_key
+    _reading = (firing_reading or {}).get('reading')
+    if _reading == 'agrees-with-patched':
+        return 'void', (firing_reading.get('reason') or 'agrees-with-patched')
+    if _reading == 'agrees-with-check':
+        return 'abstain', (firing_reading.get('reason') or 'agrees-with-check')
     obs = (admitted or {}).get('obs') or {}
     buggy = (admitted or {}).get('buggy') or {}
     if not fired_msg or not obs:

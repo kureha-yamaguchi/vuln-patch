@@ -89,9 +89,13 @@ def test_BOTH_judge_doors_carry_the_mechanism():
     track. A fact attached at one door and not the other makes the two tracks
     judge the same check differently."""
     n = SRC.count("getattr(args, 'reference_impl', False)")
-    assert n == 2, (
+    # Two judge doors, plus p1b step 3's admission WIDENING, which runs once
+    # per leg right after relation screening and is not a door at all.
+    assert n == 3, (
         f'expected the mechanism at BOTH judge doors, found {n}. '
         f'disputed_computation_fact is called at both; so must this be.')
+    doors = SRC.count("if getattr(args, 'reference_impl', False):")
+    assert doors == 2, f'expected exactly 2 judge doors, found {doors}'
 
 
 def test_the_two_doors_use_their_own_firing_and_trusted_values():
