@@ -60,9 +60,30 @@ analogue of the Java front-end's `classify_exceptions`).
 | Bug kind | Oracle | Example crash types | What the harness must do |
 |---|---|---|---|
 | crashing | `sanitizer` | Heap-buffer-overflow, Use-after-free, Undefined-shift, SEGV, Timeout, Direct-leak | Reach the fault. The runtime supplies the verdict. |
-| semantic | `project-assert` | `ASSERT: idx < len`, CHECK failure, Fatal error, Unreachable code | Reach a *state* the invariant does not hold in. The library aborts by itself. |
+| crashing | `project-assert` | `ASSERT: idx < len`, CHECK failure, Fatal error, Unreachable code | Reach a *state* the invariant does not hold in. The library aborts by itself. |
 | semantic | `harness` | Incorrect-result | Carry its own check: nothing else will ever notice. |
-| unknown | `sanitizer` | (record has no crash type) | Same as crashing, but printed as `unknown` so you can override. |
+| unknown | `sanitizer` | (record has no crash type) | Same as crashing, but printed as `unknown` and hedged — see below. |
+
+`oracle` is the fine-grained fact and is what the prompt reads. `kind` is a
+strict coarsening of it — **`semantic` means exactly "the harness must supply
+the verdict"** — and exists so that cross-language aggregation compares like
+with like. `BugClass.__post_init__` enforces the coarsening, because the reverse
+was a real bug: `project-assert` was filed as `semantic` on the
+reasonable-sounding grounds that a violated invariant is a logic error rather
+than memory corruption. True, but a different question — the library still
+aborts by itself, the trigger gate still works unmodified, and filing it as
+semantic made `--skip-semantic` silently discard a whole class of workable bugs.
+Java calls the same shape (an escaping invariant-check throwable) crashing.
+
+**`unknown` deliberately diverges from Java.** Java treats an undeterminable
+bug as semantic; this front-end treats it as crashing. The corpora have opposite
+base rates — Defects4J is dominated by wrong-value bugs, the OSS-Fuzz corpus by
+memory-safety and UB — so guessing "semantic" here would open the prompt with
+"THIS BUG DOES NOT CRASH" for the large majority of records and make the
+pre-build oracle gate bounce sanitizer harnesses that need no oracle. The guess
+is hedged rather than bet on: an `unknown` record takes the crashing template
+but is *also* asked for an optional tagged relation, which costs nothing if the
+bug does crash and is the only thing that can save the run if it does not.
 
 Getting this wrong is expensive in a way that looks like a result. A harness for
 an `Incorrect-result` bug written to the crashing template compiles, runs, and
@@ -100,8 +121,11 @@ What changes per kind:
   before reporting one upstream.
 
 `--bug-kind {auto,crashing,semantic}` overrides the classification;
-`--skip-semantic` skips non-crashing records during target selection (before
-the clone), mirroring the Java front-end's `--skip_semantic`. The `found_by`
+`--skip-semantic` skips records that *nothing at run time would report* during
+target selection (before the clone), mirroring the Java front-end's
+`--skip_semantic`. It keys off `needs_harness_oracle`, so project-assert bugs
+stay in scope — they abort by themselves, which is what the flag is really
+asking about. The `found_by`
 field on every finding records which oracle *actually* fired, which is not
 always the predicted one — a harness aimed at a wrong-value bug that trips ASan
 found a memory bug instead. That is a real finding, but it is not evidence

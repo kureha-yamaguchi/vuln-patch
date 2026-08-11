@@ -15,20 +15,39 @@ slice of the corpus, and wrong in an expensive way — a harness for an
 rejected by the trigger gate every single attempt until the budget is gone. The
 run then reports "0 siblings" as though the method had been tested.
 
-So classification here answers one question — **what would notice this bug?** —
-with three answers, which is what the rest of the pipeline branches on:
+Two fields, answering two different questions. Keeping them apart is the whole
+design, because conflating them is what put runtime-detected bugs on the
+"nothing will notice this" path:
+
+``oracle`` — **what would notice this bug?** Three answers (below). This is
+    the fine-grained fact, and it is what the prompt fork and the reporting
+    read.
+
+``kind`` — **must the harness supply the verdict?** ``semantic`` iff the
+    oracle is the harness itself; ``crashing`` whenever the runtime reports it,
+    by whatever means. This is the Java-parity axis: Java calls a bug crashing
+    when *anything* escapes the trigger test, including a project's own
+    invariant check throwing, and semantic only when the program completes and
+    merely returns the wrong value. ``kind`` exists so cross-language
+    aggregation compares like with like, and it is deliberately a coarsening
+    of ``oracle`` — never an independent judgement (enforced in
+    ``BugClass.__post_init__``).
+
+The three oracles:
 
 ``sanitizer``
     ASan/MSan/UBSan/LSan, a fatal signal, or libFuzzer's own timeout/OOM
     limits. Memory-safety and UB bugs. This is the case the pipeline already
-    handled: reach the fault and the runtime does the rest.
+    handled: reach the fault and the runtime does the rest. → ``crashing``
 
 ``project-assert``
     The project's own invariant check (``assert``, ``CHECK``, a fatal-error
-    path). Still detected at run time — the abort is caught like any crash —
-    but it is a *logic* defect, and a sibling has to violate an invariant
-    rather than corrupt memory. The prompt has to say so, and the build must
-    keep asserts enabled or the bug is invisible.
+    path). Detected at run time — the abort is caught like any crash, and the
+    trigger gate needs no help — but it is a *logic* defect, and a sibling has
+    to violate an invariant rather than corrupt memory, which is what the
+    prompt fork is for. The build must also keep asserts enabled or the bug is
+    invisible. → ``crashing``, exactly as Java classifies an escaping
+    ``IllegalStateException`` from a project's own check.
 
 ``harness``
     Nothing observes it. The bug is a wrong value that the program returns
@@ -36,6 +55,19 @@ with three answers, which is what the rest of the pipeline branches on:
     mismatch, which is the C analogue of the Java semantic path's lifted
     assertion. Harness-supplied alarms are *claims*, not sanitizer findings,
     so they stay distinguishable all the way into the results JSON.
+    → ``semantic``
+
+A record we cannot read is ``unknown``, which behaves as ``crashing`` (the
+sanitizer prior). That is the OPPOSITE of the Java front-end, which treats an
+undeterminable bug as semantic — and the divergence is deliberate, because the
+two corpora have opposite base rates. Defects4J is dominated by wrong-value
+bugs; the OSS-Fuzz corpus is overwhelmingly memory-safety and UB. Guessing
+"semantic" here would open the prompt with "THIS BUG DOES NOT CRASH" for the
+large majority of records and make ``campaign.oracle_tag_missing`` bounce
+sanitizer harnesses that need no oracle, burning the budget on repairs. The
+guess is hedged rather than bet on: ``uncertain`` makes the prompt ask for an
+optional wrong-value check as insurance, which costs nothing if the bug does
+crash. Override with ``--bug-kind`` when the record is known.
 
 ``crash_type`` strings come from the OSS-Fuzz OSV record's ``details`` blob
 (``osv._parse_details``) and are ClusterFuzz's own vocabulary, e.g.
@@ -111,6 +143,24 @@ class BugClass:
     crash_type: Optional[str] = None
     resource: bool = False           # timeout/OOM: needs the limits below
 
+    def __post_init__(self) -> None:
+        """``kind`` is a coarsening of ``oracle``, not a second opinion.
+
+        SEMANTIC means exactly "the harness must supply the verdict". Any other
+        oracle is reported by the runtime and therefore not semantic, however
+        logic-shaped the defect is. This check exists because the reverse was
+        the original bug: ``project-assert`` was filed as SEMANTIC on the
+        reasonable-sounding grounds that a violated invariant is a logic error,
+        which silently made ``--skip-semantic`` discard bugs the trigger gate
+        handles unmodified.
+        """
+        if (self.kind == SEMANTIC) != (self.oracle == ORACLE_HARNESS):
+            raise ValueError(
+                f"inconsistent bug class: kind={self.kind!r} with "
+                f"oracle={self.oracle!r}. kind must be {SEMANTIC!r} exactly "
+                f"when oracle is {ORACLE_HARNESS!r} — a runtime-detected bug "
+                f"is crashing whatever the shape of the defect")
+
     @property
     def is_semantic(self) -> bool:
         return self.kind == SEMANTIC
@@ -120,10 +170,23 @@ class BugClass:
         return self.kind == CRASHING
 
     @property
+    def uncertain(self) -> bool:
+        """True when the class is a prior rather than a reading of the record.
+        Behaves as crashing, but the prompt says so and asks for an optional
+        wrong-value check, so an UNKNOWN that is really semantic can still be
+        caught instead of burning the budget."""
+        return self.kind == UNKNOWN
+
+    @property
     def needs_harness_oracle(self) -> bool:
         """True when the harness must carry its own check. This is the one
         property that changes what a *valid* harness looks like: without an
-        oracle the harness cannot fail, however well it reaches the code."""
+        oracle the harness cannot fail, however well it reaches the code.
+
+        Equivalent to ``is_semantic`` by the invariant above, and the name to
+        prefer at call sites that care about harness shape or run scope — it
+        says which fact is being relied on.
+        """
         return self.oracle == ORACLE_HARNESS
 
     def libfuzzer_flags(self) -> List[str]:
@@ -144,7 +207,8 @@ def classify(crash_type: Optional[str]) -> BugClass:
         return BugClass(
             kind=UNKNOWN, oracle=ORACLE_SANITIZER, crash_type=None,
             reason="the OSV record carries no crash type; assuming a "
-                   "sanitizer-detected bug (override with --bug-kind)")
+                   "sanitizer-detected bug, which is the right prior for this "
+                   "corpus but only a prior (override with --bug-kind)")
     low = raw.lower()
 
     if any(h in low for h in _WRONG_RESULT_TYPES):
@@ -154,10 +218,15 @@ def classify(crash_type: Optional[str]) -> BugClass:
                    "so the harness must carry its own oracle")
 
     if any(h in low for h in _ASSERT_TYPES):
+        # CRASHING, not SEMANTIC: the library aborts by itself, so the trigger
+        # gate works unmodified and no oracle has to be written. The logic
+        # nature of the defect is carried by the oracle field, which is what
+        # steers the prompt — see the module docstring.
         return BugClass(
-            kind=SEMANTIC, oracle=ORACLE_PROJECT_ASSERT, crash_type=raw,
+            kind=CRASHING, oracle=ORACLE_PROJECT_ASSERT, crash_type=raw,
             reason=f"'{raw}' is a violated invariant the project checks "
-                   "itself; the sibling must break the invariant, not memory")
+                   "itself, so the runtime still reports it; the sibling must "
+                   "break the invariant, not memory")
 
     if any(h in low for h in _RESOURCE_TYPES):
         return BugClass(

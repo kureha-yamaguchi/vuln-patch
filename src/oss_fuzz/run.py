@@ -82,9 +82,12 @@ def parse_args():
                         "'auto' reads the OSV record's crash type "
                         "(see oss_fuzz/bugclass.py)")
     p.add_argument("--skip-semantic", action="store_true",
-                   help="only run on crashing bugs: skip OSV records whose "
-                        "crash type says no sanitizer would report a sibling. "
-                        "Mirrors the Java front-end's --skip_semantic")
+                   help="only run on bugs the runtime reports: skip OSV "
+                        "records whose crash type says NOTHING at run time "
+                        "would report a sibling, so the harness would have to "
+                        "supply the oracle. Project-assert bugs are kept — the "
+                        "library aborts by itself. Mirrors the Java "
+                        "front-end's --skip_semantic")
     p.add_argument("--max-target-tries", type=int, default=5,
                    help="how many OSV records (newest first) to try before "
                         "giving up on finding one whose fix diff touches C/C++ "
@@ -289,8 +292,15 @@ def main():
         # Semantic bugs cost the same clone, build and LLM budget as crashing
         # ones but answer a different question, so a suite measuring the
         # crash-gated method can exclude them here — before the clone.
-        if args.skip_semantic and cand.bug_class.is_semantic:
-            print("  SKIPPED: --skip-semantic and this bug does not crash")
+        # Gated on needs_harness_oracle rather than is_semantic: the two are
+        # equivalent by BugClass's invariant, but this is the fact being relied
+        # on — "the runtime reports nothing, so the crash gate cannot work".
+        # A project-assert bug is a logic defect that the runtime DOES report,
+        # so it stays in scope, matching the Java front-end's treatment of an
+        # escaping invariant-check throwable.
+        if args.skip_semantic and cand.bug_class.needs_harness_oracle:
+            print("  SKIPPED: --skip-semantic and nothing at run time would "
+                  "report a sibling of this bug")
             continue
         if cand.crash_state:
             print(f"crash state  : {' <- '.join(cand.crash_state)}")

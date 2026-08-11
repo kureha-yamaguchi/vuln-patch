@@ -221,8 +221,12 @@ def test_prompt_builder_uses_shared_steering():
         harness_name="vp_harness")
     assert len(msgs) == 2 and msgs[0]["role"] == "system"
     user = msgs[1]["content"]
-    # the shared directive text must be present, and steer away from covered
-    assert "root_cause_reachable" in user
+    # The steering block must be the shared function's output verbatim, not a
+    # local reimplementation of it — that delegation is the only thing keeping
+    # the rule in one place.
+    assert variant_analysis_directive(
+        ctx.root_cause_reachable, ["process"],
+        ["AddressSanitizer:heap-buffer-overflow@demo_parse"]) in user
     assert "Uncovered functions to steer toward" in user
     assert "LLVMFuzzerTestOneInput" in user
     print("ok  prompt builder + steering")
@@ -1089,14 +1093,17 @@ def test_bugclass_splits_crashing_from_semantic():
         assert bc.kind == CRASHING and bc.oracle == ORACLE_SANITIZER, (ct, bc)
         assert not bc.needs_harness_oracle and not bc.resource, (ct, bc)
 
-    # The project checks it itself: semantic, but no harness oracle needed.
+    # The project checks it itself: a logic defect, but the library aborts by
+    # itself, so it is CRASHING — the trigger gate needs no help and nobody has
+    # to write an oracle. Java classifies the same shape (an escaping
+    # invariant-check throwable) as crashing too.
     for ct in ("ASSERT: idx < len", "CHECK failure: ptr != nullptr",
                "Fatal error: bad state", "Unreachable code",
                "Security check failure"):
         bc = classify(ct)
-        assert bc.kind == SEMANTIC, (ct, bc)
+        assert bc.kind == CRASHING, (ct, bc)
         assert bc.oracle == ORACLE_PROJECT_ASSERT, (ct, bc)
-        assert not bc.needs_harness_oracle, (ct, bc)
+        assert not bc.needs_harness_oracle and not bc.is_semantic, (ct, bc)
 
     # Nothing observes it: the harness must bring the oracle.
     for ct in ("Incorrect-result", "Wrong result in decode"):
@@ -1112,11 +1119,54 @@ def test_bugclass_splits_crashing_from_semantic():
         assert any(f.startswith("-timeout=") for f in bc.libfuzzer_flags()), bc
     assert classify("Heap-buffer-overflow").libfuzzer_flags() == []
 
-    # An unreadable record keeps the pre-split behaviour, but says so.
+    # An unreadable record keeps the pre-split behaviour, but says so. The
+    # sanitizer prior is deliberate (this corpus is overwhelmingly memory
+    # bugs) and deliberately the opposite of the Java front-end's — so it is
+    # hedged, not bet on: `uncertain` is what makes the prompt ask for an
+    # optional wrong-value check anyway.
     bc = classify(None)
     assert bc.kind == UNKNOWN and bc.oracle == ORACLE_SANITIZER, bc
-    assert not bc.needs_harness_oracle, bc
+    assert not bc.needs_harness_oracle and not bc.is_semantic, bc
+    assert bc.uncertain, bc
+    assert not classify("Heap-buffer-overflow READ 4").uncertain
     print("ok  bug class: crashing vs semantic vs unknown")
+
+
+def test_bugclass_kind_cannot_contradict_its_oracle():
+    """SEMANTIC means exactly "the harness must supply the verdict". The
+    original bug filed project-assert as SEMANTIC because a violated invariant
+    is a logic error — true, but it made --skip-semantic discard bugs the
+    trigger gate handles unmodified. The invariant blocks that class of edit."""
+    from oss_fuzz.bugclass import (BugClass, CRASHING, SEMANTIC,
+                                   ORACLE_HARNESS, ORACLE_PROJECT_ASSERT,
+                                   ORACLE_SANITIZER)
+    for kind, oracle in ((SEMANTIC, ORACLE_PROJECT_ASSERT),
+                         (SEMANTIC, ORACLE_SANITIZER),
+                         (CRASHING, ORACLE_HARNESS)):
+        try:
+            BugClass(kind=kind, oracle=oracle, reason="x")
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"accepted kind={kind} with oracle={oracle}")
+    # And the three consistent combinations still build.
+    for kind, oracle in ((CRASHING, ORACLE_SANITIZER),
+                         (CRASHING, ORACLE_PROJECT_ASSERT),
+                         (SEMANTIC, ORACLE_HARNESS)):
+        BugClass(kind=kind, oracle=oracle, reason="x")
+    print("ok  bug class kind is a coarsening of its oracle, not a 2nd opinion")
+
+
+def test_skip_semantic_keeps_runtime_detected_bugs():
+    """--skip-semantic means "the crash gate cannot work here", not "the defect
+    is logic-shaped". A project assert aborts the process, so those runs are in
+    scope; only harness-oracle bugs are out."""
+    from oss_fuzz.bugclass import classify
+    assert not classify("ASSERT: idx < len").needs_harness_oracle
+    assert not classify("Timeout").needs_harness_oracle
+    assert not classify(None).needs_harness_oracle
+    assert classify("Incorrect-result").needs_harness_oracle
+    print("ok  --skip-semantic only drops bugs nothing at run time reports")
 
 
 def test_bugclass_reaches_the_target_from_the_osv_record():
@@ -1206,10 +1256,17 @@ def test_semantic_prompt_requires_a_tagged_oracle():
     assert "THIS BUG DOES NOT CRASH" in wrong_value
     assert "METAMORPHIC CHECK (optional" not in wrong_value
 
+    # A project assert is CRASHING, so no oracle is demanded — but the prompt
+    # still has to say a sanitizer is not what reports it, or the model goes
+    # hunting for memory corruption. That line used to be keyed on the kind,
+    # which would have lost it when the kind moved to crashing.
     invariant = build(classify("ASSERT: idx < len"))
     assert "the library checks this itself" in invariant
     assert "ASSERT: idx < len" in invariant
     assert "REQUIRED ORACLE" not in invariant
+    assert "THIS BUG DOES NOT CRASH" not in invariant
+    assert "detected by: project-assert" in invariant
+    assert "own check reports it, not a sanitizer" in invariant
 
     # Crashing bugs — and callers that pass nothing — keep the old wording.
     for crashing in (build(classify("Heap-buffer-overflow READ 4")),
@@ -1217,6 +1274,16 @@ def test_semantic_prompt_requires_a_tagged_oracle():
         assert "METAMORPHIC CHECK (optional" in crashing
         assert "REQUIRED ORACLE" not in crashing
         assert "THIS BUG DOES NOT CRASH" not in crashing
+        assert "detected by:" not in crashing
+        assert "STRONGLY RECOMMENDED HERE" not in crashing
+
+    # An unknown class is a prior, not a reading. It takes the crashing
+    # template, but asks for the optional relation as insurance in case the
+    # prior is wrong — otherwise a misread record burns the whole budget.
+    unknown = build(classify(None))
+    assert "REQUIRED ORACLE" not in unknown
+    assert "METAMORPHIC CHECK (optional" in unknown
+    assert "STRONGLY RECOMMENDED HERE" in unknown
     print("ok  prompt oracle contract follows the bug class")
 
 

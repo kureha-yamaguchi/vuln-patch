@@ -13,7 +13,8 @@ from typing import Dict, List, Optional
 
 from variant import variant_analysis_directive
 from oss_fuzz.analysis import PatchContext, TouchedFunction
-from oss_fuzz.bugclass import BugClass, ORACLE_HARNESS, ORACLE_PROJECT_ASSERT
+from oss_fuzz.bugclass import (BugClass, ORACLE_HARNESS, ORACLE_PROJECT_ASSERT,
+                               ORACLE_SANITIZER)
 
 
 class LibFuzzerPromptBuilder:
@@ -31,14 +32,22 @@ class LibFuzzerPromptBuilder:
               bug_class: Optional[BugClass] = None) -> List[Dict[str, str]]:
         """``bug_class`` decides what a *failing* harness even looks like.
 
-        For a crashing bug the harness only has to reach the fault; the
-        sanitizer supplies the verdict, so the metamorphic block stays the
-        optional extra it has always been. For a semantic bug there is no
-        verdict unless the harness (or the project's own assert) provides one,
-        and a harness written to the crashing template would run clean forever
-        — compiling, reaching the code, and being rejected by the trigger gate
-        on every attempt. None keeps the crashing wording, which is what every
-        caller predating the split expects.
+        The fork is on ``bug_class.oracle``, not on its kind: a project-assert
+        bug is *crashing* (the library aborts by itself) yet still needs its own
+        wording, because the sibling has to falsify an invariant rather than
+        corrupt memory. Three cases:
+
+        * ``sanitizer`` — reach the fault and the runtime supplies the verdict,
+          so the metamorphic block stays the optional extra it has always been.
+        * ``project-assert`` — also no verdict to write, but aim at state
+          rather than memory.
+        * ``harness`` — there is no verdict unless the harness provides one. A
+          harness written to the crashing template would run clean forever,
+          compiling, reaching the code, and being rejected by the trigger gate
+          on every attempt.
+
+        None keeps the crashing wording, which is what every caller predating
+        the split expects.
         """
         # The extension the harness will be SAVED as decides which language the
         # model must write, and that is not always the project's language: the
@@ -75,7 +84,12 @@ class LibFuzzerPromptBuilder:
         elif oracle == ORACLE_PROJECT_ASSERT:
             sections.append(self._project_invariant_block(crash_type))
         else:
-            sections.append(self._metamorphic_block())
+            # Sanitizer or unknown. An unknown class is a prior, not a reading,
+            # so say so and lean on the optional relation: it is the only thing
+            # that can save the run if the record we could not read was in fact
+            # a wrong-value bug, and it costs nothing if it was not.
+            sections.append(self._metamorphic_block(
+                uncertain=bool(bug_class and bug_class.uncertain)))
 
         sections.append(self._byte_carving_reference())
         if reproducer_hint:
@@ -129,9 +143,14 @@ class LibFuzzerPromptBuilder:
         lines = ["The ORIGINAL bug this fix addressed, as reported by OSS-Fuzz:"]
         if crash_type:
             lines.append(f"  crash type : {crash_type}")
-        if bug_class and bug_class.is_semantic:
-            lines.append(f"  detected by: {bug_class.oracle} — a sanitizer "
-                         "will NOT report a sibling of this bug")
+        # Keyed on the oracle, not the kind: a project-assert bug is crashing,
+        # but "no sanitizer saw this" is still the load-bearing fact about it —
+        # it tells the model not to go hunting for memory corruption.
+        if bug_class and bug_class.oracle != ORACLE_SANITIZER:
+            detail = ("a sanitizer will NOT report a sibling of this bug"
+                      if bug_class.needs_harness_oracle else
+                      "the library's own check reports it, not a sanitizer")
+            lines.append(f"  detected by: {bug_class.oracle} — {detail}")
         if crash_state:
             lines.append("  crash stack (innermost first): "
                          + " <- ".join(crash_state))
@@ -177,11 +196,11 @@ class LibFuzzerPromptBuilder:
             "`FuzzedDataProvider` from <fuzzer/FuzzedDataProvider.h> instead.",
         ])
 
-    def _metamorphic_block(self) -> str:
+    def _metamorphic_block(self, uncertain: bool = False) -> str:
         # Language-neutral version of the Java metamorphic hint. Stays OPTIONAL
         # for crashing bugs: the sanitizer is already a complete oracle there,
         # and a mandatory relation would only add false-alarm surface.
-        return "\n".join([
+        lines = [
             "METAMORPHIC CHECK (optional, catches wrong-output bugs that never "
             "crash): if the patched function has a natural relation — "
             "round-trip f(g(x))==x (decode/encode), idempotence f(f(x))==f(x) "
@@ -191,7 +210,22 @@ class LibFuzzerPromptBuilder:
             "violation. Only assert relations true for ANY correct "
             "implementation; guard inputs the library rejected so you don't "
             "report false positives.",
-        ])
+        ]
+        if uncertain:
+            # The record did not say how this bug manifests. Assuming a
+            # sanitizer is the right bet for this corpus, but if the bet is
+            # wrong the harness can never fail and the whole budget is spent
+            # proving nothing — so ask for the relation rather than merely
+            # offering it, and tag it so a firing is attributable.
+            lines.append(
+                "STRONGLY RECOMMENDED HERE: the bug report does not say how "
+                "this bug manifests, so a sanitizer may well report nothing "
+                "however precisely you reach the code. If you can see any such "
+                "relation, add it — and tag its alarm "
+                '`fprintf(stderr, "[oracle:<short-id>] <what disagreed>\\n"); '
+                "abort();` so a firing is attributable to your check rather "
+                "than mistaken for a sanitizer report.")
+        return "\n".join(lines)
 
     def _required_oracle_block(self, is_c: bool) -> str:
         """The mandatory contract for a wrong-value bug.
