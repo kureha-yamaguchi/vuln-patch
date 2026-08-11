@@ -1792,6 +1792,23 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.48 THE HOLDOUT — run once, spent, ANALYSE-ONLY (run holdout_20260811_115650, archived; 8,520,128 tokens)
+**TP=10 FN=2 FP=7 TN=16 — P=0.59 R=0.83 F1=0.69** (dev claim was
+P=0.77 R=0.62 F1=0.69). THE COMPARISON, findings only, no fixes derived:
+- F1 IDENTICAL to dev (0.69) — the aggregate generalized.
+- RECALL HIGHER unbred (0.83, 10/12): caught include witness-study GAP
+  FAMILY bugs — Math-80 (specific numeric content), Chart-15
+  (chart-render), Lang-55 (sequence), Chart-25, Math-6/33/63/71/88.
+  The 2 misses are exactly the assembly's flagged hard legs (Closure-18,
+  Math-50 — probe-false-zero provenance).
+- PRECISION LOWER unbred (0.59, 7 FP / 23 correct legs): Closure-31/57/
+  115, Math-33/71/80, Time-19. PER-CLASS TALLY still to be read from
+  the archive (analysis permitted; fixes NOT — any fix must cite dev
+  evidence independently).
+- Token cost ~1.9x the estimate (8.5M vs 4.55M).
+This is the paper's number. The holdout is now spent; nothing may be
+learned from it (hard rule, memory + header).
+
 ### 8.47 DIVCAP ROLL — Lang-63 caught for the FIRST TIME EVER (1/3); attribution read INCOMPLETE (archived; 866,212 tokens)
 Outcomes: Lang-63-o FN/FN/TP — the first catch in this leg's entire
 history — and both Chart canary legs TN, zero FPs, no wrong dismissals
