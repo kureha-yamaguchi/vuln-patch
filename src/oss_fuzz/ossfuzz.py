@@ -153,6 +153,17 @@ class Checkout:
 # Source extensions that can hold a libFuzzer harness.
 _HARNESS_EXTS = (".cc", ".cpp", ".cxx", ".c", ".C")
 
+# A harness DEFINES LLVMFuzzerTestOneInput; a standalone driver merely declares
+# and calls it, supplying its own main() so the target runs without libFuzzer.
+# rawspeed's fuzz/libFuzzer_dummy_main.cpp and wireshark's
+# fuzz/StandaloneFuzzTargetMain.c are drivers, and both beat the real harnesses
+# on the tie-breaks below (shallower path; 'S' < 'f'). Overwriting one replaces
+# the driver rather than a harness, so the build emits no target of that name.
+# Requiring the parameter list to be followed by a body is what separates them:
+# a declaration ends in ';', which the character class cannot cross.
+_HARNESS_DEF_RE = re.compile(
+    r"\bLLVMFuzzerTestOneInput\s*\([^;{)]*\)\s*\{", re.DOTALL)
+
 # Don't read megabyte generated sources looking for LLVMFuzzerTestOneInput.
 _MAX_HARNESS_SCAN_BYTES = 512 * 1024
 
@@ -192,8 +203,14 @@ def _harness_rank(rel_path: str, fuzz_target: Optional[str]) -> tuple:
     dirs = [p.lower() for p in parts[:-1]]
     vendor = 1 if any(d in _VENDOR_DIR_HINTS for d in dirs) else 0
     fuzzy = 0 if any(h in d for d in dirs for h in _FUZZ_DIR_HINTS) else 1
+    # A file called main.cpp is named for its role in the build, not after a
+    # target: rawspeed's fuzz/rawspeed/main.cpp builds 'RawSpeedFuzzer'.
+    # Overwriting it works, but nothing can predict the binary's name, so prefer
+    # a sibling whose stem could plausibly be one. Deliberately just 'main' —
+    # a project with fuzz/fuzzer.c may well build a target called 'fuzzer'.
+    untargetable = 1 if stem == "main" else 0
     # Shallower path, then lexicographic, so the choice is deterministic.
-    return (name_rank, vendor, fuzzy, len(parts), rel_path)
+    return (name_rank, vendor, fuzzy, untargetable, len(parts), rel_path)
 
 
 def find_base_harness(root: str, fuzz_target: Optional[str] = None,
@@ -202,7 +219,7 @@ def find_base_harness(root: str, fuzz_target: Optional[str] = None,
     checkout, or None if there is none to overwrite.
 
     This is what the ``overwrite`` placement strategy replaces. Identification
-    is by ``LLVMFuzzerTestOneInput`` (the definition of a libFuzzer target)
+    is by a *definition* of ``LLVMFuzzerTestOneInput`` (see ``_HARNESS_DEF_RE``)
     rather than by filename, then ranked by ``_harness_rank``.
     """
     if override:
@@ -225,7 +242,7 @@ def find_base_harness(root: str, fuzz_target: Optional[str] = None,
                 if os.path.getsize(full) > _MAX_HARNESS_SCAN_BYTES:
                     continue
                 with open(full, errors="ignore") as fh:
-                    if "LLVMFuzzerTestOneInput" not in fh.read():
+                    if not _HARNESS_DEF_RE.search(fh.read()):
                         continue
             except OSError:
                 continue

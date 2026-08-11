@@ -854,6 +854,56 @@ def test_find_base_harness_prefers_the_named_fuzz_target():
         print("ok  base harness discovery ranks target name > vendored")
 
 
+def test_find_base_harness_skips_standalone_drivers():
+    """The 20260811 sweep picked a driver over the real harness, twice.
+
+    rawspeed's fuzz/libFuzzer_dummy_main.cpp and wireshark's
+    fuzz/StandaloneFuzzTargetMain.c declare LLVMFuzzerTestOneInput and call it
+    from their own main(), so a substring test accepts them — and both win the
+    tie-breaks (shallower path for rawspeed, 'S' < 'f' for wireshark). The build
+    then produces no target named after the file, wasting the whole project.
+    """
+    import tempfile
+    driver = ('extern "C" int LLVMFuzzerTestOneInput(const uint8_t*, size_t);\n'
+              "int main(int argc, char **argv) {\n"
+              "  LLVMFuzzerTestOneInput((const uint8_t *)argv[1], 0);\n"
+              "  return 0;\n}\n")
+    with tempfile.TemporaryDirectory() as tmp:
+        _tree(tmp, {
+            "fuzz/StandaloneFuzzTargetMain.c": driver,   # sorts before fuzzshark
+            "fuzz/libFuzzer_dummy_main.cpp": driver,     # shallower than below
+            "fuzz/librawspeed/parsers/main.cpp": HARNESS_BODY,
+        })
+        assert find_base_harness(tmp, None) == os.path.join(
+            "fuzz", "librawspeed", "parsers", "main.cpp")
+        # A definition split across lines is still a definition.
+        _tree(tmp, {"fuzz/wrapped.c": (
+            "int\nLLVMFuzzerTestOneInput(const uint8_t *d,\n"
+            "                          size_t s)\n{\n  return 0;\n}\n")})
+        assert find_base_harness(tmp, "wrapped") == os.path.join(
+            "fuzz", "wrapped.c")
+        print("ok  base harness discovery skips standalone drivers")
+
+
+def test_find_base_harness_avoids_a_stem_that_cannot_name_a_target():
+    """rawspeed's fuzz/rawspeed/main.cpp is a real harness, but it builds
+    'RawSpeedFuzzer' — no rule predicts that, and no target is called 'main'.
+    A sibling whose stem the build can decorate ('DngOpcodes' ->
+    'DngOpcodesFuzzer') is usable, so it wins despite the deeper path."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        _tree(tmp, {
+            "fuzz/rawspeed/main.cpp": HARNESS_BODY,
+            "fuzz/librawspeed/common/DngOpcodes.cpp": HARNESS_BODY,
+        })
+        assert find_base_harness(tmp, None) == os.path.join(
+            "fuzz", "librawspeed", "common", "DngOpcodes.cpp")
+        # Unless the OSV record named it outright, which beats every tie-break.
+        assert find_base_harness(tmp, "main") == os.path.join(
+            "fuzz", "rawspeed", "main.cpp")
+        print("ok  base harness discovery avoids the 'main' stem")
+
+
 def test_find_base_harness_returns_none_without_a_harness():
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:

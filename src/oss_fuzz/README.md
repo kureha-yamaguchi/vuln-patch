@@ -258,11 +258,14 @@ Three things `overwrite` has to get right:
 - **The file extension decides the language**, not the project's declared
   language. A C++ body written into a `.c` file will not compile, so the prompt
   follows the extension.
-- **Finding the right file to replace.** We look for `LLVMFuzzerTestOneInput`,
-  prefer a file matching the bug's fuzz-target name, avoid vendored directories
-  like `third_party/` (those are a dependency's harness), and prefer
-  fuzz-related directories. `--base-harness` overrides the choice. HEAD is
-  searched separately, since the file may have been renamed upstream.
+- **Finding the right file to replace.** We look for a *definition* of
+  `LLVMFuzzerTestOneInput` — a file that merely declares and calls it is a
+  standalone driver supplying its own `main()`, and replacing one builds no
+  target at all. Then: prefer a file matching the bug's fuzz-target name, avoid
+  vendored directories like `third_party/` (those are a dependency's harness),
+  prefer fuzz-related directories, and avoid a `main` stem, which no target is
+  ever called. `--base-harness` overrides the choice. HEAD is searched
+  separately, since the file may have been renamed upstream.
 
 **The `vuln` and `head` directories are full clones, not git worktrees.** A
 worktree's `.git` is a pointer to a directory outside the mounted folder, so
