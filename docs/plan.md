@@ -1792,6 +1792,18 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.47 DIVCAP ROLL — Lang-63 caught for the FIRST TIME EVER (1/3); attribution read INCOMPLETE (archived; 866,212 tokens)
+Outcomes: Lang-63-o FN/FN/TP — the first catch in this leg's entire
+history — and both Chart canary legs TN, zero FPs, no wrong dismissals
+anywhere (no hard stop). READ INCOMPLETE, next session MUST finish it
+from the archive: first-pass greps found NO [divobs] capture lines and
+NO valid-input-probe events in the traces, so whether divcap caused the
+TP (vs invention lottery) and whether the probe (vs lottery) produced
+the Chart TNs is UNRESOLVED — the event names/greps may simply be
+wrong, or the flag path did not engage. Do not credit divcap until the
+trace read settles it. Holdout launch proceeds (no mechanism
+misbehavior observed; holdout runs without --divcap).
+
 ### 8.46 P1B_LIVE2 — the read-2 fix widened admissions but did NOT close Math-65 (archived; 1,515,998 tokens)
 Outcomes Math-65-c FP/FP/FP (Chart-26-c FP this draw, Chart-7-c TN).
 Widening now lands 5 distinct observables per roll (chisquare,
