@@ -44,9 +44,14 @@ VERIFY_TIMEOUT="${VERIFY_TIMEOUT:-120}"     # secs per harness, vulnerable build
 FUZZ_TIMEOUT="${FUZZ_TIMEOUT:-600}"         # secs per accepted harness on HEAD
 MAX_TARGET_TRIES="${MAX_TARGET_TRIES:-8}"   # OSV records to walk per project
 PROJECT_TIMEOUT="${PROJECT_TIMEOUT:-7200}"  # hard wall-clock cap per project
+MIN_FREE_GB="${MIN_FREE_GB:-40}"            # refuse to start below this
 NUM_PROJECTS="${NUM_PROJECTS:-5}"          # projects to sample when none given
 SELECT_SEED="${SELECT_SEED:-42}"            # sampling seed; fixes which ones
 export OSS_FUZZ_DIR="${OSS_FUZZ_DIR:-$ROOT_DIR/oss-fuzz}"
+# Clones and vuln/HEAD worktrees. config.py defaults this to ~/.cache, which on
+# this box is the small root disk; a sweep needs tens of GB, so keep it on the
+# data disk. Kept outside $ROOT_DIR so it stays out of the git tree.
+export OSS_FUZZ_WORK_DIR="${OSS_FUZZ_WORK_DIR:-/datadrive/vuln-patch-cache/oss-fuzz}"
 
 # --- 2. command line --------------------------------------------------------
 PROJECTS_FILE=""                            # -f: an explicit list, else sample
@@ -76,6 +81,23 @@ command -v uv >/dev/null || { echo "FATAL: uv not on PATH" >&2; exit 1; }
 if [ "$DRY_RUN" -eq 0 ]; then
   docker info >/dev/null 2>&1 || { echo "FATAL: Docker daemon not reachable" >&2; exit 1; }
 fi
+
+# A sweep pulls tens of GB of base images and writes clones, worktrees and
+# build/out trees. Out of space shows up as 'no space left on device' from
+# whatever ran first -- a docker pull, a git clone -- so check up front.
+# Careful when reading 'docker info': with the containerd image store
+# (driver-type io.containerd.snapshotter.v1) layers land under containerd's
+# own root, NOT the 'data-root' that Docker Root Dir reports. Both live on
+# the data disk here, which is the filesystem OSS_FUZZ_WORK_DIR checks.
+mkdir -p "$OSS_FUZZ_WORK_DIR" || exit 1
+for path in "$OSS_FUZZ_WORK_DIR" "$OSS_FUZZ_DIR"; do
+  avail="$(df -BG --output=avail "$path" 2>/dev/null | tail -1 | tr -dc '0-9')"
+  [ -n "$avail" ] || continue
+  [ "$avail" -ge "$MIN_FREE_GB" ] || {
+    echo "FATAL: only ${avail}G free on the filesystem holding '$path'" >&2
+    echo "  need >= ${MIN_FREE_GB}G (override with MIN_FREE_GB)" >&2
+    exit 1; }
+done
 
 # --- 4. create the run directory --------------------------------------------
 # -o an existing directory to resume: projects with a .rc there are skipped.
