@@ -1792,6 +1792,22 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.46 P1B_LIVE2 — the read-2 fix widened admissions but did NOT close Math-65 (archived; 1,515,998 tokens)
+Outcomes Math-65-c FP/FP/FP (Chart-26-c FP this draw, Chart-7-c TN).
+Widening now lands 5 distinct observables per roll (chisquare,
+jacobianevaluations, maxiterations, pointref, valueref x3) — but RMS
+still never admitted (the offline G-R2 finding held live: candidates
+too thin for MIN_SCREENED_OBSERVABLES), and the firing-state gate read
+4x NOT RUN / 4x ABSTAIN — zero agrees-with-patched dismissals. FIVE fix
+rounds have each narrowed the cause and none closed the class; every
+surviving conviction now has a fully documented mechanism (thin
+references, abstain shapes, aiming conditions). RECOMMENDATION
+(user-gated): ACCEPT Math-65-c as a documented known-FP leg, stop
+iterating on it (sunk ~6M tokens across rounds), let the HOLDOUT price
+the class honestly; the p1b machinery stays (safe, additive, and
+first-of-class evidence for the paper). Queue resumes: Chart
+valid-by-construction probe, divcap roll, holdout.
+
 ### 8.45 P1B LIVE ROLL (G-P5/6) — gate live and SAFE, but never aimed: the FPs changed channel (run p1b_live_20260811_012407, archived; 1,367,171 tokens)
 Outcomes Math-65-c FP/FP/FP, Chart legs TN. Widening WORKS partially:
 chisquare admitted 2/3 legs (was 1/3), valueref x2, pointref x1 — RMS
