@@ -355,11 +355,11 @@ crashing bugs only:
 
 ```bash
 export OSS_FUZZ_DIR=$PWD/oss-fuzz OPENAI_API_KEY=sk-...
-./run_ossfuzz_suite.sh                  # 20 sampled C++ projects, seed 42
+./run_ossfuzz_suite.sh                  # 5 sampled C++ projects, seed 42
 ./run_ossfuzz_suite.sh libxml2 expat    # just these
 ./run_ossfuzz_suite.sh -d               # dry run: exercises the whole sweep without Docker or an LLM
 ./run_ossfuzz_suite.sh -o runs/ossfuzz_20260810_120000   # resume an interrupted sweep
-NUM_PROJECTS=5 SELECT_SEED=7 ./run_ossfuzz_suite.sh      # a different sample
+NUM_PROJECTS=20 SELECT_SEED=7 ./run_ossfuzz_suite.sh     # a bigger, different sample
 ```
 
 The project list is sampled. `oss_fuzz.select_projects` draws
@@ -369,6 +369,9 @@ a sweep is reproducible without a file anyone has to maintain:
 ```bash
 cd src && uv run -m oss_fuzz.select_projects        # print the selection and why
 ```
+
+Run alone it prints 20; the suite passes `NUM_PROJECTS` (5). Under one seed the
+smaller run is a prefix of the larger, so those 5 are the first 5 printed here.
 
 Eligibility is `OssFuzz.check_support` — language, engine, sanitizer,
 `main_repo`, and the Dockerfile `WORKDIR` rule that makes `helper.py` refuse a
@@ -387,13 +390,17 @@ sweep cannot silently re-sample), `logs/<project>.log` for every run, the shared
 `results.jsonl`, and `summary.md`. Each project's exit code is kept as its
 status, so `infra-error` (2) and `timeout` never get averaged in with a real
 `clean` (0). Exit 0 covers two opposite outcomes, so a run that never got a
-harness to build is reported as `no-harness` rather than `clean`. It runs projects sequentially on purpose — `helper.py` builds into
-one shared `build/out/` tree — so budget hours, not minutes, and start it under
-tmux.
+harness to build is reported as `no-harness` rather than `clean`. It runs
+projects sequentially on purpose — `helper.py` builds into one shared
+`build/out/` tree — so budget hours, not minutes, and start it under tmux.
 
-The project list is a plain data file; every entry in the default one was
-checked for `language: c++`, a Dockerfile WORKDIR that is not `$SRC`, and at
-least one usable crashing OSV record.
+Eligibility is about the *project*, not its bugs: nothing in the sample is
+checked for having a usable crashing OSV record, since that answer costs an OSV
+query per project and changes week to week. A sampled project whose newest
+disclosed bugs are all non-crashing is a legitimate `no-target` row, not a
+failure — expect some in every sweep. The hand-maintained list this replaced
+was pre-filtered that way, so its sweeps ran a higher share of live targets at
+the cost of being a selection nobody could reproduce.
 
 ### Trying it without Docker, network, or an LLM
 

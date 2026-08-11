@@ -22,10 +22,10 @@
 # change which projects the run was about.
 #
 # Usage:
-#   ./run_ossfuzz_suite.sh                     # 20 C++ projects, seed 42
+#   ./run_ossfuzz_suite.sh                     # 5 sampled C++ projects, seed 42
 #   ./run_ossfuzz_suite.sh libxml2 expat       # just these
 #   ./run_ossfuzz_suite.sh -f suites/my.projects            # an explicit list
-#   NUM_PROJECTS=5 SELECT_SEED=7 ./run_ossfuzz_suite.sh     # a different sample
+#   NUM_PROJECTS=20 SELECT_SEED=7 ./run_ossfuzz_suite.sh    # a bigger, different sample
 #   ./run_ossfuzz_suite.sh -d                  # dry run: no Docker/LLM/network
 #   ./run_ossfuzz_suite.sh -o runs/ossfuzz_20260810_120000   # resume that dir
 #
@@ -45,7 +45,7 @@ FUZZ_TIMEOUT="${FUZZ_TIMEOUT:-600}"         # secs per accepted harness on HEAD
 MAX_TARGET_TRIES="${MAX_TARGET_TRIES:-8}"   # OSV records to walk per project
 PROJECT_TIMEOUT="${PROJECT_TIMEOUT:-7200}"  # hard wall-clock cap per project
 MIN_FREE_GB="${MIN_FREE_GB:-40}"            # refuse to start below this
-NUM_PROJECTS="${NUM_PROJECTS:-5}"          # projects to sample when none given
+NUM_PROJECTS="${NUM_PROJECTS:-5}"           # projects to sample when none given
 SELECT_SEED="${SELECT_SEED:-42}"            # sampling seed; fixes which ones
 export OSS_FUZZ_DIR="${OSS_FUZZ_DIR:-$ROOT_DIR/oss-fuzz}"
 # Clones and vuln/HEAD worktrees. config.py defaults this to ~/.cache, which on
