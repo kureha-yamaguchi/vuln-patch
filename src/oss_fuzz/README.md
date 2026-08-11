@@ -381,7 +381,8 @@ selection, written before the first project and reused on `-o` so a resumed
 sweep cannot silently re-sample), `logs/<project>.log` for every run, the shared
 `results.jsonl`, and `summary.md`. Each project's exit code is kept as its
 status, so `infra-error` (2) and `timeout` never get averaged in with a real
-`clean` (0). It runs projects sequentially on purpose — `helper.py` builds into
+`clean` (0). Exit 0 covers two opposite outcomes, so a run that never got a
+harness to build is reported as `no-harness` rather than `clean`. It runs projects sequentially on purpose — `helper.py` builds into
 one shared `build/out/` tree — so budget hours, not minutes, and start it under
 tmux.
 

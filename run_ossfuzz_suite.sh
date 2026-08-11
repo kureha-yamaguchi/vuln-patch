@@ -156,7 +156,11 @@ printf '%s\n' "${PROJECTS[@]}" > "$PROJECTS_LIST"
 status_for() {
   local rc="$1" log="$2"
   case "$rc" in
-    0) echo "clean" ;;
+    # rc=0 covers both "ran and found no sibling" and "never got a harness to
+    # build", which are opposite outcomes; 'clean' for the latter reads as
+    # success and hid 30 wasted build attempts in the 20260811 sweep.
+    0) if grep -qE '^== campaign: 0/' "$log" 2>/dev/null
+       then echo "no-harness"; else echo "clean"; fi ;;
     2) echo "infra-error" ;;
     3) echo "SIBLINGS" ;;
     4) echo "oracle-claims" ;;
