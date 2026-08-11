@@ -277,7 +277,10 @@ def _isolation_block(code_only=False):
     with open(os.path.join(ROOT, 'src', 'java', 'run.py')) as fh:
         body = fh.read()
     block = body[body.index('SHADOW-ISOLATION READING'):]
-    block = block[:block.index('# The firing INPUT itself')]
+    # The valid-by-construction probe (its own station, pinned in
+    # test_valid_input_probe.py) now sits between this hook and the
+    # input-bytes note; the isolation block ends where the probe begins.
+    block = block[:block.index('VALID-BY-CONSTRUCTION PROBE')]
     if code_only:
         # The comments in this block quote the old targeting they replaced.
         block = '\n'.join(ln for ln in block.splitlines()

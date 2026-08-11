@@ -3849,6 +3849,11 @@ def main():
                         # verdict, the notes and the evidence exactly as today.
                         _iso_vv = (_mvv_seen if _mvv_seen != "unknown"
                                    else _value_verdict)
+                        # Isolated buggy-side replays already taken for this
+                        # firing, by target id — the valid-by-construction
+                        # probe below reuses them instead of paying a second
+                        # Jazzer run for the same measurement.
+                        _iso_results = {}
                         if (_fired_ids and _iso_vv == "unknown"
                                 and _breplay_status != "clean"):
                             from java.relations.evidence_facts import (
@@ -3878,6 +3883,8 @@ def main():
                                     print(f"      [isolated-replay] "
                                           f"unavailable ({_iexc}) — "
                                           f"UNKNOWN kept")
+                                _iso_results[_iso_target] = (_iso_status,
+                                                             _iso_msg)
                                 _iso_read = _ivr(fired, _iso_msg)
                                 print(f"      [isolated-replay] "
                                       f"target={_iso_target} "
@@ -3931,6 +3938,88 @@ def main():
                             if _iso_drop:
                                 drop_reasons.append((fired, _iso_drop))
                                 continue
+                        # VALID-BY-CONSTRUCTION PROBE. Pre-registered in
+                        # docs/reportable-exception-prereg-2026-08-09.md
+                        # (2026-08-11 section): a tier-2/unexpected-exception
+                        # firing convicts on the premise that its input was
+                        # valid, and 8.41's Chart-7-c/Chart-26-c show that
+                        # premise can simply be wrong (empty strings,
+                        # degenerate ranges the relation wrongly declared
+                        # valid). Before such a firing may convict, replay
+                        # the SAME crashing input through the SAME check
+                        # compiled against the BUGGY build — isolated, the
+                        # same channel as the reading above, so no sibling
+                        # alarm can shadow the answer. Same exception type
+                        # from the check's probe tier there -> the input was
+                        # never valid: record [fact:input-invalid-on-both]
+                        # and DEMOTE (a judge-visible fact, never a terminal
+                        # dismissal). Different/no exception -> a
+                        # discriminating fact; the conviction stands. Any
+                        # failure to measure -> no fact, everything
+                        # unchanged (fail-closed). One deterministic event
+                        # per probe.
+                        from java.relations.evidence_facts import (
+                            tier2_exception_type as _t2x,
+                            valid_input_probe_reading as _vpr,
+                            valid_input_probe_fact as _vpf,
+                            valid_input_probe_demotes as _vpd)
+                        if _fired_ids and _t2x(fired):
+                            for _vp_target in sorted(_fired_ids):
+                                (_vp_status,
+                                 _vp_msg) = _iso_results.get(
+                                    _vp_target, (None, None))
+                                if _vp_status is None:
+                                    _vp_status, _vp_msg = (
+                                        "isolate_failed", None)
+                                    try:
+                                        (_vp_status, _vp_msg,
+                                         _vp_out) = fr.replay_input_isolated(
+                                            r.harness_path, r.class_name,
+                                            buggy_cp, r.artifact_path,
+                                            _vp_target,
+                                            builder=builder,
+                                            buggy_dir=selection.buggy_dir,
+                                            variant_tag='vp')
+                                    except Exception as _vpe:
+                                        print(f"      [valid-input-probe] "
+                                              f"unavailable ({_vpe}) — "
+                                              f"unchanged")
+                                _vp_read = _vpr(fired, _vp_status, _vp_msg)
+                                print(f"      [valid-input-probe] "
+                                      f"target={_vp_target} "
+                                      f"status={_vp_status} "
+                                      f"reading={_vp_read['reading']}")
+                                record_event(
+                                    'deterministic',
+                                    method='valid-input-probe',
+                                    target=_vp_target,
+                                    output=(f'status={_vp_status}; '
+                                            f'reading='
+                                            f'{_vp_read["reading"]}'),
+                                    reason=_vp_read['detail'],
+                                    detail={
+                                        'status': _vp_status,
+                                        'reading': _vp_read['reading'],
+                                        'patched_type':
+                                            _vp_read['patched_type'],
+                                        'buggy_type':
+                                            _vp_read['buggy_type'],
+                                        'buggy_msg': (_vp_msg or '')[:800],
+                                    })
+                                _vp_fact = _vpf(_vp_read, {_vp_target})
+                                if not _vp_fact:
+                                    continue
+                                if _vpd(_vp_read):
+                                    # DEMOTED, not dropped: the fact goes
+                                    # into the evidence the judge reads,
+                                    # the firing itself stays.
+                                    print(f"      [valid-input-probe] "
+                                          f"DEMOTED to rejection "
+                                          f"(invalid-on-both): "
+                                          f"{(fired or '')[:90]}")
+                                _fact_notes.append(_vp_fact)
+                                evid = ((evid + "\n" + _vp_fact) if evid
+                                        else _vp_fact)
                     # The firing INPUT itself, verbatim (batch6 Lang-27-c:
                     # attribution ruled 'duty to fix' on a defect-type
                     # crash without ever seeing that the input was fuzzer

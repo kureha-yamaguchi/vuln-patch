@@ -160,3 +160,45 @@ unchanged. Gates: G-V1 pytest green, no judge-prompt changes; G-V2
 Chart-7-c/Chart-26-c tier-2 firings read invalid-on-both; G-V3 zero
 demotions of any archived genuine tier-2 catch (the 11 Chart-19
 firings must all read discriminating — buggy returns -1, no throw).
+
+### Build addendum (2026-08-11, after the build; Mac only, no live roll)
+
+**Station:** the `run.py` firing loop, immediately after the
+shadow-isolation reading (same attribution branch, same isolated-replay
+channel — `FuzzRunner.replay_input_isolated`, so no sibling alarm can
+shadow the buggy-side answer); classification and fact wording in
+`evidence_facts.py` (`tier2_exception_type`,
+`valid_input_probe_reading` / `_demotes` / `_fact`,
+`[fact:input-invalid-on-both]`). One deterministic `valid-input-probe`
+event per probe; readings already taken by the shadow-isolation loop
+for the same relation are reused, not re-run.
+
+**The "same patched-class frame" clause is discharged structurally,**
+not by stack-walking: the tier-2 catch encloses only the probe calls on
+the patch-changed class (the synthesis lint's rule), so a same-type
+tier-2 firing from the SAME check on the buggy build is the same throw
+site. A buggy-side firing of the check's own value comparison (no
+tier-2 mark) counts as "no unexpected exception" — discriminating.
+DEMOTE is a judge-visible fact only: no drop path, and the fact is
+pinned non-terminal (`terminal_profile` reads None on it).
+
+**Gates, offline halves (tests/test_valid_input_probe.py):**
+- G-V1: full pytest on the working tree — 1 pre-existing failure only
+  (`test_GR2_the_exemption_touches_no_other_archived_admission`, fails
+  identically on the clean tree; driven by the newly archived
+  `p1b_live2_20260811_023425` Math-65-c trace, unrelated to this
+  build). No judge-prompt changes.
+- G-V2, unit half: 8.41's archived crash artifacts were pruned with
+  co/, so no archived input exists to replay; the verbatim Chart-7-c /
+  Chart-26-c firing messages demote under a same-type buggy reading and
+  stay untouched on a failed measurement. The live-canary half remains
+  open for the next roll.
+- G-V3, offline half: PASSED — all 11 archived Chart-19 tier-2 firings
+  (the rex study's own `phase2_cases.jsonl`, messages verbatim, each
+  case carrying the study's buggy-silent screen fact) read
+  discriminating; zero demotions.
+
+One existing test was re-scoped: `test_bypass_qualifier.py`'s
+isolation-block slice now ends at the probe marker (the probe sits
+inside the span that slice used to cover); its invariants are
+unchanged and re-asserted in the probe's own test file.

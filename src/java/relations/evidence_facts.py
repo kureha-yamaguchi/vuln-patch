@@ -1130,6 +1130,161 @@ def isolation_reading_fact(reading, oracle_ids=None):
 
 
 # ---------------------------------------------------------------------------
+# VALID-BY-CONSTRUCTION PROBE — is the tier-2 alarm's own premise true?
+#
+# Pre-registered in docs/reportable-exception-prereg-2026-08-09.md
+# (2026-08-11 section). A tier-2/unexpected-exception firing convicts on the
+# premise that its input was valid-by-construction; 8.41's Chart-7-c and
+# Chart-26-c FPs are firings on inputs the relation wrongly DECLARED valid
+# (empty strings, degenerate ranges). The probe replays the exact firing
+# input through the SAME check compiled against the BUGGY build (isolated,
+# so no sibling alarm can shadow the answer) and classifies what happened:
+#
+#   * invalid-on-both  — the buggy build's probe tier raises the SAME
+#     exception type. The tier-2 catch encloses only the calls on the
+#     patch-changed class (the synthesis lint's rule), so a same-type throw
+#     from the same check's probe is the same rejection at a patched-class
+#     frame. An input BOTH builds throw on was never valid — the firing is
+#     DEMOTED to a rejection via the fact below (judge-visible, never a
+#     terminal dismissal).
+#   * discriminating   — the buggy build raises a DIFFERENT exception type,
+#     raises none (the probe runs to completion), or fires the check's own
+#     value comparison instead. The two builds behave differently at this
+#     exact input, so the unexpected exception is patch-introduced
+#     behaviour; the conviction stands, with the fact as corroboration.
+#   * unresolved       — the replay errored, could not be isolated, or the
+#     patched firing is not a tier-2 alarm at all. No fact, nothing changes
+#     (fail-closed: a failed measurement may not manufacture evidence).
+# ---------------------------------------------------------------------------
+
+INVALID_ON_BOTH_FACT_TAG = '[fact:input-invalid-on-both]'
+
+#: The exact text the tier-2 catch throws (the shape mandated by
+#: relation_synth and enforced by the java_source lint; the rex study's
+#: TIER2_MARK is the same literal). A firing carrying it is a reportable
+#: unexpected exception; a firing without it is the relation's own value
+#: comparison, which the probe does not touch.
+TIER2_MARK = 'violated: unexpected '
+
+_TIER2_EXC_RE = re.compile(re.escape(TIER2_MARK) + r'([\w.$]+)')
+
+#: The readings ``valid_input_probe_reading`` can return. Only the first
+#: demotes, and demotion is a judge-visible fact, never a drop.
+VALID_INPUT_PROBE_READINGS = ('invalid-on-both', 'discriminating',
+                              'unresolved')
+
+
+def tier2_exception_type(msg):
+    """The exception type a tier-2 firing reports (the name printed by the
+    catch's own ``e.getClass().getName()``), or None when `msg` is not a
+    tier-2/unexpected-exception alarm. Pure."""
+    m = _TIER2_EXC_RE.search(str(msg or ''))
+    return m.group(1) if m else None
+
+
+def valid_input_probe_reading(patched_msg, buggy_status, buggy_msg):
+    """Classify the buggy-side replay of a tier-2 firing's own input through
+    the same check, per the block comment above.
+
+    ``buggy_status`` is ``FuzzRunner.replay_input_isolated``'s status
+    ("fired" / "silent" / "error" / "isolate_failed"); ``buggy_msg`` is the
+    target's own message when it fired, else None.
+
+    Returns a dict — never raises, never guesses:
+
+      ``reading``       one of ``VALID_INPUT_PROBE_READINGS``.
+      ``patched_type``  / ``buggy_type``  the exception types, when parsed.
+      ``buggy_status``  echoed for the event record.
+      ``detail``        one plain sentence naming what was seen.
+
+    Pure."""
+    out = {'reading': 'unresolved', 'patched_type': None, 'buggy_type': None,
+           'buggy_status': buggy_status, 'detail': ''}
+    p_type = tier2_exception_type(patched_msg)
+    out['patched_type'] = p_type
+    if not p_type:
+        out['detail'] = ('the patched firing is not a tier-2 '
+                         'unexpected-exception alarm, so the probe does not '
+                         'apply')
+        return out
+    if buggy_status == 'fired':
+        b_type = tier2_exception_type(buggy_msg)
+        out['buggy_type'] = b_type
+        if b_type == p_type:
+            out['reading'] = 'invalid-on-both'
+            out['detail'] = ('the same check, compiled against the BUGGY '
+                             'build, raises the SAME exception type ('
+                             + p_type + ') from its probe tier at this '
+                             'exact input')
+            return out
+        out['reading'] = 'discriminating'
+        if b_type:
+            out['detail'] = ('the same check on the BUGGY build raises a '
+                             'DIFFERENT exception type (' + b_type
+                             + ', vs ' + p_type + ' on patched) at this '
+                             'exact input')
+        else:
+            out['detail'] = ('the same check on the BUGGY build fires its '
+                             'own value comparison at this exact input — '
+                             'no unexpected exception is raised there')
+        return out
+    if buggy_status == 'silent':
+        out['reading'] = 'discriminating'
+        out['detail'] = ('the same check, compiled against the BUGGY build '
+                         'and replayed on this exact input, runs to '
+                         'completion — no exception is raised there')
+        return out
+    out['detail'] = ('the buggy-side probe replay did not produce a reading '
+                     '(status: ' + str(buggy_status) + '), so nothing is '
+                     'claimed either way')
+    return out
+
+
+def valid_input_probe_demotes(reading):
+    """True when a ``valid_input_probe_reading`` result demotes the firing to
+    a rejection. Demotion is delivered as a judge-visible fact only — it is
+    NEVER a terminal dismissal. Accepts the dict or the bare reading string.
+    Pure."""
+    name = reading.get('reading') if isinstance(reading, dict) else reading
+    return name == 'invalid-on-both'
+
+
+def valid_input_probe_fact(reading, oracle_ids=None):
+    """The mechanical fact for a resolved valid-by-construction probe, or
+    None when the probe resolved nothing (an unresolved measurement must
+    leave the evidence byte-for-byte as it was).
+
+    Both versions name the exact mechanics — same input, same check, buggy
+    build — so the judge reads the measurement rather than a conclusion.
+    Pure."""
+    if not isinstance(reading, dict):
+        return None
+    name = reading.get('reading')
+    if name not in ('invalid-on-both', 'discriminating'):
+        return None
+    who = (", ".join(sorted(oracle_ids)) if oracle_ids else "this check")
+    head = ("[valid-input probe] the tier-2 alarm for " + who + " convicts "
+            "on the premise that its input was valid-by-construction, so "
+            "that premise was MEASURED: the exact firing input was replayed "
+            "through the SAME check compiled against the BUGGY build, "
+            "isolated so no sibling alarm could end the run first. ")
+    detail = str(reading.get('detail') or '')
+    if name == 'invalid-on-both':
+        return (head + INVALID_ON_BOTH_FACT_TAG + " " + detail
+                + ". An input that makes BOTH builds throw from the probe "
+                "tier was never valid — the relation's validity claim is "
+                "wrong, not the patch. This firing is DEMOTED to an input "
+                "REJECTION: treat it as the check rejecting its own input, "
+                "not as evidence against the patch, unless independent "
+                "evidence shows the input is genuinely valid.")
+    return (head + detail + ". The two builds behave DIFFERENTLY at this "
+            "exact input, so the unexpected exception is behaviour the "
+            "patch introduced on an input the unpatched build accepts — "
+            "this measurement corroborates the firing; it dismisses "
+            "nothing.")
+
+
+# ---------------------------------------------------------------------------
 # Spec J (cycle-3) — re-armed mechanical identical-drop with the trigger-input
 # exemption. Two pure flags decide the ladder in run.py; both share ONE
 # distinctiveness rule so a trivially-common literal (a bare 0/1, a two-char
