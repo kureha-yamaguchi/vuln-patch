@@ -257,3 +257,11 @@ VERSION
 .claude/
 
 oss-fuzz/*
+
+# OSS-Fuzz sweep outputs (run_ossfuzz_suite.sh): logs, results.jsonl, summary.
+# The project list that produced them IS committed, under suites/.
+runs/
+
+# fuzz-introspector / libFuzzer artifacts the offline tests drop into src/
+src/report.yaml
+src/fuzzerLogFile-*.data
