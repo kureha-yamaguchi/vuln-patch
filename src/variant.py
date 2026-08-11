@@ -3,10 +3,19 @@
 The core research heuristic of this project — "given a set of harnesses
 already probing a vulnerability's root cause, produce the next harness as a
 *sibling* aimed at the still-uncovered part of that region" — is identical
-whether the target is Jazzer/Java or libFuzzer/C. It was originally embedded
-in the Java ``PromptBuilder``; it now lives here so the OSS-Fuzz/libFuzzer
-pipeline reuses the exact same steering instead of forking a second copy that
-could silently drift.
+whether the target is Jazzer/Java or libFuzzer/C. It was extracted from the
+Java ``PromptBuilder`` so the OSS-Fuzz/libFuzzer pipeline would not fork a
+second copy of the rule.
+
+SCOPE, so nobody reads more into this than is true: **only the OSS-Fuzz
+front-end calls this.** The Java ``PromptBuilder`` was never switched over and
+still carries its own copy, which has since grown steering this function does
+not have (a check-family novelty gate, and independent-oracle pressure once the
+harness set has found any trigger). The two front-ends therefore share the
+heuristic, not the wording — this is not a cross-language parity contract, and
+a test asserting byte-identical output between them would fail today. If the
+Java copy should be unified with this one, that is a deliberate refactor of
+``java/harness/prompts.py``, not something to assume has already happened.
 
 This module deliberately has no third-party imports (no javalang, no clang)
 so either front-end can import it without dragging in the other's toolchain.

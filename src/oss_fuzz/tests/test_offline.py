@@ -802,25 +802,6 @@ def test_find_candidates_limit_stops_the_sweep():
     print("ok  candidate sweep limit")
 
 
-def test_shared_directive_matches_across_frontends():
-    # The Java PromptBuilder must produce byte-identical steering to the
-    # shared function (this is the whole point of the refactor).
-    reachable = ["a", "b", "c"]
-    direct = variant_analysis_directive(reachable, ["a"], ["sig1"])
-    # import the Java builder lazily; it needs javalang only at parse time,
-    # not to call this delegating method.
-    sys.path.insert(0, os.path.join(SRC, "java"))
-    try:
-        from java.prompts import PromptBuilder as JPB
-        via_java = JPB(language="C")._variant_analysis_block(
-            reachable, ["a"], ["sig1"])
-        assert via_java == direct
-        print("ok  java/shared directive parity")
-    except Exception as e:
-        # javalang may be unavailable in this env; the parity is structural.
-        print("skip java parity (import unavailable):", e)
-
-
 HARNESS_BODY = ("#include <stddef.h>\nint LLVMFuzzerTestOneInput("
                 "const uint8_t *d, size_t s) { return 0; }\n")
 

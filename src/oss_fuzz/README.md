@@ -139,7 +139,7 @@ called through a deliberately small interface:
 | Shared file | How this front-end uses it |
 |---|---|
 | `src/llm.py` | Send a list of messages, get text back. Nothing else. It is imported only when needed, so `--dry-run` works without an LLM library installed. |
-| `src/variant.py` | The steering rule itself: "aim the next harness at a part of the fix's neighbourhood that earlier harnesses missed." `prompts.py` calls it with the reachable functions, the functions already covered, and the crashes already found. Because both front-ends call the same function, the method cannot quietly drift apart between them. |
+| `src/variant.py` | The steering rule itself: "aim the next harness at a part of the fix's neighbourhood that earlier harnesses missed." `prompts.py` calls it with the reachable functions, the functions already covered, and the crashes already found. Extracted from the Java `PromptBuilder`, which still carries its own copy — see the note below. |
 | `src/config.py` | All settings and their environment-variable defaults. |
 
 What is specific to C/C++ and therefore lives here: the prompt wording and byte
@@ -152,6 +152,16 @@ The rule for accepting a harness — crashes the vulnerable build, not just
 compiles — is the same as in the Java pipeline, and `campaign.py` is the only
 thing that decides it. The static analysis only steers; it never decides whether
 a harness is good.
+
+**Steering is not byte-identical across the two front-ends, and no longer claims
+to be.** `variant.py` was extracted from the Java `PromptBuilder` so this
+front-end would not fork a second copy of the rule, but the Java side was never
+switched over to it and has since grown steering this one does not have (a
+check-family novelty gate and independent-oracle pressure once any trigger has
+been found). So the two share the *heuristic*, not the *text*: a Java result and
+a C result are comparable in method, and a C campaign will accept a set of
+harnesses that a Java campaign would have pushed harder to diversify. Treat
+`variant.py` as this front-end's steering, not as a cross-language contract.
 
 ### What it uses from your oss-fuzz checkout
 
