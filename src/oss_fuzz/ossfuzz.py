@@ -128,6 +128,14 @@ _ASSERT_SIG_RE = re.compile(
     r"(?:Assertion\s+`([^']{1,80})'\s+failed"
     r"|Check\s+fail(?:ed|ure):\s*([^\n]{1,80}))", re.IGNORECASE)
 
+# Where a sanitizer's crash name ends and this run's addresses begin. Hex
+# addresses are alphanumeric, so _SIG_RE's name capture ran straight through
+# them: open62541's real overflow signed itself "heap-buffer-overflow on address
+# 0x7b9c0d9e6591 at pc 0x5585a37fac0a bp 0x7ffd... sp 0x7ffd...", which is a
+# different string every run. The distinct-finding gate compares signatures, so
+# that made every re-find of one bug look like a new one.
+_SIG_ADDRESSES_RE = re.compile(r"\s+(?:on (?:unknown )?address|at pc)\b.*$")
+
 
 # OSS-Fuzz's own defaults for keys a project.yaml omits, taken from the
 # upstream checkout so our gate agrees with what infra/ would actually build:
@@ -462,7 +470,8 @@ def crash_signature(output: str) -> Optional[str]:
     m = _SIG_RE.search(output)
     if not m:
         return None
-    kind, what = m.group(1), m.group(2).strip()
+    kind = m.group(1)
+    what = _SIG_ADDRESSES_RE.sub("", m.group(2)).strip()
     return f"{kind}:{what}{_frame_suffix(output)}"
 
 

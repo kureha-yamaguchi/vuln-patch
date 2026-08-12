@@ -197,6 +197,20 @@ def test_crash_detection_and_signature():
     assert _looks_like_crash(0, "clean run, no findings") is None
     sig = crash_signature(asan)
     assert sig and "AddressSanitizer" in sig and "demo_parse" in sig, sig
+
+    # A signature must not carry this run's addresses: hex is alphanumeric, so
+    # the crash-name capture used to swallow the whole "on address 0x.. at pc
+    # 0x.." tail, and open62541's one real finding therefore signed itself
+    # differently on every run — which is what the distinct-finding gate
+    # compares (20260812).
+    real = ("==1==ERROR: AddressSanitizer: heap-buffer-overflow on address "
+            "0x7b9c0d9e6591 at pc 0x5585a37fac0a bp 0x7ffdfb24f2f0 sp "
+            "0x7ffdfb24eaa8\n    #0 0x55 in strncpy x.c:1\n")
+    assert crash_signature(real) == \
+        "AddressSanitizer:heap-buffer-overflow@strncpy", crash_signature(real)
+    # libFuzzer's multi-word names still survive whole.
+    assert crash_signature("==1==ERROR: libFuzzer: deadly signal\n") == \
+        "libFuzzer:deadly signal"
     print("ok  crash detection:", sig)
 
 
