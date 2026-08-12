@@ -72,7 +72,7 @@ that only exist inside the process are gone when it exits:
 | `inputs/generation-input.json` | one record tying the three steering inputs to the commits they came from |
 | `inputs/fix.diff` | the fix diff, verbatim and uncapped (the prompt truncates it at 6000 chars) |
 | `inputs/trigger.txt`, `inputs/poc.bin` | the original bug's triggering evidence — crash type and crashing stack, plus the PoC input itself when `--reproducer` supplied one |
-| `inputs/reachable.txt` | the extracted reachable-function set, and which analyser produced it (`fuzz-introspector` or the degraded `heuristic` fallback) |
+| `inputs/reachable.txt` | the extracted reachable-function set, and which analyser produced it (`fuzz-introspector` or the degraded `heuristic` fallback — also in `results.jsonl` as `reachable_source`, so a sweep can count how often the steering degraded) |
 | `prompts/attempt_NNN.txt` | the exact messages sent to the model — one per attempt, since re-steering and build-repair turns change them |
 | `harnesses/vp_harness_N.<ext>` | every generated harness, including the rejected ones |
 | `fuzz/verify_*.log`, `fuzz/head_*.log` | the engine's own output per run: `verify_` on the vulnerable build (the acceptance gate), `head_` on HEAD (the sibling claim) |

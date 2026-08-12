@@ -653,6 +653,11 @@ def main():
           head_commit=head_commit, harnesses_accepted=result.achieved,
           attempts=result.attempts, siblings=siblings,
           oracle_claims=claims, harnesses_run_on_head=head_runs,
+          # Which reachable set steered the prompts. The variant-analysis
+          # heuristic is the method under test, and it degrades silently when
+          # fuzz-introspector times out — all five projects in the 20260812 run
+          # were steered by the fallback, which only the per-project log said.
+          reachable_source=context.reachable_source,
           artifacts=artifacts.dir if artifacts else None)
 
     if not args.dry_run:

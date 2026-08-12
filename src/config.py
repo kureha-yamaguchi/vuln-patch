@@ -216,8 +216,18 @@ REACHABLE_TIMEOUT_SECONDS = int(os.getenv('REACHABLE_TIMEOUT_SECONDS', '30'))
 # Wall-clock cap (s) on the one-time fuzz-introspector project parse
 # (analyse_end_to_end). It has been seen to stall on some checkouts (Math-2);
 # on timeout the run degrades to no-steering rather than hanging.
+#
+# 1800, not the 120 it was: at 120 the C/C++ light frontend timed out on all
+# five projects of the 20260812 sweep, so every prompt in it was steered by the
+# degraded regex fallback and the run tested the heuristic it was built to test
+# on none of them. The parse is not stalling, it is simply slow on a whole
+# source tree — measured on this box, warm cache: open62541 501s, ogre 1276s,
+# both completing. That is 7-18% of the suite's 7200s per-project cap, spent
+# once, on the one input the method rests on. Which analyser actually produced
+# the reachable set is recorded per project (results.jsonl 'reachable_source'),
+# so the degraded path stays countable rather than silent.
 INTROSPECTOR_TIMEOUT_SECONDS = int(
-    os.getenv('INTROSPECTOR_TIMEOUT_SECONDS', '120'))
+    os.getenv('INTROSPECTOR_TIMEOUT_SECONDS', '1800'))
 
 # Depth cap for fuzz-introspector's method-depth metric. Its stock
 # calculate_method_depth is an unbounded O(N^2+) DFS that stalls on large
