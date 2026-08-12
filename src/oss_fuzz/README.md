@@ -23,7 +23,7 @@ This is the C/C++ version of `src/java` (Defects4J + Jazzer). It shares that pip
 | 8. Build the image | `ossfuzz.py` | `helper.py build_image`. Optionally replay a known crashing input with `--reproducer`. |
 | 9. Generate and test harnesses | `campaign.py` | The main loop, described below. |
 | 10. Run the survivors on HEAD | `run.py` | Rebuild each accepted harness against the latest code and fuzz it. A crash here is a sibling bug. |
-| 11. Report | `run.py` | Print a summary; optionally append a JSON line with `--results-json`. |
+| 11. Report | `run.py` | Print a summary; optionally append a JSON line with `--results-json` and the run's evidence with `--artifacts-dir`. |
 
 **Step 6 can reject the bug.** Some fix commits touch no source code at all,
 which would leave the prompt with nothing to steer toward. When that happens the
@@ -49,6 +49,40 @@ immediately rather than blaming the model.
 Exit codes: **0** = ran fine, no siblings. **2** = `RUN ABORTED`, the
 environment is broken — this is not a result about the fix. **3** = confirmed
 siblings found. **4** = only unconfirmed oracle claims (see below).
+
+### What a run leaves behind: `--artifacts-dir`
+
+Stdout is the pipeline's commentary — it says a harness was accepted and prints
+the signature it found. It is not the evidence for either claim, and two things
+that only exist inside the process are gone when it exits:
+
+* **What the generator was given.** Step 6 prints the extracted function *names*
+  and nothing else, so the diff, the touched-function bodies and the exact
+  prompt text — the whole steering input, i.e. the thing under study — cannot be
+  recovered from a finished run.
+* **What the fuzzing engine said.** Step 9 and step 10 read two lines out of the
+  engine output (a crash signature, a crash reason) and drop the rest. The
+  sanitizer report behind a sibling claim, and the exec/coverage counters that
+  say whether a *clean* harness reached the code at all, are never printed.
+
+`--artifacts-dir DIR` keeps both, under `DIR/<project>/` (`artifacts.py`):
+
+| Path | What it holds |
+|---|---|
+| `inputs/generation-input.json` | one record tying the three steering inputs to the commits they came from |
+| `inputs/fix.diff` | the fix diff, verbatim and uncapped (the prompt truncates it at 6000 chars) |
+| `inputs/trigger.txt`, `inputs/poc.bin` | the original bug's triggering evidence — crash type and crashing stack, plus the PoC input itself when `--reproducer` supplied one |
+| `inputs/reachable.txt` | the extracted reachable-function set, and which analyser produced it (`fuzz-introspector` or the degraded `heuristic` fallback) |
+| `prompts/attempt_NNN.txt` | the exact messages sent to the model — one per attempt, since re-steering and build-repair turns change them |
+| `harnesses/vp_harness_N.<ext>` | every generated harness, including the rejected ones |
+| `fuzz/verify_*.log`, `fuzz/head_*.log` | the engine's own output per run: `verify_` on the vulnerable build (the acceptance gate), `head_` on HEAD (the sibling claim) |
+| `build/*.log` | compiler output for builds that failed (these go to `$OSS_FUZZ_WORK_DIR` when no artifacts dir is set) |
+
+`inputs/` is written before the first LLM call, so a run killed by a wall-clock
+cap still records what it set out to do. A log is clipped head-and-tail at 1 MB
+(`OSS_FUZZ_MAX_LOG_BYTES`) with the cut marked — a fuzzer's output is unbounded
+and not always text; ogre's `image_fuzz` once emitted 167 MB of raw `0xff`.
+`run_ossfuzz_suite.sh` passes `--artifacts-dir` for every project in a sweep.
 
 ## Crashing vs semantic bugs
 
@@ -410,7 +444,11 @@ them together when reporting a run.
 Everything lands in `runs/ossfuzz_<timestamp>/`: `projects.list` (the resolved
 selection, written before the first project and reused on `-o` so a resumed
 sweep cannot silently re-sample), `logs/<project>.log` for every run, the shared
-`results.jsonl`, and `summary.md`. Each project's exit code is kept as its
+`results.jsonl`, `summary.md`, and `artifacts/<project>/` — the steering input,
+the prompts and the fuzzing engine's own output for each run, described under
+[`--artifacts-dir`](#what-a-run-leaves-behind---artifacts-dir) above. The logs
+are the sweep's commentary; the artifacts are what it is commentary about, so
+quote a path from `artifacts/` when reporting a finding. Each project's exit code is kept as its
 status, so `infra-error` (2) and `timeout` never get averaged in with a real
 `clean` (0). Exit 0 covers two opposite outcomes, so a run that never got a
 harness to build is reported as `no-harness` rather than `clean`. It runs

@@ -594,10 +594,16 @@ class OssFuzz:
     def __init__(self,
                  oss_fuzz_dir: str = None,
                  work_dir: str = None,
-                 dry_run: bool = False):
+                 dry_run: bool = False,
+                 artifacts=None):
         self.oss_fuzz_dir = os.path.abspath(oss_fuzz_dir or config.OSS_FUZZ_DIR)
         self.work_dir = os.path.abspath(work_dir or config.OSS_FUZZ_WORK_DIR)
         self.dry_run = dry_run
+        # artifacts.RunArtifacts, or None to keep the old behaviour: engine
+        # output stays in RunOutcome and build logs stay in work_dir. Assigned
+        # after construction by run.py, which only knows the project — hence
+        # where the files go — once target discovery has finished.
+        self.artifacts = artifacts
         self.helper = os.path.join(self.oss_fuzz_dir, "infra", "helper.py")
         # Set while a project's build runs, so a timeout can stop that
         # project's containers rather than guessing at what to kill.
@@ -1265,15 +1271,27 @@ class OssFuzz:
         # printing stderr alone loses the actual error. Persist everything and
         # surface the lines that matter.
         combined = f"{proc.stdout}\n{proc.stderr}"
-        # Project-qualified: work_dir is shared across a sweep, so without it the
-        # next project's attempt N silently overwrites this one's evidence.
-        log_path = os.path.join(
-            self.work_dir, f"build_{project}_{checkout.label}_{log_tag}.log")
-        try:
-            with open(log_path, "w") as fh:
-                fh.write(combined)
+        # Into the run's own artifacts directory when there is one, so the
+        # evidence for a project sits under the sweep that produced it rather
+        # than in a cache directory shared by every run on the box.
+        log_path = None
+        if self.artifacts is not None:
+            log_path = self.artifacts.record_build_log(
+                f"{checkout.label}_{log_tag}", combined)
+        if log_path is None:
+            # Project-qualified: work_dir is shared across a sweep, so without it
+            # the next project's attempt N silently overwrites this one's
+            # evidence.
+            log_path = os.path.join(
+                self.work_dir, f"build_{project}_{checkout.label}_{log_tag}.log")
+            try:
+                with open(log_path, "w") as fh:
+                    fh.write(combined)
+            except OSError:
+                log_path = None
+        if log_path:
             print(f"  build failed; full log: {log_path}")
-        except OSError:
+        else:
             print("  build failed")
         print(_build_error_excerpt(combined))
         self.last_build_stderr = _build_error_excerpt(combined)
@@ -1475,7 +1493,16 @@ class OssFuzz:
 
     def run_fuzzer(self, project: str, harness_name: str, seconds: int,
                    sanitizer: str, corpus: Optional[str] = None,
-                   bug_class: Optional[BugClass] = None) -> RunOutcome:
+                   bug_class: Optional[BugClass] = None,
+                   log_tag: Optional[str] = None) -> RunOutcome:
+        """``log_tag`` names this run's engine log under ``artifacts/fuzz/``.
+
+        Supplied by the caller rather than derived from ``harness_name``,
+        because that name is not ours under the overwrite placement (it is the
+        replaced target's) and because the same harness is run twice — once as
+        the vulnerable-build gate, once on HEAD. Deriving it would put both
+        runs of every harness in one file, each overwriting the last.
+        """
         args = ["run_fuzzer", "--sanitizer", sanitizer]
         if corpus:
             args += ["--corpus-dir", corpus]
@@ -1495,14 +1522,33 @@ class OssFuzz:
             rc, out, err = -1, exc.stdout or "", exc.stderr or ""
             out = out.decode() if isinstance(out, bytes) else out
             err = err.decode() if isinstance(err, bytes) else err
+        self._log_run(log_tag or f"fuzz_{harness_name}", args, rc, out, err)
         return self._outcome(project, harness_name, rc, out, err, timed_out)
 
     def reproduce(self, project: str, harness_name: str, testcase: str,
                   sanitizer: str) -> RunOutcome:
-        proc = self._helper("reproduce", "--sanitizer", sanitizer,
-                            project, harness_name, testcase, timeout=600)
+        args = ["reproduce", "--sanitizer", sanitizer,
+                project, harness_name, testcase]
+        proc = self._helper(*args, timeout=600)
+        self._log_run(f"poc_{harness_name}", args, proc.returncode,
+                      proc.stdout, proc.stderr)
         return self._outcome(project, harness_name, proc.returncode,
                              proc.stdout, proc.stderr, False)
+
+    def _log_run(self, tag: str, args: List[str], rc: int, out: str,
+                 err: str) -> None:
+        """Persist one engine run's output, if this run is keeping artifacts.
+
+        Unconditional on the outcome: a clean run's stats (execs/sec, corpus
+        size, coverage counters) are what distinguish a harness that reached
+        the code and found nothing from one that never got past the first
+        input — a distinction ``RunOutcome.triggered`` cannot make, and the
+        one the campaign's re-steering decisions rest on.
+        """
+        if self.artifacts is None:
+            return
+        self.artifacts.record_fuzz_log(
+            tag, "helper.py " + " ".join(args), rc, out, err)
 
     def _outcome(self, project: str, harness_name: str, rc: int,
                  out: str, err: str, timed_out: bool) -> RunOutcome:

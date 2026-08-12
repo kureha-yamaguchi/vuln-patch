@@ -13,6 +13,24 @@
 #   results.jsonl        appended by the pipeline itself
 #   summary.md           status table
 #   projects.list        the resolved project list, reused when resuming
+#   artifacts/<project>/ the evidence behind that project's line in the table:
+#     inputs/            what the harness generator was steered by — the fix
+#                        diff, the original bug's triggering evidence (crash
+#                        type + crashing stack, and the PoC when --reproducer
+#                        supplied one), and the extracted reachable-function
+#                        set, plus generation-input.json tying them together
+#     prompts/           the exact messages sent to the LLM, one file per
+#                        attempt (they differ: the campaign re-steers them)
+#     harnesses/         every generated harness, accepted or not
+#     fuzz/              the fuzzing engine's own output, per run:
+#                        verify_* on the vulnerable build (the acceptance
+#                        gate), head_* on HEAD (the sibling claim)
+#     build/             compiler output for builds that failed
+#
+# logs/<project>.log is the pipeline's commentary; artifacts/<project>/ is what
+# that commentary is about. A sibling claim in the table cites a signature the
+# log prints in one line — the sanitizer report behind it, and the engine stats
+# behind every harness that instead ran clean, are only in fuzz/.
 #
 # The project list is not a checked-in file. oss_fuzz.select_projects derives it
 # from the OSS-Fuzz checkout, so nobody has to maintain a list by hand: by
@@ -41,7 +59,7 @@ set -uo pipefail
 # Pipeline tuning lives here; override any of them from the environment.
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_SUCCESSES="${TARGET_SUCCESSES:-3}"   # accepted harnesses per project
-MAX_ATTEMPTS="${MAX_ATTEMPTS:-15}"          # LLM calls per project
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-30}"          # LLM calls per project
 VERIFY_TIMEOUT="${VERIFY_TIMEOUT:-120}"     # secs per harness, vulnerable build
 FUZZ_TIMEOUT="${FUZZ_TIMEOUT:-600}"         # secs per accepted harness on HEAD
 MAX_TARGET_TRIES="${MAX_TARGET_TRIES:-8}"   # OSV records to walk per project
@@ -143,6 +161,9 @@ RUN_DIR="$(cd "$RUN_DIR" && pwd)"
 RESULTS="$RUN_DIR/results.jsonl"
 SUMMARY="$RUN_DIR/summary.md"
 PROJECTS_LIST="$RUN_DIR/projects.list"
+# Per-project subdirectories are created by the pipeline as it writes, so a
+# resumed run adds to this tree rather than replacing it.
+ARTIFACTS="$RUN_DIR/artifacts"
 
 # --- 5. resolve the project list ---------------------------------------------
 # Precedence: positional args, then -f, then this run's own projects.list, then
@@ -219,7 +240,8 @@ status_for() {
 CMD=(uv run -m oss_fuzz.run --skip-semantic
      -n "$TARGET_SUCCESSES" -m "$MAX_ATTEMPTS"
      --verify-timeout "$VERIFY_TIMEOUT" --fuzz-timeout "$FUZZ_TIMEOUT"
-     --max-target-tries "$MAX_TARGET_TRIES" --results-json "$RESULTS")
+     --max-target-tries "$MAX_TARGET_TRIES" --results-json "$RESULTS"
+     --artifacts-dir "$ARTIFACTS")
 [ "$DRY_RUN" -eq 1 ] && CMD+=(--dry-run)
 
 cd "$ROOT_DIR/src" || exit 1
@@ -256,17 +278,28 @@ done
   echo
   echo "Projects: ${#PROJECTS[@]} (seed $SELECT_SEED, oss-fuzz \`$(git -C "$OSS_FUZZ_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)\`)."
   echo
-  echo "| project | status |"
-  echo "|---|---|"
+  echo "| project | status | evidence |"
+  echo "|---|---|---|"
   for p in "${PROJECTS[@]}"; do
-    echo "| $p | ${STATUS[$p]:-not-run} |"
+    # The evidence column is only meaningful once the project has run; a
+    # not-run row would otherwise link to a directory that does not exist.
+    if [ -d "$ARTIFACTS/$p" ]; then
+      echo "| $p | ${STATUS[$p]:-not-run} | \`artifacts/$p/\` |"
+    else
+      echo "| $p | ${STATUS[$p]:-not-run} | — |"
+    fi
   done
+  echo
+  echo "Each \`artifacts/<project>/\` holds what the generator was given"
+  echo "(\`inputs/\`, \`prompts/\`) and what the fuzzing engine said back"
+  echo "(\`fuzz/verify_*.log\` on the vulnerable build, \`fuzz/head_*.log\` on HEAD)."
 } > "$SUMMARY"
 
 echo
 echo "suite done — $RUN_DIR"
 printf '  %-16s %s\n' "summary:" "$SUMMARY"
 printf '  %-16s %s\n' "results:" "$RESULTS"
+printf '  %-16s %s\n' "artifacts:" "$ARTIFACTS"
 
 # Exit 3 if any project found a confirmed sibling, mirroring the pipeline's own
 # code so a wrapper can branch on the sweep the same way.

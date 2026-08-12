@@ -121,7 +121,8 @@ class HarnessCampaign:
                  placement: Optional[HarnessPlacement] = None,
                  target_successes: int = 5, max_attempts: int = 30,
                  verify_seconds: int = 60,
-                 bug_class: Optional[BugClass] = None):
+                 bug_class: Optional[BugClass] = None,
+                 artifacts=None):
         self.generator = generator
         self.of = oss_fuzz
         self.project = project
@@ -137,6 +138,11 @@ class HarnessCampaign:
         # None keeps the pre-split behaviour: assume a sanitizer is the oracle,
         # gate on "it crashed", require nothing of the harness's own checks.
         self.bug_class = bug_class
+        # artifacts.RunArtifacts, or None. Records the prompt and the harness
+        # for EVERY attempt, not just accepted ones: a campaign that spends 30
+        # attempts and accepts nothing is the case most in need of explaining,
+        # and it is exactly the case that leaves nothing behind otherwise.
+        self.artifacts = artifacts
         # The stock-build question is asked at most once per campaign; see run().
         self._stock_checked = False
 
@@ -158,6 +164,9 @@ class HarnessCampaign:
                 repair_context = None
             else:
                 messages = prompt_factory(result.covered, result.signatures)
+
+            if self.artifacts is not None:
+                self.artifacts.record_prompt(n, messages)
 
             raw = self.generator.generate(messages)
             source = extract_source(raw)
@@ -188,6 +197,8 @@ class HarnessCampaign:
                     continue
 
             name = f"vp_harness_{n}"
+            if self.artifacts is not None:
+                self.artifacts.record_harness(name, self.ext, source)
             out_bin = self.of.build_harness(
                 self.project, self.vuln, name, source, self.ext, self.sanitizer,
                 placement=self.placement)
@@ -229,7 +240,7 @@ class HarnessCampaign:
                         else name)
             outcome = self.of.run_fuzzer(
                 self.project, run_name, self.verify_seconds, self.sanitizer,
-                bug_class=self.bug_class)
+                bug_class=self.bug_class, log_tag=f"verify_{name}")
             if outcome.triggered and outcome.signature in result.signatures:
                 # Distinct-finding gate. Five harnesses that all re-find one
                 # crash satisfy `target_successes=5` while carrying one piece

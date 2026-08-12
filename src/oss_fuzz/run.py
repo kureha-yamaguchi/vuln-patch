@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import config
 from typing import List
 
+from oss_fuzz.artifacts import RunArtifacts
 from oss_fuzz.bugclass import SEMANTIC, ORACLE_HARNESS, classify_forced
 from oss_fuzz.osv import OsvClient, CveTarget, rank_records
 from oss_fuzz.ossfuzz import OssFuzz
@@ -133,6 +134,13 @@ def parse_args():
                    help="print external commands and skip Docker/git/LLM exec")
     p.add_argument("--results-json", default=None,
                    help="append a one-line JSON summary to this path")
+    p.add_argument("--artifacts-dir", default=None,
+                   help="keep this run's evidence under <dir>/<project>/: the "
+                        "generator's input (fix diff, the original bug's "
+                        "triggering evidence, the reachable-function set), the "
+                        "exact prompt per attempt, every generated harness, "
+                        "and the fuzzing engine's own output for every verify "
+                        "and HEAD run. Off by default; see oss_fuzz/artifacts.py")
     return p.parse_args()
 
 
@@ -304,6 +312,15 @@ def main():
               "drive:\n" + "\n".join(f"  - {r}" for r in sup.reasons)
               + "\n  See viable projects with --list-candidates.", args.dry_run)
 
+    # 0d) Somewhere to keep this run's evidence. Only now, because the files go
+    #     under the project name and --auto-project does not know it until 0b —
+    #     and there is nothing worth keeping about a project that fails 0c.
+    artifacts = (RunArtifacts(args.artifacts_dir, args.project)
+                 if args.artifacts_dir else None)
+    of.artifacts = artifacts
+    if artifacts:
+        print(f"artifacts    : {artifacts.dir}")
+
     # 1) Pick a target whose fix diff is actually analysable.
     #
     #    OSS-Fuzz 'fixed' commits come from automated bisection and a real
@@ -447,6 +464,20 @@ def main():
     ext = placement.ext
     print(f"harness build: {placement.describe()}")
 
+    # Record the generator's whole input now — before the image pull, the
+    # builds and the LLM budget — so a run killed by the suite's wall-clock cap
+    # still says what it was steered by. This is the triple the method rests
+    # on: the fix diff (and the PoC when one was supplied), the evidence the
+    # original bug fired, and the reachable-function set the variant-analysis
+    # block ranges over.
+    if artifacts:
+        path = artifacts.record_generation_input(
+            target, context, sanitizer=sanitizer, bug_class=bug_class,
+            vuln_commit=vuln_commit, head_commit=head_commit,
+            placement=placement, reproducer=args.reproducer)
+        if path:
+            print(f"generation input recorded: {path}")
+
     # The bug's own OSV sanitizer can differ from the one we preflighted, so
     # re-check whatever we ended up with rather than the preference.
     if sup.exists and sanitizer not in sup.sanitizers:
@@ -498,7 +529,7 @@ def main():
         vuln_checkout=vuln, sanitizer=sanitizer, ext=ext, placement=placement,
         target_successes=args.target_successes,
         max_attempts=args.max_attempts, verify_seconds=args.verify_timeout,
-        bug_class=bug_class)
+        bug_class=bug_class, artifacts=artifacts)
     result = campaign.run(prompt_factory)
 
     print(f"\n== campaign: {result.achieved}/{result.target_successes} "
@@ -511,7 +542,8 @@ def main():
               cve=target.cve_id, sanitizer=sanitizer, attempts=result.attempts,
               bug_kind=bug_class.kind, oracle=bug_class.oracle,
               harnesses_accepted=0, siblings=[], oracle_claims=[],
-              infra_error=result.infra_error)
+              infra_error=result.infra_error,
+              artifacts=artifacts.dir if artifacts else None)
         _abort_environment("the build environment could not build any "
                            f"harness:\n  {result.infra_error}")
 
@@ -545,7 +577,8 @@ def main():
         outcome = of.run_fuzzer(args.project,
                                 head_placement.runtime_name(gen.harness_name),
                                 args.fuzz_timeout, sanitizer,
-                                bug_class=bug_class)
+                                bug_class=bug_class,
+                                log_tag=f"head_{gen.harness_name}")
         if outcome.triggered:
             # A sanitizer report on HEAD is a bug, full stop. A harness's own
             # oracle firing is a bug *if the relation it asserts is true*, and
@@ -560,7 +593,12 @@ def main():
                 "harness": gen.harness_name,
                 "signature": outcome.signature,
                 "found_by": outcome.found_by,
-                "artifact": outcome.artifact_path})
+                "artifact": outcome.artifact_path,
+                # The engine output behind this claim. `artifact` is the input
+                # that crashed; this is the report that says what it did.
+                "fuzz_log": (os.path.join(artifacts.dir, "fuzz",
+                                          f"head_{gen.harness_name}.log")
+                             if artifacts else None)})
         else:
             print("  clean on HEAD (fix covers this variant)")
 
@@ -578,6 +616,8 @@ def main():
         for c in claims:
             print(f"  - {c['harness']}: {c['signature']}  ({c['artifact']})")
     print("#" * 50)
+    if artifacts:
+        print(f"\ninput, prompts and engine logs: {artifacts.dir}")
 
     _emit(args.results_json, cve=target.cve_id, project=args.project,
           osv_id=target.osv_id, sanitizer=sanitizer,
@@ -585,7 +625,8 @@ def main():
           oracle=bug_class.oracle, vuln_commit=vuln_commit,
           head_commit=head_commit, harnesses_accepted=result.achieved,
           attempts=result.attempts, siblings=siblings,
-          oracle_claims=claims)
+          oracle_claims=claims,
+          artifacts=artifacts.dir if artifacts else None)
 
     if not args.dry_run:
         of.cleanup_checkouts(repo)

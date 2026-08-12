@@ -1378,7 +1378,7 @@ def test_campaign_runs_the_replaced_targets_name_under_overwrite():
             return "/out/xml"
 
         def run_fuzzer(self, project, harness_name, seconds, sanitizer,
-                       bug_class=None):
+                       bug_class=None, log_tag=None):
             ran.append(harness_name)
             from oss_fuzz.ossfuzz import RunOutcome
             return RunOutcome(triggered=True, timed_out=False, returncode=1,
@@ -1665,7 +1665,7 @@ def test_campaign_rejects_a_harness_that_cannot_fail():
             return "/out/" + name
 
         def run_fuzzer(self, project, harness_name, seconds, sanitizer,
-                       bug_class=None):
+                       bug_class=None, log_tag=None):
             return RunOutcome(triggered=True, timed_out=False, returncode=1,
                               crash_reason="oracle", signature="oracle:rt",
                               found_by="harness")
@@ -1704,7 +1704,7 @@ def test_crashing_campaign_is_unchanged_by_the_split():
             return "/out/" + name
 
         def run_fuzzer(self, project, harness_name, seconds, sanitizer,
-                       bug_class=None):
+                       bug_class=None, log_tag=None):
             return RunOutcome(triggered=True, timed_out=False, returncode=1,
                               crash_reason="ASan", signature="sig",
                               found_by="sanitizer")
@@ -1747,7 +1747,7 @@ def test_campaign_refuses_a_harness_that_refinds_a_known_crash():
             return "/out/" + name
 
         def run_fuzzer(self, project, harness_name, seconds, sanitizer,
-                       bug_class=None):
+                       bug_class=None, log_tag=None):
             return RunOutcome(triggered=True, timed_out=False, returncode=1,
                               crash_reason="ASan",
                               signature=sigs[len(built) - 1],
@@ -2124,6 +2124,119 @@ def test_recent_selection_probes_only_the_candidates_it_reaches():
     assert select_recent(catalogue, 4, catalogue.get, lambda _: None)[0][:2] == \
         select_recent(catalogue, 2, catalogue.get, lambda _: None)[0]
     print("ok  recent selection probes in rank order and stops when full")
+
+
+def test_artifacts_record_the_generators_whole_input():
+    """The three parts the method rests on must survive the process: the fix
+    diff, the original bug's triggering evidence, and the reachable set. A log
+    keeps only the function *names*, so without these a result cannot be
+    re-derived from a finished run."""
+    import tempfile
+    from oss_fuzz.analysis import PatchContext, TouchedFunction
+    from oss_fuzz.artifacts import RunArtifacts
+    from oss_fuzz.bugclass import classify
+
+    d = tempfile.mkdtemp()
+    poc = os.path.join(d, "crash-input")
+    with open(poc, "wb") as fh:
+        fh.write(b"\xff\x00bad")
+
+    ctx = PatchContext(
+        language="c", patch_text="--- a/x.c\n+++ b/x.c\n@@\n-bad\n+good\n",
+        functions=[TouchedFunction(file="x.c", name="parse", source="{}",
+                                   start_line=12)],
+        root_cause_reachable=["parse", "lex", "emit"],
+        reachable_source="fuzz-introspector")
+    target = CveTarget(cve_id="CVE-2024-1", osv_id="OSV-2024-9", project="demo",
+                       fixed_commit="abc123", crash_type="Heap-buffer-overflow",
+                       crash_state=["lex", "parse"], fuzz_target="xml_fuzz")
+
+    art = RunArtifacts(os.path.join(d, "artifacts"), "demo")
+    path = art.record_generation_input(
+        target, ctx, sanitizer="address", bug_class=classify("Heap-buffer-overflow"),
+        vuln_commit="abc122", head_commit="head99", reproducer=poc)
+    rec = json.load(open(path))
+
+    assert rec["patch"]["touched_functions"][0]["name"] == "parse", rec
+    assert open(os.path.join(art.dir, "inputs/fix.diff")).read() == ctx.patch_text
+    # The PoC is copied, not referenced: a path into a cache directory the run
+    # cleans up is not evidence.
+    assert open(os.path.join(art.dir, "inputs/poc.bin"), "rb").read() == b"\xff\x00bad"
+    assert rec["trigger"]["crash_state"] == ["lex", "parse"], rec
+    assert rec["reachable"]["functions"] == ["parse", "lex", "emit"], rec
+    # Which analyser produced the set: an introspector-to-heuristic fallback
+    # silently degrades the steering, and this is the only place it is recorded.
+    assert rec["reachable"]["source"] == "fuzz-introspector", rec
+    assert open(os.path.join(art.dir, "inputs/reachable.txt")).read() == \
+        "parse\nlex\nemit\n"
+    print("ok  artifacts record the diff, the trigger and the reachable set")
+
+
+def test_artifacts_clip_marks_the_cut():
+    """A fuzzer can emit hundreds of MB (ogre's image_fuzz: 167MB of 0xff), so
+    a log is clipped — but never silently: a truncated sanitizer report that
+    looks complete is worse than no log."""
+    from oss_fuzz.artifacts import clip
+
+    text = "H" * 100 + "M" * 10_000 + "T" * 100
+    out = clip(text, limit=400)
+    assert len(out) < len(text)
+    assert out.startswith("H" * 100), out[:120]
+    assert out.endswith("T" * 100), out[-120:]
+    assert "clipped" in out
+    assert clip("short", limit=400) == "short"      # untouched under the cap
+    print("ok  oversized engine output is clipped head-and-tail, and says so")
+
+
+def test_campaign_records_prompt_harness_and_engine_log_per_attempt():
+    """Every attempt leaves its prompt, its harness and the engine's output —
+    including the rejected attempts, which are the ones a 0/N campaign needs
+    explaining by."""
+    import tempfile
+    from oss_fuzz.artifacts import RunArtifacts
+    from oss_fuzz.campaign import HarnessCampaign
+    from oss_fuzz.ossfuzz import RunOutcome
+
+    d = tempfile.mkdtemp()
+    art = RunArtifacts(d, "demo")
+
+    class _Gen:
+        def generate(self, messages):
+            return ("```c\nint LLVMFuzzerTestOneInput(const uint8_t *d, "
+                    "size_t s){ return 0; }\n```")
+
+    class _Of:
+        last_build_stderr = ""
+        last_build_infra_error = None
+        artifacts = art
+
+        def build_harness(self, project, checkout, name, source, ext,
+                          sanitizer, placement=None):
+            return "/out/" + name
+
+        def run_fuzzer(self, project, harness_name, seconds, sanitizer,
+                       bug_class=None, log_tag=None):
+            # The real OssFuzz writes the log; here we only assert the campaign
+            # asked for a tag that separates this run from the HEAD run of the
+            # same harness (both would otherwise be 'vp_harness_N.log').
+            art.record_fuzz_log(log_tag, "helper.py run_fuzzer", 0, "stats", "")
+            return RunOutcome(triggered=False, timed_out=False, returncode=0)
+
+    camp = HarnessCampaign(generator=_Gen(), oss_fuzz=_Of(), project="demo",
+                           vuln_checkout=None, sanitizer="address", ext=".c",
+                           target_successes=1, max_attempts=2, artifacts=art)
+    camp.run(lambda covered, sigs: [{"role": "system", "content": "sys"},
+                                    {"role": "user", "content": f"steer {sigs}"}])
+
+    assert sorted(os.listdir(os.path.join(art.dir, "prompts"))) == \
+        ["attempt_001.txt", "attempt_002.txt"]
+    assert sorted(os.listdir(os.path.join(art.dir, "harnesses"))) == \
+        ["vp_harness_1.c", "vp_harness_2.c"]
+    assert sorted(os.listdir(os.path.join(art.dir, "fuzz"))) == \
+        ["verify_vp_harness_1.log", "verify_vp_harness_2.log"]
+    prompt = open(os.path.join(art.dir, "prompts/attempt_001.txt")).read()
+    assert "----- system -----" in prompt and "----- user -----" in prompt
+    print("ok  campaign records prompt, harness and engine log per attempt")
 
 
 def _ctx_for_prompt():
