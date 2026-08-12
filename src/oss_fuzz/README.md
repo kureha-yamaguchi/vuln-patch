@@ -72,10 +72,11 @@ that only exist inside the process are gone when it exits:
 | `inputs/generation-input.json` | one record tying the three steering inputs to the commits they came from |
 | `inputs/fix.diff` | the fix diff, verbatim and uncapped (the prompt truncates it at 6000 chars) |
 | `inputs/trigger.txt`, `inputs/poc.bin` | the original bug's triggering evidence — crash type and crashing stack, plus the PoC input itself when `--reproducer` supplied one |
-| `inputs/reachable.txt` | the extracted reachable-function set, and which analyser produced it (`fuzz-introspector` or the degraded `heuristic` fallback) |
+| `inputs/reachable.txt` | the extracted reachable-function set, and which analyser produced it (`fuzz-introspector` or the degraded `heuristic` fallback — also in `results.jsonl` as `reachable_source`, so a sweep can count how often the steering degraded) |
 | `prompts/attempt_NNN.txt` | the exact messages sent to the model — one per attempt, since re-steering and build-repair turns change them |
 | `harnesses/vp_harness_N.<ext>` | every generated harness, including the rejected ones |
 | `fuzz/verify_*.log`, `fuzz/head_*.log` | the engine's own output per run: `verify_` on the vulnerable build (the acceptance gate), `head_` on HEAD (the sibling claim) |
+| `crashes/<run>/<artifact>` | the input a run stopped on, byte for byte, copied out of `build/out/` before the next build wipes it |
 | `build/*.log` | compiler output for builds that failed (these go to `$OSS_FUZZ_WORK_DIR` when no artifacts dir is set) |
 
 `inputs/` is written before the first LLM call, so a run killed by a wall-clock
@@ -451,7 +452,9 @@ are the sweep's commentary; the artifacts are what it is commentary about, so
 quote a path from `artifacts/` when reporting a finding. Each project's exit code is kept as its
 status, so `infra-error` (2) and `timeout` never get averaged in with a real
 `clean` (0). Exit 0 covers two opposite outcomes, so a run that never got a
-harness to build is reported as `no-harness` rather than `clean`. It runs
+harness to build is reported as `no-harness` rather than `clean`, and a run whose
+accepted harnesses never ran on HEAD is `inconclusive` (5) — it tested nothing
+there, so `clean` would be a claim about a fix nobody exercised. It runs
 projects sequentially on purpose — `helper.py` builds into one shared
 `build/out/` tree — so budget hours, not minutes, and start it under tmux.
 
@@ -562,7 +565,15 @@ staying out of the way on crashing ones.
   as claims and exit 4.
 - **HEAD may not build.** If the project's API changed between the fix and now,
   a harness may not compile against HEAD. Those are skipped and reported, not
-  counted as clean.
+  counted as clean; when *none* of the accepted harnesses runs there the run is
+  `inconclusive` (exit 5), because nothing about HEAD was tested.
+- **A harness leaks and runs out of memory more easily than the library does.**
+  Forgetting one destructor is a `LeakSanitizer` report, and allocating from an
+  unvalidated size field is a libFuzzer out-of-memory kill — both on a *fixed*
+  library, which makes them the false positives a generated harness produces
+  most readily. Neither counts as a finding unless the OSV crash type says a
+  leak or a resource limit is the bug being chased (`ossfuzz.incidental_finding`).
+  In the 20260812 run they were three of three "confirmed siblings".
 - **Two URLs can name the repo the fix landed in, and they go stale in opposite
   ways.** The OSV record's is historically exact but frozen at disclosure;
   `project.yaml`'s is maintained but can be a different repo. cryptofuzz needs

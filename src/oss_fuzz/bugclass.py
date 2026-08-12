@@ -118,6 +118,18 @@ _WRONG_RESULT_TYPES = (
     "mismatch",
 )
 
+# Reported by LeakSanitizer when the process exits, not at a point of access.
+# Kept apart from the memory-safety types because a *harness* leaks so easily by
+# accident: forgetting one destructor produces the same report on a fixed
+# library, so "a leak fired" is only evidence when a leak is what we came for.
+# See ossfuzz.incidental_finding.
+_LEAK_TYPES = (
+    "direct-leak",
+    "indirect-leak",
+    "memory-leak",
+    "memory leak",
+)
+
 # Detected by the runtime, but by libFuzzer's resource limits rather than a
 # sanitizer — and only if those limits are actually passed to the binary, which
 # is why these carry extra flags rather than being just another crash type.
@@ -142,6 +154,7 @@ class BugClass:
     reason: str                      # why, for the run log
     crash_type: Optional[str] = None
     resource: bool = False           # timeout/OOM: needs the limits below
+    leak: bool = False               # LeakSanitizer reports it at exit
 
     def __post_init__(self) -> None:
         """``kind`` is a coarsening of ``oracle``, not a second opinion.
@@ -227,6 +240,13 @@ def classify(crash_type: Optional[str]) -> BugClass:
             reason=f"'{raw}' is a violated invariant the project checks "
                    "itself, so the runtime still reports it; the sibling must "
                    "break the invariant, not memory")
+
+    if any(h in low for h in _LEAK_TYPES):
+        return BugClass(
+            kind=CRASHING, oracle=ORACLE_SANITIZER, crash_type=raw,
+            leak=True,
+            reason=f"'{raw}' is reported by LeakSanitizer when the process "
+                   "exits, so a leak in the harness itself looks identical")
 
     if any(h in low for h in _RESOURCE_TYPES):
         return BugClass(

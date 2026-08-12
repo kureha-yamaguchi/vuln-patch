@@ -54,7 +54,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import config
 from oss_fuzz.bugclass import (BugClass, ORACLE_HARNESS,
@@ -127,6 +127,14 @@ _SIG_RE = re.compile(
 _ASSERT_SIG_RE = re.compile(
     r"(?:Assertion\s+`([^']{1,80})'\s+failed"
     r"|Check\s+fail(?:ed|ure):\s*([^\n]{1,80}))", re.IGNORECASE)
+
+# Where a sanitizer's crash name ends and this run's addresses begin. Hex
+# addresses are alphanumeric, so _SIG_RE's name capture ran straight through
+# them: open62541's real overflow signed itself "heap-buffer-overflow on address
+# 0x7b9c0d9e6591 at pc 0x5585a37fac0a bp 0x7ffd... sp 0x7ffd...", which is a
+# different string every run. The distinct-finding gate compares signatures, so
+# that made every re-find of one bug look like a new one.
+_SIG_ADDRESSES_RE = re.compile(r"\s+(?:on (?:unknown )?address|at pc)\b.*$")
 
 
 # OSS-Fuzz's own defaults for keys a project.yaml omits, taken from the
@@ -216,6 +224,11 @@ _OUT_TOOLS = frozenset({"llvm-symbolizer"})
 
 # Source extensions that can hold a libFuzzer harness.
 _HARNESS_EXTS = (".cc", ".cpp", ".cxx", ".c", ".C")
+
+# What libFuzzer names the input it stopped on, by what stopped it. All of them,
+# not just 'crash-': a leak or an out-of-memory kill is a finding too when that
+# is the bug being chased (see incidental_finding).
+_ARTIFACT_PREFIXES = ("crash-", "leak-", "oom-", "timeout-")
 
 # A harness DEFINES LLVMFuzzerTestOneInput; a standalone driver merely declares
 # and calls it, supplying its own main() so the target runs without libFuzzer.
@@ -314,6 +327,42 @@ def find_base_harness(root: str, fuzz_target: Optional[str] = None,
     if not hits:
         return None
     return min(hits, key=lambda p: _harness_rank(p, fuzz_target))
+
+
+_INCLUDE_RE = re.compile(r'^[ \t]*#[ \t]*include[ \t]*[<"]([^>"]+)[>"]',
+                         re.MULTILINE)
+
+
+def included_paths(source: str) -> List[str]:
+    """The header paths a translation unit includes, in first-seen order."""
+    out: List[str] = []
+    for m in _INCLUDE_RE.finditer(source):
+        if m.group(1) not in out:
+            out.append(m.group(1))
+    return out
+
+
+def harness_includes(root: str, rel_path: Optional[str]) -> List[str]:
+    """The ``#include`` lines of an existing harness source, in file order.
+
+    Ground truth about where this project's headers live. The overwrite
+    placement replaces a file that compiles TODAY under the project's own build
+    with the project's own include path, so its include block is known to
+    resolve — and nothing else in the prompt carries that information, which is
+    why guessing at it is the most common way a generated harness fails to
+    build. The 20260812 run spent 3 of ogre's 8 attempts and most of libxaac's
+    30 on missing headers, while the files being replaced said
+    ``#include "OgreRoot.h"`` and ``#include "ixheaac_type_def.h"`` — neither of
+    them the form the model guessed.
+    """
+    if not rel_path:
+        return []
+    try:
+        with open(os.path.join(root, rel_path), errors="ignore") as fh:
+            text = fh.read(_MAX_HARNESS_SCAN_BYTES)
+    except OSError:
+        return []
+    return [m.group(0).strip() for m in _INCLUDE_RE.finditer(text)]
 
 
 @dataclass
@@ -457,7 +506,8 @@ def crash_signature(output: str) -> Optional[str]:
     m = _SIG_RE.search(output)
     if not m:
         return None
-    kind, what = m.group(1), m.group(2).strip()
+    kind = m.group(1)
+    what = _SIG_ADDRESSES_RE.sub("", m.group(2)).strip()
     return f"{kind}:{what}{_frame_suffix(output)}"
 
 
@@ -520,6 +570,30 @@ _COMPILER_DIAG_RE = re.compile(
     re.IGNORECASE)
 
 
+# What a line has to say to count as a build failure. Anchored on the colon
+# forms compilers, linkers and make actually emit, because a bare search for the
+# word 'error' also matches the '-Wno-error=...' entries in the CFLAGS banner
+# OSS-Fuzz prints before every build — which is how the 20260812 run reported a
+# flag list as the reason grok would not build, and handed the model the same
+# flag list as the error to repair.
+_ERROR_LINE_RE = re.compile(
+    r"(?:fatal )?error:"                    # clang/gcc/ld diagnostics
+    r"|undefined (?:reference to|symbol)"
+    r"|No such file or directory"
+    r"|\bError \d+\b"                       # make/ninja recipe failure
+    r"|^[\w./-]+: cannot ",                 # mkdir/cp/ld refusing outright
+    re.IGNORECASE | re.MULTILINE)
+
+# helper.py's own commentary, present on every failed build and saying nothing
+# about the cause ("ERROR:__main__:Building fuzzers failed.").
+_HELPER_LOG_RE = re.compile(r"^(?:INFO|WARNING|ERROR):(?:__main__|common_utils)")
+
+
+def _names_an_error(line: str) -> bool:
+    return (bool(_ERROR_LINE_RE.search(line))
+            and not _HELPER_LOG_RE.match(line.lstrip()))
+
+
 def _build_error_excerpt(combined: str, limit: int = 2500) -> str:
     """The interesting part of a failed build's output.
 
@@ -529,25 +603,49 @@ def _build_error_excerpt(combined: str, limit: int = 2500) -> str:
     instead of BuildKit progress bars.
     """
     lines = combined.splitlines()
-    hits = [i for i, ln in enumerate(lines)
-            if re.search(r"\berror\b|\bfatal\b|undefined reference|"
-                         r"No such file or directory|Error [0-9]+", ln,
-                         re.IGNORECASE)]
+    hits = [i for i, ln in enumerate(lines) if _names_an_error(ln)]
     if not hits:
         return combined[-limit:]
     keep: set = set()
     for i in hits:
         keep.update(range(max(0, i - 2), min(len(lines), i + 3)))
     excerpt = "\n".join(lines[i] for i in sorted(keep))
-    return excerpt[-limit:]
+    if len(excerpt) > limit:
+        # Whole lines only: cutting mid-line opens the excerpt with the tail of
+        # whichever line straddled the boundary, which reads as corruption.
+        excerpt = excerpt[-limit:].split("\n", 1)[-1]
+    return excerpt
 
 
 def _first_error_line(text: str) -> str:
     """The first line of ``text`` that names an error, for one-line reports."""
     for ln in text.splitlines():
-        if re.search(r"\berror\b", ln, re.IGNORECASE):
+        if _names_an_error(ln):
             return ln.strip()[:200]
     return "see the build log"
+
+
+_MISSING_INCLUDE_RE = re.compile(
+    r"(?:fatal )?error: '([^']+)' file not found"
+    r"|(?:fatal )?error: ([\w./+-]+): No such file or directory")
+
+
+def missing_includes(build_output: str) -> List[str]:
+    """Header paths the compiler could not find, in first-seen order.
+
+    The single most common way a generated harness fails to build, and the one
+    that repeats: 23 of libxaac's 30 attempts in the 20260812 run died on a
+    missing header, and the same three names came back over and over because
+    only the last compiler error was ever fed back. A name in here is a fact —
+    the compiler looked and it was not there — so the campaign can both ban it
+    and refuse to spend a Docker build on a harness that uses it again.
+    """
+    out: List[str] = []
+    for m in _MISSING_INCLUDE_RE.finditer(build_output):
+        name = m.group(1) or m.group(2)
+        if name and name not in out:
+            out.append(name)
+    return out
 
 
 def _infra_error(combined: str) -> Optional[str]:
@@ -588,6 +686,52 @@ def _looks_like_crash(returncode: int, combined: str) -> Optional[str]:
     return None
 
 
+# Reports about the harness's own resource use rather than about a fault in the
+# library. A generated harness that never frees what it allocated leaks by
+# construction, and one that allocates from an unvalidated size field runs the
+# process out of memory on almost any input — both fire just as readily on a
+# FIXED library. This is how three ogre harnesses "confirmed" a sibling bug on
+# HEAD in the 20260812 run: two libFuzzer out-of-memory kills and a 168-byte
+# leak in the harness's own Ogre::Mesh objects.
+_LEAK_RE = re.compile(r"LeakSanitizer|byte\(s\) leaked")
+_RESOURCE_RE = re.compile(r"libFuzzer: (?:out-of-memory|timeout)")
+
+# A fault the library is answerable for: a sanitizer naming a memory error or
+# UB, or a fatal signal. Distinguished from the leak summary, which wears the
+# same 'AddressSanitizer:' prefix but carries a byte count where the error name
+# goes ("SUMMARY: AddressSanitizer: 168 byte(s) leaked").
+_HARD_FAULT_RE = re.compile(
+    r"(?:ERROR|SUMMARY): (?:Address|Memory)Sanitizer: [A-Za-z]"
+    r"|SUMMARY: UndefinedBehaviorSanitizer"
+    r"|runtime error:"
+    r"|ERROR: libFuzzer: deadly signal"
+    r"|SEGV on unknown address")
+
+
+def incidental_finding(output: str,
+                       bug_class: Optional[BugClass]) -> Optional[str]:
+    """Why this report is about the harness rather than the library, or None if
+    it is admissible evidence about the bug being chased.
+
+    A leak or a resource-limit kill is a real thing to have found, but it is not
+    evidence that a fix missed a variant of a memory-safety bug — and it is the
+    failure a generated harness is most likely to produce by accident. When the
+    bug IS of that class (``bugclass`` reads ``leak``/``resource`` off the OSV
+    crash type) the same report is exactly what the run came for, so the test is
+    against the class rather than against the marker.
+    """
+    if _HARD_FAULT_RE.search(output):
+        return None
+    if _LEAK_RE.search(output) and not (bug_class and bug_class.leak):
+        return ("the only report is a memory leak, which a harness that does "
+                "not free what it allocated produces on a fixed library too")
+    if _RESOURCE_RE.search(output) and not (bug_class and bug_class.resource):
+        return ("the only report is libFuzzer's own out-of-memory/timeout "
+                "limit, which a harness that allocates from an unvalidated "
+                "size field trips on a fixed library too")
+    return None
+
+
 class OssFuzz:
     """Wrapper over a local ``google/oss-fuzz`` checkout."""
 
@@ -610,6 +754,9 @@ class OssFuzz:
         self._active_project: Optional[str] = None
         self.last_build_stderr = ""
         self.last_build_infra_error: Optional[str] = None
+        # The commit each project's shared build directories were last built
+        # from; see _needs_clean.
+        self._built_commit: Dict[str, str] = {}
         os.makedirs(self.work_dir, exist_ok=True)
 
     # -- low-level ---------------------------------------------------------
@@ -1233,6 +1380,10 @@ class OssFuzz:
         Dispatches on ``placement.mode`` (see ``plan_harness``). ``placement=None``
         means the ``crib`` strategy, so existing callers keep their behaviour.
         """
+        # Before the harness is placed, never after: the crib strategy writes
+        # its harness into this tree as an untracked file, which is exactly what
+        # a clean removes.
+        self._clean_source_tree(checkout)
         if placement is not None and placement.mode == "overwrite":
             return self._build_harness_overwrite(
                 project, checkout, harness_name, harness_source, placement,
@@ -1240,8 +1391,67 @@ class OssFuzz:
         return self._build_harness_crib(
             project, checkout, harness_name, harness_source, ext, sanitizer)
 
+    def _needs_clean(self, project: str, checkout: Checkout) -> bool:
+        """Whether helper.py must wipe ``$OUT`` and ``$WORK`` before this build.
+
+        Both are per-project directories that survive between builds, and
+        helper.py reuses them unless told otherwise. That reuse is worth keeping
+        *within* one commit — it is the difference between a two-minute attempt
+        and a twenty-minute one — but across two different commits it is wrong,
+        because what survives is not only object files:
+
+          * ``$WORK`` holds the project's own out-of-source build tree
+            (open62541 configures CMake in ``$WORK/open62541``), generated
+            sources included. In the 20260812 run all three of its HEAD builds
+            failed on ``UA_STATUSCODE_SEMANTICSCHANGED`` — HEAD's sources
+            compiled against status-code headers generated from the *vulnerable*
+            commit — and the run reported "clean on HEAD" as its result.
+          * ``$OUT`` holds every crash artifact the runs have written, which is
+            what the trigger gate reads as evidence (see ``_find_artifact``).
+        """
+        return self._built_commit.get(project) != checkout.commit
+
+    def _clean_source_tree(self, checkout: Checkout) -> None:
+        """Remove build leftovers from a checkout, best effort.
+
+        OSS-Fuzz builds each project from a pristine copy of its sources, and
+        some build.sh scripts rely on that: grok's runs ``mkdir build``, which
+        fails outright on the second attempt because the first one's directory
+        is still sitting in the tree. In the 20260812 run that turned an
+        ordinary compile error into "the project's own build fails", and the
+        campaign aborted after 1 of its 30 attempts.
+
+        ``git clean -xdf`` covers it: build outputs are untracked, so are
+        harnesses the crib strategy left behind, and tracked files a build.sh
+        edited in place are left alone (they are restored by whoever wrote
+        them). Submodules are tracked gitlinks and are not descended into.
+
+        Asked on the host first (``-n`` lists, deletes nothing) and only then
+        done in a container, for two reasons. Most projects build in ``$WORK``
+        and leave nothing here, so the common case costs one git call instead of
+        a container start; and when there IS something, it was written by the
+        previous build's container and is root-owned, which a host-side clean
+        cannot remove — the same problem ``_remove_as_root`` exists for.
+        ``safe.directory`` goes in the container's *global* config because git
+        refuses to operate on a repository owned by another uid, and that
+        setting is read only from the system and global scopes.
+        """
+        if self.dry_run:
+            return
+        listed = self._run(["git", "-C", checkout.path, "clean", "-xdn"])
+        leftovers = (listed.stdout or "").splitlines()
+        if listed.returncode != 0 or not leftovers:
+            return
+        print(f"  clearing {len(leftovers)} build leftover(s) from the "
+              f"{checkout.label} checkout")
+        self._run(["docker", "run", "--rm", "-v", f"{checkout.path}:/mnt",
+                   CLEANUP_IMAGE, "bash", "-c",
+                   'git config --global --add safe.directory "*" && '
+                   'git -C /mnt clean -xdfq'],
+                  timeout=600)
+
     def _run_build(self, project: str, checkout: Checkout, sanitizer: str,
-                   log_tag: str) -> bool:
+                   log_tag: str, *, clean: Optional[bool] = None) -> bool:
         """``helper.py build_fuzzers`` against a checkout.
 
         Records diagnostics in ``last_build_stderr`` (fed back to the model as a
@@ -1253,13 +1463,17 @@ class OssFuzz:
         a half-hour cap kills legitimate builds. Configurable because the right
         value depends entirely on host architecture.
         """
+        if clean is None:
+            clean = self._needs_clean(project, checkout)
+        args = ["build_fuzzers", "--sanitizer", sanitizer,
+                "--engine", "libfuzzer"]
+        if clean:
+            args.append("--clean")
+        args += [project, checkout.path]
+        self._built_commit[project] = checkout.commit
         self._active_project = project
         try:
-            proc = self._helper(
-                "build_fuzzers", "--sanitizer", sanitizer,
-                "--engine", "libfuzzer", project, checkout.path,
-                timeout=config.OSS_FUZZ_BUILD_TIMEOUT,
-            )
+            proc = self._helper(*args, timeout=config.OSS_FUZZ_BUILD_TIMEOUT)
         finally:
             self._active_project = None
         if proc.returncode == 0:
@@ -1318,11 +1532,22 @@ class OssFuzz:
         at a 2024 vuln commit, and that failure looks like an ordinary
         ``clang++: error:``. A tree that does not build without us cannot be
         repaired by rewriting the harness.
+
+        The answer is only worth having if the tree is pristine. This runs right
+        after a failed harness build, whose leftovers are still in the checkout,
+        and grok's build.sh then fails on ``mkdir build`` — "File exists" — with
+        no harness of ours anywhere near it. That verdict cost the whole project
+        in the 20260812 run: an ordinary stale-API compile error was reported as
+        a broken environment and the campaign aborted on attempt 1 of 30.
         """
         if self.dry_run:
             return None
         print("  checking whether the project builds without our harness")
-        if self._run_build(project, checkout, sanitizer, "stock"):
+        # From a pristine tree and a pristine $WORK, both: this verdict aborts
+        # the whole project, so it must not rest on state the failed harness
+        # build left behind. One full rebuild, once, on the failure path only.
+        self._clean_source_tree(checkout)
+        if self._run_build(project, checkout, sanitizer, "stock", clean=True):
             return None
         return (f"the project's own build of the {checkout.label} checkout "
                 f"fails with no harness of ours in it: "
@@ -1514,6 +1739,7 @@ class OssFuzz:
         if bug_class:
             args += bug_class.libfuzzer_flags()
         timed_out = False
+        started = time.time()
         try:
             proc = self._helper(*args, timeout=seconds + 120)
             rc, out, err = proc.returncode, proc.stdout, proc.stderr
@@ -1522,18 +1748,21 @@ class OssFuzz:
             rc, out, err = -1, exc.stdout or "", exc.stderr or ""
             out = out.decode() if isinstance(out, bytes) else out
             err = err.decode() if isinstance(err, bytes) else err
-        self._log_run(log_tag or f"fuzz_{harness_name}", args, rc, out, err)
-        return self._outcome(project, harness_name, rc, out, err, timed_out)
+        tag = log_tag or f"fuzz_{harness_name}"
+        self._log_run(tag, args, rc, out, err)
+        return self._outcome(project, rc, out, err, timed_out,
+                             since=started, tag=tag, bug_class=bug_class)
 
     def reproduce(self, project: str, harness_name: str, testcase: str,
                   sanitizer: str) -> RunOutcome:
         args = ["reproduce", "--sanitizer", sanitizer,
                 project, harness_name, testcase]
+        started = time.time()
         proc = self._helper(*args, timeout=600)
-        self._log_run(f"poc_{harness_name}", args, proc.returncode,
-                      proc.stdout, proc.stderr)
-        return self._outcome(project, harness_name, proc.returncode,
-                             proc.stdout, proc.stderr, False)
+        tag = f"poc_{harness_name}"
+        self._log_run(tag, args, proc.returncode, proc.stdout, proc.stderr)
+        return self._outcome(project, proc.returncode, proc.stdout, proc.stderr,
+                             False, since=started, tag=tag)
 
     def _log_run(self, tag: str, args: List[str], rc: int, out: str,
                  err: str) -> None:
@@ -1550,11 +1779,13 @@ class OssFuzz:
         self.artifacts.record_fuzz_log(
             tag, "helper.py " + " ".join(args), rc, out, err)
 
-    def _outcome(self, project: str, harness_name: str, rc: int,
-                 out: str, err: str, timed_out: bool) -> RunOutcome:
+    def _outcome(self, project: str, rc: int, out: str, err: str,
+                 timed_out: bool, *, since: float = 0.0,
+                 tag: Optional[str] = None,
+                 bug_class: Optional[BugClass] = None) -> RunOutcome:
         combined = f"{out}\n{err}"
-        # A persisted crash-* artifact is the strongest signal.
-        artifact = self._find_artifact(project)
+        # A persisted artifact this run wrote is the strongest signal.
+        artifact = self._find_artifact(project, since)
         reason = None if timed_out else _looks_like_crash(rc, combined)
         found_by = None if timed_out else finding_oracle(combined)
         if artifact and reason is None:
@@ -1562,7 +1793,15 @@ class OssFuzz:
             # An artifact with no readable report still means libFuzzer stopped
             # on an input, which is a runtime detection like any other.
             found_by = found_by or ORACLE_SANITIZER
+        # Last: a report can be real and still not be about the library.
+        if reason is not None:
+            why = incidental_finding(combined, bug_class)
+            if why:
+                print(f"  not counted as a finding: {why}")
+                reason = found_by = artifact = None
         triggered = reason is not None
+        if triggered and tag:
+            artifact = self._keep_artifact(tag, artifact) or artifact
         return RunOutcome(
             triggered=triggered, timed_out=timed_out, returncode=rc,
             stdout=out, stderr=err, crash_reason=reason,
@@ -1570,14 +1809,38 @@ class OssFuzz:
             artifact_path=artifact, found_by=found_by if triggered else None,
         )
 
-    def _find_artifact(self, project: str) -> Optional[str]:
+    def _find_artifact(self, project: str, since: float = 0.0) -> Optional[str]:
+        """The newest crashing input THIS run wrote, or None.
+
+        ``build/out/<project>`` accumulates artifacts: every attempt in a
+        campaign writes into the same directory and nothing clears it between
+        them (see ``_needs_clean`` — within one commit we deliberately keep the
+        build). So an age test is not a refinement, it is the whole check. Two
+        ogre harnesses were accepted in the 20260812 run on the strength of a
+        ``crash-`` file that a previous run had left there hours earlier; both
+        had in fact run clean for their full 121 seconds.
+        """
         out_dir = os.path.join(self.oss_fuzz_dir, "build", "out", project)
         if self.dry_run or not os.path.isdir(out_dir):
             return None
-        crashes = [os.path.join(out_dir, f) for f in os.listdir(out_dir)
-                   if f.startswith("crash-")]
-        crashes.sort(key=lambda p: os.path.getmtime(p), reverse=True)
-        return crashes[0] if crashes else None
+        found = [os.path.join(out_dir, f) for f in os.listdir(out_dir)
+                 if f.startswith(_ARTIFACT_PREFIXES)]
+        mine = [p for p in found if _built_since(p, since)]
+        mine.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+        return mine[0] if mine else None
+
+    def _keep_artifact(self, tag: str, path: Optional[str]) -> Optional[str]:
+        """Copy a crashing input into this run's artifacts, returning the copy.
+
+        The original lives in ``build/out/<project>``, which is wiped whenever
+        the commit being built changes (see ``_needs_clean``) — so a
+        vulnerable-build artifact is already gone by the time the HEAD run it
+        justified has finished, and a claim in the results cites a path that no
+        longer exists.
+        """
+        if not path or self.artifacts is None:
+            return None
+        return self.artifacts.record_crash_input(tag, path)
 
     def cleanup_checkouts(self, repo: str) -> None:
         for label in ("vuln", "head"):

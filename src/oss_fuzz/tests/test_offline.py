@@ -197,6 +197,20 @@ def test_crash_detection_and_signature():
     assert _looks_like_crash(0, "clean run, no findings") is None
     sig = crash_signature(asan)
     assert sig and "AddressSanitizer" in sig and "demo_parse" in sig, sig
+
+    # A signature must not carry this run's addresses: hex is alphanumeric, so
+    # the crash-name capture used to swallow the whole "on address 0x.. at pc
+    # 0x.." tail, and open62541's one real finding therefore signed itself
+    # differently on every run — which is what the distinct-finding gate
+    # compares (20260812).
+    real = ("==1==ERROR: AddressSanitizer: heap-buffer-overflow on address "
+            "0x7b9c0d9e6591 at pc 0x5585a37fac0a bp 0x7ffdfb24f2f0 sp "
+            "0x7ffdfb24eaa8\n    #0 0x55 in strncpy x.c:1\n")
+    assert crash_signature(real) == \
+        "AddressSanitizer:heap-buffer-overflow@strncpy", crash_signature(real)
+    # libFuzzer's multi-word names still survive whole.
+    assert crash_signature("==1==ERROR: libFuzzer: deadly signal\n") == \
+        "libFuzzer:deadly signal"
     print("ok  crash detection:", sig)
 
 
@@ -2243,6 +2257,223 @@ def _ctx_for_prompt():
     from oss_fuzz.analysis import PatchContext
     return PatchContext(language="c++", patch_text="--- a\n+++ b\n",
                         functions=[], headers=[], root_cause_reachable=[])
+
+
+# OSS-Fuzz prints this before every build, and every line of it contains the
+# word 'error'.
+CFLAGS_BANNER = (
+    "CFLAGS=-O1 -fno-omit-frame-pointer -Wno-error=int-conversion "
+    "-Wno-error=implicit-function-declaration -fsanitize=address\n"
+    "CXXFLAGS=-O1 -Wno-error=vla-cxx-extension -stdlib=libc++\n")
+
+
+def test_error_lines_ignore_the_compiler_flag_banner():
+    """'-Wno-error=' is not an error.
+
+    The 20260812 run reported grok's failure as a truncated CFLAGS string, in
+    results.jsonl and in the repair prompt handed back to the model, because
+    both helpers matched the bare word 'error'.
+    """
+    from oss_fuzz.ossfuzz import _build_error_excerpt, _first_error_line
+    combined = (CFLAGS_BANNER
+                + "+ mkdir build\nmkdir: cannot create directory 'build': "
+                  "File exists\n"
+                + "INFO:__main__:Running: docker run ...\n"
+                  "ERROR:__main__:Building fuzzers failed.\n")
+    first = _first_error_line(_build_error_excerpt(combined))
+    assert first.startswith("mkdir: cannot create directory"), first
+
+    # A real compiler diagnostic still wins over the banner around it.
+    diag = (CFLAGS_BANNER
+            + "/src/ogre/Tests/fuzz/image_fuzz.cpp:16:10: fatal error: "
+              "'OgreMeshFileFormat.h' file not found\n")
+    assert "OgreMeshFileFormat.h" in _first_error_line(diag)
+    assert "Wno-error" not in _first_error_line(diag)
+    print("ok  error extraction ignores the -Wno-error flag banner")
+
+
+def test_missing_includes_are_extracted_and_remembered():
+    """The headers a build could not find, so the campaign can stop re-trying
+    them: 23 of libxaac's 30 attempts died on a missing header, the same three
+    names recurring because only the last error was ever fed back."""
+    from oss_fuzz.ossfuzz import missing_includes, included_paths
+    out = (CFLAGS_BANNER
+           + "/src/libxaac/fuzzer/xaac_dec_fuzzer.cpp:9:10: fatal error: "
+             "'ixheaace.h' file not found\n"
+             "/src/x/y.c:3:10: fatal error: 'common/ixheaac_type_def.h' file "
+             "not found\n"
+             "/src/x/z.c:4:10: error: no.h: No such file or directory\n")
+    assert missing_includes(out) == ["ixheaace.h",
+                                     "common/ixheaac_type_def.h", "no.h"], \
+        missing_includes(out)
+    # And the same header seen twice is listed once.
+    assert missing_includes(out + out) == missing_includes(out)
+
+    # Real includes only: a commented-out line is not one the compiler sees, and
+    # banning a harness for it would reject a harness that builds.
+    src = ('#include <stdio.h>\n#include "ixheaace.h"\n#  include <a/b.h>\n'
+           '// #include "commented_out.h"\n')
+    assert included_paths(src) == ["stdio.h", "ixheaace.h", "a/b.h"], \
+        included_paths(src)
+    print("ok  missing includes extracted from build output")
+
+
+def test_campaign_refuses_a_harness_reusing_a_known_missing_header():
+    """A header the compiler has already failed to find will not be there on the
+    next attempt either, so the Docker build is one whose answer we know."""
+    from oss_fuzz.campaign import HarnessCampaign
+
+    class _Gen:
+        def generate(self, messages):
+            return ('```c\n#include "ixheaace.h"\nint LLVMFuzzerTestOneInput('
+                    'const unsigned char *d, unsigned long s){return 0;}\n```')
+
+    class _Of:
+        builds = 0
+        last_build_infra_error = None
+        last_build_stderr = ("/src/x.c:1:10: fatal error: 'ixheaace.h' file "
+                             "not found")
+
+        def build_harness(self, *a, **k):
+            _Of.builds += 1
+            return None
+
+        def stock_build_error(self, project, checkout, sanitizer):
+            return None
+
+    camp = HarnessCampaign(generator=_Gen(), oss_fuzz=_Of(), project="libxaac",
+                           vuln_checkout=None, sanitizer="address", ext=".cpp",
+                           target_successes=1, max_attempts=4)
+    res = camp.run(lambda covered, sigs: [{"role": "user", "content": "x"}])
+    # Attempt 1 pays for the build and learns the header is absent; attempts
+    # 2-4 re-use it and are refused before Docker.
+    assert res.attempts == 4, res.attempts
+    assert _Of.builds == 1, _Of.builds
+    assert camp.missing_headers == ["ixheaace.h"], camp.missing_headers
+    print("ok  campaign refuses a harness reusing a known-missing header")
+
+
+def test_leaks_and_resource_kills_are_not_findings_by_default():
+    """Three ogre harnesses "confirmed" a sibling bug on HEAD in the 20260812
+    run: two libFuzzer out-of-memory kills and a 168-byte leak in the harness's
+    own objects. Both fire just as readily on a fixed library."""
+    from oss_fuzz.ossfuzz import incidental_finding
+    from oss_fuzz.bugclass import classify
+
+    overflow = classify("Heap-buffer-overflow READ 4")
+    leak = ("DEDUP_TOKEN: operator new--Ogre::SubMesh::SubMesh\n"
+            "SUMMARY: AddressSanitizer: 168 byte(s) leaked in 2 allocation(s).")
+    oom = "==1==ERROR: libFuzzer: out-of-memory (malloc(1073741824))"
+    assert incidental_finding(leak, overflow)
+    assert incidental_finding(oom, overflow)
+
+    # Unless that is the bug being chased, in which case it is the evidence.
+    assert incidental_finding(leak, classify("Direct-leak")) is None
+    assert incidental_finding(oom, classify("Out-of-memory")) is None
+
+    # A real fault is admissible whatever else the run also reported.
+    real = ("==1==ERROR: AddressSanitizer: heap-buffer-overflow on address "
+            "0x602000000010\n" + leak)
+    assert incidental_finding(real, overflow) is None
+    assert incidental_finding("", overflow) is None
+    print("ok  leaks and OOM kills are not findings unless that is the bug")
+
+
+def test_outcome_ignores_a_crash_artifact_from_an_earlier_run():
+    """build/out/<project> accumulates artifacts and nothing clears it between
+    attempts, so 'is there a crash file?' answered yes for two ogre harnesses
+    that had run clean for their full 121 seconds."""
+    import tempfile
+    import time
+    with tempfile.TemporaryDirectory() as tmp:
+        out = os.path.join(tmp, "build", "out", "ogre")
+        os.makedirs(out)
+        stale = os.path.join(out, "crash-e61d8503")
+        with open(stale, "w") as fh:
+            fh.write("old")
+        of = OssFuzz(oss_fuzz_dir=tmp, work_dir=os.path.join(tmp, "wd"))
+
+        clean_run = "Done 2311663 runs in 121 second(s)"
+        started = time.time()
+        outcome = of._outcome("ogre", 0, clean_run, "", False, since=started)
+        assert not outcome.triggered, outcome.crash_reason
+        assert outcome.artifact_path is None
+
+        # An artifact this run wrote is evidence, as before.
+        fresh = os.path.join(out, "crash-abc123")
+        with open(fresh, "w") as fh:
+            fh.write("new")
+        outcome = of._outcome("ogre", 1, clean_run, "", False, since=started)
+        assert outcome.triggered and outcome.artifact_path == fresh, outcome
+        print("ok  a previous run's crash artifact is not this run's evidence")
+
+
+def test_build_cleans_shared_dirs_when_the_commit_changes():
+    """$OUT and $WORK survive between builds and helper.py reuses them. Within
+    one commit that is a big speed win; across two it compiled open62541's HEAD
+    against status-code headers generated from the vulnerable commit, and all
+    three HEAD builds failed on UA_STATUSCODE_SEMANTICSCHANGED."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        of = OssFuzz(oss_fuzz_dir=_mk_oss_fuzz(tmp, "open62541", "#!/bin/sh\n"),
+                     work_dir=os.path.join(tmp, "wd"))
+        seen = []
+
+        def fake_helper(*args, **kwargs):
+            seen.append(list(args))
+            import subprocess
+            return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+        of._helper = fake_helper
+        of._clean_source_tree = lambda checkout: None
+        vuln = Checkout(label="vuln", path=tmp, commit="aaa")
+        head = Checkout(label="head", path=tmp, commit="bbb")
+        for co in (vuln, vuln, head, head, vuln):
+            of._run_build("open62541", co, "address", "t")
+        assert [("--clean" in a) for a in seen] == \
+            [True, False, True, False, True], seen
+        print("ok  a change of commit clears $OUT and $WORK")
+
+
+def test_upper_case_C_is_cpp_source():
+    """Wt names every source '.C'. Its only usable record was rejected as
+    "touches no C/C++ function" over 773 lines of C++ (20260812)."""
+    an = DiffAnalyzer(language="c++")
+    assert an._is_source("src/Wt/Http/Request.C")
+    assert an._is_source("src/x.cpp") and not an._is_source("README.md")
+    print("ok  '.C' counts as C++ source")
+
+
+def test_prompt_carries_the_replaced_harness_include_block():
+    """The file being overwritten compiles today with this project's own include
+    path, so its includes are the only ones known to resolve. Nothing else in
+    the prompt said where a project's headers live, and guessing cost ogre 3 of
+    its 8 attempts."""
+    import tempfile
+    from oss_fuzz.ossfuzz import harness_includes
+    with tempfile.TemporaryDirectory() as tmp:
+        _tree(tmp, {"Tests/fuzz/image_fuzz.cpp":
+                    '#include <stdio.h>\n\n#include "OgreRoot.h"\n'
+                    'int LLVMFuzzerTestOneInput(const unsigned char *d,'
+                    ' unsigned long s){return 0;}\n'})
+        includes = harness_includes(tmp, "Tests/fuzz/image_fuzz.cpp")
+        assert includes == ['#include <stdio.h>', '#include "OgreRoot.h"'], \
+            includes
+        assert harness_includes(tmp, None) == []
+        assert harness_includes(tmp, "does/not/exist.cpp") == []
+
+    user = LibFuzzerPromptBuilder("c++").build(
+        context=_ctx_for_prompt(), covered_functions=[], found_signatures=[],
+        harness_name="image_fuzz", base_harness="Tests/fuzz/image_fuzz.cpp",
+        base_includes=includes)[1]["content"]
+    assert '#include "OgreRoot.h"' in user
+    assert "Tests/fuzz/image_fuzz.cpp" in user
+    # Absent when there is nothing known-good to say.
+    plain = LibFuzzerPromptBuilder("c++").build(
+        context=_ctx_for_prompt(), covered_functions=[], found_signatures=[],
+        harness_name="h")[1]["content"]
+    assert "known to resolve" not in plain
+    print("ok  prompt carries the replaced harness's include block")
 
 
 if __name__ == "__main__":

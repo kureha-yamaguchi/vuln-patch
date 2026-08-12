@@ -29,7 +29,9 @@ class LibFuzzerPromptBuilder:
               crash_type: Optional[str] = None,
               crash_state: Optional[List[str]] = None,
               harness_ext: Optional[str] = None,
-              bug_class: Optional[BugClass] = None) -> List[Dict[str, str]]:
+              bug_class: Optional[BugClass] = None,
+              base_harness: Optional[str] = None,
+              base_includes: Optional[List[str]] = None) -> List[Dict[str, str]]:
         """``bug_class`` decides what a *failing* harness even looks like.
 
         The fork is on ``bug_class.oracle``, not on its kind: a project-assert
@@ -69,6 +71,9 @@ class LibFuzzerPromptBuilder:
             sections.append(
                 "Public headers touched by the fix (include what you need):\n"
                 + "\n".join(f"  #include \"{h}\"" for h in context.headers))
+        if base_includes:
+            sections.append(self._known_includes_block(base_harness,
+                                                       base_includes))
 
         if context.root_cause_reachable:
             sections.append(variant_analysis_directive(
@@ -174,6 +179,30 @@ class LibFuzzerPromptBuilder:
                           "proves nothing about this fix.")
             lines.append(reach)
         return "\n".join(lines)
+
+    def _known_includes_block(self, base_harness: Optional[str],
+                              includes: List[str]) -> str:
+        """The include block of the harness file this one replaces.
+
+        The only statement in the prompt about the include path the compiler
+        will actually use. The file it comes from builds today in this project's
+        OSS-Fuzz build, so every line here is known to resolve — where an
+        invented path costs a full Docker build to disprove, and then tends to
+        be invented again.
+        """
+        where = f" of {base_harness}" if base_harness else ""
+        return "\n".join([
+            f"The include block{where} — the file you are replacing, which "
+            "compiles today with this project's own OSS-Fuzz include path. "
+            "Every line below is known to resolve; prefer them, and copy the "
+            "form (quoted vs angled, prefixed vs bare) for any other header of "
+            "this project you need:",
+            "```",
+            "\n".join(includes),
+            "```",
+            "A header path you invent costs a full build to disprove. If you "
+            "need something not listed, reach it through one of these instead.",
+        ])
 
     def _patch_block(self, patch_text: str) -> str:
         # Cap to keep the prompt bounded; the touched-function bodies below

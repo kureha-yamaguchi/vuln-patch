@@ -34,6 +34,7 @@ Layout, for ``--artifacts-dir runs/<sweep>/artifacts``::
       harnesses/vp_harness_3.cc      what came back
       fuzz/verify_vp_harness_3.log   engine output, vulnerable build (the gate)
       fuzz/head_vp_harness_3.log     engine output, HEAD (the sibling claim)
+      crashes/head_vp_harness_3/…    the input it stopped on, byte for byte
       build/vuln_vp_harness_3.log    compiler output, when a build failed
 
 ``inputs/`` is written once per project, before the first LLM call, so an
@@ -265,3 +266,21 @@ class RunArtifacts:
 
     def record_build_log(self, tag: str, text: str) -> Optional[str]:
         return self._write(f"build/{tag}.log", clip(text))
+
+    def record_crash_input(self, tag: str, path: str) -> Optional[str]:
+        """Copy the input a run stopped on, keeping libFuzzer's own file name.
+
+        It is written into ``build/out/<project>``, which is cleared whenever the
+        commit being built changes — so a claim that cites it there cites a path
+        that has stopped existing by the time anyone reads the results. The name
+        is kept because it is the input's digest, and the tag because two
+        harnesses can stop on the same bytes.
+        """
+        dest = os.path.join(self.dir, "crashes", tag, os.path.basename(path))
+        try:
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copyfile(path, dest)
+        except OSError as exc:
+            print(f"  WARNING: could not copy the crashing input {path}: {exc}")
+            return None
+        return dest
