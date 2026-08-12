@@ -452,7 +452,9 @@ are the sweep's commentary; the artifacts are what it is commentary about, so
 quote a path from `artifacts/` when reporting a finding. Each project's exit code is kept as its
 status, so `infra-error` (2) and `timeout` never get averaged in with a real
 `clean` (0). Exit 0 covers two opposite outcomes, so a run that never got a
-harness to build is reported as `no-harness` rather than `clean`. It runs
+harness to build is reported as `no-harness` rather than `clean`, and a run whose
+accepted harnesses never ran on HEAD is `inconclusive` (5) — it tested nothing
+there, so `clean` would be a claim about a fix nobody exercised. It runs
 projects sequentially on purpose — `helper.py` builds into one shared
 `build/out/` tree — so budget hours, not minutes, and start it under tmux.
 
@@ -563,7 +565,8 @@ staying out of the way on crashing ones.
   as claims and exit 4.
 - **HEAD may not build.** If the project's API changed between the fix and now,
   a harness may not compile against HEAD. Those are skipped and reported, not
-  counted as clean.
+  counted as clean; when *none* of the accepted harnesses runs there the run is
+  `inconclusive` (exit 5), because nothing about HEAD was tested.
 - **A harness leaks and runs out of memory more easily than the library does.**
   Forgetting one destructor is a `LeakSanitizer` report, and allocating from an
   unvalidated size field is a libFuzzer out-of-memory kill — both on a *fixed*

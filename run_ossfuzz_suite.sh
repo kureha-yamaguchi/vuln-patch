@@ -219,8 +219,9 @@ printf '%s\n' "${PROJECTS[@]}" > "$PROJECTS_LIST"
 
 # --- 6. run each project ----------------------------------------------------
 # The pipeline's exit code IS the result, so it is recorded per project:
-# 3 = confirmed siblings, 4 = unconfirmed oracle claims, 2 = broken environment,
-# 124 = our cap fired, 1 = catch-all (usually "nothing eligible to run on").
+# 3 = confirmed siblings, 4 = unconfirmed oracle claims, 5 = HEAD never tested,
+# 2 = broken environment, 124 = our cap fired, 1 = catch-all (usually "nothing
+# eligible to run on").
 status_for() {
   local rc="$1" log="$2"
   case "$rc" in
@@ -232,6 +233,9 @@ status_for() {
     2) echo "infra-error" ;;
     3) echo "SIBLINGS" ;;
     4) echo "oracle-claims" ;;
+    # Harnesses that triggered on the vulnerable build but never ran on HEAD.
+    # 'clean' would claim the fix covers a variant nothing tested.
+    5) echo "inconclusive" ;;
     124|137) echo "timeout" ;;
     1) if grep -qE 'No usable public|None of the .* OSV record|is not a target' "$log" 2>/dev/null
        then echo "no-target"; else echo "error(1)"; fi ;;

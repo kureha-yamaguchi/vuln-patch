@@ -573,6 +573,7 @@ def main():
 
     siblings = []   # runtime-confirmed: a sanitizer or the project's own check
     claims = []     # the harness's own oracle fired; true only if it is right
+    head_runs = 0   # accepted harnesses that actually got to run on HEAD
     for gen in result.successful if head_placement else []:
         print(f"\n-- HEAD run: {gen.harness_name} --")
         out_bin = of.build_harness(args.project, head, gen.harness_name,
@@ -581,6 +582,7 @@ def main():
         if out_bin is None:
             print("  did not build against HEAD (API drift?); skipping")
             continue
+        head_runs += 1
         outcome = of.run_fuzzer(args.project,
                                 head_placement.runtime_name(gen.harness_name),
                                 args.fuzz_timeout, sanitizer,
@@ -609,11 +611,22 @@ def main():
         else:
             print("  clean on HEAD (fix covers this variant)")
 
-    # 7) Report.
+    # 7) Report. Harnesses that triggered on the vulnerable build but never ran
+    #    on HEAD answer nothing about the fix, and "0 siblings" reads as "the fix
+    #    covers this": the 20260812 run reported open62541 clean after all three
+    #    of its HEAD builds failed on generated sources left over from the
+    #    vulnerable commit. Distinct exit code, distinct line, distinct status
+    #    in the suite's table.
+    head_untested = result.achieved > 0 and head_runs == 0
     print("\n" + "#" * 50)
+    if head_untested:
+        print(f"{target.cve_id or target.osv_id} [{bug_class.kind}]: "
+              f"INCONCLUSIVE — {result.achieved} harness(es) triggered on the "
+              "vulnerable build and none of them could be run on HEAD, so HEAD "
+              "was never tested. This is not a result about the fix.")
     print(f"{target.cve_id or target.osv_id} [{bug_class.kind}]: "
           f"{len(siblings)} confirmed sibling(s) on HEAD from "
-          f"{result.achieved} harness(es)")
+          f"{head_runs} harness(es) run there ({result.achieved} accepted)")
     for s in siblings:
         print(f"  - {s['harness']}: {s['signature']}  ({s['artifact']})")
     if claims:
@@ -632,7 +645,7 @@ def main():
           oracle=bug_class.oracle, vuln_commit=vuln_commit,
           head_commit=head_commit, harnesses_accepted=result.achieved,
           attempts=result.attempts, siblings=siblings,
-          oracle_claims=claims,
+          oracle_claims=claims, harnesses_run_on_head=head_runs,
           artifacts=artifacts.dir if artifacts else None)
 
     if not args.dry_run:
@@ -640,10 +653,13 @@ def main():
     # 3 stays "the fix missed something, confirmed by the runtime". Oracle
     # claims get their own code rather than being folded into 3 (which would
     # inflate the headline result with unreviewed relations) or into 0 (which
-    # would hide the only findings a semantic run can produce).
+    # would hide the only findings a semantic run can produce). 5 is "HEAD was
+    # never tested", which is not a finding and not a clean bill of health.
     if siblings:
         sys.exit(3)
-    sys.exit(4 if claims else 0)
+    if claims:
+        sys.exit(4)
+    sys.exit(5 if head_untested else 0)
 
 
 class _StubGenerator:
