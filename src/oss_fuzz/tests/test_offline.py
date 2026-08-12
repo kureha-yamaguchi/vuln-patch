@@ -866,6 +866,92 @@ def test_checkout_populates_submodules():
     print("ok  checkout populates submodules, and skips them when there are none")
 
 
+def test_a_previous_runs_binary_is_never_mistaken_for_this_build():
+    """build/out/<project> is never cleared and every attempt overwrites the
+    same harness file, so a leftover sits there under exactly the name the next
+    build expects. A build that reports success while producing nothing (as
+    librawspeed's does) would otherwise pass the 'is my binary there?' check on
+    that leftover, and the campaign would fuzz the previous run's harness and
+    judge this one by its behaviour."""
+    import tempfile
+    import time as _time
+    from oss_fuzz.ossfuzz import _built_since
+
+    root = tempfile.mkdtemp()
+    out = os.path.join(root, "build", "out", "proj")
+    os.makedirs(out)
+    stale = os.path.join(out, "vp_harness_1")
+    with open(stale, "w") as fh:
+        fh.write("yesterday's binary\n")
+    os.chmod(stale, 0o755)
+
+    started = _time.time()
+    assert not _built_since(stale, started), "a leftover must not count"
+    assert not _built_since(os.path.join(out, "absent"), started)
+
+    of = OssFuzz(oss_fuzz_dir=root, work_dir=root, dry_run=False)
+    # The stale binary is invisible to a caller judging this build...
+    assert of._out_targets("proj", since=started) == []
+    # ...and still visible to one asking what the project can produce at all.
+    assert of._out_targets("proj") == ["vp_harness_1"]
+
+    # A build that really did write it is accepted.
+    with open(stale, "w") as fh:
+        fh.write("today's binary\n")
+    assert _built_since(stale, started)
+    assert of._out_targets("proj", since=started) == ["vp_harness_1"]
+    print("ok  an earlier run's binary is not mistaken for this build's output")
+
+
+def test_undeletable_checkout_is_escalated_not_ignored():
+    """A build runs as root in the container and many projects build in-tree,
+    so the next run finds files rmtree cannot delete. Silently leaving them is
+    what turned grok into 'destination path already exists and is not an empty
+    directory' -- an error naming nothing that caused it."""
+    import shutil
+    import subprocess
+    import tempfile
+    from oss_fuzz.ossfuzz import CLEANUP_IMAGE
+    work = tempfile.mkdtemp()
+    of = OssFuzz(oss_fuzz_dir=tempfile.mkdtemp(), work_dir=work, dry_run=False)
+    path = os.path.join(work, "wt__src__proj__vuln")
+    os.makedirs(os.path.join(path, "build"))
+
+    # Stand in for the container: record the removal instead of running docker.
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        if cmd[:2] == ["docker", "run"]:
+            shutil.rmtree(path)                     # what root would achieve
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    of._run = fake_run
+    of._remove_as_root(path)
+    assert calls and calls[0][:2] == ["docker", "run"], calls
+    assert CLEANUP_IMAGE in calls[0], calls[0]
+    assert f"/mnt/{os.path.basename(path)}" in calls[0], calls[0]
+    assert not os.path.exists(path)
+
+    # A removal that does not remove must raise, not return quietly: the next
+    # step is a clone into that path and its error explains nothing.
+    os.makedirs(path)
+    of._run = lambda cmd, **kw: subprocess.CompletedProcess(cmd, 0, "", "")
+    try:
+        of._remove_as_root(path)
+        assert False, "a failed removal must raise"
+    except RuntimeError as exc:
+        assert "could not clear" in str(exc), exc
+
+    # And an rm -rf as root must refuse a path outside the work dir.
+    try:
+        of._remove_as_root("/etc/passwd")
+        assert False, "must refuse a path outside work_dir"
+    except RuntimeError as exc:
+        assert "outside work_dir" in str(exc), exc
+    print("ok  a checkout the container left undeletable is escalated")
+
+
 def test_binary_output_does_not_kill_the_run():
     """A fuzzer echoes the bytes it is holding, so its stdout is not text.
 

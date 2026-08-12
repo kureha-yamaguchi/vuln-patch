@@ -52,6 +52,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import time
 from dataclasses import dataclass, field
 from typing import List, Optional
 
@@ -148,6 +149,11 @@ NATIVE_LANGUAGES = ("c", "c++")
 # because an unattended sweep must not sit on a hung fetch for its whole cap.
 SUBMODULE_TIMEOUT = 900
 
+# Every OSS-Fuzz project image is built FROM this, so it is on the machine
+# before any container can leave a root-owned file behind. Used only to delete
+# such files; see ``OssFuzz._remove_as_root``.
+CLEANUP_IMAGE = "gcr.io/oss-fuzz-base/base-builder"
+
 
 def cache_name(main_repo: str) -> str:
     """Directory name for a cloned upstream repo: readable, unique per repo.
@@ -180,6 +186,26 @@ class Checkout:
     label: str        # 'vuln' | 'head'
     path: str         # worktree path (mounted as $SRC/<project>)
     commit: str
+
+
+def _built_since(path: str, since: float) -> bool:
+    """Whether ``path`` is a file this build produced, rather than an old one.
+
+    ``build/out/<project>`` is never cleared: helper.py keeps existing artifacts,
+    and we overwrite the same harness file every attempt, so a target from an
+    earlier run sits there under exactly the name the next one expects. A build
+    that reports success while producing nothing — librawspeed does this — would
+    otherwise pass the "is my binary there?" check on that leftover, and the
+    campaign would fuzz a previous run's harness and judge this one by it.
+
+    An mtime beats deleting $OUT first: the leftovers are root-owned (the
+    container writes them), and this also covers the target whose name the build
+    decorated, which we cannot delete in advance because we do not know it.
+    """
+    try:
+        return os.path.getmtime(path) >= since
+    except OSError:
+        return False
 
 
 # Tools OSS-Fuzz copies into $OUT beside the real targets. Counting them as
@@ -928,9 +954,41 @@ class OssFuzz:
         self._run(["git", "-C", owner, "worktree", "remove", "--force", path])
         if os.path.exists(path) and not self.dry_run:
             shutil.rmtree(path, ignore_errors=True)
+            if os.path.exists(path):
+                self._remove_as_root(path)
         for r in {owner, repo}:
             if os.path.isdir(os.path.join(r, ".git")):
                 self._run(["git", "-C", r, "worktree", "prune"])
+
+    def _remove_as_root(self, path: str) -> None:
+        """Remove what the build left us no permission to delete.
+
+        An OSS-Fuzz build runs as root inside the container with the checkout
+        bind-mounted, and many projects build in-tree: grok's leaves a
+        root-owned build/ of 121 files in the checkout, ogre's 1532.
+        ``rmtree(ignore_errors=True)`` deletes what it can and silently keeps
+        the rest, so the *next* run's clone dies with "destination path already
+        exists and is not an empty directory" and the project stays unrunnable
+        until someone clears it by hand. Nothing about that error points at the
+        container, which is what makes it expensive to diagnose.
+
+        Borrowing the container runtime to undo what the container did needs no
+        sudo, and the image is necessarily local already: root-owned files can
+        only be here because a container ran here first.
+        """
+        parent, base = os.path.split(path.rstrip(os.sep))
+        # An rm -rf running as root deserves a guard against a path that is not
+        # ours to delete, however it came to be passed in.
+        if not base or not os.path.abspath(path).startswith(
+                os.path.abspath(self.work_dir) + os.sep):
+            raise RuntimeError(f"refusing to remove '{path}': outside work_dir")
+        self._run(["docker", "run", "--rm", "-v", f"{parent}:/mnt",
+                   CLEANUP_IMAGE, "rm", "-rf", f"/mnt/{base}"])
+        if os.path.exists(path):
+            raise RuntimeError(
+                f"could not clear '{path}'; it holds files owned by the "
+                f"container's root that neither this user nor {CLEANUP_IMAGE} "
+                f"could remove")
 
     def checkout(self, repo: str, commit: str, label: str) -> Checkout:
         """A self-contained checkout of ``commit``, safe to mount into Docker.
@@ -1288,6 +1346,7 @@ class OssFuzz:
                         f"{checkout.label} checkout: {exc}")
                     print(f"  {self.last_build_infra_error}")
                     return None
+            started = time.time()
             if not self._run_build(project, checkout, sanitizer, harness_name):
                 return None
         finally:
@@ -1301,14 +1360,14 @@ class OssFuzz:
 
         out_bin = os.path.join(self.oss_fuzz_dir, "build", "out", project,
                                run_name)
-        if not self.dry_run and not os.path.exists(out_bin):
+        if not self.dry_run and not _built_since(out_bin, started):
             # The build succeeded but named the binary something other than the
             # source stem. Often it merely decorated the stem — rawspeed's CMake
             # names every target '<Stem>Fuzzer' — and a unique such target is
             # safe to adopt: it is the binary built from the file we just
             # overwrote. Recorded on the placement so run_fuzzer agrees, and so
             # later attempts resolve it directly.
-            avail = self._out_targets(project)
+            avail = self._out_targets(project, since=started)
             decorated = [t for t in avail if run_name in t]
             if len(decorated) == 1:
                 print(f"  the build named it '{decorated[0]}', not "
@@ -1323,10 +1382,14 @@ class OssFuzz:
             # no targets at all is an environment to fix, not a name to correct.
             self.last_build_stderr = ""
             if not avail:
+                left_over = ("; a binary of that name is present but predates "
+                             "this build, so it is an earlier run's and was "
+                             "ignored" if os.path.exists(out_bin) else "")
                 self.last_build_infra_error = (
                     f"the build reported success but produced no fuzz targets "
                     f"at all (expected '{run_name}'); nothing was built to run, "
-                    f"so this is the build environment, not the harness")
+                    f"so this is the build environment, not the harness"
+                    f"{left_over}")
             else:
                 self.last_build_infra_error = (
                     f"the build produced no target named '{run_name}' (present: "
@@ -1338,8 +1401,13 @@ class OssFuzz:
         self.last_build_stderr = ""
         return out_bin
 
-    def _out_targets(self, project: str) -> List[str]:
-        """Executable fuzz targets present in build/out/<project>."""
+    def _out_targets(self, project: str, since: float = 0.0) -> List[str]:
+        """Executable fuzz targets in build/out/<project>, built after ``since``.
+
+        ``since`` defaults to 'any age' for callers that only want to know what
+        the project can produce; a caller judging *this* build must pass its
+        start time. See ``_built_since``.
+        """
         out_dir = os.path.join(self.oss_fuzz_dir, "build", "out", project)
         if not os.path.isdir(out_dir):
             return []
@@ -1348,7 +1416,7 @@ class OssFuzz:
             p = os.path.join(out_dir, f)
             # Targets are extensionless executables; skips .so/.dict/.options.
             if (os.path.isfile(p) and os.access(p, os.X_OK) and "." not in f
-                    and f not in _OUT_TOOLS):
+                    and f not in _OUT_TOOLS and _built_since(p, since)):
                 names.append(f)
         return names
 
@@ -1380,6 +1448,7 @@ class OssFuzz:
                     fh.write(f"\n# --- vuln-patch generated harness ---\n{crib}\n")
 
             # 3) build against this checkout.
+            started = time.time()
             if not self._run_build(project, checkout, sanitizer, harness_name):
                 return None
         finally:
@@ -1389,6 +1458,18 @@ class OssFuzz:
 
         out_bin = os.path.join(self.oss_fuzz_dir, "build", "out", project,
                                harness_name)
+        # This path never checked at all: our compile line is appended to
+        # build.sh, so a build.sh that exits 0 before reaching it leaves us
+        # returning a path to an earlier run's binary, or to nothing.
+        if not self.dry_run and not _built_since(out_bin, started):
+            self.last_build_stderr = ""
+            self.last_build_infra_error = (
+                f"the build reported success but did not produce "
+                f"'{harness_name}'; the cribbed compile line appended to "
+                f"build.sh did not run, so this is the build environment, not "
+                f"the harness")
+            print(f"  {self.last_build_infra_error}")
+            return None
         self.last_build_stderr = ""
         return out_bin
 
