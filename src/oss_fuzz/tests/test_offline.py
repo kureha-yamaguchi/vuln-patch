@@ -2278,6 +2278,33 @@ def test_error_lines_ignore_the_compiler_flag_banner():
     print("ok  error extraction ignores the -Wno-error flag banner")
 
 
+def test_build_cleans_shared_dirs_when_the_commit_changes():
+    """$OUT and $WORK survive between builds and helper.py reuses them. Within
+    one commit that is a big speed win; across two it compiled open62541's HEAD
+    against status-code headers generated from the vulnerable commit, and all
+    three HEAD builds failed on UA_STATUSCODE_SEMANTICSCHANGED."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        of = OssFuzz(oss_fuzz_dir=_mk_oss_fuzz(tmp, "open62541", "#!/bin/sh\n"),
+                     work_dir=os.path.join(tmp, "wd"))
+        seen = []
+
+        def fake_helper(*args, **kwargs):
+            seen.append(list(args))
+            import subprocess
+            return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+        of._helper = fake_helper
+        of._clean_source_tree = lambda checkout: None
+        vuln = Checkout(label="vuln", path=tmp, commit="aaa")
+        head = Checkout(label="head", path=tmp, commit="bbb")
+        for co in (vuln, vuln, head, head, vuln):
+            of._run_build("open62541", co, "address", "t")
+        assert [("--clean" in a) for a in seen] == \
+            [True, False, True, False, True], seen
+        print("ok  a change of commit clears $OUT and $WORK")
+
+
 
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]

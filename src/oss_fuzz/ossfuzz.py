@@ -54,7 +54,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import config
 from oss_fuzz.bugclass import (BugClass, ORACLE_HARNESS,
@@ -635,6 +635,9 @@ class OssFuzz:
         self._active_project: Optional[str] = None
         self.last_build_stderr = ""
         self.last_build_infra_error: Optional[str] = None
+        # The commit each project's shared build directories were last built
+        # from; see _needs_clean.
+        self._built_commit: Dict[str, str] = {}
         os.makedirs(self.work_dir, exist_ok=True)
 
     # -- low-level ---------------------------------------------------------
@@ -1258,6 +1261,10 @@ class OssFuzz:
         Dispatches on ``placement.mode`` (see ``plan_harness``). ``placement=None``
         means the ``crib`` strategy, so existing callers keep their behaviour.
         """
+        # Before the harness is placed, never after: the crib strategy writes
+        # its harness into this tree as an untracked file, which is exactly what
+        # a clean removes.
+        self._clean_source_tree(checkout)
         if placement is not None and placement.mode == "overwrite":
             return self._build_harness_overwrite(
                 project, checkout, harness_name, harness_source, placement,
@@ -1265,8 +1272,67 @@ class OssFuzz:
         return self._build_harness_crib(
             project, checkout, harness_name, harness_source, ext, sanitizer)
 
+    def _needs_clean(self, project: str, checkout: Checkout) -> bool:
+        """Whether helper.py must wipe ``$OUT`` and ``$WORK`` before this build.
+
+        Both are per-project directories that survive between builds, and
+        helper.py reuses them unless told otherwise. That reuse is worth keeping
+        *within* one commit — it is the difference between a two-minute attempt
+        and a twenty-minute one — but across two different commits it is wrong,
+        because what survives is not only object files:
+
+          * ``$WORK`` holds the project's own out-of-source build tree
+            (open62541 configures CMake in ``$WORK/open62541``), generated
+            sources included. In the 20260812 run all three of its HEAD builds
+            failed on ``UA_STATUSCODE_SEMANTICSCHANGED`` — HEAD's sources
+            compiled against status-code headers generated from the *vulnerable*
+            commit — and the run reported "clean on HEAD" as its result.
+          * ``$OUT`` holds every crash artifact the runs have written, which is
+            what the trigger gate reads as evidence (see ``_find_artifact``).
+        """
+        return self._built_commit.get(project) != checkout.commit
+
+    def _clean_source_tree(self, checkout: Checkout) -> None:
+        """Remove build leftovers from a checkout, best effort.
+
+        OSS-Fuzz builds each project from a pristine copy of its sources, and
+        some build.sh scripts rely on that: grok's runs ``mkdir build``, which
+        fails outright on the second attempt because the first one's directory
+        is still sitting in the tree. In the 20260812 run that turned an
+        ordinary compile error into "the project's own build fails", and the
+        campaign aborted after 1 of its 30 attempts.
+
+        ``git clean -xdf`` covers it: build outputs are untracked, so are
+        harnesses the crib strategy left behind, and tracked files a build.sh
+        edited in place are left alone (they are restored by whoever wrote
+        them). Submodules are tracked gitlinks and are not descended into.
+
+        Asked on the host first (``-n`` lists, deletes nothing) and only then
+        done in a container, for two reasons. Most projects build in ``$WORK``
+        and leave nothing here, so the common case costs one git call instead of
+        a container start; and when there IS something, it was written by the
+        previous build's container and is root-owned, which a host-side clean
+        cannot remove — the same problem ``_remove_as_root`` exists for.
+        ``safe.directory`` goes in the container's *global* config because git
+        refuses to operate on a repository owned by another uid, and that
+        setting is read only from the system and global scopes.
+        """
+        if self.dry_run:
+            return
+        listed = self._run(["git", "-C", checkout.path, "clean", "-xdn"])
+        leftovers = (listed.stdout or "").splitlines()
+        if listed.returncode != 0 or not leftovers:
+            return
+        print(f"  clearing {len(leftovers)} build leftover(s) from the "
+              f"{checkout.label} checkout")
+        self._run(["docker", "run", "--rm", "-v", f"{checkout.path}:/mnt",
+                   CLEANUP_IMAGE, "bash", "-c",
+                   'git config --global --add safe.directory "*" && '
+                   'git -C /mnt clean -xdfq'],
+                  timeout=600)
+
     def _run_build(self, project: str, checkout: Checkout, sanitizer: str,
-                   log_tag: str) -> bool:
+                   log_tag: str, *, clean: Optional[bool] = None) -> bool:
         """``helper.py build_fuzzers`` against a checkout.
 
         Records diagnostics in ``last_build_stderr`` (fed back to the model as a
@@ -1278,13 +1344,17 @@ class OssFuzz:
         a half-hour cap kills legitimate builds. Configurable because the right
         value depends entirely on host architecture.
         """
+        if clean is None:
+            clean = self._needs_clean(project, checkout)
+        args = ["build_fuzzers", "--sanitizer", sanitizer,
+                "--engine", "libfuzzer"]
+        if clean:
+            args.append("--clean")
+        args += [project, checkout.path]
+        self._built_commit[project] = checkout.commit
         self._active_project = project
         try:
-            proc = self._helper(
-                "build_fuzzers", "--sanitizer", sanitizer,
-                "--engine", "libfuzzer", project, checkout.path,
-                timeout=config.OSS_FUZZ_BUILD_TIMEOUT,
-            )
+            proc = self._helper(*args, timeout=config.OSS_FUZZ_BUILD_TIMEOUT)
         finally:
             self._active_project = None
         if proc.returncode == 0:
@@ -1343,11 +1413,22 @@ class OssFuzz:
         at a 2024 vuln commit, and that failure looks like an ordinary
         ``clang++: error:``. A tree that does not build without us cannot be
         repaired by rewriting the harness.
+
+        The answer is only worth having if the tree is pristine. This runs right
+        after a failed harness build, whose leftovers are still in the checkout,
+        and grok's build.sh then fails on ``mkdir build`` — "File exists" — with
+        no harness of ours anywhere near it. That verdict cost the whole project
+        in the 20260812 run: an ordinary stale-API compile error was reported as
+        a broken environment and the campaign aborted on attempt 1 of 30.
         """
         if self.dry_run:
             return None
         print("  checking whether the project builds without our harness")
-        if self._run_build(project, checkout, sanitizer, "stock"):
+        # From a pristine tree and a pristine $WORK, both: this verdict aborts
+        # the whole project, so it must not rest on state the failed harness
+        # build left behind. One full rebuild, once, on the failure path only.
+        self._clean_source_tree(checkout)
+        if self._run_build(project, checkout, sanitizer, "stock", clean=True):
             return None
         return (f"the project's own build of the {checkout.label} checkout "
                 f"fails with no harness of ours in it: "
