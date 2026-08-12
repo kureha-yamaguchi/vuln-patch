@@ -217,6 +217,11 @@ _OUT_TOOLS = frozenset({"llvm-symbolizer"})
 # Source extensions that can hold a libFuzzer harness.
 _HARNESS_EXTS = (".cc", ".cpp", ".cxx", ".c", ".C")
 
+# What libFuzzer names the input it stopped on, by what stopped it. All of them,
+# not just 'crash-': a leak or an out-of-memory kill is a finding too when that
+# is the bug being chased (see incidental_finding).
+_ARTIFACT_PREFIXES = ("crash-", "leak-", "oom-", "timeout-")
+
 # A harness DEFINES LLVMFuzzerTestOneInput; a standalone driver merely declares
 # and calls it, supplying its own main() so the target runs without libFuzzer.
 # rawspeed's fuzz/libFuzzer_dummy_main.cpp and wireshark's
@@ -610,6 +615,52 @@ def _looks_like_crash(returncode: int, combined: str) -> Optional[str]:
     for marker in _ASSERT_MARKERS:
         if marker in low:
             return f"project invariant failed: {marker!r}"
+    return None
+
+
+# Reports about the harness's own resource use rather than about a fault in the
+# library. A generated harness that never frees what it allocated leaks by
+# construction, and one that allocates from an unvalidated size field runs the
+# process out of memory on almost any input — both fire just as readily on a
+# FIXED library. This is how three ogre harnesses "confirmed" a sibling bug on
+# HEAD in the 20260812 run: two libFuzzer out-of-memory kills and a 168-byte
+# leak in the harness's own Ogre::Mesh objects.
+_LEAK_RE = re.compile(r"LeakSanitizer|byte\(s\) leaked")
+_RESOURCE_RE = re.compile(r"libFuzzer: (?:out-of-memory|timeout)")
+
+# A fault the library is answerable for: a sanitizer naming a memory error or
+# UB, or a fatal signal. Distinguished from the leak summary, which wears the
+# same 'AddressSanitizer:' prefix but carries a byte count where the error name
+# goes ("SUMMARY: AddressSanitizer: 168 byte(s) leaked").
+_HARD_FAULT_RE = re.compile(
+    r"(?:ERROR|SUMMARY): (?:Address|Memory)Sanitizer: [A-Za-z]"
+    r"|SUMMARY: UndefinedBehaviorSanitizer"
+    r"|runtime error:"
+    r"|ERROR: libFuzzer: deadly signal"
+    r"|SEGV on unknown address")
+
+
+def incidental_finding(output: str,
+                       bug_class: Optional[BugClass]) -> Optional[str]:
+    """Why this report is about the harness rather than the library, or None if
+    it is admissible evidence about the bug being chased.
+
+    A leak or a resource-limit kill is a real thing to have found, but it is not
+    evidence that a fix missed a variant of a memory-safety bug — and it is the
+    failure a generated harness is most likely to produce by accident. When the
+    bug IS of that class (``bugclass`` reads ``leak``/``resource`` off the OSV
+    crash type) the same report is exactly what the run came for, so the test is
+    against the class rather than against the marker.
+    """
+    if _HARD_FAULT_RE.search(output):
+        return None
+    if _LEAK_RE.search(output) and not (bug_class and bug_class.leak):
+        return ("the only report is a memory leak, which a harness that does "
+                "not free what it allocated produces on a fixed library too")
+    if _RESOURCE_RE.search(output) and not (bug_class and bug_class.resource):
+        return ("the only report is libFuzzer's own out-of-memory/timeout "
+                "limit, which a harness that allocates from an unvalidated "
+                "size field trips on a fixed library too")
     return None
 
 
@@ -1620,6 +1671,7 @@ class OssFuzz:
         if bug_class:
             args += bug_class.libfuzzer_flags()
         timed_out = False
+        started = time.time()
         try:
             proc = self._helper(*args, timeout=seconds + 120)
             rc, out, err = proc.returncode, proc.stdout, proc.stderr
@@ -1628,18 +1680,21 @@ class OssFuzz:
             rc, out, err = -1, exc.stdout or "", exc.stderr or ""
             out = out.decode() if isinstance(out, bytes) else out
             err = err.decode() if isinstance(err, bytes) else err
-        self._log_run(log_tag or f"fuzz_{harness_name}", args, rc, out, err)
-        return self._outcome(project, harness_name, rc, out, err, timed_out)
+        tag = log_tag or f"fuzz_{harness_name}"
+        self._log_run(tag, args, rc, out, err)
+        return self._outcome(project, rc, out, err, timed_out,
+                             since=started, tag=tag, bug_class=bug_class)
 
     def reproduce(self, project: str, harness_name: str, testcase: str,
                   sanitizer: str) -> RunOutcome:
         args = ["reproduce", "--sanitizer", sanitizer,
                 project, harness_name, testcase]
+        started = time.time()
         proc = self._helper(*args, timeout=600)
-        self._log_run(f"poc_{harness_name}", args, proc.returncode,
-                      proc.stdout, proc.stderr)
-        return self._outcome(project, harness_name, proc.returncode,
-                             proc.stdout, proc.stderr, False)
+        tag = f"poc_{harness_name}"
+        self._log_run(tag, args, proc.returncode, proc.stdout, proc.stderr)
+        return self._outcome(project, proc.returncode, proc.stdout, proc.stderr,
+                             False, since=started, tag=tag)
 
     def _log_run(self, tag: str, args: List[str], rc: int, out: str,
                  err: str) -> None:
@@ -1656,11 +1711,13 @@ class OssFuzz:
         self.artifacts.record_fuzz_log(
             tag, "helper.py " + " ".join(args), rc, out, err)
 
-    def _outcome(self, project: str, harness_name: str, rc: int,
-                 out: str, err: str, timed_out: bool) -> RunOutcome:
+    def _outcome(self, project: str, rc: int, out: str, err: str,
+                 timed_out: bool, *, since: float = 0.0,
+                 tag: Optional[str] = None,
+                 bug_class: Optional[BugClass] = None) -> RunOutcome:
         combined = f"{out}\n{err}"
-        # A persisted crash-* artifact is the strongest signal.
-        artifact = self._find_artifact(project)
+        # A persisted artifact this run wrote is the strongest signal.
+        artifact = self._find_artifact(project, since)
         reason = None if timed_out else _looks_like_crash(rc, combined)
         found_by = None if timed_out else finding_oracle(combined)
         if artifact and reason is None:
@@ -1668,7 +1725,15 @@ class OssFuzz:
             # An artifact with no readable report still means libFuzzer stopped
             # on an input, which is a runtime detection like any other.
             found_by = found_by or ORACLE_SANITIZER
+        # Last: a report can be real and still not be about the library.
+        if reason is not None:
+            why = incidental_finding(combined, bug_class)
+            if why:
+                print(f"  not counted as a finding: {why}")
+                reason = found_by = artifact = None
         triggered = reason is not None
+        if triggered and tag:
+            artifact = self._keep_artifact(tag, artifact) or artifact
         return RunOutcome(
             triggered=triggered, timed_out=timed_out, returncode=rc,
             stdout=out, stderr=err, crash_reason=reason,
@@ -1676,14 +1741,38 @@ class OssFuzz:
             artifact_path=artifact, found_by=found_by if triggered else None,
         )
 
-    def _find_artifact(self, project: str) -> Optional[str]:
+    def _find_artifact(self, project: str, since: float = 0.0) -> Optional[str]:
+        """The newest crashing input THIS run wrote, or None.
+
+        ``build/out/<project>`` accumulates artifacts: every attempt in a
+        campaign writes into the same directory and nothing clears it between
+        them (see ``_needs_clean`` — within one commit we deliberately keep the
+        build). So an age test is not a refinement, it is the whole check. Two
+        ogre harnesses were accepted in the 20260812 run on the strength of a
+        ``crash-`` file that a previous run had left there hours earlier; both
+        had in fact run clean for their full 121 seconds.
+        """
         out_dir = os.path.join(self.oss_fuzz_dir, "build", "out", project)
         if self.dry_run or not os.path.isdir(out_dir):
             return None
-        crashes = [os.path.join(out_dir, f) for f in os.listdir(out_dir)
-                   if f.startswith("crash-")]
-        crashes.sort(key=lambda p: os.path.getmtime(p), reverse=True)
-        return crashes[0] if crashes else None
+        found = [os.path.join(out_dir, f) for f in os.listdir(out_dir)
+                 if f.startswith(_ARTIFACT_PREFIXES)]
+        mine = [p for p in found if _built_since(p, since)]
+        mine.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+        return mine[0] if mine else None
+
+    def _keep_artifact(self, tag: str, path: Optional[str]) -> Optional[str]:
+        """Copy a crashing input into this run's artifacts, returning the copy.
+
+        The original lives in ``build/out/<project>``, which is wiped whenever
+        the commit being built changes (see ``_needs_clean``) — so a
+        vulnerable-build artifact is already gone by the time the HEAD run it
+        justified has finished, and a claim in the results cites a path that no
+        longer exists.
+        """
+        if not path or self.artifacts is None:
+            return None
+        return self.artifacts.record_crash_input(tag, path)
 
     def cleanup_checkouts(self, repo: str) -> None:
         for label in ("vuln", "head"):

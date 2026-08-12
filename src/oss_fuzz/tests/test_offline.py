@@ -2278,6 +2278,61 @@ def test_error_lines_ignore_the_compiler_flag_banner():
     print("ok  error extraction ignores the -Wno-error flag banner")
 
 
+def test_leaks_and_resource_kills_are_not_findings_by_default():
+    """Three ogre harnesses "confirmed" a sibling bug on HEAD in the 20260812
+    run: two libFuzzer out-of-memory kills and a 168-byte leak in the harness's
+    own objects. Both fire just as readily on a fixed library."""
+    from oss_fuzz.ossfuzz import incidental_finding
+    from oss_fuzz.bugclass import classify
+
+    overflow = classify("Heap-buffer-overflow READ 4")
+    leak = ("DEDUP_TOKEN: operator new--Ogre::SubMesh::SubMesh\n"
+            "SUMMARY: AddressSanitizer: 168 byte(s) leaked in 2 allocation(s).")
+    oom = "==1==ERROR: libFuzzer: out-of-memory (malloc(1073741824))"
+    assert incidental_finding(leak, overflow)
+    assert incidental_finding(oom, overflow)
+
+    # Unless that is the bug being chased, in which case it is the evidence.
+    assert incidental_finding(leak, classify("Direct-leak")) is None
+    assert incidental_finding(oom, classify("Out-of-memory")) is None
+
+    # A real fault is admissible whatever else the run also reported.
+    real = ("==1==ERROR: AddressSanitizer: heap-buffer-overflow on address "
+            "0x602000000010\n" + leak)
+    assert incidental_finding(real, overflow) is None
+    assert incidental_finding("", overflow) is None
+    print("ok  leaks and OOM kills are not findings unless that is the bug")
+
+
+def test_outcome_ignores_a_crash_artifact_from_an_earlier_run():
+    """build/out/<project> accumulates artifacts and nothing clears it between
+    attempts, so 'is there a crash file?' answered yes for two ogre harnesses
+    that had run clean for their full 121 seconds."""
+    import tempfile
+    import time
+    with tempfile.TemporaryDirectory() as tmp:
+        out = os.path.join(tmp, "build", "out", "ogre")
+        os.makedirs(out)
+        stale = os.path.join(out, "crash-e61d8503")
+        with open(stale, "w") as fh:
+            fh.write("old")
+        of = OssFuzz(oss_fuzz_dir=tmp, work_dir=os.path.join(tmp, "wd"))
+
+        clean_run = "Done 2311663 runs in 121 second(s)"
+        started = time.time()
+        outcome = of._outcome("ogre", 0, clean_run, "", False, since=started)
+        assert not outcome.triggered, outcome.crash_reason
+        assert outcome.artifact_path is None
+
+        # An artifact this run wrote is evidence, as before.
+        fresh = os.path.join(out, "crash-abc123")
+        with open(fresh, "w") as fh:
+            fh.write("new")
+        outcome = of._outcome("ogre", 1, clean_run, "", False, since=started)
+        assert outcome.triggered and outcome.artifact_path == fresh, outcome
+        print("ok  a previous run's crash artifact is not this run's evidence")
+
+
 def test_build_cleans_shared_dirs_when_the_commit_changes():
     """$OUT and $WORK survive between builds and helper.py reuses them. Within
     one commit that is a big speed win; across two it compiled open62541's HEAD

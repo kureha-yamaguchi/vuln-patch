@@ -25,6 +25,8 @@
 #     fuzz/              the fuzzing engine's own output, per run:
 #                        verify_* on the vulnerable build (the acceptance
 #                        gate), head_* on HEAD (the sibling claim)
+#     crashes/<run>/     the input each run stopped on, copied out of
+#                        build/out/ before the next build wipes it
 #     build/             compiler output for builds that failed
 #
 # logs/<project>.log is the pipeline's commentary; artifacts/<project>/ is what

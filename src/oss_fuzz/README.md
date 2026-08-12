@@ -76,6 +76,7 @@ that only exist inside the process are gone when it exits:
 | `prompts/attempt_NNN.txt` | the exact messages sent to the model — one per attempt, since re-steering and build-repair turns change them |
 | `harnesses/vp_harness_N.<ext>` | every generated harness, including the rejected ones |
 | `fuzz/verify_*.log`, `fuzz/head_*.log` | the engine's own output per run: `verify_` on the vulnerable build (the acceptance gate), `head_` on HEAD (the sibling claim) |
+| `crashes/<run>/<artifact>` | the input a run stopped on, byte for byte, copied out of `build/out/` before the next build wipes it |
 | `build/*.log` | compiler output for builds that failed (these go to `$OSS_FUZZ_WORK_DIR` when no artifacts dir is set) |
 
 `inputs/` is written before the first LLM call, so a run killed by a wall-clock
@@ -563,6 +564,13 @@ staying out of the way on crashing ones.
 - **HEAD may not build.** If the project's API changed between the fix and now,
   a harness may not compile against HEAD. Those are skipped and reported, not
   counted as clean.
+- **A harness leaks and runs out of memory more easily than the library does.**
+  Forgetting one destructor is a `LeakSanitizer` report, and allocating from an
+  unvalidated size field is a libFuzzer out-of-memory kill — both on a *fixed*
+  library, which makes them the false positives a generated harness produces
+  most readily. Neither counts as a finding unless the OSV crash type says a
+  leak or a resource limit is the bug being chased (`ossfuzz.incidental_finding`).
+  In the 20260812 run they were three of three "confirmed siblings".
 - **Two URLs can name the repo the fix landed in, and they go stale in opposite
   ways.** The OSV record's is historically exact but frozen at disclosure;
   `project.yaml`'s is maintained but can be a different repo. cryptofuzz needs
