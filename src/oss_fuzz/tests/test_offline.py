@@ -2245,6 +2245,40 @@ def _ctx_for_prompt():
                         functions=[], headers=[], root_cause_reachable=[])
 
 
+# OSS-Fuzz prints this before every build, and every line of it contains the
+# word 'error'.
+CFLAGS_BANNER = (
+    "CFLAGS=-O1 -fno-omit-frame-pointer -Wno-error=int-conversion "
+    "-Wno-error=implicit-function-declaration -fsanitize=address\n"
+    "CXXFLAGS=-O1 -Wno-error=vla-cxx-extension -stdlib=libc++\n")
+
+
+def test_error_lines_ignore_the_compiler_flag_banner():
+    """'-Wno-error=' is not an error.
+
+    The 20260812 run reported grok's failure as a truncated CFLAGS string, in
+    results.jsonl and in the repair prompt handed back to the model, because
+    both helpers matched the bare word 'error'.
+    """
+    from oss_fuzz.ossfuzz import _build_error_excerpt, _first_error_line
+    combined = (CFLAGS_BANNER
+                + "+ mkdir build\nmkdir: cannot create directory 'build': "
+                  "File exists\n"
+                + "INFO:__main__:Running: docker run ...\n"
+                  "ERROR:__main__:Building fuzzers failed.\n")
+    first = _first_error_line(_build_error_excerpt(combined))
+    assert first.startswith("mkdir: cannot create directory"), first
+
+    # A real compiler diagnostic still wins over the banner around it.
+    diag = (CFLAGS_BANNER
+            + "/src/ogre/Tests/fuzz/image_fuzz.cpp:16:10: fatal error: "
+              "'OgreMeshFileFormat.h' file not found\n")
+    assert "OgreMeshFileFormat.h" in _first_error_line(diag)
+    assert "Wno-error" not in _first_error_line(diag)
+    print("ok  error extraction ignores the -Wno-error flag banner")
+
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for fn in fns:

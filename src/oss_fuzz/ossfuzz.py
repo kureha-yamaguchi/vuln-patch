@@ -520,6 +520,30 @@ _COMPILER_DIAG_RE = re.compile(
     re.IGNORECASE)
 
 
+# What a line has to say to count as a build failure. Anchored on the colon
+# forms compilers, linkers and make actually emit, because a bare search for the
+# word 'error' also matches the '-Wno-error=...' entries in the CFLAGS banner
+# OSS-Fuzz prints before every build — which is how the 20260812 run reported a
+# flag list as the reason grok would not build, and handed the model the same
+# flag list as the error to repair.
+_ERROR_LINE_RE = re.compile(
+    r"(?:fatal )?error:"                    # clang/gcc/ld diagnostics
+    r"|undefined (?:reference to|symbol)"
+    r"|No such file or directory"
+    r"|\bError \d+\b"                       # make/ninja recipe failure
+    r"|^[\w./-]+: cannot ",                 # mkdir/cp/ld refusing outright
+    re.IGNORECASE | re.MULTILINE)
+
+# helper.py's own commentary, present on every failed build and saying nothing
+# about the cause ("ERROR:__main__:Building fuzzers failed.").
+_HELPER_LOG_RE = re.compile(r"^(?:INFO|WARNING|ERROR):(?:__main__|common_utils)")
+
+
+def _names_an_error(line: str) -> bool:
+    return (bool(_ERROR_LINE_RE.search(line))
+            and not _HELPER_LOG_RE.match(line.lstrip()))
+
+
 def _build_error_excerpt(combined: str, limit: int = 2500) -> str:
     """The interesting part of a failed build's output.
 
@@ -529,23 +553,24 @@ def _build_error_excerpt(combined: str, limit: int = 2500) -> str:
     instead of BuildKit progress bars.
     """
     lines = combined.splitlines()
-    hits = [i for i, ln in enumerate(lines)
-            if re.search(r"\berror\b|\bfatal\b|undefined reference|"
-                         r"No such file or directory|Error [0-9]+", ln,
-                         re.IGNORECASE)]
+    hits = [i for i, ln in enumerate(lines) if _names_an_error(ln)]
     if not hits:
         return combined[-limit:]
     keep: set = set()
     for i in hits:
         keep.update(range(max(0, i - 2), min(len(lines), i + 3)))
     excerpt = "\n".join(lines[i] for i in sorted(keep))
-    return excerpt[-limit:]
+    if len(excerpt) > limit:
+        # Whole lines only: cutting mid-line opens the excerpt with the tail of
+        # whichever line straddled the boundary, which reads as corruption.
+        excerpt = excerpt[-limit:].split("\n", 1)[-1]
+    return excerpt
 
 
 def _first_error_line(text: str) -> str:
     """The first line of ``text`` that names an error, for one-line reports."""
     for ln in text.splitlines():
-        if re.search(r"\berror\b", ln, re.IGNORECASE):
+        if _names_an_error(ln):
             return ln.strip()[:200]
     return "see the build log"
 
