@@ -17,7 +17,8 @@ from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional
 
 from oss_fuzz.bugclass import BugClass, ORACLE_HARNESS
-from oss_fuzz.ossfuzz import OssFuzz, Checkout, HarnessPlacement, RunOutcome
+from oss_fuzz.ossfuzz import (OssFuzz, Checkout, HarnessPlacement, RunOutcome,
+                              included_paths, missing_includes)
 
 _FENCE_RE = re.compile(r"```(?:c|cc|cpp|c\+\+)?\s*\n(.*?)```", re.DOTALL)
 
@@ -145,6 +146,24 @@ class HarnessCampaign:
         self.artifacts = artifacts
         # The stock-build question is asked at most once per campaign; see run().
         self._stock_checked = False
+        # Header paths the compiler has already failed to find in this project.
+        # Facts, not guesses — and they do not become true on a later attempt.
+        self.missing_headers: List[str] = []
+
+    def _missing_header_note(self) -> str:
+        """Every header this project has been shown not to have, restated.
+
+        Accumulated across the campaign rather than left to the last compiler
+        error, because that error is all the model was ever shown: the 20260812
+        run watched libxaac re-include the same three headers across 30
+        attempts, each time being told about only the most recent one.
+        """
+        if not self.missing_headers:
+            return ""
+        return ("\n\nThese header paths do NOT exist in this project's include "
+                "path — the compiler has already looked for each one. Do not "
+                "include any of them again:\n"
+                + "\n".join(f"  {h}" for h in self.missing_headers))
 
     def run(self, prompt_factory: Callable[[List[str], List[str]],
                                            List[Dict[str, str]]]) -> CampaignResult:
@@ -177,6 +196,13 @@ class HarnessCampaign:
                                   "LLVMFuzzerTestOneInput translation unit.")
                 continue
 
+            # Kept before the pre-build gates below, so a harness they reject
+            # still leaves a file behind: those rejections print a one-line
+            # reason, and the harness is what the reason is about.
+            name = f"vp_harness_{n}"
+            if self.artifacts is not None:
+                self.artifacts.record_harness(name, self.ext, source)
+
             # Semantic gate, before the build: a harness for a non-crashing bug
             # must carry an alarm that can fire, or the whole attempt is spent
             # proving nothing. Costs a string search; saves a Docker build and
@@ -196,9 +222,24 @@ class HarnessCampaign:
                         "the complete file as one code block.")
                     continue
 
-            name = f"vp_harness_{n}"
-            if self.artifacts is not None:
-                self.artifacts.record_harness(name, self.ext, source)
+            # A header the compiler has already failed to find will not be
+            # found on a later attempt either, so this is a build we know the
+            # answer to. Worth checking because the model does come back with
+            # the same path: libxaac's campaign spent four separate Docker
+            # builds rediscovering that 'ixheaace.h' is not there.
+            reused = [h for h in included_paths(source)
+                      if h in self.missing_headers]
+            if reused:
+                print(f"  includes headers already known missing: "
+                      f"{', '.join(reused)}")
+                repair_context = (
+                    "Your harness includes a header this project does not have, "
+                    "which the compiler already told you on an earlier attempt. "
+                    "Re-output the complete file as one code block, reaching "
+                    "what you need through the known-good includes above."
+                    + self._missing_header_note())
+                continue
+
             out_bin = self.of.build_harness(
                 self.project, self.vuln, name, source, self.ext, self.sanitizer,
                 placement=self.placement)
@@ -227,11 +268,14 @@ class HarnessCampaign:
                         print(f"  ABORTING: this is an infrastructure failure, "
                               f"not a harness problem:\n    {stock}")
                         break
+                for h in missing_includes(stderr):
+                    if h not in self.missing_headers:
+                        self.missing_headers.append(h)
                 print("  build failed; feeding compiler errors back")
                 repair_context = (
                     "Your harness did not compile. Fix it and re-output the "
                     "complete file as one code block. Compiler errors:\n"
-                    + stderr[-1500:])
+                    + stderr[-1500:] + self._missing_header_note())
                 continue
 
             # Trigger gate: must crash the vulnerable build. Under the overwrite

@@ -329,6 +329,42 @@ def find_base_harness(root: str, fuzz_target: Optional[str] = None,
     return min(hits, key=lambda p: _harness_rank(p, fuzz_target))
 
 
+_INCLUDE_RE = re.compile(r'^[ \t]*#[ \t]*include[ \t]*[<"]([^>"]+)[>"]',
+                         re.MULTILINE)
+
+
+def included_paths(source: str) -> List[str]:
+    """The header paths a translation unit includes, in first-seen order."""
+    out: List[str] = []
+    for m in _INCLUDE_RE.finditer(source):
+        if m.group(1) not in out:
+            out.append(m.group(1))
+    return out
+
+
+def harness_includes(root: str, rel_path: Optional[str]) -> List[str]:
+    """The ``#include`` lines of an existing harness source, in file order.
+
+    Ground truth about where this project's headers live. The overwrite
+    placement replaces a file that compiles TODAY under the project's own build
+    with the project's own include path, so its include block is known to
+    resolve — and nothing else in the prompt carries that information, which is
+    why guessing at it is the most common way a generated harness fails to
+    build. The 20260812 run spent 3 of ogre's 8 attempts and most of libxaac's
+    30 on missing headers, while the files being replaced said
+    ``#include "OgreRoot.h"`` and ``#include "ixheaac_type_def.h"`` — neither of
+    them the form the model guessed.
+    """
+    if not rel_path:
+        return []
+    try:
+        with open(os.path.join(root, rel_path), errors="ignore") as fh:
+            text = fh.read(_MAX_HARNESS_SCAN_BYTES)
+    except OSError:
+        return []
+    return [m.group(0).strip() for m in _INCLUDE_RE.finditer(text)]
+
+
 @dataclass
 class HarnessPlacement:
     """How a generated harness gets into a project's build.
@@ -587,6 +623,29 @@ def _first_error_line(text: str) -> str:
         if _names_an_error(ln):
             return ln.strip()[:200]
     return "see the build log"
+
+
+_MISSING_INCLUDE_RE = re.compile(
+    r"(?:fatal )?error: '([^']+)' file not found"
+    r"|(?:fatal )?error: ([\w./+-]+): No such file or directory")
+
+
+def missing_includes(build_output: str) -> List[str]:
+    """Header paths the compiler could not find, in first-seen order.
+
+    The single most common way a generated harness fails to build, and the one
+    that repeats: 23 of libxaac's 30 attempts in the 20260812 run died on a
+    missing header, and the same three names came back over and over because
+    only the last compiler error was ever fed back. A name in here is a fact —
+    the compiler looked and it was not there — so the campaign can both ban it
+    and refuse to spend a Docker build on a harness that uses it again.
+    """
+    out: List[str] = []
+    for m in _MISSING_INCLUDE_RE.finditer(build_output):
+        name = m.group(1) or m.group(2)
+        if name and name not in out:
+            out.append(name)
+    return out
 
 
 def _infra_error(combined: str) -> Optional[str]:

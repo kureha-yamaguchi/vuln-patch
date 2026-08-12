@@ -2292,6 +2292,67 @@ def test_error_lines_ignore_the_compiler_flag_banner():
     print("ok  error extraction ignores the -Wno-error flag banner")
 
 
+def test_missing_includes_are_extracted_and_remembered():
+    """The headers a build could not find, so the campaign can stop re-trying
+    them: 23 of libxaac's 30 attempts died on a missing header, the same three
+    names recurring because only the last error was ever fed back."""
+    from oss_fuzz.ossfuzz import missing_includes, included_paths
+    out = (CFLAGS_BANNER
+           + "/src/libxaac/fuzzer/xaac_dec_fuzzer.cpp:9:10: fatal error: "
+             "'ixheaace.h' file not found\n"
+             "/src/x/y.c:3:10: fatal error: 'common/ixheaac_type_def.h' file "
+             "not found\n"
+             "/src/x/z.c:4:10: error: no.h: No such file or directory\n")
+    assert missing_includes(out) == ["ixheaace.h",
+                                     "common/ixheaac_type_def.h", "no.h"], \
+        missing_includes(out)
+    # And the same header seen twice is listed once.
+    assert missing_includes(out + out) == missing_includes(out)
+
+    # Real includes only: a commented-out line is not one the compiler sees, and
+    # banning a harness for it would reject a harness that builds.
+    src = ('#include <stdio.h>\n#include "ixheaace.h"\n#  include <a/b.h>\n'
+           '// #include "commented_out.h"\n')
+    assert included_paths(src) == ["stdio.h", "ixheaace.h", "a/b.h"], \
+        included_paths(src)
+    print("ok  missing includes extracted from build output")
+
+
+def test_campaign_refuses_a_harness_reusing_a_known_missing_header():
+    """A header the compiler has already failed to find will not be there on the
+    next attempt either, so the Docker build is one whose answer we know."""
+    from oss_fuzz.campaign import HarnessCampaign
+
+    class _Gen:
+        def generate(self, messages):
+            return ('```c\n#include "ixheaace.h"\nint LLVMFuzzerTestOneInput('
+                    'const unsigned char *d, unsigned long s){return 0;}\n```')
+
+    class _Of:
+        builds = 0
+        last_build_infra_error = None
+        last_build_stderr = ("/src/x.c:1:10: fatal error: 'ixheaace.h' file "
+                             "not found")
+
+        def build_harness(self, *a, **k):
+            _Of.builds += 1
+            return None
+
+        def stock_build_error(self, project, checkout, sanitizer):
+            return None
+
+    camp = HarnessCampaign(generator=_Gen(), oss_fuzz=_Of(), project="libxaac",
+                           vuln_checkout=None, sanitizer="address", ext=".cpp",
+                           target_successes=1, max_attempts=4)
+    res = camp.run(lambda covered, sigs: [{"role": "user", "content": "x"}])
+    # Attempt 1 pays for the build and learns the header is absent; attempts
+    # 2-4 re-use it and are refused before Docker.
+    assert res.attempts == 4, res.attempts
+    assert _Of.builds == 1, _Of.builds
+    assert camp.missing_headers == ["ixheaace.h"], camp.missing_headers
+    print("ok  campaign refuses a harness reusing a known-missing header")
+
+
 def test_leaks_and_resource_kills_are_not_findings_by_default():
     """Three ogre harnesses "confirmed" a sibling bug on HEAD in the 20260812
     run: two libFuzzer out-of-memory kills and a 168-byte leak in the harness's
@@ -2373,6 +2434,37 @@ def test_build_cleans_shared_dirs_when_the_commit_changes():
             [True, False, True, False, True], seen
         print("ok  a change of commit clears $OUT and $WORK")
 
+
+def test_prompt_carries_the_replaced_harness_include_block():
+    """The file being overwritten compiles today with this project's own include
+    path, so its includes are the only ones known to resolve. Nothing else in
+    the prompt said where a project's headers live, and guessing cost ogre 3 of
+    its 8 attempts."""
+    import tempfile
+    from oss_fuzz.ossfuzz import harness_includes
+    with tempfile.TemporaryDirectory() as tmp:
+        _tree(tmp, {"Tests/fuzz/image_fuzz.cpp":
+                    '#include <stdio.h>\n\n#include "OgreRoot.h"\n'
+                    'int LLVMFuzzerTestOneInput(const unsigned char *d,'
+                    ' unsigned long s){return 0;}\n'})
+        includes = harness_includes(tmp, "Tests/fuzz/image_fuzz.cpp")
+        assert includes == ['#include <stdio.h>', '#include "OgreRoot.h"'], \
+            includes
+        assert harness_includes(tmp, None) == []
+        assert harness_includes(tmp, "does/not/exist.cpp") == []
+
+    user = LibFuzzerPromptBuilder("c++").build(
+        context=_ctx_for_prompt(), covered_functions=[], found_signatures=[],
+        harness_name="image_fuzz", base_harness="Tests/fuzz/image_fuzz.cpp",
+        base_includes=includes)[1]["content"]
+    assert '#include "OgreRoot.h"' in user
+    assert "Tests/fuzz/image_fuzz.cpp" in user
+    # Absent when there is nothing known-good to say.
+    plain = LibFuzzerPromptBuilder("c++").build(
+        context=_ctx_for_prompt(), covered_functions=[], found_signatures=[],
+        harness_name="h")[1]["content"]
+    assert "known to resolve" not in plain
+    print("ok  prompt carries the replaced harness's include block")
 
 
 if __name__ == "__main__":

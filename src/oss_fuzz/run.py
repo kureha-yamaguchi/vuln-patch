@@ -35,7 +35,7 @@ from typing import List
 from oss_fuzz.artifacts import RunArtifacts
 from oss_fuzz.bugclass import SEMANTIC, ORACLE_HARNESS, classify_forced
 from oss_fuzz.osv import OsvClient, CveTarget, rank_records
-from oss_fuzz.ossfuzz import OssFuzz
+from oss_fuzz.ossfuzz import OssFuzz, harness_includes
 from oss_fuzz.analysis import DiffAnalyzer
 from oss_fuzz.prompts import LibFuzzerPromptBuilder
 from oss_fuzz.campaign import HarnessCampaign
@@ -511,13 +511,20 @@ def main():
     if placement.mode == "overwrite" and placement.rel_path:
         harness_label = os.path.splitext(os.path.basename(placement.rel_path))[0]
 
+    # The file we are about to overwrite compiles in this project's own build,
+    # so its include block is the one thing in the prompt that is known to
+    # resolve. Without it the model guesses header paths, and a wrong guess
+    # costs a full Docker build to find out.
+    base_includes = harness_includes(vuln.path, placement.rel_path)
+
     def prompt_factory(covered, signatures):
         return prompt_builder.build(
             context=context, covered_functions=covered,
             found_signatures=signatures, harness_name=harness_label,
             reproducer_hint=repro_hint,
             crash_type=target.crash_type, crash_state=target.crash_state,
-            harness_ext=placement.ext, bug_class=bug_class)
+            harness_ext=placement.ext, bug_class=bug_class,
+            base_harness=placement.rel_path, base_includes=base_includes)
 
     if args.dry_run:
         generator = _StubGenerator()
