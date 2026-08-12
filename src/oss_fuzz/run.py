@@ -416,9 +416,16 @@ def main():
             vuln, vuln_commit, head_commit = wt, vc, hc
             break
 
-        print(f"  REJECTED: the fix diff ({len(diff)} bytes) touches no C/C++ "
-              "function, so the prompt would carry no steering. Trying the "
-              "next-newest record.")
+        # Say which of the two it is. "Touches no C/C++ function" over a diff of
+        # 773 lines of C++ sent a reader looking for a parser bug when the real
+        # situation was an OSV 'fixed' commit that only adds a regression test
+        # (wt, 20260812) — a different problem with a different answer.
+        why = "touches no C/C++ function"
+        if ctx.skipped_paths:
+            why = ("touches only tests, harnesses or tooling: "
+                   + ", ".join(ctx.skipped_paths[:3]))
+        print(f"  REJECTED: the fix diff ({len(diff)} bytes) {why}, so the "
+              "prompt would carry no steering. Trying the next-newest record.")
 
     if target is None:
         extra = (" or was skipped as semantic (--skip-semantic)"

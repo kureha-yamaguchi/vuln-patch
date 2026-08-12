@@ -477,7 +477,11 @@ class DiffAnalyzer:
 
     # -- io ----------------------------------------------------------------
     def _is_source(self, path: str) -> bool:
-        return path.endswith((".c", ".cc", ".cpp", ".cxx", ".c++"))
+        # '.C' is upper-case C++, not a case-insensitive spelling of '.c': it is
+        # what Wt names every one of its sources, so without it that project's
+        # only usable record was rejected as "touches no C/C++ function" over a
+        # diff of 773 lines of C++ (20260812).
+        return path.endswith((".c", ".cc", ".cpp", ".cxx", ".c++", ".C"))
 
     def _is_header_file(self, path: str) -> bool:
         return path.endswith((".h", ".hpp", ".hh", ".hxx", ".inl", ".ipp"))

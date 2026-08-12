@@ -2435,6 +2435,15 @@ def test_build_cleans_shared_dirs_when_the_commit_changes():
         print("ok  a change of commit clears $OUT and $WORK")
 
 
+def test_upper_case_C_is_cpp_source():
+    """Wt names every source '.C'. Its only usable record was rejected as
+    "touches no C/C++ function" over 773 lines of C++ (20260812)."""
+    an = DiffAnalyzer(language="c++")
+    assert an._is_source("src/Wt/Http/Request.C")
+    assert an._is_source("src/x.cpp") and not an._is_source("README.md")
+    print("ok  '.C' counts as C++ source")
+
+
 def test_prompt_carries_the_replaced_harness_include_block():
     """The file being overwritten compiles today with this project's own include
     path, so its includes are the only ones known to resolve. Nothing else in
