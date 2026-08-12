@@ -791,6 +791,124 @@ def test_checkout_is_self_contained_for_docker_mounting():
     print("ok  checkout survives Docker mounting (self-contained .git)")
 
 
+def test_checkout_populates_submodules():
+    """A checkout must carry the source the project only *references*.
+
+    Regression from the grok run: OSS-Fuzz's Dockerfile clones with --recursive,
+    our checkout replaces that clone, and 'git clone --local' brings no submodule
+    objects — so /src/grok/src/include/spdlog was an empty directory and CMake
+    died there, an infra failure charged to the harness.
+
+    Local paths travel git's 'file' transport, which git refuses for submodules
+    by default (CVE-2022-39253); the config below is this test's substitute for
+    the real thing being an https:// URL.
+    """
+    import subprocess
+    import tempfile
+    root = tempfile.mkdtemp()
+    env = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+           "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t",
+           "GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "protocol.file.allow",
+           "GIT_CONFIG_VALUE_0": "always"}
+
+    def git(repo, *args, **kw):
+        return subprocess.run(["git", "-C", repo, *args], check=True, env=env,
+                              capture_output=True, text=True, **kw)
+
+    dep = os.path.join(root, "dep")
+    os.makedirs(dep)
+    subprocess.run(["git", "init", "-q", dep], check=True)
+    with open(os.path.join(dep, "borrowed.txt"), "w") as fh:
+        fh.write("the source only referenced\n")
+    git(dep, "add", "borrowed.txt")
+    git(dep, "commit", "-q", "-m", "dep")
+
+    repo = os.path.join(root, "src__proj")
+    os.makedirs(repo)
+    subprocess.run(["git", "init", "-q", repo], check=True)
+    with open(os.path.join(repo, "own.txt"), "w") as fh:
+        fh.write("the project's own source\n")
+    git(repo, "add", "own.txt")
+    git(repo, "submodule", "add", "-q", dep, "deps/dep")
+    git(repo, "commit", "-q", "-m", "with submodule")
+    head = git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    of = OssFuzz(oss_fuzz_dir=_fake_checkout({"native": _NATIVE_YAML}),
+                 work_dir=root, dry_run=False)
+    saved = {k: os.environ.get(k) for k in
+             ("GIT_CONFIG_COUNT", "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0")}
+    os.environ.update({k: env[k] for k in saved})
+    try:
+        co = of.checkout(repo, head, "vuln")
+    finally:
+        for k, v in saved.items():
+            os.environ.pop(k) if v is None else os.environ.update({k: v})
+
+    borrowed = os.path.join(co.path, "deps", "dep", "borrowed.txt")
+    assert os.path.isfile(borrowed), f"submodule not populated: {borrowed}"
+
+    # ...and a project that borrows nothing must not pay for the check: no
+    # .gitmodules, no submodule command, no network reach.
+    plain = os.path.join(root, "src__plain")
+    os.makedirs(plain)
+    subprocess.run(["git", "init", "-q", plain], check=True)
+    with open(os.path.join(plain, "own.txt"), "w") as fh:
+        fh.write("no submodules here\n")
+    git(plain, "add", "own.txt")
+    git(plain, "commit", "-q", "-m", "one")
+    plain_head = git(plain, "rev-parse", "HEAD").stdout.strip()
+
+    ran = []
+    real_run = of._run
+    of._run = lambda cmd, **kw: (ran.append(cmd), real_run(cmd, **kw))[1]
+    of.checkout(plain, plain_head, "vuln")
+    assert not any("submodule" in c for cmd in ran for c in cmd), ran
+    print("ok  checkout populates submodules, and skips them when there are none")
+
+
+def test_binary_output_does_not_kill_the_run():
+    """A fuzzer echoes the bytes it is holding, so its stdout is not text.
+
+    Regression from the ogre run: image_fuzz emitted a raw 0xff, strict UTF-8
+    decoding raised inside communicate(), and because that is our plumbing
+    rather than the harness's, it escaped the campaign's per-attempt handling
+    and killed a project that had just built and started fuzzing.
+    """
+    import tempfile
+    of = OssFuzz(oss_fuzz_dir=tempfile.mkdtemp(), work_dir=tempfile.mkdtemp(),
+                 dry_run=False)
+    proc = of._run(["python3", "-c",
+                    "import sys; sys.stdout.buffer.write(b'ok\\xff\\xfetail')"])
+    assert proc.returncode == 0, proc
+    assert "ok" in proc.stdout and "tail" in proc.stdout, repr(proc.stdout)
+    print("ok  binary fuzzer output is decoded leniently, not fatally")
+
+
+def test_an_empty_build_is_not_reported_as_a_naming_problem():
+    """librawspeed built nothing at all, $OUT held only llvm-symbolizer, and the
+    diagnosis told the reader to go pick a different --base-harness. The tool
+    OSS-Fuzz ships beside the targets is not a target, and 'nothing was built'
+    is a different instruction to the reader than 'wrong name'."""
+    import tempfile
+    root = tempfile.mkdtemp()
+    of = OssFuzz(oss_fuzz_dir=root, work_dir=root, dry_run=False)
+    out = os.path.join(root, "build", "out", "proj")
+    os.makedirs(out)
+
+    def put(name):
+        path = os.path.join(out, name)
+        with open(path, "w") as fh:
+            fh.write("#!/bin/sh\n")
+        os.chmod(path, 0o755)
+
+    put("llvm-symbolizer")
+    assert of._out_targets("proj") == [], of._out_targets("proj")
+    put("DngOpcodesFuzzer")
+    put("libz.so")                       # not extensionless: not a target
+    assert of._out_targets("proj") == ["DngOpcodesFuzzer"], of._out_targets("proj")
+    print("ok  llvm-symbolizer is not counted as a fuzz target")
+
+
 def test_worktrees_are_namespaced_per_repo():
     # Regression: a shared wt__vuln across projects meant the leftover from the
     # previous project was still registered to *its* repo, so this repo could

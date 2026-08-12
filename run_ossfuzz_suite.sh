@@ -81,6 +81,14 @@ export GIT_TERMINAL_PROMPT=0
 export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0=
 unset GIT_ASKPASS SSH_ASKPASS
 
+# Python block-buffers stdout when it is a pipe, and every project's output goes
+# through 'tee' into a log. So the pipeline's own commentary sat in a buffer for
+# the hour a project ran while git's and Docker's unbuffered stderr went straight
+# through -- a log that was 0 bytes until the project ended, showing only the
+# scariest lines and none of the "...that failed, recovering" around them. That
+# is what made the 20260811 cryptofuzz clone look fatal when it was handled.
+export PYTHONUNBUFFERED=1
+
 # --- 2. command line --------------------------------------------------------
 PROJECTS_FILE=""                            # -f: an explicit list, else sample
 RUN_DIR=""

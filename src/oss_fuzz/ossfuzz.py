@@ -143,6 +143,11 @@ _DEFAULT_ENGINES = ("libfuzzer", "afl", "honggfuzz", "centipede")
 # an LLM budget on a target we could never compile a .c/.cc harness into.
 NATIVE_LANGUAGES = ("c", "c++")
 
+# Generous: this is a network clone of every submodule, recursively, and some
+# projects vendor large ones (grok pulls google/highway). Bounded all the same,
+# because an unattended sweep must not sit on a hung fetch for its whole cap.
+SUBMODULE_TIMEOUT = 900
+
 
 def cache_name(main_repo: str) -> str:
     """Directory name for a cloned upstream repo: readable, unique per repo.
@@ -176,6 +181,12 @@ class Checkout:
     path: str         # worktree path (mounted as $SRC/<project>)
     commit: str
 
+
+# Tools OSS-Fuzz copies into $OUT beside the real targets. Counting them as
+# targets is what let an empty build masquerade as a naming problem: librawspeed
+# built nothing at all, $OUT held only this, and the diagnosis told the reader to
+# go and pick a different --base-harness.
+_OUT_TOOLS = frozenset({"llvm-symbolizer"})
 
 # Source extensions that can hold a libFuzzer harness.
 _HARNESS_EXTS = (".cc", ".cpp", ".cxx", ".c", ".C")
@@ -598,9 +609,15 @@ class OssFuzz:
         timeout, and stop the containers started from the project image (killing
         the docker *client* does not stop the container).
         """
+        # errors='replace' because a fuzzer's output is not text: libFuzzer
+        # echoes the input it is holding, and ogre's image_fuzz emitted a raw
+        # 0xff 167MB into a run that had just built and started fuzzing. Strict
+        # decoding raises UnicodeDecodeError from communicate() -- inside our
+        # own plumbing, so it escapes the campaign's per-attempt error handling
+        # and takes down the whole project run.
         proc = subprocess.Popen(
             cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, start_new_session=True, env=env)
+            text=True, errors="replace", start_new_session=True, env=env)
         try:
             out, err = proc.communicate(timeout=timeout)
             return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
@@ -941,7 +958,35 @@ class OssFuzz:
                       check=True)
         self._run(["git", "-C", path, "checkout", "--detach", "--quiet", commit],
                   check=not self.dry_run)
+        self._init_submodules(path)
         return Checkout(label=label, path=path, commit=commit)
+
+    def _init_submodules(self, path: str) -> None:
+        """Fetch the sources this checkout only *references*, if it has any.
+
+        A project's Dockerfile clones it with ``--recursive`` (or runs
+        ``git submodule update`` itself) for 39 of the 360 C/C++ projects this
+        front-end can drive. Our checkout replaces that clone, so without this
+        the referenced source is a set of empty directories and the build dies
+        well before a harness of ours is involved: grok's CMake stops at
+        "/src/grok/src/include/spdlog does not contain a CMakeLists.txt file",
+        open62541's at a generated file whose generator lives in a submodule.
+
+        This reaches the network — ``clone --local`` hardlinks the parent's
+        objects, and the submodules' objects are not among them.
+
+        Non-fatal on purpose. A project can carry a submodule its fuzzing build
+        never compiles (grok's grok-gpu-plugin is a GPU backend), and failing
+        the checkout over one of those would cost a run that would have worked.
+        The build speaks for itself if something it needs really is missing.
+        """
+        if self.dry_run or not os.path.exists(os.path.join(path, ".gitmodules")):
+            return
+        proc = self._run(["git", "-C", path, "submodule", "update",
+                          "--init", "--recursive"], timeout=SUBMODULE_TIMEOUT)
+        if proc.returncode != 0:
+            print("  WARNING: some submodules did not initialise; a build that "
+                  "needs them will fail")
 
     def diff(self, repo: str, a: str, b: str) -> str:
         p = self._run(["git", "-C", repo, "diff", f"{a}..{b}"])
@@ -1273,14 +1318,21 @@ class OssFuzz:
                 return os.path.join(self.oss_fuzz_dir, "build", "out", project,
                                     decorated[0])
             # Ambiguous or absent: retrying cannot help, so abort rather than
-            # spend the attempt budget, and name what IS there so the fix is
-            # obvious.
+            # spend the attempt budget. Which of the two it is decides what the
+            # reader should do next, so say them separately: a build that made
+            # no targets at all is an environment to fix, not a name to correct.
             self.last_build_stderr = ""
-            self.last_build_infra_error = (
-                f"the build produced no target named '{run_name}' (present: "
-                f"{', '.join(avail[:12]) or 'none'}); this project names its "
-                f"fuzz binary differently from its harness source — select the "
-                f"right harness with --base-harness")
+            if not avail:
+                self.last_build_infra_error = (
+                    f"the build reported success but produced no fuzz targets "
+                    f"at all (expected '{run_name}'); nothing was built to run, "
+                    f"so this is the build environment, not the harness")
+            else:
+                self.last_build_infra_error = (
+                    f"the build produced no target named '{run_name}' (present: "
+                    f"{', '.join(avail[:12])}); this project names its fuzz "
+                    f"binary differently from its harness source — select one "
+                    f"of those with --base-harness")
             print(f"  {self.last_build_infra_error}")
             return None
         self.last_build_stderr = ""
@@ -1295,7 +1347,8 @@ class OssFuzz:
         for f in sorted(os.listdir(out_dir)):
             p = os.path.join(out_dir, f)
             # Targets are extensionless executables; skips .so/.dict/.options.
-            if os.path.isfile(p) and os.access(p, os.X_OK) and "." not in f:
+            if (os.path.isfile(p) and os.access(p, os.X_OK) and "." not in f
+                    and f not in _OUT_TOOLS):
                 names.append(f)
         return names
 
