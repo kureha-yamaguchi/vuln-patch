@@ -52,6 +52,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
@@ -59,6 +60,7 @@ from typing import Dict, List, Optional
 import config
 from oss_fuzz.bugclass import (BugClass, ORACLE_HARNESS,
                                ORACLE_PROJECT_ASSERT, ORACLE_SANITIZER)
+from oss_fuzz.crash_evidence import reached_functions
 
 # Sanitizer reports proper: the runtime found the fault and explained it. These
 # are the strongest evidence available and outrank everything below, because
@@ -365,6 +367,61 @@ def harness_includes(root: str, rel_path: Optional[str]) -> List[str]:
     return [m.group(0).strip() for m in _INCLUDE_RE.finditer(text)]
 
 
+def harness_source(root: str, rel_path: Optional[str]) -> Optional[str]:
+    """A whole existing harness file, or None.
+
+    The include block alone was already the most reliable statement in the
+    prompt; the rest of the file is more of the same and then some. It is a
+    complete, compiling example of how this project turns ``(data, size)`` into
+    whatever its API wants — the object initialisation, the teardown, the
+    ``if (size < N) return 0`` guard, the type the bytes get wrapped in — and it
+    is the nearest thing this corpus has to the trigger test the Java front-end
+    puts in front of the model. Rendered by
+    ``prompts.LibFuzzerPromptBuilder._reference_harness_block``.
+    """
+    if not rel_path:
+        return None
+    try:
+        with open(os.path.join(root, rel_path), errors="replace") as fh:
+            text = fh.read(_MAX_HARNESS_SCAN_BYTES)
+    except OSError:
+        return None
+    return text or None
+
+
+def seed_corpus_from_poc(poc_path: Optional[str]) -> Optional[str]:
+    """A directory holding the PoC, to seed the trigger gate's fuzz runs.
+
+    The verify run currently starts from an empty corpus and has its whole budget
+    (60s by default) to rediscover the input shape from scratch, which is the
+    likeliest reason a harness that does reach the code still gets rejected as
+    "compiled but did not trigger". The Java front-end does not accept that
+    handicap: it hands the model the exact crashing input and tells it to call
+    with that first.
+
+    The C analogue is weaker and worth being precise about. Under the overwrite
+    placement the PoC's bytes were shaped for the *original* contents of the file
+    we replace, so our harness may parse them completely differently — this is a
+    seed, not an anchor, and it is not expected to reproduce anything by itself.
+    What it does supply is real structured input (file magic, plausible lengths,
+    real keywords) for libFuzzer to mutate, which is strictly better than
+    starting from the empty string.
+
+    Returns None when there is no local PoC, which is the common case: OSV's
+    reproducer URLs are login-gated, so a testcase only exists here if the user
+    passed ``--reproducer``.
+    """
+    if not poc_path or not os.path.isfile(poc_path):
+        return None
+    seeds = tempfile.mkdtemp(prefix="vp-seeds-")
+    try:
+        shutil.copyfile(poc_path, os.path.join(seeds, "poc"))
+    except OSError as exc:
+        print(f"  WARNING: could not stage the PoC as a seed: {exc}")
+        return None
+    return seeds
+
+
 @dataclass
 class HarnessPlacement:
     """How a generated harness gets into a project's build.
@@ -439,6 +496,13 @@ class RunOutcome:
     # is a claim about correctness rather than a memory-safety report, and the
     # two must not be merged in the results — see finding_oracle.
     found_by: Optional[str] = None
+    # Project functions this run demonstrably entered, innermost first, read off
+    # the crash stack. The steering input the C front-end never computed: the
+    # campaign hands these to the variant block as the covered part of the
+    # root-cause region, exactly as the Java pipeline does with
+    # FuzzRunResult.reached_functions. Empty on a clean run, which prints no
+    # stack — see the honest limits noted at crash_evidence.reached_functions.
+    reached: List[str] = field(default_factory=list)
 
     @property
     def combined(self) -> str:
@@ -1719,7 +1783,8 @@ class OssFuzz:
     def run_fuzzer(self, project: str, harness_name: str, seconds: int,
                    sanitizer: str, corpus: Optional[str] = None,
                    bug_class: Optional[BugClass] = None,
-                   log_tag: Optional[str] = None) -> RunOutcome:
+                   log_tag: Optional[str] = None,
+                   seeds: Optional[str] = None) -> RunOutcome:
         """``log_tag`` names this run's engine log under ``artifacts/fuzz/``.
 
         Supplied by the caller rather than derived from ``harness_name``,
@@ -1727,8 +1792,19 @@ class OssFuzz:
         replaced target's) and because the same harness is run twice — once as
         the vulnerable-build gate, once on HEAD. Deriving it would put both
         runs of every harness in one file, each overwriting the last.
+
+        ``seeds`` is a directory of read-only starting inputs (in practice the
+        recorded PoC). Each run gets a fresh COPY of it, never the directory
+        itself, for two reasons: libFuzzer writes every interesting input it
+        discovers into its corpus dir, so sharing one would make each harness's
+        gate depend on what the previous harness happened to find — an
+        order-dependent, unreproducible verdict — and the HEAD run would inherit
+        a corpus grown specifically to reproduce the vulnerable build's crash.
         """
         args = ["run_fuzzer", "--sanitizer", sanitizer]
+        work = None
+        if not corpus and seeds:
+            corpus, work = self._fresh_corpus(seeds), True
         if corpus:
             args += ["--corpus-dir", corpus]
         args += [project, harness_name, "--",
@@ -1748,10 +1824,27 @@ class OssFuzz:
             rc, out, err = -1, exc.stdout or "", exc.stderr or ""
             out = out.decode() if isinstance(out, bytes) else out
             err = err.decode() if isinstance(err, bytes) else err
+        finally:
+            if work and corpus:
+                shutil.rmtree(corpus, ignore_errors=True)
         tag = log_tag or f"fuzz_{harness_name}"
         self._log_run(tag, args, rc, out, err)
         return self._outcome(project, rc, out, err, timed_out,
                              since=started, tag=tag, bug_class=bug_class)
+
+    def _fresh_corpus(self, seeds: str) -> Optional[str]:
+        """A new directory holding a copy of every seed file."""
+        if self.dry_run or not os.path.isdir(seeds):
+            return None
+        dest = tempfile.mkdtemp(prefix="vp-corpus-")
+        try:
+            for name in os.listdir(seeds):
+                src = os.path.join(seeds, name)
+                if os.path.isfile(src):
+                    shutil.copyfile(src, os.path.join(dest, name))
+        except OSError as exc:
+            print(f"  WARNING: could not stage the seed corpus: {exc}")
+        return dest
 
     def reproduce(self, project: str, harness_name: str, testcase: str,
                   sanitizer: str) -> RunOutcome:
@@ -1807,6 +1900,14 @@ class OssFuzz:
             stdout=out, stderr=err, crash_reason=reason,
             signature=crash_signature(combined) if triggered else None,
             artifact_path=artifact, found_by=found_by if triggered else None,
+            # Guarded by a substring test, not by `triggered`: a run whose
+            # finding was discounted as incidental (a harness leak, an OOM on a
+            # fixed library) still walked the library, and that coverage is worth
+            # steering off. The guard matters because a fuzzer's output can be
+            # enormous — ogre's image_fuzz once emitted 167MB — and a run with no
+            # stack at all has nothing to parse.
+            reached=(reached_functions(combined)
+                     if "#0 0x" in combined else []),
         )
 
     def _find_artifact(self, project: str, since: float = 0.0) -> Optional[str]:

@@ -111,8 +111,8 @@ class RunArtifacts:
                                 bug_class, vuln_commit: Optional[str],
                                 head_commit: Optional[str],
                                 placement=None,
-                                reproducer: Optional[str] = None
-                                ) -> Optional[str]:
+                                reproducer: Optional[str] = None,
+                                evidence=None) -> Optional[str]:
         """Everything the harness generator is steered by, before it is asked.
 
         The three parts the method rests on, in the order the prompt uses them:
@@ -124,10 +124,16 @@ class RunArtifacts:
         diff_path = self._write("inputs/fix.diff", context.patch_text)
         trig_path = self._write("inputs/trigger.txt",
                                 self._trigger_text(target, bug_class,
-                                                   reproducer))
+                                                   reproducer, evidence))
+        # One line per function, annotated exactly as the prompt sees it: the
+        # tier it is in, its signature, where it lives, and whether an existing
+        # fuzz target reaches it. A bare name list could not be checked against
+        # the prompt, and could not show that a region entry is unreachable — the
+        # finding most worth keeping about an under-fuzzed neighbourhood.
         reach_path = self._write(
             "inputs/reachable.txt",
-            "".join(f"{fn}\n" for fn in context.root_cause_reachable))
+            "".join(f"{r.label()}\n" for r in context.reachable)
+            or "".join(f"{fn}\n" for fn in context.root_cause_reachable))
 
         # The PoC itself when there is one: it is the other half of the
         # "PoC or patch diff" the generator can be steered by, and a URL in the
@@ -180,6 +186,19 @@ class RunArtifacts:
                 "report_url": target.report_url,
                 "reproducer_url": target.reproducer_url,
                 "poc_file": self._rel(poc_path),
+                # Whether the crash above was REPRODUCED here or merely quoted
+                # from the report. The single most important qualifier on any
+                # claim made downstream, and the OSV prose does not carry it.
+                "evidence_source": getattr(evidence, "source", "osv"),
+                "observed_crash_type": getattr(evidence, "crash_type", None),
+                "observed_access": getattr(evidence, "access", None),
+                "observed_frames": [
+                    {"function": fr.function, "file": fr.file,
+                     "line": fr.line}
+                    for fr in (getattr(evidence, "frames", None) or [])],
+                "poc_reproduced": (
+                    None if evidence is None or not reproducer
+                    else not evidence.poc_did_not_reproduce),
             },
             # 3) the reachable set: the neighbourhood the variant-analysis
             #    directive steers across, and the one input whose quality
@@ -189,19 +208,33 @@ class RunArtifacts:
                 "source": context.reachable_source,
                 "count": len(context.root_cause_reachable),
                 "functions": context.root_cause_reachable,
+                # 'code-index' with 0 of 5 seeds resolved is not a working
+                # analysis. The old single-word label could not say so, and a
+                # sweep counting 'reachable_source' read it as a success.
+                "seeds_resolved": list(
+                    getattr(context, "seeds_resolved", (0, 0))),
+                "index_stats": getattr(context, "index_stats", None),
+                "entry_reachable": [
+                    r.name for r in getattr(context, "reachable", [])
+                    if r.entry_reachable],
+                "detail": context.as_dict().get("reachable_detail", []),
             },
         }
         return self._write("inputs/generation-input.json",
                            json.dumps(record, indent=2) + "\n")
 
     @staticmethod
-    def _trigger_text(target, bug_class, reproducer: Optional[str]) -> str:
+    def _trigger_text(target, bug_class, reproducer: Optional[str],
+                      evidence=None) -> str:
         lines = [
             "# The evidence that the ORIGINAL bug fired: this corpus's",
             "# stand-in for a triggering test. OSS-Fuzz publishes no test",
             "# case, so what stands in for one is the crash ClusterFuzz saw",
             "# (type + crashing stack, innermost frame first) and, when",
-            "# --reproducer named a local file, the PoC input beside it.",
+            "# --reproducer named a local file, the PoC input beside it —",
+            "# plus, when that PoC could be replayed, what the sanitizer",
+            "# actually printed on the vulnerable build. The replay is the",
+            "# only part of this file that was measured rather than quoted.",
             "",
             f"osv id       : {target.osv_id}",
             f"cve          : {target.cve_id or '(none)'}",
@@ -218,6 +251,24 @@ class RunArtifacts:
         if target.reproducer_url:
             lines.append(f"testcase url : {target.reproducer_url}")
         lines.append(f"poc supplied : {reproducer or '(none)'}")
+        if evidence is not None and evidence.observed:
+            lines += ["", "-- replayed on the vulnerable build (OBSERVED) --",
+                      f"crash type   : {evidence.crash_type or '(unparsed)'}"]
+            if evidence.access:
+                lines.append(f"access       : {evidence.access}")
+            if evidence.poc_size is not None:
+                lines.append(f"poc size     : {evidence.poc_size} bytes")
+            if evidence.poc_preview:
+                lines.append(f"poc head     : {evidence.poc_preview}")
+            for fr in evidence.frames:
+                lines.append(f"  {fr.describe()}")
+            if evidence.alloc_frames:
+                lines.append("allocated/freed at:")
+                for fr in evidence.alloc_frames:
+                    lines.append(f"  {fr.describe()}")
+        elif evidence is not None and evidence.poc_did_not_reproduce:
+            lines += ["", "-- the supplied PoC did NOT crash the vulnerable "
+                      "build; everything above is the report's own text --"]
         if target.summary:
             lines += ["", "summary:", target.summary]
         return "\n".join(lines) + "\n"

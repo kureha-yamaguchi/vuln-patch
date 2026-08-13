@@ -35,8 +35,10 @@ from typing import List
 from oss_fuzz.artifacts import RunArtifacts
 from oss_fuzz.bugclass import SEMANTIC, ORACLE_HARNESS, classify_forced
 from oss_fuzz.osv import OsvClient, CveTarget, rank_records
-from oss_fuzz.ossfuzz import OssFuzz, harness_includes
+from oss_fuzz.ossfuzz import (OssFuzz, harness_includes, harness_source,
+                              seed_corpus_from_poc)
 from oss_fuzz.analysis import DiffAnalyzer
+from oss_fuzz.crash_evidence import CrashEvidence
 from oss_fuzz.prompts import LibFuzzerPromptBuilder
 from oss_fuzz.campaign import HarnessCampaign
 from oss_fuzz.targets import find_candidates
@@ -343,6 +345,13 @@ def main():
     context = None
     repo = vuln = None
     vuln_commit = head_commit = None
+    # One analyzer for the whole loop, so its code index is built once per
+    # checkout and can be reused when the verified crash stack arrives later
+    # (see the re-seed after the PoC replay).
+    analyzer = DiffAnalyzer(
+        language=(ranked[0].language or sup.language or "c++"),
+        reachable_node_cap=args.reachable_node_cap,
+        reachable_max_depth=args.reachable_max_depth)
 
     for i, cand in enumerate(ranked[:tries], 1):
         cand.language = cand.language or sup.language or "c++"
@@ -400,11 +409,16 @@ def main():
         wt = of.checkout(repo, vc, "vuln")
 
         diff = of.diff(repo, vc, cand.fixed_commit)
-        ctx = DiffAnalyzer(
-            language=cand.language,
-            reachable_node_cap=args.reachable_node_cap,
-            reachable_max_depth=args.reachable_max_depth,
-        ).analyze(diff, wt.path)
+        # The record's crash stack seeds the root-cause region alongside the
+        # diff: the frame that faulted is frequently not a function the fix
+        # touched (a bounds helper hardened one level up leaves the innermost
+        # frame outside the commit entirely), and it is the most specific
+        # statement the report makes about where the fault lives.
+        analyzer.language = cand.language
+        ctx = analyzer.analyze(
+            diff, wt.path,
+            crash_frames=CrashEvidence.from_osv(
+                cand.crash_type, cand.crash_state).names)
         print("-- root-cause context --")
         print(json.dumps(ctx.as_dict(), indent=2))
 
@@ -481,7 +495,9 @@ def main():
         path = artifacts.record_generation_input(
             target, context, sanitizer=sanitizer, bug_class=bug_class,
             vuln_commit=vuln_commit, head_commit=head_commit,
-            placement=placement, reproducer=args.reproducer)
+            placement=placement, reproducer=args.reproducer,
+            evidence=CrashEvidence.from_osv(target.crash_type,
+                                            target.crash_state))
         if path:
             print(f"generation input recorded: {path}")
 
@@ -499,18 +515,71 @@ def main():
     head = of.checkout(repo, head_commit, "head")
     of.build_image(args.project)
 
-    # 3) Optional PoC sanity: crashes on vuln, clean on HEAD (needs the harness
-    #    name the bug was found on + a local testcase).
+    # 3) Replay the PoC on the vulnerable build with the project's OWN fuzz
+    #    target. This was a printed sanity check whose result was discarded; it is
+    #    now the strongest evidence the run has about the original failure. What
+    #    the sanitizer prints here — the faulting access, every frame with file
+    #    and line, the allocation stack — is the C analogue of the Java pipeline
+    #    running the trigger test on the buggy checkout, and it goes into the
+    #    prompt labelled as observed rather than inferred.
+    evidence = CrashEvidence.from_osv(target.crash_type, target.crash_state)
     if args.reproducer and target.fuzz_target:
-        print("\n-- PoC sanity check --")
+        print("\n-- PoC replay on the vulnerable build --")
         vc_out = of.reproduce(args.project, target.fuzz_target,
                               args.reproducer, sanitizer)
         print(f"  vuln build: {'CRASH' if vc_out.triggered else 'no crash'} "
               f"({vc_out.crash_reason}, found by {vc_out.found_by})")
+        evidence = CrashEvidence.from_run(
+            vc_out.combined, poc_path=args.reproducer,
+            triggered=vc_out.triggered, fallback=evidence)
+        if evidence.observed:
+            print(f"  observed: {evidence.crash_type or '?'}"
+                  + (f" — {evidence.access}" if evidence.access else ""))
+            for fr in evidence.frames[:5]:
+                print(f"    {fr.describe()}")
+            # Re-seed the root-cause region from the VERIFIED stack rather than
+            # the report's prose: real frames, in real order, with the file and
+            # line that let a symbol the index does not know still be resolved.
+            # Nearly free — the analyzer kept its code index, and rebuilding that
+            # is the only expensive part of an analysis.
+            if set(evidence.names) - set(target.crash_state or []) \
+                    or evidence.locations:
+                reseeded = analyzer.analyze(
+                    context.patch_text, vuln.path,
+                    crash_frames=evidence.names,
+                    crash_locations=evidence.locations)
+                added = (set(reseeded.root_cause_reachable)
+                         - set(context.root_cause_reachable))
+                print("  re-seeded the root-cause region from the observed "
+                      f"stack ({len(reseeded.root_cause_reachable)} functions"
+                      + (f", {len(added)} new" if added else "") + ")")
+                context = reseeded
+    elif args.reproducer:
+        print("\nnote: --reproducer was given but this record names no fuzz "
+              "target, so the PoC cannot be replayed; falling back to the OSV "
+              "record's own crash description.")
+
+    # The PoC also seeds the trigger gate's fuzz runs. A seed, not an anchor —
+    # see seed_corpus_from_poc for why the distinction matters here and does not
+    # in the Java pipeline.
+    seeds = seed_corpus_from_poc(args.reproducer)
+    if seeds:
+        print(f"seeding the trigger gate with the PoC ({args.reproducer})")
+
+    # The record above was written before the image pull, so it could only carry
+    # the OSV prose. Now that the replay has happened, write it again with what
+    # was actually observed. Same paths, so this is an update, not a second copy —
+    # and the early write stays worth doing because a run killed before the
+    # replay still says what it set out to do.
+    if artifacts and evidence.observed:
+        artifacts.record_generation_input(
+            target, context, sanitizer=sanitizer, bug_class=bug_class,
+            vuln_commit=vuln_commit, head_commit=head_commit,
+            placement=placement, reproducer=args.reproducer,
+            evidence=evidence)
 
     # 5) Campaign: generate + build + trigger-gate on the vulnerable build.
     prompt_builder = LibFuzzerPromptBuilder(language=target.language)
-    repro_hint = None  # bytes of the PoC could be summarised here if desired
 
     # Under overwrite the harness IS the project's existing target file, so name
     # it in the prompt rather than inventing one.
@@ -523,15 +592,19 @@ def main():
     # resolve. Without it the model guesses header paths, and a wrong guess
     # costs a full Docker build to find out.
     base_includes = harness_includes(vuln.path, placement.rel_path)
+    # ...and the rest of that file with it. It is a complete, compiling example
+    # of how this project drives its API from (data, size) — the closest thing
+    # this corpus has to the trigger test the Java front-end shows the model.
+    base_source = harness_source(vuln.path, placement.rel_path)
 
     def prompt_factory(covered, signatures):
         return prompt_builder.build(
             context=context, covered_functions=covered,
             found_signatures=signatures, harness_name=harness_label,
-            reproducer_hint=repro_hint,
             crash_type=target.crash_type, crash_state=target.crash_state,
             harness_ext=placement.ext, bug_class=bug_class,
-            base_harness=placement.rel_path, base_includes=base_includes)
+            base_harness=placement.rel_path, base_includes=base_includes,
+            base_harness_source=base_source, crash_evidence=evidence)
 
     if args.dry_run:
         generator = _StubGenerator()
@@ -543,7 +616,7 @@ def main():
         vuln_checkout=vuln, sanitizer=sanitizer, ext=ext, placement=placement,
         target_successes=args.target_successes,
         max_attempts=args.max_attempts, verify_seconds=args.verify_timeout,
-        bug_class=bug_class, artifacts=artifacts)
+        bug_class=bug_class, artifacts=artifacts, seeds=seeds)
     result = campaign.run(prompt_factory)
 
     print(f"\n== campaign: {result.achieved}/{result.target_successes} "
@@ -590,11 +663,16 @@ def main():
             print("  did not build against HEAD (API drift?); skipping")
             continue
         head_runs += 1
+        # Same starting inputs as the gate run. Not an afterthought: if the
+        # vulnerable-build run were seeded and this one were not, a harness could
+        # look "fixed on HEAD" purely because it started from an empty corpus
+        # here and from the PoC there.
         outcome = of.run_fuzzer(args.project,
                                 head_placement.runtime_name(gen.harness_name),
                                 args.fuzz_timeout, sanitizer,
                                 bug_class=bug_class,
-                                log_tag=f"head_{gen.harness_name}")
+                                log_tag=f"head_{gen.harness_name}",
+                                seeds=seeds)
         if outcome.triggered:
             # A sanitizer report on HEAD is a bug, full stop. A harness's own
             # oracle firing is a bug *if the relation it asserts is true*, and

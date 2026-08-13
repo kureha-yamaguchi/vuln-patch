@@ -11,10 +11,17 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
+import config
 from variant import variant_analysis_directive
-from oss_fuzz.analysis import PatchContext, TouchedFunction
+from oss_fuzz.analysis import PatchContext, TouchedFunction, covered_keys
 from oss_fuzz.bugclass import (BugClass, ORACLE_HARNESS, ORACLE_PROJECT_ASSERT,
                                ORACLE_SANITIZER)
+from oss_fuzz.crash_evidence import CrashEvidence
+
+# How much of the reference harness to quote. Generous: it is the single most
+# useful thing in the prompt (a complete, compiling example of driving this
+# project's API from raw bytes) and most OSS-Fuzz targets are well under this.
+MAX_REFERENCE_HARNESS_CHARS = 4000
 
 
 class LibFuzzerPromptBuilder:
@@ -31,7 +38,10 @@ class LibFuzzerPromptBuilder:
               harness_ext: Optional[str] = None,
               bug_class: Optional[BugClass] = None,
               base_harness: Optional[str] = None,
-              base_includes: Optional[List[str]] = None) -> List[Dict[str, str]]:
+              base_includes: Optional[List[str]] = None,
+              base_harness_source: Optional[str] = None,
+              crash_evidence: Optional[CrashEvidence] = None
+              ) -> List[Dict[str, str]]:
         """``bug_class`` decides what a *failing* harness even looks like.
 
         The fork is on ``bug_class.oracle``, not on its kind: a project-assert
@@ -62,10 +72,20 @@ class LibFuzzerPromptBuilder:
         sections: List[str] = [self._intro(lang_label, bug_class)]
 
         sections.append(self._patch_block(context.patch_text))
-        if crash_type or crash_state:
-            sections.append(self._original_crash_block(crash_type, crash_state,
-                                                       bug_class))
+        # Evidence about the original firing, strongest form available: a
+        # verified replay when run.py managed one, the OSV prose otherwise. The
+        # loose crash_type/crash_state arguments still work on their own so
+        # callers predating the evidence record are unchanged.
+        evidence = crash_evidence or CrashEvidence.from_osv(crash_type,
+                                                            crash_state)
+        if evidence.has_evidence:
+            sections.append(self._original_crash_block(evidence, bug_class))
         for fn in context.functions:
+            sections.append(self._function_block(fn))
+        # The crash stack's own functions, when the fix did not touch them. For a
+        # fix in a caller or a helper this is where the fault actually is, and it
+        # used to reach the model as three bare names in a prose line.
+        for fn in context.frame_functions:
             sections.append(self._function_block(fn))
         if context.headers:
             sections.append(
@@ -74,11 +94,26 @@ class LibFuzzerPromptBuilder:
         if base_includes:
             sections.append(self._known_includes_block(base_harness,
                                                        base_includes))
+        # The project's own fuzz target: this corpus's nearest thing to Java's
+        # trigger test. See _reference_harness_block.
+        if base_harness_source:
+            sections.append(self._reference_harness_block(base_harness,
+                                                         base_harness_source,
+                                                         is_c))
 
         if context.root_cause_reachable:
+            # Labels carry the signature, location and reachability of each
+            # entry; the keys stay plain names so the covered/uncovered split
+            # still matches. covered_keys reconciles the sanitizer's spelling of
+            # a function with the static index's.
             sections.append(variant_analysis_directive(
                 context.root_cause_reachable,
-                covered_functions, found_signatures))
+                covered_keys(covered_functions, context.root_cause_reachable),
+                found_signatures,
+                labels={r.name: r.label() for r in context.reachable}))
+            routes = self._routes_block(context)
+            if routes:
+                sections.append(routes)
 
         # The campaign refuses a harness that re-finds a listed crash, so say
         # so: a gate the model cannot see spends attempts teaching it nothing.
@@ -105,6 +140,11 @@ class LibFuzzerPromptBuilder:
 
         sections.append(self._byte_carving_reference())
         if reproducer_hint:
+            # Superseded by the PoC lines inside the crash-evidence block, which
+            # get the size and the preview from the file itself instead of from
+            # a string the caller had to build. Kept because it is a public
+            # parameter and it costs one branch; run.py no longer passes it, and
+            # never in fact did — it was wired to a hard-coded None.
             sections.append(
                 "A known crashing input for the ORIGINAL bug (bytes shown as "
                 f"context, not to be hardcoded):\n{reproducer_hint}")
@@ -145,16 +185,37 @@ class LibFuzzerPromptBuilder:
                 "not hold in, reached along a path the fix did not harden.")
         return base
 
-    def _original_crash_block(self, crash_type: Optional[str],
-                              crash_state: Optional[List[str]],
+    def _original_crash_block(self, ev: CrashEvidence,
                               bug_class: Optional[BugClass] = None) -> str:
-        """The original bug's crash type and crashing frames, straight from the
-        OSV record. The frames are the call path the harness has to re-enter,
-        which is more direct evidence than the diff alone: the diff says what
-        changed, this says where it blew up."""
-        lines = ["The ORIGINAL bug this fix addressed, as reported by OSS-Fuzz:"]
-        if crash_type:
-            lines.append(f"  crash type : {crash_type}")
+        """What the original bug did, from the strongest source we have.
+
+        The Java front-end runs the trigger test on the buggy checkout and
+        labels the result "trust it over anything inferred from the test body".
+        This is that block. When ``ev.observed`` the frames come with files and
+        lines from a real sanitizer report and the faulting access is quoted;
+        otherwise it is the OSV record's prose, and the block says so rather
+        than presenting stale names as measurements.
+
+        The stack is the call path a variant harness has to re-enter, which is
+        more direct evidence than the diff: the diff says what changed, this
+        says where it blew up.
+        """
+        if ev.observed:
+            head = ("The ORIGINAL bug, OBSERVED: we replayed the recorded PoC "
+                    "against the vulnerable checkout with the project's own "
+                    "fuzz target and this is what the sanitizer printed. It is "
+                    "ground truth — trust it over anything inferred from the "
+                    "diff.")
+        else:
+            head = ("The ORIGINAL bug this fix addressed, as reported by "
+                    "OSS-Fuzz. This is the bug report's own text, not a run we "
+                    "reproduced: the frame names are reliable, the absence of "
+                    "anything else is not evidence.")
+        lines = [head]
+        if ev.crash_type:
+            lines.append(f"  crash type : {ev.crash_type}")
+        if ev.access:
+            lines.append(f"  access     : {ev.access}")
         # Keyed on the oracle, not the kind: a project-assert bug is crashing,
         # but "no sanitizer saw this" is still the load-bearing fact about it —
         # it tells the model not to go hunting for memory corruption.
@@ -163,21 +224,148 @@ class LibFuzzerPromptBuilder:
                       if bug_class.needs_harness_oracle else
                       "the library's own check reports it, not a sanitizer")
             lines.append(f"  detected by: {bug_class.oracle} — {detail}")
-        if crash_state:
+        if ev.frames:
+            lines.append("  crash stack (innermost first):")
+            lines.extend(f"    #{i} {fr.describe()}"
+                         for i, fr in enumerate(ev.frames[:12]))
+        elif ev.frame_names:
             lines.append("  crash stack (innermost first): "
-                         + " <- ".join(crash_state))
-            # For a semantic bug the frames are where the wrong value surfaced,
-            # not where memory was corrupted, so "reach it" is only half the
-            # instruction — the oracle has to be able to see the result there.
-            reach = (f"Drive execution into `{crash_state[0]}` via the public "
-                     "API. Reaching that frame is necessary but NOT sufficient "
-                     "— the point is to reach it along a path the fix did not "
-                     "harden.")
+                         + " <- ".join(ev.frame_names))
+        if ev.alloc_frames:
+            # For a heap bug the block's history is the other half of the
+            # story: the size it was given is the invariant the fix restored.
+            lines.append("  the memory involved was allocated/freed at:")
+            lines.extend(f"    #{i} {fr.describe()}"
+                         for i, fr in enumerate(ev.alloc_frames[:6]))
+        lines.extend(self._poc_lines(ev))
+
+        target = ev.names[0] if ev.names else None
+        if target:
+            reach = (f"Drive execution into `{target}` via the public API. "
+                     "Reaching that frame is necessary but NOT sufficient — the "
+                     "point is to reach it along a path the fix did not harden.")
             if bug_class and bug_class.oracle == ORACLE_HARNESS:
                 reach += (" Your oracle must observe a value that this frame "
                           "computes; a check on something it cannot influence "
                           "proves nothing about this fix.")
             lines.append(reach)
+        return "\n".join(lines)
+
+    def _poc_lines(self, ev: CrashEvidence) -> List[str]:
+        """The PoC's shape — size and a short hex/ASCII preview.
+
+        A preview and never the whole input, on purpose. A harness that embeds
+        the recorded testcase as a constant passes the trigger gate and proves
+        nothing about the fix, which is the failure the Java front-end's "anchor
+        THEN fuzz" wording exists to prevent. What transfers is the shape: the
+        magic bytes, the field order, the length it had to reach.
+        """
+        out: List[str] = []
+        if ev.poc_size is not None:
+            out.append(f"  the recorded PoC is {ev.poc_size} bytes")
+        if ev.poc_preview:
+            out.append(f"  its first bytes: {ev.poc_preview}")
+            out.append(
+                "  Build inputs of THIS SHAPE from (data, size) — same magic "
+                "bytes, same field order, comparable length — and let the "
+                "fuzzer vary the rest. Do NOT hard-code these bytes: a harness "
+                "that replays a constant crashes the vulnerable build and says "
+                "nothing about whether the fix generalises, which is the whole "
+                "question.")
+        if ev.poc_did_not_reproduce:
+            out.append(
+                "  NOTE: replaying that PoC on the vulnerable checkout did NOT "
+                "crash, so the code path may have moved or the build differs "
+                "from the one that found it. Treat the report above as a lead, "
+                "not as a confirmed reproduction.")
+        return out
+
+    def _reference_harness_block(self, path: Optional[str], source: str,
+                                 is_c: bool) -> str:
+        """The project's existing fuzz target, in full.
+
+        This corpus's closest thing to the Java pipeline's trigger test. The
+        Java prompt carries the failing test's body, its setup and its fixtures
+        precisely because a harness that improvises the setup diverges from the
+        scenario that actually fails. On the C side the equivalent artefact is
+        the target that found this bug — and unlike a test it is *known to
+        compile in this project's OSS-Fuzz build*, which makes it simultaneously
+        the answer to "how is this API driven from bytes", "which headers
+        resolve", and "what does this build already link".
+
+        Only the include block of it used to reach the prompt.
+        """
+        where = f" ({path})" if path else ""
+        body = source.strip()
+        if len(body) > MAX_REFERENCE_HARNESS_CHARS:
+            body = body[:MAX_REFERENCE_HARNESS_CHARS] + "\n/* ...truncated */"
+        return "\n".join([
+            f"REFERENCE HARNESS{where} — this project's own libFuzzer target, "
+            "the one the original bug was found with. It compiles and links in "
+            "this project's OSS-Fuzz build today, so every include, type and "
+            "initialisation call in it is known to work:",
+            f"```{'c' if is_c else 'cpp'}",
+            body,
+            "```",
+            "Follow its setup (the same headers, the same init/teardown, the "
+            "same way it turns bytes into whatever the API wants) and then "
+            "diverge where it matters: it drives the API generically, and your "
+            "job is to drive it into the region the fix touched. Do not copy it "
+            "unchanged — an identical harness re-finds whatever it already "
+            "found.",
+        ])
+
+    def _routes_block(self, context: PatchContext) -> str:
+        """How to GET to the root cause: entry paths and callers.
+
+        The direction the old reachable set never computed. A list of nearby
+        function names says where a sibling might live; it does not say how a
+        harness could ever execute one of them, and for a `static` helper or an
+        internal function with no public caller the honest answer is "not
+        directly, only through here". The Java front-end has carried this as
+        ``xrefs`` from the start.
+
+        Only the seed tiers get routes — the functions the fix touched and the
+        ones that faulted. Routing every callee too would triple the block for
+        targets that are already covered by their parent's path.
+        """
+        seeds = [r for r in context.reachable
+                 if r.tier.startswith(("crash-frame", "touched"))]
+        if not seeds:
+            return ""
+        lines = [
+            "HOW TO REACH IT. Static call graph of the vulnerable checkout "
+            "(tree-sitter, no build), so it is sound-ish but not complete: "
+            "calls made through function pointers, vtables or macros may be "
+            "missing, and a route that is absent below may still exist.",
+        ]
+        unreached: List[str] = []
+        for r in seeds[:config.MAX_CALLERS_IN_PROMPT * 2]:
+            lines.append(f"- {r.name}:")
+            if r.entry_path:
+                lines.append("    an existing fuzz target reaches it: "
+                             + " -> ".join(r.entry_path))
+            elif r.entry_unknown:
+                lines.append("    whether an existing target reaches it was "
+                             "not determined (the call-graph search was "
+                             "truncated) — treat it as unknown, not as "
+                             "unreachable")
+            else:
+                unreached.append(r.name)
+            if r.callers:
+                lines.append("    called by: " + ", ".join(r.callers))
+            elif not r.entry_path:
+                lines.append("    no caller in the indexed sources — it is "
+                             "either a public entry point itself or only "
+                             "reached indirectly")
+        if unreached:
+            lines.append(
+                "No existing target reaches " + ", ".join(unreached[:6])
+                + ". That is the interesting case, not a dead end: it means "
+                "this code is under-fuzzed today, and your harness has to open "
+                "a route in through the public API rather than follow one. Work "
+                "up the 'called by' chain until you find something declared in "
+                "a public header.")
         return "\n".join(lines)
 
     def _known_includes_block(self, base_harness: Optional[str],
@@ -212,8 +400,15 @@ class LibFuzzerPromptBuilder:
 
     def _function_block(self, fn: TouchedFunction) -> str:
         body = fn.source if len(fn.source) < 4000 else fn.source[:4000] + "\n/*...*/"
-        return (f"Function `{fn.name}` in {fn.file} (vulnerable version, the "
-                f"fix sits inside it):\n```{self._fence()}\n{body}\n```")
+        # Two provenances, and conflating them would be a false statement about
+        # the fix: a crash-stack function is where the fault SURFACED, which is
+        # often a caller or a helper the commit never edited.
+        why = ("the ORIGINAL CRASH REPORT named this frame; the fix did not "
+               "change it, so whatever it does wrong it still does"
+               if fn.origin == "crash-frame"
+               else "the fix sits inside it")
+        return (f"Function `{fn.name}` in {fn.file} (vulnerable version, "
+                f"{why}):\n```{self._fence()}\n{body}\n```")
 
     def _fence(self) -> str:
         return "c" if self.language.lower() == "c" else "cpp"

@@ -238,10 +238,13 @@ def test_prompt_builder_uses_shared_steering():
     user = msgs[1]["content"]
     # The steering block must be the shared function's output verbatim, not a
     # local reimplementation of it — that delegation is the only thing keeping
-    # the rule in one place.
+    # the rule in one place. The builder passes `labels` so each entry renders
+    # with its signature and location; the keys it steers on are unchanged,
+    # which is what the covered/uncovered split below still depends on.
     assert variant_analysis_directive(
         ctx.root_cause_reachable, ["process"],
-        ["AddressSanitizer:heap-buffer-overflow@demo_parse"]) in user
+        ["AddressSanitizer:heap-buffer-overflow@demo_parse"],
+        labels={r.name: r.label() for r in ctx.reachable}) in user
     assert "Uncovered functions to steer toward" in user
     assert "LLVMFuzzerTestOneInput" in user
     print("ok  prompt builder + steering")
@@ -346,6 +349,14 @@ def test_analysis_drops_unnameable_functions_and_libc_noise():
             "{\n"
             "    changed();\n"
             "}\n")
+    # findstr has to be DEFINED somewhere in the checkout to be a project
+    # function. The index draws the project/libc line by asking whether the tree
+    # defines the callee, which is strictly better than a name denylist — it also
+    # drops third-party and undeclared names the denylist never listed — but it
+    # means an only-ever-called symbol is external, so the fixture has to supply
+    # the definition the real coturn tree has.
+    with open(os.path.join(d, "ns_turn_utils.c"), "w") as fh:
+        fh.write("int findstr(const char *s, size_t n) { return n > 0; }\n")
     diff = ("--- a/ns_turn_msg.c\n+++ b/ns_turn_msg.c\n"
             "@@ -1,3 +1,3 @@\n+    if (strstr(s, \"HTTP\")) return 1;\n")
     ctx = DiffAnalyzer(language="c").analyze(diff, d)
@@ -356,6 +367,17 @@ def test_analysis_drops_unnameable_functions_and_libc_noise():
         assert libc not in ctx.root_cause_reachable, ctx.root_cause_reachable
     # A project-local callee must survive the denylist.
     assert "findstr" in ctx.root_cause_reachable, ctx.root_cause_reachable
+    assert ctx.reachable_source == "code-index", ctx.reachable_source
+
+    # And the heuristic fallback still keeps the same line when there is no
+    # index at all (no introspector extra, parse failure, timeout).
+    fallback = DiffAnalyzer(language="c")
+    fallback._index_safe = lambda _dir: None          # type: ignore[method-assign]
+    ctx2 = fallback.analyze(diff, d)
+    assert ctx2.reachable_source == "heuristic"
+    assert "findstr" in ctx2.root_cause_reachable
+    for libc in ("strstr", "strlen", "tolower"):
+        assert libc not in ctx2.root_cause_reachable
     print("ok  analysis drops '?' functions and libc noise")
 
 
@@ -1392,7 +1414,7 @@ def test_campaign_runs_the_replaced_targets_name_under_overwrite():
             return "/out/xml"
 
         def run_fuzzer(self, project, harness_name, seconds, sanitizer,
-                       bug_class=None, log_tag=None):
+                       bug_class=None, log_tag=None, seeds=None):
             ran.append(harness_name)
             from oss_fuzz.ossfuzz import RunOutcome
             return RunOutcome(triggered=True, timed_out=False, returncode=1,
@@ -1679,7 +1701,7 @@ def test_campaign_rejects_a_harness_that_cannot_fail():
             return "/out/" + name
 
         def run_fuzzer(self, project, harness_name, seconds, sanitizer,
-                       bug_class=None, log_tag=None):
+                       bug_class=None, log_tag=None, seeds=None):
             return RunOutcome(triggered=True, timed_out=False, returncode=1,
                               crash_reason="oracle", signature="oracle:rt",
                               found_by="harness")
@@ -1718,7 +1740,7 @@ def test_crashing_campaign_is_unchanged_by_the_split():
             return "/out/" + name
 
         def run_fuzzer(self, project, harness_name, seconds, sanitizer,
-                       bug_class=None, log_tag=None):
+                       bug_class=None, log_tag=None, seeds=None):
             return RunOutcome(triggered=True, timed_out=False, returncode=1,
                               crash_reason="ASan", signature="sig",
                               found_by="sanitizer")
@@ -1761,7 +1783,7 @@ def test_campaign_refuses_a_harness_that_refinds_a_known_crash():
             return "/out/" + name
 
         def run_fuzzer(self, project, harness_name, seconds, sanitizer,
-                       bug_class=None, log_tag=None):
+                       bug_class=None, log_tag=None, seeds=None):
             return RunOutcome(triggered=True, timed_out=False, returncode=1,
                               crash_reason="ASan",
                               signature=sigs[len(built) - 1],
@@ -2229,7 +2251,7 @@ def test_campaign_records_prompt_harness_and_engine_log_per_attempt():
             return "/out/" + name
 
         def run_fuzzer(self, project, harness_name, seconds, sanitizer,
-                       bug_class=None, log_tag=None):
+                       bug_class=None, log_tag=None, seeds=None):
             # The real OssFuzz writes the log; here we only assert the campaign
             # asked for a tag that separates this run from the HEAD run of the
             # same harness (both would otherwise be 'vp_harness_N.log').
@@ -2474,6 +2496,486 @@ def test_prompt_carries_the_replaced_harness_include_block():
         harness_name="h")[1]["content"]
     assert "known to resolve" not in plain
     print("ok  prompt carries the replaced harness's include block")
+
+
+# --- the code index: callers, entry paths, and the dead-for-C bug -----------
+
+# A tiny but complete project: library code, an internal helper, a public entry
+# point, its own libFuzzer target, and a test directory that must not be indexed.
+_IDX_C = {
+    "src/tag.c": (
+        '#include <string.h>\n'
+        '#include "tag.h"\n'
+        '\n'
+        'static int tag_len(const unsigned char *p, size_t n) {\n'
+        '    return p[0] & 0x7f;\n'
+        '}\n'
+        '\n'
+        'int tag_read(const unsigned char *p, size_t n, char *out) {\n'
+        '    int len = tag_len(p, n);\n'
+        '    if (len > (int)n) return -1;\n'
+        '    memcpy(out, p + 1, len);\n'
+        '    return len;\n'
+        '}\n'
+        '\n'
+        'int demo_parse(const unsigned char *data, size_t size) {\n'
+        '    char buf[64];\n'
+        '    if (size < 2) return 0;\n'
+        '    return tag_read(data, size, buf);\n'
+        '}\n'),
+    "src/tag.h": ("#include <stddef.h>\n"
+                  "int tag_read(const unsigned char *p, size_t n, char *out);\n"
+                  "int demo_parse(const unsigned char *d, size_t s);\n"),
+    "fuzz/demo_fuzzer.c": (
+        '#include <stdint.h>\n'
+        '#include "tag.h"\n'
+        'int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {\n'
+        '  demo_parse(data, size);\n'
+        '  return 0;\n'
+        '}\n'),
+    "tests/tag_test.c": "int must_not_be_indexed(void) { return 0; }\n",
+}
+
+_IDX_DIFF = (
+    "diff --git a/src/tag.c b/src/tag.c\n"
+    "--- a/src/tag.c\n+++ b/src/tag.c\n"
+    "@@ -8,7 +8,7 @@\n"
+    " int tag_read(const unsigned char *p, size_t n, char *out) {\n"
+    "     int len = tag_len(p, n);\n"
+    "-    if (len > (int)n) return -1;\n"
+    "+    if (len > (int)n - 1) return -1;\n")
+
+# A real ASan report, including the frames that are not project code and a
+# demangled C++ symbol whose argument list contains spaces.
+_ASAN_REPORT = (
+    "==12==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7ffd "
+    "at pc 0x5555 bp 0x7ffd sp 0x7ffd\n"
+    "WRITE of size 63 at 0x7ffd thread T0\n"
+    "    #0 0x4f1a in tag_read /src/demo/src/tag.c:11:5\n"
+    "    #1 0x4f80 in demo_parse /src/demo/src/tag.c:18:12\n"
+    "    #2 0x4fc0 in LLVMFuzzerTestOneInput /src/demo/fuzz/demo_fuzzer.c:3:3\n"
+    "    #3 0x5a10 in fuzzer::Fuzzer::ExecuteCallback(unsigned char const*, "
+    "unsigned long) /src/llvm/FuzzerLoop.cpp:611:13\n"
+    "    #4 0x7f2b in __libc_start_main /build/csu/libc-start.c:308:16\n"
+    "SUMMARY: AddressSanitizer: stack-buffer-overflow /src/demo/src/tag.c:11:5 "
+    "in tag_read\n")
+
+
+def _idx_tree():
+    import tempfile
+    tmp = tempfile.mkdtemp()
+    _tree(tmp, _IDX_C)
+    return tmp
+
+
+def test_code_index_works_for_c_where_all_functions_is_never_populated():
+    """The regression this whole module exists for.
+
+    The old reachable set read ``project.all_functions`` off
+    ``analyse_folder``. ``CProject`` never assigns that attribute — its report is
+    built from ``no_fuzz_function_list`` instead — so on every pure-C project the
+    function map came back empty, no touched name resolved, and the analysis
+    fell back to the brace-match heuristic having already paid for a full
+    tree-sitter parse. Indexing ``source_code_files[*].func_defs`` is what fixes
+    it, and this test fails on the old code path by construction.
+    """
+    from oss_fuzz.callgraph import build_index, FRONTENDS_AVAILABLE
+    if not FRONTENDS_AVAILABLE:
+        print("skip  code index (fuzz-introspector extra not installed)")
+        return
+    idx = build_index(_idx_tree(), "c")
+    assert idx is not None
+    assert set(idx.by_name) >= {"tag_len", "tag_read", "demo_parse",
+                                "LLVMFuzzerTestOneInput"}, sorted(idx.by_name)
+    # tests/ is not library code and is not indexed.
+    assert "must_not_be_indexed" not in idx.by_name
+
+    # The direction the old implementation never computed.
+    assert idx.callers_of("tag_read") == ["demo_parse"]
+    assert idx.callers_of("tag_len") == ["tag_read"]
+    # ...and a concrete route in from a real fuzz target.
+    assert idx.path_from_entry("tag_len") == [
+        "LLVMFuzzerTestOneInput", "demo_parse", "tag_read", "tag_len"]
+    assert idx.entry_points == ["LLVMFuzzerTestOneInput"]
+
+    # Callees, with the depth the flat list used to discard.
+    assert idx.callees_bfs(["demo_parse"], 50, 3) == [("tag_read", 1),
+                                                      ("tag_len", 2)]
+    # libc is dropped by the only rule that generalises: the tree does not
+    # define memcpy, so it is not a project function. No denylist involved.
+    assert "memcpy" not in idx.by_name
+
+    # Declarations come off the AST, so they keep the qualifiers both frontends
+    # drop when they rebuild a signature from parts.
+    node = idx.by_name["tag_read"]
+    assert node.signature() == \
+        "int tag_read(const unsigned char *p, size_t n, char *out)"
+    assert node.file == os.path.join("src", "tag.c") and node.start_line == 8
+    assert idx.by_name["tag_len"].internal is True     # `static`
+    assert node.internal is False
+    print("ok  code index resolves callers/entry paths on a C project")
+
+
+def test_code_index_handles_cpp_namespaces_and_header_definitions():
+    from oss_fuzz.callgraph import build_index, FRONTENDS_AVAILABLE
+    if not FRONTENDS_AVAILABLE:
+        print("skip  code index c++ (extra not installed)")
+        return
+    import tempfile
+    tmp = tempfile.mkdtemp()
+    _tree(tmp, {
+        "include/reader.h": (
+            "#pragma once\n#include <cstddef>\nnamespace fmt {\n"
+            "class Reader {\n public:\n"
+            "  int Read(const char *data, std::size_t size);\n"
+            "  int Validate(const char *d, std::size_t n) { return n > 0; }\n"
+            "};\n}\n"),
+        "src/reader.cc": (
+            '#include "reader.h"\nnamespace fmt {\n'
+            "int Reader::Read(const char *data,\n"
+            "                std::size_t size) {\n"
+            "  if (!Validate(data, size)) return -1;\n"
+            "  return static_cast<int>(size);\n}\n}\n"),
+        "fuzz/reader_fuzzer.cc": (
+            '#include <cstdint>\n#include "reader.h"\n'
+            'extern "C" int LLVMFuzzerTestOneInput(const uint8_t *d, '
+            "size_t s) {\n  fmt::Reader r;\n  r.Read((const char *)d, s);\n"
+            "  return 0;\n}\n"),
+    })
+    idx = build_index(tmp, "c++")
+    assert "fmt::Reader::Read" in idx.by_name, sorted(idx.by_name)
+    # A bare method name resolves through the trailing-segment index, which is
+    # how a crash frame or a diff-touched name (neither of which is qualified)
+    # finds its definition.
+    assert idx.resolve("Read").name == "fmt::Reader::Read"
+    assert idx.callers_of("Validate") == ["fmt::Reader::Read"]
+    assert idx.path_from_entry("Validate")[0] == "LLVMFuzzerTestOneInput"
+    # An inline definition in a header is a real function, not a declaration.
+    assert idx.by_name["fmt::Reader::Validate"].in_header is True
+    # And the arity is right, which reconstructing from the C++ frontend's
+    # (empty) arg_types would not have been: `int Validate()` reads as a
+    # zero-argument method.
+    assert "std::size_t n" in idx.by_name["fmt::Reader::Validate"].signature()
+    print("ok  code index handles C++ namespaces and header definitions")
+
+
+def test_truncated_route_search_reports_unknown_not_unreachable():
+    """A cap must not turn into a claim.
+
+    The prompt tells the model "no existing target reaches it — open your own
+    route in", which is a real instruction with real cost. If the entry-point
+    BFS merely ran out of budget, that sentence is false, and the model spends
+    its attempt solving a problem that was already solved. So an unfinished
+    search downgrades the claim rather than asserting it.
+    """
+    from oss_fuzz.callgraph import build_index, FRONTENDS_AVAILABLE
+    if not FRONTENDS_AVAILABLE:
+        print("skip  route truncation (extra not installed)")
+        return
+    idx = build_index(_idx_tree(), "c")
+    assert idx.entry_search_complete
+    assert idx.path_from_entry("tag_len")
+
+    # Same index, a budget of one node: the search cannot get past the entry
+    # point, so nothing looks reachable — and it must say so as ignorance.
+    import config
+    old = config.ENTRY_BFS_NODE_CAP
+    try:
+        config.ENTRY_BFS_NODE_CAP = 1
+        starved = build_index(_idx_tree(), "c")
+        assert starved.path_from_entry("tag_len") is None
+        assert starved.entry_search_complete is False
+    finally:
+        config.ENTRY_BFS_NODE_CAP = old
+
+    from oss_fuzz.analysis import ReachableFn
+    unknown = ReachableFn(name="f", entry_unknown=True).label()
+    assert "not determined" in unknown and "no existing target" not in unknown
+    known = ReachableFn(name="f").label()
+    assert "no existing target reaches it" in known
+    print("ok  a truncated route search reports unknown, not unreachable")
+
+
+def test_region_seeds_from_the_crash_stack_not_only_the_diff():
+    """A frame the fix did not touch still belongs to the root cause.
+
+    The fix here is inside ``tag_read``; ``demo_parse`` is the caller that
+    faulted and the commit never edits it. It used to reach the prompt as a bare
+    name in a prose line, and never entered the reachable set at all.
+    """
+    from oss_fuzz.crash_evidence import CrashEvidence
+    ev = CrashEvidence.from_run(_ASAN_REPORT, triggered=True)
+    ctx = DiffAnalyzer(language="c").analyze(_IDX_DIFF, _idx_tree(),
+                                            crash_frames=ev.names)
+    if ctx.reachable_source != "code-index":
+        print("skip  region seeding (extra not installed)")
+        return
+    tiers = {r.name: r.tier for r in ctx.reachable}
+    # Both a fix site and the faulting frame: the highest-value entry, and one
+    # tier alone cannot say it.
+    assert tiers["tag_read"] == "crash-frame+touched", tiers
+    assert tiers["demo_parse"] == "crash-frame", tiers
+    assert tiers["tag_len"] == "callee", tiers
+    # Ranked, because the list is truncated at MAX_REACHABLE_IN_PROMPT and an
+    # unranked cut keeps whatever the BFS happened to reach first.
+    assert ctx.root_cause_reachable[0] == "tag_read"
+
+    # The harness is what we are writing, so it is never a steering target —
+    # even though it is a genuine caller of demo_parse and the crash stack names
+    # it.
+    assert "LLVMFuzzerTestOneInput" not in ctx.root_cause_reachable
+
+    # ...and the faulting frame's source is now in the prompt, labelled as
+    # crash-stack rather than as a place the fix touched.
+    assert [f.name for f in ctx.frame_functions] == ["demo_parse"]
+    assert ctx.frame_functions[0].origin == "crash-frame"
+    body = LibFuzzerPromptBuilder("c").build(
+        context=ctx, covered_functions=[], found_signatures=[],
+        harness_name="h")[1]["content"]
+    assert "the ORIGINAL CRASH REPORT named this frame" in body
+    # The route in, which is the half the old downstream-only analysis could
+    # never produce.
+    assert ("an existing fuzz target reaches it: LLVMFuzzerTestOneInput -> "
+            "demo_parse -> tag_read") in body, body
+    assert "called by: demo_parse" in body
+    print("ok  region seeds from the crash stack and ranks seeds first")
+
+
+def test_frames_resolve_by_location_when_the_symbol_does_not():
+    """A frame whose symbol the index does not know is not a lost frame.
+
+    The sanitizer prints a file and a line beside every frame, and that
+    identifies the function whatever the symbol was mangled or inlined into. Only
+    available for an observed crash — the OSV prose has names alone — which is
+    also why the analyzer keeps its index: the verified stack does not arrive
+    until after the Docker replay, one step later than the first analysis.
+    """
+    from oss_fuzz.callgraph import build_index, FRONTENDS_AVAILABLE
+    if not FRONTENDS_AVAILABLE:
+        print("skip  frame resolution by location (extra not installed)")
+        return
+    tree = _idx_tree()
+    idx = build_index(tree, "c")
+    # tag_read's body spans lines 8-13; a frame anywhere inside it resolves,
+    # matched on the basename because the container path is not the local one.
+    assert idx.resolve_at("/src/demo/src/tag.c", 11).name == "tag_read"
+    assert idx.resolve_at("tag.c", 9).name == "tag_read"
+    assert idx.resolve_at("tag.c", 5).name == "tag_len"
+    assert idx.resolve_at("nosuch.c", 11) is None
+    assert idx.resolve_at(None, 11) is None
+
+    an = DiffAnalyzer(language="c")
+    ctx = an.analyze(_IDX_DIFF, tree,
+                     crash_frames=["mangled_name_the_index_never_saw"],
+                     crash_locations={
+                         "mangled_name_the_index_never_saw": ("tag.c", 11)})
+    if ctx.reachable_source != "code-index":
+        print("skip  frame resolution (no index)")
+        return
+    # Resolved to the real function, under the index's name, not the symbol's.
+    assert "tag_read" in ctx.root_cause_reachable, ctx.root_cause_reachable
+    tiers = {r.name: r.tier for r in ctx.reachable}
+    assert tiers["tag_read"] == "crash-frame+touched", tiers
+
+    # And the index was built once, not once per analyze() call: re-seeding from
+    # the verified stack has to be cheap or run.py could not afford to do it.
+    assert list(an._index_cache) == [tree]
+    before = an._index_cache[tree]
+    an.analyze(_IDX_DIFF, tree, crash_frames=["tag_read"])
+    assert an._index_cache[tree] is before
+    print("ok  frames resolve by location, and the index is built once")
+
+
+def test_crash_evidence_reads_a_real_sanitizer_report():
+    from oss_fuzz.crash_evidence import CrashEvidence, reached_functions
+    ev = CrashEvidence.from_run(_ASAN_REPORT, triggered=True)
+    assert ev.observed and ev.source == "observed"
+    assert ev.crash_type == "stack-buffer-overflow", ev.crash_type
+    # The trailing addresses are stripped, exactly as crash_signature does it:
+    # they differ every run.
+    assert "0x" not in ev.crash_type
+    assert ev.access == "WRITE of size 63 at 0x7ffd thread T0"
+    # Project frames only, in order, with the locations the OSV prose lacks.
+    assert [f.function for f in ev.frames] == ["tag_read", "demo_parse"]
+    assert ev.frames[0].file == "/src/demo/src/tag.c" and ev.frames[0].line == 11
+    # A demangled C++ symbol contains spaces, so the location cannot be scraped
+    # as the second whitespace-separated token — and libFuzzer's own frames are
+    # not project code anyway.
+    assert not any("fuzzer::" in f.function for f in ev.frames)
+    assert reached_functions(_ASAN_REPORT) == ["tag_read", "demo_parse"]
+
+    # A report we cannot parse leaves the OSV prose in place rather than
+    # replacing it with nothing.
+    prose = CrashEvidence.from_osv("Heap-use-after-free READ 4", ["a", "b"])
+    kept = CrashEvidence.from_run("nothing useful here", triggered=True,
+                                  fallback=prose)
+    assert kept.crash_type == "Heap-use-after-free READ 4"
+    assert kept.names == ["a", "b"]
+
+    # A PoC that does not reproduce is reported as such, never as a confirmed
+    # crash: it says the path may have moved, not that the harness is wrong.
+    dud = CrashEvidence.from_run("", triggered=False, fallback=prose)
+    assert dud.poc_did_not_reproduce and not dud.observed
+    print("ok  crash evidence parses a real report and degrades honestly")
+
+
+def test_crash_evidence_separates_the_allocation_stack():
+    from oss_fuzz.crash_evidence import CrashEvidence
+    report = (
+        "==1==ERROR: AddressSanitizer: heap-use-after-free on address 0x602\n"
+        "READ of size 4 at 0x602 thread T0\n"
+        "    #0 0x11 in use_it /src/p/a.c:20:3\n"
+        "    #1 0x22 in api_call /src/p/a.c:40:5\n"
+        "freed by thread T0 here:\n"
+        "    #0 0x33 in free /asan/asan_malloc_linux.cpp:52:3\n"
+        "    #1 0x44 in release_it /src/p/a.c:10:3\n")
+    ev = CrashEvidence.from_run(report, triggered=True)
+    # Merging the two stacks would put the allocator on the path a variant
+    # harness is told to re-enter.
+    assert [f.function for f in ev.frames] == ["use_it", "api_call"]
+    assert [f.function for f in ev.alloc_frames] == ["release_it"]
+    assert ev.names[0] == "use_it"
+    print("ok  crash evidence keeps the faulting and allocation stacks apart")
+
+
+def test_covered_keys_reconciles_sanitizer_and_index_spellings():
+    from oss_fuzz.analysis import covered_keys
+    region = ["fmt::Reader::Read", "fmt::Reader::Validate", "tag_read"]
+    # ASan prints a demangled, argument-bearing, fully qualified name; the index
+    # may hold either spelling. Without the trailing-segment fallback the
+    # covered half of the steering reads as "nothing covered" on every C++
+    # target, which is worse than not steering: it asserts a false negative.
+    assert covered_keys(["Read"], region) == ["fmt::Reader::Read"]
+    assert covered_keys(["fmt::Reader::Validate"], region) == \
+        ["fmt::Reader::Validate"]
+    assert covered_keys(["tag_read", "unrelated"], region) == ["tag_read"]
+    print("ok  covered keys match across sanitizer/index spellings")
+
+
+def test_campaign_folds_reached_functions_into_covered():
+    """Phase-0 regression: ``GenResult.covered`` was declared and never set.
+
+    So ``CampaignResult.covered`` was always empty and the variant block's
+    "functions covered / uncovered functions to steer toward" half never
+    rendered on any C/C++ run — the campaign steered on crash signatures alone
+    while the prompt described a coverage map nothing was measuring.
+    """
+    from oss_fuzz.ossfuzz import RunOutcome
+    from oss_fuzz.campaign import HarnessCampaign
+
+    class _Gen:
+        def generate(self, messages):
+            return "```c\nint LLVMFuzzerTestOneInput(const uint8_t *d, " \
+                   "size_t s){return 0;}\n```"
+
+    sigs = ["ASan:overflow@tag_read", "ASan:overflow@tag_read", "other"]
+    reached = [["tag_read", "tag_len"], ["demo_parse"], ["helper_fn"]]
+    calls = {"n": 0}
+
+    class _Of:
+        def build_harness(self, *a, **k):
+            return "/out/bin"
+
+        def run_fuzzer(self, project, harness_name, seconds, sanitizer,
+                       bug_class=None, log_tag=None, seeds=None):
+            i = calls["n"]
+            calls["n"] += 1
+            return RunOutcome(triggered=True, timed_out=False, returncode=1,
+                              crash_reason="ASan", signature=sigs[i],
+                              found_by="sanitizer", reached=reached[i])
+
+    camp = HarnessCampaign(generator=_Gen(), oss_fuzz=_Of(), project="demo",
+                           vuln_checkout=None, sanitizer="address", ext=".c",
+                           target_successes=2, max_attempts=3)
+    seen_covered = []
+    result = camp.run(lambda covered, sigs_: seen_covered.append(list(covered))
+                      or [{"role": "user", "content": "x"}])
+    assert result.achieved == 2, result.achieved
+    # Attempt 1 accepted (tag_read, tag_len). Attempt 2 triggered but re-found
+    # the same signature — rejected as evidence, yet it demonstrably walked
+    # demo_parse, which is ground the next harness should not re-spend itself on.
+    # Attempt 3 accepted with a distinct signature.
+    assert result.covered == ["tag_read", "tag_len", "helper_fn", "demo_parse"], \
+        result.covered
+    assert result.also_covered == ["demo_parse"]
+    # And the steering actually saw it: the third prompt was built with the
+    # first two attempts' coverage in hand.
+    assert seen_covered[-1] and "tag_read" in seen_covered[-1], seen_covered
+    print("ok  campaign folds reached functions into the covered set")
+
+
+def test_seed_corpus_is_copied_fresh_for_every_run():
+    from oss_fuzz.ossfuzz import OssFuzz, seed_corpus_from_poc
+    import tempfile
+    assert seed_corpus_from_poc(None) is None
+    assert seed_corpus_from_poc("/does/not/exist") is None
+
+    poc = os.path.join(tempfile.mkdtemp(), "poc.bin")
+    with open(poc, "wb") as fh:
+        fh.write(b"\x89PNG\r\n")
+    seeds = seed_corpus_from_poc(poc)
+    assert seeds and os.listdir(seeds) == ["poc"]
+
+    of = OssFuzz(oss_fuzz_dir=tempfile.mkdtemp(),
+                 work_dir=tempfile.mkdtemp(), dry_run=False)
+    a, b = of._fresh_corpus(seeds), of._fresh_corpus(seeds)
+    # Two runs must not share a corpus directory: libFuzzer writes every
+    # interesting input it finds into it, so sharing would make each harness's
+    # trigger verdict depend on what the previous one happened to discover.
+    assert a != b
+    assert open(os.path.join(a, "poc"), "rb").read() == b"\x89PNG\r\n"
+    assert open(os.path.join(b, "poc"), "rb").read() == b"\x89PNG\r\n"
+    print("ok  seed corpus is staged fresh per run")
+
+
+def test_prompt_carries_the_reference_harness_and_observed_crash():
+    from oss_fuzz.crash_evidence import CrashEvidence
+    from oss_fuzz.ossfuzz import harness_source
+    tmp = _idx_tree()
+    src = harness_source(tmp, "fuzz/demo_fuzzer.c")
+    assert src and "LLVMFuzzerTestOneInput" in src
+    assert harness_source(tmp, None) is None
+    assert harness_source(tmp, "nope.c") is None
+
+    poc = os.path.join(tmp, "poc.bin")
+    with open(poc, "wb") as fh:
+        fh.write(b"\x3f" + b"A" * 8)
+    ev = CrashEvidence.from_run(_ASAN_REPORT, poc_path=poc, triggered=True)
+    user = LibFuzzerPromptBuilder("c").build(
+        context=_ctx_for_prompt(), covered_functions=[], found_signatures=[],
+        harness_name="demo_fuzzer", base_harness="fuzz/demo_fuzzer.c",
+        base_harness_source=src, crash_evidence=ev)[1]["content"]
+    assert "REFERENCE HARNESS (fuzz/demo_fuzzer.c)" in user
+    assert "demo_parse(data, size);" in user
+    assert "Do not copy it unchanged" in user
+    # Observed, and said to be observed — the qualifier the OSV prose cannot
+    # carry and that every downstream claim depends on.
+    assert "The ORIGINAL bug, OBSERVED" in user
+    assert "WRITE of size 63" in user
+    # The container's /src/<project>/ mount prefix is stripped: the model was
+    # shown these files under their project-relative names, and two spellings of
+    # one path in a single prompt invite it to treat them as two files.
+    assert "tag_read  [src/tag.c:11]" in user, user
+    assert "/src/demo/" not in user
+    # The PoC's shape, with the instruction not to hard-code it.
+    assert "the recorded PoC is 9 bytes" in user
+    assert "3f 41 41" in user and "|?AAAAAAAA|" in user
+    assert "Do NOT hard-code these bytes" in user
+
+    # With no evidence at all the block is absent rather than empty.
+    plain = LibFuzzerPromptBuilder("c").build(
+        context=_ctx_for_prompt(), covered_functions=[],
+        found_signatures=[], harness_name="h")[1]["content"]
+    assert "REFERENCE HARNESS" not in plain
+    assert "ORIGINAL bug" not in plain
+    # And the OSV prose still renders, flagged as a report rather than a run.
+    prose = LibFuzzerPromptBuilder("c").build(
+        context=_ctx_for_prompt(), covered_functions=[], found_signatures=[],
+        harness_name="h", crash_type="Heap-buffer-overflow READ 1",
+        crash_state=["parse_thing", "read_all"])[1]["content"]
+    assert "not a run we reproduced" in prose
+    assert "parse_thing <- read_all" in prose
+    print("ok  prompt carries the reference harness and the observed crash")
 
 
 if __name__ == "__main__":

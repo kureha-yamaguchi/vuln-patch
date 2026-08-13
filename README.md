@@ -122,6 +122,11 @@ All settings are env-driven via [src/config.py](src/config.py):
 | `REACHABLE_NODE_CAP` | `200` | Budget for the reachable-set BFS: max functions visited (also `--reachable_node_cap`) |
 | `REACHABLE_MAX_DEPTH` | `3` | Max call-graph depth for the reachable-set BFS; direct callees are depth 1 (also `--reachable_max_depth`) |
 
+C/C++ only — the code index behind the root-cause region (see
+[src/oss_fuzz/README.md](src/oss_fuzz/README.md#setup) for the rest):
+`MAX_CALLERS_IN_PROMPT` (`6`), `OSS_FUZZ_INDEX_FILE_CAP` (`4000`),
+`ENTRY_BFS_NODE_CAP` (`500000`).
+
 Example — use LM Studio instead of Ollama:
 
 ```bash

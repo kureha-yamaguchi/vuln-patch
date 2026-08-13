@@ -20,7 +20,7 @@ Java copy should be unified with this one, that is a deliberate refactor of
 This module deliberately has no third-party imports (no javalang, no clang)
 so either front-end can import it without dragging in the other's toolchain.
 """
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import config
 
@@ -28,7 +28,8 @@ import config
 def variant_analysis_directive(reachable: List[str],
                                covered: List[str],
                                signatures: List[str],
-                               cap: Optional[int] = None) -> str:
+                               cap: Optional[int] = None,
+                               labels: Optional[Dict[str, str]] = None) -> str:
     """Steer successive harnesses across the root-cause neighbourhood.
 
     ``reachable`` are the functions in/around the patched region (the head of
@@ -37,12 +38,24 @@ def variant_analysis_directive(reachable: List[str],
     used to push the next harness at something new. The wording is neutral
     ("function", "call graph") so it reads correctly for methods and free
     functions alike.
+
+    ``labels`` optionally maps a name to a richer one-line rendering (its
+    signature, where it lives, whether an existing fuzz target reaches it). The
+    KEYS stay the plain names, so coverage matching is unaffected by however the
+    caller chooses to display them — a front-end that has a static index can
+    hand the model a map instead of a word list without either side having to
+    agree on a format. Omitted (the default) reproduces the original output
+    byte for byte.
     """
     if cap is None:
         cap = config.MAX_REACHABLE_IN_PROMPT
     shown = reachable[:cap]
     covered_set = set(covered)
     remaining = [r for r in shown if r not in covered_set]
+
+    def render(name: str) -> str:
+        return (labels or {}).get(name, name)
+
     parts: List[str] = [
         "This harness is ONE of a set probing the root cause of"
         " the vulnerability the patch under analysis is meant to fix."
@@ -51,7 +64,7 @@ def variant_analysis_directive(reachable: List[str],
         "  (a) lives in this region (same function or call graph), AND\n"
         "  (b) stems from the SAME root cause\n"
         "<root_cause_reachable>",
-        *(f"- {name}" for name in shown),
+        *(f"- {render(name)}" for name in shown),
         "</root_cause_reachable>",
     ]
     if len(reachable) > cap:
@@ -66,13 +79,13 @@ def variant_analysis_directive(reachable: List[str],
         )
         if covered:
             parts.append("Functions covered:")
-            parts.extend(f"- {c}" for c in sorted(covered_set))
+            parts.extend(f"- {render(c)}" for c in sorted(covered_set))
         if signatures:
             parts.append("Crashes already found:")
             parts.extend(f"- {s}" for s in signatures)
         if remaining:
             parts.append("Uncovered functions to steer toward:")
-            parts.extend(f"- {r}" for r in remaining)
+            parts.extend(f"- {render(r)}" for r in remaining)
     else:
         parts.append(
             "First harness: establish the most direct path from the"

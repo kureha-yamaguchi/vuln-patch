@@ -72,6 +72,11 @@ class CampaignResult:
     successful: List[GenResult] = field(default_factory=list)
     attempts: int = 0
     target_successes: int = 5
+    # Functions reached by harnesses that triggered but were NOT accepted (they
+    # re-found a crash the set already had). They are not evidence, but they are
+    # coverage: the region they walked is ground the next harness should not
+    # spend itself on again, which is the entire purpose of the covered list.
+    also_covered: List[str] = field(default_factory=list)
     # Set when the campaign stopped because the build environment could not
     # build ANY harness (see ossfuzz._infra_error). Distinguishes "the method
     # found nothing" from "the run never got off the ground".
@@ -99,9 +104,22 @@ class CampaignResult:
 
     @property
     def covered(self) -> List[str]:
+        """Every root-cause-region function the set has demonstrably entered.
+
+        This was the steering half that never worked: ``GenResult.covered`` was
+        declared and never assigned, so this list was always empty, and the
+        variant-analysis block's "functions covered / uncovered functions to
+        steer toward" section never rendered on a single C/C++ run. The campaign
+        steered on crash signatures alone while the prompt described a coverage
+        map of the neighbourhood that nothing was measuring.
+        """
         out: List[str] = []
-        for g in self.successful:
-            out.extend(g.covered)
+        seen: set = set()
+        for name in ([n for g in self.successful for n in g.covered]
+                     + self.also_covered):
+            if name not in seen:
+                seen.add(name)
+                out.append(name)
         return out
 
 
@@ -123,7 +141,8 @@ class HarnessCampaign:
                  target_successes: int = 5, max_attempts: int = 30,
                  verify_seconds: int = 60,
                  bug_class: Optional[BugClass] = None,
-                 artifacts=None):
+                 artifacts=None,
+                 seeds: Optional[str] = None):
         self.generator = generator
         self.of = oss_fuzz
         self.project = project
@@ -144,6 +163,10 @@ class HarnessCampaign:
         # attempts and accepts nothing is the case most in need of explaining,
         # and it is exactly the case that leaves nothing behind otherwise.
         self.artifacts = artifacts
+        # Directory of starting inputs for the trigger gate (the recorded PoC,
+        # when --reproducer supplied one). A fresh copy per run — see
+        # OssFuzz.run_fuzzer — so no harness's verdict depends on another's.
+        self.seeds = seeds
         # The stock-build question is asked at most once per campaign; see run().
         self._stock_checked = False
         # Header paths the compiler has already failed to find in this project.
@@ -284,7 +307,8 @@ class HarnessCampaign:
                         else name)
             outcome = self.of.run_fuzzer(
                 self.project, run_name, self.verify_seconds, self.sanitizer,
-                bug_class=self.bug_class, log_tag=f"verify_{name}")
+                bug_class=self.bug_class, log_tag=f"verify_{name}",
+                seeds=self.seeds)
             if outcome.triggered and outcome.signature in result.signatures:
                 # Distinct-finding gate. Five harnesses that all re-find one
                 # crash satisfy `target_successes=5` while carrying one piece
@@ -301,6 +325,9 @@ class HarnessCampaign:
                 # crash report stall the campaign to max_attempts.
                 print(f"  triggers, but re-finds a crash the set already has "
                       f"[{outcome.signature}]; steering off it")
+                for fn in outcome.reached:
+                    if fn not in result.also_covered:
+                        result.also_covered.append(fn)
                 repair_context = (
                     f"That harness works, but it reproduces "
                     f"`{outcome.signature}` — a crash this set has already "
@@ -323,9 +350,16 @@ class HarnessCampaign:
                         outcome.found_by != self.bug_class.oracle:
                     print(f"  note: expected a {self.bug_class.oracle} "
                           f"finding for this {self.bug_class.kind} bug")
+                if outcome.reached:
+                    print(f"  reached: {', '.join(outcome.reached[:6])}"
+                          + (" ..." if len(outcome.reached) > 6 else ""))
                 result.successful.append(GenResult(
                     harness_name=name, source=source, ext=self.ext,
-                    signature=outcome.signature, found_by=outcome.found_by))
+                    signature=outcome.signature, found_by=outcome.found_by,
+                    # The functions the crash stack proves this harness entered.
+                    # Folded into the next prompt's covered list so the set
+                    # spreads across the region instead of re-walking one path.
+                    covered=list(outcome.reached)))
             else:
                 print("  compiled but did not trigger on the vulnerable "
                       "build; re-steering")

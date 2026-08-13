@@ -18,9 +18,9 @@ This is the C/C++ version of `src/java` (Defects4J + Jazzer). It shares that pip
 | 4. Pick a bug | `osv.py` | Ask OSV for the project's bugs, newest first. Keep ones with a fix commit. Pull the crash type and crash stack out of the text. |
 | 4b. Classify it | `bugclass.py` | Crashing or semantic — i.e. will a sanitizer report a sibling of this bug, or must the harness notice it itself? Decides the prompt's oracle contract, a pre-build gate, the fuzzing flags and how a HEAD finding is reported. |
 | 5. Get the code | `ossfuzz.py` | Clone the project's own repo, then make two checkouts: `vuln` (the commit before the fix) and `head` (latest). |
-| 6. Work out what the fix touched | `analysis.py` | Diff the two commits, list the changed functions, and expand them into the surrounding call graph. This is what the prompt steers toward. |
+| 6. Work out what the fix touched | `analysis.py`, `callgraph.py` | Diff the two commits and list the changed functions; add the functions the original crash stack named; then index the checkout and expand into the surrounding call graph in **both directions** — callees downstream, callers upstream, plus a concrete route in from an existing fuzz target. This is what the prompt steers toward. |
 | 7. Decide how to compile | `ossfuzz.py` | Choose `crib` or `overwrite` (see below) — before pulling the Docker image, so an impossible choice fails early. |
-| 8. Build the image | `ossfuzz.py` | `helper.py build_image`. Optionally replay a known crashing input with `--reproducer`. |
+| 8. Build the image, replay the PoC | `ossfuzz.py`, `crash_evidence.py` | `helper.py build_image`. With `--reproducer`, replay the recorded testcase against the vulnerable build using the project's own fuzz target and keep the sanitizer report — the observed crash type, every frame with file and line, the allocation stack. That report goes into the prompt as ground truth, and the PoC seeds the trigger gate's fuzz runs. |
 | 9. Generate and test harnesses | `campaign.py` | The main loop, described below. |
 | 10. Run the survivors on HEAD | `run.py` | Rebuild each accepted harness against the latest code and fuzz it. A crash here is a sibling bug. |
 | 11. Report | `run.py` | Print a summary; optionally append a JSON line with `--results-json` and the run's evidence with `--artifacts-dir`. |
@@ -32,8 +32,11 @@ run moves on to the next-newest bug instead (`--max-target-tries`).
 **Step 9, the main loop.** Repeat until `-n` harnesses are accepted or `-m`
 attempts are used up:
 
-1. `prompts.py` builds the prompt from the fix diff, the crash stack, and the
-   list of functions to aim at.
+1. `prompts.py` builds the prompt from the fix diff, the observed (or reported)
+   crash, the bodies of the touched *and* faulting functions, the project's own
+   existing fuzz target as a reference harness, and the annotated root-cause
+   region — each entry with its signature, location, callers and whether an
+   existing target already reaches it.
 2. `llm.py` returns a reply; the code block is pulled out of it.
 3. The harness is put into the `vuln` checkout and built with
    `helper.py build_fuzzers`.
@@ -71,8 +74,8 @@ that only exist inside the process are gone when it exits:
 |---|---|
 | `inputs/generation-input.json` | one record tying the three steering inputs to the commits they came from |
 | `inputs/fix.diff` | the fix diff, verbatim and uncapped (the prompt truncates it at 6000 chars) |
-| `inputs/trigger.txt`, `inputs/poc.bin` | the original bug's triggering evidence — crash type and crashing stack, plus the PoC input itself when `--reproducer` supplied one |
-| `inputs/reachable.txt` | the extracted reachable-function set, and which analyser produced it (`fuzz-introspector` or the degraded `heuristic` fallback — also in `results.jsonl` as `reachable_source`, so a sweep can count how often the steering degraded) |
+| `inputs/trigger.txt`, `inputs/poc.bin` | the original bug's triggering evidence — crash type and crashing stack, plus the PoC input itself when `--reproducer` supplied one. When the PoC could be replayed, also what the sanitizer actually printed on the vulnerable build, marked as the only part of the file that was measured rather than quoted (`evidence_source: observed` vs `osv`) |
+| `inputs/reachable.txt` | the root-cause region, one function per line, annotated exactly as the prompt sees it: tier, signature, location, internal linkage, and whether an existing fuzz target reaches it. The JSON record adds which analyser produced it (`code-index` or the degraded `heuristic` fallback), how many seeds the index could resolve (`seeds_resolved`), and what the index cost or capped (`index_stats`) — so a sweep can count how often the steering degraded *and* tell a real empty neighbourhood from a truncated one |
 | `prompts/attempt_NNN.txt` | the exact messages sent to the model — one per attempt, since re-steering and build-repair turns change them |
 | `harnesses/vp_harness_N.<ext>` | every generated harness, including the rejected ones |
 | `fuzz/verify_*.log`, `fuzz/head_*.log` | the engine's own output per run: `verify_` on the vulnerable build (the acceptance gate), `head_` on HEAD (the sibling claim) |
@@ -174,14 +177,26 @@ called through a deliberately small interface:
 | Shared file | How this front-end uses it |
 |---|---|
 | `src/llm.py` | Send a list of messages, get text back. Nothing else. It is imported only when needed, so `--dry-run` works without an LLM library installed. |
-| `src/variant.py` | The steering rule itself: "aim the next harness at a part of the fix's neighbourhood that earlier harnesses missed." `prompts.py` calls it with the reachable functions, the functions already covered, and the crashes already found. Extracted from the Java `PromptBuilder`, which still carries its own copy — see the note below. |
+| `src/variant.py` | The steering rule itself: "aim the next harness at a part of the fix's neighbourhood that earlier harnesses missed." `prompts.py` calls it with the reachable functions, the functions already covered, and the crashes already found — plus an optional `labels` map, so this front-end can render each entry with its signature and location while the rule still matches coverage on plain names. Extracted from the Java `PromptBuilder`, which still carries its own copy — see the note below. |
 | `src/config.py` | All settings and their environment-variable defaults. |
 
 What is specific to C/C++ and therefore lives here: the prompt wording and byte
 handling for `LLVMFuzzerTestOneInput` (`prompts.py`), the diff analysis
-(`analysis.py`), the crashing/semantic classification (`bugclass.py` — same
-split as the Java front-end, but read off ClusterFuzz crash types rather than
-JUnit throwables), and everything that builds and runs harnesses (`ossfuzz.py`).
+(`analysis.py`), the call graph over a checkout (`callgraph.py`), reading a
+sanitizer report (`crash_evidence.py`), the crashing/semantic classification
+(`bugclass.py` — same split as the Java front-end, but read off ClusterFuzz
+crash types rather than JUnit throwables), and everything that builds and runs
+harnesses (`ossfuzz.py`).
+
+Where the two front-ends carry the *same idea* under different names:
+
+| Idea | Java | Here |
+|---|---|---|
+| The artefact that shows how to reach the bug | the failing JUnit test's body, its `setUp` and its fixtures (`bug_context/failure_test.py`) | the project's own existing fuzz target, quoted in full — it compiles in this project's OSS-Fuzz build today, so its includes, types and initialisation are all known to work (`ossfuzz.harness_source`) |
+| Verified evidence of the original failure | run the trigger test on the buggy checkout and capture the throwable, message, throw site and crashing literal (`bug_context/crash_input.py`) | replay the recorded PoC on the vulnerable build with the project's own target and capture the sanitizer report — crash type, faulting access, every frame with file and line, the allocation stack (`crash_evidence.py`) |
+| Anchor input | the exact crashing value, hard-coded as call #1 then fuzzed around | the PoC's size and a hex/ASCII preview of its head, plus the same bytes as a **seed corpus** for the trigger gate. Weaker on purpose: under `overwrite` the PoC was shaped for the file we replaced, so it is a starting point for mutation, not a guaranteed trigger |
+| How to get *in* to the root cause | `xrefs` — the callers fuzz-introspector found (`bug_context/analysis.py`) | the reverse call graph, plus a shortest route from a real `LLVMFuzzerTestOneInput` where one exists (`callgraph.CodeIndex`) |
+| What the harness set has covered | project frames from the Jazzer crash trace (`execution/fuzz_runner.covered_functions`) | project frames from the libFuzzer/ASan report (`crash_evidence.reached_functions`) |
 
 The rule for accepting a harness — crashes the vulnerable build, not just
 compiles — is the same as in the Java pipeline, and `campaign.py` is the only
@@ -334,6 +349,16 @@ Settings live in `src/config.py` and can all be set by environment variable:
 | `OSS_FUZZ_VERIFY_TIMEOUT` | `120` | seconds to test each harness on the vulnerable build |
 | `OSS_FUZZ_FUZZ_TIMEOUT` | `600` | seconds to fuzz each accepted harness on HEAD |
 | `OSV_API_URL` | `https://api.osv.dev/v1` | where bugs come from |
+
+Shared with the Java front-end, and all four shape the root-cause region:
+
+| Var | Default | Meaning |
+|-----|---------|---------|
+| `MAX_REACHABLE_IN_PROMPT` | `60` | how many region entries the prompt lists. The list is **ranked** before it is cut — crash-stack frames, then touched functions, then routes in, then callees by depth — so the truncation falls at the far end of the neighbourhood rather than wherever the search happened to stop |
+| `REACHABLE_NODE_CAP` / `REACHABLE_MAX_DEPTH` | `200` / `3` | budget for the downstream BFS; also `--reachable_node_cap` / `--reachable_max_depth` |
+| `MAX_CALLERS_IN_PROMPT` | `6` | callers listed per seed function as routes in |
+| `OSS_FUZZ_INDEX_FILE_CAP` | `4000` | source files indexed. Reported when it bites (`index_stats`), since a truncated index otherwise reads as a small neighbourhood |
+| `ENTRY_BFS_NODE_CAP` | `500000` | backstop on the one search that decides whether an existing fuzz target already reaches each function. Set far above any real project on purpose: an unfinished search does not answer slowly, it answers *wrongly*, and the prompt would tell the model to open its own route in on the strength of it. If it ever bites, the claim is downgraded to "not determined" and a warning is printed |
 
 ## Usage
 
@@ -503,7 +528,7 @@ is not run under ASan, where the harness would compile and never crash.
 python src/oss_fuzz/tests/test_offline.py     # or: pytest src/oss_fuzz/tests
 ```
 
-48 tests, no Docker, network, or LLM needed. They cover bug selection, crash
+94 tests, no Docker, network, or LLM needed. They cover bug selection, crash
 parsing and sanitizer choice, `project.yaml` parsing, the checkout and project
 checks, candidate discovery, diff analysis, both compile strategies (including
 that `overwrite` restores the tree exactly and never edits `build.sh`), crash
@@ -512,6 +537,30 @@ The crashing/semantic split is covered end to end: classification over
 ClusterFuzz's crash-type vocabulary, evidence ranking in `finding_oracle`,
 signature separation, the pre-build oracle gate firing on semantic runs and
 staying out of the way on crashing ones.
+
+The context and reachability work has its own regression tests, each pinned to
+the specific way it used to be wrong:
+
+- the code index resolves callers and entry-point routes **on a C project**,
+  which is the case where the old `all_functions` read returned nothing at all;
+- C++ namespaced names, header-inline definitions, and a signature with the
+  right arity (rebuilding it from the frontend's empty `arg_types` produced
+  `int Validate()` for a two-argument method);
+- the region is seeded by the crash stack as well as the diff, tiers a function
+  that is both `crash-frame+touched`, ranks seeds first, and never lists
+  `LLVMFuzzerTestOneInput` as a steering target;
+- a truncated route search reports "not determined", never "no existing target
+  reaches it";
+- the campaign folds reached functions into `covered` (it was declared and never
+  assigned, so the covered/uncovered steering never rendered), including from a
+  harness that triggered but was rejected as a duplicate;
+- the sanitizer-report parser: demangled C++ symbols with spaces, libc and
+  libFuzzer frames dropped, the allocation stack kept separate from the faulting
+  one, and an unparseable report leaving the OSV prose in place;
+- `covered_keys` matching a sanitizer's spelling of a function against the
+  index's;
+- a seed corpus staged fresh per run, so no harness's verdict depends on what
+  another one discovered.
 
 ## Limits and gotchas
 
@@ -547,15 +596,37 @@ staying out of the way on crashing ones.
   not compile" would waste every attempt on a file that never reached a
   compiler and then report zero siblings, so those runs stop after one attempt
   and exit 2.
-- **Crashing inputs are usually unavailable.** OSS-Fuzz testcases are embargoed
-  until disclosure, so the original input is optional here: the pipeline works
-  out its own crashing harnesses from the fix diff. Pass `--reproducer <path>`
-  if you do have the testcase.
-- **The reachable function list is approximate.** It comes from
-  fuzz-introspector's lightweight (no-build) parser, which needs the optional
-  extra (`uv sync --extra introspector`). Without it, or on timeout, a simpler
-  brace-matching fallback is used, and the run prints which one it used. Either
-  way this only steers the prompt — the crash test decides what is accepted.
+- **Crashing inputs are usually unavailable, and that costs more than a prompt
+  line.** OSS-Fuzz testcases are embargoed until disclosure, and OSV's
+  reproducer URLs are login-gated, so nothing is fetched automatically: a PoC
+  exists here only if you pass `--reproducer <path>`. Without one, three things
+  are unavailable at once — the crash cannot be replayed (so the crash block is
+  the report's prose rather than an observed sanitizer report), there is no
+  input shape to describe, and the trigger gate's fuzz runs start from an empty
+  corpus with their whole `--verify-timeout` to rediscover the input format.
+  With one, all three improve. The pipeline still works without it — it derives
+  its own crashing harnesses from the fix diff — but a run with a PoC and a run
+  without are not equally well steered, and a sweep mixing them should say so.
+- **The root-cause region is approximate.** It comes from tree-sitter parsing
+  (no build), which needs the optional extra (`uv sync --extra introspector`).
+  Calls through function pointers, vtables and macros can be missing, so a route
+  the prompt does not show may still exist — the prompt says as much. Without
+  the extra, or on timeout, a simpler brace-matching fallback is used and
+  `reachable_source` records `heuristic` instead of `code-index`. Either way
+  this only steers the prompt — the crash test decides what is accepted.
+
+  Two things worth knowing about the numbers here. First, until this was
+  rewritten, **the analysis was silently inert on every pure-C project**: it
+  read `project.all_functions` off fuzz-introspector's `analyse_folder`, which
+  `CProject` never assigns (it builds its report from a separate list), so the
+  function map came back empty, no touched name resolved, and every C run fell
+  back to the heuristic *after* paying for a full parse. Only C++ projects were
+  ever getting a call graph. Second, indexing the frontends directly rather than
+  through `analyse_folder` skips its per-function O(N²) metrics and per-harness
+  calltree extraction: measured on this box, a 3000-file / 36000-function tree
+  indexes in ~50s, against the 500–1300s `analyse_folder` was taking on
+  open62541 and ogre. `INTROSPECTOR_TIMEOUT_SECONDS` still bounds it, and
+  `index_stats` in the artifacts record says what was capped.
 - **A harness oracle can be wrong.** For semantic bugs the harness asserts a
   relation it chose itself, and a relation that is not universally true fires on
   the vulnerable build *and* on HEAD — which looks exactly like a sibling. The

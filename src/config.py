@@ -229,6 +229,33 @@ REACHABLE_TIMEOUT_SECONDS = int(os.getenv('REACHABLE_TIMEOUT_SECONDS', '30'))
 INTROSPECTOR_TIMEOUT_SECONDS = int(
     os.getenv('INTROSPECTOR_TIMEOUT_SECONDS', '1800'))
 
+# Bounds on the C/C++ code index (oss_fuzz/callgraph.py). That index is built
+# straight from the tree-sitter frontends rather than through analyse_folder, so
+# it skips generate_report's O(N^2) per-function metrics and the per-harness
+# calltree extraction — but it still parses every source file it is given, which
+# on a large monorepo is the dominant cost of the whole analysis step. Both caps
+# are reported when they bite (IndexStats.describe): a silently truncated index
+# reads as "the neighbourhood is small", which is the one conclusion it must not
+# be allowed to suggest.
+INDEX_FILE_CAP = int(os.getenv('OSS_FUZZ_INDEX_FILE_CAP', '4000'))
+INDEX_FUNCTION_CAP = int(os.getenv('OSS_FUZZ_INDEX_FUNCTION_CAP', '40000'))
+
+# How many of a root-cause function's callers to show as routes in, and how many
+# frames of a route from a real fuzz target to print. Callers are the direction
+# a libFuzzer harness actually needs (the Java front-end's `xrefs`); the cap
+# exists because a utility called from 200 places says nothing by listing them.
+MAX_CALLERS_IN_PROMPT = int(os.getenv('MAX_CALLERS_IN_PROMPT', '6'))
+MAX_ENTRY_PATH_FRAMES = int(os.getenv('MAX_ENTRY_PATH_FRAMES', '8'))
+
+# Backstop on the one BFS from the project's existing fuzz entry points that
+# decides, for every function, whether a target already reaches it. Deliberately
+# far above any real project: it is a single O(edges) pass over an in-memory
+# graph (36k functions traverse in under a second), and an UNFINISHED search
+# does not merely answer slowly — it answers wrongly, reporting reachable
+# functions as unreachable. CodeIndex downgrades the claim to "not determined"
+# and warns if this ever bites, rather than letting the prompt assert it.
+ENTRY_BFS_NODE_CAP = int(os.getenv('ENTRY_BFS_NODE_CAP', '500000'))
+
 # Depth cap for fuzz-introspector's method-depth metric. Its stock
 # calculate_method_depth is an unbounded O(N^2+) DFS that stalls on large
 # libraries (Math-2's commons-math3). We patch it to a depth-bounded recursion
