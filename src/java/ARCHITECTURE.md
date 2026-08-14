@@ -19,6 +19,9 @@ and `config` / `llm` (which live in `src/`) resolve too.
 
 `config.py` and `llm.py` stay in `src/` (shared, imported flat as `config` / `llm`).
 
+See `PROMPT_ANATOMY.md` for a block-by-block breakdown of the crashing-bug
+harness prompt built by `harness/prompts.py`.
+
 ## Import rule
 Intra-package imports are absolute: `from java.execution.fuzz_runner import …`.
 Direct-entry scripts (`run`, `verifier_replay`, `dataset/*`) anchor `sys.path`
