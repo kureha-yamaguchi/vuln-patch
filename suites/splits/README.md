@@ -1,5 +1,8 @@
 # suites/splits — semantic dev/holdout split
 
+> The crashing counterpart is `crashing_split.jsonl`, documented in
+> `README_crashing.md` (frozen 2026-08-14, seed `20260814`, 60/40).
+
 `semantic_split.jsonl` — the frozen **60/40 bug-level split** of the certified
 semantic pool. One row per bug: `{project, bug_id, side, overfit_legs,
 correct_legs, used_in_tuning}`.
