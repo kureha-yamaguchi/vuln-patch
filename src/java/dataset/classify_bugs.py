@@ -73,7 +73,12 @@ def main():
     parser.add_argument(
         "--projects-dir",
         type=Path,
-        default=Path(__file__).resolve().parent.parent.parent
+        # parents[3] is the repo root (dataset -> java -> src -> repo), matching
+        # make_crashing_split.py. Three .parent hops stopped at src/, so the
+        # default pointed at a non-existent src/defects4j and every run raised
+        # FileNotFoundError -- which evaluate_crashing.sh then turned into a
+        # silent "0 patches queued" rather than an error.
+        default=Path(__file__).resolve().parents[3]
         / "defects4j" / "framework" / "projects",
         help="Path to defects4j/framework/projects",
     )

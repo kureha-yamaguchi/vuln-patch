@@ -75,9 +75,28 @@ Math 5/2/3/0.
 - Resolve each split bug's patches from `suites/labels/crashing/verified_correct.jsonl`
   (recall = `drr_label=="overfitting"`, precision = `drr_label=="correct"`); never
   source a patch listed in that directory's `verified_incorrect.jsonl` / `excluded.jsonl`.
-- The crashing pipeline entry point is `scripts/evaluate_crashing.sh`. Its default
-  balanced random sample (`SAMPLE_SIZE=60`, `SEED=42`) is **not** split-aware —
-  build the queue from this file instead when running dev or holdout.
+- The crashing pipeline entry point is `scripts/evaluate_crashing.sh`, which is
+  split-aware via `-s`:
+
+  ```bash
+  scripts/evaluate_crashing.sh -s dev        # tune / iterate here  (8 bugs, 32 patches)
+  scripts/evaluate_crashing.sh -s holdout    # final numbers only  (10 bugs, 51 patches)
+  ```
+
+  With `-s` the queue is built from this file joined against
+  `verified_correct.jsonl`, and **every** certified patch on that side runs —
+  `SAMPLE_SIZE`/`SEED` do not apply, and the `classify_bugs.py` pre-filter is
+  skipped (this split's population is already crashing-only). Run it with
+  `DRY_RUN=1` to print the queue and stop.
+
+  Without `-s` you get the legacy balanced random sample (`SAMPLE_SIZE=60`,
+  `SEED=42`), which is **not** split-aware and straddles both sides — a smoke
+  test, never a reported number.
+
+  `-s` is a flag rather than an env var deliberately: an exported `SPLIT=holdout`
+  would persist for a whole shell and leak the holdout into later runs unnoticed,
+  and a mistyped *variable name* is undetectable — it would silently fall through
+  to the random sample. A bad `-s` value hard-fails.
 - Semantic bugs are out of scope here (see `semantic_split.jsonl` / `README.md`).
 
 ## Regenerating
@@ -85,3 +104,15 @@ Math 5/2/3/0.
 Deterministic from the label truth + `logs/` at the seed above. If the certified
 set or the tuning trail changes, re-freeze with a new dated seed and note it here
 (don't silently reshuffle — that would re-leak the holdout).
+
+**Run this by hand only.** `evaluate_crashing.sh -s` *reads* `crashing_split.jsonl`
+and never regenerates it. The generator is deterministic given its inputs, but
+those inputs are live: it globs `logs/` and reads the label files, so certifying
+a bug or dropping in one experiment log changes the draw. Certifying a single
+extra Math bug, for instance, moves Math-32 and Math-79 (the untouched dev smoke
+checks) into the holdout and Math-70 out of it. Regenerating inside the eval path
+would make that happen automatically, on a path nobody inspects.
+
+Each `-s` run therefore copies the split it used into its output directory
+alongside `split_provenance.txt` (the file's git commit), so an old result stays
+interpretable after a future re-freeze.

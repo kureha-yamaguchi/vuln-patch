@@ -164,6 +164,41 @@ cd src && uv run java/run.py --overfitting --project_name Lang -n 5 -m 50
 | `--verify_timeout` | Seconds Jazzer runs per harness against the *buggy* code to verify it triggers before acceptance (default: `VERIFY_TIMEOUT_SECONDS`, 20) |
 | `--no-require-trigger` | Accept harnesses on compile alone (old behaviour); skips the buggy-version trigger gate. For ablation experiments |
 
+#### Evaluating the crashing-bug classifier
+
+`run.py` handles one patch. To score the confusion matrix over a whole set of
+patches, use `scripts/evaluate_crashing.sh`, which runs the pipeline per patch and
+aggregates precision / recall / F1. It reads the frozen dev/holdout split at
+[suites/splits/crashing_split.jsonl](suites/splits/crashing_split.jsonl):
+
+```bash
+# tune / iterate here — 8 bugs, 32 certified patches (15 overfitting, 17 correct)
+scripts/evaluate_crashing.sh -s dev
+
+# final headline numbers — 10 bugs, 51 patches; touch as rarely as possible
+scripts/evaluate_crashing.sh -s holdout
+
+# print the queue and stop, without invoking run.py
+DRY_RUN=1 scripts/evaluate_crashing.sh -s dev
+```
+
+| Flag / env | Description |
+|---|---|
+| `-s dev` / `-s holdout` | Run one side of the frozen split. Every certified patch on that side runs; `SAMPLE_SIZE`/`SEED` do not apply. Omit `-s` for the legacy balanced random sample, which straddles both sides — a smoke test, not a reportable number |
+| `-h` | Usage |
+| `PROJECTS` | Defects4J projects to include (default: `Chart Closure Lang Math Time`) |
+| `NUM_HARNESSES` / `MAX_ATTEMPTS` | Passed through to `run.py` as `-n` / `-m` |
+| `FUZZ_TIMEOUT` / `VERIFY_TIMEOUT` | Seconds per harness on the patched / buggy build |
+| `SAMPLE_SIZE` / `SEED` | Legacy random sample only (default 60 / 42; `SAMPLE_SIZE=0` runs every queued patch) |
+| `DRY_RUN=1` | Build the queue and stop |
+
+Results land in `results/eval_<side>_<timestamp>/`: per-run `records.jsonl`,
+`summary.json` with the confusion matrix, the queue, and — in `-s` mode — a copy
+of the split plus its git commit, so a result stays traceable to the split it was
+scored against. The split file is read, never regenerated; see
+[suites/splits/README_crashing.md](suites/splits/README_crashing.md) for why that
+matters and for the split's known limits before quoting a number off it.
+
 ### C/C++ (OSS-Fuzz + libFuzzer)
 
 Also run from `src/` (the gitignored `oss-fuzz/` clone lives at the repo root):

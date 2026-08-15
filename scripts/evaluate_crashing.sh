@@ -6,6 +6,25 @@
 # and capped independently). Set SAMPLE_SIZE=0 to run every patch instead
 # of sampling.
 #
+# Usage:
+#   scripts/evaluate_crashing.sh [-s dev|holdout] [-h]
+#
+#   -s dev      tune / iterate here
+#   -s holdout  final headline numbers -- touch as rarely as possible
+#   -h          this help
+#
+# With -s, the queue is built from the frozen split
+# (suites/splits/crashing_split.jsonl x suites/labels/crashing/verified_correct.jsonl)
+# instead of by sampling drr/Patches, and SAMPLE_SIZE/SEED do not apply: every
+# certified patch on that side is run. Without -s the legacy random sample runs,
+# which straddles both sides -- fine for a smoke test, NOT for a reported number.
+#
+# The split file is read, never regenerated. It is frozen (see
+# suites/splits/README_crashing.md); re-deriving it per run would let drift in
+# logs/ or the label files silently reshuffle the holdout. A copy of the split
+# and its git provenance land in the output dir so a result stays traceable to
+# the split it was scored against.
+#
 # This pipeline only evaluates crashing bugs, so semantic bugs are filtered
 # out of the queue BEFORE sampling (via src/java/dataset/classify_bugs.py, which reads
 # defects4j's static trigger_tests files — no checkout needed). That keeps
@@ -40,9 +59,33 @@ SAMPLE_SIZE="${SAMPLE_SIZE:-60}"          # 0 = run every queued patch; else spl
 SEED="${SEED:-42}"                        # for reproducible sampling
 
 DRR_PATCHES="drr/Patches"
+SPLIT_FILE="suites/splits/crashing_split.jsonl"
+
+# ---- command line ---------------------------------------------------------
+# SPLIT is a flag, not an env var, on purpose: `export SPLIT=holdout` would stick
+# for a whole shell and silently leak the holdout into later runs, and a mistyped
+# variable NAME is undetectable (the script only ever sees its absence, and would
+# fall through to the random sample). A bad -s value hard-fails below.
+SPLIT=""
+while getopts "s:h" opt; do
+  case "$opt" in
+    s) SPLIT="$OPTARG" ;;
+    # \{0,1\} not \? — the latter is a GNU extension, and BSD/macOS sed silently
+    # matches nothing, printing empty help.
+    h) sed -n '2,/^$/{s/^# \{0,1\}//;p;}' "${BASH_SOURCE[0]}"; exit 0 ;;
+    *) echo "try -h" >&2; exit 1 ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+case "$SPLIT" in
+  ""|dev|holdout) ;;
+  *) echo "FATAL: -s must be 'dev' or 'holdout' (got '$SPLIT')" >&2; exit 1 ;;
+esac
 
 TS="$(date +%Y%m%d_%H%M%S)"
 OUTDIR="results/eval_all_${TS}"
+[[ -n "$SPLIT" ]] && OUTDIR="results/eval_${SPLIT}_${TS}"
 mkdir -p "$OUTDIR"
 RESULTS="${OUTDIR}/records.jsonl"
 : > "$RESULTS"
@@ -52,7 +95,44 @@ QUEUE="${OUTDIR}/queue.txt"
 
 echo "Output dir : $OUTDIR"
 echo "Projects   : ${PROJECTS[*]}"
+if [[ -n "$SPLIT" ]]; then
+  echo "Mode       : frozen split, side=$SPLIT"
+else
+  echo "Mode       : random sample (straddles dev+holdout — smoke test only)"
+fi
 echo ""
+
+# ===========================================================================
+# SPLIT MODE: queue every certified patch on one side of the frozen split.
+# No classify_bugs.py pre-filter (the split's population is already crashing-
+# only) and no sampling (the sides are small enough to run whole).
+# ===========================================================================
+if [[ -n "$SPLIT" ]]; then
+  [[ -f "$SPLIT_FILE" ]] || {
+    echo "FATAL: $SPLIT_FILE missing — see suites/splits/README_crashing.md" >&2; exit 1; }
+
+  # Pin the result to the split it was scored against: if the split is ever
+  # re-frozen, this run stays interpretable instead of silently referring to a
+  # split that no longer exists.
+  cp "$SPLIT_FILE" "${OUTDIR}/crashing_split.jsonl"
+  git log -1 --format='%H %ad' -- "$SPLIT_FILE" > "${OUTDIR}/split_provenance.txt" 2>/dev/null \
+    || echo "(not under git)" > "${OUTDIR}/split_provenance.txt"
+
+  if ! python3 src/java/dataset/build_split_queue.py \
+         --side "$SPLIT" --projects "${PROJECTS[*]}" --out "$QUEUE"; then
+    echo "FATAL: could not build the $SPLIT queue" >&2; exit 1
+  fi
+
+  if [[ "$SAMPLE_SIZE" != "60" || "$SEED" != "42" ]]; then
+    echo "note: SAMPLE_SIZE/SEED are ignored in split mode (running the whole $SPLIT side)"
+  fi
+  echo ""
+
+else
+# ===========================================================================
+# LEGACY MODE (no -s): classify, glob drr/Patches, balanced random sample.
+# The sample straddles dev and holdout — do not report a number off it.
+# ===========================================================================
 
 # ---- classify every bug up front (crashing vs semantic), from defects4j's
 #      static trigger_tests files -- no checkout, no defects4j subprocess
@@ -119,6 +199,7 @@ if [[ "$SAMPLE_SIZE" != "0" ]]; then
   mv "${QUEUE}.tmp" "$QUEUE"
   echo "Sampled ${HALF_C} correct + ${HALF_O} overfitting patch(es) (seed=${SEED})"
 fi
+fi   # end split-mode / legacy-mode
 
 TOTAL=$(wc -l < "$QUEUE")
 echo "Patches queued : $TOTAL"
