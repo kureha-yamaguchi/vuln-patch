@@ -1,7 +1,7 @@
 """Score one side of the frozen crashing split with the one-shot baseline.
 
 Usage (from src/):
-    uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v0
+    uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v1
     uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2 \\
         --confirm_holdout
 
@@ -41,7 +41,7 @@ HEADLINE_RULE = 'majority'
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--side', required=True, choices=['dev', 'holdout'])
-    ap.add_argument('--prompt_version', default='v0',
+    ap.add_argument('--prompt_version', default='v1',
                     help=f'stage-A design or stage-B iteration; registered: '
                          f'{prompts.known_versions()}')
     ap.add_argument('--samples', type=int, default=run_one.DEFAULT_SAMPLES)

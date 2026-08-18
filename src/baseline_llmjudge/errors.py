@@ -4,7 +4,7 @@ The protocol is one loop: run a version on dev, read its errors, write the next
 version to fix the dominant error class. This is the "read its errors" step.
 
 Usage (from src/):
-    uv run -m baseline_llmjudge.errors --records ../results/llmjudge_dev_v0_*/records.jsonl
+    uv run -m baseline_llmjudge.errors --records ../results/llmjudge_dev_v1_*/records.jsonl
 
 A false positive is a CORRECT patch called incomplete. A false negative is an
 OVERFITTING patch called correct. The two need opposite repairs, so the counts

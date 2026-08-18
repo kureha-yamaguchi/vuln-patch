@@ -43,7 +43,7 @@ DEFAULT_SAMPLES = 5
 
 
 def classify(patch_path: str, label: str, *,
-             version: str = 'v0',
+             version: str = 'v1',
              samples: int = DEFAULT_SAMPLES,
              cache_dir: Optional[str] = None,
              model: Optional[str] = None,
@@ -163,7 +163,7 @@ def main() -> int:
                        help='ground truth: this patch is correct')
     group.add_argument('-o', '--overfitting', action='store_true',
                        help='ground truth: this patch is overfitting')
-    ap.add_argument('--prompt_version', default='v0',
+    ap.add_argument('--prompt_version', default='v1',
                     help=f'stage-A design or stage-B iteration; registered: '
                          f'{prompts.known_versions()}')
     ap.add_argument('--samples', type=int, default=DEFAULT_SAMPLES)

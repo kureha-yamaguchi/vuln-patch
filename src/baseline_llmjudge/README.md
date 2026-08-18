@@ -176,7 +176,7 @@ Stage B refines the winner three times, and only stage B reads an error log.
 
 ```
 STAGE A — blind. No error log is read.
-    v0  ──run on dev──┐
+    v1  ──run on dev──┐
     v2  ──run on dev──┼──→  best dev F1 wins        (say v2 wins)
     v3  ──run on dev──┘
 
@@ -193,13 +193,13 @@ Six dev passes in total, then one holdout pass.
 ### Stage A — the three designs
 
 They are authored blind, before any run, and they differ in how much method the
-request supplies. The names are historical: a fourth draft, `v1`, was a strict
-subset of `v2` and was dropped. **The numbering does not imply an order**,
-because the three run independently.
+request supplies. **The numbers are labels, not an order**, because the three
+run independently. A fourth draft was dropped before any run, because it was a
+strict subset of `v2`.
 
 | Design | What the request supplies | The bet |
 |---|---|---|
-| `v0` | The evidence, the question, the output contract. Nothing else. | The floor: what the model does unaided |
+| `v1` | The evidence, the question, the output contract. Nothing else. | The floor: what the model does unaided |
 | `v2` | Definitions, the plausibility premise, a five-step method, two calibration rules | A method plus guard rails beats an unaided answer |
 | `v3` | Definitions, the plausibility premise, five **required** output sections | A form the answer must fill in beats a method it may skip |
 
@@ -210,7 +210,7 @@ plus unequal hindsight. `errors.py` prints a warning when it is pointed at a
 stage-A run.
 
 ```bash
-uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v0
+uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v1
 uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v2
 uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v3
 
@@ -307,7 +307,7 @@ never made, which is itself a fact a reader needs.
 
 | Design | Dev P | Dev R | Dev F1 | FP | FN | Parse failures | Agreement | Run directory |
 |---|---|---|---|---|---|---|---|---|
-| v0 | | | | | | | | |
+| v1 | | | | | | | | |
 | v2 | | | | | | | | |
 | v3 | | | | | | | | |
 
@@ -358,7 +358,7 @@ export LLMJUDGE_PRICE_CACHED_IN_USD_PER_MTOK=...   # optional
 ### Measured cost
 
 Measured on `gpt-5.4` with an early draft, whose instruction was about 830
-characters — between `v0` (206) and `v2` (1,746), so these figures sit in the
+characters — between `v1` (206) and `v2` (1,746), so these figures sit in the
 middle of the three designs' range. One call on `patch1-Lang-27-DeepRepair`:
 **3,686 prompt and 1,792 completion tokens.** Per call on the five Chart-9
 patches: about **7,060 prompt with 850–1,270 completion tokens.** Evidence size
@@ -450,7 +450,7 @@ Run from `src/`.
 uv run -m baseline_llmjudge.evaluate --side dev --dry_run
 
 # STAGE A — the three designs, blind, in any order
-uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v0
+uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v1
 uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v2
 uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v3
 uv run -m baseline_llmjudge.compare  --stage A
@@ -475,7 +475,7 @@ uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2.2 \
 | Option | Meaning |
 |---|---|
 | `--side dev\|holdout` | Which side of the frozen split to score |
-| `--prompt_version` | A stage-A design (`v0`, `v2`, `v3`) or a stage-B iteration (`v2.1`) |
+| `--prompt_version` | A stage-A design (`v1`, `v2`, `v3`) or a stage-B iteration (`v2.1`) |
 | `--samples N` | Samples per patch (default 5) |
 | `--projects "Lang Math"` | Restrict to some projects |
 | `--model` | Override the model; the default is `config.LOCAL_LLM_MODEL` |

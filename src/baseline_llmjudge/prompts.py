@@ -5,7 +5,7 @@ side. No error log is read during this stage: reading one design's errors before
 the others have run would make the comparison unfair, because the later designs
 would carry information the earlier ones did not. Pick the best dev F1.
 
-    v0  ─┐
+    v1  ─┐
     v2  ─┼─  each run once on dev, blind  ─→  best dev F1 wins
     v3  ─┘
 
@@ -16,9 +16,9 @@ previous run's errors. An iteration is named `<winner>.<n>`:
 
 Pick the best dev F1 among the three iterations, freeze it, run the holdout once.
 
-The names v0, v2 and v3 are historical: a fourth draft, v1, was a strict subset
-of v2 and was dropped. The numbering does NOT imply an order, because the three
-stage-A designs run independently.
+The numbers v1, v2 and v3 are labels, not an order: the three stage-A designs
+run independently. A fourth draft was dropped before any run, because it was a
+strict subset of v2.
 
 WHAT IS HELD CONSTANT ACROSS EVERY VERSION
   * the system message,
@@ -33,8 +33,7 @@ refers to its text. A later idea becomes a new version, never an edit. Every
 record carries `prompt_sha256`, so a silent edit is detectable.
 
 CHANGELOG
-  v0, v2, v3   stage-A designs, authored blind. Not yet scored.
-  v1           dropped before any run: a strict subset of v2.
+  v1, v2, v3   stage-A designs, authored blind. Not yet scored.
   <winner>.1-3 stage-B iterations. Record here what each one repaired, and
                which error class the dev log showed.
 """
@@ -96,8 +95,8 @@ class PromptVersion:
 
 # --- Stage A: three independent designs -------------------------------------
 
-V0 = PromptVersion(
-    name='v0',
+V1 = PromptVersion(
+    name='v1',
     hypothesis='Floor. Evidence, the question, and the output contract only. '
                'No definition, no method — what the model does unaided.',
     task=(
@@ -168,9 +167,9 @@ V3 = PromptVersion(
 )
 
 #: The stage-A designs. Each runs once on dev, blind, in any order.
-BASE_VERSIONS: Tuple[str, ...] = ('v0', 'v2', 'v3')
+BASE_VERSIONS: Tuple[str, ...] = ('v1', 'v2', 'v3')
 
-VERSIONS: Dict[str, PromptVersion] = {v.name: v for v in (V0, V2, V3)}
+VERSIONS: Dict[str, PromptVersion] = {v.name: v for v in (V1, V2, V3)}
 
 # An iteration is '<base>.<n>', e.g. 'v2.1'.
 _ITERATION_RE = re.compile(r'^(?P<base>v\d+)\.(?P<n>[1-9]\d*)$')
