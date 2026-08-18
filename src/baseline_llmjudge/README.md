@@ -136,12 +136,19 @@ One bit. Two classes. No abstain option, no confidence score, no severity. A
 wider output space would need a threshold, and a threshold tuned on dev is a
 free parameter the pipeline does not have.
 
-The model must end its answer with `VERDICT: INCOMPLETE` or `VERDICT: CORRECT`.
+The model must end its answer with `VERDICT: OVERFITTING` or `VERDICT: CORRECT`.
 [`verdict.py`](verdict.py) reads the last such line, because a scaffolded answer
 can name the other class on its way to a conclusion.
 
-Records carry `predicted_incomplete` and mirror it into `crashed_on_patch`, the
-field the pipeline's aggregator reads. One scoring function then serves both
+**One word per class.** The two class names are the two ground-truth labels, in
+upper case. So a per-patch line reads
+`Lang-27 (SimFix) [correct]: 5/5 overfitting -> majority=overfitting`: the
+bracket is the truth, the word after `majority=` is the prediction, and the two
+compare directly with no translation step. `verdict.class_name` is the one
+place that maps the decision bit to its word.
+
+Records carry `predicted_overfitting` and mirror it into `crashed_on_patch`,
+the field the pipeline's aggregator reads. One scoring function then serves both
 sides, so the arithmetic cannot drift between them.
 
 **Parse failures.** One retry, then the sample counts as the negative class and
@@ -241,7 +248,7 @@ classes need opposite repairs:
 
 | Dominant class | What it means | What the next iteration should do |
 |---|---|---|
-| FP | A correct patch was called incomplete | Raise the bar for the positive class: demand a named surviving input, forbid style objections |
+| FP | A correct patch was called overfitting | Raise the bar for the positive class: demand a named surviving input, forbid style objections |
 | FN | An overfitting patch was called correct | Name the patterns being missed: guard on the reported value, swallowed error, unfixed sibling path, off-by-one bound |
 
 Add the iteration to [`prompts.py`](prompts.py) with `register(...)`, and set

@@ -1,7 +1,8 @@
 """Read one verdict out of a model response, then combine several.
 
 The output space is one bit, so parsing is deliberately strict: the class name
-must appear on a `VERDICT:` line. A response that does not carry one is a parse
+must appear on a `VERDICT:` line. The two class names are OVERFITTING and
+CORRECT, the same two words the dataset labels a patch with. A response that does not carry one is a parse
 failure, not a guess. `parse` reports that as None and lets the caller decide
 what an unparsed sample counts as — see run_one.PARSE_FAILURE_COUNTS_AS and the
 README section on it.
@@ -11,20 +12,24 @@ and reasoning can mention the word on the way to a conclusion.
 """
 from typing import Dict, List, Optional
 
-INCOMPLETE = 'INCOMPLETE'
+# The output space. The prompt demands these two tokens on the VERDICT line.
+# Lower-cased, they are also the ground-truth labels a record carries, so one
+# word names each class across the prompt, the printed lines and the labels.
+OVERFITTING = 'OVERFITTING'
 CORRECT = 'CORRECT'
 
-# 'INCORRECT' can only mean "not correct", because the prompt names both
-# classes explicitly. Accepting it protects the baseline from losing a clear
-# answer to a wording slip, which would weaken it for no reason.
-_POSITIVE_PREFIXES = (INCOMPLETE, 'INCORRECT')
+# 'OVERFIT' also catches the shortened and past-tense forms, and 'INCORRECT'
+# can only mean "not correct", because the prompt names both classes
+# explicitly. Accepting them protects the baseline from losing a clear answer
+# to a wording slip, which would weaken it for no reason.
+_POSITIVE_PREFIXES = ('OVERFIT', 'INCORRECT')
 
 # Markdown and backticks the model may wrap the class name in.
 _DECORATION = '*`_# '
 
 
 def parse(text: Optional[str]) -> Optional[bool]:
-    """True for INCOMPLETE, False for CORRECT, None when unparseable."""
+    """True for OVERFITTING, False for CORRECT, None when unparseable."""
     if not text:
         return None
     verdict = None
@@ -36,13 +41,18 @@ def parse(text: Optional[str]) -> Optional[bool]:
         if not sep:
             continue
         tail = tail.strip().lstrip(_DECORATION).strip()
-        # Order matters: a hedged tail such as 'INCOMPLETE (not correct)'
+        # Order matters: a hedged tail such as 'OVERFITTING (not correct)'
         # must not read as CORRECT.
         if tail.startswith(_POSITIVE_PREFIXES):
             verdict = True
         elif tail.startswith(CORRECT):
             verdict = False
     return verdict
+
+
+def class_name(flag: bool) -> str:
+    """One prediction as a ground-truth label: True is the positive class."""
+    return (OVERFITTING if flag else CORRECT).lower()
 
 
 def votes_summary(votes: List[Optional[bool]],

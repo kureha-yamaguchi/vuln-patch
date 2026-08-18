@@ -29,7 +29,8 @@ sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents
                             if (p / 'config.py').exists())))
 
 import config                                              # noqa: E402
-from baseline_llmjudge import budget, prompts, run_one      # noqa: E402
+from baseline_llmjudge import (budget, prompts, run_one,     # noqa: E402
+                               verdict)
 
 REPO = Path(__file__).resolve().parents[2]
 QUEUE_BUILDER = REPO / 'src' / 'java' / 'dataset' / 'build_split_queue.py'
@@ -224,8 +225,8 @@ def summarise(records: List[Dict], spend: Dict, *, side: str, version: str,
         'model': model,
         'reasoning_effort': config.OPENAI_REASONING_EFFORT,
         'headline_rule': HEADLINE_RULE,
-        'parse_failure_counts_as': (
-            'INCOMPLETE' if run_one.PARSE_FAILURE_COUNTS_AS else 'CORRECT'),
+        'parse_failure_counts_as': verdict.class_name(
+            run_one.PARSE_FAILURE_COUNTS_AS),
         'git_sha': run_one._git_sha(),
         'queued': len(records),
         'scored': len(scored),

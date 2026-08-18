@@ -53,7 +53,7 @@ SYSTEM = (
 CONTRACT = (
     "End your answer with a final line in exactly one of these two forms, "
     "and write nothing after it:\n"
-    "VERDICT: INCOMPLETE\n"
+    "VERDICT: OVERFITTING\n"
     "VERDICT: CORRECT"
 )
 
@@ -71,7 +71,7 @@ GROUND_RULES = (
 
 DEFINITIONS = (
     "Decide between two classes:\n"
-    "- INCOMPLETE: the patch removes the reported failure but leaves the root"
+    "- OVERFITTING: the patch removes the reported failure but leaves the root"
     " cause in place. Some other input reaches the same fault, in the patched"
     " method or elsewhere in the reachable region above.\n"
     "- CORRECT: the patch removes the root cause. No input reaches that fault"
@@ -95,17 +95,26 @@ class PromptVersion:
 
 # --- Stage A: three independent designs -------------------------------------
 
+# v1 glosses the two classes in one sentence each, and stops there. The word
+# 'overfitting' is a term of art: a model that has to guess what it means is
+# not an unaided FLOOR, it is a vocabulary test. The gloss is therefore the
+# minimum v1 needs to ask its question at all. What v1 still withholds is the
+# plausibility premise, the failure shapes, the method and the output form.
 V1 = PromptVersion(
     name='v1',
-    hypothesis='Floor. Evidence, the question, and the output contract only. '
-               'No definition, no method — what the model does unaided.',
+    hypothesis='Floor. Evidence, the question, a one-sentence gloss of each '
+               'class, and the output contract. No plausibility premise, no '
+               'method, no required sections — what the model does unaided.',
     task=(
         "Below is a Java bug, the test that reports it, and a candidate patch."
-        " Decide whether the patch is a complete fix."
+        " Decide whether the patch is correct or overfitting."
     ),
     instruction=(
-        "Is this patch a complete fix, or does it leave the root cause in"
-        " place?\n\n" + CONTRACT
+        "An overfitting patch stops the reported failure, but it leaves the"
+        " root cause in place. Some other input still reaches the same fault."
+        " A correct patch removes the root cause, so no input reaches that"
+        " fault any more.\n\n"
+        "Is this patch correct, or is it overfitting?\n\n" + CONTRACT
     ),
 )
 
@@ -137,7 +146,7 @@ V2 = PromptVersion(
         "Two calibration rules:\n"
         "- Judge behaviour, not style. A patch that no human would write is"
         " still CORRECT when it removes the root cause.\n"
-        "- Answer INCOMPLETE only when you can name a concrete input that"
+        "- Answer OVERFITTING only when you can name a concrete input that"
         " still reaches the fault. A patch being short or narrow is not by"
         " itself evidence.\n\n" + CONTRACT
     ),
@@ -161,7 +170,7 @@ V3 = PromptVersion(
         "SIBLING PATHS: whether any other function in the reachable region"
         " still carries the unpatched behaviour.\n"
         "DECISION: one sentence.\n\n"
-        "Judge behaviour, not style. Answer INCOMPLETE only when SURVIVING"
+        "Judge behaviour, not style. Answer OVERFITTING only when SURVIVING"
         " INPUT or SIBLING PATHS names something concrete.\n\n" + CONTRACT
     ),
 )
@@ -204,12 +213,12 @@ def register(version: PromptVersion) -> PromptVersion:
 # register(PromptVersion(
 #     name='v2.1',
 #     hypothesis='v2 produced 7 FP and 2 FN. It called a correct patch '
-#                'incomplete whenever the fix was narrower than the developer '
+#                'overfitting whenever the fix was narrower than the developer '
 #                'fix, so require the surviving input to be spelled out.',
 #     task=V2.task,
 #     instruction=V2.instruction.replace(
-#         'Answer INCOMPLETE only when you can name a concrete input',
-#         'Answer INCOMPLETE only when you WRITE OUT a concrete input'),
+#         'Answer OVERFITTING only when you can name a concrete input',
+#         'Answer OVERFITTING only when you WRITE OUT a concrete input'),
 # ))
 
 

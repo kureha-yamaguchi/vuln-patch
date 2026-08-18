@@ -104,7 +104,7 @@ def classify(patch_path: str, label: str, *,
     rec['vote'] = summary
     # The headline rule. `crashed_on_patch` is the alias the pipeline's
     # aggregator reads, so one scoring function serves both sides.
-    rec['predicted_incomplete'] = summary['majority']
+    rec['predicted_overfitting'] = summary['majority']
     rec['crashed_on_patch'] = summary['majority']
     rec['decisions'] = {k: summary[k] for k in ('majority', 'any',
                                                 'unanimous')}
@@ -113,8 +113,8 @@ def classify(patch_path: str, label: str, *,
     rec['budget'] = budget.report(rec['tokens_total'])
     if not quiet:
         print(f"  {ev.project}-{ev.bug_id} ({ev.apr_tool}) [{label}]: "
-              f"{summary['n_positive']}/{summary['n_samples']} incomplete "
-              f"-> majority={summary['majority']}"
+              f"{summary['n_positive']}/{summary['n_samples']} overfitting "
+              f"-> majority={verdict.class_name(summary['majority'])}"
               + (f", {summary['n_parse_failures']} unparsed"
                  if summary['n_parse_failures'] else ""))
     return rec
@@ -137,7 +137,7 @@ def _one_sample(generator, messages, index: int, quiet: bool) -> Dict:
     if not quiet:
         print(f"    sample {index}: no verdict line parsed after "
               f"{PARSE_RETRIES + 1} attempt(s); counts as "
-              f"{'INCOMPLETE' if PARSE_FAILURE_COUNTS_AS else 'CORRECT'}")
+              f"{verdict.class_name(PARSE_FAILURE_COUNTS_AS)}")
     return {'index': index, 'verdict': None, 'retried': PARSE_RETRIES > 0,
             'attempts': attempts}
 

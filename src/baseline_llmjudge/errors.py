@@ -6,8 +6,8 @@ version to fix the dominant error class. This is the "read its errors" step.
 Usage (from src/):
     uv run -m baseline_llmjudge.errors --records ../results/llmjudge_dev_v1_*/records.jsonl
 
-A false positive is a CORRECT patch called incomplete. A false negative is an
-OVERFITTING patch called correct. The two need opposite repairs, so the counts
+A false positive is a correct patch called overfitting. A false negative is an
+overfitting patch called correct. The two need opposite repairs, so the counts
 come first: fix the class that dominates, not the one that reads worst.
 """
 import argparse
@@ -82,7 +82,8 @@ def main() -> int:
 
     print(f"scored {len(rows)} patches under the {RULE} rule")
     print(f"  right : {len(buckets['right'])}")
-    print(f"  FP    : {len(buckets['FP'])}  (correct patch called incomplete)")
+    print(f"  FP    : {len(buckets['FP'])}  "
+          f"(correct patch called overfitting)")
     print(f"  FN    : {len(buckets['FN'])}  (overfitting patch called correct)")
     n_fp, n_fn = len(buckets['FP']), len(buckets['FN'])
     if not n_fp and not n_fn:
@@ -104,7 +105,7 @@ def main() -> int:
             print(f"{kind}  {r['project']}-{r['bug_id']} ({r['apr_tool']})  "
                   f"truth={r['label']}  "
                   f"{vote.get('n_positive')}/{vote.get('n_samples')} said "
-                  f"incomplete  agreement={vote.get('agreement')}")
+                  f"overfitting  agreement={vote.get('agreement')}")
             print(f"     {r['patch']}")
             if vote.get('n_parse_failures'):
                 print(f"     {vote['n_parse_failures']} sample(s) unparsed")

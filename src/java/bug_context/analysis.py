@@ -404,7 +404,7 @@ class TargetAnalyzer:
             if not os.path.isfile(full):
                 continue
             try:
-                with open(full) as fh:
+                with open(full, encoding='utf-8', errors='replace') as fh:
                     source = fh.read()
             except OSError:
                 continue
@@ -889,7 +889,7 @@ class TargetAnalyzer:
                 continue
             fpath = os.path.join(pkg_dir, fname)
             try:
-                with open(fpath) as fh:
+                with open(fpath, encoding='utf-8', errors='replace') as fh:
                     fsrc = fh.read()
                 ftree = javalang.parse.parse(fsrc)
             except (OSError, javalang.parser.JavaSyntaxError,
@@ -1291,7 +1291,7 @@ class TargetAnalyzer:
             if not os.path.isfile(full_path):
                 continue
             try:
-                with open(full_path) as fh:
+                with open(full_path, encoding='utf-8', errors='replace') as fh:
                     for line in fh:
                         m = _IMPORT_RE.match(line)
                         if m:
@@ -1321,7 +1321,7 @@ class TargetAnalyzer:
             if not os.path.isfile(full_path):
                 continue
             try:
-                with open(full_path) as fh:
+                with open(full_path, encoding='utf-8', errors='replace') as fh:
                     for line in fh:
                         m = self._PACKAGE_RE.match(line)
                         if m:
