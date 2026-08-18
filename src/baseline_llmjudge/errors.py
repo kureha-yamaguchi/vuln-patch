@@ -1,7 +1,8 @@
-"""Print the errors of one dev pass, so the next prompt version can fix them.
+"""Print the errors of one DEV pass, so the next prompt version can fix them.
 
-The protocol is one loop: run a version on dev, read its errors, write the next
-version to fix the dominant error class. This is the "read its errors" step.
+The protocol is one loop: run a version on dev, read its dev errors, write the
+next version to fix the dominant error class. This is the "read its errors"
+step, and it reads the dev side only.
 
 Usage (from src/):
     uv run -m baseline_llmjudge.errors --records ../results/llmjudge_dev_v1_*/records.jsonl
@@ -9,6 +10,12 @@ Usage (from src/):
 A false positive is a correct patch called overfitting. A false negative is an
 overfitting patch called correct. The two need opposite repairs, so the counts
 come first: fix the class that dominates, not the one that reads worst.
+
+HOLDOUT RECORDS ARE REFUSED. Stage B selects on holdout F1, so the holdout is
+scored three times. Each of those passes gives back one number per iteration.
+If a holdout error log were read, that number would become a sentence, the
+sentence would enter the next prompt, and the holdout would stop being held
+out. This module is the place that rule is enforced rather than remembered.
 """
 import argparse
 import glob
@@ -44,6 +51,53 @@ def classify_error(row: Dict) -> str:
     return 'FP' if said else 'FN'
 
 
+def side_of(records_path: str):
+    """'dev', 'holdout', or None when the run's side cannot be determined.
+
+    The run's own `summary.json` is the authority, because `--out_dir` can
+    give a run any directory name. The name is the fallback, so a run whose
+    summary is missing is still classified."""
+    path = Path(records_path)
+    summary = path.parent / 'summary.json'
+    if summary.exists():
+        try:
+            side = json.loads(summary.read_text()).get('side')
+        except (ValueError, OSError):
+            side = None
+        if side in ('dev', 'holdout'):
+            return side
+    name = path.parent.name
+    if name.startswith('llmjudge_holdout_'):
+        return 'holdout'
+    if name.startswith('llmjudge_dev_'):
+        return 'dev'
+    return None
+
+
+def refuse_holdout(patterns: List[str]) -> int:
+    """0 when every matched run is a dev run. 2 when any is a holdout run.
+
+    A run of unknown side is allowed through with a warning, because the side
+    is a property of the run directory and a custom `--out_dir` can hide it."""
+    for path in sorted(set(sum((glob.glob(p) for p in patterns), []))):
+        side = side_of(path)
+        if side == 'holdout':
+            print("!" * 70, file=sys.stderr)
+            print(f"REFUSING: {path} is a HOLDOUT run.", file=sys.stderr)
+            print("Stage B refines from the DEV log and selects on the "
+                  "holdout F1.", file=sys.stderr)
+            print("Reading a holdout error log would carry holdout evidence "
+                  "into the next", file=sys.stderr)
+            print("prompt, and the holdout would no longer be held out. See "
+                  "README section 6.", file=sys.stderr)
+            print("!" * 70, file=sys.stderr)
+            return 2
+        if side is None:
+            print(f"WARNING: cannot tell which side {path} belongs to. "
+                  f"Confirm it is a dev run.\n", file=sys.stderr)
+    return 0
+
+
 def _stage_warning(rows: List[Dict]) -> None:
     """Stage A is blind. Say so when these records come from a stage-A design.
 
@@ -73,6 +127,10 @@ def main() -> int:
                     help='characters of each sample answer to print')
     args = ap.parse_args()
 
+    refused = refuse_holdout([args.records])
+    if refused:
+        return refused
+
     all_rows = load(args.records)
     rows = [r for r in all_rows if r.get('status') == 'evaluated']
     _stage_warning(all_rows)
@@ -87,8 +145,10 @@ def main() -> int:
     print(f"  FN    : {len(buckets['FN'])}  (overfitting patch called correct)")
     n_fp, n_fn = len(buckets['FP']), len(buckets['FN'])
     if not n_fp and not n_fn:
-        print("\nno errors on this side — nothing for the next version to "
-              "fix. Stop the loop and report this version.\n")
+        print("\nno errors on this dev pass — this version has no dominant "
+              "class to repair.\nThe turn still runs: write the next "
+              "iteration against the reasoning above,\nand record that the "
+              "dev log was empty.\n")
     elif n_fp == n_fn:
         print(f"\nFP and FN are tied at {n_fp}. Read both below, then pick "
               f"the class whose reasoning is more clearly repairable.\n")

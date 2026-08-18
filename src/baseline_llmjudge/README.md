@@ -106,7 +106,7 @@ baseline gets none of it. That gap is the thing the experiment measures.
 **What the baseline is not.** It is not free of execution. The evidence comes
 from a Defects4J checkout, and two of its steps run tests on the *buggy* build:
 the safety-net gate, and the crash capture. What it never does is build the
-patched code, compile a harness, or fuzz. Section 6 accounts for both halves.
+patched code, compile a harness, or fuzz. Section 7 accounts for both halves.
 
 **Label leakage.** The ground truth sits in the patch path
 (`drr/Patches/Dcorrect/…` against `…/Doverfitting/…`), and the certification
@@ -176,26 +176,113 @@ Each patch also reports `agreement`, the share of sample pairs that agree. That
 is the baseline's own variance, and it is the fair counterpart to the pipeline's
 run-to-run variance.
 
-## 6. Dev iteration protocol
+## 6. Iteration protocol
 
-Two stages. Stage A is a blind bake-off between three independent designs.
-Stage B refines the winner three times, and only stage B reads an error log.
+Two stages. Stage A is a blind bake-off between three independent designs, and
+it is scored on dev. Stage B refines the stage-A winner three times, and it
+selects on the holdout.
+
+The two sides do different jobs in stage B, and that division is the protocol:
+
+| Side | Its job | What it hands back |
+|---|---|---|
+| dev | Refinement. Each turn reads the previous iteration's dev errors. | The error text, in full |
+| holdout | Selection. Every iteration is scored on it. | One F1 per iteration |
 
 ```
-STAGE A — blind. No error log is read.
+STAGE A — blind. No error log is read. Scored on dev.
     v1  ──run on dev──┐
     v2  ──run on dev──┼──→  best dev F1 wins        (say v2 wins)
     v3  ──run on dev──┘
 
-STAGE B — refinement of the winner, three turns. Each turn reads errors.
-    v2  ──read v2's errors──→   v2.1  ──run on dev
-        ──read v2.1's errors──→ v2.2  ──run on dev
-        ──read v2.2's errors──→ v2.3  ──run on dev
-                                  │
-    best dev F1 of v2.1 / v2.2 / v2.3  ──→  freeze  ──→  holdout ONCE
+STAGE B — refinement of the winner, three turns.
+
+  refinement reads DEV only:
+      v2   ──read v2's DEV errors──→   v2.1
+      v2.1 ──read v2.1's DEV errors──→ v2.2
+      v2.2 ──read v2.2's DEV errors──→ v2.3
+
+  every iteration runs on BOTH sides:
+      v2.1 ──dev──→ error log, read to write v2.2  ──holdout──→ F1
+      v2.2 ──dev──→ error log, read to write v2.3  ──holdout──→ F1
+      v2.3 ──dev──→ error log, published only      ──holdout──→ F1
+
+  the highest of the three holdout F1 values is the reported version
 ```
 
-Six dev passes in total, then one holdout pass.
+Six dev passes, and four holdout passes: the three iterations, plus the
+stage-A winner as a reference row.
+
+### Why selection reads the holdout
+
+A stage-B iteration is written from a dev error log. Its dev score is therefore
+the score of a version tuned against the very patches it is then scored on, and
+it climbs whether or not the new wording generalises. Selection on that number
+would pick the iteration that best memorised the dev errors. The holdout score
+carries no such loop, because nothing a holdout pass produces reaches any
+prompt: `errors.py` refuses holdout records, and the selector reads one field
+of `summary.json`, `headline.f1`.
+
+**The bias that does remain.** The winning iteration's holdout F1 is a maximum
+over three iterations, so it is optimistic. The size of that optimism is about
+the spread between the three rows. Publish all four holdout rows, and never
+quote the winner's F1 as an unbiased estimate. The honest sentence names the
+population the number was selected from: "of three iterations refined on dev,
+the best scored F1=0.71 on holdout; the three scored 0.71, 0.66 and 0.64."
+
+### The refinement turn is a manual edit
+
+**The dev error log never enters a model call.** A person reads it. That person
+writes one new `PromptVersion` in [`prompts.py`](prompts.py) by hand. About a
+bug, the model still sees exactly what it saw before: the patch, the trigger
+tests, and the reachable set.
+
+That is structural, not a matter of discipline. Two facts make it so:
+
+1. `errors.py` is imported by no module in this package. It is a reader for the
+   operator, and it writes to a terminal.
+2. `prompts.build_messages` takes a version name and the evidence text. There
+   is no third parameter, so an error log has no way in:
+
+   ```python
+   def build_messages(name: str, evidence_text: str) -> List[Dict[str, str]]:
+       v = resolve(name)
+       return [
+           {'role': 'system', 'content': SYSTEM},
+           {'role': 'user',
+            'content': '\n\n'.join([v.task, evidence_text, v.instruction])},
+       ]
+   ```
+
+So the model sees four strings per call, and a turn moves one of them:
+
+| Part | Source | Moves between iterations? |
+|---|---|---|
+| `SYSTEM` | A module constant | Never |
+| `v.task` | The `PromptVersion` you write | Rarely |
+| `evidence_text` | The patch, the trigger tests, the reachable set | Never — it is cached, and digested as `evidence_sha256` |
+| `v.instruction` | The `PromptVersion` you write | This is the one thing a turn changes |
+
+A turn is therefore an offline edit between two runs of the tool. Write the
+child as a `.replace()` on its parent's instruction, so the single change is a
+literal line in the source rather than a promise:
+
+```python
+register(PromptVersion(
+    name='v2.1',
+    hypothesis='v2 produced 7 FP and 2 FN on dev. It called a correct patch '
+               'overfitting whenever the fix was narrower than the developer '
+               'fix, so require the surviving input to be spelled out.',
+    task=V2.task,
+    instruction=V2.instruction.replace(
+        'Answer OVERFITTING only when you can name a concrete input',
+        'Answer OVERFITTING only when you WRITE OUT a concrete input'),
+))
+```
+
+`hypothesis` is the audit trail. It names the dev error class the change
+repairs. A `hypothesis` that cites a holdout error is itself the evidence of a
+leak, so cite the dev log only.
 
 ### Stage A — the three designs
 
@@ -210,9 +297,8 @@ strict subset of `v2`.
 | `v2` | Definitions, the plausibility premise, a five-step method, two calibration rules | A method plus guard rails beats an unaided answer |
 | `v3` | Definitions, the plausibility premise, five **required** output sections | A form the answer must fill in beats a method it may skip |
 
-**Stage A is blind on purpose.** If one design's errors were read before the
-others ran, the later designs would carry information the earlier ones did not,
-and the bake-off would no longer compare designs — it would compare designs
+Reading one design's errors before the others ran would give the later designs
+information the earlier ones did not, so the bake-off would compare designs
 plus unequal hindsight. `errors.py` prints a warning when it is pointed at a
 stage-A run.
 
@@ -221,26 +307,42 @@ uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v1
 uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v2
 uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v3
 
-uv run -m baseline_llmjudge.compare --stage A     # names the winner
+uv run -m baseline_llmjudge.compare --stage A     # names the winner, on dev F1
+
+# the winner on the holdout, as stage B's reference row
+uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2 \
+    --confirm_holdout
 ```
 
 ### Stage B — three refinement turns
 
-Each turn is: read the previous run's errors, write the next iteration to repair
-the dominant error class, run it on dev. An iteration is named `<winner>.<n>`,
-so the lineage of every score is readable from its name.
+Each turn is three steps:
+
+1. Read the previous iteration's **dev** errors.
+2. Write the next iteration by hand, to repair the dominant error class.
+3. Run it on dev, then run it on the holdout.
+
+An iteration is named `<winner>.<n>`, so the lineage of every score is readable
+from its name.
 
 ```bash
-# turn 1 — read the stage-A winner's errors, then write v2.1 in prompts.py
+# turn 1 — read the stage-A winner's DEV errors, then write v2.1 in prompts.py
 uv run -m baseline_llmjudge.errors \
     --records ../results/llmjudge_dev_v2_<ts>/records.jsonl
-uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v2.1
 
-# turns 2 and 3 — same shape, reading the previous turn's records
+# the dev pass feeds turn 2; the holdout pass is v2.1's selection score
+uv run -m baseline_llmjudge.evaluate --side dev     --prompt_version v2.1
+uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2.1 \
+    --confirm_holdout
+
+# turns 2 and 3 — same shape, reading the previous turn's DEV records
 uv run -m baseline_llmjudge.errors \
     --records ../results/llmjudge_dev_v2.1_<ts>/records.jsonl
-uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v2.2
 ```
+
+Point `errors.py` at a dev run. Pointed at a holdout run it exits 2, because a
+holdout error log read here would turn the selection side into a second
+refinement side.
 
 `errors.py` prints the false-positive and false-negative counts, names the
 dominant class, then prints each error with the model's own reasoning. The two
@@ -251,31 +353,33 @@ classes need opposite repairs:
 | FP | A correct patch was called overfitting | Raise the bar for the positive class: demand a named surviving input, forbid style objections |
 | FN | An overfitting patch was called correct | Name the patterns being missed: guard on the reported value, swallowed error, unfixed sibling path, off-by-one bound |
 
-Add the iteration to [`prompts.py`](prompts.py) with `register(...)`, and set
-its `hypothesis` to the error class it repairs. The file carries a worked
-example to copy.
-
-### Selection and the holdout
+### Selection
 
 ```bash
 uv run -m baseline_llmjudge.compare --stage B --base v2
-uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2.2 \
-    --confirm_holdout --tool_records ../results/eval_holdout_<ts>/records.jsonl
 ```
 
-Both stages select the same way: **highest dev F1, ties broken by the lower
-false-positive count.** Stage B selects among the three iterations. The stage-A
-winner appears in the comparison as a reference row, so a refinement that made
-things worse is visible before the holdout is spent on it. If no iteration beat
-the base, record that in the iteration log — it is a finding about the method,
+| Stage | Selects on | Tie break |
+|---|---|---|
+| A | Highest **dev** F1 | Fewer false positives |
+| B | Highest **holdout** F1 | Fewer false positives |
+
+`compare --stage B` prints each iteration's dev F1 beside its holdout row. The
+dev column is there for the record, and it does not select. The stage-A
+winner's own holdout row appears as a reference, so a refinement that made
+things worse on holdout is visible rather than inferred. If no iteration beat
+the base, record that in the iteration log. It is a finding about the method,
 not a failure of the run.
 
 ### The rules
 
 1. **Stage A is blind.** Run all three designs before reading any error log.
-2. **One change per stage-B turn.** The system message never moves, and only one
-   wording change goes into each iteration, so a score difference has one cause.
-3. **The evidence never moves.** It is extracted once per patch and cached, so
+2. **Refinement reads dev only.** Every sentence that enters a prompt comes
+   from a dev error log. The holdout contributes numbers, never text.
+3. **One change per stage-B turn.** The system message never moves, and only
+   one wording change goes into each iteration, so a score difference has one
+   cause.
+4. **The evidence never moves.** It is extracted once per patch and cached, so
    every version reads one byte-identical string. Every record carries
    `evidence_sha256`, which makes that a check rather than an assumption:
 
@@ -284,24 +388,27 @@ not a failure of the run.
         <(jq -r '"\(.patch) \(.evidence_sha256)"' ../results/llmjudge_dev_v2.1_*/records.jsonl | sort)
    ```
 
-   Keep one `--cache_dir` across every dev pass, and do not pass
+   Keep one `--cache_dir` across every pass on both sides, and do not pass
    `--refresh_context` between them. The renderer version catches a change to
    `evidence.py`; only this digest catches a changed Defects4J checkout.
-4. **A version is frozen once it has been run on dev.** Its recorded score
-   refers to its text. A later idea becomes a new iteration, never an edit.
-   `register()` refuses to overwrite a registered name, and every record carries
-   `prompt_sha256`, so a silent edit is detectable.
-5. **Three stage-B turns maximum.** Stop earlier when an iteration gains less
-   than two points of dev F1.
-6. **Publish all six dev passes**, including the two losing designs and any
-   iteration that regressed. The iteration log below is that record, and it is
-   the evidence that the baseline was tuned honestly rather than tuned until it
-   lost.
-7. **The holdout is read once**, after the winner is frozen. `--side holdout`
-   refuses to run without `--confirm_holdout`.
+5. **A version is frozen once it has been run on either side.** Its recorded
+   score refers to its text. A later idea becomes a new iteration, never an
+   edit. `register()` refuses to overwrite a registered name, and every record
+   carries `prompt_sha256`, so a silent edit is detectable.
+6. **Three stage-B turns, and all three are run.** There is no early stop.
+   Selection compares three holdout rows, so a turn not taken is a candidate
+   missing from the comparison. An iteration that gains nothing on dev is still
+   written, still run on both sides, and still published.
+7. **Publish every pass**, including the two losing stage-A designs, every
+   iteration that regressed, and all four holdout rows. The iteration log below
+   is that record, and it is the evidence that the baseline was tuned honestly
+   rather than tuned until it lost.
+8. **The holdout is scored, never read.** Do not open a holdout
+   `records.jsonl` by hand either. The rule is about what reaches the next
+   prompt, and a person reading it breaks the rule exactly as a script would.
 
-**Before the holdout run, write down:** the model, the effort setting, the
-sample count, the vote rule, the parse-failure default, and the population.
+**Before the first holdout pass, write down:** the model, the effort setting,
+the sample count, the vote rule, the parse-failure default, and the population.
 Every one of them is already in `summary.json`, so the note is a copy, not a
 new claim.
 
@@ -310,7 +417,7 @@ new claim.
 Fill each row in from that run's `summary.json`. An empty row means the pass was
 never made, which is itself a fact a reader needs.
 
-**Stage A — blind bake-off**
+**Stage A — blind bake-off, scored on dev**
 
 | Design | Dev P | Dev R | Dev F1 | FP | FN | Parse failures | Agreement | Run directory |
 |---|---|---|---|---|---|---|---|---|
@@ -318,24 +425,28 @@ never made, which is itself a fact a reader needs.
 | v2 | | | | | | | | |
 | v3 | | | | | | | | |
 
-Stage-A winner: _(version, and its F1)_
+Stage-A winner: _(version, and its dev F1)_
 
-**Stage B — refinement of the winner**
+**Stage B — refinement on dev**
 
-| Iteration | Error class it repaired | Dev P | Dev R | Dev F1 | FP | FN | Run directory |
+| Iteration | Dev error class it repaired | Dev P | Dev R | Dev F1 | FP | FN | Run directory |
 |---|---|---|---|---|---|---|---|
 | `<winner>.1` | | | | | | | |
 | `<winner>.2` | | | | | | | |
 | `<winner>.3` | | | | | | | |
 
-Frozen version: _(the best of the three iterations, and its F1 against the
-stage-A winner's)_
-
-**Holdout — one pass**
+**Stage B — selection on holdout**
 
 | Version | P | R | F1 | FP | FN | Paired vs pipeline | McNemar p | Run directory |
 |---|---|---|---|---|---|---|---|---|
-| | | | | | | | | |
+| `<winner>` (reference) | | | | | | | | |
+| `<winner>.1` | | | | | | | | |
+| `<winner>.2` | | | | | | | | |
+| `<winner>.3` | | | | | | | | |
+
+Selected version: _(the best holdout F1 of the three iterations, its F1 against
+the stage-A winner's, and the spread across the three)_
+
 
 ## 7. Budget disclosure
 
@@ -373,13 +484,21 @@ varies by bug, so treat 4k–8k prompt tokens per call as the working range.
 
 | Stage | Passes | Calls | Prompt tokens | Completion tokens |
 |---|---|---|---|---|
-| Stage A — three blind designs | 3 | 465 | 1.9M – 3.7M | ~0.84M |
-| Stage B — three refinement turns | 3 | 465 | 1.9M – 3.7M | ~0.84M |
-| Holdout — one pass | 1 | 255 | 1.0M – 2.0M | ~0.46M |
-| **total** | **7** | **1,185** | **4.8M – 9.4M** | **~2.1M** |
+| Stage A — three blind designs, on dev | 3 | 465 | 1.9M – 3.7M | ~0.84M |
+| Stage A winner — the holdout reference row | 1 | 255 | 1.0M – 2.0M | ~0.46M |
+| Stage B — three refinement turns, on dev | 3 | 465 | 1.9M – 3.7M | ~0.84M |
+| Stage B — the same three iterations, on holdout | 3 | 765 | 3.1M – 6.1M | ~1.38M |
+| **total** | **10** | **1,950** | **7.9M – 15.5M** | **~3.5M** |
 
-One dev pass is 31 patches at 5 samples, so 155 calls. Six dev passes plus one
-holdout pass is 1,185 calls before any retry.
+One dev pass is 31 patches at 5 samples, so 155 calls. One holdout pass is 51
+patches, so 255 calls. Six dev passes and four holdout passes is 1,950 calls
+before any retry.
+
+**What the selection rule costs.** Selecting on the holdout needs four holdout
+passes where selecting on dev would need one. The difference is three passes,
+765 calls, and roughly 3.1M–6.1M prompt tokens. That is the price of removing
+the tuned-and-scored-on-the-same-side loop, and it belongs in the accounting
+rather than in a footnote.
 
 For scale, one pipeline dev pass measured 209 calls, 1,713,259 prompt tokens and
 669,707 completion tokens on the same model.
@@ -396,10 +515,11 @@ sits. Report all four rows:
 | Patched-build compile, harness compile, Jazzer time | yes | **no** |
 | Wall-clock per patch | minutes | seconds after the first extraction |
 
-Report the three spends separately: stage A, stage B, and the holdout. State
-that two stage-A designs and up to two stage-B iterations were discarded. The
-baseline gets six dev passes before its one holdout pass, and the accounting
-must say so rather than quoting the holdout pass alone.
+Report four spends separately: stage A on dev, the stage-A winner's holdout
+reference pass, stage B on dev, and stage B on holdout. State that two stage-A
+designs and two stage-B iterations were discarded. The baseline gets six dev
+passes and four holdout passes, and the accounting must say so rather than
+quoting the selected iteration's holdout pass alone.
 
 ## 8. Head-to-head
 
@@ -416,6 +536,11 @@ Report the full-population matrix too. It is the baseline's own number, and the
 difference between the two shows what the pipeline's `no_harnesses` exclusion
 costs. At these sample sizes a few points of F1 will not reach significance. Say
 so before the numbers arrive.
+
+Pass `--tool_records` on every holdout pass, so each iteration's row carries its
+own paired matrix. Report the selected iteration's head-to-head as the
+comparison, and the other three as the sensitivity around it. The block is
+arithmetic over `summary.json`, so it never becomes a route back into a prompt.
 
 ## 9. Threats to validity
 
@@ -438,11 +563,11 @@ so before the numbers arrive.
 |---|---|
 | [`context.py`](context.py) | Extract the evidence for one patch; cache it as rendered text |
 | [`evidence.py`](evidence.py) | Render the evidence blocks; build the parity manifest |
-| [`prompts.py`](prompts.py) | The three stage-A designs, and the stage-B iterations |
+| [`prompts.py`](prompts.py) | The three stage-A designs, and the hand-written stage-B iterations. Builds the messages: system, task, evidence, instruction |
 | [`verdict.py`](verdict.py) | Parse one verdict; combine samples under the three vote rules |
 | [`budget.py`](budget.py) | Tokens to cost, with the price and cache rules above |
-| [`errors.py`](errors.py) | Print one dev pass's errors — the input to the next stage-B iteration |
-| [`compare.py`](compare.py) | Compare dev runs and name the stage winner |
+| [`errors.py`](errors.py) | Print one dev pass's errors — the input to the next stage-B iteration. Refuses holdout records |
+| [`compare.py`](compare.py) | Name the stage winner: stage A on dev F1, stage B on holdout F1 |
 | [`run_one.py`](run_one.py) | One patch, N samples, one record |
 | [`evaluate.py`](evaluate.py) | One side of the split: records, summary, budget, head-to-head |
 
@@ -450,33 +575,31 @@ Guards live in [`tests/test_llmjudge_baseline.py`](../../tests/test_llmjudge_bas
 
 ## 11. Usage
 
-Run from `src/`.
+Run from `src/`. Section 6 carries the protocol's command sequence in order.
+These are the entry points and their options.
 
 ```bash
-# print the dev queue and stop, before any model call
+# print a queue and stop, before any model call
 uv run -m baseline_llmjudge.evaluate --side dev --dry_run
 
-# STAGE A — the three designs, blind, in any order
+# one side of the split, one prompt version
 uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v1
-uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v2
-uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v3
-uv run -m baseline_llmjudge.compare  --stage A
+uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2.1 \
+  --confirm_holdout \
+  --tool_records ../results/eval_holdout_<timestamp>/records.jsonl
 
-# STAGE B — read the winner's errors, write the next iteration, run it
+# a dev pass's errors — the input to the next hand-written iteration
 uv run -m baseline_llmjudge.errors \
   --records ../results/llmjudge_dev_v2_<timestamp>/records.jsonl
-uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v2.1
-uv run -m baseline_llmjudge.compare  --stage B --base v2
+
+# name the stage winner: stage A on dev F1, stage B on holdout F1
+uv run -m baseline_llmjudge.compare --stage A
+uv run -m baseline_llmjudge.compare --stage B --base v2
 
 # one patch, to reproduce a single error by hand
 uv run -m baseline_llmjudge.run_one -o \
   --patch_file ../drr/Patches/Doverfitting/DeepRepair/Lang/patch1-Lang-27-DeepRepair.patch \
   --prompt_version v2 --samples 5
-
-# the holdout, once, with the frozen winner and a paired comparison
-uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2.2 \
-  --confirm_holdout \
-  --tool_records ../results/eval_holdout_<timestamp>/records.jsonl
 ```
 
 | Option | Meaning |
@@ -490,6 +613,7 @@ uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2.2 \
 | `--refresh_context` | Re-extract even when cached |
 | `--tool_records` | A pipeline `records.jsonl`, for the paired head-to-head |
 | `--confirm_holdout` | Required for `--side holdout` |
+| `--out_dir` | Override the run directory; the default name carries the side |
 | `--dry_run` | Build the queue and stop |
 
 Output lands in `results/llmjudge_<side>_<version>_<timestamp>/`:

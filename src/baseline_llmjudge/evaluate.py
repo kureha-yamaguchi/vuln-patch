@@ -12,8 +12,13 @@ the same exclusions, and inherit the same `-c` / `-o` ground truth. A second
 implementation of the queue would be a place for the two populations to drift
 apart.
 
-`--side holdout` refuses to run without `--confirm_holdout`. The holdout is
-read once, after a prompt version is frozen on dev.
+`--side holdout` refuses to run without `--confirm_holdout`.
+
+Stage B selects on holdout F1, so every stage-B iteration gets a holdout pass.
+A holdout pass is a SCORING pass and nothing else: it returns the numbers in
+`summary.json`, and its `records.jsonl` is never read for refinement.
+`errors.py` refuses holdout records, so that rule is enforced rather than
+remembered.
 """
 import argparse
 import json
@@ -77,8 +82,9 @@ def main() -> int:
         return 2
 
     if args.side == 'holdout' and not args.confirm_holdout:
-        print("REFUSING: --side holdout needs --confirm_holdout. Freeze a "
-              "prompt version on dev first; see the README protocol.",
+        print("REFUSING: --side holdout needs --confirm_holdout. A holdout "
+              "pass scores a registered version and nothing else — never "
+              "read its errors. See the README protocol.",
               file=sys.stderr)
         return 2
 

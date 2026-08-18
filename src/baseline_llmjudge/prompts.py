@@ -10,11 +10,17 @@ would carry information the earlier ones did not. Pick the best dev F1.
     v3  ─┘
 
 STAGE B — refinement of the stage-A winner, three turns. Each turn DOES read the
-previous run's errors. An iteration is named `<winner>.<n>`:
+previous run's DEV errors. An iteration is named `<winner>.<n>`:
 
-    v2  ──→ read v2's errors ──→ v2.1 ──→ read v2.1's errors ──→ v2.2 ──→ ...
+    v2  ──→ read v2's dev errors ──→ v2.1 ──→ read v2.1's dev errors ──→ v2.2 ──→ ...
 
-Pick the best dev F1 among the three iterations, freeze it, run the holdout once.
+Every iteration is then run on both sides. The dev run feeds the next turn. The
+holdout run selects: the iteration with the best HOLDOUT F1 wins.
+
+The holdout gives one number per iteration and never gives a sentence, because
+`errors.py` refuses holdout records. So no holdout evidence reaches any prompt.
+The bias that does remain is a selection bias: the winner's holdout F1 is a
+maximum over three, so all three rows must be published.
 
 The numbers v1, v2 and v3 are labels, not an order: the three stage-A designs
 run independently. A fourth draft was dropped before any run, because it was a
@@ -35,7 +41,9 @@ record carries `prompt_sha256`, so a silent edit is detectable.
 CHANGELOG
   v1, v2, v3   stage-A designs, authored blind. Not yet scored.
   <winner>.1-3 stage-B iterations. Record here what each one repaired, and
-               which error class the dev log showed.
+               which error class the DEV log showed. Never cite a holdout
+               error here: an iteration's stated reason is its audit trail,
+               and a holdout reason would prove the holdout leaked.
 """
 import hashlib
 import re
@@ -206,13 +214,13 @@ def register(version: PromptVersion) -> PromptVersion:
 
 
 # --- Stage B: iterations of the stage-A winner -------------------------------
-# Add one entry per turn, AFTER you have read the previous run's errors with
-#     uv run -m baseline_llmjudge.errors --records <run>/records.jsonl
-# Set `hypothesis` to the error class the iteration repairs. Copy this shape:
+# Add one entry per turn, AFTER you have read the previous run's DEV errors:
+#     uv run -m baseline_llmjudge.errors --records <dev run>/records.jsonl
+# Set `hypothesis` to the error class the DEV log showed. Copy this shape:
 #
 # register(PromptVersion(
 #     name='v2.1',
-#     hypothesis='v2 produced 7 FP and 2 FN. It called a correct patch '
+#     hypothesis='v2 produced 7 FP and 2 FN on dev. It called a correct patch '
 #                'overfitting whenever the fix was narrower than the developer '
 #                'fix, so require the surviving input to be spelled out.',
 #     task=V2.task,

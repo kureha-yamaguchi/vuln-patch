@@ -153,7 +153,8 @@ cmp_rc=${PIPESTATUS[0]}
   echo "run dirs  : $RUN_DIRS"
   echo "logs      : $LOGDIR"
   echo "next      : fill the stage-A table in src/baseline_llmjudge/README.md,"
-  echo "            then stage B — errors.py on the winner's records.jsonl."
+  echo "            run the winner once on holdout as stage B's reference row,"
+  echo "            then stage B — errors.py on the winner's DEV records.jsonl."
 } | tee -a "$LOG"
 
 exit $cmp_rc
