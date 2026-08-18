@@ -42,7 +42,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--side', required=True, choices=['dev', 'holdout'])
     ap.add_argument('--prompt_version', default='v0',
-                    choices=list(prompts.VERSION_ORDER))
+                    help=f'stage-A design or stage-B iteration; registered: '
+                         f'{prompts.known_versions()}')
     ap.add_argument('--samples', type=int, default=run_one.DEFAULT_SAMPLES)
     ap.add_argument('--projects', default='',
                     help='space-separated allow-list; default = every '
@@ -66,6 +67,14 @@ def main() -> int:
                     help='build the queue and stop')
     args = ap.parse_args()
 
+    # Resolve the version first: a typo, or a stage-B iteration that has not
+    # been registered yet, must fail before any directory is created.
+    try:
+        version = prompts.resolve(args.prompt_version)
+    except ValueError as exc:
+        print(f"REFUSING: {exc}", file=sys.stderr)
+        return 2
+
     if args.side == 'holdout' and not args.confirm_holdout:
         print("REFUSING: --side holdout needs --confirm_holdout. Freeze a "
               "prompt version on dev first; see the README protocol.",
@@ -81,8 +90,9 @@ def main() -> int:
     queue_path = out_dir / 'queue.txt'
     queue = _build_queue(args.side, args.projects, queue_path)
     print(f"Output dir     : {out_dir}")
-    print(f"Prompt version : {args.prompt_version} "
-          f"({prompts.VERSIONS[args.prompt_version].hypothesis})")
+    print(f"Prompt version : {version.name}  "
+          f"[stage {prompts.stage_of(version.name)}]")
+    print(f"Hypothesis     : {version.hypothesis}")
     print(f"Patches queued : {len(queue)}")
     print(f"Samples each   : {args.samples}  "
           f"({len(queue) * args.samples} model calls minimum)")
@@ -205,7 +215,11 @@ def summarise(records: List[Dict], spend: Dict, *, side: str, version: str,
     summary: Dict = {
         'side': side,
         'prompt_version': version,
-        'prompt_hypothesis': prompts.VERSIONS[version].hypothesis,
+        'prompt_stage': prompts.stage_of(version),
+        'prompt_base': prompts.base_of(version),
+        'prompt_hypothesis': prompts.resolve(version).hypothesis,
+        'prompt_sha256': prompts.version_sha256(version),
+        'prompt_text': prompts.version_text(version),
         'samples_per_patch': samples,
         'model': model,
         'reasoning_effort': config.OPENAI_REASONING_EFFORT,

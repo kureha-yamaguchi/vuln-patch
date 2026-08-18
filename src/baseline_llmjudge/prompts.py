@@ -1,26 +1,47 @@
-"""The four frozen prompt versions of the dev iteration protocol.
+"""The prompt versions of the two-stage dev protocol.
 
-One version per iteration. Each one is frozen: once a version has been scored
-on the dev side, its text must not change, because the recorded dev score
-refers to that text. A new idea becomes a new version.
+STAGE A — blind bake-off. Three INDEPENDENT designs, each run once on the dev
+side. No error log is read during this stage: reading one design's errors before
+the others have run would make the comparison unfair, because the later designs
+would carry information the earlier ones did not. Pick the best dev F1.
 
-The system message is identical across versions on purpose. The only variable
-between versions is the task wording, so a dev score difference cannot come
-from two changes at once.
+    v0  ─┐
+    v2  ─┼─  each run once on dev, blind  ─→  best dev F1 wins
+    v3  ─┘
 
-Every version shares one output contract: the last line names the class, and
-the class vocabulary never changes. That keeps the output space equal to the
-pipeline's — one bit, two values, no abstain, no score.
+STAGE B — refinement of the stage-A winner, three turns. Each turn DOES read the
+previous run's errors. An iteration is named `<winner>.<n>`:
+
+    v2  ──→ read v2's errors ──→ v2.1 ──→ read v2.1's errors ──→ v2.2 ──→ ...
+
+Pick the best dev F1 among the three iterations, freeze it, run the holdout once.
+
+The names v0, v2 and v3 are historical: a fourth draft, v1, was a strict subset
+of v2 and was dropped. The numbering does NOT imply an order, because the three
+stage-A designs run independently.
+
+WHAT IS HELD CONSTANT ACROSS EVERY VERSION
+  * the system message,
+  * the evidence (extracted once per patch and cached),
+  * the output contract — the last line names one of two classes.
+Only the task wording and the instruction move. So a dev score difference has
+one cause.
+
+FREEZING
+A version is frozen once it has been run on dev, because its recorded score
+refers to its text. A later idea becomes a new version, never an edit. Every
+record carries `prompt_sha256`, so a silent edit is detectable.
 
 CHANGELOG
-  v0, v1  designed before the first dev run (the baseline and the definition).
-  v2, v3  designed before the first dev run as well, from the failure modes
-          the drr corpus is known to contain. The protocol allows either to be
-          REPLACED (never edited) once the v0/v1 dev errors are read. Record
-          any replacement here, with the error class that motivated it.
+  v0, v2, v3   stage-A designs, authored blind. Not yet scored.
+  v1           dropped before any run: a strict subset of v2.
+  <winner>.1-3 stage-B iterations. Record here what each one repaired, and
+               which error class the dev log showed.
 """
+import hashlib
+import re
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 # Mirrors the pipeline's framing ("You are an expert Java security engineer
 # who writes Jazzer fuzzing harnesses") with the task swapped.
@@ -58,18 +79,27 @@ DEFINITIONS = (
     " any more."
 )
 
+_SHARED_TASK = (
+    "Below is a Java bug, the test that reports it, and a candidate patch"
+    " for it. Decide whether the patch fixes the root cause, or only the"
+    " reported symptom."
+)
+
 
 @dataclass(frozen=True)
 class PromptVersion:
     name: str
-    hypothesis: str      # why this version differs from the one before it
+    hypothesis: str      # what this version's design bets on
     task: str            # text before the evidence
     instruction: str     # text after the evidence
 
 
+# --- Stage A: three independent designs -------------------------------------
+
 V0 = PromptVersion(
     name='v0',
-    hypothesis='Floor. Evidence, the question, and the output contract only.',
+    hypothesis='Floor. Evidence, the question, and the output contract only. '
+               'No definition, no method — what the model does unaided.',
     task=(
         "Below is a Java bug, the test that reports it, and a candidate patch."
         " Decide whether the patch is a complete fix."
@@ -80,36 +110,12 @@ V0 = PromptVersion(
     ),
 )
 
-V1 = PromptVersion(
-    name='v1',
-    hypothesis=(
-        'v0 leaves the class boundary and the plausibility premise to be '
-        'guessed. State both, and ask for a concrete surviving input.'
-    ),
-    task=(
-        "Below is a Java bug, the test that reports it, and a candidate patch"
-        " for it. Decide whether the patch fixes the root cause, or only the"
-        " reported symptom."
-    ),
-    instruction=(
-        GROUND_RULES + "\n\n" + DEFINITIONS + "\n\n"
-        "Name one concrete input that still reaches the fault under this"
-        " patch, if one exists. Then give your verdict.\n\n" + CONTRACT
-    ),
-)
-
 V2 = PromptVersion(
     name='v2',
-    hypothesis=(
-        'A free-form answer drifts toward style review, and toward calling a '
-        'narrow patch incomplete without evidence. Fix the decision procedure '
-        'and require a named input for the positive class.'
-    ),
-    task=(
-        "Below is a Java bug, the test that reports it, and a candidate patch"
-        " for it. Decide whether the patch fixes the root cause, or only the"
-        " reported symptom."
-    ),
+    hypothesis='Definitions, the plausibility premise, a five-step method, and '
+               'two calibration rules. Bets that a method plus guard rails '
+               'beats an unaided answer.',
+    task=_SHARED_TASK,
     instruction=(
         GROUND_RULES + "\n\n" + DEFINITIONS + "\n\n"
         "Work through these steps:\n"
@@ -140,15 +146,10 @@ V2 = PromptVersion(
 
 V3 = PromptVersion(
     name='v3',
-    hypothesis=(
-        "v2's steps are advice the answer can skip. Make them required "
-        "output sections, so each one is actually performed."
-    ),
-    task=(
-        "Below is a Java bug, the test that reports it, and a candidate patch"
-        " for it. Decide whether the patch fixes the root cause, or only the"
-        " reported symptom."
-    ),
+    hypothesis='Definitions, the plausibility premise, and five REQUIRED '
+               'output sections. Bets that a form the answer must fill in '
+               'beats a method it may skip.',
+    task=_SHARED_TASK,
     instruction=(
         GROUND_RULES + "\n\n" + DEFINITIONS + "\n\n"
         "Answer in exactly these five sections, each one heading followed by"
@@ -166,16 +167,102 @@ V3 = PromptVersion(
     ),
 )
 
-VERSIONS: Dict[str, PromptVersion] = {v.name: v for v in (V0, V1, V2, V3)}
-VERSION_ORDER = ('v0', 'v1', 'v2', 'v3')
+#: The stage-A designs. Each runs once on dev, blind, in any order.
+BASE_VERSIONS: Tuple[str, ...] = ('v0', 'v2', 'v3')
+
+VERSIONS: Dict[str, PromptVersion] = {v.name: v for v in (V0, V2, V3)}
+
+# An iteration is '<base>.<n>', e.g. 'v2.1'.
+_ITERATION_RE = re.compile(r'^(?P<base>v\d+)\.(?P<n>[1-9]\d*)$')
 
 
-def build_messages(version: str, evidence_text: str) -> List[Dict[str, str]]:
+def register(version: PromptVersion) -> PromptVersion:
+    """Add a stage-B iteration.
+
+    The name must be `<base>.<n>` for one of the stage-A designs, so the
+    lineage of every score is readable from its name alone. Re-registration is
+    refused: a scored version is frozen, and a new idea is a new iteration."""
+    m = _ITERATION_RE.match(version.name)
+    if not m:
+        raise ValueError(
+            f"{version.name!r} is not an iteration name; expected "
+            f"'<base>.<n>' with base in {BASE_VERSIONS}, e.g. 'v2.1'")
+    if m.group('base') not in BASE_VERSIONS:
+        raise ValueError(f"unknown base {m.group('base')!r}; "
+                         f"expected one of {BASE_VERSIONS}")
+    if version.name in VERSIONS:
+        raise ValueError(f"{version.name!r} is already registered; a scored "
+                         f"version is frozen — add a new iteration instead")
+    VERSIONS[version.name] = version
+    return version
+
+
+# --- Stage B: iterations of the stage-A winner -------------------------------
+# Add one entry per turn, AFTER you have read the previous run's errors with
+#     uv run -m baseline_llmjudge.errors --records <run>/records.jsonl
+# Set `hypothesis` to the error class the iteration repairs. Copy this shape:
+#
+# register(PromptVersion(
+#     name='v2.1',
+#     hypothesis='v2 produced 7 FP and 2 FN. It called a correct patch '
+#                'incomplete whenever the fix was narrower than the developer '
+#                'fix, so require the surviving input to be spelled out.',
+#     task=V2.task,
+#     instruction=V2.instruction.replace(
+#         'Answer INCOMPLETE only when you can name a concrete input',
+#         'Answer INCOMPLETE only when you WRITE OUT a concrete input'),
+# ))
+
+
+def is_iteration(name: str) -> bool:
+    return bool(_ITERATION_RE.match(name))
+
+
+def base_of(name: str) -> str:
+    """The stage-A design a version belongs to ('v2.1' -> 'v2')."""
+    m = _ITERATION_RE.match(name)
+    return m.group('base') if m else name
+
+
+def iterations_of(base: str) -> List[str]:
+    """Registered iterations of one design, in numeric order."""
+    return sorted((n for n in VERSIONS
+                   if is_iteration(n) and base_of(n) == base),
+                  key=lambda n: int(n.split('.')[1]))
+
+
+def stage_of(name: str) -> str:
+    return 'B' if is_iteration(name) else 'A'
+
+
+def known_versions() -> List[str]:
+    return list(BASE_VERSIONS) + [n for n in VERSIONS
+                                  if is_iteration(n)]
+
+
+def resolve(name: str) -> PromptVersion:
+    if name not in VERSIONS:
+        raise ValueError(
+            f"unknown prompt version {name!r}. Registered: "
+            f"{known_versions()}. A stage-B iteration must be added to "
+            f"prompts.py with register() before it can be run.")
+    return VERSIONS[name]
+
+
+def version_text(name: str) -> str:
+    """The version's own wording: system, task and instruction, no evidence."""
+    v = resolve(name)
+    return '\n\n'.join([SYSTEM, v.task, v.instruction])
+
+
+def version_sha256(name: str) -> str:
+    """Digest of the wording, so a scored version cannot be edited unnoticed."""
+    return hashlib.sha256(version_text(name).encode()).hexdigest()
+
+
+def build_messages(name: str, evidence_text: str) -> List[Dict[str, str]]:
     """The chat-completion messages for one candidate patch."""
-    if version not in VERSIONS:
-        raise ValueError(f"unknown prompt version {version!r}; "
-                         f"expected one of {VERSION_ORDER}")
-    v = VERSIONS[version]
+    v = resolve(name)
     return [
         {'role': 'system', 'content': SYSTEM},
         {'role': 'user',

@@ -13,6 +13,7 @@ patch vary through the provider's own nondeterminism. The README says so in the
 "Same model" section, because it changes what the five samples measure.
 """
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -58,6 +59,8 @@ def classify(patch_path: str, label: str, *,
         'project': None, 'bug_id': None, 'apr_tool': None,
         'patch': os.path.basename(patch_path),
         'prompt_version': version,
+        'prompt_stage': prompts.stage_of(version),
+        'prompt_base': prompts.base_of(version),
         'model': model,
         'reasoning_effort': config.OPENAI_REASONING_EFFORT,
         'git_sha': _git_sha(),
@@ -79,6 +82,15 @@ def classify(patch_path: str, label: str, *,
 
     messages = prompts.build_messages(version, ev.text)
     rec['prompt_chars'] = sum(len(m['content']) for m in messages)
+    # The evidence is meant to be byte-identical across prompt versions, so
+    # that a dev score difference can only come from the wording. Recording
+    # its digest makes that a CHECK rather than an assumption: two version
+    # runs of the same patch must carry the same value here.
+    rec['evidence_sha256'] = hashlib.sha256(ev.text.encode()).hexdigest()
+    # Which prompt TEXT produced this score. A version is a draft until it is
+    # run, then it is frozen; this digest is what makes that rule checkable
+    # after the fact instead of a promise about editing discipline.
+    rec['prompt_sha256'] = prompts.version_sha256(version)
     generator = HarnessGenerator(model=model, temperature=0.6, top_p=1.0)
 
     results: List[Dict] = []
@@ -152,7 +164,8 @@ def main() -> int:
     group.add_argument('-o', '--overfitting', action='store_true',
                        help='ground truth: this patch is overfitting')
     ap.add_argument('--prompt_version', default='v0',
-                    choices=list(prompts.VERSION_ORDER))
+                    help=f'stage-A design or stage-B iteration; registered: '
+                         f'{prompts.known_versions()}')
     ap.add_argument('--samples', type=int, default=DEFAULT_SAMPLES)
     ap.add_argument('--model', default=None,
                     help=f'default: config.LOCAL_LLM_MODEL '
