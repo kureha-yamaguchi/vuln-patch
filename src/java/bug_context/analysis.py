@@ -21,9 +21,11 @@ import javalang
 
 import config
 from java.parsing.java_source import match_brace
-from java.bug_context.call_graph import (fi_method_name, arg_count, reachable_of,
-                        with_timeout, is_project_fn, project_prefix,
-                        short_name)
+from java.bug_context.call_graph import (
+    arg_count, fi_method_name, is_project_fn, mangled_param_types,
+    project_prefix, qualified_label, reachable_of, receiver_of, short_name,
+    simple_type, with_timeout,
+)
 try:
     from fuzz_introspector import commands as fi_commands
     _FI_AVAILABLE = True
@@ -177,6 +179,34 @@ class TouchedFunction:
     func_name: str
     func_signature: str
     func_source: str
+    # The class that DECLARES this function, nested classes joined with a
+    # dot ('StringEscapeUtils.CsvEscaper'). fuzz-introspector keys its
+    # functions by mangled name, and a bare method name matches several
+    # classes in any project with an override or a utility hierarchy, so
+    # the declaring class is what makes the lookup unambiguous.
+    func_class: Optional[str] = None
+    # The same class with its package ('org.apache.commons.lang.
+    # NumberUtils'). commons-lang declares NumberUtils twice, in two
+    # packages, so a simple class name still leaves two candidates. None
+    # when the file declares no package.
+    func_class_fq: Optional[str] = None
+    # Simple parameter type names from the AST ('CharSequence', 'Writer').
+    # Two overloads can take the same NUMBER of arguments, so a count is
+    # not enough to tell them apart.
+    func_param_types: List[str] = field(default_factory=list)
+    # The introspector mangled name this function resolved to, or None
+    # when the lookup failed. Recorded because every downstream pass that
+    # must exclude the touched function itself has to compare THIS, not a
+    # display name.
+    fi_name: Optional[str] = None
+    # Parameter types of EVERY method declared beside this one under the
+    # same class and name — this function's real overload set, read from
+    # the AST. It is what separates a genuine sibling overload from the
+    # same function under a second spelling: the JVM frontend mis-types
+    # call arguments (it reports TimeSeries.createCopy(RegularTimePeriod,
+    # RegularTimePeriod) as createCopy(TimeSeries, TimeSeries)), so a
+    # mangled name alone cannot say which function it denotes.
+    overload_types: List[List[str]] = field(default_factory=list)
     xrefs: List[str] = field(default_factory=list)
     # Statically reachable functions from this touched function, per
     # fuzz-introspector's call graph. This is the slice of the codebase
@@ -213,6 +243,12 @@ class PatchContext:
     # should collectively cover. Drives the variant-analysis prompt
     # block. Empty if fuzz-introspector produced no reachability data.
     root_cause_reachable: List[str] = field(default_factory=list)
+    # One note per problem met while the neighbourhood was built, e.g.
+    # 'unresolved:translate' or 'ambiguous:toBoolean'. An EMPTY list and an
+    # empty `root_cause_reachable` then mean different things: the first is
+    # a function with no project callee, the second is a lookup that
+    # failed. Without this a failed extraction reads as a leaf.
+    neighbourhood_notes: List[str] = field(default_factory=list)
 
     # Import statements from the modified source files, read verbatim.
     # Gives the LLM the correct package paths for types like Range and
@@ -281,16 +317,24 @@ class TargetAnalyzer:
         # fuzz-introspector still earns its keep for xrefs by name —
         # we run it once and look up each enclosing method.
         project = self._light_project_safe(buggy_dir)
-        functions = self._enrich_with_xrefs(enclosing, project)
+        notes: List[str] = []
+        functions = self._enrich_with_xrefs(enclosing, project, notes)
 
         # Aggregate the reachable neighbourhood of the root cause across
         # all touched functions, preserving first-seen order and
         # dropping the touched functions themselves (the prompt already
         # shows those in full).
-        touched_names = {fn.func_name for fn in functions}
+        #
+        # The exclusion is by SIGNATURE, never by bare method name (see
+        # `_is_touched_self`). A different overload of the touched method
+        # shares its bare name, so a name test discards that overload as
+        # if it were the touched function itself. That is not a rare
+        # shape: it is the entire neighbourhood of
+        # CharSequenceTranslator.translate, whose every neighbour is
+        # another `translate`. `_resolve_related_callees` already excludes
+        # by signature for this same reason.
         proj_prefix = project_prefix(package)
-        root_cause_reachable: List[str] = []
-        seen_reach: set = set()
+        survivors: List[str] = []
         for fn in functions:
             for name in fn.reachable:
                 # Keep project functions; drop JDK noise (Double.isNaN,
@@ -298,11 +342,11 @@ class TargetAnalyzer:
                 # in but that isn't part of the root-cause neighbourhood.
                 if proj_prefix and not is_project_fn(name, proj_prefix):
                     continue
-                short = short_name(name)
-                if short in touched_names or short in seen_reach:
+                if self._is_touched_self(name, functions):
                     continue
-                seen_reach.add(short)
-                root_cause_reachable.append(short)
+                survivors.append(name)
+        root_cause_reachable = self._labels_for(
+            self._dedupe(survivors, functions))
 
         return PatchContext(
             modified_files=modified_files,
@@ -310,8 +354,105 @@ class TargetAnalyzer:
             functions=functions,
             package=package,
             root_cause_reachable=root_cause_reachable,
+            neighbourhood_notes=notes,
             source_imports=self._resolve_imports(modified_files, buggy_dir),
         )
+
+    def _is_touched_self(self, mangled: str,
+                         functions: List[TouchedFunction]) -> bool:
+        """True when `mangled` denotes a function the prompt already shows.
+
+        Three tests, because neither the mangled name nor the method name
+        is reliable on its own:
+
+          1. the resolved name matches exactly;
+          2. the class, the name and the PARAMETER TYPES all match — the
+             same function, spelled differently;
+          3. the class, the name and the ARITY match, and the types match
+             no real overload declared in the source — a mis-typed
+             spelling of the same function.
+
+        Anything else is kept, including a genuine overload of the same
+        name. Test 3 is deliberately narrow: an overload the source really
+        declares survives it, so the abstract `translate(CharSequence,
+        int, Writer)` stays in `translate(CharSequence, Writer)`'s
+        neighbourhood."""
+        params = mangled_param_types(mangled)
+        name = fi_method_name(mangled)
+        for fn in functions:
+            if fn.fi_name and mangled == fn.fi_name:
+                return True
+            if name != fn.func_name or not self._same_class(
+                    mangled, fn.func_class, fn.func_class_fq):
+                continue
+            own = [simple_type(x) for x in (fn.func_param_types or [])]
+            if params == own:
+                return True
+            declared = [[simple_type(x) for x in o]
+                        for o in (fn.overload_types or [])]
+            if len(params) == len(own) and params not in declared:
+                return True
+        return False
+
+    def _dedupe(self, mangled_names: List[str],
+                functions: List[TouchedFunction]) -> List[str]:
+        """One entry per function, in first-seen order.
+
+        The key is class + method + arity rather than the mangled name,
+        because one function arrives under two spellings: the call graph
+        reports the mis-typed `isAllZeros(NumberUtils)` and the source
+        pass reports the real `isAllZeros(String)`. Keyed on the raw name,
+        the neighbourhood would name that one function twice.
+
+        When two spellings collide, the one whose parameter types the
+        SOURCE declares wins, so the region reads in the project's own
+        vocabulary."""
+        best: Dict[tuple, str] = {}
+        order: List[tuple] = []
+        for name in mangled_names:
+            key = (short_name(name), arg_count(name))
+            if key not in best:
+                best[key] = name
+                order.append(key)
+            elif (self._is_declared_spelling(name, functions)
+                  and not self._is_declared_spelling(best[key], functions)):
+                best[key] = name
+        return [best[k] for k in order]
+
+    def _is_declared_spelling(self, mangled: str,
+                              functions: List[TouchedFunction]) -> bool:
+        """True when the source declares an overload with exactly these
+        parameter types.
+
+        Only knowable for a method that shares its class and name with a
+        touched function, which is the case the two spellings arise in.
+        False for anything else, so first-seen wins there."""
+        params = mangled_param_types(mangled)
+        name = fi_method_name(mangled)
+        for fn in functions:
+            if name != fn.func_name or not self._same_class(
+                    mangled, fn.func_class, fn.func_class_fq):
+                continue
+            declared = [[simple_type(x) for x in o]
+                        for o in (fn.overload_types or [])]
+            if params in declared:
+                return True
+        return False
+
+    @staticmethod
+    def _labels_for(mangled_names: List[str]) -> List[str]:
+        """Prompt labels for the kept neighbourhood, in the given order.
+
+        `Class.method` is the label. When two KEPT functions share one
+        label — two overloads of the same method — both get their
+        parameter types appended instead, because a list that names the
+        same thing twice tells the reader nothing about either one."""
+        labels = [short_name(n) for n in mangled_names]
+        clashing = {lab for lab in labels if labels.count(lab) > 1}
+        out: List[str] = []
+        for name, lab in zip(mangled_names, labels):
+            out.append(qualified_label(name) if lab in clashing else lab)
+        return out
 
     # --- patch parsing ---------------------------------------------------
 
@@ -431,6 +572,14 @@ class TargetAnalyzer:
                     func_name=m['name'],
                     func_signature=m['signature'],
                     func_source=body,
+                    func_class=m.get('class'),
+                    func_class_fq=self._qualify(tree, m.get('class')),
+                    func_param_types=list(m.get('param_types') or []),
+                    overload_types=[
+                        list(o.get('param_types') or []) for o in methods
+                        if o['name'] == m['name']
+                        and o.get('class') == m.get('class')
+                    ],
                 )
                 # Additive enrichment: surface the methods this function
                 # calls within its body whose contract the patch depends
@@ -933,7 +1082,7 @@ class TargetAnalyzer:
         what we want when a patch lands inside an anonymous class.
         """
         methods: List[dict] = []
-        for _, node in tree:
+        for path, node in tree:
             if not isinstance(
                 node,
                 (javalang.tree.MethodDeclaration,
@@ -947,11 +1096,50 @@ class TargetAnalyzer:
             methods.append({
                 'name': node.name,
                 'signature': self._format_method_sig(node),
+                'class': self._declaring_class(path),
+                'param_types': [self._format_type(p.type)
+                                for p in (node.parameters or [])],
                 'start': start,
                 'end': end,
                 'node': node,
             })
         return methods
+
+    @staticmethod
+    def _qualify(tree, class_name: Optional[str]) -> Optional[str]:
+        """`package.Class` from the compilation unit's own declaration.
+
+        Read from the parsed tree, so it costs nothing beyond the parse
+        that already happened."""
+        pkg = getattr(getattr(tree, 'package', None), 'name', None)
+        if not pkg or not class_name:
+            return None
+        return f'{pkg}.{class_name}'
+
+    @staticmethod
+    def _declaring_class(path) -> Optional[str]:
+        """The dotted class path of the type that declares a node.
+
+        `path` is javalang's ancestor chain. It alternates a node with the
+        child COLLECTION that holds the next node, so only the plain-node
+        entries are ancestors. The lists are skipped deliberately: a list
+        of body declarations also holds the node's SIBLINGS, and reading
+        those in would staple unrelated nested classes onto the name.
+
+        Taking the class from the AST rather than from the file name is
+        what keeps a nested class right: CsvEscaper lives in
+        StringEscapeUtils.java, so the file name would call it
+        StringEscapeUtils."""
+        types = (javalang.tree.ClassDeclaration,
+                 javalang.tree.InterfaceDeclaration,
+                 javalang.tree.EnumDeclaration)
+        names: List[str] = []
+        for node in (path or ()):
+            if isinstance(node, (list, tuple)):
+                continue
+            if isinstance(node, types) and getattr(node, 'name', None):
+                names.append(node.name)
+        return '.'.join(names) if names else None
 
     @staticmethod
     def _smallest_containing(methods: List[dict],
@@ -1131,6 +1319,7 @@ class TargetAnalyzer:
         self,
         functions: List[TouchedFunction],
         project,
+        notes: Optional[List[str]] = None,
     ) -> List[TouchedFunction]:
         """Look up each AST-resolved enclosing method in the
         fuzz-introspector project and attach its statically reachable
@@ -1146,10 +1335,12 @@ class TargetAnalyzer:
         ``[pkg.Class].method(argtypes)`` — disambiguating overloads by
         argument count — and call the real reachability API."""
         if project is None:
+            if notes is not None:
+                notes.append('introspector_unavailable')
             return functions
         index = self._build_fi_index(project)
         for fn in functions:
-            mangled = self._match_fi_name(fn, index)
+            mangled = self._match_fi_name(fn, index, notes)
             if mangled is None:
                 # Legacy fallback for older introspector versions whose
                 # find_function_by_name accepted a bare name.
@@ -1161,6 +1352,7 @@ class TargetAnalyzer:
                     mangled = None
             if not mangled:
                 continue
+            fn.fi_name = mangled
             try:
                 xrefs = project.get_cross_references_by_name(mangled)
                 # get_cross_references_by_name returns one entry per CALL
@@ -1193,7 +1385,8 @@ class TargetAnalyzer:
             bfs = reachable_of(project, mangled,
                                self.reachable_node_cap,
                                self.reachable_max_depth)
-            src = self._source_callees(fn.func_source, index)
+            src = self._source_callees(fn.func_source, index,
+                                       own_class=fn.func_class)
             seen, merged = set(), []
             for name in bfs + src:
                 if name and name not in seen:
@@ -1203,7 +1396,8 @@ class TargetAnalyzer:
         return functions
 
     def _source_callees(self, func_source: Optional[str],
-                        index: Dict[str, List[str]]) -> List[str]:
+                        index: Dict[str, List[str]],
+                        own_class: Optional[str] = None) -> List[str]:
         """Method names the function's SOURCE invokes, resolved to
         introspector mangled names for project methods only.
 
@@ -1211,10 +1405,16 @@ class TargetAnalyzer:
         JDK/static calls (ceil, sqrt, isNaN) are dropped because they are
         not keys in the project fi index. Returns [] without an index
         (introspector unavailable) — source names alone can't be
-        distinguished from JDK ones reliably."""
+        distinguished from JDK ones reliably.
+
+        An unqualified call resolves against `own_class` first, and
+        against the call's argument count second. Both matter: the call is
+        on `this`, so its target is declared by this class or inherited by
+        it, and one class can declare several overloads of the name."""
         if not func_source or not index:
             return []
         names = set()
+        arity: Dict[str, int] = {}
         try:
             tree = javalang.parse.parse(
                 "class _Wrap { " + func_source + " }")
@@ -1227,14 +1427,21 @@ class TargetAnalyzer:
                 # the static graph already resolves.
                 if node.member and node.qualifier in (None, '', 'this'):
                     names.add(node.member)
+                    arity[node.member] = len(node.arguments or [])
         except Exception:
             names.update(re.findall(r'(?:^|[=;{(\s])([a-zA-Z_]\w*)\s*\(',
                                     func_source))
         out: List[str] = []
-        for n in names:
+        for n in sorted(names):
             cands = index.get(n)
-            if cands:
-                out.append(cands[0])
+            if not cands:
+                continue
+            pool = [c for c in cands
+                    if self._same_class(c, own_class)] or cands
+            if n in arity:
+                pool = [c for c in pool
+                        if arg_count(c) == arity[n]] or pool
+            out.append(pool[0])
         return out
 
     def _build_fi_index(self, project) -> Dict[str, List[str]]:
@@ -1257,20 +1464,87 @@ class TargetAnalyzer:
         return index
 
     def _match_fi_name(self, fn: TouchedFunction,
-                       index: Dict[str, List[str]]) -> Optional[str]:
-        """Resolve a touched function to its introspector mangled name,
-        picking the overload whose argument count matches the AST
-        signature when there is more than one."""
+                       index: Dict[str, List[str]],
+                       notes: Optional[List[str]] = None) -> Optional[str]:
+        """Resolve a touched function to its introspector mangled name.
+
+        Three filters, narrowest first, because a bare method name is
+        ambiguous in any real project: commons-lang declares 14 methods
+        named `translate` and 7 named `toBoolean`.
+
+          1. the DECLARING CLASS must match, so an override in a base
+             class or a same-named method on an unrelated subclass is
+             never picked (PolygonsSet vs AbstractRegion);
+          2. the PARAMETER TYPES must match, so two overloads of equal
+             arity are told apart (toBoolean(String) vs toBoolean(Boolean));
+          3. argument count, as the last resort when the AST and
+             introspector spell a type differently.
+
+        Returns None rather than a guess when nothing matches. A guess is
+        worse than nothing here: it silently reports a different
+        function's neighbourhood as if it were this one's. Any narrowing
+        that stays ambiguous is recorded in `notes`.
+        """
         cands = index.get(fn.func_name)
         if not cands:
+            if notes is not None:
+                notes.append(f'unresolved:{fn.func_name}')
             return None
-        if len(cands) == 1:
-            return cands[0]
-        want = arg_count(fn.func_signature or '')
-        for c in cands:
-            if arg_count(c) == want:
-                return c
-        return cands[0]
+
+        by_class = [c for c in cands
+                    if self._same_class(c, fn.func_class,
+                                        fn.func_class_fq)]
+        if fn.func_class and not by_class:
+            # The class is known and no candidate declares this method.
+            # Refuse rather than fall back to another class.
+            if notes is not None:
+                notes.append(f'class_unresolved:{fn.func_class}.'
+                             f'{fn.func_name}')
+            return None
+        pool = by_class or cands
+
+        if len(pool) == 1:
+            return pool[0]
+
+        want_types = [simple_type(x) for x in (fn.func_param_types or [])]
+        by_types = [c for c in pool
+                    if mangled_param_types(c) == want_types]
+        if len(by_types) == 1:
+            return by_types[0]
+
+        want_n = (len(want_types) if fn.func_param_types is not None
+                  else arg_count(fn.func_signature or ''))
+        by_count = [c for c in (by_types or pool) if arg_count(c) == want_n]
+        pool = by_count or by_types or pool
+        if len(pool) > 1 and notes is not None:
+            notes.append(f'ambiguous:{fn.func_name}')
+        return pool[0]
+
+    @staticmethod
+    def _same_class(mangled: str, func_class: Optional[str],
+                    func_class_fq: Optional[str] = None) -> bool:
+        """True when `mangled`'s receiver declares this function's class.
+
+        With the package known the test is EXACT, which is what separates
+        `org.apache.commons.lang.NumberUtils` from
+        `org.apache.commons.lang.math.NumberUtils` — commons-lang ships
+        both, so a simple class name leaves two candidates.
+
+        Without a package it falls back to a suffix test on dotted
+        segments. That still keeps a nested class exact:
+        'StringEscapeUtils.CsvEscaper' matches the receiver
+        'org.apache.commons.lang3.StringEscapeUtils.CsvEscaper' and not
+        the receiver 'org.apache.commons.lang3.StringEscapeUtils'."""
+        recv = receiver_of(mangled)
+        if not recv:
+            return False
+        if func_class_fq:
+            return recv == func_class_fq
+        if not func_class:
+            return False
+        want = [s for s in func_class.split('.') if s]
+        have = [s for s in recv.split('.') if s]
+        return len(have) >= len(want) and have[-len(want):] == want
 
     # --- package resolution ----------------------------------------------
 

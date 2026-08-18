@@ -39,7 +39,13 @@ from java.parsing.java_source import candidate_anchor_literals
 
 from baseline_llmjudge import evidence
 
-CACHE_VERSION = 1
+# Bump when the EXTRACTION changes, not only when the rendering does.
+# A cached entry is rendered text, so an extraction fix reaches the
+# baseline only when the cache that predates it is invalidated.
+#   2: class-aware and type-aware resolution of a touched function, so the
+#      neighbourhood belongs to the patched method (see
+#      java/bug_context/analysis.py, _match_fi_name).
+CACHE_VERSION = 2
 
 
 class ContextUnavailable(Exception):
@@ -186,6 +192,9 @@ def _build(patch_path: str, label: str) -> PatchEvidence:
             'package': context.package,
             'touched_functions': [fn.func_name for fn in context.functions],
             'reachable_count': len(context.root_cause_reachable or []),
+            # Empty notes plus an empty neighbourhood means a real leaf.
+            # Notes plus an empty neighbourhood means the lookup failed.
+            'neighbourhood_notes': list(context.neighbourhood_notes or []),
             'trigger_tests': [f'{ft.test_class}::{ft.test_method}'
                               for ft in failure_tests],
             'crash_evidence_captured': bool(

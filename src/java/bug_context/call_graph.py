@@ -148,6 +148,15 @@ def as_name_list(val) -> List[str]:
     return out
 
 
+def receiver_of(mangled: str) -> str:
+    """The ``[pkg.Class]`` receiver of an introspector JVM name, or ''.
+
+    Every caller that needs the declaring class goes through this, so the
+    bracket is parsed in exactly one place."""
+    m = re.match(r'^\[([^\]]*)\]', mangled)
+    return m.group(1) if m else ''
+
+
 def is_project_fn(mangled: str, proj_prefix: str) -> bool:
     """True if a reachable function belongs to the project, judged by its
     RECEIVER class (the ``[pkg.Class]`` bracket) rather than the whole
@@ -155,9 +164,36 @@ def is_project_fn(mangled: str, proj_prefix: str) -> bool:
     the project package, so a substring check over the full name lets JDK
     statics (``Math.abs(...)``) leak through; the receiver bracket is the
     reliable signal — JDK/static calls have none."""
-    m = re.match(r'^\[([^\]]*)\]', mangled)
-    receiver = m.group(1) if m else ''
-    return proj_prefix in receiver
+    return proj_prefix in receiver_of(mangled)
+
+
+def simple_type(name: str) -> str:
+    """A parameter type reduced to its simple name, for comparison.
+
+    introspector writes a mangled parameter list in mixed spellings
+    (``CharSequence``, ``java.io.Writer``), and the AST writes the simple
+    name the source used. Comparing simple names is what lets the two
+    agree. Generic arguments are dropped, and array brackets are kept,
+    because ``byte[]`` and ``byte`` are different overloads."""
+    name = name.strip()
+    name = re.sub(r'<[^>]*>', '', name)
+    dims = '[]' * name.count('[')
+    name = name.split('[')[0].strip()
+    return name.split('.')[-1] + dims
+
+
+def mangled_param_types(mangled: str) -> List[str]:
+    """Simple parameter type names of an introspector JVM name.
+
+    Returns [] for a no-argument method and for a name with no argument
+    list at all. Use `arg_count` to tell those two apart."""
+    m = re.search(r'\(([^)]*)\)', mangled)
+    if not m:
+        return []
+    inner = m.group(1).strip()
+    if not inner:
+        return []
+    return [simple_type(a) for a in inner.split(',') if a.strip()]
 
 
 def project_prefix(package: Optional[str]) -> str:
@@ -175,12 +211,31 @@ def project_prefix(package: Optional[str]) -> str:
 
 def short_name(name: str) -> str:
     """Reduce a fully-qualified / mangled fuzz-introspector function name to
-    something readable for the prompt. JVM names often look like
-    `[pkg.Class].method(args)` or `pkg.Class.method`; we keep the
-    `Class.method` tail."""
-    # Strip any bracketed receiver prefix d4j/JVM mangling adds.
+    something readable for the prompt: the `Class.method` tail.
+
+    JVM names look like `[pkg.Class].method(args)` or `pkg.Class.method`.
+    The receiver bracket carries the declaring class, so it is FOLDED IN
+    rather than stripped. Dropping it used to reduce every overload of one
+    method to the same bare word, which made two different functions
+    indistinguishable in the prompt and made a same-name callee look like
+    the touched function itself."""
+    receiver = receiver_of(name)
     name = re.sub(r'^\[[^\]]*\]\.?', '', name).strip()
     # Drop argument lists.
     name = name.split('(')[0]
-    parts = name.split('.')
+    parts = [p for p in name.split('.') if p]
+    if receiver and len(parts) == 1:
+        return f"{receiver.split('.')[-1]}.{parts[0]}"
     return '.'.join(parts[-2:]) if len(parts) >= 2 else name
+
+
+def label_of(mangled: str) -> str:
+    """`Class.method` for the prompt. See `short_name`."""
+    return short_name(mangled)
+
+
+def qualified_label(mangled: str) -> str:
+    """`Class.method(TypeA, TypeB)` — used only to separate two kept
+    functions whose `Class.method` labels are identical."""
+    params = ', '.join(mangled_param_types(mangled))
+    return f"{short_name(mangled)}({params})"
