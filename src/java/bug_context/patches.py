@@ -174,6 +174,12 @@ class PatchSelector:
     def _ensure_checkout(self, project_name: str, bug_id: str) -> str:
         """Generates buggy directory from defects4j that corresponds with the patch
         """
+        # The checkout root must exist before `defects4j checkout` runs.
+        # d4j resolves the `-w` path with Cwd::abs_path, which returns undef
+        # when the PARENT directory is missing; that undef reaches
+        # Vcs::checkout_vid and the checkout dies with "Failed to create
+        # working directory", which we would then report as a deprecated bug.
+        os.makedirs(config.D4J_CHECKOUT_ROOT, exist_ok=True)
         buggy_dir = os.path.join(
             config.D4J_CHECKOUT_ROOT,
             f'{project_name}_{bug_id}_buggy',
