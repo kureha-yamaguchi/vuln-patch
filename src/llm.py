@@ -59,9 +59,16 @@ def _record_usage(model: str, usage) -> None:
         return
     slot = _USAGE_BY_MODEL.setdefault(
         model or 'unknown',
-        {'prompt_tokens': 0, 'completion_tokens': 0,
-         'total_tokens': 0, 'calls': 0})
+        {'prompt_tokens': 0, 'cached_prompt_tokens': 0,
+         'completion_tokens': 0, 'total_tokens': 0, 'calls': 0})
     slot['prompt_tokens'] += int(getattr(usage, 'prompt_tokens', 0) or 0)
+    # How much of that input the provider served from its prompt cache.
+    # `prompt_tokens` counts cached tokens at full count, so without this the
+    # only cost figure available is an upper bound. Absent on backends that
+    # do not report it, which reads as zero.
+    _details = getattr(usage, 'prompt_tokens_details', None)
+    slot['cached_prompt_tokens'] += int(
+        getattr(_details, 'cached_tokens', 0) or 0)
     slot['completion_tokens'] += int(
         getattr(usage, 'completion_tokens', 0) or 0)
     slot['total_tokens'] += int(getattr(usage, 'total_tokens', 0) or 0)
@@ -118,8 +125,8 @@ def _record_llm_call(model, messages, output) -> None:
 
 def usage_totals() -> Dict[str, int]:
     """Summed prompt/completion/total tokens and call count across models."""
-    out = {'prompt_tokens': 0, 'completion_tokens': 0,
-           'total_tokens': 0, 'calls': 0}
+    out = {'prompt_tokens': 0, 'cached_prompt_tokens': 0,
+           'completion_tokens': 0, 'total_tokens': 0, 'calls': 0}
     for v in _USAGE_BY_MODEL.values():
         for k in out:
             out[k] += v.get(k, 0)
