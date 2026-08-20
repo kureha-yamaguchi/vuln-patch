@@ -116,11 +116,28 @@ def _stage_warning(rows: List[Dict]) -> None:
     print("!" * 70 + "\n")
 
 
+def _pool_of(rows: List[Dict]) -> str:
+    """The bug pool these records belong to.
+
+    Each pool has its own frozen split and its own family of prompt versions,
+    so a dev log read for the wrong pool would repair the wrong wording."""
+    pools = sorted({r.get('bug_kind') for r in rows if r.get('bug_kind')})
+    return '+'.join(pools) if pools else 'unknown-pool'
+
+
+def _version_of(rows: List[Dict]) -> str:
+    versions = sorted({r.get('prompt_version') for r in rows
+                       if r.get('prompt_version')})
+    return '+'.join(versions) if versions else '?'
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--records', required=True,
                     help="a run's records.jsonl (globs are allowed)")
-    ap.add_argument('--kind', choices=['FP', 'FN', 'both'], default='both')
+    ap.add_argument('--kind', choices=['FP', 'FN', 'both'], default='both',
+                    help='which ERROR class to print. This is not the bug '
+                         'pool: a run states its pool in its own records')
     ap.add_argument('--samples_shown', type=int, default=1,
                     help='how many sample answers to print per error')
     ap.add_argument('--chars', type=int, default=1200,
@@ -138,6 +155,8 @@ def main() -> int:
     for r in rows:
         buckets[classify_error(r)].append(r)
 
+    print(f"{_pool_of(all_rows)} pass, version "
+          f"{_version_of(all_rows)}, {RULE} rule")
     print(f"scored {len(rows)} patches under the {RULE} rule")
     print(f"  right : {len(buckets['right'])}")
     print(f"  FP    : {len(buckets['FP'])}  "

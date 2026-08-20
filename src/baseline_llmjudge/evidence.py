@@ -225,3 +225,10 @@ def _reachable_block(reachable: Optional[List[str]]) -> str:
         parts.append(
             f"(+{len(reachable) - cap} more reachable functions omitted.)")
     return '\n'.join(parts)
+
+
+#: The same block under a public name, for the semantic renderer. The pipeline
+#: builds this section from `_variant_analysis_block` on both of its paths, so
+#: one renderer here keeps the two baselines from drifting apart. This is an
+#: alias, not a second rendering, so RENDERER_VERSION does not move.
+reachable_block = _reachable_block

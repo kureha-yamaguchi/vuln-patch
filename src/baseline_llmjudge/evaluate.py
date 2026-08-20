@@ -1,9 +1,11 @@
-"""Score one side of the frozen crashing split with the one-shot baseline.
+"""Score one side of a frozen split with the one-shot baseline.
 
 Usage (from src/):
     uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v1
     uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2 \\
         --confirm_holdout
+    uv run -m baseline_llmjudge.evaluate --side dev --kind semantic \\
+        --prompt_version s1
 
 The queue comes from `java/dataset/build_split_queue.py`, invoked as a
 subprocess. That is deliberate: the pipeline's own evaluator builds its queue
@@ -11,6 +13,12 @@ with the same script, so both sides score the same certified patches, honour
 the same exclusions, and inherit the same `-c` / `-o` ground truth. A second
 implementation of the queue would be a place for the two populations to drift
 apart.
+
+`--kind` selects the pool, and it defaults to `crashing`. It picks the frozen
+split file, the labels, the evidence renderer and the family of prompt versions
+that are legal. A version of the other pool is refused before any directory is
+made, because a crashing design scored against the semantic split would report
+a population change rather than a wording result.
 
 `--side holdout` refuses to run without `--confirm_holdout`.
 
@@ -22,13 +30,12 @@ remembered.
 """
 import argparse
 import json
-import math
 import shutil
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents
                             if (p / 'config.py').exists())))
@@ -39,7 +46,15 @@ from baseline_llmjudge import (budget, prompts, run_one,     # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
 QUEUE_BUILDER = REPO / 'src' / 'java' / 'dataset' / 'build_split_queue.py'
-SPLIT_FILE = REPO / 'suites' / 'splits' / 'crashing_split.jsonl'
+SPLITS = REPO / 'suites' / 'splits'
+
+#: The frozen split each pool is scored against. It is copied into every run
+#: directory, so a result never loses the population it was measured on.
+SPLIT_FILE_BY_KIND = {
+    'crashing': SPLITS / 'crashing_split.jsonl',
+    'semantic': SPLITS / 'semantic_split.jsonl',
+}
+
 RULES = ('majority', 'any', 'unanimous')
 HEADLINE_RULE = 'majority'
 
@@ -47,9 +62,12 @@ HEADLINE_RULE = 'majority'
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--side', required=True, choices=['dev', 'holdout'])
-    ap.add_argument('--prompt_version', default='v1',
-                    help=f'stage-A design or stage-B iteration; registered: '
-                         f'{prompts.known_versions()}')
+    ap.add_argument('--kind', default='crashing',
+                    choices=sorted(SPLIT_FILE_BY_KIND),
+                    help='bug pool to score (default: crashing)')
+    ap.add_argument('--prompt_version', default=None,
+                    help='stage-A design or stage-B iteration of this pool; '
+                         'default: the first design of the pool')
     ap.add_argument('--samples', type=int, default=run_one.DEFAULT_SAMPLES)
     ap.add_argument('--projects', default='',
                     help='space-separated allow-list; default = every '
@@ -59,26 +77,36 @@ def main() -> int:
                          f'({config.LOCAL_LLM_MODEL})')
     ap.add_argument('--out_dir', default=None,
                     help='default: results/llmjudge_<side>_<version>_<ts>')
-    ap.add_argument('--cache_dir', default=str(REPO / 'results'
-                                               / 'llmjudge_cache'),
+    ap.add_argument('--cache_dir', default=None,
                     help='extracted evidence is cached here and reused '
-                         'across prompt versions')
+                         'across prompt versions; default: '
+                         'results/llmjudge_cache for the crashing pool, '
+                         'results/llmjudge_cache_semantic for the semantic '
+                         'one')
     ap.add_argument('--refresh_context', action='store_true')
-    ap.add_argument('--tool_records', default=None,
-                    help="a pipeline run's records.jsonl; adds the paired "
-                         "head-to-head matrix and the McNemar counts")
     ap.add_argument('--confirm_holdout', action='store_true',
                     help='required for --side holdout')
     ap.add_argument('--dry_run', action='store_true',
                     help='build the queue and stop')
     args = ap.parse_args()
 
-    # Resolve the version first: a typo, or a stage-B iteration that has not
-    # been registered yet, must fail before any directory is created.
+    version_name = args.prompt_version or prompts.base_versions(args.kind)[0]
+
+    # Resolve the version first: a typo, a version of the other pool, or a
+    # stage-B iteration that has not been registered yet, must fail before any
+    # directory is created.
     try:
-        version = prompts.resolve(args.prompt_version)
+        version = prompts.resolve(version_name)
     except ValueError as exc:
         print(f"REFUSING: {exc}", file=sys.stderr)
+        return 2
+    if version.kind != args.kind:
+        print(f"REFUSING: {version_name!r} is a {version.kind} design, and "
+              f"--kind is {args.kind}. The two pools have two frozen splits, "
+              f"so scoring one design against the other's population would "
+              f"report a population change as a wording result. Registered "
+              f"{args.kind} versions: {prompts.known_versions(args.kind)}.",
+              file=sys.stderr)
         return 2
 
     if args.side == 'holdout' and not args.confirm_holdout:
@@ -88,18 +116,20 @@ def main() -> int:
               file=sys.stderr)
         return 2
 
+    cache_dir = args.cache_dir or str(default_cache_dir(args.kind))
     ts = datetime.now().strftime('%Y%m%d_%H%M%S')
     out_dir = Path(args.out_dir) if args.out_dir else (
-        REPO / 'results'
-        / f'llmjudge_{args.side}_{args.prompt_version}_{ts}')
+        REPO / 'results' / f'llmjudge_{args.side}_{version_name}_{ts}')
     out_dir.mkdir(parents=True, exist_ok=True)
 
     queue_path = out_dir / 'queue.txt'
-    queue = _build_queue(args.side, args.projects, queue_path)
+    queue = _build_queue(args.side, args.kind, args.projects, queue_path)
     print(f"Output dir     : {out_dir}")
+    print(f"Bug kind       : {args.kind}")
     print(f"Prompt version : {version.name}  "
           f"[stage {prompts.stage_of(version.name)}]")
     print(f"Hypothesis     : {version.hypothesis}")
+    print(f"Evidence cache : {cache_dir}")
     print(f"Patches queued : {len(queue)}")
     print(f"Samples each   : {args.samples}  "
           f"({len(queue) * args.samples} model calls minimum)")
@@ -108,9 +138,9 @@ def main() -> int:
         return 0
 
     # Pin the result to the split and the code it was produced with.
-    shutil.copy(SPLIT_FILE, out_dir / 'crashing_split.jsonl')
-    (out_dir / 'split_provenance.txt').write_text(
-        _git_log_for(SPLIT_FILE))
+    split_file = SPLIT_FILE_BY_KIND[args.kind]
+    shutil.copy(split_file, out_dir / split_file.name)
+    (out_dir / 'split_provenance.txt').write_text(_git_log_for(split_file))
 
     records_path = out_dir / 'records.jsonl'
     records: List[Dict] = []
@@ -120,9 +150,10 @@ def main() -> int:
             print(f"[{i}/{len(queue)}] {label} "
                   f"{Path(patch_path).name}")
             rec = run_one.classify(patch_path, label,
-                                   version=args.prompt_version,
+                                   version=version_name,
+                                   kind=args.kind,
                                    samples=args.samples,
-                                   cache_dir=args.cache_dir,
+                                   cache_dir=cache_dir,
                                    model=args.model,
                                    refresh_context=args.refresh_context)
             fh.write(json.dumps(rec) + '\n')
@@ -135,10 +166,10 @@ def main() -> int:
 
     summary = summarise(records, spend,
                         side=args.side,
-                        version=args.prompt_version,
+                        kind=args.kind,
+                        version=version_name,
                         samples=args.samples,
-                        model=args.model or config.LOCAL_LLM_MODEL,
-                        tool_records=args.tool_records)
+                        model=args.model or config.LOCAL_LLM_MODEL)
     (out_dir / 'summary.json').write_text(json.dumps(summary, indent=2))
     _print_summary(summary)
     print(f"\nWrote {records_path}")
@@ -146,12 +177,22 @@ def main() -> int:
     return 0
 
 
+def default_cache_dir(kind: str) -> Path:
+    """One evidence cache per pool.
+
+    A shared directory keys on the patch file stem alone. The two pools hold
+    different patches, so a collision is unlikely rather than impossible, and
+    an unlikely silent mix is not worth the one saved directory."""
+    suffix = '' if kind == 'crashing' else f'_{kind}'
+    return REPO / 'results' / f'llmjudge_cache{suffix}'
+
+
 # --- queue -------------------------------------------------------------------
 
-def _build_queue(side: str, projects: str, out: Path):
+def _build_queue(side: str, kind: str, projects: str, out: Path):
     """`[(label, patch_path)]` for one side, from the pipeline's own builder."""
     cmd = [sys.executable, str(QUEUE_BUILDER), '--side', side,
-           '--out', str(out)]
+           '--kind', kind, '--out', str(out)]
     if projects.strip():
         cmd += ['--projects', projects]
     proc = subprocess.run(cmd, capture_output=True, text=True)
@@ -208,9 +249,8 @@ def confusion(rows: List[Dict], rule: str) -> Dict:
     }
 
 
-def summarise(records: List[Dict], spend: Dict, *, side: str, version: str,
-              samples: int, model: str,
-              tool_records: Optional[str] = None) -> Dict:
+def summarise(records: List[Dict], spend: Dict, *, side: str, kind: str,
+              version: str, samples: int, model: str) -> Dict:
     scored = [r for r in records if r['status'] == 'evaluated']
     n_pos = sum(1 for r in scored if r['label'] == 'overfitting')
     agreements = [(r.get('vote') or {}).get('agreement')
@@ -221,9 +261,11 @@ def summarise(records: List[Dict], spend: Dict, *, side: str, version: str,
 
     summary: Dict = {
         'side': side,
+        'bug_kind': kind,
         'prompt_version': version,
         'prompt_stage': prompts.stage_of(version),
         'prompt_base': prompts.base_of(version),
+        'prompt_kind': prompts.kind_of(version),
         'prompt_hypothesis': prompts.resolve(version).hypothesis,
         'prompt_sha256': prompts.version_sha256(version),
         'prompt_text': prompts.version_text(version),
@@ -254,9 +296,6 @@ def summarise(records: List[Dict], spend: Dict, *, side: str, version: str,
     if len(clean) != len(scored):
         summary['headline_excluding_parse_failures'] = confusion(
             clean, HEADLINE_RULE)
-
-    if tool_records:
-        summary['head_to_head'] = _head_to_head(scored, Path(tool_records))
     return summary
 
 
@@ -277,59 +316,6 @@ def _by_bug(scored: List[Dict]) -> List[Dict]:
     return [bugs[k] for k in sorted(bugs)]
 
 
-def _head_to_head(scored: List[Dict], tool_path: Path) -> Dict:
-    """Paired comparison against a pipeline run, on the patches both scored."""
-    if not tool_path.exists():
-        return {'error': f'{tool_path} not found'}
-    tool: Dict = {}
-    for line in tool_path.read_text().splitlines():
-        if not line.strip():
-            continue
-        row = json.loads(line)
-        if row.get('status') != 'evaluated':
-            continue
-        tool[_pair_key(row)] = bool(row.get('crashed_on_patch'))
-
-    both, b, c = [], 0, 0
-    for r in scored:
-        key = _pair_key(r)
-        if key not in tool:
-            continue
-        want = r['label'] == 'overfitting'
-        tool_right = tool[key] == want
-        base_right = bool((r.get('decisions') or {})
-                          .get(HEADLINE_RULE)) == want
-        both.append(r)
-        if tool_right and not base_right:
-            b += 1
-        elif base_right and not tool_right:
-            c += 1
-    return {
-        'paired_patches': len(both),
-        'baseline_on_paired': confusion(both, HEADLINE_RULE),
-        'tool_only_right': b,
-        'baseline_only_right': c,
-        'mcnemar_exact_two_sided_p': _mcnemar_p(b, c),
-        'note': ('b = the pipeline is right and the baseline is wrong; '
-                 'c = the reverse. Patches the pipeline did not score are '
-                 'excluded from this block only.'),
-    }
-
-
-def _pair_key(row: Dict) -> str:
-    return (f"{row.get('project')}|{row.get('bug_id')}|"
-            f"{row.get('apr_tool')}|{row.get('label')}")
-
-
-def _mcnemar_p(b: int, c: int):
-    """Exact two-sided McNemar p-value over the discordant pairs."""
-    n = b + c
-    if n == 0:
-        return None
-    tail = sum(math.comb(n, i) for i in range(min(b, c) + 1))
-    return min(1.0, 2.0 * tail / (2 ** n))
-
-
 def _div(num, den):
     return (num / den) if den else None
 
@@ -344,7 +330,8 @@ def _counts(values):
 def _print_summary(s: Dict) -> None:
     h = s['headline']
     print("\n" + "=" * 60)
-    print(f"side={s['side']} version={s['prompt_version']} "
+    print(f"kind={s['bug_kind']} side={s['side']} "
+          f"version={s['prompt_version']} "
           f"model={s['model']} samples={s['samples_per_patch']}")
     print(f"scored {s['scored']} of {s['queued']}  "
           f"(positive prior {_pct(s['positive_class_prior'])})")
@@ -369,21 +356,11 @@ def _print_summary(s: Dict) -> None:
               f"${bd['cost_usd_with_cache_rate']:.2f}")
     if bd['note']:
         print(f"  {bd['note']}")
-    hh = s.get('head_to_head')
-    if hh and 'paired_patches' in hh:
-        print(f"head-to-head on {hh['paired_patches']} paired patches: "
-              f"pipeline-only-right={hh['tool_only_right']}, "
-              f"baseline-only-right={hh['baseline_only_right']}, "
-              f"McNemar p={_pct_raw(hh['mcnemar_exact_two_sided_p'])}")
     print("=" * 60)
 
 
 def _pct(v):
     return 'n/a' if v is None else f'{v:.3f}'
-
-
-def _pct_raw(v):
-    return 'n/a' if v is None else f'{v:.4f}'
 
 
 if __name__ == '__main__':

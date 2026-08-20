@@ -21,9 +21,15 @@ holdout rows, not the winner's row alone.
 
 Ties break the same way in both stages: the lower false-positive count.
 
+`--kind` selects the pool, and it defaults to `crashing`. Each pool has its own
+three stage-A designs, so a comparison reads only the runs of one pool. A run's
+own `summary.json` states its pool, and the version name says it too: v1, v2
+and v3 judge crashing bugs, s1, s2 and s3 judge semantic ones.
+
 Usage (from src/):
     # stage A — the three blind designs, scored on dev
     uv run -m baseline_llmjudge.compare --stage A
+    uv run -m baseline_llmjudge.compare --stage A --kind semantic
 
     # stage B — the iterations of the stage-A winner, scored on holdout
     uv run -m baseline_llmjudge.compare --stage B --base v2
@@ -51,14 +57,21 @@ RESULTS = REPO / 'results'
 SELECTION_SIDE = {'A': 'dev', 'B': 'holdout'}
 
 
-def load_runs(results_dir: Path, side: str = 'dev') -> Dict[str, Dict]:
+def load_runs(results_dir: Path, side: str = 'dev',
+              kind: str = None) -> Dict[str, Dict]:
     """Every scored run of one side, keyed by prompt version.
 
     When one version was run more than once, the latest run wins — a rerun of
-    the same frozen text supersedes the earlier one."""
+    the same frozen text supersedes the earlier one.
+
+    `kind` keeps one pool's runs apart from the other's. A run that predates
+    the semantic pool carries no `bug_kind` field, so a missing field reads as
+    'crashing' — that is what those runs are."""
     runs: Dict[str, Dict] = {}
     for path in sorted(results_dir.glob(f'llmjudge_{side}_*/summary.json')):
         s = json.loads(path.read_text())
+        if kind is not None and s.get('bug_kind', 'crashing') != kind:
+            continue
         s['run_dir'] = str(path.parent)
         runs[s['prompt_version']] = s
     return runs
@@ -80,6 +93,9 @@ def rows_for(runs: Dict[str, Dict], names: List[str]) -> List[Dict]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--stage', required=True, choices=['A', 'B'])
+    ap.add_argument('--kind', default='crashing',
+                    choices=list(prompts.KINDS),
+                    help='bug pool to compare (default: crashing)')
     ap.add_argument('--base', default=None,
                     help="stage B only: the stage-A winner, e.g. 'v2'")
     ap.add_argument('--results_dir', default=str(RESULTS))
@@ -88,22 +104,34 @@ def main() -> int:
     if args.stage == 'B' and not args.base:
         print("--stage B needs --base (the stage-A winner)", file=sys.stderr)
         return 2
+    # A base of the other pool would compare a version family against a
+    # population it was never scored on, and the table would silently be empty.
+    if args.base is not None:
+        try:
+            base_kind = prompts.kind_of(args.base)
+        except ValueError as exc:
+            print(f"REFUSING: {exc}", file=sys.stderr)
+            return 2
+        if base_kind != args.kind:
+            print(f"REFUSING: base {args.base!r} is a {base_kind} design, and "
+                  f"--kind is {args.kind}.", file=sys.stderr)
+            return 2
 
     results_dir = Path(args.results_dir)
     if args.stage == 'A':
-        return _stage_a(results_dir)
-    return _stage_b(results_dir, args.base)
+        return _stage_a(results_dir, args.kind)
+    return _stage_b(results_dir, args.base, args.kind)
 
 
 # --- stage A -----------------------------------------------------------------
 
-def _stage_a(results_dir: Path) -> int:
+def _stage_a(results_dir: Path, kind: str) -> int:
     """Three blind designs, scored on dev."""
-    runs = load_runs(results_dir, 'dev')
-    wanted = list(prompts.BASE_VERSIONS)
+    runs = load_runs(results_dir, 'dev', kind)
+    wanted = list(prompts.base_versions(kind))
     candidates = rows_for(runs, wanted)
 
-    print(f"stage A — dev runs found in {results_dir}")
+    print(f"stage A — {kind} dev runs found in {results_dir}")
     print("selection: highest dev F1, ties broken by fewer false positives\n")
     header = (f"{'version':<10} {'P':>7} {'R':>7} {'F1':>7} {'FP':>4} "
               f"{'FN':>4} {'parse':>6}  run")
@@ -133,14 +161,14 @@ def _stage_a(results_dir: Path) -> int:
 
 # --- stage B -----------------------------------------------------------------
 
-def _stage_b(results_dir: Path, base: str) -> int:
+def _stage_b(results_dir: Path, base: str, kind: str) -> int:
     """Three refinement iterations, refined on dev, selected on holdout."""
-    dev = load_runs(results_dir, 'dev')
-    hold = load_runs(results_dir, 'holdout')
+    dev = load_runs(results_dir, 'dev', kind)
+    hold = load_runs(results_dir, 'holdout', kind)
     wanted = prompts.iterations_of(base)
     candidates = rows_for(hold, wanted)
 
-    print(f"stage B — holdout runs found in {results_dir}")
+    print(f"stage B — {kind} holdout runs found in {results_dir}")
     print("selection: highest HOLDOUT F1, ties broken by fewer false "
           "positives")
     print("the dev column is the refinement side. It is shown for the record, "

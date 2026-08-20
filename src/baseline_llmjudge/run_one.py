@@ -5,6 +5,13 @@ Usage (from src/):
         --patch_file ../drr/Patches/Doverfitting/Jaid/Chart/patch1-Chart-9-Jaid-plausible.patch \\
         --prompt_version v1 --samples 5
 
+`--kind` selects the pool, and it defaults to `crashing`. A patch whose bug
+belongs to the other kind is not scored: the record carries `semantic_skip` or
+`crashing_skip` and no model is called.
+
+`--samples 0` extracts the evidence, caches it, and stops. That is the cheap
+way to measure how large a pool's prompts are before a pass is paid for.
+
 The model, the client, the timeout policy and the usage recorder all come from
 `llm.HarnessGenerator`, the same wrapper the harness campaign uses, constructed
 with the same sampling arguments (`temperature=0.6, top_p=1.0`). A reasoning
@@ -44,6 +51,7 @@ DEFAULT_SAMPLES = 5
 
 def classify(patch_path: str, label: str, *,
              version: str = 'v1',
+             kind: str = 'crashing',
              samples: int = DEFAULT_SAMPLES,
              cache_dir: Optional[str] = None,
              model: Optional[str] = None,
@@ -55,12 +63,15 @@ def classify(patch_path: str, label: str, *,
     rec: Dict = {
         'label': label,
         'status': 'evaluated',
-        'bug_kind': 'crashing',
+        # The kind that was ASKED for. A patch of the other kind is refused
+        # below, so a scored record's kind is also the kind it really is.
+        'bug_kind': kind,
         'project': None, 'bug_id': None, 'apr_tool': None,
         'patch': os.path.basename(patch_path),
         'prompt_version': version,
         'prompt_stage': prompts.stage_of(version),
         'prompt_base': prompts.base_of(version),
+        'prompt_kind': prompts.kind_of(version),
         'model': model,
         'reasoning_effort': config.OPENAI_REASONING_EFFORT,
         'git_sha': _git_sha(),
@@ -68,7 +79,7 @@ def classify(patch_path: str, label: str, *,
 
     try:
         ev = context.load_or_build(patch_path, label, cache_dir=cache_dir,
-                                   refresh=refresh_context)
+                                   refresh=refresh_context, kind=kind)
     except context.ContextUnavailable as exc:
         rec.update(status=exc.status, detail=exc.detail)
         return rec
@@ -91,6 +102,17 @@ def classify(patch_path: str, label: str, *,
     # run, then it is frozen; this digest is what makes that rule checkable
     # after the fact instead of a promise about editing discipline.
     rec['prompt_sha256'] = prompts.version_sha256(version)
+    if samples < 1:
+        # The measurement path. The evidence is now extracted and cached, so
+        # the prompt size of this pool can be read without paying for a pass.
+        rec.update(status='extracted_only',
+                   detail=f'samples={samples}, so no model was called')
+        if not quiet:
+            print(f"  {ev.project}-{ev.bug_id} ({ev.apr_tool}) [{label}]: "
+                  f"evidence {len(ev.text):,} chars, prompt "
+                  f"{rec['prompt_chars']:,} chars — no model call")
+        return rec
+
     generator = HarnessGenerator(model=model, temperature=0.6, top_p=1.0)
 
     results: List[Dict] = []
@@ -166,7 +188,12 @@ def main() -> int:
     ap.add_argument('--prompt_version', default='v1',
                     help=f'stage-A design or stage-B iteration; registered: '
                          f'{prompts.known_versions()}')
-    ap.add_argument('--samples', type=int, default=DEFAULT_SAMPLES)
+    ap.add_argument('--kind', default=None,
+                    choices=['crashing', 'semantic'],
+                    help='bug pool; default: the pool the prompt version '
+                         'belongs to')
+    ap.add_argument('--samples', type=int, default=DEFAULT_SAMPLES,
+                    help='0 extracts and caches the evidence, then stops')
     ap.add_argument('--model', default=None,
                     help=f'default: config.LOCAL_LLM_MODEL '
                          f'({config.LOCAL_LLM_MODEL})')
@@ -178,9 +205,16 @@ def main() -> int:
                     help='append the record as one JSON line to this file')
     args = ap.parse_args()
 
+    try:
+        kind = args.kind or prompts.kind_of(args.prompt_version)
+    except ValueError as exc:
+        print(f"REFUSING: {exc}", file=sys.stderr)
+        return 2
+
     rec = classify(args.patch_file,
                    'correct' if args.correct else 'overfitting',
                    version=args.prompt_version,
+                   kind=kind,
                    samples=args.samples,
                    cache_dir=args.cache_dir,
                    model=args.model,
@@ -190,7 +224,7 @@ def main() -> int:
             fh.write(json.dumps(rec) + '\n')
     else:
         print(json.dumps(rec, indent=2))
-    if rec['status'] == 'evaluated':
+    if rec['status'] in ('evaluated', 'extracted_only'):
         return 0
     return 1 if rec['status'] == 'error' else 3
 
