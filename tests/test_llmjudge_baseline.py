@@ -1,4 +1,4 @@
-"""Guards for the one-shot LLM baseline in src/baseline_llmjudge/.
+"""Guards for the one-shot LLM baseline in src/baseline_llmjudge/defects4j/.
 
 Three properties are asserted here, and each one is a claim the README makes:
 
@@ -22,7 +22,7 @@ from java.bug_context.analysis import PatchContext, TouchedFunction
 from java.bug_context.failure_test import FailureTest
 from java.harness.prompts import PromptBuilder
 
-from baseline_llmjudge import evidence, evidence_semantic, prompts
+from baseline_llmjudge.defects4j import evidence, evidence_semantic, prompts
 
 PB = PromptBuilder()
 
