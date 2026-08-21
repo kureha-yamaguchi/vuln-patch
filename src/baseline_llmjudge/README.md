@@ -1138,9 +1138,13 @@ it dropped.
 
 | Class | Rule | Rows |
 |---|---|---|
-| `overfitting` | Every distinct `fix0` | 12 |
-| `correct` | Every distinct `fix1`, less two exclusions | 9 |
-| | **Total, positive prior 0.57** | **21** |
+| `overfitting` | Every distinct `fix0` | 32 |
+| `correct` | Every distinct `fix1`, less two exclusions | 22 |
+| | **Total, positive prior 0.59** | **54** |
+
+That count is after `resolve_gerrit.py` ran on every repository. Before it, 21
+of the 43 `fix0` ids were Gerrit change numbers and the population was 21 rows.
+Section 11.6 explains why.
 
 **Two exclusions apply to the negative class.** Each one removes a fix that is
 known to be incomplete:
@@ -1152,10 +1156,12 @@ Five CVE ids of this dataset act in both roles: `CVE-2019-11707`,
 `CVE-2019-13720`, `CVE-2021-30551`, `CVE-2022-1096` and `CVE-2022-3723`. A fix
 that left a sibling bug cannot serve as an example of one that did not.
 
-**The rows cluster by project.** 14 of the 21 rows are Chrome or v8. Rows of one
-project share a coding style, a review culture and a fault vocabulary. So
-`summary.json` carries a `by_codebase` breakdown. Any interval computed on 21
-independent rows is too narrow.
+**The rows cluster by project.** 45 of the 54 rows carry the `chrome` codebase
+label, which the dataset uses for v8 as well. Rows of one project share a
+coding style, a review culture and a fault vocabulary. So `summary.json`
+carries a `by_codebase` breakdown, and the split balances that label across the
+two sides. Any interval computed as though 54 rows were independent is too
+narrow.
 
 ## 11.3 The negative-class confound
 
@@ -1259,13 +1265,24 @@ is the absence of a marker, so no regex can assert it. The rule pass can say
 `crashing` or say nothing. `decided_by` records which pass ruled on each fix.
 
 **The measured result.** 59 distinct fixes: 47 crashing, 12 semantic. The rule
-pass decided 29, and the model pass decided 30. Inside the scored population of
-21 rows the split is 16 crashing and 5 semantic.
+pass decided 29, and the model pass decided 30.
 
-**So this dataset does not get two pools.** Five rows do not support a pool of
-its own. One run scores every row, and `summary.json` carries a `by_bug_kind`
-breakdown. Read the semantic row as a count, never as an F1. `--bug_kind` can
-filter the population when the population is larger.
+Inside the scored population of 54 rows:
+
+| Side | Rows | Crashing | Semantic |
+|---|---|---|---|
+| dev | 27 | 21 | 6 |
+| holdout | 27 | 23 | 4 |
+| whole | 54 | 44 | 10 |
+
+`bugkind.py` classifies every fix in the dataset, so a larger population needs
+no rerun. Only these counts move.
+
+**So this dataset does not get two pools.** Four semantic rows on the holdout
+side do not support a pool of their own. One run scores every row, and
+`summary.json` carries a `by_bug_kind` breakdown. Read the semantic row as a
+count, never as an F1. `--bug_kind` filters the population when you want one
+pool, and `BUG_KIND` passes it through either driver.
 
 ## 11.6 The fetch step
 
@@ -1291,7 +1308,8 @@ the `fix1_commit` values are.
 | Tier | Rule | Pairs |
 |---|---|---|
 | 1 (default) | A SHA on both sides, a supported host, and not `chromium/src` | 14 |
-| all | Every pair with a SHA and a supported host | 16 |
+| all, before any resolution | Every pair with a SHA and a supported host | 16 |
+| all, after `resolve_gerrit.py` | The same rule, with 24 change numbers resolved | **39** |
 
 Six raw-file endpoints are supported: Gitiles, cgit on kernel.org, cgit on
 savannah, Mercurial, GitHub and GitLab. Bugzilla is not. Its `fix0_commit` is an
@@ -1304,8 +1322,9 @@ the same file in both. `MIRRORS` maps freetype to its GitHub mirror.
 **Two caps apply, and the tool prints both.** It skips a fix that touches more
 than 15 files. It skips a file over 1 MB.
 
-**The measured result.** 64 files in place. Two permanent failures, both in
-Skia: the fix references two files that do not exist at that commit.
+**The measured result.** 172 files in place over 39 pairs. Three permanent
+failures: two in Skia and one elsewhere, each a file that does not exist at
+that commit.
 
 **Tier 2 raises the population.**
 [`resolve_gerrit.py`](../db/project_zero/tools/resolve_gerrit.py) resolves a
@@ -1319,8 +1338,12 @@ separate override file, `gerrit_resolved.json`, and it never rewrites
    resolution written back would change every fix id, and `bug_kind.jsonl`
    would stop to match.
 
-`--only_repo` defaults to `v8/v8`. That unlocks 11 more changes. `chromium/src`
-stays out for the same cost reason tier 1 excludes it.
+`--only_repo` defaults to `v8/v8`, which unlocks 11 changes. `--only_repo ''`
+does every repository, and that resolved all 24. Both runs are done: the
+population went from 21 rows to 54.
+
+`chromium/src` stays out of tier 1 for cost, and `--tier all` includes it. Its
+trees are the largest here, and a file-level fetch of two pairs is cheap.
 
 ## 11.7 The evidence, and the parity target
 
@@ -1421,16 +1444,131 @@ needs a checkout and two test runs. Here the render is a few local file reads.
 The record still carries `evidence_sha256`, so the claim that every prompt
 version reads byte-identical evidence stays checkable.
 
-## 11.10 No holdout split yet
+## 11.10 The frozen split
 
-21 rows do not support two sides. Ten rows per side give an interval about 0.3
-wide on F1, and no prompt comparison survives that. So the evaluator runs one
-dev side over the whole population, and it refuses `--side holdout`.
+The split lives in
+[`suites/splits/project_zero_split.jsonl`](../../suites/splits/project_zero_split.jsonl),
+and [`project_zero/split.py`](project_zero/split.py) freezes it.
 
-Freeze a split after `resolve_gerrit.py` raises the population to about 40 rows.
-Split by codebase, so that v8 does not sit on both sides.
+**The split unit is a root-cause group.** The Defects4J splits assign a side
+per bug, so every candidate patch of one bug lands on one side. A group is the
+counterpart, and the reason is stronger than convention: the two fixes of a
+pair repair one root cause, and they often touch one file. A judge tuned on one
+fix of a pair and then scored on the other would be scored on code it was tuned
+against.
 
-## 11.11 Iteration log
+Two pairs join one group when they share any identifier — a CVE id in either
+role, or a commit on either side. The union is transitive. 43 pairs collapse to
+20 groups. Three real reasons why:
+
+1. Six pairs share one prior fix, `CVE-2019-13720`.
+2. Five CVE ids act as a prior in one pair and a later in another, so those
+   pairs chain: `CVE-2016-5128` to `CVE-2022-1096` to `CVE-2022-1232`.
+3. Three Mozilla pairs share one later CVE, `CVE-2020-6820`.
+
+**The balance rule adds three gaps, and each term earns its place.**
+
+```
+cost = |rows|  +  |positives|  +  sum over codebases of |rows of it|
+```
+
+| Terms | What it produced |
+|---|---|
+| Rows alone | 29/30 rows, priors 0.55 and 0.68 |
+| Rows and positives | The prior gap closed, and the dev side came out entirely `chrome` |
+| All three | The split below |
+
+The second row is the interesting failure. A dev side of one project gives a
+one-line `by_codebase` breakdown. Worse, a prompt tuned only on browser C++
+would meet a Mali driver for the first time on the selection side.
+
+A hill-climb refines the greedy sweep, over single moves and over swaps of one
+dev group for one holdout group. Both shapes are needed: single moves alone got
+stuck, because the improvement needed one group to go each way at once. The
+climb is a local search, and it is not proved optimal.
+
+**What is frozen, measured.**
+
+| Side | Groups | Rows at freeze | Prior | Scored rows | Codebases |
+|---|---|---|---|---|---|
+| dev | 10 | 31 | 0.58 | **27** | chrome 23, apple-webkit 2, qualcomm-android 2 |
+| holdout | 10 | 28 | 0.64 | **27** | chrome 22, mozilla-gecko 3, mali-gpu-driver 2 |
+
+The scored priors are 0.56 and 0.63. A gap of 0.07 is well inside what the
+protocol tolerates elsewhere: the Defects4J crashing pool carries 0.21.
+
+**The side is frozen per group, not per row.** A group keeps its side when a
+later context fetch adds a row to it. So `rows_at_freeze` can go stale, and
+`queue.py` always recounts. The Defects4J splits have the same property, and
+section 1 records the same kind of drift there.
+
+**A frozen split is frozen.** `split.py` refuses to overwrite one without
+`--force`. A split rewritten after a version was scored against it would
+silently change what that score refers to.
+
+### Read the size before you read any F1
+
+27 rows a side. That is enough to rank three designs. It is not enough to
+separate two of them. **No F1 difference under about 0.2 is real here.**
+Section 11.13 carries the rest of the threats.
+
+## 11.11 The two-stage protocol, and its drivers
+
+The protocol is the one section 6 describes, with one dataset swapped in.
+
+```
+STAGE A — blind. No records file is read. Scored on dev.
+    p1  ──run on dev──┐
+    p2  ──run on dev──┼──→  best dev F1 wins
+    p3  ──run on dev──┘
+
+STAGE B — refinement of the winner.
+  refinement reads DEV only:
+      p2 ──read p2's DEV records──→ p2.1 ──read p2.1's DEV records──→ p2.2 ...
+  every iteration runs on BOTH sides:
+      p2.1 ──dev──→ records, read to write p2.2  ──holdout──→ F1
+  the highest holdout F1 is the reported version
+```
+
+Two drivers wrap it, and they mirror `llmjudge_stage_a.sh` and
+`llmjudge_stage_b.sh`:
+
+| Script | What it does |
+|---|---|
+| [`llmjudge_pz_stage_a.sh`](../../scripts/llmjudge_pz_stage_a.sh) | Run every stage-A design on dev, then the comparison. Logs in `results/llmjudge_pz_stageA_<ts>/` |
+| [`llmjudge_pz_stage_b.sh`](../../scripts/llmjudge_pz_stage_b.sh) | Run one stage-B turn: dev, then holdout. Then the comparison, once every iteration has a holdout pass. Logs in `results/llmjudge_pz_stageB_<base>_<ts>/` |
+
+```bash
+DRY_RUN=1 scripts/llmjudge_pz_stage_a.sh    # build the populations, spend nothing
+scripts/llmjudge_pz_stage_a.sh              # the bake-off, then compare
+
+scripts/llmjudge_pz_stage_b.sh p2           # the winner's holdout reference row
+scripts/llmjudge_pz_stage_b.sh p2.1         # turn 1: dev, then holdout
+```
+
+**Three differences from the Defects4J drivers, and each one is a property of
+this dataset:**
+
+1. **There is no `KIND`.** The bug-kind gate found too few semantic fixes for a
+   pool of its own, so one run scores every row. `BUG_KIND` can still filter.
+2. **There is no evidence cache and no `errors.py`.** The render is a few local
+   file reads. A turn is written from the dev run's `records.jsonl`, read by a
+   person.
+3. **Every row prints its floor.** [`project_zero/compare.py`](project_zero/compare.py)
+   adds a `floor` column — the higher of the two baselines that read no code —
+   and it marks a design whose F1 does not clear that floor by more than 0.05.
+   A design can win the bake-off and still be unproven, and those are two
+   different claims.
+
+**Two protocol rules the drivers enforce rather than leave to the operator:**
+
+- Stage A is blind. `compare.py` runs only when every design finished, so a
+  winner is never named off a partial bake-off.
+- The pre-registration comes first. No holdout pass runs until a prereg note
+  exists, because a holdout number written before the design is fixed is not a
+  held-out number.
+
+## 11.12 Iteration log
 
 One stage-A design ran. Two are written and frozen, and neither has run.
 
@@ -1484,15 +1622,21 @@ for this pass, and a stage-B turn on `p1` would need the pass to run again.
 Re-run `p1` before you write any `p1.n`, or start stage B from whichever of
 `p2` and `p3` wins instead.
 
-## 11.12 Threats to validity
+## 11.13 Threats to validity
 
 - **The negative class is the later fix of the same pair.** See section 11.3.
   The proxy control bounds this threat. It does not remove it.
-- **The population is 21 rows in 4 codebases.** No F1 difference under about
-  0.2 is real. Two prompt versions cannot be separated on this population.
-- **The always-positive floor is high.** The prior is 0.57, so a rule that
-  answers OVERFITTING every time scores F1 0.727. Quote that floor beside any
-  F1 from this population.
+- **Each side holds 27 rows in 3 codebase labels.** No F1 difference under
+  about 0.2 is real. Two prompt versions cannot be separated on one side.
+- **The always-positive floor is high.** The dev prior is 0.56 and the holdout
+  prior is 0.63, so a rule that answers OVERFITTING every time already scores
+  F1 near 0.72. Quote the floor beside any F1 from this population.
+- **The stage-B winner's holdout F1 is a maximum over the iterations**, so it
+  is optimistic. Publish every holdout row. `compare.py` prints the sentence
+  that states this honestly.
+- **The split's hill-climb is a local search.** A better-balanced assignment
+  may exist. The split is frozen, so this is a property of the population every
+  score refers to, not a per-run variation.
 - **A negative label is an absence of evidence.** No third CVE followed `fix1`.
   That is not proof that `fix1` left no sibling bug.
 - **Contamination.** Every CVE here is public, and the fixes are in the
@@ -1504,59 +1648,86 @@ Re-run `p1` before you write any `p1.n`, or start stage B from whichever of
 - **The pipeline cannot run on these codebases yet.** So this baseline has no
   comparison target on this dataset. It measures the baseline alone.
 
-## 11.13 Files
+## 11.14 Files
 
 | File | Responsibility |
 |---|---|
 | [`project_zero/firewall.py`](project_zero/firewall.py) | The one reader of `metadata.json` and the raw diffs. Returns the selector view and the clean view |
 | [`project_zero/bugkind.py`](project_zero/bugkind.py) | Classify each fix as crashing or semantic, by rule then by model. Writes `bug_kind.jsonl` |
-| [`project_zero/queue.py`](project_zero/queue.py) | The scored population: one row per distinct fix commit, with the two negative-class exclusions |
+| [`project_zero/split.py`](project_zero/split.py) | Freeze the dev/holdout split. One side per root-cause group |
+| [`project_zero/queue.py`](project_zero/queue.py) | The scored population: one row per distinct fix commit, with the two negative-class exclusions. Filters by side and by pool |
 | [`project_zero/evidence.py`](project_zero/evidence.py) | Render the four evidence blocks; build the parity manifest and the withheld list |
 | [`project_zero/prompts.py`](project_zero/prompts.py) | The three stage-A designs, the stage-B registry, and the message builder |
 | [`project_zero/run_one.py`](project_zero/run_one.py) | One fix, N samples, one record. `--samples 0` renders and stops |
-| [`project_zero/evaluate.py`](project_zero/evaluate.py) | The whole population: records, summary, the two breakdowns, the two baselines |
+| [`project_zero/evaluate.py`](project_zero/evaluate.py) | One side of the split: records, summary, the two breakdowns, the two baselines |
+| [`project_zero/compare.py`](project_zero/compare.py) | Name the stage winner: stage A on dev F1, stage B on holdout F1. Prints each row's floor |
 | [`fetch_context.py`](../db/project_zero/tools/fetch_context.py) | Fetch the touched files of each fix, at that fix's own commit |
 | [`resolve_gerrit.py`](../db/project_zero/tools/resolve_gerrit.py) | Resolve a Gerrit change number to its merged SHA. Writes `gerrit_resolved.json` |
+| [`llmjudge_pz_stage_a.sh`](../../scripts/llmjudge_pz_stage_a.sh) | Run stage A: every design on dev, then the comparison |
+| [`llmjudge_pz_stage_b.sh`](../../scripts/llmjudge_pz_stage_b.sh) | Run one stage-B turn: dev, then holdout, then the comparison when every iteration is in |
+| [`project_zero_split.jsonl`](../../suites/splits/project_zero_split.jsonl) | The frozen split: one row per root-cause group |
 
 Guards live in
 [`tests/test_llmjudge_pz.py`](../../tests/test_llmjudge_pz.py).
 
-## 11.14 Usage
+## 11.15 Usage
 
 Run the two dataset tools from `src/db/project_zero/`. Run everything else from
 `src/`.
 
+Steps 1 to 4 are the setup. They run once, and step 4 is the only one that
+cannot be repeated freely.
+
 ```bash
-# 1. classify the bug kind of every fix — the gate
-uv run -m baseline_llmjudge.project_zero.bugkind --rules_only     # no model call
-uv run -m baseline_llmjudge.project_zero.bugkind                  # with the model pass
-
-# 2. fetch the source of the touched files
+# 1. raise the population: resolve every Gerrit change number to a SHA
 cd db/project_zero
-uv run python tools/fetch_context.py --dry_run
-uv run python tools/fetch_context.py
-
-# 3. raise the population (tier 2), then fetch again
 uv run python tools/resolve_gerrit.py --dry_run
-uv run python tools/resolve_gerrit.py
+uv run python tools/resolve_gerrit.py --only_repo ''
+
+# 2. fetch the source of the touched files of every reachable fix
+uv run python tools/fetch_context.py --tier all --dry_run
 uv run python tools/fetch_context.py --tier all
 
-# 4. print the population and stop, before any model call
+# 3. classify the bug kind of every fix — the gate
 cd ../..
-uv run -m baseline_llmjudge.project_zero.queue
-uv run -m baseline_llmjudge.project_zero.evaluate --dry_run
+uv run -m baseline_llmjudge.project_zero.bugkind --rules_only   # no model call
+uv run -m baseline_llmjudge.project_zero.bugkind                # model pass
 
-# 5. score the population
-uv run -m baseline_llmjudge.project_zero.evaluate --prompt_version p1
-uv run -m baseline_llmjudge.project_zero.evaluate --prompt_version p2
-uv run -m baseline_llmjudge.project_zero.evaluate --prompt_version p3
+# 4. freeze the split. --force is needed to overwrite a frozen one
+uv run -m baseline_llmjudge.project_zero.split --dry_run
+uv run -m baseline_llmjudge.project_zero.split
+```
 
-# 6. one fix, to reproduce a single error by hand
+Then the protocol. Prefer the drivers of section 11.11 — they keep one stage's
+logs in one folder and they enforce two protocol rules.
+
+```bash
+# 5. print each population and stop, before any model call
+uv run -m baseline_llmjudge.project_zero.queue --side dev
+uv run -m baseline_llmjudge.project_zero.evaluate --side dev --dry_run
+
+# 6. stage A: every design on dev, then the comparison
+cd ..
+DRY_RUN=1 scripts/llmjudge_pz_stage_a.sh
+scripts/llmjudge_pz_stage_a.sh
+
+# 7. stage B, one turn at a time. p2 stands for the stage-A winner
+scripts/llmjudge_pz_stage_b.sh p2      # the winner's holdout reference row
+scripts/llmjudge_pz_stage_b.sh p2.1    # turn 1: dev, then holdout
+
+# or drive one pass by hand
+cd src
+uv run -m baseline_llmjudge.project_zero.evaluate --side dev --prompt_version p1
+uv run -m baseline_llmjudge.project_zero.evaluate --side holdout \
+    --prompt_version p1 --confirm_holdout
+uv run -m baseline_llmjudge.project_zero.compare --stage A
+
+# 8. one fix, to reproduce a single error by hand
 uv run -m baseline_llmjudge.project_zero.run_one \
   --pair CVE-2021-30551__CVE-2022-1096 --which fix0 \
   --prompt_version p1 --samples 5
 
-# 7. one fix, to measure its evidence size — no model is called
+# 9. one fix, to measure its evidence size — no model is called
 uv run -m baseline_llmjudge.project_zero.run_one \
   --pair CVE-2021-30551__CVE-2022-1096 --which fix0 --samples 0
 ```
@@ -1570,8 +1741,11 @@ uv run -m baseline_llmjudge.project_zero.run_one \
 | `--out_dir` | Override the run directory |
 | `--allow_missing_source` | Keep a fix whose context fetch produced no file |
 | `--dry_run` | Build the population and stop |
-| `--side holdout` | Refused. See section 11.10 |
+| `--side dev\|holdout` | Which side of the frozen split to score (default `dev`) |
+| `--confirm_holdout` | Required for `--side holdout` |
 
-Output lands in `results/llmjudge_pz_<version>_<timestamp>/`: `records.jsonl`,
-`summary.json`, `queue.txt`, `population.json`, and the git provenance of the
-pairs directory.
+Output lands in `results/llmjudge_pz_<side>_<version>_<timestamp>/`. The side
+is in the name, because `compare.py` finds the runs of one side by globbing it.
+Each directory holds `records.jsonl`, `summary.json`, `queue.txt`,
+`population.json`, a copy of the frozen split, and the git provenance of both
+the split and the pairs directory — so a number never loses its population.

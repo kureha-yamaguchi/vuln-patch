@@ -29,14 +29,20 @@ POPULATION.
      judge that does not clearly beat the higher floor is unproven on this
      population, whatever its own F1.
 
-NO HOLDOUT YET. 21 rows do not support two sides: ten rows per side give an
-interval about 0.3 wide on F1, and no prompt comparison survives that. So this
-evaluator runs one dev side over the whole population, and refuses `--side
-holdout`. Freeze a split after `resolve_gerrit.py` raises the population to
-about 40 rows, and split by codebase so that v8 does not sit on both sides.
+THE SPLIT IS FROZEN PER ROOT-CAUSE GROUP. `split.py` assigns a side to a group
+of pairs, not to a row, because the two fixes of a pair repair one root cause
+and often touch one file. A judge tuned on one side of a pair and scored on the
+other would be scored on code it was tuned against. `--side holdout` needs
+`--confirm_holdout`, and a holdout pass is a SCORING pass and nothing else.
+
+READ THE POPULATION SIZE BEFORE YOU READ ANY F1. Each side holds about twenty
+rows. That is enough to rank three designs and not enough to separate two of
+them: no F1 difference under about 0.2 is real here. Section 11.12 of the
+README carries the full list of threats.
 """
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 from datetime import datetime
@@ -48,7 +54,7 @@ sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents
 
 import config                                              # noqa: E402
 from baseline_llmjudge.project_zero import (bugkind,          # noqa: E402
-                                            prompts, queue, run_one)
+                                            prompts, queue, run_one, split)
 from baseline_llmjudge.shared import budget, verdict          # noqa: E402
 from baseline_llmjudge.shared.provenance import git_sha        # noqa: E402
 from baseline_llmjudge.shared.scoring import (HEADLINE_RULE,   # noqa: E402
@@ -75,15 +81,23 @@ def main() -> int:
                     help='default: results/llmjudge_pz_<version>_<ts>')
     ap.add_argument('--allow_missing_source', action='store_true',
                     help='keep a fix whose context fetch produced no file')
+    ap.add_argument('--confirm_holdout', action='store_true',
+                    help='required for --side holdout')
     ap.add_argument('--dry_run', action='store_true',
                     help='build the population and stop')
     args = ap.parse_args()
 
-    if args.side == 'holdout':
-        print("REFUSING: no Project Zero holdout split is frozen. The "
-              "population is 21 rows, and two sides of ten cannot separate "
-              "two prompt versions. Raise the population with "
-              "tools/resolve_gerrit.py first. See the README.",
+    if args.side == 'holdout' and not args.confirm_holdout:
+        print("REFUSING: --side holdout needs --confirm_holdout. A holdout "
+              "pass scores a registered version and nothing else — never "
+              "read its records for refinement. See the README protocol.",
+              file=sys.stderr)
+        return 2
+
+    sides = split.load()
+    if not sides:
+        print(f'REFUSING: no frozen split at {split.SPLIT_FILE}. Run '
+              f'`uv run -m baseline_llmjudge.project_zero.split` first.',
               file=sys.stderr)
         return 2
 
@@ -105,15 +119,19 @@ def main() -> int:
 
     rows, stats = queue.build_queue(
         require_source=not args.allow_missing_source,
-        bug_kind=args.bug_kind, kinds=kinds)
+        bug_kind=args.bug_kind, kinds=kinds,
+        side=args.side, sides=sides)
 
     ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    # The side is in the directory name, because `compare.py` finds the runs
+    # of one side by globbing it.
     out_dir = Path(args.out_dir) if args.out_dir else (
-        REPO / 'results' / f'llmjudge_pz_{version.name}_{ts}')
+        REPO / 'results' / f'llmjudge_pz_{args.side}_{version.name}_{ts}')
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f'Output dir     : {out_dir}')
     print('Dataset        : project_zero')
+    print(f'Side           : {args.side}')
     print(f'Prompt version : {version.name}  '
           f'[stage {prompts.stage_of(version.name)}]')
     print(f'Hypothesis     : {version.hypothesis}')
@@ -128,6 +146,11 @@ def main() -> int:
         for r in rows) + '\n')
     (out_dir / 'dataset_provenance.txt').write_text(
         _git_log_for(REPO / 'src' / 'db' / 'project_zero' / 'pairs'))
+    # Pin the result to the split it was measured on, so a number never loses
+    # its population.
+    shutil.copy(split.SPLIT_FILE, out_dir / split.SPLIT_FILE.name)
+    (out_dir / 'split_provenance.txt').write_text(
+        _git_log_for(split.SPLIT_FILE))
 
     if args.dry_run:
         print('\n--dry_run — stopping before any model call.')

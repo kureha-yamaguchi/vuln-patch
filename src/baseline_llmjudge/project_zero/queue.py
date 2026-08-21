@@ -63,7 +63,9 @@ class QueueRow:
 
 def build_queue(*, require_source: bool = True,
                 bug_kind: Optional[str] = None,
-                kinds: Optional[Dict[str, str]] = None
+                kinds: Optional[Dict[str, str]] = None,
+                side: Optional[str] = None,
+                sides: Optional[Dict[str, str]] = None
                 ) -> Tuple[List[QueueRow], Dict]:
     """`(rows, stats)`. One row per distinct fix commit.
 
@@ -72,7 +74,11 @@ def build_queue(*, require_source: bool = True,
     question than the rest of the population.
 
     `bug_kind` keeps one pool. It needs `kinds`, the `{fix_id: kind}` map that
-    `bugkind.load()` returns."""
+    `bugkind.load()` returns.
+
+    `side` keeps one side of the frozen split. It needs `sides`, the
+    `{pair name: side}` map that `split.load()` returns. The side is frozen per
+    root-cause group, so both fixes of a pair always land on one side."""
     pairs = firewall.read_pairs()
     ever_fix0 = {p.fix0_commit for p in pairs if p.fix0_commit}
     ever_prior = {p.prior_cve for p in pairs if p.prior_cve}
@@ -86,6 +92,11 @@ def build_queue(*, require_source: bool = True,
         dropped[reason] = dropped.get(reason, 0) + 1
 
     for pair in pairs:
+        if side is not None and (sides or {}).get(pair.name) != side:
+            # Counted once per pair, not once per side, because the split
+            # assigns a pair whole.
+            drop(f'not_on_the_{side}_side')
+            continue
         for which in firewall.WHICH:
             commit = pair.commit(which)
             if not commit:
@@ -174,6 +185,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--out', type=Path,
                     help='write the queue here instead of stdout')
+    ap.add_argument('--side', default=None, choices=['dev', 'holdout'],
+                    help='keep one side of the frozen split; needs '
+                         'project_zero_split.jsonl')
     ap.add_argument('--bug_kind', default=None,
                     choices=[bugkind.CRASHING, bugkind.SEMANTIC],
                     help='keep one pool; needs bug_kind.jsonl')
@@ -190,9 +204,23 @@ def main() -> int:
               file=sys.stderr)
         return 2
 
+    # Imported here, not at module scope. `split.py` needs the queue rules to
+    # count the rows of a group, so a module-level import either way round
+    # would be a cycle. `build_queue` takes `sides` as a plain parameter, so
+    # only this CLI needs the split file at all.
+    from baseline_llmjudge.project_zero import split
+
+    sides = split.load() if args.side else None
+    if args.side and not sides:
+        print(f'REFUSING: --side needs {split.SPLIT_FILE}. Run '
+              f'`uv run -m baseline_llmjudge.project_zero.split` first.',
+              file=sys.stderr)
+        return 2
+
     rows, stats = build_queue(
         require_source=not args.allow_missing_source,
-        bug_kind=args.bug_kind, kinds=kinds)
+        bug_kind=args.bug_kind, kinds=kinds,
+        side=args.side, sides=sides)
 
     lines = [f"{'-o' if r.label == 'overfitting' else '-c'} {r.pair}|{r.which}"
              for r in rows]
