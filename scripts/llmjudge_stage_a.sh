@@ -3,9 +3,9 @@
 # bake-off between the three independent prompt designs, then the comparison
 # that names the winner. See src/baseline_llmjudge/README.md section 6.
 #
-#   uv run -m baseline_llmjudge.evaluate --side dev --kind <kind> \
+#   uv run -m baseline_llmjudge.defects4j.evaluate --side dev --kind <kind> \
 #       --prompt_version <design>          # once per design
-#   uv run -m baseline_llmjudge.compare  --stage A --kind <kind>
+#   uv run -m baseline_llmjudge.defects4j.compare  --stage A --kind <kind>
 #
 # Usage:
 #   scripts/llmjudge_stage_a.sh [-h]                 # the crashing pool
@@ -66,7 +66,7 @@ esac
 # The pool's three stage-A designs come from prompts.py, so this script never
 # holds a second copy of the list that could drift out of step with it.
 DEFAULT_VERSIONS="$(cd src && uv run python -c \
-  "from baseline_llmjudge import prompts; print(' '.join(prompts.base_versions('$KIND')))" \
+  "from baseline_llmjudge.defects4j import prompts; print(' '.join(prompts.base_versions('$KIND')))" \
   2>/dev/null)"
 if [[ -z "${VERSIONS:-}" && -z "$DEFAULT_VERSIONS" ]]; then
   echo "could not read the $KIND designs from prompts.py — set VERSIONS" >&2
@@ -113,7 +113,7 @@ failed=()
 for v in "${VERSIONS[@]}"; do
   vlog="${LOGDIR}/evaluate_${v}.log"
   echo "---- $v : dev pass (log: $vlog)" | tee -a "$LOG"
-  ( cd src && uv run -m baseline_llmjudge.evaluate \
+  ( cd src && uv run -m baseline_llmjudge.defects4j.evaluate \
       --side dev \
       --kind "$KIND" \
       --prompt_version "$v" \
@@ -152,7 +152,7 @@ if [[ ${#failed[@]} -gt 0 ]]; then
     echo "compare.py NOT run: a stage-A winner off a partial bake-off would be"
     echo "selected from fewer designs than the protocol registers. Fix the"
     echo "failure, rerun those designs, then run:"
-    echo "    cd src && uv run -m baseline_llmjudge.compare --stage A" \
+    echo "    cd src && uv run -m baseline_llmjudge.defects4j.compare --stage A" \
          "--kind $KIND"
     echo "logs           : $LOGDIR"
   } | tee -a "$LOG"
@@ -166,7 +166,7 @@ fi
 
 CMPLOG="${LOGDIR}/compare_A.log"
 echo "---- compare --stage A --kind $KIND (log: $CMPLOG)" | tee -a "$LOG"
-( cd src && uv run -m baseline_llmjudge.compare --stage A --kind "$KIND" ) \
+( cd src && uv run -m baseline_llmjudge.defects4j.compare --stage A --kind "$KIND" ) \
   2>&1 | tee "$CMPLOG"
 cmp_rc=${PIPESTATUS[0]}
 [[ $cmp_rc -ne 0 ]] && echo "  compare FAILED (exit $cmp_rc)" | tee -a "$LOG"
