@@ -28,11 +28,11 @@ and v3 judge crashing bugs, s1, s2 and s3 judge semantic ones.
 
 Usage (from src/):
     # stage A — the three blind designs, scored on dev
-    uv run -m baseline_llmjudge.compare --stage A
-    uv run -m baseline_llmjudge.compare --stage A --kind semantic
+    uv run -m baseline_llmjudge.defects4j.compare --stage A
+    uv run -m baseline_llmjudge.defects4j.compare --stage A --kind semantic
 
     # stage B — the iterations of the stage-A winner, scored on holdout
-    uv run -m baseline_llmjudge.compare --stage B --base v2
+    uv run -m baseline_llmjudge.defects4j.compare --stage B --base v2
 
 `--stage B` reports the base design's own holdout score too, as a reference
 row. If no iteration beats it, the protocol still selects the best iteration —
@@ -47,9 +47,9 @@ from typing import Dict, List, Optional
 sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents
                             if (p / 'config.py').exists())))
 
-from baseline_llmjudge import prompts        # noqa: E402
+from baseline_llmjudge.defects4j import prompts   # noqa: E402
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 RESULTS = REPO / 'results'
 
 #: Which side each stage selects on. Stage B reads the holdout, because an
@@ -154,7 +154,7 @@ def _stage_a(results_dir: Path, kind: str) -> int:
 
     print(f"\nnext: refine {winner['prompt_version']} three times. Read its "
           f"DEV errors first:")
-    print(f"  uv run -m baseline_llmjudge.errors "
+    print(f"  uv run -m baseline_llmjudge.defects4j.errors "
           f"--records {winner['run_dir']}/records.jsonl")
     return 0
 

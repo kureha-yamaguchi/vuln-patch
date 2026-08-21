@@ -1,10 +1,10 @@
 """Score one side of a frozen split with the one-shot baseline.
 
 Usage (from src/):
-    uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v1
-    uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2 \\
+    uv run -m baseline_llmjudge.defects4j.evaluate --side dev --prompt_version v1
+    uv run -m baseline_llmjudge.defects4j.evaluate --side holdout --prompt_version v2 \\
         --confirm_holdout
-    uv run -m baseline_llmjudge.evaluate --side dev --kind semantic \\
+    uv run -m baseline_llmjudge.defects4j.evaluate --side dev --kind semantic \\
         --prompt_version s1
 
 The queue comes from `java/dataset/build_split_queue.py`, invoked as a
@@ -41,10 +41,14 @@ sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents
                             if (p / 'config.py').exists())))
 
 import config                                              # noqa: E402
-from baseline_llmjudge import (budget, prompts, run_one,     # noqa: E402
-                               verdict)
+from baseline_llmjudge.defects4j import prompts, run_one     # noqa: E402
+from baseline_llmjudge.shared import budget, verdict         # noqa: E402
+from baseline_llmjudge.shared.provenance import git_sha      # noqa: E402
+from baseline_llmjudge.shared.scoring import (HEADLINE_RULE,  # noqa: E402
+                                              RULES, confusion, counts, div,
+                                              print_summary)
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 QUEUE_BUILDER = REPO / 'src' / 'java' / 'dataset' / 'build_split_queue.py'
 SPLITS = REPO / 'suites' / 'splits'
 
@@ -54,10 +58,6 @@ SPLIT_FILE_BY_KIND = {
     'crashing': SPLITS / 'crashing_split.jsonl',
     'semantic': SPLITS / 'semantic_split.jsonl',
 }
-
-RULES = ('majority', 'any', 'unanimous')
-HEADLINE_RULE = 'majority'
-
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
@@ -171,7 +171,7 @@ def main() -> int:
                         samples=args.samples,
                         model=args.model or config.LOCAL_LLM_MODEL)
     (out_dir / 'summary.json').write_text(json.dumps(summary, indent=2))
-    _print_summary(summary)
+    print_summary(summary)
     print(f"\nWrote {records_path}")
     print(f"Wrote {out_dir / 'summary.json'}")
     return 0
@@ -221,34 +221,6 @@ def _git_log_for(path: Path) -> str:
 
 # --- scoring -----------------------------------------------------------------
 
-def confusion(rows: List[Dict], rule: str) -> Dict:
-    """The pipeline's matrix, computed on the same field it reads.
-
-    Positive class = ground-truth 'overfitting'. Identical arithmetic to the
-    jq block in scripts/evaluate_crashing.sh."""
-    ovf = [r for r in rows if r['label'] == 'overfitting']
-    cor = [r for r in rows if r['label'] == 'correct']
-
-    def positive(r):
-        return bool((r.get('decisions') or {}).get(rule))
-
-    tp = sum(1 for r in ovf if positive(r))
-    fn = len(ovf) - tp
-    fp = sum(1 for r in cor if positive(r))
-    tn = len(cor) - fp
-    return {
-        'rule': rule,
-        'overfitting_evaluated': len(ovf),
-        'correct_evaluated': len(cor),
-        'TP': tp, 'FN': fn, 'FP': fp, 'TN': tn,
-        'precision': _div(tp, tp + fp),
-        'recall': _div(tp, tp + fn),
-        'specificity': _div(tn, tn + fp),
-        'accuracy': _div(tp + tn, tp + fn + fp + tn),
-        'f1': _div(2 * tp, 2 * tp + fp + fn),
-    }
-
-
 def summarise(records: List[Dict], spend: Dict, *, side: str, kind: str,
               version: str, samples: int, model: str) -> Dict:
     scored = [r for r in records if r['status'] == 'evaluated']
@@ -275,12 +247,12 @@ def summarise(records: List[Dict], spend: Dict, *, side: str, kind: str,
         'headline_rule': HEADLINE_RULE,
         'parse_failure_counts_as': verdict.class_name(
             run_one.PARSE_FAILURE_COUNTS_AS),
-        'git_sha': run_one._git_sha(),
+        'git_sha': git_sha(),
         'queued': len(records),
         'scored': len(scored),
-        'not_scored': _counts(r['status'] for r in records
+        'not_scored': counts(r['status'] for r in records
                               if r['status'] != 'evaluated'),
-        'positive_class_prior': _div(n_pos, len(scored)),
+        'positive_class_prior': div(n_pos, len(scored)),
         'mean_sample_agreement': (sum(agreements) / len(agreements)
                                   if agreements else None),
         'parse_failures': parse_failures,
@@ -314,53 +286,6 @@ def _by_bug(scored: List[Dict]) -> List[Dict]:
         if bool((r.get('decisions') or {}).get(HEADLINE_RULE)) == want:
             slot['right'] += 1
     return [bugs[k] for k in sorted(bugs)]
-
-
-def _div(num, den):
-    return (num / den) if den else None
-
-
-def _counts(values):
-    out: Dict[str, int] = {}
-    for v in values:
-        out[v] = out.get(v, 0) + 1
-    return out
-
-
-def _print_summary(s: Dict) -> None:
-    h = s['headline']
-    print("\n" + "=" * 60)
-    print(f"kind={s['bug_kind']} side={s['side']} "
-          f"version={s['prompt_version']} "
-          f"model={s['model']} samples={s['samples_per_patch']}")
-    print(f"scored {s['scored']} of {s['queued']}  "
-          f"(positive prior {_pct(s['positive_class_prior'])})")
-    print(f"headline rule: {s['headline_rule']}")
-    print(f"  TP={h['TP']} FN={h['FN']} FP={h['FP']} TN={h['TN']}")
-    print(f"  precision={_pct(h['precision'])} recall={_pct(h['recall'])} "
-          f"specificity={_pct(h['specificity'])} f1={_pct(h['f1'])}")
-    print("vote-rule sensitivity:")
-    for m in s['vote_rule_sensitivity']:
-        print(f"  {m['rule']:<10} P={_pct(m['precision'])} "
-              f"R={_pct(m['recall'])} F1={_pct(m['f1'])}")
-    print(f"mean sample agreement: {_pct(s['mean_sample_agreement'])}"
-          f"   parse failures: {s['parse_failures']}")
-    bd = s['budget']
-    print(f"budget: {bd['calls']} calls, {bd['prompt_tokens']:,} in "
-          f"({bd['cached_prompt_tokens']:,} cached), "
-          f"{bd['completion_tokens']:,} out")
-    if bd['cost_usd_full_rate'] is not None:
-        print(f"  cost (full rate)  : ${bd['cost_usd_full_rate']:.2f}")
-    if bd['cost_usd_with_cache_rate'] is not None:
-        print(f"  cost (cache rate) : "
-              f"${bd['cost_usd_with_cache_rate']:.2f}")
-    if bd['note']:
-        print(f"  {bd['note']}")
-    print("=" * 60)
-
-
-def _pct(v):
-    return 'n/a' if v is None else f'{v:.3f}'
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 """Classify one candidate patch: N samples of one prompt, one decision.
 
 Usage (from src/):
-    uv run -m baseline_llmjudge.run_one -o \\
+    uv run -m baseline_llmjudge.defects4j.run_one -o \\
         --patch_file ../drr/Patches/Doverfitting/Jaid/Chart/patch1-Chart-9-Jaid-plausible.patch \\
         --prompt_version v1 --samples 5
 
@@ -23,7 +23,6 @@ import argparse
 import hashlib
 import json
 import os
-import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -35,18 +34,12 @@ import config                                            # noqa: E402
 from llm import (HarnessGenerator, reset_token_usage,     # noqa: E402
                  token_usage, usage_totals)
 
-from baseline_llmjudge import budget, context, prompts, verdict  # noqa: E402
-
-# An unparsed sample counts as the NEGATIVE class. It is not dropped: dropping
-# it would hand the baseline a filter the pipeline never gets, because a
-# pipeline run that produces no usable harness is scored, not excluded.
-PARSE_FAILURE_COUNTS_AS = False
-
-# One retry per sample, then the sample is a parse failure. More retries would
-# quietly buy the baseline extra attempts the pipeline does not get per harness.
-PARSE_RETRIES = 1
-
-DEFAULT_SAMPLES = 5
+from baseline_llmjudge.defects4j import context, prompts       # noqa: E402
+from baseline_llmjudge.shared import budget, verdict           # noqa: E402
+from baseline_llmjudge.shared.provenance import git_sha        # noqa: E402
+from baseline_llmjudge.shared.verdict import (DEFAULT_SAMPLES,  # noqa: E402
+                                              PARSE_FAILURE_COUNTS_AS,
+                                              PARSE_RETRIES)
 
 
 def classify(patch_path: str, label: str, *,
@@ -74,7 +67,7 @@ def classify(patch_path: str, label: str, *,
         'prompt_kind': prompts.kind_of(version),
         'model': model,
         'reasoning_effort': config.OPENAI_REASONING_EFFORT,
-        'git_sha': _git_sha(),
+        'git_sha': git_sha(),
     }
 
     try:
@@ -162,18 +155,6 @@ def _one_sample(generator, messages, index: int, quiet: bool) -> Dict:
               f"{verdict.class_name(PARSE_FAILURE_COUNTS_AS)}")
     return {'index': index, 'verdict': None, 'retried': PARSE_RETRIES > 0,
             'attempts': attempts}
-
-
-def _git_sha() -> str:
-    env = os.environ.get('GITSHA')
-    if env:
-        return env
-    try:
-        return subprocess.run(['git', 'rev-parse', 'HEAD'],
-                              capture_output=True, text=True,
-                              timeout=10).stdout.strip() or 'unknown'
-    except Exception:
-        return 'unknown'
 
 
 def main() -> int:

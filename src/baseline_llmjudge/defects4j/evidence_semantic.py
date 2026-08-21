@@ -76,7 +76,8 @@ from java.harness.prompts import PromptBuilder
 
 # `Block` and `evidence_text` are shared with the crashing renderer, so the two
 # baselines cannot disagree about what a block is or how blocks are joined.
-from baseline_llmjudge.evidence import Block, evidence_text, reachable_block
+from baseline_llmjudge.defects4j.evidence import reachable_block
+from baseline_llmjudge.shared.blocks import Block, evidence_text
 
 # `evidence_text` is re-exported, not called here: a caller reads the renderer
 # of its own pool and asks that module for everything.

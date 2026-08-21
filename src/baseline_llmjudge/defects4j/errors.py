@@ -5,7 +5,7 @@ next version to fix the dominant error class. This is the "read its errors"
 step, and it reads the dev side only.
 
 Usage (from src/):
-    uv run -m baseline_llmjudge.errors --records ../results/llmjudge_dev_v1_*/records.jsonl
+    uv run -m baseline_llmjudge.defects4j.errors --records ../results/llmjudge_dev_v1_*/records.jsonl
 
 A false positive is a correct patch called overfitting. A false negative is an
 overfitting patch called correct. The two need opposite repairs, so the counts

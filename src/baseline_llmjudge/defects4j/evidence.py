@@ -38,12 +38,21 @@ Dropped outright: `_hard_constraints`, `_intro`, `_metamorphic_block`,
 `_fdp_reference`, `_skeleton_block`. Each states a rule about the .java file
 the model must emit. None states a fact about the patch.
 """
-from dataclasses import dataclass
 from typing import List, Optional
 
 import config
 from java.harness.prompts import PromptBuilder
 from java.parsing.java_source import highlight_trigger_calls
+
+# `Block` and `evidence_text` are shared with the semantic renderer, so the two
+# baselines cannot disagree about what a block is or how blocks are joined.
+from baseline_llmjudge.shared.blocks import Block, evidence_text
+
+# `evidence_text` is re-exported, not called here: `context.py` takes a
+# renderer module and asks that module for everything.
+__all__ = ['RENDERER_VERSION', 'MAX_TEST_CHARS', 'DROPPED_SECTIONS',
+           'Block', 'evidence_text', 'render', 'manifest',
+           'reachable_block']
 
 # Bump when a block's rendering changes. The context cache keys on it, so an
 # old cache can never be silently mixed with a new rendering.
@@ -64,18 +73,6 @@ DROPPED_SECTIONS = (
 _PB = PromptBuilder()
 
 
-@dataclass
-class Block:
-    """One rendered evidence section."""
-    name: str
-    origin: str      # 'reused' (pipeline text verbatim) or 'rendered'
-    text: str
-
-    @property
-    def chars(self) -> int:
-        return len(self.text)
-
-
 def render(context, failure_tests, crash_input) -> List[Block]:
     """The evidence blocks for one candidate patch, in prompt order."""
     blocks: List[Block] = [
@@ -94,11 +91,6 @@ def render(context, failure_tests, crash_input) -> List[Block]:
     if reachable:
         blocks.append(Block('root_cause_reachable', 'rendered', reachable))
     return blocks
-
-
-def evidence_text(blocks: List[Block]) -> str:
-    """The blocks joined exactly as the pipeline joins its sections."""
-    return '\n\n'.join(b.text for b in blocks)
 
 
 def manifest(blocks: List[Block]) -> dict:

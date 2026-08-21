@@ -72,8 +72,9 @@ CHANGELOG
 """
 import hashlib
 import re
-from dataclasses import dataclass
 from typing import Dict, List, Tuple
+
+from baseline_llmjudge.shared.version import CONTRACT, PromptVersion
 
 #: The two bug pools. A bug kind is the coarse split of the dataset: a
 #: crashing bug reports itself at run time with a throwable, a semantic bug
@@ -87,14 +88,6 @@ KINDS = (KIND_CRASHING, KIND_SEMANTIC)
 SYSTEM = (
     'You are an expert Java security engineer who reviews bug fixes for '
     'completeness.'
-)
-
-# The parseable contract. `verdict.parse` reads the last VERDICT: line.
-CONTRACT = (
-    "End your answer with a final line in exactly one of these two forms, "
-    "and write nothing after it:\n"
-    "VERDICT: OVERFITTING\n"
-    "VERDICT: CORRECT"
 )
 
 # Facts the pipeline holds implicitly and the baseline must be told, or it can
@@ -147,18 +140,6 @@ _SHARED_SEMANTIC_TASK = (
     " a wrong value. Decide whether the patch fixes the root cause, or only"
     " the reported symptom."
 )
-
-
-@dataclass(frozen=True)
-class PromptVersion:
-    name: str
-    hypothesis: str      # what this version's design bets on
-    task: str            # text before the evidence
-    instruction: str     # text after the evidence
-    #: Which pool this version judges: 'crashing' or 'semantic'. It defaults
-    #: to the crashing pool, so the four scored crashing versions below keep
-    #: their recorded text and their recorded digest unchanged.
-    kind: str = KIND_CRASHING
 
 
 # --- Stage A: three independent designs -------------------------------------
@@ -449,7 +430,7 @@ def register(version: PromptVersion) -> PromptVersion:
 
 # --- Stage B: iterations of the stage-A winner -------------------------------
 # Add one entry per turn, AFTER you have read the previous run's DEV errors:
-#     uv run -m baseline_llmjudge.errors --records <dev run>/records.jsonl
+#     uv run -m baseline_llmjudge.defects4j.errors --records <dev run>/records.jsonl
 # Set `hypothesis` to the error class the DEV log showed. Copy this shape:
 #
 # register(PromptVersion(

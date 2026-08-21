@@ -61,7 +61,7 @@ from java.parsing.java_source import (candidate_anchor_literals,
                                       sibling_and_state_hints)
 from java.relations.relation_synth import javadoc_for
 
-from baseline_llmjudge import evidence, evidence_semantic
+from baseline_llmjudge.defects4j import evidence, evidence_semantic
 
 # Bump when the EXTRACTION changes, not only when the rendering does.
 # A cached entry is rendered text, so an extraction fix reaches the

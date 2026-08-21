@@ -20,6 +20,60 @@ remains is the measurement itself.
 | Output space | One bit, two classes, no abstain, no score |
 | **Not equal** | The pipeline observes execution. The baseline does not. |
 
+## Two datasets
+
+Sections 1 to 10 describe the Defects4J baseline, over the drr patches. That is
+the main experiment.
+
+### Package layout
+
+Three subpackages, and the split is the dataset.
+
+```
+baseline_llmjudge/
+├── shared/         what both datasets use — see the table below
+├── defects4j/      the Defects4J baseline, over the drr patches (sections 1-10)
+└── project_zero/   the Project Zero baseline (section 11)
+```
+
+A dataset subpackage imports from `shared/`. Neither dataset subpackage imports
+from the other, so a change to one cannot move a number in the other.
+
+**A module belongs in `shared/` when the two baselines must not be able to
+disagree about it.** Six do.
+
+| Module | What it fixes for both datasets |
+|---|---|
+| [`shared/verdict.py`](shared/verdict.py) | The output space: one bit, two classes, the parse rule, the three vote rules, and what an unparsed sample counts as |
+| [`shared/scoring.py`](shared/scoring.py) | The confusion matrix, the headline rule, and the printed summary form |
+| [`shared/budget.py`](shared/budget.py) | Tokens to cost, with the price and cache rules |
+| [`shared/blocks.py`](shared/blocks.py) | The evidence block type, and the rule that joins blocks into one prompt string |
+| [`shared/version.py`](shared/version.py) | The `PromptVersion` shape, and the output contract |
+| [`shared/provenance.py`](shared/provenance.py) | Which commit produced a record |
+
+**What deliberately stays out of `shared/`.** Each dataset keeps its own
+`SYSTEM` message, its own prompt registry and its own `version_sha256`. That is
+not tidiness. `version_sha256` digests `SYSTEM` together with the version's own
+wording, so one shared `SYSTEM` would tie every recorded digest of one dataset
+to an edit made for the other. `CONTRACT` is shared and safe to share, because
+the digest covers its VALUE and a move between modules does not change that.
+
+Each dataset also keeps its own `summarise`. The two differ in what they group
+by and in which registry they read, so one shared function would need a flag
+per difference.
+
+**One duplication remains, and it is known.** The two prompt modules each carry
+their own iteration-name grammar, `register` and `resolve`, about 40 lines
+apiece. A shared registry would need `SYSTEM` injected into it, so it would put
+the digest machinery back into one place. The duplication is the safer trade
+today.
+
+[Section 11](#11-the-project-zero-dataset) describes a second baseline, over the
+Project Zero variant-pair dataset. It answers the same question about real
+upstream security fixes in C and C++. It shares the output space, the vote rules
+and the confusion matrix. It shares no population, no prompt and no split. Its
+population is 21 fixes, so it is a pilot and not a result.
+
 ## Two pools
 
 The dataset has two bug kinds, and the baseline covers both. A bug kind is the
@@ -37,7 +91,7 @@ both. Four things differ, and each one is a separate frozen artifact:
 |---|---|---|
 | Frozen split | `suites/splits/crashing_split.jsonl` | `suites/splits/semantic_split.jsonl` |
 | Certification files | `suites/labels/crashing/` | `suites/labels/` |
-| Evidence renderer | [`evidence.py`](evidence.py) | [`evidence_semantic.py`](evidence_semantic.py) |
+| Evidence renderer | [`evidence.py`](defects4j/evidence.py) | [`evidence_semantic.py`](defects4j/evidence_semantic.py) |
 | Stage-A designs | `v1`, `v2`, `v3` | `s1`, `s2`, `s3` |
 
 `--kind crashing|semantic` selects the pool, and it defaults to `crashing`. The
@@ -116,7 +170,7 @@ at a cache that no longer exists.
 The pipeline's harness prompt is the crashing branch of `PromptBuilder.build`
 ([`prompts.py`](../java/harness/prompts.py)). It joins ten kinds of section.
 Five carry facts about the patch and the bug. Five teach Jazzer harness
-authorship. [`evidence.py`](evidence.py) rebuilds the factual five and drops
+authorship. [`evidence.py`](defects4j/evidence.py) rebuilds the factual five and drops
 the other five.
 
 | Block | Pipeline section | Origin here |
@@ -155,7 +209,7 @@ the model must emit.
 
 The pipeline's semantic prompt is `_build_semantic`, the branch `build` takes
 when `bug_kind == "semantic"`. It joins up to eleven sections.
-[`evidence_semantic.py`](evidence_semantic.py) rebuilds the factual ones.
+[`evidence_semantic.py`](defects4j/evidence_semantic.py) rebuilds the factual ones.
 
 | Block | Pipeline section | Origin here |
 |---|---|---|
@@ -247,7 +301,7 @@ the selector only, because the selector needs it to find the file.
 
 ## 3. Same model
 
-[`run_one.py`](run_one.py) resolves the model as the pipeline does — `--model`
+[`run_one.py`](defects4j/run_one.py) resolves the model as the pipeline does — `--model`
 or `config.LOCAL_LLM_MODEL` — and calls it through `llm.HarnessGenerator`, the
 same wrapper the harness campaign uses, with the same sampling arguments
 (`temperature=0.6, top_p=1.0`). One client, one timeout policy, one retry
@@ -268,7 +322,7 @@ wider output space would need a threshold, and a threshold tuned on dev is a
 free parameter the pipeline does not have.
 
 The model must end its answer with `VERDICT: OVERFITTING` or `VERDICT: CORRECT`.
-[`verdict.py`](verdict.py) reads the last such line, because a scaffolded answer
+[`verdict.py`](shared/verdict.py) reads the last such line, because a scaffolded answer
 can name the other class on its way to a conclusion.
 
 **One word per class.** The two class names are the two ground-truth labels, in
@@ -300,7 +354,7 @@ All five verdicts are stored. Three rules are reported for every patch:
 | `unanimous` | 5 of 5 | The high-precision end of the curve. |
 
 `majority` is the headline. The other two are a sensitivity curve, never a
-second headline. `HEADLINE_RULE` in [`evaluate.py`](evaluate.py) is the single
+second headline. `HEADLINE_RULE` in [`evaluate.py`](defects4j/evaluate.py) is the single
 place that choice lives.
 
 Each patch also reports `agreement`, the share of sample pairs that agree. That
@@ -364,7 +418,7 @@ the best scored F1=0.71 on holdout; the three scored 0.71, 0.66 and 0.64."
 ### The refinement turn is a manual edit
 
 **The dev error log never enters a model call.** A person reads it. That person
-writes one new `PromptVersion` in [`prompts.py`](prompts.py) by hand. About a
+writes one new `PromptVersion` in [`prompts.py`](defects4j/prompts.py) by hand. About a
 bug, the model still sees exactly what it saw before: the patch, the trigger
 tests, and the reachable set.
 
@@ -449,25 +503,25 @@ stage-A run.
 
 ```bash
 # the crashing pool
-uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v1
-uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v2
-uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v3
+uv run -m baseline_llmjudge.defects4j.evaluate --side dev --prompt_version v1
+uv run -m baseline_llmjudge.defects4j.evaluate --side dev --prompt_version v2
+uv run -m baseline_llmjudge.defects4j.evaluate --side dev --prompt_version v3
 
-uv run -m baseline_llmjudge.compare --stage A     # names the winner, on dev F1
+uv run -m baseline_llmjudge.defects4j.compare --stage A     # names the winner, on dev F1
 
 # the winner on the holdout, as stage B's reference row
-uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2 \
+uv run -m baseline_llmjudge.defects4j.evaluate --side holdout --prompt_version v2 \
     --confirm_holdout
 
 # the semantic pool — the same three passes against the semantic split
-uv run -m baseline_llmjudge.evaluate --side dev --kind semantic \
+uv run -m baseline_llmjudge.defects4j.evaluate --side dev --kind semantic \
     --prompt_version s1
-uv run -m baseline_llmjudge.evaluate --side dev --kind semantic \
+uv run -m baseline_llmjudge.defects4j.evaluate --side dev --kind semantic \
     --prompt_version s2
-uv run -m baseline_llmjudge.evaluate --side dev --kind semantic \
+uv run -m baseline_llmjudge.defects4j.evaluate --side dev --kind semantic \
     --prompt_version s3
 
-uv run -m baseline_llmjudge.compare --stage A --kind semantic
+uv run -m baseline_llmjudge.defects4j.compare --stage A --kind semantic
 ```
 
 **Measure before you spend.** A semantic prompt is several times the size of a
@@ -477,7 +531,7 @@ model. Run it on a few patches of different projects, read the character counts,
 then decide what a pass costs:
 
 ```bash
-uv run -m baseline_llmjudge.run_one -c \
+uv run -m baseline_llmjudge.defects4j.run_one -c \
   --patch_file ../drr/Patches/Dcorrect/ACS/Lang/patch1-Lang-7-ACS.patch \
   --prompt_version s1 --samples 0 \
   --cache_dir ../results/llmjudge_cache_semantic
@@ -497,16 +551,16 @@ from its name.
 ```bash
 # say v2 wins
 # turn 1 — read the stage-A winner's DEV errors, then write v2.1 in prompts.py
-uv run -m baseline_llmjudge.errors \
+uv run -m baseline_llmjudge.defects4j.errors \
     --records ../results/llmjudge_dev_v2_<ts>/records.jsonl
 
 # the dev pass feeds turn 2; the holdout pass is v2.1's selection score
-uv run -m baseline_llmjudge.evaluate --side dev     --prompt_version v2.1
-uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2.1 \
+uv run -m baseline_llmjudge.defects4j.evaluate --side dev     --prompt_version v2.1
+uv run -m baseline_llmjudge.defects4j.evaluate --side holdout --prompt_version v2.1 \
     --confirm_holdout
 
 # turns 2 and 3 — same shape, reading the previous turn's DEV records
-uv run -m baseline_llmjudge.errors \
+uv run -m baseline_llmjudge.defects4j.errors \
     --records ../results/llmjudge_dev_v2.1_<ts>/records.jsonl
 ```
 
@@ -565,7 +619,7 @@ The stage-B script enforces three rules of the protocol:
 ### Selection
 
 ```bash
-uv run -m baseline_llmjudge.compare --stage B --base v2
+uv run -m baseline_llmjudge.defects4j.compare --stage B --base v2
 ```
 
 | Stage | Selects on | Tie break |
@@ -803,7 +857,7 @@ a dev error log did not improve it.
 ## 7. Budget disclosure
 
 Token usage comes from the shared recorder in [`llm.py`](../llm.py), the same
-one the pipeline reports. [`budget.py`](budget.py) turns it into a cost, under
+one the pipeline reports. [`budget.py`](shared/budget.py) turns it into a cost, under
 two rules:
 
 1. **No invented prices.** A price comes from the environment, or the report
@@ -956,21 +1010,21 @@ quoting the selected iteration's holdout pass alone.
 
 | File | Responsibility |
 |---|---|
-| [`context.py`](context.py) | Extract the evidence for one patch, by the steps of its pool; cache it as rendered text |
-| [`evidence.py`](evidence.py) | Render the crashing evidence blocks; build the parity manifest |
-| [`evidence_semantic.py`](evidence_semantic.py) | Render the semantic evidence blocks; list the withheld evidence |
-| [`prompts.py`](prompts.py) | Each pool's three stage-A designs, and the hand-written stage-B iterations. Builds the messages: system, task, evidence, instruction |
-| [`verdict.py`](verdict.py) | Parse one verdict; combine samples under the three vote rules |
-| [`budget.py`](budget.py) | Tokens to cost, with the price and cache rules above |
-| [`errors.py`](errors.py) | Print one dev pass's errors — the input to the next stage-B iteration. Refuses holdout records |
-| [`compare.py`](compare.py) | Name the stage winner of one pool: stage A on dev F1, stage B on holdout F1 |
-| [`run_one.py`](run_one.py) | One patch, N samples, one record. `--samples 0` extracts and stops |
-| [`evaluate.py`](evaluate.py) | One side of one pool's split: records, summary, budget |
+| [`defects4j/context.py`](defects4j/context.py) | Extract the evidence for one patch, by the steps of its pool; cache it as rendered text |
+| [`defects4j/evidence.py`](defects4j/evidence.py) | Render the crashing evidence blocks; build the parity manifest |
+| [`defects4j/evidence_semantic.py`](defects4j/evidence_semantic.py) | Render the semantic evidence blocks; list the withheld evidence |
+| [`defects4j/prompts.py`](defects4j/prompts.py) | Each pool's three stage-A designs, and the hand-written stage-B iterations. Builds the messages: system, task, evidence, instruction |
+| [`defects4j/errors.py`](defects4j/errors.py) | Print one dev pass's errors — the input to the next stage-B iteration. Refuses holdout records |
+| [`defects4j/compare.py`](defects4j/compare.py) | Name the stage winner of one pool: stage A on dev F1, stage B on holdout F1 |
+| [`defects4j/run_one.py`](defects4j/run_one.py) | One patch, N samples, one record. `--samples 0` extracts and stops |
+| [`defects4j/evaluate.py`](defects4j/evaluate.py) | One side of one pool's split: records, summary, budget |
 | [`build_split_queue.py`](../java/dataset/build_split_queue.py) | The queue for one side of one pool, from the frozen split and the labels |
 | [`llmjudge_stage_a.sh`](../../scripts/llmjudge_stage_a.sh) | Run stage A: the pool's three designs on dev, then the comparison. Logs land in `results/llmjudge_stageA_<kind>_<ts>/` |
 | [`llmjudge_stage_b.sh`](../../scripts/llmjudge_stage_b.sh) | Run one stage-B turn: dev, then holdout, then the comparison once all three turns are in. Logs land in `results/llmjudge_stageB_<base>_<ts>/` |
 
-Guards live in [`tests/test_llmjudge_baseline.py`](../../tests/test_llmjudge_baseline.py).
+The shared modules are listed under **Package layout** near the top of this
+file. Guards live in
+[`tests/test_llmjudge_baseline.py`](../../tests/test_llmjudge_baseline.py).
 
 ## 10. Usage
 
@@ -982,32 +1036,32 @@ the repository root.
 
 ```bash
 # print a queue and stop, before any model call
-uv run -m baseline_llmjudge.evaluate --side dev --dry_run
-uv run -m baseline_llmjudge.evaluate --side dev --kind semantic --dry_run
+uv run -m baseline_llmjudge.defects4j.evaluate --side dev --dry_run
+uv run -m baseline_llmjudge.defects4j.evaluate --side dev --kind semantic --dry_run
 
 # one side of one pool, one prompt version
-uv run -m baseline_llmjudge.evaluate --side dev --prompt_version v1
-uv run -m baseline_llmjudge.evaluate --side holdout --prompt_version v2.1 \
+uv run -m baseline_llmjudge.defects4j.evaluate --side dev --prompt_version v1
+uv run -m baseline_llmjudge.defects4j.evaluate --side holdout --prompt_version v2.1 \
   --confirm_holdout
-uv run -m baseline_llmjudge.evaluate --side dev --kind semantic \
+uv run -m baseline_llmjudge.defects4j.evaluate --side dev --kind semantic \
   --prompt_version s1
 
 # a dev pass's errors — the input to the next hand-written iteration
-uv run -m baseline_llmjudge.errors \
+uv run -m baseline_llmjudge.defects4j.errors \
   --records ../results/llmjudge_dev_v2_<timestamp>/records.jsonl
 
 # name the stage winner: stage A on dev F1, stage B on holdout F1
-uv run -m baseline_llmjudge.compare --stage A
-uv run -m baseline_llmjudge.compare --stage A --kind semantic
-uv run -m baseline_llmjudge.compare --stage B --base v2
+uv run -m baseline_llmjudge.defects4j.compare --stage A
+uv run -m baseline_llmjudge.defects4j.compare --stage A --kind semantic
+uv run -m baseline_llmjudge.defects4j.compare --stage B --base v2
 
 # one patch, to reproduce a single error by hand
-uv run -m baseline_llmjudge.run_one -o \
+uv run -m baseline_llmjudge.defects4j.run_one -o \
   --patch_file ../drr/Patches/Doverfitting/DeepRepair/Lang/patch1-Lang-27-DeepRepair.patch \
   --prompt_version v2 --samples 5
 
 # one patch, to measure its evidence size — no model is called
-uv run -m baseline_llmjudge.run_one -c \
+uv run -m baseline_llmjudge.defects4j.run_one -c \
   --patch_file ../drr/Patches/Dcorrect/ACS/Lang/patch1-Lang-7-ACS.patch \
   --prompt_version s1 --samples 0 \
   --cache_dir ../results/llmjudge_cache_semantic
@@ -1034,3 +1088,490 @@ Output lands in `results/llmjudge_<side>_<version>_<timestamp>/`:
 `records.jsonl`, `summary.json`, `queue.txt`, and a copy of the split with its
 git provenance — so a number stays traceable to the split and the code that
 produced it.
+
+---
+
+# 11. The Project Zero dataset
+
+Sections 1 to 10 describe the Defects4J baseline. This section describes a
+second dataset, and a second set of modules that score it. The two do not share
+a population, a prompt or a split. They share the output space, the vote rules
+and the confusion matrix.
+
+**Read this section before you quote any number from it.** The population is 21
+fixes. That is a pilot, not a result.
+
+## 11.1 What the dataset holds
+
+The Project Zero dataset is a set of variant pairs. It lives in
+[`src/db/project_zero/pairs/`](../db/project_zero/pairs/). A **variant pair** is
+two upstream security fixes for one root cause:
+
+- `fix0` is the **prior fix**. It shipped. It left a sibling bug behind, and a
+  later CVE reported that sibling bug.
+- `fix1` is the **later fix**. It removed what `fix0` missed. No third CVE
+  followed it.
+
+So `fix0` is an overfitting patch by the definition in
+[`.claude/CONTEXT.md`](../../.claude/CONTEXT.md). It removed the reported
+symptom without the root cause. `fix1` is the correct patch of that pair.
+
+Three properties separate this dataset from drr, and each one changes the
+design:
+
+1. There is no label file. The pair convention *is* the label.
+2. There is no trigger test, no proof-of-concept input and no buildable tree.
+   The dataset stores two diffs and one metadata file per pair.
+3. The code is C and C++. So the parity target is the C/C++ front-end, not the
+   Java front-end.
+
+## 11.2 The population, and why the unit is one fix
+
+**The unit is one fix, never one pair.** 43 pair directories hold only 35
+distinct `fix0` commits. One prior CVE, `CVE-2019-13720`, carries six pairs on
+its own. Every pair of that CVE renders the same diff. A per-pair queue would
+enter one fix into the confusion matrix six times, and pay for it five times
+over.
+
+[`project_zero/queue.py`](project_zero/queue.py) collapses a repeat by commit, and prints how many
+it dropped.
+
+| Class | Rule | Rows |
+|---|---|---|
+| `overfitting` | Every distinct `fix0` | 12 |
+| `correct` | Every distinct `fix1`, less two exclusions | 9 |
+| | **Total, positive prior 0.57** | **21** |
+
+**Two exclusions apply to the negative class.** Each one removes a fix that is
+known to be incomplete:
+
+1. A `fix1` commit that is also a `fix0` somewhere in the dataset.
+2. A `fix1` whose CVE is a prior CVE somewhere in the dataset.
+
+Five CVE ids of this dataset act in both roles: `CVE-2019-11707`,
+`CVE-2019-13720`, `CVE-2021-30551`, `CVE-2022-1096` and `CVE-2022-3723`. A fix
+that left a sibling bug cannot serve as an example of one that did not.
+
+**The rows cluster by project.** 14 of the 21 rows are Chrome or v8. Rows of one
+project share a coding style, a review culture and a fault vocabulary. So
+`summary.json` carries a `by_codebase` breakdown. Any interval computed on 21
+independent rows is too narrow.
+
+## 11.3 The negative-class confound
+
+The negative class is the later fix of the same pair. A later fix is later in
+time, and it had more scrutiny. So a judge can score well on this population by
+detection of recency rather than of completeness.
+
+The firewall in section 11.4 removes every date, every identifier and the whole
+commit message. No token states the order. The firewall cannot remove a
+difference in coding style, and fix size is the readable half of that.
+
+**So every summary carries two baselines that read no code.** Both take their
+best form on the scored rows themselves, so both are floors and neither is a
+competitor.
+
+1. `always_positive` calls every fix an overfitting patch. The prior of 0.57
+   alone gives it F1 0.727. Any result on this population must beat that first.
+2. `size_rule` calls a fix an overfitting patch when its diff is shorter than
+   T. This is the proxy control for the confound.
+
+**A degenerate threshold is excluded from the size rule.** The largest diff
+length makes the rule predict every row positive, which is `always_positive`
+under another name. The measured best honest threshold is 11,414 characters,
+and it scores F1 0.688 — below the always-positive floor. **So fix size does
+not separate the two classes on this population.** That is a measured result
+about the confound, and it is the reassuring direction.
+
+Read `headline.f1` against the higher of the two floors.
+
+A stronger negative class exists, and this plan does not build it: security
+fixes from the same repositories with no later CVE against the same files. That
+needs a new harvest, and its label is weak. "No known sibling bug" is not "no
+sibling bug".
+
+## 11.4 The leakage firewall
+
+The pair convention is written all over the data. So
+[`project_zero/firewall.py`](project_zero/firewall.py) is the one module that reads `metadata.json`
+or a raw `.patch` file. It returns two views:
+
+- `PairRecord` is the **selector view**. It carries the CVE ids, both commits
+  and both repository URLs. The queue builder and the fetch tool read it.
+  Nothing renders it.
+- `Fix` is the **clean view**. It carries the diff, the touched files, the
+  fetched source and the codebase label. Only this view reaches a prompt.
+
+Six leak channels exist. Each one has its own rule.
+
+| Channel | The leak | The rule |
+|---|---|---|
+| Directory name | `<PRIOR>__<LATER>` names the later CVE | The clean view carries `fix_id`, the first eight hex digits of the commit digest |
+| File name | `fix0.patch` against `fix1.patch` | The clean view has no file name |
+| Metadata fields | `relationship_kind` states the verdict; `deep_reasoning` explains it in prose | `KEPT_METADATA` is an allow-list of two fields |
+| Dates | `fix0_date` and `fix1_date` order the two fixes | Neither view carries a date |
+| Commit message | See below | The clean view starts at the first `diff --git` line |
+| Diff body | One patch adds a ChangeLog entry that reads "This is CVE-2020-15999" | `scrub` masks every CVE id, tracker id, ISO date and blob hash |
+
+**The commit message is the richest channel, so the firewall drops it whole.**
+Four real examples from this dataset: "This is CVE-2020-15999";
+"commit 5eeb2ca0 upstream"; "Bug 1607443 - Fix some alias sets"; and a `Fixes:`
+tag that names the commit under repair. Message presence is not even symmetric:
+only 49 of the 86 patch files carry one. So presence alone would separate the
+two classes without one line of code read.
+
+That rule costs real evidence. `withheld_pipeline_evidence` lists
+`commit_message` in every record, so the cost stays visible.
+
+**Two path rules deserve a note.** v8 names a regression test after the bug it
+covers, for example `test/mjsunit/compiler/regress-crbug-1228407.js`. A bug
+number rises over time, so it orders the two fixes. The firewall therefore masks
+a 6-to-8 digit run on a diff header line, and it leaves a numeric constant in
+code alone. It also keeps two sets of paths: the real paths address the disk,
+and the masked paths go in the prompt.
+
+**Four Bugzilla attachments hold a second changeset header inside the diff.** So
+`drop_metadata_lines` removes a metadata line wherever it appears, not only in
+the leading message. Every pattern anchors at column 0. A diff content line
+always begins with `+`, `-` or a space, so no pattern can match code.
+
+**The guard is a sweep, not a sample.**
+[`tests/test_llmjudge_pz.py`](../../tests/test_llmjudge_pz.py) checks all 86
+clean views against 12 leak patterns. A new pair cannot enter the dataset with a
+leak the tests never saw.
+
+## 11.5 The bug-kind gate
+
+`.claude/CONTEXT.md` fixes the two words. A **crashing bug** is one that
+something at run time reports by itself. A **semantic bug** is one that nothing
+reports.
+
+[`project_zero/bugkind.py`](project_zero/bugkind.py) classifies each distinct fix in two passes:
+
+1. A rule pass over the added lines of the diff. Seven marker groups stand for
+   a fault the run time reports: an assert, a bounds check, a null guard, a
+   lifetime or refcount change, a type-cast guard, an overflow guard, and an
+   alias or side-effect model.
+2. A model pass on every fix the rule pass leaves unsure.
+
+**The two passes are asymmetric on purpose.** "Nothing reports this at run time"
+is the absence of a marker, so no regex can assert it. The rule pass can say
+`crashing` or say nothing. `decided_by` records which pass ruled on each fix.
+
+**The measured result.** 59 distinct fixes: 47 crashing, 12 semantic. The rule
+pass decided 29, and the model pass decided 30. Inside the scored population of
+21 rows the split is 16 crashing and 5 semantic.
+
+**So this dataset does not get two pools.** Five rows do not support a pool of
+its own. One run scores every row, and `summary.json` carries a `by_bug_kind`
+breakdown. Read the semantic row as a count, never as an F1. `--bug_kind` can
+filter the population when the population is larger.
+
+## 11.6 The fetch step
+
+The dataset stores no source tree, so
+[`fetch_context.py`](../db/project_zero/tools/fetch_context.py) fetches the
+touched files of each fix at that fix's own commit. It is a port of the Linux
+twin, and it writes the same layout:
+
+```
+pairs/<PAIR>/fix0_context/<path/to/file.cc>
+pairs/<PAIR>/fix1_context/<path/to/file.cc>
+```
+
+The scope is the directly modified files only. That is enough for a one-shot
+judgement. It is not enough for harness generation, which needs the whole tree,
+the transitive headers and the build system. Chromium's tree alone is 61 GB.
+
+**A Gerrit change number, not repository size, caps the population.** A raw-file
+endpoint addresses a file at a commit, so it needs a git SHA. 21 of the 43
+`fix0_commit` values are Gerrit change numbers such as `CL/1888103`, and 13 of
+the `fix1_commit` values are.
+
+| Tier | Rule | Pairs |
+|---|---|---|
+| 1 (default) | A SHA on both sides, a supported host, and not `chromium/src` | 14 |
+| all | Every pair with a SHA and a supported host | 16 |
+
+Six raw-file endpoints are supported: Gitiles, cgit on kernel.org, cgit on
+savannah, Mercurial, GitHub and GitLab. Bugzilla is not. Its `fix0_commit` is an
+attachment id, so no path-addressed route exists, and its four pairs stay out.
+
+**One mirror is configured.** `git.savannah.gnu.org` does not answer from every
+network. A git mirror shares the object ids of its origin, so a SHA addresses
+the same file in both. `MIRRORS` maps freetype to its GitHub mirror.
+
+**Two caps apply, and the tool prints both.** It skips a fix that touches more
+than 15 files. It skips a file over 1 MB.
+
+**The measured result.** 64 files in place. Two permanent failures, both in
+Skia: the fix references two files that do not exist at that commit.
+
+**Tier 2 raises the population.**
+[`resolve_gerrit.py`](../db/project_zero/tools/resolve_gerrit.py) resolves a
+change number to its merged SHA through the Gerrit REST API. It writes a
+separate override file, `gerrit_resolved.json`, and it never rewrites
+`metadata.json`. Two reasons, and the second matters more than tidiness:
+
+1. The dataset stays as the harvester produced it.
+2. `project_zero/firewall.py` derives `fix_id` from the commit id in
+   `metadata.json`. A
+   resolution written back would change every fix id, and `bug_kind.jsonl`
+   would stop to match.
+
+`--only_repo` defaults to `v8/v8`. That unlocks 11 more changes. `chromium/src`
+stays out for the same cost reason tier 1 excludes it.
+
+## 11.7 The evidence, and the parity target
+
+The Defects4J baseline rebuilds four of the five factual sections of the Java
+harness prompt. That claim does not transfer. This dataset is C and C++, so the
+counterpart is `LibFuzzerPromptBuilder.build`
+([`oss_fuzz/prompts.py`](../oss_fuzz/prompts.py)).
+
+| Block | Pipeline section | Origin here |
+|---|---|---|
+| `patch` | `_patch_block` | reused verbatim |
+| `touched_files` | (none) | baseline only |
+| `touched_source` | `_function_block` | baseline only |
+| `codebase` | (none) | baseline only |
+
+`patch` calls the pipeline's own method, so its wording and its
+6000-character cap cannot drift. A test asserts the equality.
+
+**`touched_source` is `baseline_only`, not `rendered`, and the distinction
+matters.** The pipeline's `_function_block` carries one function, extracted by a
+parser, and it states why that function is in the prompt. No C or C++ function
+extraction runs on this path, so this block carries whole files instead. To call
+it `rendered` would claim a parity that does not exist.
+
+**The evidence gap is wider here than on the Defects4J side.** The Defects4J
+baseline is missing execution evidence alone. This one is missing the
+root-cause region as well, because no tree is checked out and no call graph is
+built. Every record lists all of it:
+
+| Withheld | Why |
+|---|---|
+| `_original_crash_block` | Needs the crash report and a proof-of-concept input. The dataset stores neither |
+| `_routes_block` | Needs a checked-out tree and a call graph |
+| `_reference_harness_block`, `_known_includes_block` | Need the project's own OSS-Fuzz harness |
+| `compile_result`, `fuzz_result` | Need a build of the patched code |
+| `commit_message` | Dropped by the firewall. See section 11.4 |
+
+**Do not compare an F1 from this population with an F1 from the Defects4J
+population.** The two judges did not see comparable evidence.
+
+## 11.8 The prompts
+
+[`project_zero/prompts.py`](project_zero/prompts.py) is a separate module, and the reason is
+mechanical. `prompts.version_text` joins `SYSTEM` with a version's own wording,
+and `version_sha256` digests the result. One edit to `prompts.SYSTEM` would
+change the recorded digest of every scored Defects4J version. So this module
+holds its own system message, its own registry and its own `resolve`. It imports
+the `PromptVersion` shape and the output contract. Nothing here can move a
+Defects4J number.
+
+**The question changes, and the class names do not.** The Defects4J prompt shows
+a failing test and asks whether a candidate patch fixes its root cause. There is
+no test here, and no candidate patch either. Every fix shipped. So the question
+becomes: did this fix remove the whole root cause, or did it leave a sibling bug?
+`OVERFITTING` and `CORRECT` stay the two class names, so `verdict.py` parses
+both datasets with one function.
+
+The three stage-A designs mirror the three Defects4J bets one for one:
+
+| Version | What the request supplies | The bet |
+|---|---|---|
+| `p1` | The evidence, the question, a gloss of each class, the output contract | The floor: what the model does unaided |
+| `p2` | Definitions, the shipped-fix premise, a five-step method, two calibration rules | A method plus guard rails beats an unaided answer |
+| `p3` | Definitions, the shipped-fix premise, five **required** output sections | A form the answer must fill in beats a method it may skip |
+
+**Two premises the model must be told.** The fix is real and it shipped, so
+"this would not compile" is never a valid reason. The fix stopped the
+vulnerability reported at the time, so "the proof-of-concept still works" is not
+one either. Neither premise reveals the label. Both classes shipped, and both
+stopped the vulnerability reported at the time.
+
+A third sentence tells the model that dates and identifiers are masked, and that
+it must not guess them. Without it the model can read `DATE-MASKED` as a signal.
+
+A stage-B iteration is `<base>.<n>`, for example `p2.1`. Register it by hand,
+after you read the dev errors. `build_messages` takes a version name and the
+evidence text. There is no third parameter, so an error log has no way in.
+
+## 11.9 What is reused
+
+Four things carry over by import, not by copy. So the two datasets cannot drift
+apart on any of them.
+
+| From | What |
+|---|---|
+| [`shared/verdict.py`](shared/verdict.py) | The one-bit output space, the last-`VERDICT:`-line parse, the three vote rules, `PARSE_FAILURE_COUNTS_AS`, `PARSE_RETRIES`, `DEFAULT_SAMPLES` |
+| [`shared/scoring.py`](shared/scoring.py) | `confusion`, `RULES`, `HEADLINE_RULE`, `print_summary` |
+| [`shared/blocks.py`](shared/blocks.py) | `Block`, and the rule that joins blocks into one prompt string |
+| [`shared/version.py`](shared/version.py) | `PromptVersion`, and the output contract |
+| [`shared/budget.py`](shared/budget.py) | The spend report and the price rules |
+| [`shared/provenance.py`](shared/provenance.py) | Which commit produced a record |
+
+`summarise` is local, and so is the Defects4J one. The two differ in what they
+group by and in which prompt registry they read.
+
+**There is no evidence cache.** The Defects4J side caches because extraction
+needs a checkout and two test runs. Here the render is a few local file reads.
+The record still carries `evidence_sha256`, so the claim that every prompt
+version reads byte-identical evidence stays checkable.
+
+## 11.10 No holdout split yet
+
+21 rows do not support two sides. Ten rows per side give an interval about 0.3
+wide on F1, and no prompt comparison survives that. So the evaluator runs one
+dev side over the whole population, and it refuses `--side holdout`.
+
+Freeze a split after `resolve_gerrit.py` raises the population to about 40 rows.
+Split by codebase, so that v8 does not sit on both sides.
+
+## 11.11 Iteration log
+
+One stage-A design ran. Two are written and frozen, and neither has run.
+
+### `p1` — the floor. Dev, 21 fixes, 5 samples, `gpt-5.4`, effort `low`
+
+| Figure | Value |
+|---|---|
+| Headline rule | `majority` |
+| TP / FN / FP / TN | 0 / 12 / 0 / 9 |
+| Precision, recall, F1 | n/a, 0.000, 0.000 |
+| Specificity | 1.000 |
+| `any` rule | P 0.667, R 0.333, F1 0.444 |
+| Mean sample agreement | 0.867 |
+| Parse failures | 0 of 105 |
+| Spend | 105 calls, 650,605 in (459,776 cached), 113,895 out |
+
+**`p1` never answers OVERFITTING under the majority rule.** Not once, on any of
+the 21 fixes. The vote counts show how one-sided it is. On the 12 positives the
+votes were eight zeros, two ones and two twos. On the 9 negatives they were
+seven zeros and two ones. So no fix reached the 3-of-5 threshold.
+
+**This is a collapse, not a parse failure.** All 105 samples parsed. The
+answers are substantive: the model names the root cause, quotes the guard the
+fix adds, and argues that the guard removes the condition rather than the one
+input. It reads the code and then it clears the fix.
+
+**The `any` rule shows the signal is not zero.** At 1 of 5 the model reaches
+F1 0.444 with precision 0.667. So `p1` does raise doubt about some positives.
+It never raises enough doubt to carry a majority.
+
+**The diagnosis, and it points at the prompt.** `p1` is the floor design. It
+supplies no premise, no method and no required sections. The evidence tells it
+that upstream maintainers wrote and shipped this fix. With no instruction to
+look for a sibling bug, "a reviewed upstream fix is correct" is the answer that
+costs the least. `p2` and `p3` both carry the premise, the class definitions
+and either a method or a required form. They exist to test exactly this.
+
+**What it does not yet show.** The evidence question from the plan stays open.
+A judge that answers one class every time tells us nothing about whether the
+diff plus the touched source carries enough signal. Run `p2` and `p3` before
+you conclude anything about the evidence.
+
+**The blind bake-off still holds.** `p2` and `p3` were authored and frozen
+before any run, and `prompt_sha256` records their text. So this read-out cannot
+have shaped them.
+
+**The run directory of this pass was deleted by accident, and the raw records
+are gone.** The table above, the vote counts and the baselines are the whole of
+what survives. The 105 model answers do not. So `errors.py` has nothing to read
+for this pass, and a stage-B turn on `p1` would need the pass to run again.
+Re-run `p1` before you write any `p1.n`, or start stage B from whichever of
+`p2` and `p3` wins instead.
+
+## 11.12 Threats to validity
+
+- **The negative class is the later fix of the same pair.** See section 11.3.
+  The proxy control bounds this threat. It does not remove it.
+- **The population is 21 rows in 4 codebases.** No F1 difference under about
+  0.2 is real. Two prompt versions cannot be separated on this population.
+- **The always-positive floor is high.** The prior is 0.57, so a rule that
+  answers OVERFITTING every time scores F1 0.727. Quote that floor beside any
+  F1 from this population.
+- **A negative label is an absence of evidence.** No third CVE followed `fix1`.
+  That is not proof that `fix1` left no sibling bug.
+- **Contamination.** Every CVE here is public, and the fixes are in the
+  training data of any recent model. This helps the baseline, not the pipeline,
+  so it works against the claim. That is the safe direction.
+- **The bug kind of 30 fixes came from a model, not a rule.** The
+  `by_bug_kind` breakdown rests on that classification.
+- **The evidence is thinner than on the Defects4J side.** See section 11.7.
+- **The pipeline cannot run on these codebases yet.** So this baseline has no
+  comparison target on this dataset. It measures the baseline alone.
+
+## 11.13 Files
+
+| File | Responsibility |
+|---|---|
+| [`project_zero/firewall.py`](project_zero/firewall.py) | The one reader of `metadata.json` and the raw diffs. Returns the selector view and the clean view |
+| [`project_zero/bugkind.py`](project_zero/bugkind.py) | Classify each fix as crashing or semantic, by rule then by model. Writes `bug_kind.jsonl` |
+| [`project_zero/queue.py`](project_zero/queue.py) | The scored population: one row per distinct fix commit, with the two negative-class exclusions |
+| [`project_zero/evidence.py`](project_zero/evidence.py) | Render the four evidence blocks; build the parity manifest and the withheld list |
+| [`project_zero/prompts.py`](project_zero/prompts.py) | The three stage-A designs, the stage-B registry, and the message builder |
+| [`project_zero/run_one.py`](project_zero/run_one.py) | One fix, N samples, one record. `--samples 0` renders and stops |
+| [`project_zero/evaluate.py`](project_zero/evaluate.py) | The whole population: records, summary, the two breakdowns, the two baselines |
+| [`fetch_context.py`](../db/project_zero/tools/fetch_context.py) | Fetch the touched files of each fix, at that fix's own commit |
+| [`resolve_gerrit.py`](../db/project_zero/tools/resolve_gerrit.py) | Resolve a Gerrit change number to its merged SHA. Writes `gerrit_resolved.json` |
+
+Guards live in
+[`tests/test_llmjudge_pz.py`](../../tests/test_llmjudge_pz.py).
+
+## 11.14 Usage
+
+Run the two dataset tools from `src/db/project_zero/`. Run everything else from
+`src/`.
+
+```bash
+# 1. classify the bug kind of every fix — the gate
+uv run -m baseline_llmjudge.project_zero.bugkind --rules_only     # no model call
+uv run -m baseline_llmjudge.project_zero.bugkind                  # with the model pass
+
+# 2. fetch the source of the touched files
+cd db/project_zero
+uv run python tools/fetch_context.py --dry_run
+uv run python tools/fetch_context.py
+
+# 3. raise the population (tier 2), then fetch again
+uv run python tools/resolve_gerrit.py --dry_run
+uv run python tools/resolve_gerrit.py
+uv run python tools/fetch_context.py --tier all
+
+# 4. print the population and stop, before any model call
+cd ../..
+uv run -m baseline_llmjudge.project_zero.queue
+uv run -m baseline_llmjudge.project_zero.evaluate --dry_run
+
+# 5. score the population
+uv run -m baseline_llmjudge.project_zero.evaluate --prompt_version p1
+uv run -m baseline_llmjudge.project_zero.evaluate --prompt_version p2
+uv run -m baseline_llmjudge.project_zero.evaluate --prompt_version p3
+
+# 6. one fix, to reproduce a single error by hand
+uv run -m baseline_llmjudge.project_zero.run_one \
+  --pair CVE-2021-30551__CVE-2022-1096 --which fix0 \
+  --prompt_version p1 --samples 5
+
+# 7. one fix, to measure its evidence size — no model is called
+uv run -m baseline_llmjudge.project_zero.run_one \
+  --pair CVE-2021-30551__CVE-2022-1096 --which fix0 --samples 0
+```
+
+| Option | Meaning |
+|---|---|
+| `--prompt_version` | A stage-A design (`p1`…`p3`) or a stage-B iteration (`p2.1`). The default is `p1` |
+| `--samples N` | Samples per fix (default 5). `0` renders the evidence and stops |
+| `--bug_kind crashing\|semantic` | Score one pool only. The default scores every row |
+| `--model` | Override the model. The default is `config.LOCAL_LLM_MODEL` |
+| `--out_dir` | Override the run directory |
+| `--allow_missing_source` | Keep a fix whose context fetch produced no file |
+| `--dry_run` | Build the population and stop |
+| `--side holdout` | Refused. See section 11.10 |
+
+Output lands in `results/llmjudge_pz_<version>_<timestamp>/`: `records.jsonl`,
+`summary.json`, `queue.txt`, `population.json`, and the git provenance of the
+pairs directory.

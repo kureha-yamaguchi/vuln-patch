@@ -2,13 +2,16 @@
 
 The output space is one bit, so parsing is deliberately strict: the class name
 must appear on a `VERDICT:` line. The two class names are OVERFITTING and
-CORRECT, the same two words the dataset labels a patch with. A response that does not carry one is a parse
-failure, not a guess. `parse` reports that as None and lets the caller decide
-what an unparsed sample counts as — see run_one.PARSE_FAILURE_COUNTS_AS and the
-README section on it.
+CORRECT, the same two words the dataset labels a patch with. A response that
+does not carry one is a parse failure, not a guess. `parse` reports that as
+None, and `PARSE_FAILURE_COUNTS_AS` below decides what it is worth.
 
 The last `VERDICT:` line wins. Later prompt versions ask for reasoning first,
 and reasoning can mention the word on the way to a conclusion.
+
+The three sample-policy constants live here too, because all three are rules
+about how N samples become one bit. Both datasets read them, so neither can
+end up with its own default for an unparsed sample.
 """
 from typing import Dict, List, Optional
 
@@ -17,6 +20,21 @@ from typing import Dict, List, Optional
 # word names each class across the prompt, the printed lines and the labels.
 OVERFITTING = 'OVERFITTING'
 CORRECT = 'CORRECT'
+
+#: Samples per patch. Five, and all five are stored.
+DEFAULT_SAMPLES = 5
+
+#: An unparsed sample counts as the NEGATIVE class. It is not dropped:
+#: dropping it would hand the baseline a filter the pipeline never gets,
+#: because a pipeline run that produces no usable harness is scored, not
+#: excluded. Every summary also carries the matrix with parse failures
+#: excluded, so the cost of this default stays visible.
+PARSE_FAILURE_COUNTS_AS = False
+
+#: One retry per sample, then the sample is a parse failure. More retries
+#: would quietly buy the baseline extra attempts the pipeline does not get
+#: per harness.
+PARSE_RETRIES = 1
 
 # 'OVERFIT' also catches the shortened and past-tense forms, and 'INCORRECT'
 # can only mean "not correct", because the prompt names both classes
