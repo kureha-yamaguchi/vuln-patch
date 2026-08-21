@@ -40,12 +40,43 @@ project_zero/
 │   ├── pipeline/                machine-readable JSON/CSV
 │   └── verified/                human-curated verification + URLs
 ├── tools/                     STAGE 2 — dataset materialization
-│   └── build_pairs.py           findings/ + patch cache → pairs/
-│                                (future: fetch_context.py, checkout_pair.py)
+│   ├── build_pairs.py           findings/ + patch cache → pairs/
+│   ├── fetch_context.py         touched files of each fix, at that commit
+│   └── resolve_gerrit.py        CL number → merged SHA (writes the file below)
+├── gerrit_resolved.json       {"CL/1888103": "<sha>"} — written by the tool
+│                              above, read by fetch_context.py. Absent until
+│                              resolve_gerrit.py runs.
+├── bug_kind.jsonl             crashing or semantic, one row per distinct fix.
+│                              Written by baseline_llmjudge.project_zero.bugkind.
 └── pairs/                     the dataset — one dir per READY pair
     ├── README.md                layout + metadata.json schema
-    └── <PRIOR>__<LATER>/        fix0.patch, fix1.patch, metadata.json
+    └── <PRIOR>__<LATER>/        fix0.patch, fix1.patch, metadata.json,
+                                 fix0_context/, fix1_context/
 ```
+
+## Stage 3 — the source of each fix
+
+`tools/fetch_context.py` fetches the files each fix touches, at that fix's own
+commit. It writes `fix0_context/` and `fix1_context/` per pair, the same layout
+`linux_kernel/pairs/` uses. Only the directly modified files are fetched. That
+is enough for a one-shot LLM judgement, and it is not enough for harness
+generation.
+
+**A Gerrit change number blocks a fetch.** A raw-file endpoint needs a git SHA.
+21 of the 43 `fix0_commit` values are change numbers such as `CL/1888103`. Run
+`tools/resolve_gerrit.py` first for those pairs. It writes a separate override
+file and never rewrites `metadata.json`.
+
+```bash
+uv run python tools/fetch_context.py --dry_run    # list the reachable pairs
+uv run python tools/fetch_context.py              # tier 1: 14 pairs
+uv run python tools/resolve_gerrit.py             # v8 change numbers
+uv run python tools/fetch_context.py --tier all
+```
+
+The evaluation that consumes this output is
+[`src/baseline_llmjudge/README.md`](../../baseline_llmjudge/README.md),
+section 11.
 
 ## Input sources
 
