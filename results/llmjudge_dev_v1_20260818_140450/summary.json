@@ -1,0 +1,153 @@
+{
+  "side": "dev",
+  "prompt_version": "v1",
+  "prompt_stage": "A",
+  "prompt_base": "v1",
+  "prompt_hypothesis": "Floor. Evidence, the question, a one-sentence gloss of each class, and the output contract. No plausibility premise, no method, no required sections \u2014 what the model does unaided.",
+  "prompt_sha256": "dcd0ef737d27917afc0fdfb5f4fb14238985a69db3fa48ccfa25dd1fe44d389a",
+  "prompt_text": "You are an expert Java security engineer who reviews bug fixes for completeness.\n\nBelow is a Java bug, the test that reports it, and a candidate patch. Decide whether the patch is correct or overfitting.\n\nAn overfitting patch stops the reported failure, but it leaves the root cause in place. Some other input still reaches the same fault. A correct patch removes the root cause, so no input reaches that fault any more.\n\nIs this patch correct, or is it overfitting?\n\nEnd your answer with a final line in exactly one of these two forms, and write nothing after it:\nVERDICT: OVERFITTING\nVERDICT: CORRECT",
+  "samples_per_patch": 5,
+  "model": "gpt-5.4",
+  "reasoning_effort": "low",
+  "headline_rule": "majority",
+  "parse_failure_counts_as": "correct",
+  "git_sha": "1e567ff05b33ab3a4b0c40a2d220047f5dcdfb87",
+  "queued": 31,
+  "scored": 31,
+  "not_scored": {},
+  "positive_class_prior": 0.4838709677419355,
+  "mean_sample_agreement": 0.9806451612903225,
+  "parse_failures": 0,
+  "headline": {
+    "rule": "majority",
+    "overfitting_evaluated": 15,
+    "correct_evaluated": 16,
+    "TP": 13,
+    "FN": 2,
+    "FP": 7,
+    "TN": 9,
+    "precision": 0.65,
+    "recall": 0.8666666666666667,
+    "specificity": 0.5625,
+    "accuracy": 0.7096774193548387,
+    "f1": 0.7428571428571429
+  },
+  "vote_rule_sensitivity": [
+    {
+      "rule": "majority",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 16,
+      "TP": 13,
+      "FN": 2,
+      "FP": 7,
+      "TN": 9,
+      "precision": 0.65,
+      "recall": 0.8666666666666667,
+      "specificity": 0.5625,
+      "accuracy": 0.7096774193548387,
+      "f1": 0.7428571428571429
+    },
+    {
+      "rule": "any",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 16,
+      "TP": 13,
+      "FN": 2,
+      "FP": 7,
+      "TN": 9,
+      "precision": 0.65,
+      "recall": 0.8666666666666667,
+      "specificity": 0.5625,
+      "accuracy": 0.7096774193548387,
+      "f1": 0.7428571428571429
+    },
+    {
+      "rule": "unanimous",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 16,
+      "TP": 12,
+      "FN": 3,
+      "FP": 7,
+      "TN": 9,
+      "precision": 0.631578947368421,
+      "recall": 0.8,
+      "specificity": 0.5625,
+      "accuracy": 0.6774193548387096,
+      "f1": 0.7058823529411765
+    }
+  ],
+  "by_bug": [
+    {
+      "bug": "Chart-9",
+      "patches": 5,
+      "overfitting": 1,
+      "correct": 4,
+      "right": 5
+    },
+    {
+      "bug": "Lang-27",
+      "patches": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 2
+    },
+    {
+      "bug": "Lang-39",
+      "patches": 4,
+      "overfitting": 3,
+      "correct": 1,
+      "right": 4
+    },
+    {
+      "bug": "Lang-44",
+      "patches": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Lang-51",
+      "patches": 5,
+      "overfitting": 3,
+      "correct": 2,
+      "right": 5
+    },
+    {
+      "bug": "Lang-6",
+      "patches": 7,
+      "overfitting": 1,
+      "correct": 6,
+      "right": 1
+    },
+    {
+      "bug": "Math-32",
+      "patches": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 3
+    },
+    {
+      "bug": "Math-79",
+      "patches": 1,
+      "overfitting": 1,
+      "correct": 0,
+      "right": 1
+    }
+  ],
+  "budget": {
+    "calls": 155,
+    "prompt_tokens": 394670,
+    "cached_prompt_tokens": 265600,
+    "completion_tokens": 169406,
+    "total_tokens": 564076,
+    "cache_hit_rate": 0.6729672891276256,
+    "prices_usd_per_mtok": {
+      "in_usd_per_mtok": null,
+      "out_usd_per_mtok": null,
+      "cached_in_usd_per_mtok": null
+    },
+    "cost_usd_full_rate": null,
+    "cost_usd_with_cache_rate": null,
+    "note": "price not set \u2014 tokens only. Set LLMJUDGE_PRICE_IN_USD_PER_MTOK and LLMJUDGE_PRICE_OUT_USD_PER_MTOK for a cost figure."
+  }
+}

@@ -1,0 +1,153 @@
+{
+  "side": "dev",
+  "prompt_version": "v3",
+  "prompt_stage": "A",
+  "prompt_base": "v3",
+  "prompt_hypothesis": "Definitions, the plausibility premise, and five REQUIRED output sections. Bets that a form the answer must fill in beats a method it may skip.",
+  "prompt_sha256": "f6d9cce85af6f31305c7c089ec9948df4148e1f368d6d91f4e91b5bd26cc5f2d",
+  "prompt_text": "You are an expert Java security engineer who reviews bug fixes for completeness.\n\nBelow is a Java bug, the test that reports it, and a candidate patch for it. Decide whether the patch fixes the root cause, or only the reported symptom.\n\nFacts about the patch:\n- An automated program-repair tool produced it as a candidate fix.\n- It compiles, and it already makes the failing test above pass. Every other test in the project's suite also passes.\n- You cannot compile or run anything. Decide from the code alone.\n\nDecide between two classes:\n- OVERFITTING: the patch removes the reported failure but leaves the root cause in place. Some other input reaches the same fault, in the patched method or elsewhere in the reachable region above.\n- CORRECT: the patch removes the root cause. No input reaches that fault any more.\n\nAnswer in exactly these five sections, each one heading followed by at most three sentences:\n\nROOT CAUSE: which condition makes the original code fail.\nPATCH EFFECT: what the patch changes, in behavioural terms.\nSURVIVING INPUT: one concrete input that still reaches the fault under this patch, or the words 'none found' \u2014 and, if none, say why the condition can no longer hold.\nSIBLING PATHS: whether any other function in the reachable region still carries the unpatched behaviour.\nDECISION: one sentence.\n\nJudge behaviour, not style. Answer OVERFITTING only when SURVIVING INPUT or SIBLING PATHS names something concrete.\n\nEnd your answer with a final line in exactly one of these two forms, and write nothing after it:\nVERDICT: OVERFITTING\nVERDICT: CORRECT",
+  "samples_per_patch": 5,
+  "model": "gpt-5.4",
+  "reasoning_effort": "low",
+  "headline_rule": "majority",
+  "parse_failure_counts_as": "correct",
+  "git_sha": "1e567ff05b33ab3a4b0c40a2d220047f5dcdfb87",
+  "queued": 31,
+  "scored": 31,
+  "not_scored": {},
+  "positive_class_prior": 0.4838709677419355,
+  "mean_sample_agreement": 0.8903225806451613,
+  "parse_failures": 0,
+  "headline": {
+    "rule": "majority",
+    "overfitting_evaluated": 15,
+    "correct_evaluated": 16,
+    "TP": 9,
+    "FN": 6,
+    "FP": 5,
+    "TN": 11,
+    "precision": 0.6428571428571429,
+    "recall": 0.6,
+    "specificity": 0.6875,
+    "accuracy": 0.6451612903225806,
+    "f1": 0.6206896551724138
+  },
+  "vote_rule_sensitivity": [
+    {
+      "rule": "majority",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 16,
+      "TP": 9,
+      "FN": 6,
+      "FP": 5,
+      "TN": 11,
+      "precision": 0.6428571428571429,
+      "recall": 0.6,
+      "specificity": 0.6875,
+      "accuracy": 0.6451612903225806,
+      "f1": 0.6206896551724138
+    },
+    {
+      "rule": "any",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 16,
+      "TP": 10,
+      "FN": 5,
+      "FP": 8,
+      "TN": 8,
+      "precision": 0.5555555555555556,
+      "recall": 0.6666666666666666,
+      "specificity": 0.5,
+      "accuracy": 0.5806451612903226,
+      "f1": 0.6060606060606061
+    },
+    {
+      "rule": "unanimous",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 16,
+      "TP": 9,
+      "FN": 6,
+      "FP": 2,
+      "TN": 14,
+      "precision": 0.8181818181818182,
+      "recall": 0.6,
+      "specificity": 0.875,
+      "accuracy": 0.7419354838709677,
+      "f1": 0.6923076923076923
+    }
+  ],
+  "by_bug": [
+    {
+      "bug": "Chart-9",
+      "patches": 5,
+      "overfitting": 1,
+      "correct": 4,
+      "right": 5
+    },
+    {
+      "bug": "Lang-27",
+      "patches": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 2
+    },
+    {
+      "bug": "Lang-39",
+      "patches": 4,
+      "overfitting": 3,
+      "correct": 1,
+      "right": 3
+    },
+    {
+      "bug": "Lang-44",
+      "patches": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Lang-51",
+      "patches": 5,
+      "overfitting": 3,
+      "correct": 2,
+      "right": 2
+    },
+    {
+      "bug": "Lang-6",
+      "patches": 7,
+      "overfitting": 1,
+      "correct": 6,
+      "right": 3
+    },
+    {
+      "bug": "Math-32",
+      "patches": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 3
+    },
+    {
+      "bug": "Math-79",
+      "patches": 1,
+      "overfitting": 1,
+      "correct": 0,
+      "right": 1
+    }
+  ],
+  "budget": {
+    "calls": 155,
+    "prompt_tokens": 426600,
+    "cached_prompt_tokens": 283520,
+    "completion_tokens": 181752,
+    "total_tokens": 608352,
+    "cache_hit_rate": 0.6646038443506798,
+    "prices_usd_per_mtok": {
+      "in_usd_per_mtok": null,
+      "out_usd_per_mtok": null,
+      "cached_in_usd_per_mtok": null
+    },
+    "cost_usd_full_rate": null,
+    "cost_usd_with_cache_rate": null,
+    "note": "price not set \u2014 tokens only. Set LLMJUDGE_PRICE_IN_USD_PER_MTOK and LLMJUDGE_PRICE_OUT_USD_PER_MTOK for a cost figure."
+  }
+}

@@ -1,0 +1,64 @@
+{
+ "cache_version": 2,
+ "renderer_version": 1,
+ "project": "Math",
+ "bug_id": "70",
+ "apr_tool": "SketchFix",
+ "patch": "patch1-Math-70-SketchFix.patch",
+ "bug_kind": "crashing",
+ "context_degraded": false,
+ "text": "Patch under analysis:\n<patch>\n--- /src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java\n+++ /src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java\n@@ -69,7 +69,7 @@\n     /** {@inheritDoc} */\n     public double solve(final UnivariateRealFunction f, double min, double max, double initial)\n         throws MaxIterationsExceededException, FunctionEvaluationException {\n-        return solve(min, max);\n+        return solve(f, min, max);\n     }\n \n     /** {@inheritDoc} */\n\n</patch>\n\nAvailable imports from the modified file (copy exactly when you need these types):\n<source_imports>\nimport org.apache.commons.math.FunctionEvaluationException;\nimport org.apache.commons.math.MaxIterationsExceededException;\nimport org.apache.commons.math.analysis.UnivariateRealFunction;\n</source_imports>\n\nFunction `solve`:\n<signature>\npublic double solve(UnivariateRealFunction f, double min, double max, double initial) throws MaxIterationsExceededException, FunctionEvaluationException\n</signature>\n<code>\n    public double solve(final UnivariateRealFunction f, double min, double max, double initial)\n        throws MaxIterationsExceededException, FunctionEvaluationException {\n        return solve(min, max);\n    }\n</code>\nMethods called by `solve` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.\n<callee name=\"solve\" from=\"UnivariateRealSolver.java\" abstract=\"true\">\n<signature>\ndouble solve(double min, double max) throws ConvergenceException, FunctionEvaluationException\n</signature>\n<contract>\n    double solve(double min, double max) throws ConvergenceException,\n        FunctionEvaluationException;\n</contract>\n<implementation in=\"BisectionSolver.java\">\n    public double solve(double min, double max, double initial)\n        throws MaxIterationsExceededException, FunctionEvaluationException {\n        return solve(f, min, max);\n    }\n</implementation>\n<implementation in=\"BisectionSolver.java\">\n    public double solve(double min, double max)\n        throws MaxIterationsExceededException, FunctionEvaluationException {\n        return solve(f, min, max);\n    }\n</implementation>\n<implementation in=\"BisectionSolver.java\">\n    public double solve(final UnivariateRealFunction f, double min, double max)\n        throws MaxIterationsExceededException, FunctionEvaluationException {\n\n        clearResult();\n        verifyInterval(min,max);\n        double m;\n        double fm;\n        double fmin;\n\n        int i = 0;\n        while (i < maximalIterationCount) {\n            m = UnivariateRealSolverUtils.midpoint(min, max);\n           fmin = f.value(min);\n           fm = f.value(m);\n\n            if (fm * fmin > 0.0) {\n                // max and m bracket the root.\n                min = m;\n            } else {\n                // min and m bracket the root.\n                max = m;\n            }\n\n            if (Math.abs(max - min) <= absoluteAccuracy) {\n                m = UnivariateRealSolverUtils.midpoint(min, max);\n                setResult(m, i);\n                return m;\n            }\n            ++i;\n        }\n\n        throw new MaxIterationsExceededException(maximalIterationCount);\n    }\n</implementation>\n<implementation in=\"BrentSolver.java\">\n    public double solve(double min, double max)\n        throws MaxIterationsExceededException, FunctionEvaluationException {\n        return solve(f, min, max);\n    }\n</implementation>\n</callee>\n\nThe project's own test(s) below FAIL on the buggy code. They are the reported symptom of this bug \u2014 the failure the patch was written to remove.\nThrowable(s) observed, most reliable first: java.lang.NullPointerException\nRuntime failure captured by running the trigger test on the buggy code. This is the verified failure; trust it over anything inferred from the test body.\n<observed_crash>\nthrowable: java.lang.NullPointerException\nthrown_at: org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:88)\n</observed_crash>\n<failing_test class=\"org.apache.commons.math.analysis.solvers.BisectionSolverTest\" method=\"testMath369\">\n    public void testMath369() throws Exception {\n        UnivariateRealFunction f = new SinFunction();\n        UnivariateRealSolver solver = new BisectionSolver();\n        assertEquals(Math.PI, solver.solve(f, 3.0, 3.2, 3.1), solver.getAbsoluteAccuracy());\n    }\n</failing_test>\n\nThe patched lines sit at the head of the region below. A sibling bug is one that lives in this region and stems from the SAME root cause as the reported failure.\n<root_cause_reachable>\n- BisectionSolver.solve(double, double)\n- BisectionSolver.solve(BisectionSolver, double, double)\n</root_cause_reachable>",
+ "manifest": {
+  "renderer_version": 1,
+  "blocks": [
+   {
+    "name": "patch",
+    "origin": "reused",
+    "chars": 524
+   },
+   {
+    "name": "source_imports",
+    "origin": "reused",
+    "chars": 304
+   },
+   {
+    "name": "touched_function:solve",
+    "origin": "reused",
+    "chars": 2848
+   },
+   {
+    "name": "trigger_tests",
+    "origin": "rendered",
+    "chars": 933
+   },
+   {
+    "name": "root_cause_reachable",
+    "origin": "rendered",
+    "chars": 305
+   }
+  ],
+  "total_chars": 4914,
+  "dropped_pipeline_sections": [
+   "_hard_constraints",
+   "_intro",
+   "_metamorphic_block",
+   "_fdp_reference",
+   "_skeleton_block"
+  ]
+ },
+ "facts": {
+  "modified_files": [
+   "src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java"
+  ],
+  "package": "org.apache.commons.math.analysis.solvers",
+  "touched_functions": [
+   "solve"
+  ],
+  "reachable_count": 2,
+  "neighbourhood_notes": [],
+  "trigger_tests": [
+   "org.apache.commons.math.analysis.solvers.BisectionSolverTest::testMath369"
+  ],
+  "crash_evidence_captured": true
+ }
+}

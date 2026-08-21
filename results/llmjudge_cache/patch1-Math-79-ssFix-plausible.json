@@ -1,0 +1,59 @@
+{
+ "cache_version": 2,
+ "renderer_version": 1,
+ "project": "Math",
+ "bug_id": "79",
+ "apr_tool": "ssFix",
+ "patch": "patch1-Math-79-ssFix-plausible.patch",
+ "bug_kind": "crashing",
+ "context_degraded": false,
+ "text": "Patch under analysis:\n<patch>\n--- /src/main/java/org/apache/commons/math/util/MathUtils.java\n+++ /src/main/java/org/apache/commons/math/util/MathUtils.java\n@@ -1623,7 +1623,7 @@\n     public static double distance(int[] p1, int[] p2) {\n       int sum = 0;\n       for (int i = 0; i < p1.length; i++) {\n-          final int dp = p1[i] - p2[i];\n+          final double dp = p1[i] - p2[i];\n           sum += dp * dp;\n       }\n       return Math.sqrt(sum);\n\n</patch>\n\nAvailable imports from the modified file (copy exactly when you need these types):\n<source_imports>\nimport java.math.BigDecimal;\nimport java.math.BigInteger;\nimport java.util.Arrays;\nimport org.apache.commons.math.MathRuntimeException;\n</source_imports>\n\nFunction `distance`:\n<signature>\npublic static double distance(int[] p1, int[] p2)\n</signature>\n<code>\n    public static double distance(int[] p1, int[] p2) {\n      int sum = 0;\n      for (int i = 0; i < p1.length; i++) {\n          final int dp = p1[i] - p2[i];\n          sum += dp * dp;\n      }\n      return Math.sqrt(sum);\n    }\n</code>\nCall-site examples (use these as a guide for constructing the target call):\n<xref>\npublic double distanceFrom(final EuclideanIntegerPoint p) {\n        return MathUtils.distance(point, p.getPoint());\n    }\n</xref>\n\nThe project's own test(s) below FAIL on the buggy code. They are the reported symptom of this bug \u2014 the failure the patch was written to remove.\nThrowable(s) observed, most reliable first: java.lang.NullPointerException\nRuntime failure captured by running the trigger test on the buggy code. This is the verified failure; trust it over anything inferred from the test body.\n<observed_crash>\nthrowable: java.lang.NullPointerException\nthrown_at: org.apache.commons.math.stat.clustering.KMeansPlusPlusClusterer.assignPointsToClusters(KMeansPlusPlusClusterer.java:91)\n</observed_crash>\n<failing_test class=\"org.apache.commons.math.stat.clustering.KMeansPlusPlusClustererTest\" method=\"testPerformClusterAnalysisDegenerate\">\n    @Test\n    public void testPerformClusterAnalysisDegenerate() {\n        KMeansPlusPlusClusterer<EuclideanIntegerPoint> transformer = new KMeansPlusPlusClusterer<EuclideanIntegerPoint>(\n                new Random(1746432956321l));\n        EuclideanIntegerPoint[] points = new EuclideanIntegerPoint[] {\n                new EuclideanIntegerPoint(new int[] { 1959, 325100 }),\n                new EuclideanIntegerPoint(new int[] { 1960, 373200 }), };\n        List<Cluster<EuclideanIntegerPoint>> clusters = transformer.cluster(Arrays.asList(points), 1, 1);\n        assertEquals(1, clusters.size());\n        assertEquals(2, (clusters.get(0).getPoints().size()));\n        EuclideanIntegerPoint pt1 = new EuclideanIntegerPoint(new int[] { 1959, 325100 });\n        EuclideanIntegerPoint pt2 = new EuclideanIntegerPoint(new int[] { 1960, 373200 });\n        assertTrue(clusters.get(0).getPoints().contains(pt1));\n        assertTrue(clusters.get(0).getPoints().contains(pt2));\n\n    }\n</failing_test>",
+ "manifest": {
+  "renderer_version": 1,
+  "blocks": [
+   {
+    "name": "patch",
+    "origin": "reused",
+    "chars": 460
+   },
+   {
+    "name": "source_imports",
+    "origin": "reused",
+    "chars": 253
+   },
+   {
+    "name": "touched_function:distance",
+    "origin": "reused",
+    "chars": 551
+   },
+   {
+    "name": "trigger_tests",
+    "origin": "rendered",
+    "chars": 1709
+   }
+  ],
+  "total_chars": 2973,
+  "dropped_pipeline_sections": [
+   "_hard_constraints",
+   "_intro",
+   "_metamorphic_block",
+   "_fdp_reference",
+   "_skeleton_block"
+  ]
+ },
+ "facts": {
+  "modified_files": [
+   "src/main/java/org/apache/commons/math/util/MathUtils.java"
+  ],
+  "package": "org.apache.commons.math.util",
+  "touched_functions": [
+   "distance"
+  ],
+  "reachable_count": 0,
+  "neighbourhood_notes": [],
+  "trigger_tests": [
+   "org.apache.commons.math.stat.clustering.KMeansPlusPlusClustererTest::testPerformClusterAnalysisDegenerate"
+  ],
+  "crash_evidence_captured": true
+ }
+}

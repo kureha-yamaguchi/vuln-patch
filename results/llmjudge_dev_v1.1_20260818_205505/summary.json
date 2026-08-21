@@ -1,0 +1,153 @@
+{
+  "side": "dev",
+  "prompt_version": "v1.1",
+  "prompt_stage": "B",
+  "prompt_base": "v1",
+  "prompt_hypothesis": "v1 produced 7 FP and 2 FN on dev, so FP dominated. Six of the seven FP were Lang-6 patches, and the reasoning rejected each one for a collateral reason: the patch advances the index from the wrong base, so traversal elsewhere can be wrong and no human would write it. None of the six named an input that still reaches the reported fault. So make fault reachability the only ground for the positive class, and rule the style and collateral-behaviour objection out.",
+  "prompt_sha256": "c5af431a01953d526c0c5025b400d6c65f8cd2b22b3a5da318abbb896a876a54",
+  "prompt_text": "You are an expert Java security engineer who reviews bug fixes for completeness.\n\nBelow is a Java bug, the test that reports it, and a candidate patch. Decide whether the patch is correct or overfitting.\n\nAn overfitting patch stops the reported failure, but it leaves the root cause in place. Some other input still reaches the same fault. A correct patch removes the root cause, so no input reaches that fault any more.\n\nAnswer OVERFITTING only when you can name a concrete input that still reaches the same fault under this patch. A patch that is clumsy, that no human would write, or that changes other behaviour is still CORRECT when no input reaches that fault any more.\n\nIs this patch correct, or is it overfitting?\n\nEnd your answer with a final line in exactly one of these two forms, and write nothing after it:\nVERDICT: OVERFITTING\nVERDICT: CORRECT",
+  "samples_per_patch": 5,
+  "model": "gpt-5.4",
+  "reasoning_effort": "low",
+  "headline_rule": "majority",
+  "parse_failure_counts_as": "correct",
+  "git_sha": "923ffce05faa1c20315b7500b60db0b985b5e723",
+  "queued": 31,
+  "scored": 31,
+  "not_scored": {},
+  "positive_class_prior": 0.4838709677419355,
+  "mean_sample_agreement": 1.0,
+  "parse_failures": 0,
+  "headline": {
+    "rule": "majority",
+    "overfitting_evaluated": 15,
+    "correct_evaluated": 16,
+    "TP": 7,
+    "FN": 8,
+    "FP": 1,
+    "TN": 15,
+    "precision": 0.875,
+    "recall": 0.4666666666666667,
+    "specificity": 0.9375,
+    "accuracy": 0.7096774193548387,
+    "f1": 0.6086956521739131
+  },
+  "vote_rule_sensitivity": [
+    {
+      "rule": "majority",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 16,
+      "TP": 7,
+      "FN": 8,
+      "FP": 1,
+      "TN": 15,
+      "precision": 0.875,
+      "recall": 0.4666666666666667,
+      "specificity": 0.9375,
+      "accuracy": 0.7096774193548387,
+      "f1": 0.6086956521739131
+    },
+    {
+      "rule": "any",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 16,
+      "TP": 7,
+      "FN": 8,
+      "FP": 1,
+      "TN": 15,
+      "precision": 0.875,
+      "recall": 0.4666666666666667,
+      "specificity": 0.9375,
+      "accuracy": 0.7096774193548387,
+      "f1": 0.6086956521739131
+    },
+    {
+      "rule": "unanimous",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 16,
+      "TP": 7,
+      "FN": 8,
+      "FP": 1,
+      "TN": 15,
+      "precision": 0.875,
+      "recall": 0.4666666666666667,
+      "specificity": 0.9375,
+      "accuracy": 0.7096774193548387,
+      "f1": 0.6086956521739131
+    }
+  ],
+  "by_bug": [
+    {
+      "bug": "Chart-9",
+      "patches": 5,
+      "overfitting": 1,
+      "correct": 4,
+      "right": 5
+    },
+    {
+      "bug": "Lang-27",
+      "patches": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 2
+    },
+    {
+      "bug": "Lang-39",
+      "patches": 4,
+      "overfitting": 3,
+      "correct": 1,
+      "right": 3
+    },
+    {
+      "bug": "Lang-44",
+      "patches": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Lang-51",
+      "patches": 5,
+      "overfitting": 3,
+      "correct": 2,
+      "right": 2
+    },
+    {
+      "bug": "Lang-6",
+      "patches": 7,
+      "overfitting": 1,
+      "correct": 6,
+      "right": 7
+    },
+    {
+      "bug": "Math-32",
+      "patches": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 2
+    },
+    {
+      "bug": "Math-79",
+      "patches": 1,
+      "overfitting": 1,
+      "correct": 0,
+      "right": 0
+    }
+  ],
+  "budget": {
+    "calls": 155,
+    "prompt_tokens": 426000,
+    "cached_prompt_tokens": 298624,
+    "completion_tokens": 160781,
+    "total_tokens": 586781,
+    "cache_hit_rate": 0.7009953051643193,
+    "prices_usd_per_mtok": {
+      "in_usd_per_mtok": null,
+      "out_usd_per_mtok": null,
+      "cached_in_usd_per_mtok": null
+    },
+    "cost_usd_full_rate": null,
+    "cost_usd_with_cache_rate": null,
+    "note": "price not set \u2014 tokens only. Set LLMJUDGE_PRICE_IN_USD_PER_MTOK and LLMJUDGE_PRICE_OUT_USD_PER_MTOK for a cost figure."
+  }
+}

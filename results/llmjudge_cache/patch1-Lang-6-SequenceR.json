@@ -1,0 +1,64 @@
+{
+ "cache_version": 2,
+ "renderer_version": 1,
+ "project": "Lang",
+ "bug_id": "6",
+ "apr_tool": "SequenceR",
+ "patch": "patch1-Lang-6-SequenceR.patch",
+ "bug_kind": "crashing",
+ "context_degraded": false,
+ "text": "Patch under analysis:\n<patch>\n--- /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java\t\n+++ /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java\n@@ -92,7 +92,7 @@\n //          // contract with translators is that they have to understand codepoints \n //          // and they just took care of a surrogate pair\n             for (int pt = 0; pt < consumed; pt++) {\n-                pos += Character.charCount(Character.codePointAt(input, pos));\n+                pos+=Character.charCount(Character.codePointAt(input,pt));\n             }\n         }\n     }\n\n</patch>\n\nAvailable imports from the modified file (copy exactly when you need these types):\n<source_imports>\nimport java.io.IOException;\nimport java.io.StringWriter;\nimport java.io.Writer;\nimport java.util.Locale;\n</source_imports>\n\nFunction `translate`:\n<signature>\nfinal public void translate(CharSequence input, Writer out) throws IOException\n</signature>\n<code>\n    public final void translate(CharSequence input, Writer out) throws IOException {\n        if (out == null) {\n            throw new IllegalArgumentException(\"The Writer must not be null\");\n        }\n        if (input == null) {\n            return;\n        }\n        int pos = 0;\n        int len = input.length();\n        while (pos < len) {\n            int consumed = translate(input, pos, out);\n            if (consumed == 0) {\n                char[] c = Character.toChars(Character.codePointAt(input, pos));\n                out.write(c);\n                pos+= c.length;\n                continue;\n            }\n//          // contract with translators is that they have to understand codepoints \n//          // and they just took care of a surrogate pair\n            for (int pt = 0; pt < consumed; pt++) {\n                pos += Character.charCount(Character.codePointAt(input, pos));\n            }\n        }\n    }\n</code>\nMethods called by `translate` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.\n<callee name=\"translate\" from=\"CharSequenceTranslator.java\" abstract=\"true\">\n<signature>\nabstract public int translate(CharSequence input, int index, Writer out) throws IOException\n</signature>\n<contract>\n    public abstract int translate(CharSequence input, int index, Writer out) throws IOException;\n</contract>\n<implementation in=\"AggregateTranslator.java\">\n    public int translate(CharSequence input, int index, Writer out) throws IOException {\n        for (CharSequenceTranslator translator : translators) {\n            int consumed = translator.translate(input, index, out);\n            if(consumed != 0) {\n                return consumed;\n            }\n        }\n        return 0;\n    }\n</implementation>\n<implementation in=\"CharSequenceTranslator.java\">\n    public final String translate(CharSequence input) {\n        if (input == null) {\n            return null;\n        }\n        try {\n            StringWriter writer = new StringWriter(input.length() * 2);\n            translate(input, writer);\n            return writer.toString();\n        } catch (IOException ioe) {\n            // this should never ever happen while writing to a StringWriter\n            throw new RuntimeException(ioe);\n        }\n    }\n</implementation>\n<implementation in=\"CodePointTranslator.java\">\n    public final int translate(CharSequence input, int index, Writer out) throws IOException {\n        int codepoint = Character.codePointAt(input, index);\n        boolean consumed = translate(codepoint, out);\n        if (consumed) {\n            return 1;\n        } else {\n            return 0;\n        }\n    }\n</implementation>\n<implementation in=\"LookupTranslator.java\">\n    public int translate(CharSequence input, int index, Writer out) throws IOException {\n        int max = longest;\n        if (index + longest > input.length()) {\n            max = input.length() - index;\n        }\n        // descend so as to get a greedy algorithm\n        for (int i = max; i >= shortest; i--) {\n            CharSequence subSeq = input.subSequence(index, index + i);\n            CharSequence result = lookupMap.get(subSeq);\n            if (result != null) {\n                out.write(result.toString());\n                return i;\n            }\n        }\n        return 0;\n    }\n</implementation>\n</callee>\n\nThe project's own test(s) below FAIL on the buggy code. They are the reported symptom of this bug \u2014 the failure the patch was written to remove.\nThrowable(s) observed, most reliable first: java.lang.StringIndexOutOfBoundsException\nRuntime failure captured by running the trigger test on the buggy code. This is the verified failure; trust it over anything inferred from the test body.\n<observed_crash>\nthrowable: java.lang.StringIndexOutOfBoundsException\nmessage: String index out of range: 2\nthrown_at: org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate(CharSequenceTranslator.java:95)\n</observed_crash>\n<failing_test class=\"org.apache.commons.lang3.StringUtilsTest\" method=\"testEscapeSurrogatePairs\">\n    @Test\n    public void testEscapeSurrogatePairs() throws Exception {\n        assertEquals(\"\\uD83D\\uDE30\", StringEscapeUtils.escapeCsv(\"\\uD83D\\uDE30\"));\n        // Examples from https://en.wikipedia.org/wiki/UTF-16\n        assertEquals(\"\\uD800\\uDC00\", StringEscapeUtils.escapeCsv(\"\\uD800\\uDC00\"));\n        assertEquals(\"\\uD834\\uDD1E\", StringEscapeUtils.escapeCsv(\"\\uD834\\uDD1E\"));\n        assertEquals(\"\\uDBFF\\uDFFD\", StringEscapeUtils.escapeCsv(\"\\uDBFF\\uDFFD\"));\n        \n    }\n</failing_test>\n\nThe patched lines sit at the head of the region below. A sibling bug is one that lives in this region and stems from the SAME root cause as the reported failure.\n<root_cause_reachable>\n- CharSequenceTranslator.translate\n</root_cause_reachable>",
+ "manifest": {
+  "renderer_version": 1,
+  "blocks": [
+   {
+    "name": "patch",
+    "origin": "reused",
+    "chars": 620
+   },
+   {
+    "name": "source_imports",
+    "origin": "reused",
+    "chars": 222
+   },
+   {
+    "name": "touched_function:translate",
+    "origin": "reused",
+    "chars": 3709
+   },
+   {
+    "name": "trigger_tests",
+    "origin": "rendered",
+    "chars": 1221
+   },
+   {
+    "name": "root_cause_reachable",
+    "origin": "rendered",
+    "chars": 243
+   }
+  ],
+  "total_chars": 6015,
+  "dropped_pipeline_sections": [
+   "_hard_constraints",
+   "_intro",
+   "_metamorphic_block",
+   "_fdp_reference",
+   "_skeleton_block"
+  ]
+ },
+ "facts": {
+  "modified_files": [
+   "src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java"
+  ],
+  "package": "org.apache.commons.lang3.text.translate",
+  "touched_functions": [
+   "translate"
+  ],
+  "reachable_count": 1,
+  "neighbourhood_notes": [],
+  "trigger_tests": [
+   "org.apache.commons.lang3.StringUtilsTest::testEscapeSurrogatePairs"
+  ],
+  "crash_evidence_captured": true
+ }
+}

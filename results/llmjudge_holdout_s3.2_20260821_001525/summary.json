@@ -1,0 +1,283 @@
+{
+  "side": "holdout",
+  "bug_kind": "semantic",
+  "prompt_version": "s3.2",
+  "prompt_stage": "B",
+  "prompt_base": "s3",
+  "prompt_kind": "semantic",
+  "prompt_hypothesis": "s3.1 cut FP from 20 to 13 and broke the unanimity of the Math-59 cluster, but FN rose from 5 to 17 and dev F1 fell from 0.731 to 0.595. Recall fell from 0.872 to 0.564, so the turn overshot. The dev FN log names three wording faults, and all three are mine. First, SIBLING PATHS asked a sibling to produce THE REPORTED FAULT, which no sibling can do, because the reported fault is one input in the patched method: that dismissed every real sibling, and it cost Math-53 (Complex.add guarded, subtract and multiply not), Lang-41 (one overload), Chart-12, Chart-3 and Lang-60. Second, \"at the same computed step\" is tighter than an overfitting patch has to be. Third, the CORRECT rule had no counterweight, so a patch keyed on the reported symptom passed whenever no single input could be named \u2014 Math-82 twice, Math-73 twice, Closure-38 and Chart-26, all unanimous. So repair the sibling clause, widen the survivor to the same KIND of wrong value, and add a PATCH SCOPE section that asks whether the patch keys on the property or on the reported input. Keep all four exclusions, because they are what cut the FP.",
+  "prompt_sha256": "567a2a676d649b17c94eb8dcee37acfa188289364def4859754493539ea2f2a4",
+  "prompt_text": "You are an expert Java security engineer who reviews bug fixes for completeness.\n\nBelow is a Java bug, the test that reports it, and a candidate patch for it. The bug is not a crash: the test fails because the code returns a wrong value. Decide whether the patch fixes the root cause, or only the reported symptom.\n\nFacts about the patch:\n- An automated program-repair tool produced it as a candidate fix.\n- It compiles, and it already makes the failing test above pass. Every other test in the project's suite also passes.\n- You cannot compile or run anything. Decide from the code alone.\n\nDecide between two classes:\n- OVERFITTING: the patch corrects the value the failing test reports, but it leaves the root cause in place. Some other input still gets a wrong value out of the same computation, in the patched method or elsewhere in the reachable region above.\n- CORRECT: the patch removes the root cause. No input gets a wrong value out of that computation any more.\n\nAnswer in exactly these seven sections, each one heading followed by at most three sentences:\n\nREPORTED FAULT: read the <observed_failure> block, and state the fault it reports as a condition \u2014 which input, which computed step, and how the returned value is wrong. Copy that observable from the failure message. Do not widen it to what an ideal implementation would do.\nROOT CAUSE: which condition makes the original code compute the wrong value.\nPATCH EFFECT: what the patch changes, in behavioural terms.\nPATCH SCOPE: name the property that makes the computation wrong \u2014 the property, not the reported input. Then say whether the patch keys on that property, or on the reported input itself: its exact value, its type, its length, its sign, or the one branch the failing test takes.\nSURVIVING INPUT: one concrete input that still meets the REPORTED FAULT condition under this patch, with the wrong value named \u2014 or the words 'none found', and then why the condition can no longer hold. It must get the same kind of wrong value out of the same computation as the reported failure. It does not have to fail at the same line, and it does not have to resemble the reported input. Four things do not count: a separate defect the original code also had and the reported failure never names; a wrong value the patch introduces in some other behaviour; a shortfall against an ideal specification, a library's semantics or a TODO; and an extreme input that breaks a different expression from the one the reported failure names.\nSIBLING PATHS: whether any other function in the reachable region, or any other reader of the same state, still carries the unpatched computation and can get the same kind of wrong value out. A sibling never reproduces the reported input, so do not ask it to. Look for another overload, another member of the same family, another reader of the same state, and another caller path that skips the changed lines. Name it by a concrete call, and do not name the patched method: a residue inside it belongs in SURVIVING INPUT.\nDECISION: one sentence.\n\nJudge behaviour, not style. The patched method does not have to be perfect, and it does not have to be the fix you would write. It has to stop producing the reported fault.\n\nBefore you write 'none found', check two cases that do count. First, an input that reproduces the reported fault without ever reaching the changed lines. Second, a bound that the patch corrects at one end and leaves wrong, or newly wrong, at the other end.\n\nAnswer OVERFITTING when either of these holds. First, SURVIVING INPUT or SIBLING PATHS names something concrete of the same kind as the REPORTED FAULT. Second, PATCH SCOPE says the patch keys on the reported input rather than on the property, because the property then still makes other inputs wrong even where you cannot name one.\n\nOtherwise answer CORRECT. A patch that keys on the property is CORRECT even when it is narrower, uglier or later than the fix you would write.\n\nEnd your answer with a final line in exactly one of these two forms, and write nothing after it:\nVERDICT: OVERFITTING\nVERDICT: CORRECT",
+  "samples_per_patch": 5,
+  "model": "gpt-5.4",
+  "reasoning_effort": "low",
+  "headline_rule": "majority",
+  "parse_failure_counts_as": "correct",
+  "git_sha": "dae04f25a4d92def8a1555bbc87a3c7cc4633c63",
+  "queued": 69,
+  "scored": 68,
+  "not_scored": {
+    "bug_not_reproduced": 1
+  },
+  "positive_class_prior": 0.3382352941176471,
+  "mean_sample_agreement": 0.9352941176470587,
+  "parse_failures": 0,
+  "headline": {
+    "rule": "majority",
+    "overfitting_evaluated": 23,
+    "correct_evaluated": 45,
+    "TP": 18,
+    "FN": 5,
+    "FP": 6,
+    "TN": 39,
+    "precision": 0.75,
+    "recall": 0.782608695652174,
+    "specificity": 0.8666666666666667,
+    "accuracy": 0.8382352941176471,
+    "f1": 0.7659574468085106
+  },
+  "vote_rule_sensitivity": [
+    {
+      "rule": "majority",
+      "overfitting_evaluated": 23,
+      "correct_evaluated": 45,
+      "TP": 18,
+      "FN": 5,
+      "FP": 6,
+      "TN": 39,
+      "precision": 0.75,
+      "recall": 0.782608695652174,
+      "specificity": 0.8666666666666667,
+      "accuracy": 0.8382352941176471,
+      "f1": 0.7659574468085106
+    },
+    {
+      "rule": "any",
+      "overfitting_evaluated": 23,
+      "correct_evaluated": 45,
+      "TP": 20,
+      "FN": 3,
+      "FP": 6,
+      "TN": 39,
+      "precision": 0.7692307692307693,
+      "recall": 0.8695652173913043,
+      "specificity": 0.8666666666666667,
+      "accuracy": 0.8676470588235294,
+      "f1": 0.8163265306122449
+    },
+    {
+      "rule": "unanimous",
+      "overfitting_evaluated": 23,
+      "correct_evaluated": 45,
+      "TP": 15,
+      "FN": 8,
+      "FP": 2,
+      "TN": 43,
+      "precision": 0.8823529411764706,
+      "recall": 0.6521739130434783,
+      "specificity": 0.9555555555555556,
+      "accuracy": 0.8529411764705882,
+      "f1": 0.75
+    }
+  ],
+  "by_bug": [
+    {
+      "bug": "Chart-1",
+      "patches": 12,
+      "overfitting": 5,
+      "correct": 7,
+      "right": 10
+    },
+    {
+      "bug": "Chart-15",
+      "patches": 1,
+      "overfitting": 1,
+      "correct": 0,
+      "right": 0
+    },
+    {
+      "bug": "Chart-25",
+      "patches": 1,
+      "overfitting": 1,
+      "correct": 0,
+      "right": 1
+    },
+    {
+      "bug": "Chart-8",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Closure-126",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Closure-18",
+      "patches": 3,
+      "overfitting": 1,
+      "correct": 2,
+      "right": 2
+    },
+    {
+      "bug": "Closure-31",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Closure-57",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Lang-21",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Lang-24",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Lang-38",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Lang-55",
+      "patches": 4,
+      "overfitting": 2,
+      "correct": 2,
+      "right": 4
+    },
+    {
+      "bug": "Math-25",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 0
+    },
+    {
+      "bug": "Math-33",
+      "patches": 7,
+      "overfitting": 1,
+      "correct": 6,
+      "right": 7
+    },
+    {
+      "bug": "Math-34",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Math-41",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Math-50",
+      "patches": 10,
+      "overfitting": 1,
+      "correct": 9,
+      "right": 9
+    },
+    {
+      "bug": "Math-6",
+      "patches": 1,
+      "overfitting": 1,
+      "correct": 0,
+      "right": 1
+    },
+    {
+      "bug": "Math-63",
+      "patches": 2,
+      "overfitting": 2,
+      "correct": 0,
+      "right": 1
+    },
+    {
+      "bug": "Math-71",
+      "patches": 2,
+      "overfitting": 1,
+      "correct": 1,
+      "right": 2
+    },
+    {
+      "bug": "Math-75",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Math-80",
+      "patches": 10,
+      "overfitting": 6,
+      "correct": 4,
+      "right": 6
+    },
+    {
+      "bug": "Math-88",
+      "patches": 1,
+      "overfitting": 1,
+      "correct": 0,
+      "right": 1
+    },
+    {
+      "bug": "Math-99",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Time-15",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Time-19",
+      "patches": 1,
+      "overfitting": 0,
+      "correct": 1,
+      "right": 1
+    }
+  ],
+  "budget": {
+    "calls": 340,
+    "prompt_tokens": 4121390,
+    "cached_prompt_tokens": 3185152,
+    "completion_tokens": 369542,
+    "total_tokens": 4490932,
+    "cache_hit_rate": 0.7728344078090159,
+    "prices_usd_per_mtok": {
+      "in_usd_per_mtok": null,
+      "out_usd_per_mtok": null,
+      "cached_in_usd_per_mtok": null
+    },
+    "cost_usd_full_rate": null,
+    "cost_usd_with_cache_rate": null,
+    "note": "price not set \u2014 tokens only. Set LLMJUDGE_PRICE_IN_USD_PER_MTOK and LLMJUDGE_PRICE_OUT_USD_PER_MTOK for a cost figure."
+  }
+}

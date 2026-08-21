@@ -1,0 +1,98 @@
+{
+  "side": "dev",
+  "prompt_version": "v3",
+  "prompt_stage": "A",
+  "prompt_base": "v3",
+  "prompt_hypothesis": "Definitions, the plausibility premise, and five REQUIRED output sections. Bets that a form the answer must fill in beats a method it may skip.",
+  "prompt_sha256": "d68ca24bbf843a6f4a6eb5c3d58630328d589124362756e17dfdc9e9b7f64898",
+  "prompt_text": "You are an expert Java security engineer who reviews bug fixes for completeness.\n\nBelow is a Java bug, the test that reports it, and a candidate patch for it. Decide whether the patch fixes the root cause, or only the reported symptom.\n\nFacts about the patch:\n- An automated program-repair tool produced it as a candidate fix.\n- It compiles, and it already makes the failing test above pass. Every other test in the project's suite also passes.\n- You cannot compile or run anything. Decide from the code alone.\n\nDecide between two classes:\n- INCOMPLETE: the patch removes the reported failure but leaves the root cause in place. Some other input reaches the same fault, in the patched method or elsewhere in the reachable region above.\n- CORRECT: the patch removes the root cause. No input reaches that fault any more.\n\nAnswer in exactly these five sections, each one heading followed by at most three sentences:\n\nROOT CAUSE: which condition makes the original code fail.\nPATCH EFFECT: what the patch changes, in behavioural terms.\nSURVIVING INPUT: one concrete input that still reaches the fault under this patch, or the words 'none found' \u2014 and, if none, say why the condition can no longer hold.\nSIBLING PATHS: whether any other function in the reachable region still carries the unpatched behaviour.\nDECISION: one sentence.\n\nJudge behaviour, not style. Answer INCOMPLETE only when SURVIVING INPUT or SIBLING PATHS names something concrete.\n\nEnd your answer with a final line in exactly one of these two forms, and write nothing after it:\nVERDICT: INCOMPLETE\nVERDICT: CORRECT",
+  "samples_per_patch": 5,
+  "model": "gpt-5.4",
+  "reasoning_effort": "low",
+  "headline_rule": "majority",
+  "parse_failure_counts_as": "CORRECT",
+  "git_sha": "0e1314caea1a30b541efc6f7d3d169434647f56c",
+  "queued": 32,
+  "scored": 0,
+  "not_scored": {
+    "error": 32
+  },
+  "positive_class_prior": null,
+  "mean_sample_agreement": null,
+  "parse_failures": 0,
+  "headline": {
+    "rule": "majority",
+    "overfitting_evaluated": 0,
+    "correct_evaluated": 0,
+    "TP": 0,
+    "FN": 0,
+    "FP": 0,
+    "TN": 0,
+    "precision": null,
+    "recall": null,
+    "specificity": null,
+    "accuracy": null,
+    "f1": null
+  },
+  "vote_rule_sensitivity": [
+    {
+      "rule": "majority",
+      "overfitting_evaluated": 0,
+      "correct_evaluated": 0,
+      "TP": 0,
+      "FN": 0,
+      "FP": 0,
+      "TN": 0,
+      "precision": null,
+      "recall": null,
+      "specificity": null,
+      "accuracy": null,
+      "f1": null
+    },
+    {
+      "rule": "any",
+      "overfitting_evaluated": 0,
+      "correct_evaluated": 0,
+      "TP": 0,
+      "FN": 0,
+      "FP": 0,
+      "TN": 0,
+      "precision": null,
+      "recall": null,
+      "specificity": null,
+      "accuracy": null,
+      "f1": null
+    },
+    {
+      "rule": "unanimous",
+      "overfitting_evaluated": 0,
+      "correct_evaluated": 0,
+      "TP": 0,
+      "FN": 0,
+      "FP": 0,
+      "TN": 0,
+      "precision": null,
+      "recall": null,
+      "specificity": null,
+      "accuracy": null,
+      "f1": null
+    }
+  ],
+  "by_bug": [],
+  "budget": {
+    "calls": 0,
+    "prompt_tokens": 0,
+    "cached_prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cache_hit_rate": null,
+    "prices_usd_per_mtok": {
+      "in_usd_per_mtok": null,
+      "out_usd_per_mtok": null,
+      "cached_in_usd_per_mtok": null
+    },
+    "cost_usd_full_rate": null,
+    "cost_usd_with_cache_rate": null,
+    "note": "price not set \u2014 tokens only. Set LLMJUDGE_PRICE_IN_USD_PER_MTOK and LLMJUDGE_PRICE_OUT_USD_PER_MTOK for a cost figure."
+  }
+}

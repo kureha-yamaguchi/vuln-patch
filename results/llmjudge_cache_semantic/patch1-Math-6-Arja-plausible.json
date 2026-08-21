@@ -1,0 +1,116 @@
+{
+ "cache_version": 3,
+ "renderer_version": 1,
+ "project": "Math",
+ "bug_id": "6",
+ "apr_tool": "Arja",
+ "patch": "patch1-Math-6-Arja-plausible.patch",
+ "bug_kind": "semantic",
+ "context_degraded": false,
+ "text": "Patch under analysis:\n<patch>\n--- /src/main/java/org/apache/commons/math3/optim/BaseOptimizer.java\n+++ /src/main/java/org/apache/commons/math3/optim/BaseOptimizer.java\n@@ -90,7 +90,7 @@\n      * @return the number of evaluations of the objective function.\n      */\n     public int getIterations() {\n-        return iterations.getCount();\n+    \treturn evaluations.getMaximalCount();\n     }\n \n     /**\n\n</patch>\n\nAvailable imports from the modified file (copy exactly when you need these types):\n<source_imports>\nimport org.apache.commons.math3.util.Incrementor;\nimport org.apache.commons.math3.exception.TooManyEvaluationsException;\nimport org.apache.commons.math3.exception.TooManyIterationsException;\n</source_imports>\n\nFunction `getIterations`:\n<signature>\npublic int getIterations()\n</signature>\n<code>\n    public int getIterations() {\n        return iterations.getCount();\n    }\n</code>\n\nPartial skeletons of the class(es) this patch touches, of their supertypes, and of the classes the failing test itself uses. Signatures, fields and javadoc are shown. A method body is shown only for a touched method.\n<class_skeletons>\n<class name=\"BaseOptimizer\" role=\"patched\">\nclass MaxEvalCallback\n        implements  Incrementor.MaxCountExceededCallback {\n     * {@inheritDoc}\n     * @throws TooManyEvaluationsException.\n    public void trigger(int max) { \u2026 }\n}\n</class>\n\n<class name=\"PointValuePair\" role=\"test-subject\">\nclass DataTransferObject implements Serializable {\n     * Serializable UID.\n    private static final long serialVersionUID = 20120513L;\n     * Point coordinates.\n     * @Serial\n    private final double[] point;\n     * Value of the objective function at the point.\n     * @Serial\n    private final double value;\n     * Simple constructor.\n     * @param point Point coordinates.\n     * @param value Value of the objective function at the point.\n    public DataTransferObject(final double[] point, final double value) {\n            this.point = point.clone();\n            this.value = value;\n        }\n     * Replace the deserialized data transfer object with a {@link PointValuePair}.\n     * @return replacement {@link PointValuePair}\n    private Object readResolve() { \u2026 }\n}\n</class>\n\n<class name=\"GoalType\" role=\"test-subject\">\n     * Goal type for an optimization problem (minimization or maximization of\n     * a scalar function.\n     * @version $Id$\n     * @since 2.0\npublic enum GoalType implements OptimizationData {\n\n}\n</class>\n\n<class name=\"SimplexOptimizer\" role=\"test-subject\">\n     * This class implements simplex-based direct search optimization.\n     * <p>\n     * Direct search methods only use objective function values, they do\n     * not need derivatives and don't either try to compute approximation\n     * of the derivatives. According to a 1996 paper by Margaret H. Wright\n     * (<a href=\"http://cm.bell-labs.com/cm/cs/doc/96/4-02.ps.gz\">Direct\n     * Search Methods: Once Scorned, Now Respectable</a>), they are used\n     * when either the computation of the derivative is impossible (noisy\n     * functions, unpredictable discontinuities) or difficult (complexity,\n     * computation cost). In the first cases, rather than an optimum, a\n     * <em>not too bad</em> point is desired. In the latter cases, an\n     * optimum is desired but cannot be reasonably found. In all cases\n     * \u2026\npublic class SimplexOptimizer extends MultivariateOptimizer {\n     * Simplex update rule.\n    private AbstractSimplex simplex;\n     * @param checker Convergence checker.\n    public SimplexOptimizer(ConvergenceChecker<PointValuePair> checker) {\n        super(checker);\n    }\n     * @param rel Relative threshold.\n     * @param abs Absolute threshold.\n    public SimplexOptimizer(double rel, double abs) {\n        this(new SimpleValueChecker(rel, abs));\n    }\n     * {@inheritDoc}\n     * @param optData Optimization data. In addition to those documented in\n     * {@link MultivariateOptimizer#parseOptimizationData(OptimizationData[])\n     * MultivariateOptimizer}, this method will register the following data:\n     * <ul>\n     * <li>{@link AbstractSimplex}</li>\n     * </ul>\n     * @return {@inheritDoc}\n    @Override public PointValuePair optimize(OptimizationData... optData) { \u2026 }\n     * {@inheritDoc}\n    @Override protected PointValuePair doOptimize() { \u2026 }\n     * Scans the list of (required and optional) optimization data that\n     * characterize the problem.\n     * @param optData Optimization data.\n     * The following data will be looked for:\n     * <ul>\n     * <li>{@link AbstractSimplex}</li>\n     * </ul>\n    @Override protected void parseOptimizationData(OptimizationData... optData) { \u2026 }\n     * @throws MathUnsupportedOperationException if bounds were passed to the\n     * {@link #optimize(OptimizationData[]) optimize} method.\n     * @throws NullArgumentException if no initial simplex was passed to the\n     * {@link #optimize(OptimizationData[]) optimize} method.\n    private void checkParameters() { \u2026 }\n}\n</class>\n\n<class name=\"Incrementor\" role=\"collaborator\">\n     * Utility that increments a counter until a maximum is reached, at\n     * which point, the instance will by default throw a\n     * {@link MaxCountExceededException}.\n     * However, the user is able to override this behaviour by defining a\n     * custom {@link MaxCountExceededCallback callback}, in order to e.g.\n     * select which exception must be thrown.\n     * @since 3.0\n     * @version $Id$\npublic class Incrementor {\n     * Upper limit for the counter.\n    private int maximalCount;\n     * Current count.\n    private int count = 0;\n     * Function called at counter exhaustion.\n    private final MaxCountExceededCallback maxCountCallback;\n     * Default constructor.\n     * For the new instance to be useful, the maximal count must be set\n     * by calling {@link #setMaximalCount(int) setMaximalCount}.\n    public Incrementor() {\n        this(0);\n    }\n     * Defines a maximal count.\n     * @param max Maximal count.\n    public Incrementor(int max) {\n        this(max,\n             new MaxCountExceededCallback() {\n                 /** {@inheritDoc} */\n                 public void trigger(int max) throws MaxCountExceededException {\n                     throw new MaxCountExceededException(max);\n                 }\n             });\n    }\n     * Defines a maximal count and a callback method to be triggered at\n     * counter exhaustion.\n     * @param max Maximal count.\n     * @param cb Function to be called when the maximal count has been reached.\n     * @throws NullArgumentException if {@code cb} is {@code null}\n    public Incrementor(int max, MaxCountExceededCallback cb) throws NullArgumentException {\n        if (cb == null){\n            throw new NullArgumentException();\n        }\n        maximalCount = max;\n        maxCountCallback = cb;\n    }\n     * Sets the upper limit for the counter.\n     * This does not automatically reset the current count to zero (see\n     * {@link #resetCount()}).\n     * @param max Upper limit of the counter.\n    public void setMaximalCount(int max) { \u2026 }\n     * Gets the upper limit of the counter.\n     * @return the counter upper limit.\n    public int getMaximalCount() { \u2026 }\n     * Gets the current count.\n     * @return the current count.\n    public int getCount() { \u2026 }\n     * Checks whether a single increment is allowed.\n     * @return {@code false} if the next call to {@link #incrementCount(int)\n     * incrementCount} will trigger a {@code MaxCountExceededException},\n     * {@code true} otherwise.\n    public boolean canIncrement() { \u2026 }\n     * Performs multiple increments.\n     * See the other {@link #incrementCount() incrementCount} method).\n     * @param value Number of increments.\n     * @throws MaxCountExceededException at counter exhaustion.\n    public void incrementCount(int value) throws MaxCountExceededException { \u2026 }\n     * Adds one to the current iteration count.\n     * At counter exhaustion, this method will call the\n     * {@link MaxCountExceededCallback#trigger(int) trigger} method of the\n     * callback object passed to the\n     * {@link #Incrementor(int,MaxCountExceededCallback) constructor}.\n     * If not explictly set, a default callback is used that will throw\n     * a {@code MaxCountExceededException}.\n     * @throws MaxCountExceededException at counter exhaustion, unless a\n     * custom {@link MaxCountExceededCallback callback} has been set at\n     * construction.\n    public void incrementCount() throws MaxCountExceededException { \u2026 }\n     * Resets the counter to 0.\n    public void resetCount() { \u2026 }\n     * Defines a method to be called at counter exhaustion.\n     * The {@link #trigger(int) trigger} method should usually throw an exception.\n    public interface MaxCountExceededCallback { \u2026 }\n}\n</class>\n\n<class name=\"TooManyEvaluationsException\" role=\"collaborator\">\n     * Exception to be thrown when the maximal number of evaluations is exceeded.\n     * @since 3.0\n     * @version $Id$\npublic class TooManyEvaluationsException extends MaxCountExceededException {\n     * Serializable version Id.\n    private static final long serialVersionUID = 4330003017885151975L;\n     * Construct the exception.\n     * @param max Maximum number of evaluations.\n    public TooManyEvaluationsException(Number max) {\n        super(max);\n        getContext().addMessage(LocalizedFormats.EVALUATIONS);\n    }\n}\n</class>\n\n<class name=\"TooManyIterationsException\" role=\"collaborator\">\n     * Exception to be thrown when the maximal number of iterations is exceeded.\n     * @since 3.1\n     * @version $Id$\npublic class TooManyIterationsException extends MaxCountExceededException {\n     * Serializable version Id.\n    private static final long serialVersionUID = 20121211L;\n     * Construct the exception.\n     * @param max Maximum number of evaluations.\n    public TooManyIterationsException(Number max) {\n        super(max);\n        getContext().addMessage(LocalizedFormats.ITERATIONS);\n    }\n}\n</class>\n\n<class name=\"OptimizationData\" role=\"collaborator\">\n     * Marker interface.\n     * Implementations will provide functionality (optional or required) needed\n     * by the optimizers, and those will need to check the actual type of the\n     * arguments and perform the appropriate cast in order to access the data\n     * they need.\n     * @version $Id$\n     * @since 3.1\npublic interface OptimizationData {\n\n}\n</class>\n\n<class name=\"MaxEval\" role=\"collaborator\">\n     * Maximum number of evaluations of the function to be optimized.\n     * @version $Id$\n     * @since 3.1\npublic class MaxEval implements OptimizationData {\n     * Allowed number of evalutations.\n    private final int maxEval;\n     * @param max Allowed number of evalutations.\n     * @throws NotStrictlyPositiveException if {@code max <= 0}.\n    public MaxEval(int max) {\n        if (max <= 0) {\n            throw new NotStrictlyPositiveException(max);\n        }\n\n        maxEval = max;\n    }\n     * Gets the maximum number of evaluations.\n     * @return the allowed number of evaluations.\n    public int getMaxEval() { \u2026 }\n     * Factory method that creates instance of this class that represents\n     * a virtually unlimited number of evaluations.\n     * @return a new instance suitable for allowing {@link Integer#MAX_VALUE}\n     * evaluations.\n    public static MaxEval unlimited() { \u2026 }\n}\n</class>\n</class_skeletons>\n\nDocumented contract of the touched method(s), from their javadoc. An input that violates an @param constraint is invalid, and a documented @throws on such an input is correct behaviour.\n  - @param <PAIR> Type of the point/value pair returned by the optimization\n  - @param checker Convergence checker.\n\nMechanically listed members of the touched class. They are raw material for a judgement about a sibling path, not a claim about one.\nMETHOD FAMILIES over the same input space:\n  get* family: getConvergenceChecker, getEvaluations, getIterations, getMaxEvaluations, getMaxIterations\nSTATE YOU CAN READ: getConvergenceChecker, getEvaluations, getIterations, getMaxEvaluations, getMaxIterations\n\nThe project's own test below FAILS on the buggy code. It is the reported symptom of this bug \u2014 the failure the patch was written to remove. Nothing throws: the test fails a JUnit assertion, because the code returns a wrong value.\nThe failure this exact test produced on the buggy code. This is the verified failure; trust it over anything inferred from the test body. It names the observable that diverges and the wrong value the buggy code returns for it.\n<observed_failure>\n--- org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizerTest::testTrivial\njunit.framework.AssertionFailedError\n</observed_failure>\nPublic API class(es) the failing test drives: NonLinearConjugateGradientOptimizer, CMAESOptimizer, PowellOptimizer, SimplexOptimizerMultiDirectional, SimplexOptimizerNelderMead, GaussNewtonOptimizer, LevenbergMarquardtOptimizer\n<failing_test class=\"org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizerTest\" method=\"testTrivial\">\n    @Test\n    public void testTrivial() {\n        LinearProblem problem\n            = new LinearProblem(new double[][] { { 2 } }, new double[] { 3 });\n        NonLinearConjugateGradientOptimizer optimizer\n            = new NonLinearConjugateGradientOptimizer(NonLinearConjugateGradientOptimizer.Formula.POLAK_RIBIERE,\n                                                      new SimpleValueChecker(1e-6, 1e-6));\n        PointValuePair optimum\n            = optimizer.optimize(new MaxEval(100),\n                                 problem.getObjectiveFunction(),\n                                 problem.getObjectiveFunctionGradient(),\n                                 GoalType.MINIMIZE,\n                                 new InitialGuess(new double[] { 0 }));\n        Assert.assertEquals(1.5, optimum.getPoint()[0], 1.0e-10);\n        Assert.assertEquals(0.0, optimum.getValue(), 1.0e-10);\n\n        // Check that the number of iterations is updated (MATH-949).\n        Assert.assertTrue(optimizer.getIterations() > 0);\n    }\n</failing_test>\nWhat the test method uses from its own test class: the setup, the helper methods, the constants, and the fixture files.\n<test_support class=\"org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizerTest\">\n// --- helper LinearProblem() ---\n        public LinearProblem(double[][] factors,\n                             double[] target) {\n            this.factors = new BlockRealMatrix(factors);\n            this.target  = target;\n        }\n</test_support>\nOther trigger test(s) for this same bug, which probe the same root cause: org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testConstrainedRosen, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testElliRotated, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testEllipse, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testTwoAxes, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testCigar, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testRosen, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testRastrigin, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testDiagonalRosen, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testSsDiffPow, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testMaximize, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testAckley, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testCigTab, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testDiffPow, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testSphere, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testTablet, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testCigarWithBoundaries, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.PowellOptimizerTest::testSumSinc, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerMultiDirectionalTest::testMaximize1, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerMultiDirectionalTest::testMaximize2, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerMultiDirectionalTest::testMinimize1, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerMultiDirectionalTest::testMinimize2, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerNelderMeadTest::testMaximize1, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerNelderMeadTest::testMaximize2, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerNelderMeadTest::testMinimize1, org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerNelderMeadTest::testMinimize2, org.apache.commons.math3.optim.nonlinear.vector.jacobian.GaussNewtonOptimizerTest::testGetIterations, org.apache.commons.math3.optim.nonlinear.vector.jacobian.LevenbergMarquardtOptimizerTest::testGetIterations.\n\nThe patched lines sit at the head of the region below. A sibling bug is one that lives in this region and stems from the SAME root cause as the reported failure.\n<root_cause_reachable>\n- Incrementor.getCount\n</root_cause_reachable>",
+ "manifest": {
+  "renderer_version": 1,
+  "blocks": [
+   {
+    "name": "patch",
+    "origin": "reused",
+    "chars": 408
+   },
+   {
+    "name": "source_imports",
+    "origin": "reused",
+    "chars": 308
+   },
+   {
+    "name": "touched_function:getIterations",
+    "origin": "reused",
+    "chars": 169
+   },
+   {
+    "name": "class_skeletons",
+    "origin": "rendered",
+    "chars": 10405
+   },
+   {
+    "name": "documented_contract",
+    "origin": "rendered",
+    "chars": 301
+   },
+   {
+    "name": "sibling_and_state",
+    "origin": "rendered",
+    "chars": 390
+   },
+   {
+    "name": "trigger_tests",
+    "origin": "rendered",
+    "chars": 5212
+   },
+   {
+    "name": "root_cause_reachable",
+    "origin": "rendered",
+    "chars": 231
+   }
+  ],
+  "total_chars": 17424,
+  "dropped_pipeline_sections": [
+   "_hard_constraints",
+   "_intro",
+   "_synthesized_relations_block",
+   "_metamorphic_block",
+   "_fdp_reference",
+   "_skeleton_block"
+  ],
+  "withheld_pipeline_evidence": [
+   "synthesized_relations: a relation candidate comes from a separate model call, and only a candidate that survives a compile and a run on the buggy build reaches a prompt",
+   "divcap_divergences: collecting one needs the patched build"
+  ]
+ },
+ "facts": {
+  "modified_files": [
+   "src/main/java/org/apache/commons/math3/optim/BaseOptimizer.java"
+  ],
+  "package": "org.apache.commons.math3.optim",
+  "touched_functions": [
+   "getIterations"
+  ],
+  "reachable_count": 1,
+  "neighbourhood_notes": [],
+  "trigger_tests": [
+   "org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizerTest::testTrivial",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testConstrainedRosen",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testElliRotated",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testEllipse",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testTwoAxes",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testCigar",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testRosen",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testRastrigin",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testDiagonalRosen",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testSsDiffPow",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testMaximize",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testAckley",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testCigTab",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testDiffPow",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testSphere",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testTablet",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizerTest::testCigarWithBoundaries",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.PowellOptimizerTest::testSumSinc",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerMultiDirectionalTest::testMaximize1",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerMultiDirectionalTest::testMaximize2",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerMultiDirectionalTest::testMinimize1",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerMultiDirectionalTest::testMinimize2",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerNelderMeadTest::testMaximize1",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerNelderMeadTest::testMaximize2",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerNelderMeadTest::testMinimize1",
+   "org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizerNelderMeadTest::testMinimize2",
+   "org.apache.commons.math3.optim.nonlinear.vector.jacobian.GaussNewtonOptimizerTest::testGetIterations",
+   "org.apache.commons.math3.optim.nonlinear.vector.jacobian.LevenbergMarquardtOptimizerTest::testGetIterations"
+  ],
+  "lifted_from": "org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizerTest::testTrivial",
+  "failure_message_captured": true,
+  "test_support_captured": true,
+  "class_skeleton_count": 9,
+  "javadoc_count": 1,
+  "sibling_hint_chars": 554
+ }
+}

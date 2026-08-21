@@ -1,0 +1,64 @@
+{
+ "cache_version": 2,
+ "renderer_version": 1,
+ "project": "Lang",
+ "bug_id": "59",
+ "apr_tool": "Arja",
+ "patch": "patch1-Lang-59-Arja-plausible.patch",
+ "bug_kind": "crashing",
+ "context_degraded": false,
+ "text": "Patch under analysis:\n<patch>\n--- /src/java/org/apache/commons/lang/text/StrBuilder.java\t\n+++ /src/java/org/apache/commons/lang/text/StrBuilder.java\n@@ -877,6 +877,7 @@\n      */\n     public StrBuilder appendFixedWidthPadRight(Object obj, int width, char padChar) {\n         if (width > 0) {\n+        \t    buffer=new char[CAPACITY];\n             ensureCapacity(size + width);\n             String str = (obj == null ? getNullText() : obj.toString());\n             int strLen = str.length();\n\n</patch>\n\nAvailable imports from the modified file (copy exactly when you need these types):\n<source_imports>\nimport java.io.Reader;\nimport java.io.Writer;\nimport java.util.Collection;\nimport java.util.Iterator;\nimport java.util.List;\nimport org.apache.commons.lang.ArrayUtils;\nimport org.apache.commons.lang.SystemUtils;\n</source_imports>\n\nFunction `appendFixedWidthPadRight`:\n<signature>\npublic StrBuilder appendFixedWidthPadRight(Object obj, int width, char padChar)\n</signature>\n<code>\n    public StrBuilder appendFixedWidthPadRight(Object obj, int width, char padChar) {\n        if (width > 0) {\n            ensureCapacity(size + width);\n            String str = (obj == null ? getNullText() : obj.toString());\n            int strLen = str.length();\n            if (strLen >= width) {\n                str.getChars(0, strLen, buffer, size);\n            } else {\n                int padLen = width - strLen;\n                str.getChars(0, strLen, buffer, size);\n                for (int i = 0; i < padLen; i++) {\n                    buffer[size + strLen + i] = padChar;\n                }\n            }\n            size += width;\n        }\n        return this;\n    }\n</code>\nMethods called by `appendFixedWidthPadRight` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.\n<callee name=\"ensureCapacity\" from=\"StrBuilder.java\">\n<signature>\npublic StrBuilder ensureCapacity(int capacity)\n</signature>\n<code>\n    public StrBuilder ensureCapacity(int capacity) {\n        if (capacity > buffer.length) {\n            char[] old = buffer;\n            buffer = new char[capacity];\n            System.arraycopy(old, 0, buffer, 0, size);\n        }\n        return this;\n    }\n</code>\n</callee>\n<callee name=\"getNullText\" from=\"StrBuilder.java\">\n<signature>\npublic String getNullText()\n</signature>\n<code>\n    public String getNullText() {\n        return nullText;\n    }\n</code>\n</callee>\n<callee name=\"toString\" from=\"StrBuilder.java\">\n<signature>\npublic String toString()\n</signature>\n<code>\n    public String toString() {\n        return new String(buffer, 0, size);\n    }\n</code>\n<implementation in=\"StrBuilder.java\">\n    public String toString() {\n        return new String(buffer, 0, size);\n    }\n</implementation>\n<implementation in=\"StrTokenizer.java\">\n    public String toString() {\n        if (tokens == null) {\n            return \"StrTokenizer[not tokenized yet]\";\n        } else {\n            return \"StrTokenizer\" + getTokenList();\n        }\n    }\n</implementation>\n</callee>\n<callee name=\"length\" from=\"StrBuilder.java\">\n<signature>\npublic int length()\n</signature>\n<code>\n    public int length() {\n        return size;\n    }\n</code>\n</callee>\n<callee name=\"getChars\" from=\"StrBuilder.java\">\n<signature>\npublic char[] getChars(char[] destination)\n</signature>\n<code>\n    public char[] getChars(char[] destination) {\n        int len = length();\n        if (destination == null || destination.length < len) {\n            destination = new char[len];\n        }\n        System.arraycopy(buffer, 0, destination, 0, len);\n        return destination;\n    }\n</code>\n<implementation in=\"StrBuilder.java\">\n    public char[] getChars(char[] destination) {\n        int len = length();\n        if (destination == null || destination.length < len) {\n            destination = new char[len];\n        }\n        System.arraycopy(buffer, 0, destination, 0, len);\n        return destination;\n    }\n</implementation>\n<implementation in=\"StrBuilder.java\">\n    public void getChars(int startIndex, int endIndex, char destination[], int destinationIndex) {\n        if (startIndex < 0) {\n            throw new StringIndexOutOfBoundsException(startIndex);\n        }\n        if (endIndex < 0 || endIndex > length()) {\n            throw new StringIndexOutOfBoundsException(endIndex);\n        }\n        if (startIndex > endIndex) {\n            throw new StringIndexOutOfBoundsException(\"end < start\");\n        }\n        System.arraycopy(buffer, startIndex, destination, destinationIndex, endIndex - startIndex);\n    }\n</implementation>\n</callee>\nSTATE COUPLING: these members of the same class share the listed field(s) with `appendFixedWidthPadRight` but neither calls the other \u2014 state one of them writes is what the other reports. A defect the patch leaves (or introduces) in that shared state stays observable through these members even when `appendFixedWidthPadRight`'s own output looks right, so a strong harness CHECKS THEY AGREE: compare what a reader reports against what the writer/constructor established.\n  - `public StrBuilder setLength(int length)` (shared field(s): buffer, size)\n      doc: Updates the length of the builder by either dropping the last characters or adding filler of unicode zero. @param length  the length to set to, must be zero or positive @return this, to enable chaining @throws IndexOutOfBoundsException if the length is negative\n  - `public StrBuilder minimizeCapacity()` (shared field(s): buffer, size)\n      doc: Minimizes the capacity to the actual length of the string. @return this, to enable chaining\n  - `public char[] toCharArray()` (shared field(s): buffer, size)\n      doc: Copies the builder's character array into a new character array. @return a new array that represents the contents of the builder\n  - `public StrBuilder append(String str)` (shared field(s): buffer, size)\n      doc: Appends a string to this string builder. Appending null will call {@link #appendNull()}. @param str  the string to append @return this, to enable chaining\n  - `public StrBuilder append(String str, int startIndex, int length)` (shared field(s): buffer, size)\n      doc: Appends part of a string to this string builder. Appending null will call {@link #appendNull()}. @param str  the string to append @param startIndex  the start index, inclusive, must be valid @param length  the length to append, must be valid @return this, to enable chaining\n\nThe project's own test(s) below FAIL on the buggy code. They are the reported symptom of this bug \u2014 the failure the patch was written to remove.\nThrowable(s) observed, most reliable first: java.lang.ArrayIndexOutOfBoundsException\nRuntime failure captured by running the trigger test on the buggy code. This is the verified failure; trust it over anything inferred from the test body.\n<observed_crash>\nthrowable: java.lang.ArrayIndexOutOfBoundsException\nthrown_at: org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(StrBuilder.java:884)\n</observed_crash>\n<failing_test class=\"org.apache.commons.lang.text.StrBuilderAppendInsertTest\" method=\"testLang299\">\n    public void testLang299() {\n        StrBuilder sb = new StrBuilder(1);\n        sb.appendFixedWidthPadRight(\"foo\", 1, '-');\n        assertEquals(\"f\", sb.toString());\n    }\n</failing_test>\n\nThe patched lines sit at the head of the region below. A sibling bug is one that lives in this region and stems from the SAME root cause as the reported failure.\n<root_cause_reachable>\n- StrBuilder.ensureCapacity\n- StrBuilder.getNullText\n</root_cause_reachable>",
+ "manifest": {
+  "renderer_version": 1,
+  "blocks": [
+   {
+    "name": "patch",
+    "origin": "reused",
+    "chars": 498
+   },
+   {
+    "name": "source_imports",
+    "origin": "reused",
+    "chars": 329
+   },
+   {
+    "name": "touched_function:appendFixedWidthPadRight",
+    "origin": "reused",
+    "chars": 5801
+   },
+   {
+    "name": "trigger_tests",
+    "origin": "rendered",
+    "chars": 858
+   },
+   {
+    "name": "root_cause_reachable",
+    "origin": "rendered",
+    "chars": 261
+   }
+  ],
+  "total_chars": 7747,
+  "dropped_pipeline_sections": [
+   "_hard_constraints",
+   "_intro",
+   "_metamorphic_block",
+   "_fdp_reference",
+   "_skeleton_block"
+  ]
+ },
+ "facts": {
+  "modified_files": [
+   "src/java/org/apache/commons/lang/text/StrBuilder.java"
+  ],
+  "package": "org.apache.commons.lang.text",
+  "touched_functions": [
+   "appendFixedWidthPadRight"
+  ],
+  "reachable_count": 2,
+  "neighbourhood_notes": [],
+  "trigger_tests": [
+   "org.apache.commons.lang.text.StrBuilderAppendInsertTest::testLang299"
+  ],
+  "crash_evidence_captured": true
+ }
+}

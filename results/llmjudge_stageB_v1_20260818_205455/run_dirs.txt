@@ -1,0 +1,23 @@
+# stage B — base v1. Index of every pass, one line per pass.
+# columns: version  side  exit_code  run_dir
+#
+# This folder was assembled after the fact, on 2026-08-19. The passes ran by
+# hand under nohup, before scripts/llmjudge_stage_b.sh existed, so the exit
+# code of each pass was not recorded. A "-" means "not recorded". Every pass
+# marked "-" wrote a summary.json, which is the check that it finished.
+#
+# The base's own DEV row is not here. It belongs to stage A:
+#   llmjudge_stageA_20260818_140449 -> llmjudge_dev_v1_20260818_140450
+v1     holdout  -  llmjudge_holdout_v1_20260818_205502
+v1.1   dev      -  llmjudge_dev_v1.1_20260818_205505
+v1.1   holdout  -  llmjudge_holdout_v1.1_20260818_214152
+v1.2   dev      -  llmjudge_dev_v1.2_20260818_214249
+v1.2   holdout  -  llmjudge_holdout_v1.2_20260818_220631
+v1.3   dev      -  llmjudge_dev_v1.3_20260818_222209
+v1.3   holdout  -  llmjudge_holdout_v1.3_20260818_222223
+v1     dev      -  llmjudge_dev_v1_20260818_233832  (INCOMPLETE)
+
+# The last line is a re-run of the base on dev against a second evidence cache.
+# It stopped after the queue build. Its records.jsonl is empty and it has no
+# summary.json, so compare.py does not see it and no table row uses it.
+# Its log is evaluate_v1_dev_incomplete.log.

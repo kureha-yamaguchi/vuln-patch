@@ -1,0 +1,64 @@
+{
+ "cache_version": 2,
+ "renderer_version": 1,
+ "project": "Math",
+ "bug_id": "32",
+ "apr_tool": "Elixir",
+ "patch": "patch1-Math-32-Elixir-plausible.patch",
+ "bug_kind": "crashing",
+ "context_degraded": false,
+ "text": "Patch under analysis:\n<patch>\n--- /src/main/java/org/apache/commons/math3/geometry/euclidean/twod/PolygonsSet.java\n+++ /src/main/java/org/apache/commons/math3/geometry/euclidean/twod/PolygonsSet.java\n@@ -133,7 +133,7 @@\n \n         if (v.length == 0) {\n             final BSPTree<Euclidean2D> tree = getTree(false);\n-            if ((Boolean) tree.getAttribute()) {\n+            if ((Boolean) tree.getPlus().getAttribute()) {\n                 // the instance covers the whole space\n                 setSize(Double.POSITIVE_INFINITY);\n                 setBarycenter(Vector2D.NaN);\n\n</patch>\n\nAvailable imports from the modified file (copy exactly when you need these types):\n<source_imports>\nimport java.util.ArrayList;\nimport java.util.Collection;\nimport java.util.List;\nimport org.apache.commons.math3.exception.MathInternalError;\nimport org.apache.commons.math3.geometry.euclidean.oned.Euclidean1D;\nimport org.apache.commons.math3.geometry.euclidean.oned.Interval;\nimport org.apache.commons.math3.geometry.euclidean.oned.IntervalsSet;\nimport org.apache.commons.math3.geometry.euclidean.oned.Vector1D;\nimport org.apache.commons.math3.geometry.partitioning.AbstractSubHyperplane;\nimport org.apache.commons.math3.geometry.partitioning.BSPTree;\nimport org.apache.commons.math3.geometry.partitioning.BSPTreeVisitor;\nimport org.apache.commons.math3.geometry.partitioning.BoundaryAttribute;\nimport org.apache.commons.math3.geometry.partitioning.SubHyperplane;\nimport org.apache.commons.math3.geometry.partitioning.AbstractRegion;\nimport org.apache.commons.math3.geometry.partitioning.utilities.AVLTree;\nimport org.apache.commons.math3.geometry.partitioning.utilities.OrderedTuple;\nimport org.apache.commons.math3.util.FastMath;\n</source_imports>\n\nFunction `computeGeometricalProperties`:\n<signature>\nprotected void computeGeometricalProperties()\n</signature>\n<code>\n    protected void computeGeometricalProperties() {\n\n        final Vector2D[][] v = getVertices();\n\n        if (v.length == 0) {\n            final BSPTree<Euclidean2D> tree = getTree(false);\n            if ((Boolean) tree.getAttribute()) {\n                // the instance covers the whole space\n                setSize(Double.POSITIVE_INFINITY);\n                setBarycenter(Vector2D.NaN);\n            } else {\n                setSize(0);\n                setBarycenter(new Vector2D(0, 0));\n            }\n        } else if (v[0][0] == null) {\n            // there is at least one open-loop: the polygon is infinite\n            setSize(Double.POSITIVE_INFINITY);\n            setBarycenter(Vector2D.NaN);\n        } else {\n            // all loops are closed, we compute some integrals around the shape\n\n            double sum  = 0;\n            double sumX = 0;\n            double sumY = 0;\n\n            for (Vector2D[] loop : v) {\n                double x1 = loop[loop.length - 1].getX();\n                double y1 = loop[loop.length - 1].getY();\n                for (final Vector2D point : loop) {\n                    final double x0 = x1;\n                    final double y0 = y1;\n                    x1 = point.getX();\n                    y1 = point.getY();\n                    final double factor = x0 * y1 - y0 * x1;\n                    sum  += factor;\n                    sumX += factor * (x0 + x1);\n                    sumY += factor * (y0 + y1);\n                }\n            }\n\n            if (sum < 0) {\n                // the polygon as a finite outside surrounded by an infinite inside\n                setSize(Double.POSITIVE_INFINITY);\n                setBarycenter(Vector2D.NaN);\n            } else {\n                setSize(sum / 2);\n                setBarycenter(new Vector2D(sumX / (3 * sum), sumY / (3 * sum)));\n            }\n\n        }\n\n    }\n</code>\nMethods called by `computeGeometricalProperties` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.\n<callee name=\"getVertices\" from=\"PolygonsSet.java\">\n<signature>\npublic Vector2D[][] getVertices()\n</signature>\n<code>\n    public Vector2D[][] getVertices() {\n        if (vertices == null) {\n            if (getTree(false).getCut() == null) {\n                vertices = new Vector2D[0][];\n            } else {\n\n                // sort the segments according to their start point\n                final SegmentsBuilder visitor = new SegmentsBuilder();\n                getTree(true).visit(visitor);\n                final AVLTree<ComparableSegment> sorted = visitor.getSorted();\n\n                // identify the loops, starting from the open ones\n                // (their start segments are naturally at the sorted set beginning)\n                final ArrayList<List<ComparableSegment>> loops = new ArrayList<List<ComparableSegment>>();\n                while (!sorted.isEmpty()) {\n                    final AVLTree<ComparableSegment>.Node node = sorted.getSmallest();\n                    final List<ComparableSegment> loop = followLoop(node, sorted);\n                    if (loop != null) {\n                        loops.add(loop);\n                    }\n                }\n\n                // tranform the loops in an array of arrays of points\n                vertices = new Vector2D[loops.size()][];\n                int i = 0;\n\n                for (final List<ComparableSegment> loop : loops) {\n                    if (loop.size() < 2) {\n                        // single infinite line\n                        final Line line = loop.get(0).getLine();\n                        vertices[i++] = new Vector2D[] {\n                            null,\n                            line.toSpace(new Vector1D(-Float.MAX_VALUE)),\n                            line.toSpace(new Vector1D(+Float.MAX_VALUE))\n                        };\n                    } else if (loop.get(0).getStart() == null) {\n                        // open loop with at least one real point\n                        final Vector2D[] array = new Vector2D[loop.size() + 2];\n                        int j = 0;\n                        for (Segment segment : loop) {\n\n                            if (j == 0) {\n                                // null point and first dummy point\n                                double x = segment.getLine().toSubSpace(segment.getEnd()).getX();\n                                x -= FastMath.max(1.0, FastMath.abs(x / 2));\n                                array[j++] = null;\n                                array[j++] = segment.getLine().toSpace(new Vector1D(x));\n                            }\n\n                            if (j < (array.length - 1)) {\n                                // current point\n                                array[j++] = segment.getEnd();\n                            }\n\n                            if (j == (array.length - 1)) {\n                                // last dummy point\n                                double x = segment.getLine().toSubSpace(segment.getStart()).getX();\n                                x += FastMath.max(1.0, FastMath.abs(x / 2));\n                                array[j++] = segment.getLine().toSpace(new Vector1D(x));\n                            }\n\n                        }\n                        vertices[i++] = array;\n                    } else {\n                        final Vector2D[] array = new Vector2D[loop.size()];\n                        int j = 0;\n                        for (Segment segment : loop) {\n                            array[j++] = segment.getStart();\n                        }\n                        vertices[i++] = array;\n                    }\n                }\n\n            }\n        }\n\n        return vertices.clone();\n\n    }\n</code>\n</callee>\n<callee name=\"getX\" from=\"Vector2D.java\">\n<signature>\npublic double getX()\n</signature>\n<code>\n    public double getX() {\n        return x;\n    }\n</code>\n</callee>\n<callee name=\"getY\" from=\"Vector2D.java\">\n<signature>\npublic double getY()\n</signature>\n<code>\n    public double getY() {\n        return y;\n    }\n</code>\n</callee>\n\nThe project's own test(s) below FAIL on the buggy code. They are the reported symptom of this bug \u2014 the failure the patch was written to remove.\nThrowable(s) observed, most reliable first: java.lang.ClassCastException\nRuntime failure captured by running the trigger test on the buggy code. This is the verified failure; trust it over anything inferred from the test body.\n<observed_crash>\nthrowable: java.lang.ClassCastException\nmessage: org.apache.commons.math3.geometry.partitioning.BoundaryAttribute cannot be cast to java.lang.Boolean\nthrown_at: org.apache.commons.math3.geometry.euclidean.twod.PolygonsSet.computeGeometricalProperties(PolygonsSet.java:136)\n</observed_crash>\n<failing_test class=\"org.apache.commons.math3.geometry.euclidean.threed.PolyhedronsSetTest\" method=\"testIssue780\">\n    @Test\n    public void testIssue780() {\n        float[] coords = {\n            1.000000f, -1.000000f, -1.000000f, \n            1.000000f, -1.000000f, 1.000000f, \n            -1.000000f, -1.000000f, 1.000000f, \n            -1.000000f, -1.000000f, -1.000000f, \n            1.000000f, 1.000000f, -1f, \n            0.999999f, 1.000000f, 1.000000f,   // 1.000000f, 1.000000f, 1.000000f, \n            -1.000000f, 1.000000f, 1.000000f, \n            -1.000000f, 1.000000f, -1.000000f};\n        int[] indices = {\n            0, 1, 2, 0, 2, 3, \n            4, 7, 6, 4, 6, 5, \n            0, 4, 5, 0, 5, 1, \n            1, 5, 6, 1, 6, 2, \n            2, 6, 7, 2, 7, 3, \n            4, 0, 3, 4, 3, 7};\n        ArrayList<SubHyperplane<Euclidean3D>> subHyperplaneList = new ArrayList<SubHyperplane<Euclidean3D>>();\n        for (int idx = 0; idx < indices.length; idx += 3) {\n            int idxA = indices[idx] * 3;\n            int idxB = indices[idx + 1] * 3;\n            int idxC = indices[idx + 2] * 3;\n            Vector3D v_1 = new Vector3D(coords[idxA], coords[idxA + 1], coords[idxA + 2]);\n            Vector3D v_2 = new Vector3D(coords[idxB], coords[idxB + 1], coords[idxB + 2]);\n            Vector3D v_3 = new Vector3D(coords[idxC], coords[idxC + 1], coords[idxC + 2]);\n            Vector3D[] vertices = {v_1, v_2, v_3};\n            Plane polyPlane = new Plane(v_1, v_2, v_3);\n            ArrayList<SubHyperplane<Euclidean2D>> lines = new ArrayList<SubHyperplane<Euclidean2D>>();\n\n            Vector2D[\n        // ... (truncated)\n</failing_test>\n\nThe patched lines sit at the head of the region below. A sibling bug is one that lives in this region and stems from the SAME root cause as the reported failure.\n<root_cause_reachable>\n- PolygonsSet.getVertices\n- PolygonsSet.getTree\n- PolygonsSet.getAttribute\n- PolygonsSet.setSize\n- PolygonsSet.setBarycenter\n- Vector2D.<init>\n- PolygonsSet.getCut\n- PolygonsSet.visit\n- PolygonsSet.isEmpty\n- PolygonsSet.getSmallest\n- PolygonsSet.followLoop\n- PolygonsSet.getLine\n- Vector1D.<init>()\n- PolygonsSet.toSpace\n- PolygonsSet.getStart\n- PolygonsSet.toSubSpace\n- PolygonsSet.getX\n- FastMath.abs\n- FastMath.max\n- Vector1D.<init>(int)\n- Region.getTree\n- TestBean.getX\n- TestBean.getY\n- AbstractRegion.setBarycenter\n- AbstractRegion.setSize\n</root_cause_reachable>",
+ "manifest": {
+  "renderer_version": 1,
+  "blocks": [
+   {
+    "name": "patch",
+    "origin": "reused",
+    "chars": 588
+   },
+   {
+    "name": "source_imports",
+    "origin": "reused",
+    "chars": 1149
+   },
+   {
+    "name": "touched_function:computeGeometricalProperties",
+    "origin": "reused",
+    "chars": 6405
+   },
+   {
+    "name": "trigger_tests",
+    "origin": "rendered",
+    "chars": 2338
+   },
+   {
+    "name": "root_cause_reachable",
+    "origin": "rendered",
+    "chars": 754
+   }
+  ],
+  "total_chars": 11234,
+  "dropped_pipeline_sections": [
+   "_hard_constraints",
+   "_intro",
+   "_metamorphic_block",
+   "_fdp_reference",
+   "_skeleton_block"
+  ]
+ },
+ "facts": {
+  "modified_files": [
+   "src/main/java/org/apache/commons/math3/geometry/euclidean/twod/PolygonsSet.java"
+  ],
+  "package": "org.apache.commons.math3.geometry.euclidean.twod",
+  "touched_functions": [
+   "computeGeometricalProperties"
+  ],
+  "reachable_count": 25,
+  "neighbourhood_notes": [],
+  "trigger_tests": [
+   "org.apache.commons.math3.geometry.euclidean.threed.PolyhedronsSetTest::testIssue780"
+  ],
+  "crash_evidence_captured": true
+ }
+}

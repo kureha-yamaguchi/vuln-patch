@@ -1,0 +1,59 @@
+{
+ "cache_version": 2,
+ "renderer_version": 1,
+ "project": "Lang",
+ "bug_id": "51",
+ "apr_tool": "SOFix",
+ "patch": "patch1-Lang-51-SOFix.patch",
+ "bug_kind": "crashing",
+ "context_degraded": false,
+ "text": "Patch under analysis:\n<patch>\n--- /src/java/org/apache/commons/lang/BooleanUtils.java\n+++ /src/java/org/apache/commons/lang/BooleanUtils.java\n@@ -679,6 +679,7 @@ public class BooleanUtils {\n                         (str.charAt(1) == 'E' || str.charAt(1) == 'e') &&\n                         (str.charAt(2) == 'S' || str.charAt(2) == 's');\n                 }\n+                return false;\n             }\n             case 4: {\n                 char ch = str.charAt(0);\n</patch>\n\nAvailable imports from the modified file (copy exactly when you need these types):\n<source_imports>\nimport org.apache.commons.lang.math.NumberUtils;\n</source_imports>\n\nFunction `toBoolean`:\n<signature>\npublic static boolean toBoolean(String str)\n</signature>\n<code>\n    public static boolean toBoolean(String str) {\n        // Previously used equalsIgnoreCase, which was fast for interned 'true'.\n        // Non interned 'true' matched 15 times slower.\n        // \n        // Optimisation provides same performance as before for interned 'true'.\n        // Similar performance for null, 'false', and other strings not length 2/3/4.\n        // 'true'/'TRUE' match 4 times slower, 'tRUE'/'True' 7 times slower.\n        if (str == \"true\") {\n            return true;\n        }\n        if (str == null) {\n            return false;\n        }\n        switch (str.length()) {\n            case 2: {\n                char ch0 = str.charAt(0);\n                char ch1 = str.charAt(1);\n                return \n                    (ch0 == 'o' || ch0 == 'O') &&\n                    (ch1 == 'n' || ch1 == 'N');\n            }\n            case 3: {\n                char ch = str.charAt(0);\n                if (ch == 'y') {\n                    return \n                        (str.charAt(1) == 'e' || str.charAt(1) == 'E') &&\n                        (str.charAt(2) == 's' || str.charAt(2) == 'S');\n                }\n                if (ch == 'Y') {\n                    return \n                        (str.charAt(1) == 'E' || str.charAt(1) == 'e') &&\n                        (str.charAt(2) == 'S' || str.charAt(2) == 's');\n                }\n            }\n            case 4: {\n                char ch = str.charAt(0);\n                if (ch == 't') {\n                    return \n                        (str.charAt(1) == 'r' || str.charAt(1) == 'R') &&\n                        (str.charAt(2) == 'u' || str.charAt(2) == 'U') &&\n                        (str.charAt(3) == 'e' || str.charAt(3) == 'E');\n                }\n                if (ch == 'T') {\n                    return \n                        (str.charAt(1) == 'R' || str.charAt(1) == 'r') &&\n                        (str.charAt(2) == 'U' || str.charAt(2) == 'u') &&\n                        (str.charAt(3) == 'E' || str.charAt(3) == 'e');\n                }\n            }\n        }\n        return false;\n    }\n</code>\nCall-site examples (use these as a guide for constructing the target call):\n<xref>\npublic void test_toBoolean_String() {\n        assertEquals(false, BooleanUtils.toBoolean((String) null));\n        assertEquals(false, BooleanUtils.toBoolean(\"\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"off\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"oof\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"yep\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"trux\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"false\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"a\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"true\")); // interned handled differently\n        assertEquals(true, BooleanUtils.toBoolean(new StringBuffer(\"tr\").append(\"ue\").toString()));\n        assertEquals(true, BooleanUtils.toBoolean(\"truE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"trUe\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"trUE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"tRue\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"tRuE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"tRUe\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"tRUE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TRUE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TRUe\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TRuE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TRue\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TrUE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TrUe\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TruE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"True\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"on\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"oN\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"On\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"ON\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"yes\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"yeS\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"yEs\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"yES\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"Yes\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"YeS\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"YEs\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"YES\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"yes?\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"tru\"));\n    }\n</xref>\n\nThe project's own test(s) below FAIL on the buggy code. They are the reported symptom of this bug \u2014 the failure the patch was written to remove.\nThrowable(s) observed, most reliable first: java.lang.StringIndexOutOfBoundsException\nRuntime failure captured by running the trigger test on the buggy code. This is the verified failure; trust it over anything inferred from the test body.\n<observed_crash>\nthrowable: java.lang.StringIndexOutOfBoundsException\nmessage: String index out of range: 3\nthrown_at: org.apache.commons.lang.BooleanUtils.toBoolean(BooleanUtils.java:686)\ncrashing_input: \"off\"\nother_observed_literals: \"oof\", \"yep\", \"trux\", \"false\", \"a\", \"true\", \"truE\", \"trUe\", \"trUE\", \"tRue\", \"tRuE\", \"tRUe\", \"tRUE\", \"TRUE\", \"TRUe\", \"TRuE\", \"TRue\", \"TrUE\", \"TrUe\", \"TruE\", \"True\", \"on\", \"oN\", \"On\", \"ON\", \"yes\", \"yeS\", \"yEs\", \"yES\", \"Yes\", \"YeS\", \"YEs\", \"YES\", \"yes?\", \"tru\"\n</observed_crash>\n<failing_test class=\"org.apache.commons.lang.BooleanUtilsTest\" method=\"test_toBoolean_String\">\n    public void test_toBoolean_String() {\n        assertEquals(false, BooleanUtils.toBoolean((String) null));\n        assertEquals(false, BooleanUtils.toBoolean(\"\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"off\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"oof\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"yep\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"trux\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"false\"));\n        assertEquals(false, BooleanUtils.toBoolean(\"a\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"true\")); // interned handled differently\n        assertEquals(true, BooleanUtils.toBoolean(new StringBuffer(\"tr\").append(\"ue\").toString()));\n        assertEquals(true, BooleanUtils.toBoolean(\"truE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"trUe\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"trUE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"tRue\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"tRuE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"tRUe\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"tRUE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TRUE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TRUe\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TRuE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TRue\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TrUE\"));\n        assertEquals(true, BooleanUtils.toBoolean(\"TrUe\"));\n\n        // ... (truncated)\n</failing_test>",
+ "manifest": {
+  "renderer_version": 1,
+  "blocks": [
+   {
+    "name": "patch",
+    "origin": "reused",
+    "chars": 476
+   },
+   {
+    "name": "source_imports",
+    "origin": "reused",
+    "chars": 166
+   },
+   {
+    "name": "touched_function:toBoolean",
+    "origin": "reused",
+    "chars": 4727
+   },
+   {
+    "name": "trigger_tests",
+    "origin": "rendered",
+    "chars": 2535
+   }
+  ],
+  "total_chars": 7904,
+  "dropped_pipeline_sections": [
+   "_hard_constraints",
+   "_intro",
+   "_metamorphic_block",
+   "_fdp_reference",
+   "_skeleton_block"
+  ]
+ },
+ "facts": {
+  "modified_files": [
+   "src/java/org/apache/commons/lang/BooleanUtils.java"
+  ],
+  "package": "org.apache.commons.lang",
+  "touched_functions": [
+   "toBoolean"
+  ],
+  "reachable_count": 0,
+  "neighbourhood_notes": [],
+  "trigger_tests": [
+   "org.apache.commons.lang.BooleanUtilsTest::test_toBoolean_String"
+  ],
+  "crash_evidence_captured": true
+ }
+}

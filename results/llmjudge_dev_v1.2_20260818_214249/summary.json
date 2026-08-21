@@ -1,0 +1,153 @@
+{
+  "side": "dev",
+  "prompt_version": "v1.2",
+  "prompt_stage": "B",
+  "prompt_base": "v1",
+  "prompt_hypothesis": "v1.1 produced 1 FP and 8 FN on dev, so the class flipped and FN dominated. Every one of the eight cited v1.1's own bar back at it: \"per the criterion you gave, it is only OVERFITTING if the same fault is still reachable, and I cannot name such an input\". The patches it excused only disabled the failing path \u2014 an always-true disjunct in Lang-51 Elixir and Jaid, an always-false comparison of two types in Math-32 Jaid, a deleted loop in Lang-39 Arja. So qualify the carve-out: a disabled path is not a removed root cause.",
+  "prompt_sha256": "700f3b9921b3504b747100c68d002e5257ef3516d16a67ed6a63e3b10392b2ce",
+  "prompt_text": "You are an expert Java security engineer who reviews bug fixes for completeness.\n\nBelow is a Java bug, the test that reports it, and a candidate patch. Decide whether the patch is correct or overfitting.\n\nAn overfitting patch stops the reported failure, but it leaves the root cause in place. Some other input still reaches the same fault. A correct patch removes the root cause, so no input reaches that fault any more.\n\nAnswer OVERFITTING only when you can name a concrete input that still reaches the same fault under this patch. A patch that is clumsy or that no human would write is still CORRECT when it removes the root cause. But a patch that only disables the failing path leaves the root cause in place: a condition made always true or always false, a comparison of two types that can never be equal, or the deletion of the computation that failed. Call that OVERFITTING even when you cannot name an input that reaches the old throw site.\n\nIs this patch correct, or is it overfitting?\n\nEnd your answer with a final line in exactly one of these two forms, and write nothing after it:\nVERDICT: OVERFITTING\nVERDICT: CORRECT",
+  "samples_per_patch": 5,
+  "model": "gpt-5.4",
+  "reasoning_effort": "low",
+  "headline_rule": "majority",
+  "parse_failure_counts_as": "correct",
+  "git_sha": "923ffce05faa1c20315b7500b60db0b985b5e723",
+  "queued": 31,
+  "scored": 31,
+  "not_scored": {},
+  "positive_class_prior": 0.4838709677419355,
+  "mean_sample_agreement": 0.9096774193548389,
+  "parse_failures": 0,
+  "headline": {
+    "rule": "majority",
+    "overfitting_evaluated": 15,
+    "correct_evaluated": 16,
+    "TP": 11,
+    "FN": 4,
+    "FP": 7,
+    "TN": 9,
+    "precision": 0.6111111111111112,
+    "recall": 0.7333333333333333,
+    "specificity": 0.5625,
+    "accuracy": 0.6451612903225806,
+    "f1": 0.6666666666666666
+  },
+  "vote_rule_sensitivity": [
+    {
+      "rule": "majority",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 16,
+      "TP": 11,
+      "FN": 4,
+      "FP": 7,
+      "TN": 9,
+      "precision": 0.6111111111111112,
+      "recall": 0.7333333333333333,
+      "specificity": 0.5625,
+      "accuracy": 0.6451612903225806,
+      "f1": 0.6666666666666666
+    },
+    {
+      "rule": "any",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 16,
+      "TP": 14,
+      "FN": 1,
+      "FP": 7,
+      "TN": 9,
+      "precision": 0.6666666666666666,
+      "recall": 0.9333333333333333,
+      "specificity": 0.5625,
+      "accuracy": 0.7419354838709677,
+      "f1": 0.7777777777777778
+    },
+    {
+      "rule": "unanimous",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 16,
+      "TP": 10,
+      "FN": 5,
+      "FP": 4,
+      "TN": 12,
+      "precision": 0.7142857142857143,
+      "recall": 0.6666666666666666,
+      "specificity": 0.75,
+      "accuracy": 0.7096774193548387,
+      "f1": 0.6896551724137931
+    }
+  ],
+  "by_bug": [
+    {
+      "bug": "Chart-9",
+      "patches": 5,
+      "overfitting": 1,
+      "correct": 4,
+      "right": 5
+    },
+    {
+      "bug": "Lang-27",
+      "patches": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 2
+    },
+    {
+      "bug": "Lang-39",
+      "patches": 4,
+      "overfitting": 3,
+      "correct": 1,
+      "right": 4
+    },
+    {
+      "bug": "Lang-44",
+      "patches": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "bug": "Lang-51",
+      "patches": 5,
+      "overfitting": 3,
+      "correct": 2,
+      "right": 4
+    },
+    {
+      "bug": "Lang-6",
+      "patches": 7,
+      "overfitting": 1,
+      "correct": 6,
+      "right": 1
+    },
+    {
+      "bug": "Math-32",
+      "patches": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 3
+    },
+    {
+      "bug": "Math-79",
+      "patches": 1,
+      "overfitting": 1,
+      "correct": 0,
+      "right": 0
+    }
+  ],
+  "budget": {
+    "calls": 155,
+    "prompt_tokens": 434835,
+    "cached_prompt_tokens": 314752,
+    "completion_tokens": 187728,
+    "total_tokens": 622563,
+    "cache_hit_rate": 0.7238423769935722,
+    "prices_usd_per_mtok": {
+      "in_usd_per_mtok": null,
+      "out_usd_per_mtok": null,
+      "cached_in_usd_per_mtok": null
+    },
+    "cost_usd_full_rate": null,
+    "cost_usd_with_cache_rate": null,
+    "note": "price not set \u2014 tokens only. Set LLMJUDGE_PRICE_IN_USD_PER_MTOK and LLMJUDGE_PRICE_OUT_USD_PER_MTOK for a cost figure."
+  }
+}
