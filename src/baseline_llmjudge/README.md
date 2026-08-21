@@ -742,18 +742,63 @@ Every log is in `results/llmjudge_stageA_semantic_20260819_161219/`.
 | Iteration | Dev error class it repaired | Dev P | Dev R | Dev F1 | FP | FN | Run directory |
 |---|---|---|---|---|---|---|---|
 | `s3` (base) | — | 0.630 | 0.872 | 0.731 | 20 | 5 | `llmjudge_dev_s3_20260819_222336` |
-| `s3.1` | FP. All 20 FP named a real residual imperfection in or near the patched method, and none named the REPORTED fault. Math-59 cited signed-zero semantics against a reported reversed result; Closure-62 cited an extra caret the patch itself adds; Math-2 cited a second arithmetic issue. Nine of the 20 are the Math-59 and Math-30 clusters, all unanimous. | | | | | | |
-| `s3.2` | | | | | | | |
-| `s3.3` | | | | | | | |
+| `s3.1` | FP. All 20 FP named a real residual imperfection in or near the patched method, and none named the REPORTED fault. Math-59 cited signed-zero semantics against a reported reversed result; Closure-62 cited an extra caret the patch itself adds; Math-2 cited a second arithmetic issue. Nine of the 20 are the Math-59 and Math-30 clusters, all unanimous. | 0.629 | 0.564 | 0.595 | 13 | 17 | `llmjudge_dev_s3.1_20260820_151848` |
+| `s3.2` | FN. `s3.1` cut FP to 13 but raised FN to 17, and recall fell from 0.872 to 0.564. Three wording faults in `s3.1` caused it: SIBLING PATHS asked a sibling to produce the reported fault, which no sibling can do (Math-53, Lang-41, Chart-12, Chart-3, Lang-60); "at the same computed step" was tighter than an overfitting patch has to be; and the CORRECT rule had no counterweight, so a patch keyed on the reported symptom passed unanimously (Math-82 twice, Math-73 twice, Closure-38, Chart-26). | 0.595 | 0.641 | 0.617 | 17 | 14 | `llmjudge_dev_s3.2_20260820_205114` |
+| `s3.3` | FP, and the two-turn trend. Dev precision reads 0.630, 0.629 and 0.595 across `s3`, `s3.1` and `s3.2`, so the added sections bought no precision and cost recall twice. `PATCH SCOPE` handed the whole Math-59 cluster back: all six returned as FP, because the model reads "the patch repairs only the `a > b` branch" as keying on the reported input. Nine of the 17 FP are Math-59 and Math-30, and each names a wrong value of a different kind from the reported one. So `s3.3` is the `s3` form plus one paragraph, and its parent is `s3`. | 0.614 | 0.692 | 0.651 | 17 | 12 | `llmjudge_dev_s3.3_20260821_014541` |
 
 **Stage B — selection on holdout**
 
 | Version | P | R | F1 | FP | FN | Run directory |
 |---|---|---|---|---|---|---|
-| `s3` (reference) | | | | | | |
-| `s3.1` | | | | | | |
-| `s3.2` | | | | | | |
-| `s3.3` | | | | | | |
+| `s3` (reference) | 0.778 | 0.913 | 0.840 | 6 | 2 | `llmjudge_holdout_s3_20260820_125315` |
+| `s3.1` | 0.778 | 0.609 | 0.683 | 4 | 9 | `llmjudge_holdout_s3.1_20260820_184703` |
+| `s3.2` | 0.750 | 0.783 | 0.766 | 6 | 5 | `llmjudge_holdout_s3.2_20260821_001525` |
+| `s3.3` | 0.773 | 0.739 | 0.756 | 5 | 6 | `llmjudge_holdout_s3.3_20260821_050539` |
+
+Selected iteration: `s3.2`, holdout F1 = 0.766. **No iteration beat the base.**
+`s3` scored 0.840 on the holdout, and the best iteration scored 0.074 below it.
+The honest sentence names the population the number was selected from: of three
+iterations refined on the dev side, the best scored F1 = 0.766 on the holdout;
+the three scored 0.766, 0.756 and 0.683. That maximum over three is optimistic,
+and the 0.083 spread between the three rows is the size of the optimism.
+
+**The two sides agree on the ranking.** Dev orders the iterations 0.651, 0.617,
+0.595 and the holdout orders them 0.756, 0.766, 0.683. `s3.2` and `s3.3` swap,
+by 0.010 on the holdout and 0.034 on dev, and `s3.1` is last on both. So the dev
+signal that drove each turn was not noise, and it still did not produce a
+holdout gain.
+
+**Every turn traded the same way.** Recall fell in all three iterations, from
+the base's 0.872 to 0.564, 0.641 and 0.692 on dev, while precision never rose
+above the base's 0.630. Each turn added a reason to answer CORRECT, each one
+spent recall, and none bought precision. The base's high-recall behaviour is
+what carries its F1 at this class prior.
+
+**The false-positive core does not move.** Math-59 six times and Math-30 three
+times are 9 of the 20 base FP, and the same nine survive every wording. `s3.1`
+excluded a wrong value of a different kind and broke their unanimity without
+removing them. `s3.2` handed all six Math-59 back through `PATCH SCOPE`. `s3.3`
+targeted them with one sentence and changed nothing: its dev FP set is still
+Math-59 six times and Math-30 three times.
+
+In those nine cases the model names a real residual defect in the patched code,
+and the certification calls the patch correct. `FastMath.max(+0.0f, -0.0f)` does
+return the wrong zero after the patch, and `n1 * n2` does still overflow at
+n = 50000. The disagreement is about where one patch's responsibility ends, and
+not about how carefully the model read the evidence. A prompt cannot settle it,
+because the prompt is not what the two parties disagree about. That is the
+finding of this stage, and it is a result about the method rather than a failed
+run.
+
+Parse failures: 0 in every pass on both sides. Agreement on holdout: 0.956,
+0.929, 0.935, 0.959 in row order.
+
+**Both pools reached the same answer.** On the crashing side the base `v1`
+scored 0.889 on holdout and the best iteration scored 0.857. On the semantic
+side the base `s3` scored 0.840 and the best iteration scored 0.766. Six
+refinement turns across two pools, and not one of them beat the design it
+refined. The stage-A form is what the baseline is, and hand refinement against
+a dev error log did not improve it.
 
 ## 7. Budget disclosure
 

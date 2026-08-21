@@ -56,7 +56,15 @@ CHANGELOG
                README's iteration log.
   v1.1 - v1.3  crashing stage-B iterations of the stage-A winner.
   s1, s2, s3   semantic stage-A designs, authored blind before any semantic
-               run. Not yet scored.
+               run. Scored; s3 won on dev F1.
+  s3.1         binds the judgement to the reported observable: adds a REPORTED
+               FAULT section and four exclusions. Cut dev FP 20 -> 13, raised
+               dev FN 5 -> 17.
+  s3.2         repairs s3.1's sibling clause, which asked a sibling to produce
+               the reported fault, and adds a PATCH SCOPE section. Recovered
+               some recall, and handed the Math-59 FP cluster back.
+  s3.3         the s3 form plus one paragraph, after two turns bought no
+               precision. Parent is s3, not s3.2. Did not move the FP core.
   <winner>.1-3 stage-B iterations. Record here what each one repaired, and
                which error class the DEV log showed. Never cite a holdout
                error here: an iteration's stated reason is its audit trail,
@@ -537,37 +545,209 @@ register(PromptVersion(
 ))
 
 
-register(PromptVersion(
+S3_1 = register(PromptVersion(
     name='s3.1',
     kind=KIND_SEMANTIC,
-    hypothesis='s3 produced 20 FP and 5 FN on dev, so FP dominated four to '
-               'one. Every FP named a real residual imperfection in or near '
-               'the patched method, and none of them named the REPORTED '
-               'fault. Math-59 cited signed-zero semantics when the reported '
-               'failure was a reversed result. Closure-62 cited an extra '
-               'caret the patch itself adds. Math-2 cited a second arithmetic '
-               'issue. Nine of the 20 FP are the Math-59 and Math-30 '
-               'clusters, and every one of those nine was unanimous. The s3 '
-               'form invites this, because its SURVIVING INPUT section accepts '
-               'any input that gets any wrong value out. So bind the '
-               'surviving input to the reported observable, and rule out a '
-               'different defect, a defect the patch introduces, and a '
-               'shortfall against an ideal specification.',
+    hypothesis='s3 produced 20 FP and 5 FN on dev, so FP outnumber FN four to '
+               'one. Nearly every FP names a real residual imperfection in or '
+               'near the patched method, and not the REPORTED fault: Math-59 '
+               'cites signed-zero max semantics against a reported reversed '
+               'result (6 FP, all unanimous), Math-30 cites an int overflow at '
+               'n=50000 in a different product from the one the failure names '
+               '(3 FP, all unanimous), Closure-86 cites a TODO about an ideal '
+               'specification, and Closure-62 and Math-73 cite a wrong value '
+               'the patch itself introduces elsewhere. Math-93 and Lang-26 '
+               'wrote "none found" in SURVIVING INPUT and still voted '
+               'OVERFITTING, using SIBLING PATHS to restate the patched '
+               'method. So bind the whole judgement to the observable in '
+               '<observed_failure>: add a REPORTED FAULT section, exclude the '
+               'four out-of-scope survivors, forbid the patched method as its '
+               'own sibling, and force CORRECT when neither section names '
+               'anything. Two of the five FN are protected by name, because a '
+               'stricter form invites them: Math-2 reproduces the reported '
+               'fault without reaching the changed lines, and Closure-73 '
+               'corrects one end of a bound and breaks the other.',
     task=S3.task,
     instruction=S3.instruction.replace(
+        # The form now starts from the reported observable, not from the
+        # model's own idea of what the method ought to do. 20 FP named a
+        # wrong value the reported failure never mentions.
+        "Answer in exactly these five sections, each one heading followed by"
+        " at most three sentences:\n\n"
+        "ROOT CAUSE: which condition makes the original code compute the wrong"
+        " value.\n",
+        "Answer in exactly these six sections, each one heading followed by"
+        " at most three sentences:\n\n"
+        "REPORTED FAULT: read the <observed_failure> block, and state the"
+        " fault it reports as a condition — which input, which computed step,"
+        " and how the returned value is wrong. Copy that observable from the"
+        " failure message. Do not widen it to what an ideal implementation"
+        " would do.\n"
+        "ROOT CAUSE: which condition makes the original code compute the wrong"
+        " value.\n",
+    ).replace(
+        # The four exclusions are the four FP shapes, in order of their count
+        # on dev: 6 Math-59, 3 Math-30, 1 Closure-86, and Closure-62 twice
+        # with Math-73 and Math-2 alongside.
         "SURVIVING INPUT: one concrete input that still gets a wrong value out"
         " under this patch, with the wrong value named — or the words 'none"
         " found', and then why the condition can no longer hold.\n",
-        "SURVIVING INPUT: one concrete input that still gets a wrong value out"
-        " under this patch, with the wrong value named — or the words 'none"
-        " found', and then why the condition can no longer hold. The input must"
-        " make the SAME observable wrong that the reported failure names, in"
-        " the same way and for the same reason. Three things do not count: a"
-        " different defect that happens to live in the patched method, a wrong"
-        " value the patch itself introduces, and a shortfall against an ideal"
-        " specification rather than against the reported failure. The patched"
-        " method does not have to be perfect. It has to stop producing the"
-        " reported kind of wrong value.\n"),
+        "SURVIVING INPUT: one concrete input that still meets the REPORTED"
+        " FAULT condition under this patch, with the wrong value named — or"
+        " the words 'none found', and then why the condition can no longer"
+        " hold. It must go wrong in the same way, at the same computed step,"
+        " as the reported failure. Four things do not count: a separate defect"
+        " the original code also had and the reported failure never names; a"
+        " wrong value the patch introduces in some other behaviour; a"
+        " shortfall against an ideal specification, a library's semantics or a"
+        " TODO; and an extreme input that breaks a different expression from"
+        " the one the reported failure names.\n",
+    ).replace(
+        # Math-93 and Lang-26 wrote 'none found' and then voted OVERFITTING on
+        # a sibling that was the patched method itself.
+        "SIBLING PATHS: whether any other function in the reachable region, or"
+        " any other reader of the same state, still carries the unpatched"
+        " computation.\n",
+        "SIBLING PATHS: whether any other function in the reachable region, or"
+        " any other reader of the same state, still carries the unpatched"
+        " computation and can produce the REPORTED FAULT. Name it by a"
+        " concrete call. The patched method is not a sibling path: a residue"
+        " inside it belongs in SURVIVING INPUT.\n",
+    ).replace(
+        # The two protected FN shapes are named here rather than in a section,
+        # so the sections stay at three sentences each.
+        "Judge behaviour, not style. Answer OVERFITTING only when SURVIVING"
+        " INPUT or SIBLING PATHS names something concrete.\n\n",
+        "Judge behaviour, not style. The patched method does not have to be"
+        " perfect, and it does not have to be the fix you would write. It has"
+        " to stop producing the reported fault.\n\n"
+        "Before you write 'none found', check two cases that do count. First,"
+        " an input that reproduces the reported fault without ever reaching"
+        " the changed lines. Second, a bound that the patch corrects at one"
+        " end and leaves wrong, or newly wrong, at the other end.\n\n"
+        "Answer OVERFITTING only when SURVIVING INPUT or SIBLING PATHS names"
+        " something concrete that meets the REPORTED FAULT condition. If"
+        " SURVIVING INPUT says 'none found' and SIBLING PATHS names no such"
+        " path, the answer is CORRECT.\n\n",
+    ),
+))
+
+
+S3_2 = register(PromptVersion(
+    name='s3.2',
+    kind=KIND_SEMANTIC,
+    hypothesis='s3.1 cut FP from 20 to 13 and broke the unanimity of the '
+               'Math-59 cluster, but FN rose from 5 to 17 and dev F1 fell '
+               'from 0.731 to 0.595. Recall fell from 0.872 to 0.564, so the '
+               'turn overshot. The dev FN log names three wording faults, and '
+               'all three are mine. First, SIBLING PATHS asked a sibling to '
+               'produce THE REPORTED FAULT, which no sibling can do, because '
+               'the reported fault is one input in the patched method: that '
+               'dismissed every real sibling, and it cost Math-53 (Complex.add '
+               'guarded, subtract and multiply not), Lang-41 (one overload), '
+               'Chart-12, Chart-3 and Lang-60. Second, "at the same computed '
+               'step" is tighter than an overfitting patch has to be. Third, '
+               'the CORRECT rule had no counterweight, so a patch keyed on the '
+               'reported symptom passed whenever no single input could be '
+               'named — Math-82 twice, Math-73 twice, Closure-38 and Chart-26, '
+               'all unanimous. So repair the sibling clause, widen the '
+               'survivor to the same KIND of wrong value, and add a PATCH '
+               'SCOPE section that asks whether the patch keys on the property '
+               'or on the reported input. Keep all four exclusions, because '
+               'they are what cut the FP.',
+    task=S3_1.task,
+    instruction=S3_1.instruction.replace(
+        "Answer in exactly these six sections",
+        "Answer in exactly these seven sections",
+    ).replace(
+        # The recall loss is concentrated in patches that key on the reported
+        # symptom and leave the property alone. No single input names them, so
+        # the form has to ask the question directly.
+        "PATCH EFFECT: what the patch changes, in behavioural terms.\n",
+        "PATCH EFFECT: what the patch changes, in behavioural terms.\n"
+        "PATCH SCOPE: name the property that makes the computation wrong — the"
+        " property, not the reported input. Then say whether the patch keys on"
+        " that property, or on the reported input itself: its exact value, its"
+        " type, its length, its sign, or the one branch the failing test"
+        " takes.\n",
+    ).replace(
+        # 'the same computed step' asked the survivor to fail at the same line.
+        # An overfitting patch usually moves the fault, it does not keep it in
+        # place.
+        " hold. It must go wrong in the same way, at the same computed step,"
+        " as the reported failure.",
+        " hold. It must get the same kind of wrong value out of the same"
+        " computation as the reported failure. It does not have to fail at the"
+        " same line, and it does not have to resemble the reported input.",
+    ).replace(
+        # A sibling cannot reproduce the reported fault, because the reported
+        # fault is one input in the patched method. s3.1 asked it to, so every
+        # sibling was dismissed.
+        "SIBLING PATHS: whether any other function in the reachable region, or"
+        " any other reader of the same state, still carries the unpatched"
+        " computation and can produce the REPORTED FAULT. Name it by a"
+        " concrete call. The patched method is not a sibling path: a residue"
+        " inside it belongs in SURVIVING INPUT.\n",
+        "SIBLING PATHS: whether any other function in the reachable region, or"
+        " any other reader of the same state, still carries the unpatched"
+        " computation and can get the same kind of wrong value out. A sibling"
+        " never reproduces the reported input, so do not ask it to. Look for"
+        " another overload, another member of the same family, another reader"
+        " of the same state, and another caller path that skips the changed"
+        " lines. Name it by a concrete call, and do not name the patched"
+        " method: a residue inside it belongs in SURVIVING INPUT.\n",
+    ).replace(
+        "Answer OVERFITTING only when SURVIVING INPUT or SIBLING PATHS names"
+        " something concrete that meets the REPORTED FAULT condition. If"
+        " SURVIVING INPUT says 'none found' and SIBLING PATHS names no such"
+        " path, the answer is CORRECT.\n\n",
+        "Answer OVERFITTING when either of these holds. First, SURVIVING INPUT"
+        " or SIBLING PATHS names something concrete of the same kind as the"
+        " REPORTED FAULT. Second, PATCH SCOPE says the patch keys on the"
+        " reported input rather than on the property, because the property"
+        " then still makes other inputs wrong even where you cannot name"
+        " one.\n\n"
+        "Otherwise answer CORRECT. A patch that keys on the property is"
+        " CORRECT even when it is narrower, uglier or later than the fix you"
+        " would write.\n\n",
+    ),
+))
+
+
+register(PromptVersion(
+    name='s3.3',
+    kind=KIND_SEMANTIC,
+    hypothesis='Two turns of the heavy form bought no precision at all. Dev '
+               'precision reads 0.630 for s3, 0.629 for s3.1 and 0.595 for '
+               's3.2, while recall reads 0.872, 0.564 and 0.641. So the only '
+               'thing the added sections moved was recall, and they moved it '
+               'down. The s3.2 dev log also shows PATCH SCOPE handing the '
+               'Math-59 cluster straight back: all six returned as FP, because '
+               'the model reads "the patch repairs only the a > b branch" as '
+               'keying on the reported input. The FP set is the same under '
+               'every form — Math-59 six times and Math-30 three times, nine '
+               'of the 17 — and every one of those names a wrong value of a '
+               'different kind from the reported one. So drop the whole '
+               'apparatus and go back to the s3 form with ONE sentence added: '
+               'the patch answers for the reported kind of wrong value, and '
+               'not for the method perfection. This is the narrowest change '
+               'that addresses 10 of the 20 base FP, and it touches nothing '
+               'that recall depends on. Its parent is s3, not s3.2, and the '
+               'dev logs of s3.1 and s3.2 are the reason.',
+    task=S3.task,
+    instruction=S3.instruction.replace(
+        "Judge behaviour, not style. Answer OVERFITTING only when SURVIVING"
+        " INPUT or SIBLING PATHS names something concrete.\n",
+        "Judge behaviour, not style. Answer OVERFITTING only when SURVIVING"
+        " INPUT or SIBLING PATHS names something concrete.\n\n"
+        "Do not count a wrong value of a different kind from the reported"
+        " one. A separate defect that happens to sit in the patched method, an"
+        " expression that breaks only at an extreme size the reported failure"
+        " never reaches, and a shortfall against an ideal specification, a"
+        " library's semantics or a TODO are all a different kind. The patch"
+        " answers for the reported fault, and not for the perfection of the"
+        " method.\n",
+    ),
 ))
 
 
