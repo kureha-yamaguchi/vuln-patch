@@ -81,6 +81,10 @@ def main() -> int:
                     help='default: results/llmjudge_pz_<version>_<ts>')
     ap.add_argument('--allow_missing_source', action='store_true',
                     help='keep a fix whose context fetch produced no file')
+    ap.add_argument('--resume', default=None,
+                    help='finish an interrupted pass in this run directory. '
+                         'The population comes from its queue.txt, and the '
+                         'rows it already scored are not paid for again')
     ap.add_argument('--confirm_holdout', action='store_true',
                     help='required for --side holdout')
     ap.add_argument('--dry_run', action='store_true',
@@ -117,17 +121,25 @@ def main() -> int:
               file=sys.stderr)
         return 2
 
-    rows, stats = queue.build_queue(
-        require_source=not args.allow_missing_source,
-        bug_kind=args.bug_kind, kinds=kinds,
-        side=args.side, sides=sides)
-
-    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-    # The side is in the directory name, because `compare.py` finds the runs
-    # of one side by globbing it.
-    out_dir = Path(args.out_dir) if args.out_dir else (
-        REPO / 'results' / f'llmjudge_pz_{args.side}_{version.name}_{ts}')
-    out_dir.mkdir(parents=True, exist_ok=True)
+    if args.resume:
+        try:
+            out_dir, rows, done, stats = _resume(
+                Path(args.resume), version.name, kinds)
+        except ResumeRefused as exc:
+            print(f'REFUSING: {exc}', file=sys.stderr)
+            return 2
+    else:
+        done = []
+        rows, stats = queue.build_queue(
+            require_source=not args.allow_missing_source,
+            bug_kind=args.bug_kind, kinds=kinds,
+            side=args.side, sides=sides)
+        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+        # The side is in the directory name, because `compare.py` finds the
+        # runs of one side by globbing it.
+        out_dir = Path(args.out_dir) if args.out_dir else (
+            REPO / 'results' / f'llmjudge_pz_{args.side}_{version.name}_{ts}')
+        out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f'Output dir     : {out_dir}')
     print('Dataset        : project_zero')
@@ -136,32 +148,39 @@ def main() -> int:
           f'[stage {prompts.stage_of(version.name)}]')
     print(f'Hypothesis     : {version.hypothesis}')
     print(f'Fixes queued   : {len(rows)}')
+    if done:
+        print(f'Already scored : {len(done)}  (not paid for again)')
     print(f'Samples each   : {args.samples}  '
           f'({len(rows) * args.samples} model calls minimum)')
     queue.print_stats(stats, out=sys.stdout)
 
-    (out_dir / 'population.json').write_text(json.dumps(stats, indent=2))
-    (out_dir / 'queue.txt').write_text('\n'.join(
-        f"{'-o' if r.label == 'overfitting' else '-c'} {r.pair}|{r.which}"
-        for r in rows) + '\n')
-    (out_dir / 'dataset_provenance.txt').write_text(
-        _git_log_for(REPO / 'src' / 'db' / 'project_zero' / 'pairs'))
-    # Pin the result to the split it was measured on, so a number never loses
-    # its population.
-    shutil.copy(split.SPLIT_FILE, out_dir / split.SPLIT_FILE.name)
-    (out_dir / 'split_provenance.txt').write_text(
-        _git_log_for(split.SPLIT_FILE))
+    if not args.resume:
+        (out_dir / 'population.json').write_text(json.dumps(stats, indent=2))
+        (out_dir / 'queue.txt').write_text('\n'.join(
+            f"{'-o' if r.label == 'overfitting' else '-c'} {r.pair}|{r.which}"
+            for r in rows) + '\n')
+        (out_dir / 'dataset_provenance.txt').write_text(
+            _git_log_for(REPO / 'src' / 'db' / 'project_zero' / 'pairs'))
+        # Pin the result to the split it was measured on, so a number never
+        # loses its population.
+        shutil.copy(split.SPLIT_FILE, out_dir / split.SPLIT_FILE.name)
+        (out_dir / 'split_provenance.txt').write_text(
+            _git_log_for(split.SPLIT_FILE))
 
     if args.dry_run:
         print('\n--dry_run — stopping before any model call.')
         return 0
 
     records_path = out_dir / 'records.jsonl'
-    records: List[Dict] = []
+    # Append on resume, so the rows already paid for stay where they are.
+    records: List[Dict] = list(done)
     spend: Dict[str, int] = {}
-    with open(records_path, 'w') as fh:
-        for i, row in enumerate(rows, start=1):
-            print(f'[{i}/{len(rows)}] {row.label} {row.fix.fix_id}')
+    for rec in done:
+        spend = budget.add(spend, rec.get('tokens_total') or {})
+    with open(records_path, 'a' if args.resume else 'w') as fh:
+        for i, row in enumerate(rows, start=len(done) + 1):
+            print(f'[{i}/{len(rows) + len(done)}] {row.label} '
+                  f'{row.fix.fix_id}')
             rec = run_one.classify(
                 row,
                 version=version.name,

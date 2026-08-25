@@ -1444,6 +1444,53 @@ needs a checkout and two test runs. Here the render is a few local file reads.
 The record still carries `evidence_sha256`, so the claim that every prompt
 version reads byte-identical evidence stays checkable.
 
+### Reading one pass, patch by patch
+
+`summary.json` holds the aggregates. The per-repetition verdicts are in
+`records.jsonl`, and [`project_zero/errors.py`](project_zero/errors.py) prints
+them.
+
+```bash
+# the whole pass: counts, the grid, then each error with its reasoning
+uv run -m baseline_llmjudge.project_zero.errors \
+    --records ../results/llmjudge_pz_dev_p2_*/records.jsonl
+
+# the grid alone
+uv run -m baseline_llmjudge.project_zero.errors --records ... --grid_only
+
+# one error class, with more of the reasoning
+uv run -m baseline_llmjudge.project_zero.errors --records ... \
+    --kind FN --samples_shown 2 --chars 3000
+```
+
+The grid is one line per fix, and one cell per repetition:
+
+```
+fix          truth        samples     majority     agree  where
+pz-1b6dbe6f  overfitting  C C C C C   correct       1.00  ...  <- WRONG
+pz-bb00b69a  overfitting  C C C O C   correct       0.60  ...  <- WRONG
+pz-1305f61d  correct      C C C C C   correct       1.00  ...
+```
+
+`O` is OVERFITTING, `C` is CORRECT, `?` is a sample whose answer carried no
+`VERDICT:` line.
+
+**The grid is the one addition over the Defects4J module**, which prints errors
+only. Here the sample spread is worth seeing on every row. A version can be
+wrong everywhere and still disagree with itself on a few fixes, and those few
+are where the next version has something to work with. A grid of identical
+cells says the opposite: the wording has to move, because no single fix is a
+near miss. So the module prints that count outright.
+
+**Two guards carry over unchanged.** A holdout records file is refused with
+exit 2, because reading one would turn a selection number into a sentence in
+the next prompt. A stage-A design prints a blindness warning, because reading
+one design's errors before the others have run makes the bake-off unfair.
+
+**One guard is new.** A pass with no `summary.json` did not finish, so the
+module says so and calls its counts partial. An interrupted run is common
+enough here to be worth naming rather than reading as a complete pass.
+
 ## 11.10 The frozen split
 
 The split lives in
@@ -1551,9 +1598,10 @@ this dataset:**
 
 1. **There is no `KIND`.** The bug-kind gate found too few semantic fixes for a
    pool of its own, so one run scores every row. `BUG_KIND` can still filter.
-2. **There is no evidence cache and no `errors.py`.** The render is a few local
-   file reads. A turn is written from the dev run's `records.jsonl`, read by a
-   person.
+2. **There is no evidence cache.** The render is a few local file reads. A turn
+   is written from the dev run's errors, which
+   [`project_zero/errors.py`](project_zero/errors.py) prints and a person
+   reads.
 3. **Every row prints its floor.** [`project_zero/compare.py`](project_zero/compare.py)
    adds a `floor` column — the higher of the two baselines that read no code —
    and it marks a design whose F1 does not clear that floor by more than 0.05.
@@ -1661,6 +1709,7 @@ Re-run `p1` before you write any `p1.n`, or start stage B from whichever of
 | [`project_zero/run_one.py`](project_zero/run_one.py) | One fix, N samples, one record. `--samples 0` renders and stops |
 | [`project_zero/evaluate.py`](project_zero/evaluate.py) | One side of the split: records, summary, the two breakdowns, the two baselines |
 | [`project_zero/compare.py`](project_zero/compare.py) | Name the stage winner: stage A on dev F1, stage B on holdout F1. Prints each row's floor |
+| [`project_zero/errors.py`](project_zero/errors.py) | Print one dev pass patch by patch: the grid of every repetition, then each error with its reasoning. Refuses holdout records |
 | [`fetch_context.py`](../db/project_zero/tools/fetch_context.py) | Fetch the touched files of each fix, at that fix's own commit |
 | [`resolve_gerrit.py`](../db/project_zero/tools/resolve_gerrit.py) | Resolve a Gerrit change number to its merged SHA. Writes `gerrit_resolved.json` |
 | [`llmjudge_pz_stage_a.sh`](../../scripts/llmjudge_pz_stage_a.sh) | Run stage A: every design on dev, then the comparison |
@@ -1722,12 +1771,16 @@ uv run -m baseline_llmjudge.project_zero.evaluate --side holdout \
     --prompt_version p1 --confirm_holdout
 uv run -m baseline_llmjudge.project_zero.compare --stage A
 
-# 8. one fix, to reproduce a single error by hand
+# 8. read one pass patch by patch — every repetition, then the errors
+uv run -m baseline_llmjudge.project_zero.errors \
+  --records ../results/llmjudge_pz_dev_p2_*/records.jsonl
+
+# 9. one fix, to reproduce a single error by hand
 uv run -m baseline_llmjudge.project_zero.run_one \
   --pair CVE-2021-30551__CVE-2022-1096 --which fix0 \
   --prompt_version p1 --samples 5
 
-# 9. one fix, to measure its evidence size — no model is called
+# 10. one fix, to measure its evidence size — no model is called
 uv run -m baseline_llmjudge.project_zero.run_one \
   --pair CVE-2021-30551__CVE-2022-1096 --which fix0 --samples 0
 ```
@@ -1741,6 +1794,8 @@ uv run -m baseline_llmjudge.project_zero.run_one \
 | `--out_dir` | Override the run directory |
 | `--allow_missing_source` | Keep a fix whose context fetch produced no file |
 | `--dry_run` | Build the population and stop |
+| `--grid_only` | `errors.py`: print the per-repetition grid and stop |
+| `--kind FP\|FN\|both` | `errors.py`: which error class to print in full |
 | `--side dev\|holdout` | Which side of the frozen split to score (default `dev`) |
 | `--confirm_holdout` | Required for `--side holdout` |
 
