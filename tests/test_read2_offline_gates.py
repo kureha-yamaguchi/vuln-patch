@@ -210,15 +210,36 @@ def test_GR2_the_separate_finding_all_eleven_then_fail_the_COUNT_bar():
            f'{MIN_SCREENED_OBSERVABLES} required' in why
 
 
+# The claim below is about the archive AS IT STOOD when the read-2 fix was
+# written (commit e95a3ed): runs made BEFORE the fix went live. Runs from
+# p1b_live2_20260811_023425 onward ran WITH the exemption live, so their
+# admissions legitimately carry `patch_touched_exempted` surfaces (verified:
+# p1b_live2 leg 02's `getJacobianEvaluations` admission — the exemption
+# engaged and the reference was still admitted on 5 remaining siblings).
+# Pin the test to the pre-fix set: every run_suite.sh run dir ends in
+# `_YYYYMMDD_HHMMSS`; undated dirs all predate the cutoff and are kept.
+_PRE_FIX_CUTOFF = '20260811_023425'
+
+
+def _pre_fix_traces():
+    for trace in sorted(glob.glob(str(ROOT / 'runs-archive' / 'runs' / '*'
+                                      / '*' / 'trace.md'))):
+        stamp = re.search(r'(\d{8}_\d{6})$', Path(trace).parents[1].name)
+        if stamp and stamp.group(1) >= _PRE_FIX_CUTOFF:
+            continue
+        yield trace
+
+
 def test_GR2_the_exemption_touches_no_other_archived_admission():
     """The safety half: 43 of the archive's 49 admissions sat exactly ON the
     count bar, so an exemption that reached them would delete them. It does
     not — every archived admission is either FOR the patched observable
     (already excluded from its own off-defect set) or on a different class,
-    whose siblings the patch never touched."""
+    whose siblings the patch never touched. Pinned to the pre-fix archive
+    (see `_PRE_FIX_CUTOFF`): the claim is about admissions made WITHOUT the
+    exemption, and post-fix runs carry exempted surfaces by design."""
     rows = []
-    for trace in glob.glob(str(ROOT / 'runs-archive' / 'runs' / '*' / '*'
-                               / 'trace.md')):
+    for trace in _pre_fix_traces():
         text = open(trace, errors='ignore').read()
         touched = _patched_methods(text)
         surface = {}

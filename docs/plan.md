@@ -1818,7 +1818,7 @@ NO valid-input-probe events in the traces, so whether divcap caused the
 TP (vs invention lottery) and whether the probe (vs lottery) produced
 the Chart TNs is UNRESOLVED — the event names/greps may simply be
 wrong, or the flag path did not engage. Do not credit divcap until the
-trace read settles it. Holdout launch proceeds (no mechanism
+trace read settles it. [SETTLED 2026-08-26, docs/final-reads-2026-08-11.md §2: divcap DID engage in all 5 legs (the greps looked for a JVM-internal marker); the Lang-63 TP is invention lottery — zero divergences captured, prompt byte-identical; the valid-input probe was present but structurally unreachable (harness track only). The 8.48 FP/FN class tally is §1 of the same doc: 2× tripwire inversion, 3× prose-blind gates, 1× message-less crash, 1× valid-by-construction; FNs = connective-flip config (new family) + Math-85-shape.] Holdout launch proceeds (no mechanism
 misbehavior observed; holdout runs without --divcap).
 
 ### 8.46 P1B_LIVE2 — the read-2 fix widened admissions but did NOT close Math-65 (archived; 1,515,998 tokens)
