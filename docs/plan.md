@@ -1800,12 +1800,16 @@ remains the paper's run-once result.
 **V2 RUN (`holdout_v2_20260826_220653`, archived; 19,488,287 tokens):
 full queue TP=17 FN=6 FP=15 TN=31 — P=0.53 R=0.74 F1=0.62.**
 **v1 vs v2 on the 34 overlapping legs: F1 0.69 → 0.76** (TP 10→11,
-FP 7→6). Four flips: Closure-18-o FN→TP (the connective-flip miss,
-CAUGHT under the post-holdout context/call-graph changes),
-Closure-57-c and Math-71-c FP→TN, Lang-21-c TN→FP. Provenance note:
-those code changes were made for the LLM-judge/Project-Zero work, not
-derived from holdout findings — independent improvement, stated as
-such.
+FP 7→6). Four flips: Closure-18-o FN→TP,
+Closure-57-c and Math-71-c FP→TN, Lang-21-c TN→FP. ATTRIBUTION
+CORRECTED (same day, prompt-diff check on the Closure-18 leg): the
+entire pipeline-visible code delta is ONE added prompt line (a
+"Reachable API" list from the call-graph work); the invented relations
+differ wholesale, as they do between ANY two draws. The 34-leg delta
+(F1 0.69→0.76) is WITHIN the measured draw-to-draw variance
+(±0.1–0.15) and must NOT be attributed to the code change — v2 is best
+read as a SECOND DRAW of the holdout under a near-identical pipeline,
+i.e. the first repeat measurement of holdout-level run variance.
 **Same-queue head-to-head (69 entries): pipeline v2 P=0.53/R=0.74/
 F1=0.62 vs judge s3.2 0.75/0.78/0.77 and s3.3 0.77/0.74/0.76.** Recall
 now comparable; the gap is precision (15 FPs vs 5-6). The
