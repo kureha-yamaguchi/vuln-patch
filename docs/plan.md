@@ -1792,6 +1792,34 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.49 FROZEN-QUEUE V2 + CERTIFICATION SWEEP (2026-08-26/27; analyse-only throughout)
+**User decisions recorded:** rerun ALL 69 frozen-queue entries at git
+9b63217 (current merged main; run-once exception explicit); certify the
+full uncertified holdout backlog. The v1 holdout (35 legs, 3ebfe94)
+remains the paper's run-once result.
+**V2 RUN (`holdout_v2_20260826_220653`, archived; 19,488,287 tokens):
+full queue TP=17 FN=6 FP=15 TN=31 — P=0.53 R=0.74 F1=0.62.**
+**v1 vs v2 on the 34 overlapping legs: F1 0.69 → 0.76** (TP 10→11,
+FP 7→6). Four flips: Closure-18-o FN→TP (the connective-flip miss,
+CAUGHT under the post-holdout context/call-graph changes),
+Closure-57-c and Math-71-c FP→TN, Lang-21-c TN→FP. Provenance note:
+those code changes were made for the LLM-judge/Project-Zero work, not
+derived from holdout findings — independent improvement, stated as
+such.
+**Same-queue head-to-head (69 entries): pipeline v2 P=0.53/R=0.74/
+F1=0.62 vs judge s3.2 0.75/0.78/0.77 and s3.3 0.77/0.74/0.76.** Recall
+now comparable; the gap is precision (15 FPs vs 5-6). The
+pre-registered prediction held: the extension legs are FP-heavy
+(correct siblings of Math-33/50/80), pulling full-queue precision below
+the overlap's 0.65. Both-agree ensemble on the full queue: 13/23
+catches, 4/45 false flags.
+**CERTIFICATION SWEEP (`runs-archive/certification/2026-08-26_holdout-
+ext/`): 129 proposed additions** — 19 correct label-stands + 110
+verified-overfitting (48 from the unprobed backlog + 62 from
+Dunassessed, strong-divergence gate) + 32 flagged-needs-deep-dive + 14
+failed. Pending user rulings: weak-only divergence gate (14 patches),
+patch4-Lang-38-Jaid (probe noise proven by re-probe), label merge.
+
 ### 8.48 THE HOLDOUT — run once, spent, ANALYSE-ONLY (run holdout_20260811_115650, archived; 8,520,128 tokens)
 **TP=10 FN=2 FP=7 TN=16 — P=0.59 R=0.83 F1=0.69** (dev claim was
 P=0.77 R=0.62 F1=0.69). THE COMPARISON, findings only, no fixes derived:
