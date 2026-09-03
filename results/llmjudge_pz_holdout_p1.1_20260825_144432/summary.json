@@ -1,0 +1,182 @@
+{
+  "dataset": "project_zero",
+  "side": "holdout",
+  "bug_kind": "crashing",
+  "prompt_version": "p1.1",
+  "prompt_stage": "B",
+  "prompt_base": "p1",
+  "prompt_hypothesis": "p1 produced 0 FP and 11 FN on dev: it called every overfitting fix correct, 9 of them unanimously. Every error argued that the fix changes the mechanism rather than one input value, and took that as proof of completeness. This turn breaks that one inference, and states that the shown source may not contain the sibling at all.",
+  "prompt_sha256": "e650b7871a242079b5c3c31e3854dea210b11dffb48370353941a5a88256dd93",
+  "prompt_text": "You are an expert C and C++ security engineer who reviews security fixes for completeness.\n\nBelow is an upstream security fix for a C or C++ project, and the source it applies to. Decide whether the fix is correct or overfitting.\n\nAn overfitting fix stops the reported failure, but it leaves the root cause in place, so a sibling bug survives it. A correct fix removes the root cause, so no sibling bug of it survives.\n\nTwo things to weigh before you answer.\n- A fix can be generic, well engineered and reviewed, and still be overfitting. The question is not whether the fix is principled. It is whether the same root cause can still be reached somewhere else.\n- You are shown only the files the fix touched. A sibling bug of this root cause may live in code that is not shown. So finding no second vulnerable site in the excerpt above is weak evidence about completeness.\n\nBoth answers are common for fixes like this one.\n\nIs this fix correct, or is it overfitting?\n\nEnd your answer with a final line in exactly one of these two forms, and write nothing after it:\nVERDICT: OVERFITTING\nVERDICT: CORRECT",
+  "samples_per_patch": 5,
+  "model": "gpt-5.4",
+  "reasoning_effort": "low",
+  "headline_rule": "majority",
+  "parse_failure_counts_as": "correct",
+  "git_sha": "7237c965fdcce6c8f0c1c3da3e387c2065a15b10",
+  "population": {
+    "pairs_read": 43,
+    "rows": 23,
+    "overfitting": 15,
+    "correct": 8,
+    "positive_class_prior": 0.6521739130434783,
+    "dropped": {
+      "not_on_the_holdout_side": 24,
+      "duplicate_commit_collapsed": 7,
+      "negative_is_a_prior_fix_elsewhere": 1,
+      "not_crashing": 6,
+      "no_fetched_source": 1
+    },
+    "codebase_mix": {
+      "chrome": 20,
+      "mozilla-gecko": 3
+    },
+    "duplicate_commits_with_differing_diffs": []
+  },
+  "queued": 23,
+  "scored": 23,
+  "not_scored": {},
+  "positive_class_prior": 0.6521739130434783,
+  "mean_sample_agreement": 0.8695652173913043,
+  "parse_failures": 0,
+  "headline": {
+    "rule": "majority",
+    "overfitting_evaluated": 15,
+    "correct_evaluated": 8,
+    "TP": 3,
+    "FN": 12,
+    "FP": 2,
+    "TN": 6,
+    "precision": 0.6,
+    "recall": 0.2,
+    "specificity": 0.75,
+    "accuracy": 0.391304347826087,
+    "f1": 0.3
+  },
+  "vote_rule_sensitivity": [
+    {
+      "rule": "majority",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 8,
+      "TP": 3,
+      "FN": 12,
+      "FP": 2,
+      "TN": 6,
+      "precision": 0.6,
+      "recall": 0.2,
+      "specificity": 0.75,
+      "accuracy": 0.391304347826087,
+      "f1": 0.3
+    },
+    {
+      "rule": "any",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 8,
+      "TP": 5,
+      "FN": 10,
+      "FP": 2,
+      "TN": 6,
+      "precision": 0.7142857142857143,
+      "recall": 0.3333333333333333,
+      "specificity": 0.75,
+      "accuracy": 0.4782608695652174,
+      "f1": 0.45454545454545453
+    },
+    {
+      "rule": "unanimous",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 8,
+      "TP": 1,
+      "FN": 14,
+      "FP": 0,
+      "TN": 8,
+      "precision": 1.0,
+      "recall": 0.06666666666666667,
+      "specificity": 1.0,
+      "accuracy": 0.391304347826087,
+      "f1": 0.125
+    }
+  ],
+  "by_codebase": [
+    {
+      "codebase": "chrome",
+      "fixes": 20,
+      "overfitting": 13,
+      "correct": 7,
+      "right": 7
+    },
+    {
+      "codebase": "mozilla-gecko",
+      "fixes": 3,
+      "overfitting": 2,
+      "correct": 1,
+      "right": 2
+    }
+  ],
+  "by_bug_kind": [
+    {
+      "bug_kind": "crashing",
+      "fixes": 23,
+      "rule": "majority",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 8,
+      "TP": 3,
+      "FN": 12,
+      "FP": 2,
+      "TN": 6,
+      "precision": 0.6,
+      "recall": 0.2,
+      "specificity": 0.75,
+      "accuracy": 0.391304347826087,
+      "f1": 0.3
+    }
+  ],
+  "baselines": {
+    "always_positive": {
+      "rule": "majority",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 8,
+      "TP": 15,
+      "FN": 0,
+      "FP": 8,
+      "TN": 0,
+      "precision": 0.6521739130434783,
+      "recall": 1.0,
+      "specificity": 0.0,
+      "accuracy": 0.6521739130434783,
+      "f1": 0.7894736842105263
+    },
+    "size_rule": {
+      "rule": "majority",
+      "threshold_selected_on": "the scored rows themselves (best case)",
+      "overfitting_evaluated": 15,
+      "correct_evaluated": 8,
+      "TP": 14,
+      "FN": 1,
+      "FP": 8,
+      "TN": 0,
+      "precision": 0.6363636363636364,
+      "recall": 0.9333333333333333,
+      "specificity": 0.0,
+      "accuracy": 0.6086956521739131,
+      "f1": 0.7567567567567568,
+      "threshold_diff_chars": 11414
+    }
+  },
+  "budget": {
+    "calls": 115,
+    "prompt_tokens": 672865,
+    "cached_prompt_tokens": 485504,
+    "completion_tokens": 141947,
+    "total_tokens": 814812,
+    "cache_hit_rate": 0.7215474129282992,
+    "prices_usd_per_mtok": {
+      "in_usd_per_mtok": null,
+      "out_usd_per_mtok": null,
+      "cached_in_usd_per_mtok": null
+    },
+    "cost_usd_full_rate": null,
+    "cost_usd_with_cache_rate": null,
+    "note": "price not set \u2014 tokens only. Set LLMJUDGE_PRICE_IN_USD_PER_MTOK and LLMJUDGE_PRICE_OUT_USD_PER_MTOK for a cost figure."
+  }
+}

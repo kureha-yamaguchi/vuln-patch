@@ -1,0 +1,13 @@
+-o CVE-2016-5128__CVE-2022-1096|fix0
+-o CVE-2021-0920__CVE-2021-4083|fix0
+-o CVE-2021-30551__CVE-2022-1096|fix0
+-o CVE-2022-1096__CVE-2022-1232|fix0
+-o CVE-2022-3723__CVE-2022-4906|fix0
+-c chromium-1032890__CVE-2021-30858|fix1
+-o chromium-1315901__CVE-2022-1364|fix0
+-c chromium-1315901__CVE-2022-1364|fix1
+-o chromium-1378239__CVE-2022-3723|fix0
+-o chromium-1382434__CVE-2022-3723|fix0
+-o chromium-p0-168__CVE-2020-15999|fix0
+-c chromium-p0-168__CVE-2020-15999|fix1
+-o chromium-p0-2280__CVE-2022-1096|fix0

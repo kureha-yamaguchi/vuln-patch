@@ -1,0 +1,182 @@
+{
+  "dataset": "project_zero",
+  "side": "dev",
+  "bug_kind": "crashing",
+  "prompt_version": "p1",
+  "prompt_stage": "A",
+  "prompt_base": "p1",
+  "prompt_hypothesis": "Floor. Evidence, the question, a one-sentence gloss of each class, and the output contract. No premise, no method, no required sections \u2014 what the model does unaided.",
+  "prompt_sha256": "372d9d00191f7dea8e901765c26112fd95bb0b93ec800b15f717189b861c060a",
+  "prompt_text": "You are an expert C and C++ security engineer who reviews security fixes for completeness.\n\nBelow is an upstream security fix for a C or C++ project, and the source it applies to. Decide whether the fix is correct or overfitting.\n\nAn overfitting fix stops the reported failure, but it leaves the root cause in place, so a sibling bug survives it. A correct fix removes the root cause, so no sibling bug of it survives.\n\nIs this fix correct, or is it overfitting?\n\nEnd your answer with a final line in exactly one of these two forms, and write nothing after it:\nVERDICT: OVERFITTING\nVERDICT: CORRECT",
+  "samples_per_patch": 5,
+  "model": "gpt-5.4",
+  "reasoning_effort": "low",
+  "headline_rule": "majority",
+  "parse_failure_counts_as": "correct",
+  "git_sha": "12529f7d189a486210c2513d06458465e5fe859d",
+  "population": {
+    "pairs_read": 43,
+    "rows": 21,
+    "overfitting": 11,
+    "correct": 10,
+    "positive_class_prior": 0.5238095238095238,
+    "dropped": {
+      "negative_is_a_prior_fix_elsewhere": 9,
+      "not_on_the_dev_side": 19,
+      "duplicate_commit_collapsed": 6,
+      "not_crashing": 6,
+      "no_fetched_source": 6
+    },
+    "codebase_mix": {
+      "chrome": 19,
+      "apple-webkit": 2
+    },
+    "duplicate_commits_with_differing_diffs": []
+  },
+  "queued": 21,
+  "scored": 21,
+  "not_scored": {},
+  "positive_class_prior": 0.5238095238095238,
+  "mean_sample_agreement": 0.9523809523809523,
+  "parse_failures": 0,
+  "headline": {
+    "rule": "majority",
+    "overfitting_evaluated": 11,
+    "correct_evaluated": 10,
+    "TP": 0,
+    "FN": 11,
+    "FP": 0,
+    "TN": 10,
+    "precision": null,
+    "recall": 0.0,
+    "specificity": 1.0,
+    "accuracy": 0.47619047619047616,
+    "f1": 0.0
+  },
+  "vote_rule_sensitivity": [
+    {
+      "rule": "majority",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 0,
+      "FN": 11,
+      "FP": 0,
+      "TN": 10,
+      "precision": null,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "accuracy": 0.47619047619047616,
+      "f1": 0.0
+    },
+    {
+      "rule": "any",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 1,
+      "FN": 10,
+      "FP": 1,
+      "TN": 9,
+      "precision": 0.5,
+      "recall": 0.09090909090909091,
+      "specificity": 0.9,
+      "accuracy": 0.47619047619047616,
+      "f1": 0.15384615384615385
+    },
+    {
+      "rule": "unanimous",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 0,
+      "FN": 11,
+      "FP": 0,
+      "TN": 10,
+      "precision": null,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "accuracy": 0.47619047619047616,
+      "f1": 0.0
+    }
+  ],
+  "by_codebase": [
+    {
+      "codebase": "apple-webkit",
+      "fixes": 2,
+      "overfitting": 1,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "codebase": "chrome",
+      "fixes": 19,
+      "overfitting": 10,
+      "correct": 9,
+      "right": 9
+    }
+  ],
+  "by_bug_kind": [
+    {
+      "bug_kind": "crashing",
+      "fixes": 21,
+      "rule": "majority",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 0,
+      "FN": 11,
+      "FP": 0,
+      "TN": 10,
+      "precision": null,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "accuracy": 0.47619047619047616,
+      "f1": 0.0
+    }
+  ],
+  "baselines": {
+    "always_positive": {
+      "rule": "majority",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 11,
+      "FN": 0,
+      "FP": 10,
+      "TN": 0,
+      "precision": 0.5238095238095238,
+      "recall": 1.0,
+      "specificity": 0.0,
+      "accuracy": 0.5238095238095238,
+      "f1": 0.6875
+    },
+    "size_rule": {
+      "rule": "majority",
+      "threshold_selected_on": "the scored rows themselves (best case)",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 10,
+      "FN": 1,
+      "FP": 10,
+      "TN": 0,
+      "precision": 0.5,
+      "recall": 0.9090909090909091,
+      "specificity": 0.0,
+      "accuracy": 0.47619047619047616,
+      "f1": 0.6451612903225806,
+      "threshold_diff_chars": 9271
+    }
+  },
+  "budget": {
+    "calls": 105,
+    "prompt_tokens": 569580,
+    "cached_prompt_tokens": 399744,
+    "completion_tokens": 97690,
+    "total_tokens": 667270,
+    "cache_hit_rate": 0.7018223954492784,
+    "prices_usd_per_mtok": {
+      "in_usd_per_mtok": null,
+      "out_usd_per_mtok": null,
+      "cached_in_usd_per_mtok": null
+    },
+    "cost_usd_full_rate": null,
+    "cost_usd_with_cache_rate": null,
+    "note": "price not set \u2014 tokens only. Set LLMJUDGE_PRICE_IN_USD_PER_MTOK and LLMJUDGE_PRICE_OUT_USD_PER_MTOK for a cost figure."
+  }
+}

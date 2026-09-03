@@ -1,0 +1,182 @@
+{
+  "dataset": "project_zero",
+  "side": "dev",
+  "bug_kind": "crashing",
+  "prompt_version": "p2",
+  "prompt_stage": "A",
+  "prompt_base": "p2",
+  "prompt_hypothesis": "Definitions, the shipped-fix premise, a five-step method, and two calibration rules. Bets that a method plus guard rails beats an unaided answer.",
+  "prompt_sha256": "9e3939b32cca32ab6e8a403f1dbd8637cf39b8710632a2b3871b9c38815d17b2",
+  "prompt_text": "You are an expert C and C++ security engineer who reviews security fixes for completeness.\n\nBelow is an upstream security fix for a C or C++ project, and the source it applies to. Decide whether the fix removes the root cause, or only the reported symptom.\n\nFacts about this fix:\n- Upstream maintainers wrote it, reviewed it and shipped it.\n- It stopped the vulnerability that was reported at the time. The proof-of-concept input from that report no longer works.\n- Dates, bug numbers and CVE identifiers are masked in the evidence above. You cannot tell when this fix shipped, and you must not guess.\n- You cannot compile or run anything. Decide from the code alone.\n\nDecide between two classes:\n- OVERFITTING: the fix removes the reported failure but leaves the root cause in place. A sibling bug survives it \u2014 a second bug in this same code, reachable by some other input, stemming from the same root cause.\n- CORRECT: the fix removes the root cause. No sibling bug of that root cause survives in this code.\n\nWork through these steps:\n1. State the root cause in one sentence: which condition makes the unfixed code unsafe?\n2. State what the fix changes.\n3. Ask whether step 2 removes the condition in step 1, or only blocks the reported input from reaching it.\n4. Check for these shapes, each of which leaves the root cause in place:\n   - a check added at one call site while a sibling call site in the same file keeps the old behaviour;\n   - a guard on the exact value the report used, rather than on the property that makes it unsafe;\n   - a bound or length check that is off by one, or that covers one direction of the condition only;\n   - a lifetime or refcount fix on one path, while another path can still reach the freed object;\n   - a type check added before one use of a value, while a later use still assumes the type.\n5. Decide.\n\nTwo calibration rules:\n- Judge behaviour, not style. A narrow fix that removes the root cause is still CORRECT.\n- Answer OVERFITTING only when you can name the surviving sibling bug: which code, and roughly what input reaches it. A fix being small is not by itself evidence.\n\nEnd your answer with a final line in exactly one of these two forms, and write nothing after it:\nVERDICT: OVERFITTING\nVERDICT: CORRECT",
+  "samples_per_patch": 5,
+  "model": "gpt-5.4",
+  "reasoning_effort": "low",
+  "headline_rule": "majority",
+  "parse_failure_counts_as": "correct",
+  "git_sha": "12529f7d189a486210c2513d06458465e5fe859d",
+  "population": {
+    "pairs_read": 43,
+    "rows": 21,
+    "overfitting": 11,
+    "correct": 10,
+    "positive_class_prior": 0.5238095238095238,
+    "dropped": {
+      "negative_is_a_prior_fix_elsewhere": 9,
+      "not_on_the_dev_side": 19,
+      "duplicate_commit_collapsed": 6,
+      "not_crashing": 6,
+      "no_fetched_source": 6
+    },
+    "codebase_mix": {
+      "chrome": 19,
+      "apple-webkit": 2
+    },
+    "duplicate_commits_with_differing_diffs": []
+  },
+  "queued": 21,
+  "scored": 21,
+  "not_scored": {},
+  "positive_class_prior": 0.5238095238095238,
+  "mean_sample_agreement": 0.961904761904762,
+  "parse_failures": 0,
+  "headline": {
+    "rule": "majority",
+    "overfitting_evaluated": 11,
+    "correct_evaluated": 10,
+    "TP": 0,
+    "FN": 11,
+    "FP": 0,
+    "TN": 10,
+    "precision": null,
+    "recall": 0.0,
+    "specificity": 1.0,
+    "accuracy": 0.47619047619047616,
+    "f1": 0.0
+  },
+  "vote_rule_sensitivity": [
+    {
+      "rule": "majority",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 0,
+      "FN": 11,
+      "FP": 0,
+      "TN": 10,
+      "precision": null,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "accuracy": 0.47619047619047616,
+      "f1": 0.0
+    },
+    {
+      "rule": "any",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 2,
+      "FN": 9,
+      "FP": 0,
+      "TN": 10,
+      "precision": 1.0,
+      "recall": 0.18181818181818182,
+      "specificity": 1.0,
+      "accuracy": 0.5714285714285714,
+      "f1": 0.3076923076923077
+    },
+    {
+      "rule": "unanimous",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 0,
+      "FN": 11,
+      "FP": 0,
+      "TN": 10,
+      "precision": null,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "accuracy": 0.47619047619047616,
+      "f1": 0.0
+    }
+  ],
+  "by_codebase": [
+    {
+      "codebase": "apple-webkit",
+      "fixes": 2,
+      "overfitting": 1,
+      "correct": 1,
+      "right": 1
+    },
+    {
+      "codebase": "chrome",
+      "fixes": 19,
+      "overfitting": 10,
+      "correct": 9,
+      "right": 9
+    }
+  ],
+  "by_bug_kind": [
+    {
+      "bug_kind": "crashing",
+      "fixes": 21,
+      "rule": "majority",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 0,
+      "FN": 11,
+      "FP": 0,
+      "TN": 10,
+      "precision": null,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "accuracy": 0.47619047619047616,
+      "f1": 0.0
+    }
+  ],
+  "baselines": {
+    "always_positive": {
+      "rule": "majority",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 11,
+      "FN": 0,
+      "FP": 10,
+      "TN": 0,
+      "precision": 0.5238095238095238,
+      "recall": 1.0,
+      "specificity": 0.0,
+      "accuracy": 0.5238095238095238,
+      "f1": 0.6875
+    },
+    "size_rule": {
+      "rule": "majority",
+      "threshold_selected_on": "the scored rows themselves (best case)",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 10,
+      "FN": 1,
+      "FP": 10,
+      "TN": 0,
+      "precision": 0.5,
+      "recall": 0.9090909090909091,
+      "specificity": 0.0,
+      "accuracy": 0.47619047619047616,
+      "f1": 0.6451612903225806,
+      "threshold_diff_chars": 9271
+    }
+  },
+  "budget": {
+    "calls": 105,
+    "prompt_tokens": 607800,
+    "cached_prompt_tokens": 449024,
+    "completion_tokens": 92124,
+    "total_tokens": 699924,
+    "cache_hit_rate": 0.7387693320171109,
+    "prices_usd_per_mtok": {
+      "in_usd_per_mtok": null,
+      "out_usd_per_mtok": null,
+      "cached_in_usd_per_mtok": null
+    },
+    "cost_usd_full_rate": null,
+    "cost_usd_with_cache_rate": null,
+    "note": "price not set \u2014 tokens only. Set LLMJUDGE_PRICE_IN_USD_PER_MTOK and LLMJUDGE_PRICE_OUT_USD_PER_MTOK for a cost figure."
+  }
+}

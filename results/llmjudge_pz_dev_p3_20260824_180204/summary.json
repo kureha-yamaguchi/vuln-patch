@@ -1,0 +1,189 @@
+{
+  "dataset": "project_zero",
+  "side": "dev",
+  "bug_kind": "crashing",
+  "prompt_version": "p3",
+  "prompt_stage": "A",
+  "prompt_base": "p3",
+  "prompt_hypothesis": "Definitions, the shipped-fix premise, and five REQUIRED output sections. Bets that a form the answer must fill in beats a method it may skip.",
+  "prompt_sha256": "05223bed302539379ebc46fe86d3b754c4b831b072c25973d77e9a1957c922c7",
+  "prompt_text": "You are an expert C and C++ security engineer who reviews security fixes for completeness.\n\nBelow is an upstream security fix for a C or C++ project, and the source it applies to. Decide whether the fix removes the root cause, or only the reported symptom.\n\nFacts about this fix:\n- Upstream maintainers wrote it, reviewed it and shipped it.\n- It stopped the vulnerability that was reported at the time. The proof-of-concept input from that report no longer works.\n- Dates, bug numbers and CVE identifiers are masked in the evidence above. You cannot tell when this fix shipped, and you must not guess.\n- You cannot compile or run anything. Decide from the code alone.\n\nDecide between two classes:\n- OVERFITTING: the fix removes the reported failure but leaves the root cause in place. A sibling bug survives it \u2014 a second bug in this same code, reachable by some other input, stemming from the same root cause.\n- CORRECT: the fix removes the root cause. No sibling bug of that root cause survives in this code.\n\nAnswer in exactly these five sections, each one heading followed by at most three sentences:\n\nROOT CAUSE: which condition makes the unfixed code unsafe.\nFIX EFFECT: what the fix changes, in behavioural terms.\nSURVIVING SIBLING: one concrete sibling bug that survives this fix \u2014 name the code and roughly what input reaches it \u2014 or the words 'none found', and if none, say why the condition can no longer hold.\nSIBLING SITES: whether any other site in the shown source still carries the unfixed behaviour.\nDECISION: one sentence.\n\nJudge behaviour, not style. Answer OVERFITTING only when SURVIVING SIBLING or SIBLING SITES names something concrete.\n\nEnd your answer with a final line in exactly one of these two forms, and write nothing after it:\nVERDICT: OVERFITTING\nVERDICT: CORRECT",
+  "samples_per_patch": 5,
+  "model": "gpt-5.4",
+  "reasoning_effort": "low",
+  "headline_rule": "majority",
+  "parse_failure_counts_as": "correct",
+  "git_sha": "7237c965fdcce6c8f0c1c3da3e387c2065a15b10",
+  "population": {
+    "pairs_read": 43,
+    "rows": 21,
+    "overfitting": 11,
+    "correct": 10,
+    "positive_class_prior": 0.5238095238095238,
+    "dropped": {
+      "negative_is_a_prior_fix_elsewhere": 9,
+      "not_on_the_dev_side": 19,
+      "duplicate_commit_collapsed": 6,
+      "not_crashing": 6,
+      "no_fetched_source": 6
+    },
+    "codebase_mix": {
+      "chrome": 19,
+      "apple-webkit": 2
+    },
+    "duplicate_commits_with_differing_diffs": [],
+    "resumed": {
+      "records_already_scored": 2,
+      "rows_scored_now": 19,
+      "bug_kinds_now": {
+        "crashing": 19
+      }
+    }
+  },
+  "queued": 21,
+  "scored": 21,
+  "not_scored": {},
+  "positive_class_prior": 0.5238095238095238,
+  "mean_sample_agreement": 0.9523809523809523,
+  "parse_failures": 0,
+  "headline": {
+    "rule": "majority",
+    "overfitting_evaluated": 11,
+    "correct_evaluated": 10,
+    "TP": 0,
+    "FN": 11,
+    "FP": 1,
+    "TN": 9,
+    "precision": 0.0,
+    "recall": 0.0,
+    "specificity": 0.9,
+    "accuracy": 0.42857142857142855,
+    "f1": 0.0
+  },
+  "vote_rule_sensitivity": [
+    {
+      "rule": "majority",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 0,
+      "FN": 11,
+      "FP": 1,
+      "TN": 9,
+      "precision": 0.0,
+      "recall": 0.0,
+      "specificity": 0.9,
+      "accuracy": 0.42857142857142855,
+      "f1": 0.0
+    },
+    {
+      "rule": "any",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 1,
+      "FN": 10,
+      "FP": 1,
+      "TN": 9,
+      "precision": 0.5,
+      "recall": 0.09090909090909091,
+      "specificity": 0.9,
+      "accuracy": 0.47619047619047616,
+      "f1": 0.15384615384615385
+    },
+    {
+      "rule": "unanimous",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 0,
+      "FN": 11,
+      "FP": 0,
+      "TN": 10,
+      "precision": null,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "accuracy": 0.47619047619047616,
+      "f1": 0.0
+    }
+  ],
+  "by_codebase": [
+    {
+      "codebase": "apple-webkit",
+      "fixes": 2,
+      "overfitting": 1,
+      "correct": 1,
+      "right": 0
+    },
+    {
+      "codebase": "chrome",
+      "fixes": 19,
+      "overfitting": 10,
+      "correct": 9,
+      "right": 9
+    }
+  ],
+  "by_bug_kind": [
+    {
+      "bug_kind": "crashing",
+      "fixes": 21,
+      "rule": "majority",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 0,
+      "FN": 11,
+      "FP": 1,
+      "TN": 9,
+      "precision": 0.0,
+      "recall": 0.0,
+      "specificity": 0.9,
+      "accuracy": 0.42857142857142855,
+      "f1": 0.0
+    }
+  ],
+  "baselines": {
+    "always_positive": {
+      "rule": "majority",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 11,
+      "FN": 0,
+      "FP": 10,
+      "TN": 0,
+      "precision": 0.5238095238095238,
+      "recall": 1.0,
+      "specificity": 0.0,
+      "accuracy": 0.5238095238095238,
+      "f1": 0.6875
+    },
+    "size_rule": {
+      "rule": "majority",
+      "threshold_selected_on": "the scored rows themselves (best case)",
+      "overfitting_evaluated": 11,
+      "correct_evaluated": 10,
+      "TP": 10,
+      "FN": 1,
+      "FP": 10,
+      "TN": 0,
+      "precision": 0.5,
+      "recall": 0.9090909090909091,
+      "specificity": 0.0,
+      "accuracy": 0.47619047619047616,
+      "f1": 0.6451612903225806,
+      "threshold_diff_chars": 9271
+    }
+  },
+  "budget": {
+    "calls": 105,
+    "prompt_tokens": 596670,
+    "cached_prompt_tokens": 414208,
+    "completion_tokens": 70983,
+    "total_tokens": 667653,
+    "cache_hit_rate": 0.6941994737459567,
+    "prices_usd_per_mtok": {
+      "in_usd_per_mtok": null,
+      "out_usd_per_mtok": null,
+      "cached_in_usd_per_mtok": null
+    },
+    "cost_usd_full_rate": null,
+    "cost_usd_with_cache_rate": null,
+    "note": "price not set \u2014 tokens only. Set LLMJUDGE_PRICE_IN_USD_PER_MTOK and LLMJUDGE_PRICE_OUT_USD_PER_MTOK for a cost figure."
+  }
+}

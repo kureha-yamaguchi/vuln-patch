@@ -1,0 +1,19 @@
+{
+  "pairs_read": 43,
+  "rows": 21,
+  "overfitting": 11,
+  "correct": 10,
+  "positive_class_prior": 0.5238095238095238,
+  "dropped": {
+    "negative_is_a_prior_fix_elsewhere": 9,
+    "not_on_the_dev_side": 19,
+    "duplicate_commit_collapsed": 6,
+    "not_crashing": 6,
+    "no_fetched_source": 6
+  },
+  "codebase_mix": {
+    "chrome": 19,
+    "apple-webkit": 2
+  },
+  "duplicate_commits_with_differing_diffs": []
+}
