@@ -19,8 +19,8 @@
 #
 #   1. There is no KIND. One frozen split serves the whole population, so no
 #      pool is derived from the version name.
-#   2. There is no evidence cache, and no errors.py. A turn is written from the
-#      dev run's records.jsonl, read by a person.
+#   2. There is no evidence cache. A turn is written from the dev run's errors,
+#      printed by project_zero/errors.py and read by a person.
 #   3. Each side holds about twenty rows. So the closing note repeats the size
 #      warning, and compare.py prints each row's floor beside its F1.
 #
@@ -62,8 +62,8 @@
 #      iteration of the base has a holdout pass.
 #
 # This script never reads a holdout record file. A turn is written from the
-# previous turn's DEV records only, and the path to them is printed after each
-# dev pass.
+# previous turn's DEV errors only, and the command that prints them is echoed
+# after each dev pass. errors.py refuses a holdout run outright.
 
 set -uo pipefail
 
@@ -237,8 +237,9 @@ for v in "${VERSIONS[@]}"; do
     # The next turn is written from THIS dev run, and from no other.
     if [[ "$side" == "dev" && "$DRY_RUN" != "1" && -n "$run_dir" ]]; then
       {
-        echo "  next turn reads these DEV records, and no others:"
-        echo "    ${run_dir}/records.jsonl"
+        echo "  next turn reads these DEV errors, and no others:"
+        echo "    cd src && uv run -m baseline_llmjudge.project_zero.errors \\"
+        echo "        --records ${run_dir}/records.jsonl"
       } | tee -a "$LOG"
     fi
     echo "" | tee -a "$LOG"

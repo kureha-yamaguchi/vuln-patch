@@ -65,7 +65,8 @@ def build_queue(*, require_source: bool = True,
                 bug_kind: Optional[str] = None,
                 kinds: Optional[Dict[str, str]] = None,
                 side: Optional[str] = None,
-                sides: Optional[Dict[str, str]] = None
+                sides: Optional[Dict[str, str]] = None,
+                require_region: bool = False
                 ) -> Tuple[List[QueueRow], Dict]:
     """`(rows, stats)`. One row per distinct fix commit.
 
@@ -78,7 +79,12 @@ def build_queue(*, require_source: bool = True,
 
     `side` keeps one side of the frozen split. It needs `sides`, the
     `{pair name: side}` map that `split.load()` returns. The side is frozen per
-    root-cause group, so both fixes of a pair always land on one side."""
+    root-cause group, so both fixes of a pair always land on one side.
+
+    `require_region` keeps only a fix that `tools/checkout_region.py` computed
+    a root-cause neighbourhood for. It is what makes the region A/B a PAIRED
+    comparison: both arms score the same rows, so the difference between them
+    is the evidence and not the population."""
     pairs = firewall.read_pairs()
     ever_fix0 = {p.fix0_commit for p in pairs if p.fix0_commit}
     ever_prior = {p.prior_cve for p in pairs if p.prior_cve}
@@ -126,6 +132,9 @@ def build_queue(*, require_source: bool = True,
 
             if require_source and not fix.sources:
                 drop('no_fetched_source')
+                continue
+            if require_region and not (fix.region or {}).get('reachable'):
+                drop('no_root_cause_region')
                 continue
             if bug_kind is not None:
                 if (kinds or {}).get(fix.fix_id) != bug_kind:
@@ -193,6 +202,8 @@ def main() -> int:
                     help='keep one pool; needs bug_kind.jsonl')
     ap.add_argument('--allow_missing_source', action='store_true',
                     help='keep a fix whose context fetch produced no file')
+    ap.add_argument('--require_region', action='store_true',
+                    help='keep only a fix with a computed root-cause region')
     ap.add_argument('--stats_json', type=Path,
                     help='also write the stats block here')
     args = ap.parse_args()
@@ -220,7 +231,8 @@ def main() -> int:
     rows, stats = build_queue(
         require_source=not args.allow_missing_source,
         bug_kind=args.bug_kind, kinds=kinds,
-        side=args.side, sides=sides)
+        side=args.side, sides=sides,
+        require_region=args.require_region)
 
     lines = [f"{'-o' if r.label == 'overfitting' else '-c'} {r.pair}|{r.which}"
              for r in rows]

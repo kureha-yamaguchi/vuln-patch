@@ -1444,6 +1444,34 @@ needs a checkout and two test runs. Here the render is a few local file reads.
 The record still carries `evidence_sha256`, so the claim that every prompt
 version reads byte-identical evidence stays checkable.
 
+### Finishing an interrupted pass
+
+A pass that dies part-way leaves a run directory with a partial
+`records.jsonl` and no `summary.json`. `--resume` finishes it in place:
+
+```bash
+uv run -m baseline_llmjudge.project_zero.evaluate \
+    --resume ../results/llmjudge_pz_dev_p3_20260824_180204 \
+    --prompt_version p3
+```
+
+**The population comes from that run's own `queue.txt`, not from a rebuild.**
+A rebuild would read today's dataset, and a fetch or a Gerrit resolution since
+the pass started would change the population underneath a half-finished record
+file. The queue file is what that pass was measuring, so it is the authority.
+
+The rows already scored are not paid for again, and their token spend is
+carried into the final budget block. The side and the pool label are read from
+the run directory and from the records, not from the flags, so a resumed pass
+cannot be recorded as a different pass.
+
+Three refusals guard it:
+
+1. A directory that already holds a `summary.json` — that pass finished.
+2. A `--prompt_version` that disagrees with the records already there. Two
+   versions in one record file would be scored as though they were one.
+3. A `queue.txt` naming a pair that has left the dataset.
+
 ### Reading one pass, patch by patch
 
 `summary.json` holds the aggregates. The per-repetition verdicts are in

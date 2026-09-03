@@ -19,6 +19,7 @@
 #      by_bug_kind breakdown instead. BUG_KIND can still filter.
 #   2. There is no evidence cache. The render is a few local file reads, so
 #      there is no cache directory to hold steady between designs.
+#      project_zero/errors.py prints one pass patch by patch when you want it.
 #   3. Every design's row prints its own floor — the higher of the two
 #      baselines that read no code. compare.py marks a design that does not
 #      clearly beat its floor.
@@ -182,7 +183,9 @@ cmp_rc=${PIPESTATUS[0]}
   echo "logs      : $LOGDIR"
   echo "next      : fill the stage-A table in src/baseline_llmjudge/README.md,"
   echo "            run the winner once on holdout as stage B's reference row,"
-  echo "            then stage B — read the winner's DEV records.jsonl."
+  echo "            then stage B — read the winner's DEV errors:"
+  echo "              cd src && uv run -m baseline_llmjudge.project_zero.errors \\"
+  echo "                  --records <the winner's dev run>/records.jsonl"
   echo "warning   : each side holds about twenty rows, so no F1 difference"
   echo "            under about 0.2 is real. Read the floor column too."
 } | tee -a "$LOG"

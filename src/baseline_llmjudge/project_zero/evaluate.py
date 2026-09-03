@@ -47,14 +47,15 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents
                             if (p / 'config.py').exists())))
 
 import config                                              # noqa: E402
 from baseline_llmjudge.project_zero import (bugkind,          # noqa: E402
-                                            prompts, queue, run_one, split)
+                                            firewall, prompts, queue,
+                                            run_one, split)
 from baseline_llmjudge.shared import budget, verdict          # noqa: E402
 from baseline_llmjudge.shared.provenance import git_sha        # noqa: E402
 from baseline_llmjudge.shared.scoring import (HEADLINE_RULE,   # noqa: E402
@@ -81,6 +82,12 @@ def main() -> int:
                     help='default: results/llmjudge_pz_<version>_<ts>')
     ap.add_argument('--allow_missing_source', action='store_true',
                     help='keep a fix whose context fetch produced no file')
+    ap.add_argument('--with_region', action='store_true',
+                    help='add the root_cause_region block to the evidence')
+    ap.add_argument('--require_region', action='store_true',
+                    help='keep only fixes that have a computed region. Pass '
+                         'it to BOTH arms of the region A/B, so the two score '
+                         'the same rows')
     ap.add_argument('--resume', default=None,
                     help='finish an interrupted pass in this run directory. '
                          'The population comes from its queue.txt, and the '
@@ -133,17 +140,22 @@ def main() -> int:
         rows, stats = queue.build_queue(
             require_source=not args.allow_missing_source,
             bug_kind=args.bug_kind, kinds=kinds,
-            side=args.side, sides=sides)
+            side=args.side, sides=sides,
+            require_region=args.require_region)
         ts = datetime.now().strftime('%Y%m%d_%H%M%S')
         # The side is in the directory name, because `compare.py` finds the
         # runs of one side by globbing it.
         out_dir = Path(args.out_dir) if args.out_dir else (
-            REPO / 'results' / f'llmjudge_pz_{args.side}_{version.name}_{ts}')
+            REPO / 'results'
+            / f'llmjudge_pz_{args.side}_{version.name}'
+              f"{'_region' if args.with_region else ''}_{ts}")
         out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f'Output dir     : {out_dir}')
     print('Dataset        : project_zero')
     print(f'Side           : {args.side}')
+    print(f'Region block   : {"on" if args.with_region else "off"}'
+          f"{'  (population limited to fixes with a region)' if args.require_region else ''}")
     print(f'Prompt version : {version.name}  '
           f'[stage {prompts.stage_of(version.name)}]')
     print(f'Hypothesis     : {version.hypothesis}')
@@ -186,7 +198,8 @@ def main() -> int:
                 version=version.name,
                 bug_kind=kinds.get(row.fix.fix_id, 'unclassified'),
                 samples=args.samples,
-                model=args.model)
+                model=args.model,
+                with_region=args.with_region)
             fh.write(json.dumps(rec) + '\n')
             fh.flush()
             records.append(rec)
@@ -196,11 +209,11 @@ def main() -> int:
                       f"({rec.get('detail', '')})")
 
     summary = summarise(records, spend, stats,
-                           side=args.side,
-                           bug_kind=args.bug_kind or 'both',
-                           version=version.name,
-                           samples=args.samples,
-                           model=args.model or config.LOCAL_LLM_MODEL)
+                        side=_side_of(out_dir, args.side),
+                        bug_kind=_pool_label(records, args.bug_kind),
+                        version=version.name,
+                        samples=args.samples,
+                        model=args.model or config.LOCAL_LLM_MODEL)
     (out_dir / 'summary.json').write_text(json.dumps(summary, indent=2))
     print_summary(summary)
     _print_pz_extras(summary)
@@ -209,11 +222,124 @@ def main() -> int:
     return 0
 
 
+# --- resume ------------------------------------------------------------------
+
+class ResumeRefused(Exception):
+    """The named directory cannot be resumed."""
+
+
+def _resume(out_dir: Path, version: str, kinds: Dict[str, str]):
+    """`(out_dir, rows_to_score, records_already_done, stats)`.
+
+    THE POPULATION COMES FROM THE RUN'S OWN `queue.txt`, NOT FROM A REBUILD.
+    A rebuild would read today's dataset, and a fetch or a resolution since
+    the pass started would then change the population underneath a
+    half-finished record file. The queue file is what that pass was measuring,
+    so it is the authority.
+
+    The prompt version is read from the records that exist, and it must match
+    the one asked for. Resuming a `p3` pass with `p1` would put two versions
+    in one record file and score them as though they were one.
+    """
+    if not out_dir.is_dir():
+        raise ResumeRefused(f'{out_dir} is not a directory')
+    if (out_dir / 'summary.json').exists():
+        raise ResumeRefused(
+            f'{out_dir} already holds a summary.json, so that pass finished. '
+            f'Delete the summary to rescore it, or start a new run.')
+    queue_file = out_dir / 'queue.txt'
+    if not queue_file.exists():
+        raise ResumeRefused(f'{queue_file} is missing, so the population of '
+                            f'that pass cannot be recovered')
+
+    records_file = out_dir / 'records.jsonl'
+    done: List[Dict] = []
+    if records_file.exists():
+        for line in records_file.read_text().splitlines():
+            if line.strip():
+                done.append(json.loads(line))
+    versions = {r.get('prompt_version') for r in done}
+    if versions and versions != {version}:
+        raise ResumeRefused(
+            f'{out_dir} holds records for {sorted(versions)}, and '
+            f'--prompt_version is {version!r}. Pass the version that pass '
+            f'was scoring.')
+
+    pairs = {p.name: p for p in firewall.read_pairs()}
+    scored = {r.get('fix_id') for r in done}
+    rows: List[queue.QueueRow] = []
+    for line in queue_file.read_text().splitlines():
+        if not line.strip():
+            continue
+        marker, addr = line.split(' ', 1)
+        pair_name, which = addr.strip().rsplit('|', 1)
+        if pair_name not in pairs:
+            raise ResumeRefused(f'{pair_name!r} is in queue.txt and no longer '
+                               f'in the dataset')
+        fix = firewall.clean_view(pairs[pair_name], which)
+        if fix.fix_id in scored:
+            continue
+        rows.append(queue.QueueRow(fix=fix, pair=pair_name, which=which))
+
+    if not rows:
+        raise ResumeRefused(
+            f'{out_dir} has a record for every row of its queue.txt. Nothing '
+            f'is left to score, so write the summary with --resume once the '
+            f'records are complete, or delete the directory.')
+
+    stats = _resumed_stats(out_dir, done, rows, kinds)
+    return out_dir, rows, done, stats
+
+
+def _side_of(out_dir: Path, asked: str) -> str:
+    """The side the run really scored.
+
+    A resumed run takes its side from its own directory name, because the flag
+    defaults to `dev` and a resumed holdout pass must not be recorded as a dev
+    pass."""
+    for side in ('dev', 'holdout'):
+        if out_dir.name.startswith(f'llmjudge_pz_{side}_'):
+            return side
+    return asked
+
+
+def _pool_label(records: List[Dict], asked: Optional[str]) -> str:
+    """The pool the records really belong to.
+
+    Read from the records rather than from the flag, so a resumed run keeps the
+    label of the pass it is finishing. `--bug_kind` filters the population; it
+    is not the authority on what was scored."""
+    if asked:
+        return asked
+    pools = {r.get('bug_kind') for r in records if r.get('bug_kind')}
+    pools.discard('unclassified')
+    return pools.pop() if len(pools) == 1 else 'both'
+
+
+def _resumed_stats(out_dir: Path, done: List[Dict],
+                   rows: List[queue.QueueRow],
+                   kinds: Dict[str, str]) -> Dict:
+    """The original population block, with what the resume found added.
+
+    The original `population.json` describes the whole pass, so it is kept as
+    written. `resumed` records the split between the rows that were already
+    paid for and the rows this invocation scores."""
+    path = out_dir / 'population.json'
+    stats = json.loads(path.read_text()) if path.exists() else {}
+    stats['resumed'] = {
+        'records_already_scored': len(done),
+        'rows_scored_now': len(rows),
+        'bug_kinds_now': counts(kinds.get(r.fix.fix_id, 'unclassified')
+                                for r in rows),
+    }
+    return stats
+
+
 # --- scoring -----------------------------------------------------------------
 
 def summarise(records: List[Dict], spend: Dict, population: Dict, *,
-                 side: str, bug_kind: str, version: str, samples: int,
-                 model: str) -> Dict:
+              side: str, bug_kind: str, version: str, samples: int,
+              model: str) -> Dict:
     """The Defects4J summary shape, with two Project Zero additions."""
     scored = [r for r in records if r['status'] == 'evaluated']
     n_pos = sum(1 for r in scored if r['label'] == 'overfitting')
@@ -222,6 +348,7 @@ def summarise(records: List[Dict], spend: Dict, population: Dict, *,
 
     summary: Dict = {
         'dataset': 'project_zero',
+        'with_region': bool(records) and bool(records[0].get('with_region')),
         'side': side,
         'bug_kind': bug_kind,
         'prompt_version': version,

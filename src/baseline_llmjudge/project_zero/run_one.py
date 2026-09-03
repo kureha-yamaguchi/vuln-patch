@@ -52,6 +52,7 @@ def classify(row, *, version: str = 'p1',
              bug_kind: str = 'crashing',
              samples: int = DEFAULT_SAMPLES,
              model: Optional[str] = None,
+             with_region: bool = False,
              quiet: bool = False) -> Dict:
     """One record for one queued fix, shaped like the Defects4J records.
 
@@ -81,7 +82,10 @@ def classify(row, *, version: str = 'p1',
         'git_sha': git_sha(),
     }
 
-    blocks = evidence.render(fix)
+    blocks = evidence.render(fix, with_region=with_region)
+    # Which arm of the region A/B this record belongs to. Recorded, so a
+    # records file can never be read as the wrong arm.
+    rec['with_region'] = with_region
     text = evidence.evidence_text(blocks)
     rec['parity_manifest'] = evidence.manifest(fix, blocks)
     rec['evidence_chars'] = len(text)

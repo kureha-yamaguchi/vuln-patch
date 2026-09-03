@@ -20,6 +20,7 @@ Five properties are asserted here, and each one is a claim the README makes:
 Every test here is offline. No model call, no network request, and no fetched
 context is required.
 """
+import json
 import re
 
 import pytest
@@ -27,8 +28,9 @@ import pytest
 from oss_fuzz.prompts import LibFuzzerPromptBuilder
 
 from baseline_llmjudge.defects4j import prompts as prompts_d4j
-from baseline_llmjudge.project_zero import (compare, evidence, firewall,
-                                            prompts, queue, split)
+from baseline_llmjudge.project_zero import (compare, errors, evaluate,
+                                            evidence, firewall, prompts,
+                                            queue, split)
 from baseline_llmjudge.project_zero.evaluate import _baselines
 from baseline_llmjudge.shared.version import PromptVersion
 
@@ -77,9 +79,19 @@ def _fix(pair, which):
 
 
 def _blob(fix):
-    """Every character of a clean view that could reach a prompt."""
+    """Every character of a clean view that could reach a prompt.
+
+    The computed root-cause region is included: it comes from a real checkout,
+    so its function names, file paths and signatures are one more channel a
+    tracker id could travel down."""
+    region = fix.region or {}
+    region_text = ' '.join(
+        f"{r.get('name','')} {r.get('file','')} {r.get('signature','')} "
+        f"{' '.join(r.get('callers') or ())}"
+        for r in (region.get('reachable') or ()))
     return '\n'.join([fix.diff, *(t for _, t in fix.sources),
-                      *fix.touched_files, fix.codebase, fix.software])
+                      *fix.touched_files, fix.codebase, fix.software,
+                      region_text, str(region.get('index_root') or '')])
 
 
 # --- 1. the firewall holds ---------------------------------------------------
@@ -507,3 +519,294 @@ def test_select_breaks_a_tie_on_fewer_false_positives():
 def test_select_ignores_an_unscored_run():
     runs = [{'prompt_version': 'p1', 'headline': {'f1': None, 'FP': 0}}]
     assert compare.select(runs) is None
+
+
+# --- the dev error reader ----------------------------------------------------
+
+def _record(label, verdicts, **extra):
+    """A minimal record, shaped like one run_one.classify writes."""
+    positive = sum(1 for v in verdicts if v)
+    return {
+        'status': 'evaluated', 'label': label, 'fix_id': 'pz-test0001',
+        'pair': 'CVE-1__CVE-2', 'which': 'fix0', 'codebase': 'chrome',
+        'touched_files': ['a.cc'], 'prompt_version': 'p2', 'prompt_stage': 'A',
+        'bug_kind': 'crashing',
+        'samples': [{'index': i, 'verdict': v, 'text': f'answer {i}'}
+                    for i, v in enumerate(verdicts)],
+        'vote': {'n_samples': len(verdicts), 'n_positive': positive,
+                 'n_parse_failures': sum(1 for v in verdicts if v is None),
+                 'agreement': 1.0},
+        'decisions': {'majority': positive * 2 > len(verdicts)},
+        **extra}
+
+
+def test_classify_error_names_the_two_error_classes():
+    # An overfitting fix called correct is a false negative.
+    assert errors.classify_error(
+        _record('overfitting', [False] * 5)) == 'FN'
+    # A correct fix called overfitting is a false positive.
+    assert errors.classify_error(_record('correct', [True] * 5)) == 'FP'
+    assert errors.classify_error(_record('overfitting', [True] * 5)) == 'right'
+    assert errors.classify_error(_record('correct', [False] * 5)) == 'right'
+
+
+def test_the_error_reader_uses_the_shared_headline_rule():
+    """One rule, so the reader and the evaluator cannot disagree."""
+    from baseline_llmjudge.shared.scoring import HEADLINE_RULE
+    assert errors.RULE == HEADLINE_RULE
+
+
+def test_side_of_reads_the_summary_before_the_directory_name(tmp_path):
+    """`--out_dir` can give a run any name, so the summary is the authority."""
+    d = tmp_path / 'anything_at_all'
+    d.mkdir()
+    (d / 'summary.json').write_text('{"side": "holdout"}')
+    (d / 'records.jsonl').write_text('')
+    assert errors.side_of(str(d / 'records.jsonl')) == 'holdout'
+
+
+def test_side_of_falls_back_to_the_directory_name(tmp_path):
+    """An interrupted pass has no summary, and must still be classified."""
+    for name, want in (('llmjudge_pz_dev_p1_20260101_000000', 'dev'),
+                       ('llmjudge_pz_holdout_p1_20260101_000000', 'holdout'),
+                       ('some_other_name', None)):
+        d = tmp_path / name
+        d.mkdir()
+        (d / 'records.jsonl').write_text('')
+        assert errors.side_of(str(d / 'records.jsonl')) == want
+
+
+def test_refuse_holdout_refuses_a_holdout_run(tmp_path):
+    """The rule that keeps the holdout held out, enforced not remembered."""
+    d = tmp_path / 'llmjudge_pz_holdout_p1_20260101_000000'
+    d.mkdir()
+    (d / 'records.jsonl').write_text('')
+    assert errors.refuse_holdout([str(d / 'records.jsonl')]) == 2
+
+
+def test_refuse_holdout_allows_a_dev_run(tmp_path):
+    d = tmp_path / 'llmjudge_pz_dev_p1_20260101_000000'
+    d.mkdir()
+    (d / 'records.jsonl').write_text('')
+    assert errors.refuse_holdout([str(d / 'records.jsonl')]) == 0
+
+
+def test_the_grid_prints_one_cell_per_sample(capsys):
+    rows = [_record('overfitting', [False, False, True, False, None])]
+    errors.print_grid(rows)
+    out = capsys.readouterr().out
+    # O for overfitting, C for correct, ? for an unparsed sample.
+    assert 'C C O C ?' in out
+    assert 'WRONG' in out
+
+
+def test_the_grid_does_not_mark_a_right_answer(capsys):
+    errors.print_grid([_record('correct', [False] * 5)])
+    assert 'WRONG' not in capsys.readouterr().out
+
+
+def test_load_refuses_a_pattern_that_matches_nothing(tmp_path):
+    with pytest.raises(SystemExit):
+        errors.load(str(tmp_path / 'nothing_here_*.jsonl'))
+
+
+# --- finishing an interrupted pass -------------------------------------------
+
+def _run_dir(tmp_path, name='llmjudge_pz_dev_p3_20260101_000000',
+             queue_lines=('-o CVE-2016-5128__CVE-2022-1096|fix0',
+                          '-c CVE-2019-13720__CVE-2020-6427|fix1'),
+             records=()):
+    d = tmp_path / name
+    d.mkdir()
+    (d / 'queue.txt').write_text('\n'.join(queue_lines) + '\n')
+    (d / 'records.jsonl').write_text(
+        ''.join(json.dumps(r) + '\n' for r in records))
+    return d
+
+
+def test_resume_reads_the_population_from_the_runs_own_queue(tmp_path):
+    """A rebuild would read today's dataset; queue.txt is the authority."""
+    d = _run_dir(tmp_path)
+    out_dir, rows, done, stats = evaluate._resume(d, 'p3', {})
+    assert out_dir == d
+    assert done == []
+    assert [(r.pair, r.which) for r in rows] == [
+        ('CVE-2016-5128__CVE-2022-1096', 'fix0'),
+        ('CVE-2019-13720__CVE-2020-6427', 'fix1')]
+    assert stats['resumed']['rows_scored_now'] == 2
+
+
+def test_resume_skips_a_row_already_scored(tmp_path):
+    first = firewall.fix_id(
+        next(p for p in PAIRS
+             if p.name == 'CVE-2016-5128__CVE-2022-1096').fix0_commit)
+    d = _run_dir(tmp_path, records=[
+        {'fix_id': first, 'prompt_version': 'p3', 'status': 'evaluated'}])
+    _out, rows, done, stats = evaluate._resume(d, 'p3', {})
+    assert len(done) == 1
+    assert [r.which for r in rows] == ['fix1']
+    assert stats['resumed']['records_already_scored'] == 1
+
+
+def test_resume_refuses_a_finished_pass(tmp_path):
+    d = _run_dir(tmp_path)
+    (d / 'summary.json').write_text('{}')
+    with pytest.raises(evaluate.ResumeRefused, match='already holds'):
+        evaluate._resume(d, 'p3', {})
+
+
+def test_resume_refuses_a_version_the_records_disagree_with(tmp_path):
+    """Two versions in one record file would be scored as though they were one."""
+    d = _run_dir(tmp_path, records=[
+        {'fix_id': 'pz-xxxx', 'prompt_version': 'p3', 'status': 'evaluated'}])
+    with pytest.raises(evaluate.ResumeRefused, match='holds records for'):
+        evaluate._resume(d, 'p1', {})
+
+
+def test_resume_refuses_a_directory_with_no_queue(tmp_path):
+    d = tmp_path / 'llmjudge_pz_dev_p3_20260101_000000'
+    d.mkdir()
+    with pytest.raises(evaluate.ResumeRefused, match='queue.txt is missing'):
+        evaluate._resume(d, 'p3', {})
+
+
+def test_resume_refuses_when_nothing_is_left_to_score(tmp_path):
+    ids = [firewall.fix_id(p.commit(w))
+           for p, w in ((next(x for x in PAIRS
+                              if x.name == 'CVE-2016-5128__CVE-2022-1096'),
+                         'fix0'),
+                        (next(x for x in PAIRS
+                              if x.name == 'CVE-2019-13720__CVE-2020-6427'),
+                         'fix1'))]
+    d = _run_dir(tmp_path, records=[
+        {'fix_id': i, 'prompt_version': 'p3', 'status': 'evaluated'}
+        for i in ids])
+    with pytest.raises(evaluate.ResumeRefused, match='Nothing'):
+        evaluate._resume(d, 'p3', {})
+
+
+def test_the_side_comes_from_the_run_directory_not_the_flag(tmp_path):
+    """A resumed holdout pass must not be recorded as a dev pass."""
+    assert evaluate._side_of(
+        tmp_path / 'llmjudge_pz_holdout_p3_20260101_000000', 'dev') == 'holdout'
+    assert evaluate._side_of(
+        tmp_path / 'llmjudge_pz_dev_p3_20260101_000000', 'holdout') == 'dev'
+    # A custom --out_dir states no side, so the flag stands.
+    assert evaluate._side_of(tmp_path / 'anything', 'dev') == 'dev'
+
+
+def test_the_pool_label_comes_from_the_records_when_no_flag_is_given():
+    crashing = [{'bug_kind': 'crashing'}] * 3
+    assert evaluate._pool_label(crashing, None) == 'crashing'
+    mixed = [{'bug_kind': 'crashing'}, {'bug_kind': 'semantic'}]
+    assert evaluate._pool_label(mixed, None) == 'both'
+    # An explicit flag wins, because it is what filtered the population.
+    assert evaluate._pool_label(crashing, 'semantic') == 'semantic'
+
+
+# --- the root-cause region ---------------------------------------------------
+
+WITH_REGION = [p for p in PAIRS
+               if (p.path / 'fix0_region.json').exists()]
+
+
+def test_the_region_block_is_off_by_default():
+    """Every score recorded before the region existed must still reproduce."""
+    names = [b.name for b in evidence.render(_fix(FIXTURE_PAIR, 'fix0'))]
+    assert 'root_cause_region' not in names
+
+
+@pytest.mark.skipif(not WITH_REGION, reason='no region computed yet')
+def test_the_region_block_appears_when_asked_for():
+    fix = _fix(WITH_REGION[0], 'fix0')
+    blocks = {b.name: b for b in evidence.render(fix, with_region=True)}
+    assert 'root_cause_region' in blocks
+    # Re-rendered, not reused: the pipeline's _routes_block ends in harness
+    # steering, so it cannot be called.
+    assert blocks['root_cause_region'].origin == 'rendered'
+
+
+def test_asking_for_a_region_that_does_not_exist_adds_no_block():
+    """A fix with no checkout must render exactly as it did before."""
+    fix = next(_fix(p, 'fix0') for p in PAIRS
+               if not (p.path / 'fix0_region.json').exists())
+    assert not fix.region
+    plain = [b.name for b in evidence.render(fix)]
+    asked = [b.name for b in evidence.render(fix, with_region=True)]
+    assert plain == asked
+
+
+@pytest.mark.skipif(not WITH_REGION, reason='no region computed yet')
+def test_the_region_block_teaches_no_harness_authorship():
+    """`_routes_block` ends by telling the reader to open a route in for a
+    harness. That steering must not survive the re-render."""
+    fix = _fix(WITH_REGION[0], 'fix0')
+    text = next(b.text for b in evidence.render(fix, with_region=True)
+                if b.name == 'root_cause_region')
+    for token in AUTHORSHIP_TOKENS + ('your harness', 'public header'):
+        assert token not in text
+
+
+@pytest.mark.skipif(not WITH_REGION, reason='no region computed yet')
+def test_the_manifest_stops_claiming_routes_are_withheld():
+    """The withheld list is an artifact claim, so it must track the arm."""
+    fix = _fix(WITH_REGION[0], 'fix0')
+    off = evidence.manifest(fix, evidence.render(fix))
+    on = evidence.manifest(fix, evidence.render(fix, with_region=True))
+    assert '_routes_block' in off['withheld_pipeline_evidence']
+    assert '_routes_block' not in on['withheld_pipeline_evidence']
+
+
+@pytest.mark.skipif(not WITH_REGION, reason='no region computed yet')
+def test_the_region_drops_an_entry_the_index_could_not_resolve():
+    """An entry with no file is a parse artefact, not a fact. The freetype
+    trial produced one: the macro `FT_LOCAL_DEF` read as a function name."""
+    for pair in WITH_REGION:
+        region = _fix(pair, 'fix0').region
+        for r in region['reachable']:
+            assert r['file']
+        assert isinstance(region['unresolved'], int)
+
+
+@pytest.mark.skipif(not WITH_REGION, reason='no region computed yet')
+def test_the_region_never_states_a_fuzz_entry_point():
+    """Raw upstream checkouts hold no OSS-Fuzz harness, so `entry_reachable` is
+    false for every row of every fix. A uniformly false field rendered as
+    evidence would read as a finding, so the renderer drops it."""
+    fix = _fix(WITH_REGION[0], 'fix0')
+    text = next(b.text for b in evidence.render(fix, with_region=True)
+                if b.name == 'root_cause_region')
+    for token in ('entry_reachable', 'entry_path', 'fuzz target reaches',
+                  'under-fuzzed'):
+        assert token not in text
+    # The clean view drops the field too, so no later renderer can pick it up.
+    for r in fix.region['reachable']:
+        assert 'entry_reachable' not in r and 'entry_path' not in r
+
+
+@pytest.mark.skipif(not WITH_REGION, reason='no region computed yet')
+def test_the_region_names_the_subtree_it_was_indexed_from():
+    """A region that stops at a subtree boundary is narrower than the truth,
+    and a reader who does not know the boundary cannot tell the two apart."""
+    fix = _fix(WITH_REGION[0], 'fix0')
+    text = next(b.text for b in evidence.render(fix, with_region=True)
+                if b.name == 'root_cause_region')
+    assert 'Indexed from:' in text
+
+
+def test_require_region_keeps_only_rows_that_have_one():
+    rows, stats = queue.build_queue(require_region=True)
+    for row in rows:
+        assert (row.fix.region or {}).get('reachable')
+    plain, _ = queue.build_queue()
+    assert len(rows) <= len(plain)
+    if len(rows) < len(plain):
+        assert stats['dropped'].get('no_root_cause_region')
+
+
+def test_both_arms_of_the_region_ab_score_the_same_rows():
+    """The paired guarantee. 16 dev rows cannot support two independent F1s,
+    so the comparison is per row and both arms must hold the same population."""
+    a, _ = queue.build_queue(require_region=True)
+    b, _ = queue.build_queue(require_region=True)
+    assert [r.fix.fix_id for r in a] == [r.fix.fix_id for r in b]

@@ -234,6 +234,63 @@ def register(version: PromptVersion) -> PromptVersion:
 #     instruction=P2.instruction.replace('old sentence', 'new sentence'),
 # ))
 
+#: Turn 1 of the crashing pool.
+#:
+#: WHY p1 IS THE BASE, AND WHAT THAT IS WORTH. All three stage-A designs scored
+#: F1 0.000 on the crashing dev side, and p1 and p2 tied exactly at FP=0,
+#: FN=11. `compare.select` breaks a tie on the false-positive count, and with
+#: that equal it kept the registry order. So "p1 won" means "p1 and p2 could
+#: not be told apart". The choice of base carries no information here, and the
+#: iteration log must say so.
+#:
+#: THE DEV ERROR CLASS. 11 false negatives, 0 false positives. Every one of the
+#: 11 overfitting fixes was called correct, and 9 of them unanimously. The
+#: reasoning was the same shape every time, in p1's own words: the fix changes
+#: "the mechanism rather than one input value", therefore it removes the root
+#: cause. The model equates a principled fix with a complete one.
+#:
+#: Two examples from the dev log. On the WebAudio fix it listed the other
+#: readers of `reverb_` itself, then dismissed them because the fix made the
+#: null branch match the non-null branch. On the UNIX-socket GC fix it
+#: reconstructed the MSG_PEEK race correctly and accepted `unix_peek_fds()` as
+#: the cure. The sibling of that pair lives in `fs/file.c`, which the diff
+#: never touched and the evidence therefore never showed.
+#:
+#: SO THE TURN CHANGES TWO THINGS, AND BOTH ARE CALIBRATION, NOT METHOD.
+#:   1. It breaks the inference "generic, therefore complete". The positives of
+#:      this dataset are mostly well-engineered fixes that still left a
+#:      sibling.
+#:   2. It states that the shown source may not contain the sibling at all,
+#:      because only the touched files are rendered. Without that sentence, "I
+#:      can see no other vulnerable site" reads as evidence of completeness,
+#:      when it is mostly evidence about the size of the excerpt.
+#:
+#: Neither sentence names a class, a date or an identifier, so neither leaks a
+#: label. `test_no_label_reaches_a_pz_prompt` covers this version too.
+register(PromptVersion(
+    name='p1.1',
+    hypothesis='p1 produced 0 FP and 11 FN on dev: it called every '
+               'overfitting fix correct, 9 of them unanimously. Every error '
+               'argued that the fix changes the mechanism rather than one '
+               'input value, and took that as proof of completeness. This '
+               'turn breaks that one inference, and states that the shown '
+               'source may not contain the sibling at all.',
+    task=P1.task,
+    instruction=P1.instruction.replace(
+        "Is this fix correct, or is it overfitting?",
+        "Two things to weigh before you answer.\n"
+        "- A fix can be generic, well engineered and reviewed, and still be"
+        " overfitting. The question is not whether the fix is principled. It"
+        " is whether the same root cause can still be reached somewhere"
+        " else.\n"
+        "- You are shown only the files the fix touched. A sibling bug of this"
+        " root cause may live in code that is not shown. So finding no second"
+        " vulnerable site in the excerpt above is weak evidence about"
+        " completeness.\n\n"
+        "Both answers are common for fixes like this one.\n\n"
+        "Is this fix correct, or is it overfitting?"),
+))
+
 
 def resolve(name: str) -> PromptVersion:
     if name not in VERSIONS:

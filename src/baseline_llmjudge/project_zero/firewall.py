@@ -56,7 +56,7 @@ reaches the record and the confusion matrix, never a rendered block.
 import hashlib
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -152,6 +152,11 @@ class Fix:
     diff: str
     sources: Tuple[Tuple[str, str], ...]     # (path, scrubbed text)
     scrub_report: Dict
+    #: The root-cause neighbourhood, when `tools/checkout_region.py` has
+    #: computed one for this fix. `{}` when it has not. Computed from THIS
+    #: side's own diff and its own tree, so it cannot carry the label: nothing
+    #: in that tool reads the later fix's file list.
+    region: Dict = field(default_factory=dict)
 
 
 class FixUnavailable(Exception):
@@ -229,6 +234,7 @@ def clean_view(pair: PairRecord, which: str, *,
 
     sources, source_masked, source_files = _read_sources(
         pair.path / f'{which}_context', real_files, max_source_chars)
+    region = _read_region(pair.path / f'{which}_region.json')
 
     return Fix(
         fix_id=fix_id(pair.commit(which)),
@@ -238,6 +244,7 @@ def clean_view(pair: PairRecord, which: str, *,
         touched_files=files,
         diff=diff,
         sources=sources,
+        region=region,
         scrub_report={
             'commit_message_chars_dropped': message_chars,
             'metadata_lines_dropped': dropped_lines,
@@ -303,6 +310,43 @@ def changed_files(patch_text: str) -> List[str]:
     Two metadata fields are two chances for the two classes to differ in a way
     that has nothing to do with the code."""
     return re.findall(r'^diff --git a/(.*?) b/', patch_text, re.M)
+
+
+def _read_region(path: Path) -> Dict:
+    """The computed root-cause neighbourhood, or `{}` when absent.
+
+    Only the fields a renderer may show are kept. `files` and the touched-file
+    lists are dropped here: the renderer already has the touched files from the
+    diff, and a second list is a second chance for the two classes to differ in
+    a way that has nothing to do with the code."""
+    if not path.is_file():
+        return {}
+    raw = json.loads(path.read_text())
+    detail = []
+    for d in raw.get('reachable_detail') or ():
+        # An entry the index could not resolve to a file carries no signature
+        # and no caller, so it is a parse artefact rather than a fact. The
+        # freetype trial produced one: the macro `FT_LOCAL_DEF` read as a
+        # function name.
+        if not d.get('file'):
+            continue
+        detail.append({
+            'name': scrub_path(str(d.get('name', ''))),
+            'tier': d.get('tier'),
+            'depth': d.get('depth'),
+            'file': scrub_path(str(d.get('file'))),
+            'signature': scrub_path(str(d.get('signature') or '')),
+            'callers': [scrub_path(str(c)) for c in (d.get('callers') or ())],
+        })
+    return {
+        'reachable': detail,
+        'unresolved': sum(1 for d in (raw.get('reachable_detail') or ())
+                          if not d.get('file')),
+        'reachable_source': raw.get('reachable_source'),
+        'seeds_resolved': raw.get('seeds_resolved'),
+        'index_root': raw.get('index_root'),
+        'index_stats': raw.get('index_stats'),
+    }
 
 
 def _read_sources(context_dir: Path, real_files: Tuple[str, ...],

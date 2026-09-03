@@ -36,6 +36,8 @@ comparable evidence.
 """
 from typing import Dict, List
 
+import config
+
 from oss_fuzz.prompts import LibFuzzerPromptBuilder
 
 from baseline_llmjudge.project_zero.firewall import Fix
@@ -81,8 +83,13 @@ WITHHELD_PIPELINE_EVIDENCE = (
 _PB = LibFuzzerPromptBuilder(language='c++')
 
 
-def render(fix: Fix) -> List[Block]:
-    """The evidence blocks for one fix, in prompt order."""
+def render(fix: Fix, *, with_region: bool = False) -> List[Block]:
+    """The evidence blocks for one fix, in prompt order.
+
+    `with_region` adds `root_cause_region`, which needs
+    `tools/checkout_region.py` to have run for this fix. It defaults to False,
+    so every score recorded before the region existed still reproduces
+    byte-for-byte."""
     blocks: List[Block] = [
         Block('patch', 'reused', _PB._patch_block(fix.diff)),
         Block('touched_files', 'baseline_only', _touched_files_block(fix)),
@@ -90,6 +97,10 @@ def render(fix: Fix) -> List[Block]:
     source = _touched_source_block(fix)
     if source:
         blocks.append(Block('touched_source', 'baseline_only', source))
+    if with_region:
+        region = _root_cause_region_block(fix)
+        if region:
+            blocks.append(Block('root_cause_region', 'rendered', region))
     blocks.append(Block('codebase', 'baseline_only', _codebase_block(fix)))
     return blocks
 
@@ -103,7 +114,13 @@ def manifest(fix: Fix, blocks: List[Block]) -> Dict:
                    for b in blocks],
         'total_chars': sum(b.chars for b in blocks),
         'dropped_pipeline_sections': list(DROPPED_SECTIONS),
-        'withheld_pipeline_evidence': list(WITHHELD_PIPELINE_EVIDENCE),
+        'withheld_pipeline_evidence': [
+            name for name in WITHHELD_PIPELINE_EVIDENCE
+            if not (name == '_routes_block'
+                    and any(b.name == 'root_cause_region' for b in blocks))],
+        'region_source': (fix.region or {}).get('reachable_source'),
+        'region_index_root': (fix.region or {}).get('index_root'),
+        'region_seeds_resolved': (fix.region or {}).get('seeds_resolved'),
         'scrub_report': fix.scrub_report,
     }
 
@@ -136,6 +153,63 @@ def _touched_source_block(fix: Fix) -> str:
     return '\n'.join(parts)
 
 
+def _root_cause_region_block(fix: Fix) -> str:
+    """The root-cause neighbourhood, from a real checkout and a call graph.
+
+    RE-RENDERED, NOT REUSED. The pipeline's `_routes_block` fuses these facts
+    with harness authorship: it ends by telling the model to "work up the
+    'called by' chain until you find something declared in a public header",
+    because its reader has to open a route in for a harness. The baseline emits
+    no harness, so that steering goes and the facts stay.
+
+    KEPT, because each is a fact the analysis produced: the soundness caveat,
+    every resolved function with its tier, depth, file and signature, and its
+    callers. The tier vocabulary is the front-end's own — `touched` is a
+    function the diff changed, `route-in` is a caller of one, `callee` is
+    called by one.
+
+    DROPPED: `entry_reachable` and `entry_path`. Both describe whether an
+    existing OSS-Fuzz target reaches the function, and these are raw upstream
+    checkouts with no harnesses in them, so both are uniformly false. Rendering
+    a field that is false for every row of every fix would read as a finding.
+    """
+    region = fix.region or {}
+    rows = region.get('reachable') or ()
+    if not rows:
+        return ''
+    cap = config.MAX_REACHABLE_IN_PROMPT
+    parts = [
+        "The root-cause neighbourhood, from a static call graph of this"
+        " project at this commit (tree-sitter, no build). It is sound-ish and"
+        " not complete: calls through function pointers, vtables or macros may"
+        " be missing, so a route absent below may still exist. A sibling bug"
+        " of this root cause is most likely to live in this region.",
+        "<root_cause_region>",
+    ]
+    for r in rows[:cap]:
+        parts.append(f"- {r['name']}  [{r['tier']}, depth {r['depth']}]")
+        if r.get('signature'):
+            parts.append(f"    {r['signature']}")
+        parts.append(f"    in {r['file']}")
+        if r.get('callers'):
+            parts.append("    called by: " + ", ".join(r['callers'][:8]))
+        else:
+            parts.append("    no caller in the indexed sources — either a"
+                         " public entry point itself, or reached indirectly")
+    parts.append("</root_cause_region>")
+    if len(rows) > cap:
+        parts.append(f"(+{len(rows) - cap} more functions in the region,"
+                     f" omitted.)")
+    # The scope of the index is a fact about the evidence, not about the fix. A
+    # region that stops at a subtree boundary is narrower than the truth, and a
+    # reader who does not know the boundary cannot tell the two apart.
+    root = region.get('index_root')
+    if root:
+        parts.append(f"Indexed from: {root}. A call that leaves this subtree"
+                     f" was not followed.")
+    return '\n'.join(parts)
+
+
 def _codebase_block(fix: Fix) -> str:
     """Which project this is. It sets what a fault in this code can mean."""
     return (f'Project: {fix.software}\n'
@@ -150,4 +224,4 @@ __all__ = ['RENDERED_BLOCK_NAMES', 'RENDERER_VERSION', 'DROPPED_SECTIONS',
 #: a positive fix and a negative fix draw from this one list, so the two
 #: classes cannot differ by which blocks they carry.
 RENDERED_BLOCK_NAMES = ('patch', 'touched_files', 'touched_source',
-                        'codebase')
+                        'root_cause_region', 'codebase')
