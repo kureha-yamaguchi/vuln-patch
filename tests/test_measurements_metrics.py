@@ -352,7 +352,8 @@ def test_sizes_and_available_flags(run_dir):
     row = M.compute_leg(_leg(run_dir, 0))
     assert row['available'] == {
         'patch_derived': True, 'patch_derived_lines': True,
-        'root_cause': True, 'root_cause_manifest': True,
+        'root_cause': True, 'root_cause_body_lines': False,
+        'root_cause_manifest': True,
         'coverage_buggy': True, 'coverage_patched': False,
         'coverage_compiled': False, 'static_kept': False,
         'static_compiled': False, 'crash_sites': True}
@@ -447,7 +448,8 @@ def test_cli_main_without_checkouts_still_writes_metrics(tmp_path, monkeypatch,
     assert len(rows) == 1
     assert rows[0]['available'] == {
         'patch_derived': False, 'patch_derived_lines': False,
-        'root_cause': False, 'root_cause_manifest': False,
+        'root_cause': False, 'root_cause_body_lines': False,
+        'root_cause_manifest': False,
         'coverage_buggy': False, 'coverage_patched': False,
         'coverage_compiled': False, 'static_kept': False,
         'static_compiled': False, 'crash_sites': False}

@@ -23,6 +23,12 @@ For one Defects4J bug, on the BUGGY checkout:
             comparable.
   lines     the individual source lines the patch changed, keyed by the
             top-level class of their file (ring SEED).
+  body_lines
+            every line of the BODY of each developer-changed method, keyed
+            the same way (ring SEED). `lines` answers "did the harnesses
+            execute the fix's own lines"; `body_lines` answers "how
+            thoroughly is the fixed method exercised", which is the fairer
+            question to ask of a fuzzer that was never shown the fix.
   manifest  the project methods that appear in the trigger tests' failure
             stack traces — "R-hat-1", where the bug MANIFESTS, which is
             usually not where it is caused.
@@ -93,6 +99,10 @@ class RootCause:
     methods   seeds (developer-changed methods, ring SEED) plus the caller
               and callee rings when an introspector project was supplied.
     lines     developer-changed lines, ring SEED.
+    body_lines
+              every line of the body of each seed method, ring SEED — the
+              method-body counterpart of `lines`, computed with
+              `patch_derived.lines_for` over the seeds alone.
     manifest  project frames from the trigger tests' stack traces, ring SEED.
     patch_text        the oriented patch (its '+' side is the buggy tree).
     route             'd4j_src_patch' or 'fixed_checkout_diff'.
@@ -106,6 +116,7 @@ class RootCause:
     """
     methods: MethodSet = field(default_factory=MethodSet)
     lines: LineSet = field(default_factory=LineSet)
+    body_lines: LineSet = field(default_factory=LineSet)
     manifest: MethodSet = field(default_factory=MethodSet)
     patch_text: str = ''
     route: str = ''
@@ -122,6 +133,7 @@ class RootCause:
         return {
             'methods': self.methods.to_dict(),
             'lines': self.lines.to_dict(),
+            'body_lines': self.body_lines.to_dict(),
             'manifest': self.manifest.to_dict(),
             'patch_text': self.patch_text,
             'route': self.route,
@@ -136,6 +148,10 @@ class RootCause:
         return cls(
             methods=MethodSet.from_dict(d.get('methods') or {}),
             lines=LineSet.from_dict(d.get('lines') or {}),
+            # Written since the Rbody variant was added; a root_cause.json
+            # from before that carries no such key and loads as an empty
+            # set rather than failing.
+            body_lines=LineSet.from_dict(d.get('body_lines') or {}),
             manifest=MethodSet.from_dict(d.get('manifest') or {}),
             patch_text=d.get('patch_text') or '',
             route=d.get('route') or '',
@@ -748,10 +764,12 @@ def compute(project: str, bug_id, buggy_dir: str, *,
     still a valid — just smaller — region.
 
     `source_root` is a directory of `.java` sources for that same tree
-    (normally `buggy_dir` itself). It is used only for the caller ring, and
-    only for a seed the call graph found no caller for: the JVM frontend
-    does not resolve virtual or interface calls, so those seeds otherwise
-    get an empty caller ring. See `neighbourhood.SourceScan`.
+    (normally `buggy_dir` itself). Two things read it: the caller ring, for
+    a seed the call graph found no caller for (the JVM frontend does not
+    resolve virtual or interface calls, so those seeds otherwise get an
+    empty caller ring — see `neighbourhood.SourceScan`), and `body_lines`,
+    which needs the seed methods' declarations to know where their bodies
+    start and end. It defaults to `buggy_dir` for the second.
     """
     patch_text, route = developer_patch(project, bug_id, buggy_dir,
                                         d4j_home=d4j_home,
@@ -763,10 +781,12 @@ def compute(project: str, bug_id, buggy_dir: str, *,
     notes: List[str] = []
     methods = _rings(seeds, introspector_project, caller_cap, callee_cap,
                      callee_depth, notes, source_root)
+    body_lines = _body_lines(seeds, source_root or buggy_dir, notes)
 
     return RootCause(
         methods=methods,
         lines=lines,
+        body_lines=body_lines,
         manifest=trigger_frames(buggy_dir),
         patch_text=oriented,
         route=route,
@@ -800,6 +820,40 @@ def _rings(seeds: List[MethodRef], introspector_project,
         notes.append(f'neighbourhood.build failed ({exc.__class__.__name__}: '
                      f'{exc}): seeds only, no rings')
         return _seed_set(seeds)
+
+
+def _body_lines(seeds: List[MethodRef], source_root: Optional[str],
+                notes: List[str]) -> LineSet:
+    """Every line of the BODY of each developer-changed method.
+
+    The seeds alone are handed to `patch_derived.lines_for`, which finds
+    each method's declaration in the buggy sources and returns every line
+    from its signature to its closing brace. So this is the same machinery
+    the pipeline's own patch-derived line set is built with, applied to the
+    developer's methods instead of the repair tool's — the two stay
+    comparable.
+
+    The rings are deliberately NOT included: a caller's or callee's body is
+    not part of the fix, and folding those in would make the region a
+    different thing from the one `RootCause.lines` describes.
+
+    Imported lazily, and every failure is soft: a missing module, an
+    unreadable source root or a parse failure costs the body lines and is
+    written into `notes`, rather than costing the whole of R-hat."""
+    if not source_root:
+        notes.append('no source root: body_lines empty')
+        return LineSet()
+    try:
+        from java.measurements import patch_derived
+    except ImportError:
+        notes.append('patch_derived module unavailable: body_lines empty')
+        return LineSet()
+    try:
+        return patch_derived.lines_for(_seed_set(seeds), source_root)
+    except Exception as exc:                       # noqa: BLE001 - fail soft
+        notes.append(f'patch_derived.lines_for failed '
+                     f'({exc.__class__.__name__}: {exc}): body_lines empty')
+        return LineSet()
 
 
 def _seed_set(seeds: List[MethodRef]) -> MethodSet:

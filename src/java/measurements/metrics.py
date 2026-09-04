@@ -14,7 +14,8 @@ P  patch-derived set.  What the harness generator could learn about the
 R  root-cause region.  Where the bug actually lives, taken from the
    developer fix plus its caller/callee neighbourhood.  Every element
    carries a ring: ``seed`` (a method the developer changed), ``caller``,
-   ``callee``.  File: ``root_cause.json``.
+   ``callee``.  File: ``root_cause.json`` (keys ``methods``, ``lines``,
+   ``body_lines``, ``manifest``).
 F  fuzzer-reachable set.  What the generated harness actually executed,
    measured on one build.  File: ``coverage_buggy.json`` /
    ``coverage_patched.json`` / ``coverage_compiled.json`` (the last one is
@@ -46,7 +47,17 @@ R-variant    ``R0``   = the seed ring alone (the methods the developer
                         trigger test) — METHOD GRANULARITY ONLY, because a
                         manifest is a set of stack frames stored as methods
                         and carries no line information;
-             ``full`` = the whole ringed region (seed + caller + callee).
+             ``full`` = the whole ringed region (seed + caller + callee);
+             ``Rbody``= every line of the BODY of each developer-changed
+                        method — LINE GRANULARITY ONLY, because at method
+                        granularity it is by construction the same set as
+                        R0.  ``R0`` asks "did the harnesses execute the
+                        fix's own lines"; ``Rbody`` asks "how thoroughly is
+                        the fixed method exercised", which is the fairer
+                        question for a fuzzer that was never shown the fix.
+                        Read from ``root_cause.json``'s ``body_lines``; a
+                        file written before that key existed simply gets no
+                        ``Rbody`` keys.
 build        which coverage the F-side came from: ``buggy``, ``patched``
              or ``compiled``.  The first two are the KEPT harness set on
              the two builds; ``compiled`` is every compiled candidate on
@@ -129,7 +140,18 @@ STATIC_BUILD_SLOT = {'kept': 'buggy', BUILD_COMPILED: BUILD_COMPILED}
 
 GRANULARITIES = ('method', 'line')
 R_VARIANTS = ('R0', 'R1', 'full')
-R_VARIANTS_LINE = ('R0', 'full')      # R1 has no line-level counterpart
+
+#: The R-variants that exist at LINE granularity.  ``R1`` has no line-level
+#: counterpart (a manifest is a set of stack frames, stored as methods), and
+#: ``Rbody`` — the whole body of each developer-changed method — has no
+#: method-level counterpart, because at method granularity it would be R0
+#: itself.  A table asked for a line-only variant on a Function row falls
+#: back to R0; see `paper_tables.metric_field`.
+R_VARIANTS_LINE = ('R0', 'full', 'Rbody')
+
+#: The line-only ones, i.e. the variants no ``*__method__*`` key carries.
+R_VARIANTS_LINE_ONLY = tuple(v for v in R_VARIANTS_LINE
+                             if v not in R_VARIANTS)
 RING_ORDER = (loc.SEED, loc.CALLER, loc.CALLEE)
 RING_ORDER_OUT = RING_ORDER + (loc.OUTSIDE,)
 
@@ -260,19 +282,26 @@ def _load_line_set(path: str) -> Optional[loc.LineSet]:
 
 
 def _root_cause_parts(path: str):
-    """``root_cause.json`` -> (methods MethodSet, lines LineSet, manifest
-    MethodSet).  Any part that is absent comes back None; the file is read
-    as plain JSON so this module never imports `root_cause`."""
+    """``root_cause.json`` -> (methods MethodSet, lines LineSet, body_lines
+    LineSet, manifest MethodSet).  Any part that is absent comes back None;
+    the file is read as plain JSON so this module never imports
+    `root_cause`.
+
+    ``body_lines`` is the youngest of the four: a file written before the
+    ``Rbody`` variant existed has no such key, comes back None, and simply
+    gets no ``Rbody`` metric keys."""
     d = _read_json(path)
     if not isinstance(d, dict):
-        return None, None, None
+        return None, None, None, None
     methods = loc.MethodSet.from_dict(d['methods']) \
         if isinstance(d.get('methods'), dict) else None
     lines = loc.LineSet.from_dict(d['lines']) \
         if isinstance(d.get('lines'), dict) else None
+    body_lines = loc.LineSet.from_dict(d['body_lines']) \
+        if isinstance(d.get('body_lines'), dict) else None
     manifest = loc.MethodSet.from_dict(d['manifest']) \
         if isinstance(d.get('manifest'), dict) else None
-    return methods, lines, manifest
+    return methods, lines, body_lines, manifest
 
 
 class _Coverage:
@@ -402,16 +431,28 @@ def _r_variants(methods: Optional[loc.MethodSet],
     return {'R0': _r0(methods), 'R1': _r1(methods, manifest), 'full': methods}
 
 
-def _r_variants_line(lines: Optional[loc.LineSet]) -> Dict[str, loc.LineSet]:
-    """Line-granularity R comes straight out of ``root_cause.lines``: R0 is
-    the seed-ring lines, ``full`` is all of them.  There is no R1 — see the
-    module docstring."""
+def _r_variants_line(lines: Optional[loc.LineSet],
+                     body_lines: Optional[loc.LineSet] = None
+                     ) -> Dict[str, loc.LineSet]:
+    """Line-granularity R.  ``R0`` and ``full`` come straight out of
+    ``root_cause.lines`` — R0 is the seed-ring lines, ``full`` is all of
+    them.  ``Rbody`` is a different set entirely: ``root_cause.body_lines``,
+    every line of the body of each developer-changed method, which R0's
+    changed lines sit inside.  There is no R1 — see the module docstring.
+
+    ``Rbody`` is offered only when the file carried a ``body_lines`` key.
+    An older file has none, and an empty ``Rbody`` denominator would look
+    like "the fixed methods have no lines" rather than "this run predates
+    the variant"."""
     if lines is None:
         return {}
     r0 = loc.LineSet()
     for ref in lines.refs(loc.SEED):
         r0.add(ref, loc.SEED)
-    return {'R0': r0, 'full': lines}
+    out = {'R0': r0, 'full': lines}
+    if body_lines is not None:
+        out['Rbody'] = body_lines
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -753,7 +794,7 @@ def compute_leg(leg_dir: str) -> dict:
     # -- inputs ------------------------------------------------------------
     p_methods = _load_method_set(os.path.join(mdir, F_PATCH_DERIVED))
     p_lines = _load_line_set(os.path.join(mdir, F_PATCH_DERIVED_LINES))
-    r_methods, r_lines, manifest = _root_cause_parts(
+    r_methods, r_lines, r_body_lines, manifest = _root_cause_parts(
         os.path.join(mdir, F_ROOT_CAUSE))
     p_methods, p_jdk = _strip_jdk(p_methods)
     r_methods, r_jdk = _strip_jdk(r_methods)
@@ -778,6 +819,7 @@ def compute_leg(leg_dir: str) -> dict:
         'patch_derived': p_methods is not None,
         'patch_derived_lines': p_lines is not None,
         'root_cause': r_methods is not None or r_lines is not None,
+        'root_cause_body_lines': r_body_lines is not None,
         'root_cause_manifest': manifest is not None,
         'coverage_buggy': 'buggy' in covs,
         'coverage_patched': 'patched' in covs,
@@ -789,7 +831,7 @@ def compute_leg(leg_dir: str) -> dict:
     out['builds'] = [b for b in BUILDS if b in covs]
 
     rvars = _r_variants(r_methods, manifest)
-    rvars_line = _r_variants_line(r_lines)
+    rvars_line = _r_variants_line(r_lines, r_body_lines)
 
     # -- raw sizes ---------------------------------------------------------
     sizes: dict = {

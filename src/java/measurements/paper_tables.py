@@ -94,7 +94,13 @@ SET_METRICS = (
 DEFAULT_F_KIND = M.DEFAULT_F_KIND
 DEFAULT_BUILD = A.DEFAULT_BUILD
 DEFAULT_RVAR = 'R0'
-R_VARIANTS = M.R_VARIANTS
+
+#: What ``--rvar`` accepts: the method-level variants plus the line-only
+#: ones (`metrics.R_VARIANTS_LINE_ONLY`, today just ``Rbody``).  A table
+#: has one R-variant for both of its granularity rows, so a line-only
+#: variant is honoured on the Line row and the Function row falls back to
+#: `DEFAULT_RVAR` — see `metric_field`.
+R_VARIANTS = M.R_VARIANTS + M.R_VARIANTS_LINE_ONLY
 
 #: What a leg's `outcome` field means for the classifier, with an
 #: overfitting patch as the positive case.
@@ -322,6 +328,22 @@ def pair(hr: Arm, hn: Optional[Arm]) -> Tuple[Arm, Optional[Arm], dict]:
 # which key a cell reads
 # ---------------------------------------------------------------------------
 
+def rvar_for(gran: str, rvar: str) -> str:
+    """The R-variant a cell of granularity `gran` can actually read.
+
+    ``Rbody`` (and any other line-only variant, see
+    `metrics.R_VARIANTS_LINE_ONLY`) exists at line granularity only: the
+    body of a developer-changed method IS that method, so at method
+    granularity the variant would be R0 under another name and no such key
+    is emitted.  A table fixes one R-variant for both of its rows, so the
+    Function row falls back to `DEFAULT_RVAR` and the Line row keeps what
+    was asked for.  The fallback is visible in each row's ``keys`` entry
+    and in the table's key note."""
+    if gran != 'line' and rvar in M.R_VARIANTS_LINE_ONLY:
+        return DEFAULT_RVAR
+    return rvar
+
+
 def metric_field(metric: str, gran: str, rvar: str = DEFAULT_RVAR,
                  build: str = DEFAULT_BUILD,
                  fkind: str = DEFAULT_F_KIND) -> str:
@@ -330,8 +352,10 @@ def metric_field(metric: str, gran: str, rvar: str = DEFAULT_RVAR,
     Built with `metrics.metric_key`, so the four/five-slot shapes and the
     ``na`` placeholders are the module that defines them, not a format
     string repeated here.  RCR and CSM take no build and no kind of F; PSC
-    has no R-side and so no R-variant."""
+    has no R-side and so no R-variant.  A line-only R-variant asked for on
+    a non-line row falls back to `DEFAULT_RVAR` — see `rvar_for`."""
     m = metric.lower()
+    rvar = rvar_for(gran, rvar)
     if m in ('rcr', 'csm'):
         return M.metric_key(m, gran, rvar, None)
     if m == 'psc':
@@ -397,12 +421,22 @@ def _arm_tex(label: str) -> str:
 # ---------------------------------------------------------------------------
 
 def _key_note(fkind: str, build: str, rvar: str) -> str:
-    example = metric_field('rcc', 'method', rvar, build, fkind)
-    return (f'Keys: R-variant {rvar}, build {build} '
+    # A line-only variant has no method-level key at all, so its examples
+    # are drawn from the Line row instead of the Function row.
+    line_only = rvar in M.R_VARIANTS_LINE_ONLY
+    gran = 'line' if line_only else 'method'
+    example = metric_field('rcc', gran, rvar, build, fkind)
+    note = (f'Keys: R-variant {rvar}, build {build} '
             f'({A.BUILD_LABELS.get(build, build)}), F(H) kind {fkind} — '
             f'e.g. {example}. RCR and CSM read no coverage '
-            f'({metric_field("rcr", "method", rvar)}); PSC has no R-side '
-            f'({metric_field("psc", "method", rvar, build, fkind)}).')
+            f'({metric_field("rcr", gran, rvar)}); PSC has no R-side '
+            f'({metric_field("psc", gran, rvar, build, fkind)}).')
+    if line_only:
+        note += (f' {rvar} is a line-only region (the whole body of each '
+                 f'developer-changed method), so the Line rows read it and '
+                 f'the Function rows fall back to {DEFAULT_RVAR} '
+                 f'({metric_field("rcc", "method", rvar, build, fkind)}).')
+    return note
 
 
 GRAN_NOTE = ('Granularity: "Function" is the Java method or constructor; '
@@ -855,7 +889,10 @@ def build_parser() -> argparse.ArgumentParser:
                         'the acceptance gate kept)')
     p.add_argument('--rvar', default=DEFAULT_RVAR, choices=R_VARIANTS,
                    help='the root-cause region variant (default: '
-                        '%(default)s, the methods the developer changed)')
+                        '%(default)s, the methods the developer changed). '
+                        'Rbody is line-only — every line of the body of '
+                        'each changed method — so the Line rows read it '
+                        'and the Function rows fall back to R0')
     p.add_argument('--fmt', default='md', choices=FORMATS,
                    help='markdown for the writeup, latex for the paper')
     p.add_argument('--dp', type=int, default=DEFAULT_DP,

@@ -140,6 +140,44 @@ same caps. Two named variants are used in the metrics:
   stack when the bug's failing tests fail on the unfixed code. This is
   "where the bug shows up", which may differ from "where it is fixed".
 
+At **line** granularity there is a third variant, and it is the one to read
+first:
+
+- **R̂body** — every line of the *body* of each developer-changed method.
+
+R̂₀'s lines are the lines the fix itself touched, and R̂body's are the whole
+methods those lines sit in, so R̂₀ ⊆ R̂body always. The two answer different
+questions:
+
+- R̂₀ asks **did the harnesses execute the fix's own lines** — a strict test,
+  and the one that matches the paper's ℝ most literally.
+- R̂body asks **how thoroughly is the fixed method exercised** — which is the
+  fairer question to ask of a fuzzer, because the fuzzer was never shown the
+  fix. Nothing in the harness generator knows which lines of a method the
+  developer later changed; it can only aim at the method. A harness that
+  drives the fixed method hard but happens to take a branch that skips the
+  changed line scores 0 on R̂₀ and something high on R̂body, and calling that
+  a total failure of root-cause coverage would be measuring the fuzzer
+  against knowledge it was denied.
+
+Neither is a replacement for the other, so **both are reported**: every
+line-level metric is emitted for `R0`, `full` and `Rbody`, and the paper's
+tables can be rendered against any of the three (`--rvar`, section 6.5).
+
+R̂body exists at line granularity only. At method granularity "the body of
+each changed method" is just "each changed method", which is R̂₀ under
+another name, so no `*__method__Rbody__*` key is ever emitted.
+
+It is computed inside `root_cause.compute`, by handing the seeds alone to
+`patch_derived.lines_for` against the buggy source root — the same machinery
+that turns the pipeline's own patch-derived method set into lines, so the
+developer's line set and the pipeline's stay comparable. The rings are
+deliberately left out: a caller's or callee's body is not part of the fix.
+The result is stored on `RootCause.body_lines` and serialised under
+`body_lines`; a `root_cause.json` written before the field existed has no
+such key, loads as an empty set, and gets no `Rbody` metric keys at all
+(which is different from getting a region of size zero).
+
 The rings around R̂₀ let us ask an empirical question the paper leaves open:
 *how wide is the real root-cause region?* For every overfitting patch the
 pipeline catches, the crash lands in R̂'s seeds, its callers, its callees, or
@@ -353,6 +391,7 @@ Bugs with large call graphs therefore do not dominate the result.
 | `metrics.py` | the five metrics per leg, aggregate and per ring, from the JSON files below only | no |
 | `aggregate.py` | macro-averages, the H_N/H_R/delta table, the RCC-versus-caught table | no |
 | `paper_tables.py` | the paper's Table 3 and Table 4, in markdown or LaTeX, from a measured run (section 6.5) | no |
+| `judge_view.py` | RCR for the one-shot LLM judge: the neighbourhood the *baseline* was shown, against the same R̂ (section 7) | no |
 | `cli.py` | runs everything over a run directory | imports `root_cause` (allowed here only) |
 
 The pipeline side has three flag-gated hooks (`src/java/run.py`,
@@ -391,7 +430,8 @@ in the leg's `measurements/errors.json` and the run continues.
 ### 6.3 What it writes
 
 Per leg, under `<leg>/measurements/`: `patch_derived.json`,
-`patch_derived_lines.json`, `root_cause.json`, `coverage_buggy.json`,
+`patch_derived_lines.json`, `root_cause.json` (which holds `methods`,
+`lines`, `body_lines` and `manifest`), `coverage_buggy.json`,
 `coverage_patched.json`, `coverage_compiled.json`, `crash_sites.json`,
 `errors.json`. Each set file is a list of locations with their ring tags,
 how each was found (`provenance`: `introspector` or `source-scan`), and the
@@ -453,7 +493,16 @@ Each value is an object `{value, num, den, by_ring}`; `value` is `null` when
 the denominator is empty; `by_ring` holds one ratio per ring for RCR/RCC/PSC
 and a seed/caller/callee/outside decomposition summing to one for RCP/CSM.
 The R-variants are `R0` (developer-changed methods), `R1` (R0 plus the
-manifestation frames; method granularity only) and `full` (with rings).
+manifestation frames; method granularity only), `full` (with rings) and
+`Rbody` (every line of the body of each developer-changed method; **line
+granularity only** — at method granularity it would be `R0` itself). So the
+line rows carry three variants and the function rows two, e.g.
+`rcc__line__Rbody__buggy__dyn`, `rcp__line__Rbody__patched__dyn`,
+`csm__line__Rbody__na` and `rcr__line__Rbody__na` (the last one measured
+against P's line set, like every other RCR), with the region's size under
+`sizes.R_line['Rbody']`. `Rbody` is read from `root_cause.json`'s
+`body_lines`; a leg whose file predates that key emits none of these keys,
+and `available.root_cause_body_lines` says which case a leg is in.
 `rcr_cross__…` is the ring-of-R̂ by ring-of-P count table. Every line also
 carries `available` (which inputs existed), `sizes` (|P|, |R̂|, |F| and
 their per-ring counts, plus `F_kind`, which records per build slot which
@@ -497,7 +546,9 @@ python -m java.measurements.paper_tables \
     [--hn <naive run_dir>]      # without it every H_N cell prints an en dash
     [--fkind dyn|stat]          # which kind of F(H) the RCC/RCP/PSC columns read
     [--build buggy|patched|compiled]   # i.e. which harness set
-    [--rvar R0|R1|full]         # which root-cause region variant
+    [--rvar R0|R1|full|Rbody]   # which root-cause region variant
+                                # (Rbody is line-only: the Line rows read it
+                                #  and the Function rows fall back to R0)
     [--fmt md|latex]            # markdown for the writeup, LaTeX for the paper
     [--dp 2]                    # decimal places; RCP often needs 3
     [--out FILE]
@@ -608,3 +659,119 @@ legs only.
   does not declare them, counted as `jdk_dropped.R_mislabelled` /
   `P_mislabelled`. Both passes are inert without coverage: with no
   population the question cannot be asked, and nothing is dropped.
+
+## 7. The judge's view
+
+**This section is evaluation only.** Nothing in it feeds back into the
+pipeline or into the baseline. It reads two finished artifacts and prints a
+number; it writes nothing into a leg and no other module imports it.
+
+`src/baseline_llmjudge/` is the comparison target: it answers the same
+question about the same patches with the same model and the same
+pre-execution evidence, in one shot, without running anything. Because it
+is shown evidence, it has a neighbourhood too — the set of methods its
+prompt put in front of the model. Call that set J.
+
+RCR (section 4) asks how much of the developer's region the pipeline's
+model was even told about: `|R̂ ∩ P| / |R̂|`. `judge_view.py` asks the same
+question of the baseline, against the *same* `root_cause.json`:
+
+```
+RCR_judge = |R̂ ∩ J| / |R̂|
+```
+
+Same granularity (method), same three R̂-variants, same ring breakdown,
+same `MethodIndex` matching, same JDK and mislabelled-receiver filters, and
+the same identity space (the primary build's coverage method list when the
+leg has one). The only thing that changes is which set plays P. The output
+keys are the ones `metrics.py` writes (`rcr__method__full__na` and so on),
+so a judge row and a pipeline row can be read by the same code.
+
+### 7.1 Where J comes from
+
+A baseline record does not store the evidence text it sent to the model. It
+stores a digest of it and a small audit summary, so J is built from one of
+two sources and every row says which one it used.
+
+**From the record alone** (`evidence_source: facts`). The fields read are
+`evidence_facts.touched_functions`, `.package`, `.modified_files` (and, when
+the facts are missing, the `touched_function:<name>` block names in
+`parity_manifest.blocks`). That gives the seed ring: the methods the patch
+changed, spelled `<package>.<class of the modified file>.<name>` with
+unknown parameter types. It gives nothing else, because the record keeps
+only `evidence_facts.reachable_count` — how *many* reachable methods the
+evidence carried, never which. A facts-only row therefore measures the seed
+ring honestly and reports that count beside an empty callee ring.
+
+**From the rendered evidence text** (`evidence_source: text`). The baseline
+caches its rendered evidence per patch (`<cache_dir>/<patch stem>.json`,
+field `text`), and the record carries `evidence_sha256`, the digest of
+exactly that string. A cache entry is used **only when its digest matches**:
+the cache is rebuilt in place whenever the extraction changes, and on the
+runs in this repository the semantic cache still matches its records byte
+for byte while the crashing cache no longer does. Using an unverified entry
+would credit the judge with a neighbourhood it never saw, so it is refused
+and the row falls back to the facts. With the text, J carries all three
+rings, read out of the blocks the renderer emits:
+
+| ring | block | how the name is recovered |
+|---|---|---|
+| seed | `` Function `name`: `` + its `<signature>` | the signature gives the real parameter types |
+| caller | each `<xref>…</xref>` | the calling method's *source*; the declaring class is not in it, so the ref is class-less and can only be matched by (name, arity) — the same limitation `patch_derived` has for P |
+| callee | each `- <label>` in `<root_cause_reachable>`, and each `<callee name=… from=…>` declaration | display labels, so mostly no parameter list, so matched with arity ignored; depth is always 1, since the evidence records no distance |
+
+Two things are deliberately left out of J. The semantic evidence also
+carries class skeletons and a state-coupling block, which name further
+methods; they are class-level context rather than a caller or reachable
+list, and `patch_derived` does not read their counterparts into P either.
+Conversely the `<callee>` declarations *are* counted here and are *not* read
+into P, so J can be a few methods wider than P on that block alone. Every
+row carries `shown_sources`, which says how many members came from each
+block, so any number can be re-read with a source removed.
+
+### 7.2 What the numbers do and do not mean
+
+A judge set is built from a rendered prompt, and a pipeline P is built from
+the analysis step's own dump, so the two are not measured with equal
+precision. Three things follow, and each is reported rather than hidden:
+
+- The seed's class is guessed from the modified file, so a seed in a nested
+  class can miss. `matching.*.j_unmatched` counts every shown name R̂ had
+  nothing for.
+- A name shown without a parameter list has *unknown* arity, not zero, so it
+  is matched on (simple class, name) with arity ignored. That is looser than
+  the pipeline's own matching, and when the class overloads the name it is
+  ambiguous in the build's whole method list and resolves to nothing — which
+  would read as "the judge was never shown the developer's method" when what
+  happened is that the evidence spelled the method without its types. Such a
+  name is therefore retried against R̂ alone and counted as
+  `matching.*.j_by_name_in_r`, so a row can be re-read with the retried
+  members removed. The retry fails closed: a name that R̂ itself overloads
+  stays unmatched. It can credit the judge wrongly in one case — it was
+  shown a *different* overload from the one the developer fixed — and the
+  counter is there so that case can be found.
+- The prompt shows at most `MAX_REACHABLE_IN_PROMPT` callees, and the
+  renderer prints how many it dropped. That number is reported as
+  `shown_sources.reachable_omitted`, so a low RCR_judge on the `full`
+  variant can be read against the cap rather than against the model.
+
+### 7.3 Running it
+
+```bash
+# from src/, on any machine that has both artifacts:
+python -m java.measurements.judge_view \
+    ../results/<baseline run>/records.jsonl \
+    ../runs-archive/runs/<measured run> \
+    [--evidence_cache ../results/llmjudge_cache_semantic] \
+    [--out judge_rcr.jsonl]
+```
+
+Records are paired with legs by (project, bug id, repair tool, label). When
+two legs share that key — one bug with two patches from one tool on the same
+side — the patch file's stem breaks the tie, and a tie that stays unbroken
+is reported as `ambiguous` rather than resolved by guessing. The table
+prints RCR_judge next to the pipeline's RCR for the same leg, read from that
+run's `metrics.jsonl`. A record with no matching leg, no root-cause file or
+no evidence still gets a row: `available` is false and `reason` says which
+input was missing. `--out` writes one JSON object per record; without it
+nothing is written at all.
