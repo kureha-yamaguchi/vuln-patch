@@ -140,12 +140,53 @@ patch). Coverage is collected on both. The buggy-side coverage is the
 primary one for the metrics below, because that is the build on which the
 root cause exists exactly as the developer found it; patched-side numbers
 are reported as a secondary column. Method identities are the same on both
-builds; line identities are defined on the buggy tree.
+builds; line identities are defined on the buggy tree. A third coverage set
+is collected for *every harness that compiled*, not only the ones the
+pipeline kept — section 3.3.1 says why.
 
 **Static variant.** Where useful, F_stat is also computed: the callees
 reachable, on the static call graph, from the library methods the harness
 source calls. It is what the harness *could* reach; F (dynamic) is what it
 *did* reach.
+
+### 3.3.1 Kept versus all compiled harnesses
+
+The pipeline does not keep every harness the model writes. Each harness
+that compiles is run once against the unfixed build, and it is kept only
+if it *crashes* there — the *acceptance check*. Harnesses that compile but
+do not crash are thrown away and never run again.
+
+That filter sits between the prompt and every number in section 4. If we
+measure only the harnesses that survived it, a high RCC can mean two very
+different things: the prompt sent the harnesses to the root cause, or the
+prompt sent them anywhere at all and the acceptance check quietly kept the
+few that happened to land on it. A crash on the unfixed build is already
+strong evidence of being near the bug, so the kept set is close to
+"harnesses selected for reaching the root cause", whatever the prompt did.
+The naive set (section 4.2) is where this matters most: its whole
+hypothesis is that unconditioned prompts miss the root cause, and the
+filter would hide exactly that.
+
+So coverage is collected for both sets:
+
+| harness set | build token | which harnesses | what it answers |
+|---|---|---|---|
+| kept | `buggy`, `patched` | the ones the acceptance check admitted | where the harnesses the pipeline actually uses go |
+| all compiled | `compiled` | every candidate that compiled, kept or not | where the *prompt* sent the harnesses, before the filter |
+
+`compiled` is not a third build of the code: the acceptance check runs on
+the buggy build, so its coverage is reported against the buggy classes and
+sources, and `compiled` is a separate name only because it is a different
+*set of harnesses*. It is collected in the acceptance check's own run,
+because that is the only time a rejected candidate is ever executed.
+
+Two things follow. The metrics that read F (RCC, RCP, PSC) are computed
+for `compiled` exactly as for the other two builds, and the rendered
+Table 3 gets a second block for it. Crash sites do not follow: the
+acceptance check's crashes are *by definition* crashes on the unfixed
+build — that is what the check tests — so counting them in CSM would
+measure the check rather than the harness set. They are recorded, and
+counted per build, but kept out of CSM's denominator.
 
 ## 4. The five metrics
 
@@ -232,9 +273,12 @@ Bugs with large call graphs therefore do not dominate the result.
 The pipeline side has three flag-gated hooks (`src/java/run.py`,
 `src/java/execution/fuzz_runner.py`, `src/java/harness/prompts.py`), all
 measurement-only: `context.json` is written for every leg; `--coverage` adds
-the two Jazzer flags from `src/java/execution/coverage_flags.py`, snapshots
-the compiled classes, and saves raw fuzzer output; `--naive` removes the
-root-cause context from the prompts. With the flags off the pipeline's
+the two Jazzer flags from `src/java/execution/coverage_flags.py` to every
+Jazzer run — the patched-side fuzz and the buggy-side scan of the kept
+harnesses (`FuzzRunner`) and the acceptance check of every compiled
+candidate (`HarnessVerifier`, section 3.3.1) — snapshots the compiled
+classes, and saves raw fuzzer output; `--naive` removes the root-cause
+context from the prompts. With the flags off the pipeline's
 prompts and commands are byte-for-byte unchanged, and tests pin that.
 
 ### 6.2 Running it
@@ -259,9 +303,14 @@ in the leg's `measurements/errors.json` and the run continues.
 
 Per leg, under `<leg>/measurements/`: `patch_derived.json`,
 `patch_derived_lines.json`, `root_cause.json`, `coverage_buggy.json`,
-`coverage_patched.json`, `crash_sites.json`, `errors.json`. Each set file is
-a list of locations with their ring tags plus the names that could not be
-matched.
+`coverage_patched.json`, `coverage_compiled.json`, `crash_sites.json`,
+`errors.json`. Each set file is a list of locations with their ring tags
+plus the names that could not be matched. The three coverage files are the
+three harness-set/build combinations of section 3.3.1: the kept harnesses
+on the buggy and the patched build, and every harness that compiled (on the
+buggy build). A leg's `result.jsonl` says which harnesses each set is over,
+under `coverage`: `compiled_attempts` (every candidate the acceptance check
+ran) and `accepted_attempts` (the ones it kept).
 
 Per run: `metrics.jsonl` (one line per leg), `aggregate.json`, and
 `delta.json` when `--naive_run` was given. The CLI also prints the Table 3
@@ -277,8 +326,11 @@ metric does not use: `rcr__method__R0__na`, `csm__method__R0__na`,
 
 RCC, RCP and PSC are computed from F, and add a fifth slot naming the *kind*
 of F the number came from: `rcc__method__R0__buggy__dyn`,
-`rcp__line__full__patched__dyn`, `psc__method__na__buggy__dyn`. Two kinds
-exist (`F_KINDS` in `metrics.py`). `dyn` is the dynamic set of section 3.3 —
+`rcp__line__full__patched__dyn`, `psc__method__na__buggy__dyn`, and for the
+all-compiled harness set of section 3.3.1 the same keys with `compiled` in
+the build slot: `rcc__method__R0__compiled__dyn`,
+`psc__line__na__compiled__dyn`. Two kinds exist (`F_KINDS` in
+`metrics.py`). `dyn` is the dynamic set of section 3.3 —
 what the harnesses actually executed, from JaCoCo coverage — and is the only
 kind anything emits today. `stat` is reserved for the planned static variant
 of section 3.3: what the harnesses could reach, from call-graph reachability
@@ -299,6 +351,13 @@ their per-ring counts, plus `F_kind`, which records per build how that
 build's F was obtained — `dyn` for now), `matching` (how many names could
 not be matched, and how many were ambiguous), the crash counts, and the
 leg's identity and outcome (`caught`, `missed`, `false_alarm`, `clean`).
+`crash_by_build` and `sizes.crash_sites_compiled` count the acceptance
+check's own crashes; `csm__…` never does (section 3.3.1).
+
+The printed Table 3 is the kept harnesses' by default. When the run also
+measured the all-compiled set, a second table follows it; each names its
+harness set in its header ("kept harnesses" / "all compiled harnesses"),
+and `render_markdown`'s `build` argument renders one of them on its own.
 
 ### 6.4 Known limits
 

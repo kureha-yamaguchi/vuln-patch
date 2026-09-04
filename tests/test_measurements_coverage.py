@@ -329,6 +329,65 @@ def test_collect_leg_ignores_exec_files_with_no_build_suffix(fake_java,
     assert fake_java == []
 
 
+def test_collect_leg_collects_the_compiled_candidate_set(fake_java, tmp_path):
+    """`compiled` is a third build token: the acceptance gate's run of
+    EVERY candidate that compiled, kept or not.  It is grouped, unioned
+    and written exactly like the other two, so a leg gets a third file,
+    and the harness names it lists are the compiled ones — including the
+    candidates that never made it into the kept set."""
+    leg = tmp_path / 'leg'
+    cov_dir = leg / 'cov'
+    cov_dir.mkdir(parents=True)
+    for name in ('attempt_001_compiled.exec', 'attempt_002_compiled.exec',
+                 'attempt_002_buggy.exec', 'attempt_002_patched.exec'):
+        (cov_dir / name).write_text('')
+    (cov_dir / 'classpath.json').write_text(json.dumps({
+        'class_dirs': ['/cov/classes_buggy', '/cov/classes_patched'],
+        'source_dirs': ['/buggy/source', '/patched/source'],
+        'include_glob': 'org.jfree.**',
+    }))
+
+    out = cov_mod.collect_leg(str(leg))
+
+    assert sorted(out) == ['buggy', 'compiled', 'patched']
+    # attempt_001 was rejected by the gate, so it appears ONLY here
+    assert out['compiled'].harness == 'attempt_001+attempt_002'
+    assert out['buggy'].harness == 'attempt_002'
+    path = leg / 'measurements' / 'coverage_compiled.json'
+    loaded = Coverage.from_dict(json.loads(path.read_text()))
+    assert loaded.build == 'compiled'
+    assert loaded.methods == out['compiled'].methods
+    # the report for a `compiled` dump was built against the BUGGY classes:
+    # that is the build the acceptance gate runs on.
+    cmd = [c for c in fake_java
+           if any(a.endswith('attempt_001_compiled.exec') for a in c)][0]
+    assert '/cov/classes_buggy' in cmd and '/cov/classes_patched' not in cmd
+    assert '/buggy/source' in cmd and '/patched/source' not in cmd
+
+
+def test_dirs_for_build_maps_compiled_to_the_buggy_side():
+    """`compiled` names a harness SET, not a different build of the code —
+    the acceptance gate runs on the buggy build — so it must resolve to the
+    same directories `buggy` does."""
+    dirs = ['/cov/classes_buggy', '/cov/classes_patched']
+    assert cov_mod._dirs_for_build(dirs, 'compiled') == \
+        cov_mod._dirs_for_build(dirs, 'buggy') == ['/cov/classes_buggy']
+    assert cov_mod._dirs_for_build(dirs, 'patched') == ['/cov/classes_patched']
+    # an older layout that names neither build still uses everything
+    assert cov_mod._dirs_for_build(['/one', '/two'], 'compiled') == \
+        ['/one', '/two']
+
+
+def test_split_exec_name_knows_the_three_build_tokens():
+    assert cov_mod._split_exec_name('attempt_003_compiled') == \
+        ('attempt_003', 'compiled')
+    assert cov_mod.BUILDS == ('buggy', 'patched', 'compiled')
+    # the split is on the LAST underscore, so no token may contain one
+    for build in cov_mod.BUILDS:
+        assert '_' not in build
+    assert cov_mod._split_exec_name('attempt_003_kept') is None
+
+
 def test_the_real_runner_is_a_plain_subprocess_call():
     """Guard the seam the tests monkeypatch: `_run` must stay the only
     place a process is started."""

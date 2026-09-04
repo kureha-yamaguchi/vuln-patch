@@ -353,7 +353,7 @@ def test_sizes_and_available_flags(run_dir):
         'patch_derived': True, 'patch_derived_lines': True,
         'root_cause': True, 'root_cause_manifest': True,
         'coverage_buggy': True, 'coverage_patched': False,
-        'crash_sites': True}
+        'coverage_compiled': False, 'crash_sites': True}
     assert row['builds'] == ['buggy']
     s = row['sizes']
     assert s['P_method'] == 3 and s['P_line'] == 3
@@ -447,12 +447,101 @@ def test_cli_main_without_checkouts_still_writes_metrics(tmp_path, monkeypatch,
         'patch_derived': False, 'patch_derived_lines': False,
         'root_cause': False, 'root_cause_manifest': False,
         'coverage_buggy': False, 'coverage_patched': False,
-        'crash_sites': False}
+        'coverage_compiled': False, 'crash_sites': False}
     errors = json.loads((leg / 'measurements' / 'errors.json').read_text())
     assert set(errors) == {'checkout', 'patch_derived', 'patch_derived_lines',
                            'root_cause', 'coverage', 'crash_sites'}
     out = capsys.readouterr().out
     assert 'metrics.jsonl: 1 row(s)' in out and 'n/a' in out
+
+
+# ---------------------------------------------------------------------------
+# the third harness set: every candidate that compiled
+# ---------------------------------------------------------------------------
+
+def _compiled_leg(tmp_path):
+    """One leg measured for both harness sets.
+
+    The KEPT set (build `buggy`) ran only Alpha.a.  The ALL-COMPILED set
+    (build `compiled`, the acceptance gate's own run of every candidate)
+    additionally ran Alpha.b, Beta.c and Beta.d — the candidates the gate
+    then threw away.  Crash sites carry both builds."""
+    run = str(tmp_path / 'run')
+    return _write_leg(
+        run, '01_patch1-Chart-1-Arja_o',
+        {'label': 'overfitting', 'status': 'evaluated', 'bug_kind': 'crashing',
+         'project': 'Chart', 'bug_id': '1', 'apr_tool': 'Arja',
+         'crashed_on_patch': True},
+        patch_derived=_mset([(A_a, loc.SEED), (B_c, loc.CALLER)]),
+        patch_derived_lines=_lset([(A10, loc.SEED)]),
+        root_cause=chart1_root_cause(),
+        coverage={
+            'buggy': _cov('buggy', [A_a], [A10],
+                          [A_a, A_b, B_c, B_d], 2, 10),
+            'compiled': _cov('compiled', [A_a, A_b, B_c, B_d],
+                             [A10, A11, B20, B40],
+                             [A_a, A_b, B_c, B_d], 7, 10),
+        },
+        crash_sites=[
+            # the kept set's crash: inside R0
+            _site('buggy', 'library', A_a, 10),
+            # the acceptance gate's own crashes, over all compiled
+            # candidates: one inside R0, one outside R entirely
+            _site('compiled', 'library', A_b, 11),
+            _site('compiled', 'library', B_g, 99),
+        ])
+
+
+def test_compiled_build_gets_its_own_f_metrics(tmp_path):
+    """RCC/RCP/PSC are emitted for `compiled` exactly as for the other two
+    builds — same keys, same fifth slot — so the kept set's number and the
+    all-compiled number can never be mistaken for each other."""
+    row = M.compute_leg(_compiled_leg(tmp_path))
+    assert row['builds'] == ['buggy', 'compiled']
+    assert row['available']['coverage_compiled'] is True
+    # R0 = {Alpha.a, Alpha.b}: the kept set ran half of it, the full set of
+    # compiled candidates ran all of it.  Measuring only the kept set would
+    # have credited the acceptance gate's filter with that difference.
+    assert _v(row, 'rcc__method__R0__buggy__dyn') == 0.5
+    assert _v(row, 'rcc__method__R0__compiled__dyn') == 1.0
+    assert _v(row, 'rcp__method__R0__compiled__dyn') == 0.5    # 2 of 4
+    assert _v(row, 'psc__method__na__compiled__dyn') == 1.0
+    assert _v(row, 'psc__method__na__buggy__dyn') == 0.5
+    assert _v(row, 'rcc__line__full__buggy__dyn') == 0.25
+    assert _v(row, 'rcc__line__full__compiled__dyn') == 1.0
+    for key in ('rcc__method__R0__compiled__dyn',
+                'rcp__line__full__compiled__dyn',
+                'psc__method__na__compiled__dyn'):
+        assert key in row and len(key.split('__')) == 5
+    # sizes carry the third build the same way
+    s = row['sizes']
+    assert s['F_method'] == {'buggy': 1, 'compiled': 4}
+    assert s['F_line'] == {'buggy': 1, 'compiled': 4}
+    assert s['F_all_methods'] == {'buggy': 4, 'compiled': 4}
+    assert s['F_kind'] == {'buggy': 'dyn', 'compiled': 'dyn'}
+    assert s['branches']['compiled'] == {'covered': 7, 'total': 10}
+    # RCR and CSM never read F, so they are unchanged and build-free
+    assert 'rcr__method__R0__compiled' not in row
+    assert _v(row, 'rcr__method__R0__na') == 0.5
+
+
+def test_csm_ignores_compiled_build_crash_sites(tmp_path):
+    """CSM asks where the KEPT harnesses' crashes landed.  The acceptance
+    gate crashes every candidate it runs — that is what the gate is — so
+    counting those would measure the gate, not the harness set.  They are
+    counted where they belong instead."""
+    row = M.compute_leg(_compiled_leg(tmp_path))
+    csm = row['csm__method__R0__na']
+    # denominator is the ONE kept-side library site, not all three
+    assert (csm['den'], csm['num'], csm['value']) == (1, 1, 1.0)
+    assert csm['harness_only'] == 0
+    # counting all three would have given 2/3
+    assert row['crash_by_build'] == {'buggy': 1, 'patched': 0, 'compiled': 2}
+    assert row['crash_total'] == 3 and row['crash_library'] == 3
+    assert row['crash_compiled'] == 2
+    assert row['sizes']['crash_sites_compiled'] == 2
+    assert row['sizes']['crash_sites_library'] == 3
+    assert row['csm__line__R0__na']['den'] == 1
 
 
 def test_rcr_cross_table(run_dir):

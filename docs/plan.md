@@ -1792,6 +1792,47 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.50 ROOT-CAUSE MEASUREMENT LAYER (2026-09-04)
+**Built:** `src/java/measurements/` (MEASUREMENT ONLY; README for outsiders)
+implementing the paper's formal objects — P (patch-derived set: seeds +
+callers + callees, from the pipeline's own context dump), R-hat (same
+construction from the Defects4J developer patch, orientation verified;
+variants R0 = developer-changed methods, R1 = +trigger-test frames, full =
+with rings), F(H) (JaCoCo coverage via Jazzer `--coverage_dump`, per build)
+— and the five metrics RCR/RCC/RCP/PSC/CSM at method and line granularity,
+aggregate and PER RING, with `__dyn` marked in every F-dependent key
+(`stat` reserved). Firewall: root_cause.py is the only reader of the
+developer fix; a test fails if any pipeline module imports the package.
+**Pipeline hooks (flag-gated, off-path byte-identical, pinned by tests):**
+`context.json` per leg (always), `--coverage` (dumps, class snapshots, raw
+Jazzer output per run), `--naive` (level B: patch + failing test kept,
+neighbourhood removed). Also fixed diffcov.changed_lines_by_file's per-hunk
+deletion bookkeeping (now per change group, order-independent).
+**Smoke (measure_smoke_20260904_075108, 7 dev legs, 1.56M tokens):** all
+stages ok on every leg. Verdicts 4/7 as history; flips Math-32 FN,
+Lang-6 FP (both judgement-side: symmetric firings dismissed / unsound
+metamorphic relation accepted), Chart-26-c FP (never a stable leg — my
+selection error). **A/B (measure_ab_nocov/cov, idle VM):** flips REPRODUCE
+with the hook OFF (Math-32 FN, Lang-6 FP); cov arm Math-32 FN, Lang-6 TN —
+hook exonerated. Old-vs-new code context+prompt for Math-32 on the same
+checkout: byte-identical. Math-32 now FN 3/3 vs TP 2/2 in August: an
+era difference (code 0dce300 / model), not today's changes — unattributed.
+**First numbers (H_R only):** RCR = 1.0 everywhere (APR patch and developer
+fix touch the same method on all 5 bugs); RCC(seeds) = 1.0 everywhere,
+RCC(full rings) 0.7–1.0; RCP 0.01–0.13 (root cause is a tiny share of what
+harnesses execute); PSC(method) 0.82–1.0, PSC(line) 0.36–0.54; CSM 1.0 for
+crashing bugs (every crash in the developer-changed method, on the
+developer's line), 0.45–0.56 for Chart-26 where the false alarm's crash
+site (G2TextMeasurer.getStringWidth:78) lies OUTSIDE R-hat; semantic bugs
+give harness-only crashes (CSM undefined by design).
+**Known limits:** caller ring mostly empty (introspector does not resolve
+virtual calls); introspector mislabels receivers (Rectangle2D methods as
+`Axis.*`) — such entries land in `unmatched`, never in denominators;
+third-party jars are outside the JaCoCo population.
+**User decisions:** naive = level B; measure coverage on BOTH kept and all
+compiled harnesses (hook in progress). Next: holdout_v2 root-cause pass
+(RCR/CSM at scale, running), then H_N vs H_R on dev bugs.
+
 ### 8.49 FROZEN-QUEUE V2 + CERTIFICATION SWEEP (2026-08-26/27; analyse-only throughout)
 **User decisions recorded:** rerun ALL 69 frozen-queue entries at git
 9b63217 (current merged main; run-once exception explicit); certify the

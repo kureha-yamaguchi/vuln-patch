@@ -10,7 +10,10 @@ rule and it is the rule that can silently break.
     callee walk (`reachable_edges` / `reachable_depth`).
   * HOOK 2 — the Jazzer invocation, execution/fuzz_runner.py. `--coverage`
     adds exactly two Jazzer flags and copies the class files a post-hoc
-    JaCoCo report will need.
+    JaCoCo report will need. Both classes that invoke Jazzer carry it:
+    `FuzzRunner` (the KEPT harnesses, builds `patched` and `buggy`) and
+    `HarnessVerifier`, whose acceptance run is the only time every
+    COMPILED candidate is executed (build `compiled`).
   * HOOK 3 — harness prompt assembly, harness/prompts.py. `--naive`
     builds the paper's unconditioned H_N prompt by dropping the three
     root-cause-conditioning insertions.
@@ -449,6 +452,157 @@ def test_fuzz_runner_names_dumps_by_harness_and_build(tmp_path):
     assert runner.coverage_dumps[1]['exists'] is False
 
 
+# ---- the acceptance check: every COMPILED candidate ----------------------
+
+def _build_result(tmp_path, label='attempt_002'):
+    from java.harness.build import BuildResult
+    hdir = tmp_path / label
+    hdir.mkdir(parents=True, exist_ok=True)
+    (hdir / 'FuzzHarness.java').write_text('class FuzzHarness {}')
+    return BuildResult(harness_path=str(hdir / 'FuzzHarness.java'),
+                       class_name='FuzzHarness', classpath='/cp',
+                       compiled=True, returncode=0, stdout='', stderr='',
+                       attempt_label=label)
+
+
+def _verifier(tmp_path=None, **extra):
+    return fuzz_runner.HarnessVerifier(
+        jazzer_standalone_jar='/jars/jazzer.jar',
+        buggy_classpath='/cp/classes',
+        timeout_seconds=20,
+        jazzer_api_jar='/jars/jazzer-api.jar',
+        **extra)
+
+
+def test_verifier_command_is_byte_identical_without_the_flag(
+        captured_jazzer, tmp_path):
+    """The OFF path for the gate that decides which harnesses are KEPT.
+    This run is on the pipeline's critical path — a harness is admitted to
+    the set only if it crashes here — so an extra flag would change which
+    harnesses the whole run has, not merely what is measured."""
+    br = _build_result(tmp_path)
+    _verifier().verify(br)
+    _verifier(coverage_dir=None, coverage_include=None,
+              coverage_out_dir=None).verify(br)
+    # a directory without a glob, and a glob without a directory: neither
+    # is coverage ON, so neither may touch the command
+    _verifier(coverage_dir=str(tmp_path / 'cov'),
+              coverage_out_dir=str(tmp_path / 'fuzz_out')).verify(br)
+    _verifier(coverage_include='org.example.**').verify(br)
+    cmds = [c for c, _env in captured_jazzer]
+    envs = [e for _c, e in captured_jazzer]
+    assert cmds[0] == cmds[1] == cmds[2] == cmds[3]
+    assert envs == [None, None, None, None]
+    assert not any(a.startswith('--coverage_dump') for a in cmds[0])
+    assert not any(a.startswith('--instrumentation_includes') for a in cmds[0])
+    assert not (tmp_path / 'cov').exists()
+    assert not (tmp_path / 'fuzz_out').exists()
+
+
+def test_verifier_carries_exactly_the_two_flags(captured_jazzer, tmp_path):
+    """With the flag, the acceptance run gets the SAME two Jazzer flags the
+    fuzz runs get — and nothing else changes about its command."""
+    from java.execution.coverage_flags import jazzer_coverage_args
+    br = _build_result(tmp_path)
+    _verifier().verify(br)
+    v = _verifier(coverage_dir=str(tmp_path / 'cov'),
+                  coverage_include='org.example.**',
+                  coverage_out_dir=str(tmp_path / 'fuzz_out'))
+    v.verify(br)
+    off, on = captured_jazzer[0][0], captured_jazzer[1][0]
+    expected = jazzer_coverage_args(
+        str(tmp_path / 'cov' / 'attempt_002_compiled.exec'),
+        'org.example.**')
+    assert len(expected) == 2
+    assert [a for a in on if a not in expected] == off
+    assert [a for a in on if a in expected] == expected
+    assert on.index(expected[0]) < on.index('--')
+    assert captured_jazzer[1][1] is None
+
+
+def test_verifier_names_its_dumps_with_the_compiled_build_token(tmp_path):
+    """`compiled` = the buggy build, every candidate that compiled. The
+    token has no underscore, because the measurement side recovers
+    (harness, build) by splitting on the LAST one."""
+    v = _verifier(coverage_dir=str(tmp_path / 'cov'),
+                  coverage_include='org.example.**',
+                  coverage_out_dir=str(tmp_path / 'fuzz_out'))
+    dump = v._coverage_dump_path('attempt_002', 'compiled')
+    out = v._coverage_output_path('attempt_002', 'compiled')
+    assert os.path.basename(dump) == 'attempt_002_compiled.exec'
+    assert os.path.dirname(dump) == str(tmp_path / 'cov')
+    assert os.path.basename(out) == 'attempt_002_compiled.txt'
+    assert os.path.dirname(out) == str(tmp_path / 'fuzz_out')
+    assert '_' not in 'compiled'
+    from java.measurements.coverage import _split_exec_name
+    assert _split_exec_name('attempt_002_compiled') == ('attempt_002',
+                                                        'compiled')
+    # and with the flag off there is nothing to name
+    assert _verifier()._coverage_on() is False
+    assert _verifier()._coverage_dump_path('attempt_002', 'compiled') is None
+    assert _verifier().coverage_dumps == []
+
+
+def test_verifier_records_one_dump_and_one_log_per_candidate(
+        monkeypatch, tmp_path):
+    """Every compiled candidate is run here exactly once — the rejected
+    ones are never run again — so this is where the "all compiled
+    harnesses" coverage set comes from. The record lists a candidate whose
+    dump Jazzer failed to write too, which a silently missing file would
+    not."""
+    class _Talkative:
+        returncode = 0
+        stdout = 'INFO: seed corpus'
+        stderr = '== Java Exception: java.lang.IllegalStateException'
+
+    def _run(cmd, **kw):
+        dump = [a for a in cmd if a.startswith('--coverage_dump=')]
+        if dump and 'attempt_001' in dump[0]:
+            path = dump[0].split('=', 1)[1]
+            with open(path, 'wb') as fh:
+                fh.write(b'exec')
+        return _Talkative()
+
+    monkeypatch.setattr(fuzz_runner.subprocess, 'run', _run)
+    v = _verifier(coverage_dir=str(tmp_path / 'cov'),
+                  coverage_include='org.example.**',
+                  coverage_out_dir=str(tmp_path / 'fuzz_out'))
+    v.verify(_build_result(tmp_path, 'attempt_001'))
+    v.verify(_build_result(tmp_path, 'attempt_002'))
+
+    assert [(d['harness'], d['build'], d['exists']) for d in v.coverage_dumps] \
+        == [('attempt_001', 'compiled', True),
+            ('attempt_002', 'compiled', False)]
+    assert [os.path.basename(p) for p in v.coverage_outputs] == [
+        'attempt_001_compiled.txt', 'attempt_002_compiled.txt']
+    raw = (tmp_path / 'fuzz_out' / 'attempt_001_compiled.txt').read_text()
+    assert raw == f'{_Talkative.stdout}\n{_Talkative.stderr}'
+
+
+def test_verifier_snapshots_the_buggy_classes_once(monkeypatch, tmp_path):
+    """The post-hoc report needs the buggy build's class files, and the
+    latent-oracle scan only snapshots them when the campaign KEPT a
+    harness — a leg that kept none is exactly the leg whose compiled-set
+    coverage matters, so the verifier does it itself, once."""
+    monkeypatch.setattr(fuzz_runner.subprocess, 'run',
+                        lambda cmd, **kw: _FakeProc())
+    calls = []
+    monkeypatch.setattr(fuzz_runner, 'snapshot_coverage_classpath',
+                        lambda *a: calls.append(a))
+    v = _verifier(coverage_dir=str(tmp_path / 'cov'),
+                  coverage_include='org.example.**',
+                  coverage_out_dir=str(tmp_path / 'fuzz_out'),
+                  coverage_checkout='/checkout/lang_1_buggy')
+    v.verify(_build_result(tmp_path, 'attempt_001'))
+    v.verify(_build_result(tmp_path, 'attempt_002'))
+    assert calls == [('/checkout/lang_1_buggy', str(tmp_path / 'cov'),
+                      'buggy', 'org.example.**')]
+    # with the flag off nothing is snapshotted at all
+    _verifier(coverage_checkout='/checkout/lang_1_buggy').verify(
+        _build_result(tmp_path, 'attempt_003'))
+    assert len(calls) == 1
+
+
 # ---- the classpath snapshot ----------------------------------------------
 
 def test_snapshot_copies_the_class_files_and_merges_both_builds(
@@ -548,6 +702,46 @@ def test_record_coverage_lists_every_dump(tmp_path):
         str(tmp_path / 'out' / 'attempt_001_patched.txt')]
     assert extras['coverage']['classpath'] is None    # none written yet
     assert extras['coverage']['dir'] == str(tmp_path)
+
+
+def test_record_coverage_separates_compiled_from_accepted(tmp_path):
+    """Two harness SETS come out of one leg: every candidate the
+    acceptance gate ran (build `compiled`) and the subset it kept. The
+    record names both, so a later reader never has to re-derive the gate's
+    decision from the trace to know which set a coverage number is over."""
+    verifier = fuzz_runner.HarnessVerifier(
+        jazzer_standalone_jar='/jars/j.jar', buggy_classpath='/cp',
+        coverage_dir=str(tmp_path), coverage_include='org.example.**',
+        coverage_out_dir=str(tmp_path / 'out'))
+    for label in ('attempt_001', 'attempt_002', 'attempt_003'):
+        verifier._coverage_dump_path(label, 'compiled')
+    runner = fuzz_runner.FuzzRunner(
+        jazzer_standalone_jar='/jars/j.jar',
+        coverage_dir=str(tmp_path), coverage_include='org.example.**',
+        coverage_out_dir=str(tmp_path / 'out'))
+    runner._coverage_dump_path('attempt_002', 'patched')
+    extras = {}
+    run_mod._record_coverage([runner, verifier], str(tmp_path), extras,
+                             accepted=['attempt_002'])
+    cov = extras['coverage']
+    assert cov['compiled_attempts'] == ['attempt_001', 'attempt_002',
+                                        'attempt_003']
+    assert cov['accepted_attempts'] == ['attempt_002']
+    assert {d['build'] for d in cov['dumps']} == {'compiled', 'patched'}
+
+
+def test_record_coverage_accepts_no_harnesses_at_all(tmp_path):
+    """The leg the compiled set exists for: the gate kept nothing, so the
+    kept-side lists are empty and every candidate is still accounted for."""
+    verifier = fuzz_runner.HarnessVerifier(
+        jazzer_standalone_jar='/jars/j.jar', buggy_classpath='/cp',
+        coverage_dir=str(tmp_path), coverage_include='org.example.**',
+        coverage_out_dir=str(tmp_path / 'out'))
+    verifier._coverage_dump_path('attempt_001', 'compiled')
+    extras = {}
+    run_mod._record_coverage([verifier], str(tmp_path), extras, accepted=[])
+    assert extras['coverage']['compiled_attempts'] == ['attempt_001']
+    assert extras['coverage']['accepted_attempts'] == []
 
 
 # ===========================================================================

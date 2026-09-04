@@ -172,6 +172,60 @@ def test_render_markdown_of_a_single_run(conditioned):
     assert '3 legs over 2 bugs' in text
 
 
+def test_render_markdown_adds_a_block_for_the_compiled_set(tmp_path):
+    """A run that measured both harness sets renders two tables: the kept
+    harnesses (the default, buggy build) and every candidate that
+    compiled. Each says which set it is about, and the compiled table
+    reads ONLY compiled keys — falling back to another build would put a
+    different harness set in the same column."""
+    from test_measurements_metrics import _compiled_leg
+    _compiled_leg(tmp_path)
+    run = str(tmp_path / 'run')
+    M.write_metrics(run)
+    agg = A.aggregate(run)
+
+    assert A.has_build(agg, 'compiled') is True
+    text = A.render_markdown(agg)
+    assert text.count('Table 3') == 2
+    assert '(kept harnesses, build buggy)' in text
+    assert '(all compiled harnesses, build compiled)' in text
+    kept, compiled = text.split('Table 3')[1], text.split('Table 3')[2]
+    # RCC: half the seed ring for the kept set, all of it for the compiled
+    assert '| crashing | method | H_R | 0.500 | 0.500 |' in kept
+    assert '| crashing | method | H_R | 0.500 | 1.000 |' in compiled
+
+    # asked for one build, only that block is rendered
+    only = A.render_markdown(agg, build='compiled')
+    assert only.count('Table 3') == 1
+    assert '(all compiled harnesses, build compiled)' in only
+
+
+def test_render_markdown_stays_one_block_without_a_compiled_set(conditioned):
+    """The default is unchanged for every run made before the compiled set
+    was collected: one table, and it is the kept harnesses'."""
+    agg = A.aggregate(conditioned)
+    assert A.has_build(agg, 'compiled') is False
+    text = A.render_markdown(agg)
+    assert text.count('Table 3') == 1
+    assert 'all compiled harnesses' not in text
+    assert '| crashing | method | H_R | 0.250 | 0.500 | 0.250 | 0.667 | 0.500 |' \
+        in text
+
+
+def test_table3_columns_for_another_build_does_not_fall_back(conditioned):
+    """The buggy column list may fall back to the patched build (a run can
+    have only that side). No other build may: its whole point is that it is
+    a DIFFERENT harness set."""
+    assert A.table3_columns() == A.TABLE3_COLUMNS
+    cols = dict((name, tmpl) for name, tmpl, _f in A.table3_columns('compiled'))
+    assert cols['RCC'] == ('rcc__{g}__R0__compiled__{f}',)
+    assert cols['RCP'] == ('rcp__{g}__R0__compiled__{f}',)
+    assert cols['PSC'] == ('psc__{g}__na__compiled__{f}',)
+    # RCR and CSM never read F(H), so they are the same in every table
+    assert cols['RCR'] == ('rcr__{g}__R0__na',)
+    assert cols['CSM'] == ('csm__{g}__R0__na',)
+
+
 def test_aggregate_survives_error_rows(tmp_path, conditioned):
     with open(os.path.join(conditioned, 'metrics.jsonl'), 'a') as fh:
         fh.write(json.dumps({'leg': '99_broken_c', 'error': 'boom'}) + '\n')

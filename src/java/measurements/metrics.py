@@ -17,7 +17,8 @@ R  root-cause region.  Where the bug actually lives, taken from the
    ``callee``.  File: ``root_cause.json``.
 F  fuzzer-reachable set.  What the generated harness actually executed,
    measured on one build.  File: ``coverage_buggy.json`` /
-   ``coverage_patched.json``.
+   ``coverage_patched.json`` / ``coverage_compiled.json`` (the last one is
+   the ALL-COMPILED harness set, not the kept one; see `BUILDS`).
 C  crash set.  Where the campaign's crashes landed.
    File: ``crash_sites.json``.
 
@@ -46,7 +47,10 @@ R-variant    ``R0``   = the seed ring alone (the methods the developer
                         manifest is a set of stack frames stored as methods
                         and carries no line information;
              ``full`` = the whole ringed region (seed + caller + callee).
-build        which coverage the F-side came from: ``buggy`` or ``patched``.
+build        which coverage the F-side came from: ``buggy``, ``patched``
+             or ``compiled``.  The first two are the KEPT harness set on
+             the two builds; ``compiled`` is every compiled candidate on
+             the buggy build (see `BUILDS`).
              RCR and CSM do not read coverage, so their build slot is
              ``na``; PSC has no R-side, so its R-variant slot is ``na``.
 F kind       how F(H) was obtained — ``dyn`` (run-time coverage, the only
@@ -98,7 +102,16 @@ MEASUREMENTS_DIR = 'measurements'
 RESULT_FILE = 'result.jsonl'
 METRICS_FILE = 'metrics.jsonl'
 
-BUILDS = ('buggy', 'patched')
+#: The harness-set/build combinations a leg can carry coverage for.
+#: ``buggy`` and ``patched`` are the KEPT harnesses (the ones the acceptance
+#: gate admitted) on the two builds; ``compiled`` is EVERY compiled
+#: candidate, kept or rejected, on the buggy build — the acceptance gate
+#: runs each one once, and that run is the only chance to see what the
+#: rejected ones reached.  Reading only the kept set would let the gate,
+#: not the prompt, decide RCC; see the README, "Kept versus all compiled
+#: harnesses".  ``buggy`` stays first: it is the primary build.
+BUILD_COMPILED = 'compiled'
+BUILDS = ('buggy', 'patched', BUILD_COMPILED)
 GRANULARITIES = ('method', 'line')
 R_VARIANTS = ('R0', 'R1', 'full')
 R_VARIANTS_LINE = ('R0', 'full')      # R1 has no line-level counterpart
@@ -601,6 +614,7 @@ def compute_leg(leg_dir: str) -> dict:
         'root_cause_manifest': manifest is not None,
         'coverage_buggy': 'buggy' in covs,
         'coverage_patched': 'patched' in covs,
+        'coverage_compiled': BUILD_COMPILED in covs,
         'crash_sites': sites is not None,
     }
     out['builds'] = [b for b in BUILDS if b in covs]
@@ -639,10 +653,15 @@ def compute_leg(leg_dir: str) -> dict:
         sizes['crash_sites_total'] = len(sites)
         sizes['crash_sites_library'] = len(lib)
         sizes['crash_sites_harness_only'] = len(sites) - len(lib)
+        # Of those, the ones the acceptance gate itself produced, over all
+        # compiled candidates.  Counted, and excluded from CSM below.
+        sizes['crash_sites_compiled'] = sum(
+            1 for s in sites if s.build == BUILD_COMPILED)
     else:
         sizes['crash_sites_total'] = None
         sizes['crash_sites_library'] = None
         sizes['crash_sites_harness_only'] = None
+        sizes['crash_sites_compiled'] = None
     out['sizes'] = sizes
 
     matching: dict = {}
@@ -734,6 +753,17 @@ def compute_leg(leg_dir: str) -> dict:
         out['crash_total'] = len(sites)
         out['crash_by_build'] = {
             b: sum(1 for s in sites if s.build == b) for b in BUILDS}
+        # CSM asks whether the crashes the KEPT harness set produced landed
+        # in the root-cause region, so the acceptance gate's own crashes —
+        # the ``compiled`` build, which includes the candidates that were
+        # then thrown away — are counted above but never enter CSM's
+        # denominator.  They are still visible as ``crash_by_build``
+        # ['compiled'] and as ``crash_sites_compiled``.
+        kept = [s for s in sites if s.build != BUILD_COMPILED]
+        lib_kept = [s for s in kept if s.site_kind == 'library']
+        out['crash_compiled'] = len(sites) - len(kept)
+        lib = lib_kept
+        sites_csm = kept
         for rvar, rset in rvars.items():
             index = loc.MethodIndex(rset.refs())
             resolved = [_site_in(index, s.method, rset) for s in lib]
@@ -744,7 +774,7 @@ def compute_leg(leg_dir: str) -> dict:
                 _ratio(num, len(lib)),
                 by_ring=_decompose(list(range(len(ring_of_site))),
                                    lambda i: ring_of_site[i], len(lib)),
-                harness_only=len(sites) - len(lib))
+                harness_only=len(sites_csm) - len(lib))
         for rvar, rlset in rvars_line.items():
             rings = [rlset.ring_of(s.line) if s.line is not None
                      else loc.OUTSIDE for s in lib]
@@ -753,7 +783,7 @@ def compute_leg(leg_dir: str) -> dict:
                 _ratio(num, len(lib)),
                 by_ring=_decompose(list(range(len(rings))),
                                    lambda i: rings[i], len(lib)),
-                harness_only=len(sites) - len(lib))
+                harness_only=len(sites_csm) - len(lib))
 
     out['matching'] = matching
     return out

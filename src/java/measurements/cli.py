@@ -10,6 +10,9 @@ For every leg of `run_dir` this writes the JSON files `metrics.py` reads:
     <leg>/measurements/patch_derived_lines.json  LineSet    (P, lines)
     <leg>/measurements/root_cause.json           RootCause  (R + manifest)
     <leg>/measurements/coverage_<build>.json     Coverage   (F)  --coverage
+        <build> is `buggy` / `patched` (the harnesses the acceptance gate
+        KEPT) or `compiled` (every candidate that compiled, on the buggy
+        build) — see the README, "Kept versus all compiled harnesses"
     <leg>/measurements/crash_sites.json          [CrashSite]     (C)
     <leg>/measurements/errors.json               what failed here, if anything
 
@@ -224,10 +227,15 @@ def measure_leg(leg_dir: str, *, checkout_root: Optional[str] = None,
     # -- C ------------------------------------------------------------------
     def _crash_sites():
         cs = _mod_crash_sites()
-        # A `--coverage` run saved the raw Jazzer output of every fuzz run
-        # (both builds) under fuzz_out/; that is the complete record, so it
-        # wins over the trace, which keeps full stack traces only inside the
-        # verifier's evidence blocks (patched build).
+        # A `--coverage` run saved the raw Jazzer output of every Jazzer
+        # run under fuzz_out/, named `<harness>_<build>.txt` for all three
+        # build tokens (`buggy`, `patched`, and `compiled` — the acceptance
+        # gate's run of every candidate that compiled); that is the
+        # complete record, so it wins over the trace, which keeps full
+        # stack traces only inside the verifier's evidence blocks (patched
+        # build). The build token comes from the file name, so a
+        # `compiled` crash is attributed to that build and metrics.py
+        # keeps it out of CSM's denominator.
         fo_dir = os.path.join(leg_dir, 'fuzz_out')
         sites = []
         if os.path.isdir(fo_dir):

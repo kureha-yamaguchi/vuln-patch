@@ -1282,54 +1282,45 @@ def _merge_paths(existing, new) -> list:
     return out
 
 
-class FuzzRunner:
-    """Run Jazzer on each compiled harness against a patched project and
-    report whether it still finds a crash."""
+class _CoverageDumps:
+    """The --coverage (measurement-only) dump plumbing, shared by the two
+    classes that invoke Jazzer.
 
-    def __init__(self,
-                 jazzer_standalone_jar: str,
-                 timeout_seconds: int = config.FUZZ_TIMEOUT_SECONDS,
-                 expected_exceptions: Optional[List[str]] = None,
-                 jazzer_api_jar: Optional[str] = None,
-                 seed_literals: Optional[List[str]] = None,
-                 diffcov: bool = False,
-                 coverage_dir: Optional[str] = None,
-                 coverage_include: Optional[str] = None,
-                 coverage_out_dir: Optional[str] = None):
-        self.jazzer_standalone_jar = jazzer_standalone_jar
-        self.timeout_seconds = timeout_seconds
-        self.expected_exceptions = expected_exceptions or []
-        # API jar (FuzzedDataProvider) for the runtime classpath; see
-        # run_jazzer. Defaults there to config.JAZZER_API_JAR if None.
-        self.jazzer_api_jar = jazzer_api_jar
-        # Literal seeds (the failing test's own literals plus their
-        # mechanical variations — java_source.literal_variations) written
-        # into the patched-side seed corpus. A short fuzz budget then
-        # tries the discriminating input NEIGHBOURHOOD deterministically
-        # instead of hoping random bytes reach it (batch5: every
-        # invented check was present and stayed latent because 20s of
-        # fuzz never generated an exponent-plus-suffix string).
-        self.seed_literals = list(seed_literals or [])
-        # --diffcov: count entries into the patch-changed methods during the
-        # patched-side fuzz. Off by default; measurement only.
-        self.diffcov = diffcov
-        self.diffcov_plan = None
+    `FuzzRunner` and `HarnessVerifier` both run harnesses, and with
+    `--coverage` on both leave the same two artifacts behind per run: a
+    JaCoCo `.exec` dump under `<leg_dir>/cov` and the raw fuzzer output
+    under `<leg_dir>/fuzz_out`, named `<harness>_<build>`. The three build
+    tokens are `patched` (FuzzRunner's patched-side fuzz), `buggy` (its
+    keep-going scan of the KEPT harnesses on the buggy build) and
+    `compiled` (the verifier's acceptance run of EVERY compiled
+    candidate, which is also the buggy build — see the measurements
+    README, "Kept versus all compiled harnesses").
+
+    No token may contain an underscore: the measurement side splits a
+    dump's name on the LAST underscore to recover (harness, build).
+
+    Everything here is inert with the flag off: `_coverage_on()` is False,
+    the two path helpers return None, and `run_jazzer` is then called with
+    exactly the arguments it always was.
+    """
+
+    def _coverage_init(self,
+                       coverage_dir: Optional[str],
+                       coverage_include: Optional[str],
+                       coverage_out_dir: Optional[str]) -> None:
         # --coverage: the leg's <leg_dir>/cov directory and the package glob
         # to instrument. Both None/'' with the flag off, and then every
-        # branch that reads them is skipped and run_jazzer is called with
-        # exactly the arguments it always was. Measurement only.
+        # branch that reads them is skipped. Measurement only.
         self.coverage_dir = coverage_dir
         self.coverage_include = coverage_include
         # <leg_dir>/fuzz_out — where the raw stdout+stderr of each
         # instrumented run is saved. Same flag, same off state.
         self.coverage_out_dir = coverage_out_dir
-        # One entry per dump this runner asked Jazzer for, and one path per
+        # One entry per dump this object asked Jazzer for, and one path per
         # raw log it saved. Read only by run.py's _record_coverage, which
         # writes them to result.jsonl.
         self.coverage_dumps: List[dict] = []
         self.coverage_outputs: List[str] = []
-
-    # ---- --coverage plumbing (measurement only) ------------------------
 
     def _coverage_on(self) -> bool:
         return bool(self.coverage_dir and self.coverage_include)
@@ -1379,6 +1370,43 @@ class FuzzRunner:
             return
         snapshot_coverage_classpath(checkout_dir, self.coverage_dir,
                                     build, self.coverage_include)
+
+
+class FuzzRunner(_CoverageDumps):
+    """Run Jazzer on each compiled harness against a patched project and
+    report whether it still finds a crash."""
+
+    def __init__(self,
+                 jazzer_standalone_jar: str,
+                 timeout_seconds: int = config.FUZZ_TIMEOUT_SECONDS,
+                 expected_exceptions: Optional[List[str]] = None,
+                 jazzer_api_jar: Optional[str] = None,
+                 seed_literals: Optional[List[str]] = None,
+                 diffcov: bool = False,
+                 coverage_dir: Optional[str] = None,
+                 coverage_include: Optional[str] = None,
+                 coverage_out_dir: Optional[str] = None):
+        self.jazzer_standalone_jar = jazzer_standalone_jar
+        self.timeout_seconds = timeout_seconds
+        self.expected_exceptions = expected_exceptions or []
+        # API jar (FuzzedDataProvider) for the runtime classpath; see
+        # run_jazzer. Defaults there to config.JAZZER_API_JAR if None.
+        self.jazzer_api_jar = jazzer_api_jar
+        # Literal seeds (the failing test's own literals plus their
+        # mechanical variations — java_source.literal_variations) written
+        # into the patched-side seed corpus. A short fuzz budget then
+        # tries the discriminating input NEIGHBOURHOOD deterministically
+        # instead of hoping random bytes reach it (batch5: every
+        # invented check was present and stayed latent because 20s of
+        # fuzz never generated an exponent-plus-suffix string).
+        self.seed_literals = list(seed_literals or [])
+        # --diffcov: count entries into the patch-changed methods during the
+        # patched-side fuzz. Off by default; measurement only.
+        self.diffcov = diffcov
+        self.diffcov_plan = None
+        # --coverage (measurement only): where the dumps go and what to
+        # instrument. See _CoverageDumps; all-None with the flag off.
+        self._coverage_init(coverage_dir, coverage_include, coverage_out_dir)
 
     def run_all(self,
                 successful_results: List[BuildResult],
@@ -2373,7 +2401,7 @@ class VerificationResult:
     stderr: str
 
 
-class HarnessVerifier:
+class HarnessVerifier(_CoverageDumps):
     """Run a freshly compiled harness against the *buggy* checkout for a
     short budget and report whether it crashes.
 
@@ -2392,7 +2420,11 @@ class HarnessVerifier:
                  timeout_seconds: int = config.VERIFY_TIMEOUT_SECONDS,
                  expected_exceptions: Optional[List[str]] = None,
                  jazzer_api_jar: Optional[str] = None,
-                 corpus_dir: Optional[str] = None):
+                 corpus_dir: Optional[str] = None,
+                 coverage_dir: Optional[str] = None,
+                 coverage_include: Optional[str] = None,
+                 coverage_out_dir: Optional[str] = None,
+                 coverage_checkout: Optional[str] = None):
         self.jazzer_standalone_jar = jazzer_standalone_jar
         self.buggy_classpath = buggy_classpath
         self.timeout_seconds = timeout_seconds
@@ -2408,19 +2440,57 @@ class HarnessVerifier:
         # to reach the trigger quickly, and known-valid inputs start the
         # search in the right neighbourhood.
         self.corpus_dir = corpus_dir
+        # --coverage (measurement only): this run is the ONLY place every
+        # compiled candidate is executed — the ones this gate rejects are
+        # never run again — so it is where the "all compiled harnesses"
+        # coverage set has to be collected, under the build token
+        # `compiled`. All-None with the flag off, and then the Jazzer
+        # command below is byte-identical to what it always was.
+        self._coverage_init(coverage_dir, coverage_include, coverage_out_dir)
+        # The buggy checkout, whose class files a post-hoc JaCoCo report
+        # needs; snapshotted once, lazily, on the first instrumented run.
+        self.coverage_checkout = coverage_checkout
+        self._coverage_snapshotted = False
+
+    def _coverage_snapshot_once(self) -> None:
+        """Freeze the buggy build's classes for the `compiled` dumps.
+
+        The latent-oracle scan snapshots the same build, but only when the
+        campaign kept at least one harness — and a leg that kept none is
+        exactly the leg whose compiled-candidate coverage is worth having,
+        so the verifier cannot rely on it. No-op with the flag off, and
+        once per verifier either way."""
+        if self._coverage_snapshotted or not self._coverage_on():
+            return
+        self._coverage_snapshotted = True
+        if self.coverage_checkout:
+            self.snapshot_coverage_build(self.coverage_checkout, 'buggy')
 
     def verify(self, build_result: BuildResult) -> VerificationResult:
         harness_dir = os.path.dirname(build_result.harness_path)
-        outcome = run_jazzer(
-            jazzer_standalone_jar=self.jazzer_standalone_jar,
-            target_class=build_result.class_name,
-            harness_dir=harness_dir,
-            project_cp=self.buggy_classpath,
-            timeout_seconds=self.timeout_seconds,
-            expected_exceptions=self.expected_exceptions,
-            jazzer_api_jar=self.jazzer_api_jar,
-            corpus_dir=self.corpus_dir,
-        )
+        # --coverage: `compiled` = the buggy build, every compiled
+        # candidate. Both paths are None with the flag off.
+        self._coverage_snapshot_once()
+        _cov_id = build_result.attempt_label or os.path.basename(harness_dir)
+        _cov_dump = self._coverage_dump_path(_cov_id, 'compiled')
+        _cov_out = self._coverage_output_path(_cov_id, 'compiled')
+        try:
+            outcome = run_jazzer(
+                jazzer_standalone_jar=self.jazzer_standalone_jar,
+                target_class=build_result.class_name,
+                harness_dir=harness_dir,
+                project_cp=self.buggy_classpath,
+                timeout_seconds=self.timeout_seconds,
+                expected_exceptions=self.expected_exceptions,
+                jazzer_api_jar=self.jazzer_api_jar,
+                corpus_dir=self.corpus_dir,
+                coverage_dump=_cov_dump,
+                coverage_include=(self.coverage_include
+                                  if self._coverage_on() else None),
+                output_dump=_cov_out,
+            )
+        finally:
+            self._note_coverage_dump(_cov_dump)
         combined = outcome.combined_output
         if outcome.triggered:
             print(f"  ↳ crash detected ({outcome.crash_reason})")

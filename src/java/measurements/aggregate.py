@@ -24,6 +24,11 @@ module rolls those lines up:
     {H_N, H_R, delta}), columns are RCR RCC RCP PSC CSM, ``n/a`` wherever a
     number is undefined.  It accepts either a `delta()` result (three rows
     per block) or a plain `aggregate()` result (one H_R row per block).
+    Its `build` argument says which harness set the F-using columns are
+    about — the default ``buggy`` is the harnesses the acceptance gate
+    KEPT — and when the run also measured the ``compiled`` set (every
+    candidate that compiled, kept or not) a second table for it is printed
+    below the first.
 
 The kind of fuzzer-reachable set
 --------------------------------
@@ -64,6 +69,10 @@ DEFAULT_F_KIND = M.DEFAULT_F_KIND
 #: ``{g}`` is the granularity; ``{f}`` is the kind of F(H) and appears only
 #: in the three columns whose metric reads F, which is also why those three
 #: print their kind in the header ("RCC (dyn)").
+#:
+#: This is the default table: the KEPT harness set on the buggy build,
+#: falling back to the patched build when a run has only that.  A table for
+#: another build comes from `table3_columns`.
 TABLE3_COLUMNS = (
     ('RCR', ('rcr__{g}__R0__na',), False),
     ('RCC', ('rcc__{g}__R0__buggy__{f}', 'rcc__{g}__R0__patched__{f}'), True),
@@ -71,6 +80,42 @@ TABLE3_COLUMNS = (
     ('PSC', ('psc__{g}__na__buggy__{f}', 'psc__{g}__na__patched__{f}'), True),
     ('CSM', ('csm__{g}__R0__na',), False),
 )
+
+#: The build Table 3 is about unless the caller says otherwise.
+DEFAULT_BUILD = 'buggy'
+
+#: The harness set each build token's coverage is over, in words, for the
+#: rendered table's block labels.  ``buggy`` and ``patched`` are the
+#: harnesses the acceptance gate KEPT; ``compiled`` is every candidate that
+#: compiled, whether the gate kept it or not (see `metrics.BUILDS`).
+BUILD_LABELS = {
+    'buggy': 'kept harnesses',
+    'patched': 'kept harnesses',
+    'compiled': 'all compiled harnesses',
+}
+
+
+def table3_columns(build: str = DEFAULT_BUILD) -> tuple:
+    """Table 3's columns, reading the F-using ones for ONE build.
+
+    `DEFAULT_BUILD` gives exactly `TABLE3_COLUMNS` — buggy first, patched
+    as the fallback for a run that has only the patched side.  Any other
+    build (``compiled``) reads that build and nothing else: falling back
+    to another build would silently put a different HARNESS SET in the
+    same column, which is the whole distinction this parameter exists to
+    keep.  RCR and CSM never read F(H), so they are the same in every
+    table."""
+    if build == DEFAULT_BUILD:
+        return TABLE3_COLUMNS
+    out = []
+    for name, templates, uses_f in TABLE3_COLUMNS:
+        if uses_f:
+            first = templates[0]
+            head, _, tail = first.rpartition('__{f}')
+            base = head.rsplit('__', 1)[0]
+            templates = (f'{base}__{build}__{{f}}',)
+        out.append((name, templates, uses_f))
+    return tuple(out)
 
 
 def column_label(name: str, uses_f: bool, fkind: str) -> str:
@@ -350,34 +395,46 @@ def _pick(metrics_map: dict, candidates: Sequence[str]) -> Optional[str]:
     return None
 
 
-def render_markdown(agg: dict, fkind: Optional[str] = None) -> str:
-    """The Table 3 markdown block.
+def metric_names(agg: dict) -> set:
+    """Every flat metric field name anywhere in an `aggregate()` or
+    `delta()` result.  Used to ask whether a build was measured at all."""
+    names = set()
+    for source in (agg.get('by_kind'), agg.get('delta'),
+                   (agg.get('naive') or {}).get('by_kind'),
+                   (agg.get('conditioned') or {}).get('by_kind')):
+        for entry in (source or {}).values():
+            if isinstance(entry, dict) and 'metrics' in entry:
+                names |= set(entry['metrics'])
+            elif isinstance(entry, dict):
+                names |= set(entry)
+    return names
 
-    Accepts a `delta()` result — rows H_N, H_R and delta — or a plain
-    `aggregate()` result, which has only the one run to show (rendered as
-    H_R).
 
-    `fkind` picks which kind of fuzzer-reachable set the RCC, RCP and PSC
-    columns are read for, and those three columns name it in their header
-    ("RCC (dyn)").  It defaults to the kind the aggregate was built with,
-    and to `DEFAULT_F_KIND` for an aggregate that does not record one."""
-    if fkind is None:
-        fkind = agg.get('f_kind') or DEFAULT_F_KIND
+def has_build(agg: dict, build: str) -> bool:
+    """True when any F-using metric in `agg` was computed for `build`."""
+    return any(split_key(name)['build'] == build for name in metric_names(agg))
+
+
+def _table3_blocks(agg: dict, fkind: str, build: str) -> str:
+    """One Table 3 table, for one build's harness set."""
     paired = 'delta' in agg and 'naive' in agg and 'conditioned' in agg
+    label = BUILD_LABELS.get(build, build)
     if paired:
         blocks = [('H_N', agg['naive']['by_kind'], False),
                   ('H_R', agg['conditioned']['by_kind'], False),
                   ('delta', agg['delta'], True)]
         header = (f"Table 3 — root-cause conditioning, "
                   f"{agg.get('n_common_legs')} paired legs "
-                  f"over {agg.get('n_common_bugs')} bugs")
+                  f"over {agg.get('n_common_bugs')} bugs "
+                  f"({label}, build {build})")
     else:
         blocks = [('H_R', agg['by_kind'], False)]
         header = (f"Table 3 — {agg.get('n_legs')} legs over "
-                  f"{agg.get('n_bugs')} bugs")
+                  f"{agg.get('n_bugs')} bugs ({label}, build {build})")
 
+    columns = table3_columns(build)
     cols = [column_label(name, uses_f, fkind)
-            for name, _, uses_f in TABLE3_COLUMNS]
+            for name, _, uses_f in columns]
     lines = [header, '',
              '| bug class | granularity | run | ' + ' | '.join(cols) + ' |',
              '| --- | --- | --- | ' + ' | '.join('---' for _ in cols) + ' |']
@@ -396,7 +453,7 @@ def render_markdown(agg: dict, fkind: Optional[str] = None) -> str:
                     def get(key, _t=table):
                         return (_t.get(key) or {}).get('mean')
                 cells = []
-                for col, templates, _uses_f in TABLE3_COLUMNS:
+                for col, templates, _uses_f in columns:
                     key = _pick(table, [t.format(g=gran, f=fkind)
                                         for t in templates])
                     cells.append(_fmt(get(key) if key else None,
@@ -404,6 +461,35 @@ def render_markdown(agg: dict, fkind: Optional[str] = None) -> str:
                 lines.append(f'| {kind} | {gran} | {row_name} | '
                              + ' | '.join(cells) + ' |')
     return '\n'.join(lines) + '\n'
+
+
+def render_markdown(agg: dict, fkind: Optional[str] = None,
+                    build: str = DEFAULT_BUILD) -> str:
+    """The Table 3 markdown block.
+
+    Accepts a `delta()` result — rows H_N, H_R and delta — or a plain
+    `aggregate()` result, which has only the one run to show (rendered as
+    H_R).
+
+    `fkind` picks which kind of fuzzer-reachable set the RCC, RCP and PSC
+    columns are read for, and those three columns name it in their header
+    ("RCC (dyn)").  It defaults to the kind the aggregate was built with,
+    and to `DEFAULT_F_KIND` for an aggregate that does not record one.
+
+    `build` picks whose coverage those three columns are read from, and
+    with it which HARNESS SET the table is about: the default `buggy` is
+    the harnesses the acceptance gate KEPT, and `compiled` is every
+    candidate that compiled.  Each table says which in its header.  When
+    the default table is asked for and the run also measured the compiled
+    set, a SECOND table for it follows, because a kept-only number is
+    partly the gate's doing — see the measurements README, "Kept versus
+    all compiled harnesses"."""
+    if fkind is None:
+        fkind = agg.get('f_kind') or DEFAULT_F_KIND
+    out = _table3_blocks(agg, fkind, build)
+    if build == DEFAULT_BUILD and has_build(agg, 'compiled'):
+        out += '\n' + _table3_blocks(agg, fkind, 'compiled')
+    return out
 
 
 def render_rcc_vs_caught(agg: dict) -> str:

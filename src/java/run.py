@@ -1181,9 +1181,17 @@ def _coverage_setup(args, context):
     return cov_dir, glob_, out_dir
 
 
-def _record_coverage(runners, cov_dir, record_extras) -> None:
+def _record_coverage(runners, cov_dir, record_extras, accepted=None) -> None:
     """Persist this leg's coverage dump inventory into result.jsonl
     (`coverage`).
+
+    `runners` are the objects that asked Jazzer for a dump: the patched-side
+    `FuzzRunner`, the buggy-side keep-going `FuzzRunner`, and the
+    `HarnessVerifier`, whose acceptance run covers EVERY compiled candidate
+    (build token `compiled`). `accepted` is the attempt labels of the
+    harnesses the acceptance gate KEPT, so the two harness sets — all
+    compiled, and the kept subset — can be told apart later without
+    re-deriving the gate's decision from the trace.
 
     MEASUREMENT ONLY, and this is the boundary, stated where the records
     are collected: `coverage` names files on disk for a post-hoc JaCoCo
@@ -1204,12 +1212,27 @@ def _record_coverage(runners, cov_dir, record_extras) -> None:
             if path not in outputs:
                 outputs.append(path)
     classpath_path = os.path.join(cov_dir, 'classpath.json')
+    compiled_attempts = []
+    for rec in dumps:
+        if rec.get('build') == 'compiled' and \
+                rec.get('harness') not in compiled_attempts:
+            compiled_attempts.append(rec.get('harness'))
+    accepted_attempts = []
+    for name in (accepted or []):
+        if name and name not in accepted_attempts:
+            accepted_attempts.append(name)
     record_extras['coverage'] = {
         'dumps': dumps,
         'outputs': outputs,
         'classpath': (classpath_path if os.path.exists(classpath_path)
                       else None),
         'dir': cov_dir,
+        # Which harnesses each coverage set is over: every candidate that
+        # compiled and was run once by the acceptance gate, and the subset
+        # that gate kept. Measuring only the kept set lets the gate, not
+        # the prompt, decide the root-cause coverage number.
+        'compiled_attempts': compiled_attempts,
+        'accepted_attempts': accepted_attempts,
     }
     record_event('deterministic', method='coverage',
                  target='jazzer coverage dumps',
@@ -2666,6 +2689,13 @@ def main():
             expected_exceptions=expected_exceptions,
             jazzer_api_jar=jazzer_api_jar,
             corpus_dir=corpus_dir,
+            # --coverage (measurement only): the acceptance run of EVERY
+            # compiled candidate is dumped under the build token
+            # `compiled`. All-None with the flag off.
+            coverage_dir=_cov_dir,
+            coverage_include=_cov_glob,
+            coverage_out_dir=_cov_out_dir,
+            coverage_checkout=selection.buggy_dir,
         )
 
     # ONE model, from the input parameters. The two-tier
@@ -2966,8 +2996,13 @@ def main():
             print(f"  patched-code fuzzing failed: {exc}")
     # --coverage inventory for this leg, collected once from both runners
     # that could have produced a dump. No-op with the flag off.
-    _record_coverage([r for r in (_runner, _fr_lat) if r is not None],
-                     _cov_dir, record_extras)
+    _record_coverage([r for r in (_runner, _fr_lat, verifier)
+                      if r is not None],
+                     _cov_dir, record_extras,
+                     accepted=[(br.attempt_label
+                                or os.path.basename(
+                                    os.path.dirname(br.harness_path)))
+                               for br in (result.successful_results or [])])
 
     # 7b) Differential-firing ATTRIBUTION check — mechanical, label-free,
     #     and independent of the LLM verifier (which judges oracle

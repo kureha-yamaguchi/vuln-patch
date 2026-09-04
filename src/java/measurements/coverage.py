@@ -55,6 +55,17 @@ HARNESS_CLASS_PREFIX = 'FuzzHarness'
 
 BUILD_BUGGY = 'buggy'
 BUILD_PATCHED = 'patched'
+#: The acceptance-check run of EVERY compiled candidate, kept or not. It is
+#: the BUGGY build — the gate runs each freshly compiled harness against the
+#: unfixed code — so it is reported against the buggy classes and sources,
+#: and it is a separate build token only because it is a different HARNESS
+#: SET: all compiled candidates, versus the kept ones the other two tokens
+#: cover. See the README, "Kept versus all compiled harnesses".
+BUILD_COMPILED = 'compiled'
+
+#: Every build token a `.exec` dump can carry. No token may contain an
+#: underscore: `_split_exec_name` splits a dump's name on the LAST one.
+BUILDS = (BUILD_BUGGY, BUILD_PATCHED, BUILD_COMPILED)
 
 
 def _is_harness_class(class_fq: str) -> bool:
@@ -399,11 +410,12 @@ def _split_exec_name(stem: str) -> Optional[tuple]:
     """'attempt_003_patched' -> ('attempt_003', 'patched').
 
     The build is the LAST underscore-separated field, because harness
-    names contain underscores themselves."""
+    names contain underscores themselves (`attempt_003`), which is also
+    why no build token may contain one."""
     if '_' not in stem:
         return None
     harness, build = stem.rsplit('_', 1)
-    if build not in (BUILD_BUGGY, BUILD_PATCHED) or not harness:
+    if build not in BUILDS or not harness:
         return None
     return harness, build
 
@@ -419,10 +431,14 @@ def _dirs_for_build(dirs: List[str], build: str) -> List[str]:
     A directory belongs to the patched build when any path segment
     mentions 'patched'; otherwise to the buggy build. When nothing
     matches (an older layout) all directories are used, as before.
+
+    `compiled` is the acceptance gate's run of every compiled candidate,
+    and that gate runs on the BUGGY build, so it takes the buggy build's
+    directories — anything that is not `patched` does.
     """
     def is_patched(d: str) -> bool:
         return any('patched' in seg for seg in d.replace('\\', '/').split('/'))
-    want_patched = (build == 'patched')
+    want_patched = (build == BUILD_PATCHED)
     picked = [d for d in dirs if is_patched(d) == want_patched]
     return picked or list(dirs)
 
@@ -435,6 +451,12 @@ def collect_leg(leg_dir: str) -> Dict[str, Coverage]:
 
         <leg_dir>/cov/<harness>_<build>.exec     one per harness+build
         <leg_dir>/cov/classpath.json             where the classes live
+
+    Three build tokens appear (`BUILDS`): `buggy` and `patched` are the
+    KEPT harnesses on the two builds, and `compiled` is every compiled
+    candidate on the buggy build, from the acceptance gate's own run. They
+    are grouped and unioned separately, so a leg with a `compiled` dump
+    gets a third output file, `coverage_compiled.json`.
 
     `classpath.json` holds ``{"class_dirs": [...], "source_dirs": [...],
     "include_glob": "org.jfree.**"}``. Both directory lists are the
