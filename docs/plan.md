@@ -1837,8 +1837,26 @@ dev bugs) may motivate a GENERAL mechanism applied uniformly; nothing
 bug-specific may flow from the developer fix, and nothing R-hat-based
 runs inside the pipeline — at run time only P-side signals (PSC, raw
 coverage of the shown neighbourhood) exist. Record which finding
-motivated which mechanism. Next: holdout_v2 root-cause pass
-(RCR/CSM at scale, running), then H_N vs H_R on dev bugs.
+motivated which mechanism. **Holdout_v2 root-cause pass (69/69 legs, archived measurements):**
+RCR(R0) mean 0.928 — 64/69 legs' APR neighbourhood contains every
+developer-changed method; |R0| = 1 on 63 legs (near-binary, as Kureha's
+run also found). The 5 RCR=0 legs are ALL overfitting patches that
+changed a different method than the developer (Chart-25/Math-6/Math-71
+Arja, Math-88 SimFix, Math-33 SketchFix) and ALL 5 were caught, vs 12/18
+caught among RCR=1 overfits — "patched the wrong place" reads as an
+easier catch (n small; evaluation-only observation). Crash sites in the
+archive exist only from patched-side evidence blocks (10 library sites:
+3 callee ring, 7 outside; 112 harness-only) — thin by construction.
+Caller ring in this pass = introspector only (source-scan landed after
+the pass started).
+**Kureha's parallel implementation (origin 56735ae, src/metrics):** RCC
+only, method level, crashing holdout, one overfitting leg per bug, 9/9
+RCC=1.0 (saturated). To port into ours at merge: fixed-budget re-run
+mode (-runs=20000), trigger-test JaCoCo gate, stack-frame repair of the
+JaCoCo exit-probe miss (Math-70), sweep.py population check. Conflicts:
+run_jazzer kwargs, run.py record field, config JACOCO_*/D4J_HOME. NOTE:
+that run was the crashing holdout's FIRST pipeline execution (-n 3 -m 8).
+Next: H_N vs H_R pilot (running), merge decision.
 
 ### 8.49 FROZEN-QUEUE V2 + CERTIFICATION SWEEP (2026-08-26/27; analyse-only throughout)
 **User decisions recorded:** rerun ALL 69 frozen-queue entries at git
