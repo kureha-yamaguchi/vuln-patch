@@ -429,6 +429,12 @@ def _project(rset: loc.MethodSet, pset: Optional[loc.MethodSet],
         'p_unmatched': p_missed,
         'ambiguous': index.ambiguous,
         'missing': index.missing,
+        # Refs whose labelled class had no such method at all and that the
+        # index resolved by the unique (name, arity) match instead
+        # (MethodIndex.lookup rule 4).
+        'reclassified': index.reclassified,
+        'r_caller_provenance': _caller_provenance(rset),
+        'p_caller_provenance': _caller_provenance(pset),
     }
     return _Projection(set(r_canon), r_canon, set(p_canon), p_canon,
                        stats, index)
@@ -537,15 +543,58 @@ def _is_jdk(ref: loc.MethodRef) -> bool:
     return (not ref.is_qualified) and ref.class_fq.split('.')[0] in _JDK_SIMPLE
 
 
+#: JDK methods the introspector labels with the SEED's class instead of the
+#: receiver's, so `_is_jdk` cannot see them: a call to
+#: `Rectangle2D.getCenterX()` inside `Axis.drawLabel` is written
+#: `[org.jfree.chart.axis.Axis].getCenterX()`, which looks like a project
+#: method of a project class.  These are the java.awt.geom / java.lang
+#: accessor names that mislabelling actually produced on real runs.  A name
+#: here is dropped ONLY when the class it is labelled with declares no
+#: method of that name in the coverage population, so a project class that
+#: really does have a `getWidth()` keeps it.
+_MISLABELLED_NAMES = {
+    'getCenterX', 'getCenterY', 'getBounds2D', 'getWidth', 'getHeight',
+    'getX', 'getY', 'createTransformedShape',
+    'getMinX', 'getMaxX', 'getMinY', 'getMaxY',
+}
+
+
 def _strip_jdk(ms: Optional[loc.MethodSet]):
     """(copy of `ms` without JDK methods, number dropped). Edges whose
-    endpoint was dropped go with it; `unmatched` and `multi` are kept."""
+    endpoint was dropped go with it; `unmatched`, `multi` and `provenance`
+    are kept."""
+    return _strip(ms, _is_jdk)
+
+
+def _strip_mislabelled(ms: Optional[loc.MethodSet], population):
+    """(copy of `ms` without mislabelled-receiver JDK methods, number).
+
+    The second pass over `_strip_jdk`'s output, and the one that needs the
+    coverage population: a ref survives when the class it is labelled with
+    declares a method of that name somewhere in the population.  With no
+    population nothing is dropped — the check cannot be made, and guessing
+    would remove real project methods."""
+    if ms is None:
+        return None, 0
+    pop = list(population or [])
+    if not pop:
+        return ms, 0
+    declared = {f'{r.class_simple}.{r.name}' for r in pop}
+
+    def drop(ref: loc.MethodRef) -> bool:
+        return (ref.name in _MISLABELLED_NAMES
+                and f'{ref.class_simple}.{ref.name}' not in declared)
+    return _strip(ms, drop)
+
+
+def _strip(ms: Optional[loc.MethodSet], drop):
+    """(copy of `ms` without the members `drop` says to remove, number)."""
     if ms is None:
         return None, 0
     keep = loc.MethodSet()
     dropped = 0
     for ref, tag in ms.items.items():
-        if _is_jdk(ref):
+        if drop(ref):
             dropped += 1
             continue
         keep.items[ref] = tag
@@ -553,7 +602,24 @@ def _strip_jdk(ms: Optional[loc.MethodSet]):
     keep.edges = [(a, b) for a, b in ms.edges
                   if a in keep.items and b in keep.items]
     keep.unmatched = list(ms.unmatched)
+    keep.provenance = {r: v for r, v in ms.provenance.items()
+                       if r in keep.items}
     return keep, dropped
+
+
+def _caller_provenance(ms: Optional[loc.MethodSet]) -> Optional[dict]:
+    """How many members of the CALLER ring each way of finding a caller
+    produced.  `introspector` is the static call graph; `source-scan` is
+    the source-text fallback `neighbourhood.SourceScan` runs for a seed the
+    graph found no caller for.  A set written before provenance existed
+    counts entirely as `introspector` (see `MethodSet.provenance_of`)."""
+    if ms is None:
+        return None
+    out = {'introspector': 0, 'source-scan': 0}
+    for ref in ms.refs(loc.CALLER):
+        prov = ms.provenance_of(ref)
+        out[prov] = out.get(prov, 0) + 1
+    return out
 
 
 def compute_leg(leg_dir: str) -> dict:
@@ -603,9 +669,20 @@ def compute_leg(leg_dir: str) -> dict:
     p_methods, p_jdk = _strip_jdk(p_methods)
     r_methods, r_jdk = _strip_jdk(r_methods)
     manifest, _ = _strip_jdk(manifest)
-    out['jdk_dropped'] = {'P_method': p_jdk, 'R_method': r_jdk}
     covs = _load_coverage(mdir)
     sites = _load_crash_sites(mdir)
+
+    # The primary build's method list is the identity space for everything
+    # below, and the population the mislabelled-receiver pass needs: a JDK
+    # accessor wearing a project class's name can only be recognised by
+    # asking whether that class has such a method at all.
+    primary = next((b for b in BUILDS if b in covs), None)
+    primary_pop = (covs[primary].all_methods or None) if primary else None
+    p_methods, p_mis = _strip_mislabelled(p_methods, primary_pop)
+    r_methods, r_mis = _strip_mislabelled(r_methods, primary_pop)
+    manifest, _ = _strip_mislabelled(manifest, primary_pop)
+    out['jdk_dropped'] = {'P_method': p_jdk, 'R_method': r_jdk,
+                          'P_mislabelled': p_mis, 'R_mislabelled': r_mis}
 
     out['available'] = {
         'patch_derived': p_methods is not None,
@@ -647,6 +724,10 @@ def compute_leg(leg_dir: str) -> dict:
         'branches': {b: {'covered': c.branches_covered,
                          'total': c.branches_total} for b, c in covs.items()},
         'manifest_method': len(manifest) if manifest is not None else None,
+        # Where the CALLER ring came from: the call graph, or the source
+        # scan that fills in for it when the graph resolved no caller.
+        'P_caller_provenance': _caller_provenance(p_methods),
+        'R_caller_provenance': _caller_provenance(r_methods),
     }
     if sites is not None:
         lib = [s for s in sites if s.site_kind == 'library']
@@ -668,10 +749,8 @@ def compute_leg(leg_dir: str) -> dict:
 
     # -- method granularity ------------------------------------------------
     # RCR is coverage-free, but when coverage exists its all_methods list is
-    # the better identity space, so the primary build's list is used for it.
-    primary = next((b for b in BUILDS if b in covs), None)
-    primary_pop = (covs[primary].all_methods or None) if primary else None
-
+    # the better identity space, so the primary build's list (computed
+    # above, with the mislabelled-receiver pass) is used for it.
     for rvar, rset in rvars.items():
         proj = _project(rset, p_methods, primary_pop)
         matching[f'method__{rvar}__primary'] = dict(
@@ -710,7 +789,9 @@ def compute_leg(leg_dir: str) -> dict:
             matching[f'psc__method__{build}'] = {
                 'space': ('coverage_all_methods' if cov.all_methods else 'P'),
                 'p_unmatched': p_missed, 'ambiguous': idx.ambiguous,
-                'missing': idx.missing, 'build': build}
+                'missing': idx.missing, 'reclassified': idx.reclassified,
+                'p_caller_provenance': _caller_provenance(p_methods),
+                'build': build}
             pset = set(pc)
             out[metric_key('psc', 'method', None, build)] = dict(
                 _ratio(len(pset & fset), len(pset)),

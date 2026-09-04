@@ -84,6 +84,38 @@ another). It is counted once, in the ring closest to the seeds, and the
 other membership is recorded separately, so per-ring counts never
 double-count.
 
+**Where the caller ring comes from.** The call graph is built by
+fuzz-introspector, whose Java frontend records a call site only when it can
+say statically which method is called. A call through an interface, or to a
+method some subclass overrides, is not recorded at all. In practice that
+empties the caller ring completely: on the first real measurement run
+`PolygonsSet.computeGeometricalProperties()`, `Axis.drawLabel(...)` and
+`SimplexSolver.getPivotRow(...)` each came back with no caller, although
+the library plainly calls all three. An empty ring reads as "nothing calls
+this method", which is not a finding but a tool limitation.
+
+So when the call graph yields no caller at all for a seed, and a checkout
+of the code is available, that seed's callers are read out of the **source
+text** instead. Every `.java` file under the checkout is parsed, and a
+method whose body contains a call written `<seed name>(` with the seed's
+number of arguments becomes a caller, up to the same per-seed cap. Files
+under a `test`/`tests` directory and classes whose name ends in `Test` are
+skipped: a test calling the seed is not part of the library's caller ring,
+and the seed's own body never counts, so a recursive call adds nothing.
+
+This match is textual, so it **over-approximates**: the text does not say
+what type the receiver has, so a call to a *different* method that happens
+to share the seed's name and argument count — on another class entirely —
+is counted as a caller too, as is a method declared inside an anonymous
+class in some other method's body. The alternative was a caller ring that
+is empty for most bugs, which understates P and R̂ in a way no reader can
+see. Every member therefore records **how** it was found, `introspector`
+or `source-scan`, and each metrics row reports the caller ring split by the
+two (`sizes.P_caller_provenance`, `sizes.R_caller_provenance`), so any
+number that leans on callers can be re-read with the scanned ones removed.
+Archived sets written before this existed carry no such record and count
+entirely as `introspector`.
+
 **Where it comes from.** From the pipeline's own context dump for the run
 (`context.json` in each run directory; for older runs, the same JSON block
 inside `trace.md`). It is never recomputed from scratch, so it cannot drift
@@ -261,7 +293,7 @@ Bugs with large call graphs therefore do not dominate the result.
 | file | what it does | reads the developer fix? |
 |---|---|---|
 | `locations.py` | the shared data model: `MethodRef`, `LineRef`, ring-tagged `MethodSet`/`LineSet`, and `MethodIndex` for matching names across tools | no |
-| `neighbourhood.py` | the seed/caller/callee builder used for both P and R̂, on the pipeline's fuzz-introspector call graph, with the pipeline's caps | no |
+| `neighbourhood.py` | the seed/caller/callee builder used for both P and R̂, on the pipeline's fuzz-introspector call graph, with the pipeline's caps; `SourceScan` is the source-text caller fallback of section 3.1 | no |
 | `patch_derived.py` | P from a run's `context.json` (or, for older runs, the same JSON block inside `trace.md`); `lines_for` turns methods into line sets | no |
 | `root_cause.py` | R̂: reads the Defects4J developer patch (`<D4J_HOME>/framework/projects/<Project>/patches/<bug>.src.patch`, fixed→buggy direction, verified at run time) or falls back to diffing a fixed checkout; seeds, lines, and the manifestation frames from `failing_tests` | **yes — the only one** |
 | `coverage.py` | F(H): parses JaCoCo XML reports, runs the JaCoCo command-line tool on the `.exec` dumps a `--coverage` run leaves behind, unions per build | no |
@@ -304,8 +336,9 @@ in the leg's `measurements/errors.json` and the run continues.
 Per leg, under `<leg>/measurements/`: `patch_derived.json`,
 `patch_derived_lines.json`, `root_cause.json`, `coverage_buggy.json`,
 `coverage_patched.json`, `coverage_compiled.json`, `crash_sites.json`,
-`errors.json`. Each set file is a list of locations with their ring tags
-plus the names that could not be matched. The three coverage files are the
+`errors.json`. Each set file is a list of locations with their ring tags,
+how each was found (`provenance`: `introspector` or `source-scan`), and the
+names that could not be matched. The three coverage files are the
 three harness-set/build combinations of section 3.3.1: the kept harnesses
 on the buggy and the patched build, and every harness that compiled (on the
 buggy build). A leg's `result.jsonl` says which harnesses each set is over,
@@ -348,9 +381,15 @@ manifestation frames; method granularity only) and `full` (with rings).
 `rcr_cross__…` is the ring-of-R̂ by ring-of-P count table. Every line also
 carries `available` (which inputs existed), `sizes` (|P|, |R̂|, |F| and
 their per-ring counts, plus `F_kind`, which records per build how that
-build's F was obtained — `dyn` for now), `matching` (how many names could
-not be matched, and how many were ambiguous), the crash counts, and the
-leg's identity and outcome (`caught`, `missed`, `false_alarm`, `clean`).
+build's F was obtained — `dyn` for now, and `P_caller_provenance` /
+`R_caller_provenance`, the caller ring split into the members the call
+graph found and the ones the source scan of section 3.1 did), `matching`
+(how many names could not be matched, how many were ambiguous, and
+`reclassified`, the mislabelled receivers re-attributed to the class that
+really declares the method), `jdk_dropped` (JDK members removed from P and
+R̂, and under `*_mislabelled` the ones removed by the second,
+population-aware pass), the crash counts, and the leg's identity and
+outcome (`caught`, `missed`, `false_alarm`, `clean`).
 `crash_by_build` and `sizes.crash_sites_compiled` count the acceptance
 check's own crashes; `csm__…` never does (section 3.3.1).
 
@@ -377,3 +416,31 @@ and `render_markdown`'s `build` argument renders one of them on its own.
   are unreliable, and some of its callee entries are expressions rather
   than method names; those land in `unmatched` and are counted, never
   silently dropped.
+- **Source-scanned callers over-approximate.** The fallback of section 3.1
+  matches a call by name and number of arguments in the source text, with
+  no type information, so a same-named, same-arity method on an unrelated
+  class is counted as a caller. A generic type argument spelled out in a
+  call (`f(new HashMap<String, Integer>())`) has a comma of its own and
+  inflates the argument count, which loses that call instead. The split by
+  provenance is in every metrics row so the scanned callers can be
+  discounted.
+- **Mislabelled receivers.** The introspector labels a call with the class
+  it was reading, not the class that declares the callee, so a JDK call
+  inside a project method comes out wearing the project class's name:
+  `Rectangle2D.getCenterX()` inside `Axis.drawLabel` is written
+  `org.jfree.chart.axis.Axis.getCenterX()`, and the JDK filter cannot see
+  it. Two population-aware passes handle it, both needing the coverage
+  method list to say what a class really declares. First, a ref whose
+  labelled class has no method of that name at all is re-attributed to the
+  unique method with that name and argument count elsewhere in the
+  population, if there is exactly one — this recovers *inherited* methods,
+  which is the common case (`PolygonsSet.getCut()` is
+  `BSPTree.getCut()`), and is counted as `matching.*.reclassified`. A name
+  that several classes declare stays unmatched rather than being attributed
+  by guess, and constructors are never re-attributed, since `<init>` names
+  no method. Second, a short list of well-known `java.awt.geom` /
+  `java.lang` accessor names (`getCenterX`, `getWidth`, `getBounds2D`,
+  `createTransformedShape`, …) is dropped outright when the labelled class
+  does not declare them, counted as `jdk_dropped.R_mislabelled` /
+  `P_mislabelled`. Both passes are inert without coverage: with no
+  population the question cannot be asked, and nothing is dropped.

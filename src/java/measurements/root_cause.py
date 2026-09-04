@@ -738,13 +738,20 @@ def compute(project: str, bug_id, buggy_dir: str, *,
             introspector_project=None,
             caller_cap: Optional[int] = None,
             callee_cap: Optional[int] = None,
-            callee_depth: Optional[int] = None) -> RootCause:
+            callee_depth: Optional[int] = None,
+            source_root: Optional[str] = None) -> RootCause:
     """R-hat for one bug: patch -> oriented patch -> seeds + rings, lines,
     and the manifest set from the trigger tests' stack traces.
 
     `introspector_project` is a fuzz-introspector project for the buggy
     tree. Without it the method set is the seeds alone (no rings), which is
     still a valid — just smaller — region.
+
+    `source_root` is a directory of `.java` sources for that same tree
+    (normally `buggy_dir` itself). It is used only for the caller ring, and
+    only for a seed the call graph found no caller for: the JVM frontend
+    does not resolve virtual or interface calls, so those seeds otherwise
+    get an empty caller ring. See `neighbourhood.SourceScan`.
     """
     patch_text, route = developer_patch(project, bug_id, buggy_dir,
                                         d4j_home=d4j_home,
@@ -755,7 +762,7 @@ def compute(project: str, bug_id, buggy_dir: str, *,
 
     notes: List[str] = []
     methods = _rings(seeds, introspector_project, caller_cap, callee_cap,
-                     callee_depth, notes)
+                     callee_depth, notes, source_root)
 
     return RootCause(
         methods=methods,
@@ -772,7 +779,8 @@ def compute(project: str, bug_id, buggy_dir: str, *,
 
 def _rings(seeds: List[MethodRef], introspector_project,
            caller_cap: Optional[int], callee_cap: Optional[int],
-           callee_depth: Optional[int], notes: List[str]) -> MethodSet:
+           callee_depth: Optional[int], notes: List[str],
+           source_root: Optional[str] = None) -> MethodSet:
     """Grow the caller/callee rings around the seeds via
     `java.measurements.neighbourhood`. Imported lazily so this module can be
     read (and the seeds computed) even where that module is absent; the
@@ -786,7 +794,8 @@ def _rings(seeds: List[MethodRef], introspector_project,
         return neighbourhood.build(seeds, introspector_project,
                                    caller_cap=caller_cap,
                                    callee_cap=callee_cap,
-                                   callee_depth=callee_depth)
+                                   callee_depth=callee_depth,
+                                   source_root=source_root)
     except Exception as exc:                       # noqa: BLE001 - fail soft
         notes.append(f'neighbourhood.build failed ({exc.__class__.__name__}: '
                      f'{exc}): seeds only, no rings')

@@ -26,9 +26,31 @@ with a mangled `.name` (``[pkg.Class].method(argtypes)``) and a
 `.base_callsites` list of the functions it calls. Introspector has no
 "who calls me" index, so callers are found by inverting `base_callsites`
 over the whole project once.
+
+THE EMPTY CALLER RING, AND THE SOURCE SCAN
+==========================================
+The JVM frontend records a call site only when it can resolve the callee
+statically. A call through an interface or to an overridden method is not
+resolved, so on real bugs the inverted index returns NOTHING for the seed:
+`PolygonsSet.computeGeometricalProperties()`, `Axis.drawLabel(...)` and
+`SimplexSolver.getPivotRow(...)` all come back with an empty caller ring
+even though the project plainly calls them.
+
+So when `source_root` is given and the graph yields no caller at all for a
+seed, the caller ring for that seed is recovered from the SOURCE TEXT
+instead: every `.java` file under `source_root` is parsed, and a method
+whose body contains a call written `<seed name>(` with the seed's number
+of arguments becomes a caller. This is a TEXTUAL match — it has no types,
+so a call to a same-named, same-arity method on an unrelated class counts
+too (over-approximation, described in the package README). Members found
+this way are tagged 'source-scan' in `MethodSet.provenance`, the ones the
+graph produced are tagged 'introspector', and every count that uses the
+caller ring can be split by the two.
 """
 from __future__ import annotations
 
+import os
+import re
 from typing import Dict, List, Optional, Tuple
 
 import config
@@ -37,7 +59,15 @@ from java.measurements.locations import (CALLEE, CALLER, SEED, MethodIndex,
                                          MethodRef, MethodSet,
                                          from_introspector, from_javalang)
 
-__all__ = ['build', 'seeds_from_context', 'callsite_dst']
+#: Values of `MethodSet.provenance`.
+PROV_INTROSPECTOR = 'introspector'
+PROV_SOURCE_SCAN = 'source-scan'
+
+#: Directory names that hold tests, pruned from the source scan.
+TEST_DIRS = ('test', 'tests')
+
+__all__ = ['build', 'seeds_from_context', 'callsite_dst', 'SourceScan',
+           'PROV_INTROSPECTOR', 'PROV_SOURCE_SCAN']
 
 
 # ---------------------------------------------------------------------------
@@ -109,13 +139,187 @@ def seeds_from_context(ctx_dict: dict) -> List[MethodRef]:
     return out
 
 
+
+# ---------------------------------------------------------------------------
+# The source-text caller scan (the fallback for an empty caller ring)
+# ---------------------------------------------------------------------------
+
+def _skip_literal(source: str, i: int) -> int:
+    """Index just past the string or character literal starting at `i`."""
+    quote = source[i]
+    i += 1
+    n = len(source)
+    while i < n:
+        if source[i] == '\\':
+            i += 2
+            continue
+        if source[i] == quote:
+            return i + 1
+        i += 1
+    return i
+
+
+def call_arity(source: str, open_idx: int) -> Optional[int]:
+    """Number of top-level arguments of the call whose '(' is at `open_idx`.
+
+    Counts the commas that are not nested inside another bracket, skipping
+    string and character literals and comments. `None` when the bracket
+    never closes. A generic type argument written out in an argument
+    (``f(new HashMap<String, Integer>())``) has a comma of its own and
+    inflates the count — one more reason the scan is an approximation."""
+    depth = 0
+    args = 0
+    content = False
+    i, n = open_idx, len(source)
+    while i < n:
+        ch = source[i]
+        if ch == '/' and i + 1 < n and source[i + 1] == '/':
+            j = source.find('\n', i)
+            i = n if j < 0 else j + 1
+            continue
+        if ch == '/' and i + 1 < n and source[i + 1] == '*':
+            j = source.find('*/', i + 2)
+            i = n if j < 0 else j + 2
+            continue
+        if ch in '"\'':
+            i = _skip_literal(source, i)
+            content = True
+            continue
+        if ch in '([{':
+            depth += 1
+        elif ch in ')]}':
+            depth -= 1
+            if depth == 0:
+                return args + (1 if content else 0)
+        elif ch == ',' and depth == 1:
+            args += 1
+        elif not ch.isspace():
+            content = True
+        i += 1
+    return None
+
+
+def _same_method(ref: MethodRef, seed: MethodRef) -> bool:
+    """Is `ref` the seed itself? Classes are compared on the simple name
+    too, because a seed may carry only a simple class name."""
+    if ref.name != seed.name or len(ref.params) != len(seed.params):
+        return False
+    return (ref.class_fq == seed.class_fq
+            or ref.class_simple == seed.class_simple)
+
+
+class SourceScan:
+    """Every method declared under a source root, ready to be asked "which
+    of you contains a call to X?".
+
+    The checkout is parsed ONCE (with `execution.diffcov.method_declarations`,
+    the same declaration spans `patch_derived.lines_for` matches against) and
+    reused for every seed. Directories named `test`/`tests` are pruned and
+    classes whose simple name ends in `Test` are skipped: a test calling the
+    seed is not part of the library's caller ring.
+
+    Files that do not parse are skipped; a broken file costs the methods in
+    it and nothing else."""
+
+    def __init__(self, source_root: str):
+        from java.execution import diffcov
+        self.source_root = source_root
+        # (source text, [(body_start, body_end, MethodRef), ...])
+        self.files: List[Tuple[str, List[Tuple[int, int, MethodRef]]]] = []
+        for dirpath, dirnames, filenames in os.walk(source_root):
+            dirnames[:] = sorted(d for d in dirnames
+                                 if d.lower() not in TEST_DIRS)
+            for fname in sorted(filenames):
+                if not fname.endswith('.java'):
+                    continue
+                if fname[:-5].endswith('Test'):
+                    continue
+                full = os.path.join(dirpath, fname)
+                try:
+                    with open(full, encoding='utf-8', errors='replace') as fh:
+                        source = fh.read()
+                except OSError:
+                    continue
+                try:
+                    decls = diffcov.method_declarations(source)
+                except Exception:                      # noqa: BLE001
+                    continue
+                spans: List[Tuple[int, int, MethodRef]] = []
+                for d in decls:
+                    cls = d.get('class_name') or ''
+                    if cls.rsplit('.', 1)[-1].endswith('Test'):
+                        continue
+                    body = d.get('insert_offset')
+                    if body is None:
+                        # No body (abstract or interface method): it can
+                        # contain no call.
+                        continue
+                    spans.append((body, d['end'],
+                                  from_javalang(cls, d['name'],
+                                                d.get('param_types') or [])))
+                if spans:
+                    self.files.append((source, spans))
+
+    @staticmethod
+    def _pattern(seed: MethodRef):
+        """The call as it is written in source. A constructor seed is
+        called as `new Class(`; anything else as `name(`, with any
+        receiver in front of it."""
+        if seed.name == '<init>':
+            token = seed.class_simple
+            prefix = r'(?<![\w$])new\s+(?:[\w$]+\s*\.\s*)*'
+        else:
+            token = seed.name
+            prefix = r'(?<![\w$])'
+        if not token or not token.isidentifier():
+            return None
+        return re.compile(prefix + re.escape(token) + r'\s*\(')
+
+    def _enclosing(self, spans, offset: int) -> Optional[MethodRef]:
+        """The innermost method body containing `offset` (an anonymous
+        class's method sits inside its enclosing method, so the smallest
+        span wins)."""
+        best = None
+        for start, end, ref in spans:
+            if start <= offset <= end:
+                if best is None or (end - start) < (best[1] - best[0]):
+                    best = (start, end, ref)
+        return best[2] if best else None
+
+    def callers_of(self, seed: MethodRef, cap: Optional[int] = None
+                   ) -> List[MethodRef]:
+        """The methods whose body writes a call to `seed`, sorted, capped.
+
+        Matching is on the call's NAME and its number of arguments only:
+        the text does not say what the receiver's type is, so a same-named,
+        same-arity method on another class is counted too. The seed's own
+        body never counts, so a recursive call adds nothing."""
+        pat = self._pattern(seed)
+        if pat is None:
+            return []
+        arity = len(seed.params)
+        found: set = set()
+        for source, spans in self.files:
+            for m in pat.finditer(source):
+                open_idx = source.index('(', m.end() - 1)
+                if call_arity(source, open_idx) != arity:
+                    continue
+                ref = self._enclosing(spans, m.start())
+                if ref is None or _same_method(ref, seed):
+                    continue
+                found.add(ref)
+        out = sorted(found)
+        return out if cap is None else out[:cap]
+
+
 # ---------------------------------------------------------------------------
 # The construction
 # ---------------------------------------------------------------------------
 
 def build(seeds: List[MethodRef], project, *, caller_cap: Optional[int] = None,
           callee_cap: Optional[int] = None,
-          callee_depth: Optional[int] = None) -> MethodSet:
+          callee_depth: Optional[int] = None,
+          source_root: Optional[str] = None) -> MethodSet:
     """Seeds + their callers + their bounded callee walk, as one MethodSet.
 
     `seeds` are refs from wherever the patch was parsed (a mangled name, a
@@ -139,7 +343,15 @@ def build(seeds: List[MethodRef], project, *, caller_cap: Optional[int] = None,
     Edges: every call site the walk looked at, plus one edge per caller
     into the seed it calls, as (caller_ref, callee_ref) pairs. Names that
     do not parse as introspector names are dropped from the edge list and
-    recorded in `unmatched`."""
+    recorded in `unmatched`.
+
+    `source_root`: a checkout of the code the graph was built from. When it
+    is given and the graph produced NO caller for a seed, that seed's
+    caller ring is scanned out of the source text instead (see the module
+    docstring and `SourceScan`); those members are tagged 'source-scan' in
+    `MethodSet.provenance` and are capped exactly as graph callers are.
+    Without it a seed the frontend could not resolve simply keeps an empty
+    caller ring, which is what happened before this fallback existed."""
     caller_cap = config.MAX_XREFS_PER_FUNCTION if caller_cap is None else caller_cap
     callee_cap = config.REACHABLE_NODE_CAP if callee_cap is None else callee_cap
     callee_depth = (config.REACHABLE_MAX_DEPTH if callee_depth is None
@@ -164,12 +376,12 @@ def build(seeds: List[MethodRef], project, *, caller_cap: Optional[int] = None,
     for seed in seeds:
         hit = index.lookup(seed)
         if hit is None:
-            ms.add(seed, SEED, 0)
+            ms.add(seed, SEED, 0, provenance=PROV_INTROSPECTOR)
             if str(seed) not in ms.unmatched:
                 ms.unmatched.append(str(seed))
             resolved.append((seed, None))
         else:
-            ms.add(hit, SEED, 0)
+            ms.add(hit, SEED, 0, provenance=PROV_INTROSPECTOR)
             resolved.append((hit, name_of.get(hit)))
 
     unresolvable: List[str] = []
@@ -189,15 +401,32 @@ def build(seeds: List[MethodRef], project, *, caller_cap: Optional[int] = None,
 
     # -- callers (one level up, capped, sorted for determinism) --------
     reverse = _reverse_callsites(fmap)
+    no_callers: List[MethodRef] = []
     for seed_ref, mangled in resolved:
-        if mangled is None:
-            continue
-        for caller in sorted(set(reverse.get(mangled, [])))[:caller_cap]:
+        found = 0
+        names = ([] if mangled is None
+                 else sorted(set(reverse.get(mangled, [])))[:caller_cap])
+        for caller in names:
             cref = _ref(caller)
             if cref is None:
                 continue
-            ms.add(cref, CALLER, 1)
+            ms.add(cref, CALLER, 1, provenance=PROV_INTROSPECTOR)
             _edge(cref, seed_ref)
+            found += 1
+        if not found:
+            no_callers.append(seed_ref)
+
+    # -- callers the frontend could not resolve, read out of the source --
+    if source_root and no_callers:
+        try:
+            scan = SourceScan(source_root)
+        except Exception:                              # noqa: BLE001
+            scan = None                                # measurement: fail soft
+        if scan is not None:
+            for seed_ref in no_callers:
+                for cref in scan.callers_of(seed_ref, caller_cap):
+                    ms.add(cref, CALLER, 1, provenance=PROV_SOURCE_SCAN)
+                    _edge(cref, seed_ref)
 
     # -- callees (bounded BFS down) ------------------------------------
     for seed_ref, mangled in resolved:
@@ -209,7 +438,8 @@ def build(seeds: List[MethodRef], project, *, caller_cap: Optional[int] = None,
             cref = _ref(name)
             if cref is None:
                 continue
-            ms.add(cref, CALLEE, depths.get(name, 1))
+            ms.add(cref, CALLEE, depths.get(name, 1),
+                   provenance=PROV_INTROSPECTOR)
         for src, dst in edges:
             a, b = _ref(src), _ref(dst)
             if a is None or b is None:

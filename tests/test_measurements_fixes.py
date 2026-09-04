@@ -180,7 +180,10 @@ def test_compute_leg_reports_jdk_dropped_for_p_and_r(tmp_path):
                     'manifest': _mset([]).to_dict()})
 
     row = M.compute_leg(leg)
-    assert row['jdk_dropped'] == {'P_method': 2, 'R_method': 1}
+    # `*_mislabelled` are the second, population-aware pass; this leg has no
+    # coverage, so there is no population and nothing that pass can drop.
+    assert row['jdk_dropped'] == {'P_method': 2, 'R_method': 1,
+                                  'P_mislabelled': 0, 'R_mislabelled': 0}
     assert row['sizes']['P_method'] == 1
     assert row['sizes']['R_method']['full'] == 1
     # P is now exactly R, so RCR is 1.0 rather than diluted by JDK members

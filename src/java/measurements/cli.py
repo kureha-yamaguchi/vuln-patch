@@ -214,7 +214,11 @@ def measure_leg(leg_dir: str, *, checkout_root: Optional[str] = None,
             raise RuntimeError('no buggy checkout')
         rc = _mod_root_cause().compute(
             project, bug_id, buggy['dir'], d4j_home=d4j_home,
-            introspector_project=fi['project'])
+            introspector_project=fi['project'],
+            # The buggy checkout is the source the call graph was built
+            # from, so it is also where a seed's callers are read from
+            # when the frontend resolved none (neighbourhood.SourceScan).
+            source_root=buggy['dir'])
         loc.dump(rc, os.path.join(mdir, M.F_ROOT_CAUSE))
     stage('root_cause', _root_cause)
 

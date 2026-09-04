@@ -271,31 +271,59 @@ class MethodSet:
     """A set of methods, each carrying at most one ring tag (nearest ring
     wins: seed < caller < callee, then lower depth). `multi` records the
     other rings a method ALSO qualified for, so multi-membership stays
-    countable without inflating the set."""
+    countable without inflating the set.
+
+    `provenance` says HOW a member was found: 'introspector' when the
+    static call graph produced it, 'source-scan' when the source-text
+    fallback in `neighbourhood` did (that module explains why: the JVM
+    frontend does not resolve virtual calls, so whole caller rings come
+    back empty). A member with no entry was recorded before provenance
+    existed and reads as 'introspector'."""
     items: Dict[MethodRef, Tagged] = field(default_factory=dict)
     multi: Dict[MethodRef, List[str]] = field(default_factory=dict)
     edges: List[Tuple[MethodRef, MethodRef]] = field(default_factory=list)
     unmatched: List[str] = field(default_factory=list)   # names no source resolved
+    provenance: Dict[MethodRef, str] = field(default_factory=dict)
 
     _RANK = {SEED: 0, CALLER: 1, CALLEE: 2}
 
-    def add(self, ref: MethodRef, ring: str = SEED, depth: int = 0) -> None:
+    def add(self, ref: MethodRef, ring: str = SEED, depth: int = 0,
+            provenance: Optional[str] = None) -> None:
         cur = self.items.get(ref)
         if cur is None:
             self.items[ref] = Tagged(ref, ring, depth)
+            self._record_provenance(ref, provenance, won=True)
             return
         rank = self._RANK.get(ring, 9)
         if (rank, depth) < (self._RANK.get(cur.ring, 9), cur.depth):
             self.items[ref] = Tagged(ref, ring, depth)
             loser = cur.ring
+            won = True
         else:
             loser = ring
+            won = False
         # `multi` holds only the rings the method ALSO qualified for, never
         # the one it is filed under.
         if loser != self.items[ref].ring:
             other = self.multi.setdefault(ref, [])
             if loser not in other:
                 other.append(loser)
+        self._record_provenance(ref, provenance, won=won)
+
+    def _record_provenance(self, ref: MethodRef, provenance: Optional[str],
+                           won: bool) -> None:
+        """Where this member came from. The add that decided the member's
+        ring also decides its provenance; an add that lost the ring contest
+        only fills a gap, so a member never carries the provenance of a
+        ring it is not filed under."""
+        if provenance is None:
+            return
+        if won or ref not in self.provenance:
+            self.provenance[ref] = provenance
+
+    def provenance_of(self, ref: MethodRef) -> str:
+        """'introspector' for anything recorded before provenance existed."""
+        return self.provenance.get(ref, 'introspector')
 
     def refs(self, ring: Optional[str] = None) -> List[MethodRef]:
         if ring is None:
@@ -320,6 +348,10 @@ class MethodSet:
             'multi': {r.strict_key: rings for r, rings in self.multi.items()},
             'edges': [[a.to_dict(), b.to_dict()] for a, b in self.edges],
             'unmatched': list(self.unmatched),
+            # Written since the source-scan fallback existed; a file made
+            # before it has no such key and `from_dict` reads it as empty.
+            'provenance': {r.strict_key: p
+                           for r, p in self.provenance.items()},
         }
 
     @classmethod
@@ -335,6 +367,9 @@ class MethodSet:
         ms.edges = [(MethodRef.from_dict(a), MethodRef.from_dict(b))
                     for a, b in d.get('edges', [])]
         ms.unmatched = list(d.get('unmatched', []))
+        for k, prov in (d.get('provenance') or {}).items():
+            if k in keyed:
+                ms.provenance[keyed[k]] = prov
         return ms
 
 
@@ -389,7 +424,21 @@ class MethodIndex:
       2. if `ref` is unqualified or its params look unreliable, the unique
          (simple class, name, arity) match;
       3. with frame=True (stack frames carry no params), the unique
-         (simple class, name) match regardless of arity.
+         (simple class, name) match regardless of arity;
+      4. RECEIVER RESCUE. Only when the class the ref is LABELLED with has
+         no method of that name anywhere in the population: the unique
+         (name, arity) match, whatever class it is on. Counted in
+         `reclassified`, never folded into `missing`.
+
+         The introspector's JVM frontend labels a call with the class it
+         was reading, not the class that declares the callee, so a call to
+         an interface method ends up spelled with the caller's own class
+         ("[EntityCollection].add(x)" for a call implemented by
+         `StandardEntityCollection.add(ChartEntity)`). Rule 4 recovers
+         those, and only those: the guard means a class that really does
+         declare the name is never overruled, and uniqueness means a common
+         name such as `add/1` — which dozens of classes declare — stays
+         unmatched rather than being attributed to an arbitrary one.
     Returns None when nothing or more than one candidate matches; the
     ambiguity is counted so a caller can report it."""
 
@@ -397,12 +446,16 @@ class MethodIndex:
         self.strict: Dict[str, MethodRef] = {}
         self.loose: Dict[str, List[MethodRef]] = {}
         self.by_name: Dict[str, List[MethodRef]] = {}
+        self.by_name_arity: Dict[str, List[MethodRef]] = {}
         for r in population:
             self.strict[r.strict_key] = r
             self.loose.setdefault(r.loose_key, []).append(r)
             self.by_name.setdefault(f"{r.class_simple}.{r.name}", []).append(r)
+            self.by_name_arity.setdefault(
+                f"{r.name}/{len(r.params)}", []).append(r)
         self.ambiguous = 0
         self.missing = 0
+        self.reclassified = 0
 
     def lookup(self, ref: MethodRef, frame: bool = False) -> Optional[MethodRef]:
         hit = self.strict.get(ref.strict_key)
@@ -416,11 +469,33 @@ class MethodIndex:
                      or c.class_fq == ref.class_fq]
         if len(cands) == 1:
             return cands[0]
-        if not cands:
-            self.missing += 1
-        else:
+        if cands:
             self.ambiguous += 1
+            return None
+        rescued = self._rescue(ref, frame)
+        if rescued is not None:
+            self.reclassified += 1
+            return rescued
+        self.missing += 1
         return None
+
+    def _rescue(self, ref: MethodRef, frame: bool) -> Optional[MethodRef]:
+        """Rule 4 of the docstring: the unique (name, arity) match, used
+        only when the labelled class declares no method of that name.
+
+        Not used for stack frames: a frame carries no parameter types, so
+        its arity is 0 by accident and would match every no-argument method
+        of that name. Not used for constructors either: '<init>' names no
+        method, so '<init>/4' says nothing about WHICH class was meant.
+        (`[Rectangle2D.Float].<init>(Axis,Axis,Axis,Axis)`, the other
+        mislabel the JVM frontend produces, stays unmatched.)"""
+        if frame or ref.name in ('<init>', '<clinit>'):
+            return None
+        if self.by_name.get(f"{ref.class_simple}.{ref.name}"):
+            return None            # the labelled class HAS the name: no rescue
+        alts = self.by_name_arity.get(f"{ref.name}/{len(ref.params)}") or []
+        uniq = sorted(set(alts))
+        return uniq[0] if len(uniq) == 1 else None
 
 
 # ---------------------------------------------------------------------------
