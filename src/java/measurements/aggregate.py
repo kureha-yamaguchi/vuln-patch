@@ -95,6 +95,12 @@ BUILD_LABELS = {
 }
 
 
+#: What each kind of fuzzer-reachable set is, in words, for a table header.
+#: Only the non-default kind is printed, so a ``dyn`` table's header is
+#: exactly what it always was.
+F_KIND_LABELS = {'dyn': 'dynamic coverage', 'stat': 'static reach'}
+
+
 def table3_columns(build: str = DEFAULT_BUILD) -> tuple:
     """Table 3's columns, reading the F-using ones for ONE build.
 
@@ -415,10 +421,25 @@ def has_build(agg: dict, build: str) -> bool:
     return any(split_key(name)['build'] == build for name in metric_names(agg))
 
 
+def has_fkind(agg: dict, fkind: str) -> bool:
+    """True when any metric in `agg` was computed from that KIND of F(H).
+
+    What says whether a run measured the static reachable set at all: only
+    the three F-using metrics carry a kind, and only they get a ``stat``
+    variant."""
+    return any(split_key(name)['f_kind'] == fkind
+               for name in metric_names(agg))
+
+
 def _table3_blocks(agg: dict, fkind: str, build: str) -> str:
     """One Table 3 table, for one build's harness set."""
     paired = 'delta' in agg and 'naive' in agg and 'conditioned' in agg
     label = BUILD_LABELS.get(build, build)
+    # The default kind is not named in the header — that is what every
+    # table said before a second kind existed — so only a `stat` table
+    # announces itself.
+    kind_note = ('' if fkind == DEFAULT_F_KIND
+                 else f', {F_KIND_LABELS.get(fkind, fkind)}')
     if paired:
         blocks = [('H_N', agg['naive']['by_kind'], False),
                   ('H_R', agg['conditioned']['by_kind'], False),
@@ -426,11 +447,12 @@ def _table3_blocks(agg: dict, fkind: str, build: str) -> str:
         header = (f"Table 3 — root-cause conditioning, "
                   f"{agg.get('n_common_legs')} paired legs "
                   f"over {agg.get('n_common_bugs')} bugs "
-                  f"({label}, build {build})")
+                  f"({label}, build {build}{kind_note})")
     else:
         blocks = [('H_R', agg['by_kind'], False)]
         header = (f"Table 3 — {agg.get('n_legs')} legs over "
-                  f"{agg.get('n_bugs')} bugs ({label}, build {build})")
+                  f"{agg.get('n_bugs')} bugs "
+                  f"({label}, build {build}{kind_note})")
 
     columns = table3_columns(build)
     cols = [column_label(name, uses_f, fkind)
@@ -489,6 +511,13 @@ def render_markdown(agg: dict, fkind: Optional[str] = None,
     out = _table3_blocks(agg, fkind, build)
     if build == DEFAULT_BUILD and has_build(agg, 'compiled'):
         out += '\n' + _table3_blocks(agg, fkind, 'compiled')
+    # The same table read from the STATIC reachable set, when the run
+    # measured one. It is a separate block, never extra columns: RCC over
+    # what a harness could reach and RCC over what it did reach are two
+    # different numbers, and putting them side by side in one row invites
+    # exactly the comparison the fifth key slot exists to prevent.
+    if fkind == DEFAULT_F_KIND and has_fkind(agg, M.F_KIND_STATIC):
+        out += '\n' + _table3_blocks(agg, M.F_KIND_STATIC, build)
     return out
 
 

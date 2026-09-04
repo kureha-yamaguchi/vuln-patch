@@ -98,6 +98,7 @@ F_PATCH_DERIVED_LINES = 'patch_derived_lines.json'
 F_ROOT_CAUSE = 'root_cause.json'
 F_CRASH_SITES = 'crash_sites.json'
 F_COVERAGE = 'coverage_{build}.json'
+F_STATIC = 'static_{set}.json'
 MEASUREMENTS_DIR = 'measurements'
 RESULT_FILE = 'result.jsonl'
 METRICS_FILE = 'metrics.jsonl'
@@ -112,6 +113,20 @@ METRICS_FILE = 'metrics.jsonl'
 #: harnesses".  ``buggy`` stays first: it is the primary build.
 BUILD_COMPILED = 'compiled'
 BUILDS = ('buggy', 'patched', BUILD_COMPILED)
+
+#: The harness sets the STATIC reachable set F_stat is computed for, and
+#: the build slot each one's metric keys use.  ``kept`` is the harnesses the
+#: acceptance gate admitted and ``compiled`` is every candidate that
+#: compiled — the same two sets `BUILDS` covers dynamically.
+#:
+#: Static reach is read off the source, so it is the SAME on the buggy and
+#: the patched build: the build slot carries no information for a ``stat``
+#: key.  ``buggy`` is used for the kept set by convention, because ``buggy``
+#: is the primary build in every dynamic key, and it keeps the kept set's
+#: static and dynamic numbers in the same column of a table.
+STATIC_SETS = ('kept', BUILD_COMPILED)
+STATIC_BUILD_SLOT = {'kept': 'buggy', BUILD_COMPILED: BUILD_COMPILED}
+
 GRANULARITIES = ('method', 'line')
 R_VARIANTS = ('R0', 'R1', 'full')
 R_VARIANTS_LINE = ('R0', 'full')      # R1 has no line-level counterpart
@@ -128,12 +143,16 @@ RING_ORDER_OUT = RING_ORDER + (loc.OUTSIDE,)
 #:           behind.  This is the only kind produced today.
 #: ``stat``  static.  What the harnesses COULD reach: the callees reachable
 #:           on the static call graph from the library methods the harness
-#:           source calls.  Reserved for the planned static variant; nothing
-#:           emits it yet.
+#:           source calls, computed by `java.measurements.static_reach` and
+#:           read here out of ``static_kept.json`` / ``static_compiled.json``.
+#:           METHOD GRANULARITY ONLY — a call graph names methods, not
+#:           lines — so no ``stat`` key is ever emitted at line granularity.
 F_KINDS = ('dyn', 'stat')
 
-#: The only kind currently computed; every F-using key ends in it for now.
+#: The kind a key carries when the caller does not say, and the kind the
+#: rendered tables default to.
 DEFAULT_F_KIND = 'dyn'
+F_KIND_STATIC = 'stat'
 
 #: The metrics whose value depends on F(H), so their keys carry the F kind.
 #: ``rcr``, ``csm`` and ``rcr_cross`` never read F and keep 4-slot keys.
@@ -285,6 +304,38 @@ def _load_coverage(mdir: str) -> Dict[str, _Coverage]:
     return out
 
 
+class _Static:
+    """The parts of a `static_reach.StaticReach` dict the metrics need.
+
+    Shape read: ``{'methods': [MethodRef dicts], 'entries': [MethodRef
+    dicts], 'harnesses': [str], 'unmatched': [str], 'source': str}``.
+    ``methods`` is F_stat itself (the entries plus everything the bounded
+    call-graph walk reached from them); ``entries`` is the smaller claim,
+    the methods the harness sources call directly."""
+
+    def __init__(self, d: dict, set_name: str):
+        self.set_name = d.get('set') or set_name
+        self.source = d.get('source') or ''
+        self.methods: Set[loc.MethodRef] = {
+            loc.MethodRef.from_dict(x) for x in (d.get('methods') or [])}
+        self.entries: Set[loc.MethodRef] = {
+            loc.MethodRef.from_dict(x) for x in (d.get('entries') or [])}
+        self.harnesses: List[str] = list(d.get('harnesses') or [])
+        self.unmatched: List[str] = list(d.get('unmatched') or [])
+
+
+def _load_static(mdir: str) -> Dict[str, _Static]:
+    """``static_kept.json`` / ``static_compiled.json``, keyed by harness
+    set.  Absent files are simply not in the result, exactly as for
+    coverage, so a run made before F_stat existed emits no ``stat`` key."""
+    out = {}
+    for set_name in STATIC_SETS:
+        d = _read_json(os.path.join(mdir, F_STATIC.format(set=set_name)))
+        if isinstance(d, dict):
+            out[set_name] = _Static(d, set_name)
+    return out
+
+
 class _CrashSite:
     """The parts of a `crash_sites.CrashSite` dict the metrics need.
 
@@ -390,6 +441,21 @@ _RANK = getattr(loc.MethodSet, '_RANK',
 def _rank(ring: str) -> int:
     """Ring nearness: seed 0 < caller 1 < callee 2, anything else last."""
     return _RANK.get(ring, 9)
+
+
+def _map_refs(refs: Iterable[loc.MethodRef],
+              index: loc.MethodIndex) -> Set[loc.MethodRef]:
+    """A plain ref set mapped into `index`'s identity space.
+
+    A ref the index cannot resolve is KEPT AS ITSELF rather than dropped:
+    this set is a denominator (|F_stat| in RCP), and silently losing its
+    unresolvable members would make the fuzzing budget look smaller than it
+    was.  Two refs that resolve to one canonical method collapse into one,
+    which is the same thing `_map_set` does for P and R."""
+    out: Set[loc.MethodRef] = set()
+    for ref in refs:
+        out.add(index.lookup(ref) or ref)
+    return out
 
 
 def _map_set(ms: loc.MethodSet, index: loc.MethodIndex, identity: bool):
@@ -543,6 +609,12 @@ def _is_jdk(ref: loc.MethodRef) -> bool:
     return (not ref.is_qualified) and ref.class_fq.split('.')[0] in _JDK_SIMPLE
 
 
+#: Public name for the same test.  `static_reach` drops calls to the JDK
+#: before it tries to resolve them against the project's method list, and
+#: the two must agree on what "the JDK" is, so there is one list.
+is_jdk = _is_jdk
+
+
 #: JDK methods the introspector labels with the SEED's class instead of the
 #: receiver's, so `_is_jdk` cannot see them: a call to
 #: `Rectangle2D.getCenterX()` inside `Axis.drawLabel` is written
@@ -622,6 +694,23 @@ def _caller_provenance(ms: Optional[loc.MethodSet]) -> Optional[dict]:
     return out
 
 
+def _f_kinds(covs: dict, statics: dict) -> Dict[str, List[str]]:
+    """Per build slot, which KINDS of F(H) that slot carries.
+
+    ``dyn`` comes from a build's JaCoCo coverage; ``stat`` from a harness
+    set's static reach, filed under the build slot `STATIC_BUILD_SLOT`
+    gives it.  A slot with both is a slot where the same harness set can be
+    read two ways, which is the comparison `R_stat_only` / `R_dyn_only`
+    below reports."""
+    out: Dict[str, List[str]] = {}
+    for build in covs:
+        out.setdefault(build, []).append(DEFAULT_F_KIND)
+    for set_name in statics:
+        slot = STATIC_BUILD_SLOT.get(set_name, set_name)
+        out.setdefault(slot, []).append(F_KIND_STATIC)
+    return {b: sorted(set(k)) for b, k in out.items()}
+
+
 def compute_leg(leg_dir: str) -> dict:
     """All Table 2 numbers for one leg, as a flat JSON-serialisable dict.
 
@@ -670,6 +759,7 @@ def compute_leg(leg_dir: str) -> dict:
     r_methods, r_jdk = _strip_jdk(r_methods)
     manifest, _ = _strip_jdk(manifest)
     covs = _load_coverage(mdir)
+    statics = _load_static(mdir)
     sites = _load_crash_sites(mdir)
 
     # The primary build's method list is the identity space for everything
@@ -692,6 +782,8 @@ def compute_leg(leg_dir: str) -> dict:
         'coverage_buggy': 'buggy' in covs,
         'coverage_patched': 'patched' in covs,
         'coverage_compiled': BUILD_COMPILED in covs,
+        'static_kept': 'kept' in statics,
+        'static_compiled': BUILD_COMPILED in statics,
         'crash_sites': sites is not None,
     }
     out['builds'] = [b for b in BUILDS if b in covs]
@@ -715,12 +807,24 @@ def compute_leg(leg_dir: str) -> dict:
         'R_line_by_ring': {
             k: {r: len(v.refs(r)) for r in RING_ORDER}
             for k, v in rvars_line.items()},
-        # How each build's F was obtained, next to how big it is.  Only
-        # 'dyn' is produced today; see F_KINDS.
-        'F_kind': {b: DEFAULT_F_KIND for b in covs},
+        # How each build slot's F was obtained, next to how big it is: the
+        # KINDS present for that slot, sorted.  A slot can now carry both —
+        # JaCoCo coverage for 'dyn' and call-graph reachability for 'stat' —
+        # so this is a list, and it is a list even when only one kind is
+        # there.  See F_KINDS.
+        'F_kind': _f_kinds(covs, statics),
         'F_method': {b: len(c.methods) for b, c in covs.items()},
         'F_line': {b: len(c.lines) for b, c in covs.items()},
         'F_all_methods': {b: len(c.all_methods) for b, c in covs.items()},
+        # The static reachable set, per HARNESS SET (not per build: static
+        # reach is the same on both builds).  `Fstat_entries` is the
+        # narrower claim inside it — the library methods the harness
+        # sources call directly, before the walk down.
+        'Fstat_method': {k: len(v.methods) for k, v in statics.items()},
+        'Fstat_entries': {k: len(v.entries) for k, v in statics.items()},
+        'Fstat_harnesses': {k: len(v.harnesses) for k, v in statics.items()},
+        'Fstat_source': {k: v.source for k, v in statics.items()},
+        'Fstat_unmatched': {k: len(v.unmatched) for k, v in statics.items()},
         'branches': {b: {'covered': c.branches_covered,
                          'total': c.branches_total} for b, c in covs.items()},
         'manifest_method': len(manifest) if manifest is not None else None,
@@ -797,6 +901,66 @@ def compute_leg(leg_dir: str) -> dict:
                 _ratio(len(pset & fset), len(pset)),
                 by_ring=_by_ring_ratio(
                     pset, lambda x: pc.get(x, loc.OUTSIDE), fset))
+
+    # -- static reach (F_stat) ---------------------------------------------
+    # METHOD GRANULARITY ONLY: a call graph names methods, so there is no
+    # line-level static set and no `stat` key at line granularity.  The
+    # build slot is a convention, not an observation — static reach is read
+    # off the harness source and is identical on the buggy and the patched
+    # build — so the kept set goes in the `buggy` slot and the all-compiled
+    # set in `compiled`, which puts each one's static number in the same
+    # table column as its dynamic number.  The fifth key slot says `stat`,
+    # so the two can never be mistaken for each other.
+    stat_only: Dict[str, dict] = {}
+    dyn_only: Dict[str, dict] = {}
+    for set_name, st in sorted(statics.items()):
+        build = STATIC_BUILD_SLOT.get(set_name, set_name)
+        for rvar, rset in rvars.items():
+            sproj = _project(rset, p_methods, primary_pop)
+            matching[f'method__{rvar}__{build}__stat'] = dict(
+                sproj.stats, build=build, f_kind=F_KIND_STATIC,
+                harness_set=set_name)
+            fset = _map_refs(st.methods, sproj.index)
+            ring_of = lambda x, _m=sproj: _m.r_ring.get(x, loc.OUTSIDE)
+            inter = sproj.r & fset
+            out[metric_key('rcc', 'method', rvar, build, F_KIND_STATIC)] = dict(
+                _ratio(len(inter), len(sproj.r)),
+                by_ring=_by_ring_ratio(sproj.r, ring_of, fset))
+            out[metric_key('rcp', 'method', rvar, build, F_KIND_STATIC)] = dict(
+                _ratio(len(inter), len(fset)),
+                by_ring=_decompose(fset, ring_of, len(fset)))
+            # "Pointed but not reached", and its opposite.  A method in
+            # R that the harnesses could statically get to but never ran is
+            # a FUZZING failure (the inputs never drove it there); one they
+            # ran but no call in the source leads to is the static
+            # analysis's blind spot (reflection, a lambda, a virtual call
+            # the graph does not resolve).  Only computable where the same
+            # slot has both kinds.
+            if build in covs:
+                fdyn = _map_refs(covs[build].methods, sproj.index)
+                stat_only.setdefault(build, {})[rvar] = len(
+                    (sproj.r & fset) - fdyn)
+                dyn_only.setdefault(build, {})[rvar] = len(
+                    (sproj.r & fdyn) - fset)
+        if p_methods is not None:
+            idx = loc.MethodIndex(primary_pop or p_methods.refs())
+            pc, p_missed = _map_set(p_methods, idx,
+                                    identity=primary_pop is None)
+            fset = _map_refs(st.methods, idx)
+            matching[f'psc__method__{build}__stat'] = {
+                'space': ('coverage_all_methods' if primary_pop else 'P'),
+                'p_unmatched': p_missed, 'ambiguous': idx.ambiguous,
+                'missing': idx.missing, 'reclassified': idx.reclassified,
+                'p_caller_provenance': _caller_provenance(p_methods),
+                'build': build, 'f_kind': F_KIND_STATIC,
+                'harness_set': set_name}
+            pset = set(pc)
+            out[metric_key('psc', 'method', None, build, F_KIND_STATIC)] = dict(
+                _ratio(len(pset & fset), len(pset)),
+                by_ring=_by_ring_ratio(
+                    pset, lambda x: pc.get(x, loc.OUTSIDE), fset))
+    sizes['R_stat_only'] = stat_only
+    sizes['R_dyn_only'] = dyn_only
 
     # -- line granularity --------------------------------------------------
     for rvar, rlset in rvars_line.items():

@@ -1181,6 +1181,26 @@ def _coverage_setup(args, context):
     return cov_dir, glob_, out_dir
 
 
+def _coverage_src_dir(cov_dir):
+    """`<leg_dir>/harness_src` for a `--coverage` run, or None.
+
+    Where the acceptance gate copies every COMPILED candidate's harness
+    source (`fuzz_runner.HarnessVerifier._save_harness_source`), under the
+    same attempt id its `.exec` dump carries. `java.measurements.
+    static_reach` reads those files to build the STATIC fuzzer-reachable
+    set F_stat — what a harness could reach, as against what it did.
+
+    Derived from the coverage directory (`<leg_dir>/cov`) so the flag that
+    turns coverage on turns this on too, and nothing exists with the flag
+    off. Not created here: the verifier creates it on the first candidate,
+    so a leg that compiled nothing leaves no empty directory behind.
+    """
+    if not cov_dir:
+        return None
+    return os.path.join(os.path.dirname(os.path.abspath(cov_dir)),
+                        'harness_src')
+
+
 def _record_coverage(runners, cov_dir, record_extras, accepted=None) -> None:
     """Persist this leg's coverage dump inventory into result.jsonl
     (`coverage`).
@@ -1204,6 +1224,7 @@ def _record_coverage(runners, cov_dir, record_extras, accepted=None) -> None:
         return
     dumps = []
     outputs = []
+    sources = []
     for runner in runners:
         for rec in (getattr(runner, 'coverage_dumps', None) or []):
             if rec not in dumps:
@@ -1211,6 +1232,9 @@ def _record_coverage(runners, cov_dir, record_extras, accepted=None) -> None:
         for path in (getattr(runner, 'coverage_outputs', None) or []):
             if path not in outputs:
                 outputs.append(path)
+        for path in (getattr(runner, 'coverage_sources', None) or []):
+            if path not in sources:
+                sources.append(path)
     classpath_path = os.path.join(cov_dir, 'classpath.json')
     compiled_attempts = []
     for rec in dumps:
@@ -1233,6 +1257,9 @@ def _record_coverage(runners, cov_dir, record_extras, accepted=None) -> None:
         # the prompt, decide the root-cause coverage number.
         'compiled_attempts': compiled_attempts,
         'accepted_attempts': accepted_attempts,
+        # The harness SOURCE of every compiled candidate, saved beside the
+        # dumps. Read by java.measurements.static_reach for F_stat.
+        'sources': sources,
     }
     record_event('deterministic', method='coverage',
                  target='jazzer coverage dumps',
@@ -2695,6 +2722,8 @@ def main():
             coverage_dir=_cov_dir,
             coverage_include=_cov_glob,
             coverage_out_dir=_cov_out_dir,
+            # Its harness SOURCE goes next to them, for F_stat.
+            coverage_src_dir=_coverage_src_dir(_cov_dir),
             coverage_checkout=selection.buggy_dir,
         )
 

@@ -214,8 +214,9 @@ def test_metric_keys_name_the_kind_of_F(run_dir):
     assert len('rcr_cross__method__R0__na'.split('__')) == 4
     assert 'rcr_cross__method__R0__na' in row
 
-    # only 'dyn' is emitted today, and it is what `sizes` records
-    assert set(row['sizes']['F_kind'].values()) == {'dyn'}
+    # this leg has no static reach, so every build slot carries 'dyn' alone
+    # (F_kind is a LIST per slot: a slot can carry both kinds)
+    assert set(map(tuple, row['sizes']['F_kind'].values())) == {('dyn',)}
 
     assert M.F_KINDS == ('dyn', 'stat')
     assert M.metric_key('rcc', 'method', 'R0', 'buggy') == \
@@ -353,7 +354,8 @@ def test_sizes_and_available_flags(run_dir):
         'patch_derived': True, 'patch_derived_lines': True,
         'root_cause': True, 'root_cause_manifest': True,
         'coverage_buggy': True, 'coverage_patched': False,
-        'coverage_compiled': False, 'crash_sites': True}
+        'coverage_compiled': False, 'static_kept': False,
+        'static_compiled': False, 'crash_sites': True}
     assert row['builds'] == ['buggy']
     s = row['sizes']
     assert s['P_method'] == 3 and s['P_line'] == 3
@@ -362,7 +364,7 @@ def test_sizes_and_available_flags(run_dir):
                                              'callee': 1}
     assert s['R_line'] == {'R0': 2, 'full': 4}
     assert s['F_method'] == {'buggy': 4} and s['F_line'] == {'buggy': 4}
-    assert s['F_kind'] == {'buggy': 'dyn'}
+    assert s['F_kind'] == {'buggy': ['dyn']}
     assert s['F_all_methods'] == {'buggy': 7}
     assert s['branches'] == {'buggy': {'covered': 5, 'total': 10}}
     assert (s['crash_sites_total'], s['crash_sites_library'],
@@ -447,7 +449,8 @@ def test_cli_main_without_checkouts_still_writes_metrics(tmp_path, monkeypatch,
         'patch_derived': False, 'patch_derived_lines': False,
         'root_cause': False, 'root_cause_manifest': False,
         'coverage_buggy': False, 'coverage_patched': False,
-        'coverage_compiled': False, 'crash_sites': False}
+        'coverage_compiled': False, 'static_kept': False,
+        'static_compiled': False, 'crash_sites': False}
     errors = json.loads((leg / 'measurements' / 'errors.json').read_text())
     assert set(errors) == {'checkout', 'patch_derived', 'patch_derived_lines',
                            'root_cause', 'coverage', 'crash_sites'}
@@ -518,7 +521,7 @@ def test_compiled_build_gets_its_own_f_metrics(tmp_path):
     assert s['F_method'] == {'buggy': 1, 'compiled': 4}
     assert s['F_line'] == {'buggy': 1, 'compiled': 4}
     assert s['F_all_methods'] == {'buggy': 4, 'compiled': 4}
-    assert s['F_kind'] == {'buggy': 'dyn', 'compiled': 'dyn'}
+    assert s['F_kind'] == {'buggy': ['dyn'], 'compiled': ['dyn']}
     assert s['branches']['compiled'] == {'covered': 7, 'total': 10}
     # RCR and CSM never read F, so they are unchanged and build-free
     assert 'rcr__method__R0__compiled' not in row

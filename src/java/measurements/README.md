@@ -176,10 +176,9 @@ builds; line identities are defined on the buggy tree. A third coverage set
 is collected for *every harness that compiled*, not only the ones the
 pipeline kept — section 3.3.1 says why.
 
-**Static variant.** Where useful, F_stat is also computed: the callees
-reachable, on the static call graph, from the library methods the harness
-source calls. It is what the harness *could* reach; F (dynamic) is what it
-*did* reach.
+**Static variant.** F is *dynamic*: it is what ran. Its static
+counterpart F_stat — what the harnesses *could* have run — is section
+3.3.2.
 
 ### 3.3.1 Kept versus all compiled harnesses
 
@@ -219,6 +218,58 @@ acceptance check's crashes are *by definition* crashes on the unfixed
 build — that is what the check tests — so counting them in CSM would
 measure the check rather than the harness set. They are recorded, and
 counted per build, but kept out of CSM's denominator.
+
+### 3.3.2 F_stat — what the harnesses *could* reach
+
+F as described above is *dynamic*: it is what ran. Its static counterpart,
+**F_stat**, is what the harnesses could have run at all. It answers a
+question the dynamic set alone cannot: when a method in the root-cause
+region was never executed, was it because no harness ever calls anything
+that leads there, or because a harness does lead there and the fuzzer's
+inputs never drove it that far? The first is a harness-writing failure,
+the second a fuzzing one, and only F_stat separates them.
+
+**How it is built.** For one harness, its `FuzzHarness.java` is parsed and
+every method call and `new` written in it is read out. A call gives a name
+and a number of arguments; where the receiver is a variable whose declared
+type the file shows (a local, a parameter, a field) or is written as a
+class name, it gives a receiver class too. Each call is then matched
+against the project's own method list — the same list and the same
+matching rule (`locations.MethodIndex`) every other set is matched with,
+including its receiver-rescue rule for a call whose receiver we cannot
+name. The methods that match are the **entry methods**: what the harness
+calls directly. From them the call graph is walked *downwards* with the
+same traversal and the same two caps as P's callee ring
+(`REACHABLE_NODE_CAP` nodes, `REACHABLE_MAX_DEPTH` levels, per entry).
+F_stat(H) is the union of that over the harness set, and the entry methods
+are reported separately (`entries`), because "the harness calls this" and
+"the harness could get to this" are different, and the second is far
+weaker.
+
+Calls to the JDK, to the Jazzer API the harness is written against, and to
+the harness's own helper methods are dropped before matching: none of them
+is library code. Everything else that matches nothing is counted in
+`unmatched`, so a small F_stat can be traced to a resolution gap rather
+than read as a finding.
+
+**Which harness set.** The same two as the dynamic side (section 3.3.1):
+`kept`, the harnesses the acceptance check admitted, and `compiled`, every
+candidate that compiled. The sources come from
+`<leg>/harness_src/<attempt>.java`, which a `--coverage` run saves for
+every compiled candidate at the moment the acceptance check runs it — the
+one time a rejected candidate is ever seen. For a leg archived before that
+existed, the accepted harnesses are recovered from the text of `trace.md`
+instead (the file records each accepted attempt and the model output that
+produced it), which gives the `kept` set only; those files record
+`source: "trace"` so the two provenances stay distinguishable.
+
+**No build, and no lines.** F_stat is read off the source, so it is the
+same on the buggy and the patched build, and a call graph names methods,
+so there is no line-level static set. Both facts show up in the metric
+keys: a `stat` key exists only at method granularity, and its build slot
+is a filing convention (`buggy` for the kept set, `compiled` for the
+all-compiled set) rather than an observation. Section 6.3 says it again
+where the keys are listed.
 
 ## 4. The five metrics
 
@@ -297,9 +348,11 @@ Bugs with large call graphs therefore do not dominate the result.
 | `patch_derived.py` | P from a run's `context.json` (or, for older runs, the same JSON block inside `trace.md`); `lines_for` turns methods into line sets | no |
 | `root_cause.py` | R̂: reads the Defects4J developer patch (`<D4J_HOME>/framework/projects/<Project>/patches/<bug>.src.patch`, fixed→buggy direction, verified at run time) or falls back to diffing a fixed checkout; seeds, lines, and the manifestation frames from `failing_tests` | **yes — the only one** |
 | `coverage.py` | F(H): parses JaCoCo XML reports, runs the JaCoCo command-line tool on the `.exec` dumps a `--coverage` run leaves behind, unions per build | no |
+| `static_reach.py` | F_stat: the library methods a harness source calls (javalang), and the bounded call-graph walk down from them; the `kept`/`compiled` harness sets, with the `trace.md` fallback for archived legs | no |
 | `crash_sites.py` | crash sites from raw Jazzer output (`fuzz_out/` of a `--coverage` run) or from the evidence blocks archived in `trace.md` | no |
 | `metrics.py` | the five metrics per leg, aggregate and per ring, from the JSON files below only | no |
 | `aggregate.py` | macro-averages, the H_N/H_R/delta table, the RCC-versus-caught table | no |
+| `paper_tables.py` | the paper's Table 3 and Table 4, in markdown or LaTeX, from a measured run (section 6.5) | no |
 | `cli.py` | runs everything over a run directory | imports `root_cause` (allowed here only) |
 
 The pipeline side has three flag-gated hooks (`src/java/run.py`,
@@ -309,7 +362,9 @@ the two Jazzer flags from `src/java/execution/coverage_flags.py` to every
 Jazzer run — the patched-side fuzz and the buggy-side scan of the kept
 harnesses (`FuzzRunner`) and the acceptance check of every compiled
 candidate (`HarnessVerifier`, section 3.3.1) — snapshots the compiled
-classes, and saves raw fuzzer output; `--naive` removes the root-cause
+classes, saves raw fuzzer output, and copies every compiled candidate's
+harness source to `<leg>/harness_src/<attempt>.java` (the source F_stat is
+read from, section 3.3.2); `--naive` removes the root-cause
 context from the prompts. With the flags off the pipeline's
 prompts and commands are byte-for-byte unchanged, and tests pin that.
 
@@ -322,6 +377,8 @@ python -m java.measurements.cli <run_dir> \
     --d4j_home /home/code/defects4j \
     --introspector          # build the call graph so R̂ gets its rings
     [--coverage]            # also turn cov/*.exec into coverage JSON
+    #  (F_stat is computed whenever --introspector is on: it needs the
+    #   call graph, and it reads harness_src/ or falls back to trace.md)
     [--naive_run <run_dir>] # a --naive run to diff against (Table 3 delta)
 ```
 
@@ -343,7 +400,16 @@ three harness-set/build combinations of section 3.3.1: the kept harnesses
 on the buggy and the patched build, and every harness that compiled (on the
 buggy build). A leg's `result.jsonl` says which harnesses each set is over,
 under `coverage`: `compiled_attempts` (every candidate the acceptance check
-ran) and `accepted_attempts` (the ones it kept).
+ran), `accepted_attempts` (the ones it kept) and `sources` (the saved
+harness sources).
+
+Two more files hold F_stat (section 3.3.2): `static_kept.json` and
+`static_compiled.json`, one per harness set. Each holds `methods` (the set
+itself), `entries` (the library methods the harness sources call directly),
+`edges` (the call-graph edges the walk crossed), `unmatched` (calls that
+resolved to no project method, as written), `harnesses` (which harnesses
+the set is the union over) and `source` (`harness_src` when the saved
+sources were read, `trace` when they were recovered from the trace).
 
 Per run: `metrics.jsonl` (one line per leg), `aggregate.json`, and
 `delta.json` when `--naive_run` was given. The CLI also prints the Table 3
@@ -363,15 +429,25 @@ of F the number came from: `rcc__method__R0__buggy__dyn`,
 all-compiled harness set of section 3.3.1 the same keys with `compiled` in
 the build slot: `rcc__method__R0__compiled__dyn`,
 `psc__line__na__compiled__dyn`. Two kinds exist (`F_KINDS` in
-`metrics.py`). `dyn` is the dynamic set of section 3.3 —
-what the harnesses actually executed, from JaCoCo coverage — and is the only
-kind anything emits today. `stat` is reserved for the planned static variant
-of section 3.3: what the harnesses could reach, from call-graph reachability
-out of the library methods the harness source calls. The kind is in the key
-so that a table can never put a dynamic number and a static one in the same
-column; the rendered Table 3 shows it in those three column headers, as
-`RCC (dyn)`, `RCP (dyn)`, `PSC (dyn)`, and the functions in `aggregate.py`
-that pick those columns take an `fkind` argument that defaults to `dyn`.
+`metrics.py`). `dyn` is the dynamic set of section 3.3 — what the harnesses
+actually executed, from JaCoCo coverage. `stat` is the static set of
+section 3.3.2 — what they could have executed — and its keys are
+`rcc__method__R0__buggy__stat`, `rcp__method__full__buggy__stat`,
+`psc__method__na__buggy__stat` and the same three with `compiled` in the
+build slot. Two things are true of every `stat` key and of no `dyn` key:
+it exists at **method granularity only** (a call graph has no lines), and
+its **build slot is a convention, not an observation** — static reach is
+read off the source and is identical on the buggy and the patched build, so
+the kept set is filed under `buggy` and the all-compiled set under
+`compiled` purely so that each harness set's static and dynamic numbers
+land in the same table column.
+
+The kind is in the key so that a table can never put a dynamic number and a
+static one in the same column; the rendered Table 3 shows it in those three
+column headers, as `RCC (dyn)`, `RCP (dyn)`, `PSC (dyn)`, and the functions
+in `aggregate.py` that pick those columns take an `fkind` argument that
+defaults to `dyn`. A run that measured F_stat gets its own extra Table 3
+block, whose header says `static reach`.
 
 Each value is an object `{value, num, den, by_ring}`; `value` is `null` when
 the denominator is empty; `by_ring` holds one ratio per ring for RCR/RCC/PSC
@@ -380,8 +456,18 @@ The R-variants are `R0` (developer-changed methods), `R1` (R0 plus the
 manifestation frames; method granularity only) and `full` (with rings).
 `rcr_cross__…` is the ring-of-R̂ by ring-of-P count table. Every line also
 carries `available` (which inputs existed), `sizes` (|P|, |R̂|, |F| and
-their per-ring counts, plus `F_kind`, which records per build how that
-build's F was obtained — `dyn` for now, and `P_caller_provenance` /
+their per-ring counts, plus `F_kind`, which records per build slot which
+*kinds* of F that slot carries — a list, `["dyn"]`, `["stat"]` or both;
+`Fstat_method` / `Fstat_entries` / `Fstat_harnesses` / `Fstat_unmatched` /
+`Fstat_source`, the static set's size, its entry count, how many harnesses
+it is over, how many calls resolved to nothing and where the sources came
+from, all per harness set; `R_stat_only` and `R_dyn_only`, per build slot
+and R̂ variant, the counts |R̂ ∩ F_stat − F_dyn| and |R̂ ∩ F_dyn − F_stat| —
+the methods of the root-cause region the harnesses could reach but never
+ran (a fuzzing failure: the inputs never drove them there) and the ones
+they ran although no call in their source leads there (the static
+analysis's blind spot: reflection, a lambda, an unresolved virtual call);
+and `P_caller_provenance` /
 `R_caller_provenance`, the caller ring split into the members the call
 graph found and the ones the source scan of section 3.1 did), `matching`
 (how many names could not be matched, how many were ambiguous, and
@@ -397,6 +483,68 @@ The printed Table 3 is the kept harnesses' by default. When the run also
 measured the all-compiled set, a second table follows it; each names its
 harness set in its header ("kept harnesses" / "all compiled harnesses"),
 and `render_markdown`'s `build` argument renders one of them on its own.
+
+### 6.5 Filling the paper's tables
+
+The paper's two result tables (Table 3, the main result; Table 4, coverage
+of the root-cause region plus the classification) are rendered straight
+from a measured run by `paper_tables.py`:
+
+```bash
+# from src/, on any machine that has the archived run directory:
+python -m java.measurements.paper_tables \
+    --hr <conditioned run_dir> \
+    [--hn <naive run_dir>]      # without it every H_N cell prints an en dash
+    [--fkind dyn|stat]          # which kind of F(H) the RCC/RCP/PSC columns read
+    [--build buggy|patched|compiled]   # i.e. which harness set
+    [--rvar R0|R1|full]         # which root-cause region variant
+    [--fmt md|latex]            # markdown for the writeup, LaTeX for the paper
+    [--dp 2]                    # decimal places; RCP often needs 3
+    [--out FILE]
+```
+
+It reads `metrics.jsonl` and `aggregate.json` from the run directory and
+writes nothing back. An `aggregate.json` that is missing any key its own
+`metrics.jsonl` carries — an archive made before the kind of F(H) moved
+into a fifth key slot, say — is treated as stale and the aggregate is
+recomputed from the legs; the table's note line says which happened.
+
+**Paper name → our key.** Every cell names a metric, a granularity, an
+R-variant, a build and a kind of F(H); the note under each rendered table
+spells out the set actually used, so a number can always be traced back.
+
+| paper | our key | note |
+|---|---|---|
+| RCR_g | `rcr__<gran>__<rvar>__na` | no coverage, so no build and no F kind |
+| RCC_g(H) | `rcc__<gran>__<rvar>__<build>__<fkind>` | |
+| RCP_g(H) | `rcp__<gran>__<rvar>__<build>__<fkind>` | |
+| PSC_g(H) | `psc__<gran>__na__<build>__<fkind>` | no R-side, so no R-variant |
+| CSM_g(H) | `csm__<gran>__<rvar>__na` | crash sites, not coverage |
+| F1(H) | none — counted from each leg's `outcome` | caught/missed/false_alarm/clean = TP/FN/FP/TN, overfitting is the positive case |
+| ℝ | `<rvar>` = `R0` by default: the methods the developer changed | section 3.2 |
+| function granularity | `<gran>` = `method` | |
+| **edge granularity** | `<gran>` = `line` — **rendered "Line", never "Edge"** | we do not measure control-flow edges (section 2) |
+| H_N / H_R | the `--hn` / `--hr` run directory | |
+| n | bugs and legs per bug class, in each table's notes | |
+
+**What prints an en dash.** The RCR difference (RCR judges the
+patch-derived set, which is built before any harness exists, so H_R − H_N
+is not defined), CSM for semantic bugs (nothing crashes in the library, so
+there is no site to match), every cell of an arm that was not given, and
+any ratio whose denominator was empty. Table 3's F1 column belongs to a
+(harness set, bug class) rather than to a granularity, so it is printed on
+the Function row and spans the pair; Table 4's RCR spans the two harness
+columns for the same reason — unless the two runs' patch-derived sets
+actually disagree, in which case both values are printed and a note says
+why.
+
+**Averaging** is the macro-average of section 5, straight out of
+`aggregate.py`: the mean over a bug's patches first, then the mean and
+standard deviation over bugs. "All" is computed over the complete set of
+legs, never as the mean of the crashing and semantic rows. When both arms
+are given, they are joined leg by leg on (project, bug id, APR tool, label)
+exactly as `delta()` does, and both sides are aggregated over the shared
+legs only.
 
 ### 6.4 Known limits
 
@@ -424,6 +572,22 @@ and `render_markdown`'s `build` argument renders one of them on its own.
   inflates the argument count, which loses that call instead. The split by
   provenance is in every metrics row so the scanned callers can be
   discounted.
+- **Static reach over-approximates in one direction and under-approximates
+  in the other.** A harness call is resolved by its name and its number of
+  arguments, with a receiver class only where the source spells one out, so
+  a same-named, same-arity method on an unrelated class can be taken for
+  the one that was meant — the same weakness the source-scanned callers
+  have, for the same reason. In the other direction the walk sees only what
+  the static call graph records: reflection, dynamic dispatch through an
+  interface, and the bodies of lambdas handed to library methods are
+  invisible, so a method the harness really can reach may be missing.
+  F_stat is therefore not a bound in either direction; it is "the calls
+  written down, plus what the call graph says they lead to", and every row
+  reports `Fstat_unmatched` beside it.
+- **Archived legs get the kept set only.** Without `harness_src/`, F_stat
+  falls back to the harness sources in `trace.md`, which names the accepted
+  attempts but never ties a *rejected* candidate to an attempt id, so no
+  `compiled` static set can be built for such a leg.
 - **Mislabelled receivers.** The introspector labels a call with the class
   it was reading, not the class that declares the callee, so a JDK call
   inside a project method comes out wearing the project class's name:

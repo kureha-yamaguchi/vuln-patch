@@ -13,6 +13,10 @@ For every leg of `run_dir` this writes the JSON files `metrics.py` reads:
         <build> is `buggy` / `patched` (the harnesses the acceptance gate
         KEPT) or `compiled` (every candidate that compiled, on the buggy
         build) — see the README, "Kept versus all compiled harnesses"
+    <leg>/measurements/static_<set>.json         StaticReach (F_stat)
+        <set> is `kept` (the harnesses the acceptance gate kept) or
+        `compiled` (every candidate that compiled); written only with
+        --introspector, which is what builds the call graph the walk needs
     <leg>/measurements/crash_sites.json          [CrashSite]     (C)
     <leg>/measurements/errors.json               what failed here, if anything
 
@@ -118,6 +122,11 @@ def _mod_coverage():
 def _mod_crash_sites():
     from . import crash_sites
     return crash_sites
+
+
+def _mod_static_reach():
+    from . import static_reach
+    return static_reach
 
 
 def build_introspector_project(buggy_dir: str, language: str = 'jvm'):
@@ -227,6 +236,21 @@ def measure_leg(leg_dir: str, *, checkout_root: Optional[str] = None,
         def _coverage():
             _mod_coverage().collect_leg(leg_dir)
         stage('coverage', _coverage)
+
+    # -- F_stat -------------------------------------------------------------
+    # What the harnesses COULD reach, as against what they did. It needs the
+    # call graph, so it runs only when --introspector built one, and it
+    # reuses that project object rather than parsing the checkout twice.
+    if introspector:
+        def _static_reach():
+            if fi['project'] is None:
+                raise RuntimeError('no introspector call graph')
+            sets = _mod_static_reach().collect_leg(leg_dir, fi['project'])
+            if not sets:
+                raise RuntimeError(
+                    'no harness sources: neither harness_src/ (a --coverage '
+                    'run saves it) nor an accepted harness in trace.md')
+        stage('static_reach', _static_reach)
 
     # -- C ------------------------------------------------------------------
     def _crash_sites():

@@ -1296,6 +1296,11 @@ class _CoverageDumps:
     candidate, which is also the buggy build — see the measurements
     README, "Kept versus all compiled harnesses").
 
+    The verifier leaves a third artifact, the candidate's harness SOURCE
+    under `<leg_dir>/harness_src/<attempt>.java`; only it does, because it
+    is the only object that ever sees a rejected candidate. See
+    `HarnessVerifier._save_harness_source`.
+
     No token may contain an underscore: the measurement side splits a
     dump's name on the LAST underscore to recover (harness, build).
 
@@ -1321,6 +1326,11 @@ class _CoverageDumps:
         # writes them to result.jsonl.
         self.coverage_dumps: List[dict] = []
         self.coverage_outputs: List[str] = []
+        # One path per harness SOURCE saved beside the dumps. Only the
+        # verifier fills this in (it is the one object that sees every
+        # compiled candidate); it stays empty everywhere else, and with
+        # the flag off.
+        self.coverage_sources: List[str] = []
 
     def _coverage_on(self) -> bool:
         return bool(self.coverage_dir and self.coverage_include)
@@ -2424,6 +2434,7 @@ class HarnessVerifier(_CoverageDumps):
                  coverage_dir: Optional[str] = None,
                  coverage_include: Optional[str] = None,
                  coverage_out_dir: Optional[str] = None,
+                 coverage_src_dir: Optional[str] = None,
                  coverage_checkout: Optional[str] = None):
         self.jazzer_standalone_jar = jazzer_standalone_jar
         self.buggy_classpath = buggy_classpath
@@ -2447,10 +2458,41 @@ class HarnessVerifier(_CoverageDumps):
         # `compiled`. All-None with the flag off, and then the Jazzer
         # command below is byte-identical to what it always was.
         self._coverage_init(coverage_dir, coverage_include, coverage_out_dir)
+        # <leg_dir>/harness_src — where each compiled candidate's harness
+        # SOURCE is copied, under the same attempt id as its `.exec` dump.
+        # The static fuzzer-reachable set F_stat is read out of those files
+        # (java.measurements.static_reach), and this run is the only place
+        # a REJECTED candidate's source is ever seen. Same flag, same off
+        # state: None here means nothing is written and nothing is
+        # recorded.
+        self.coverage_src_dir = coverage_src_dir
         # The buggy checkout, whose class files a post-hoc JaCoCo report
         # needs; snapshotted once, lazily, on the first instrumented run.
         self.coverage_checkout = coverage_checkout
         self._coverage_snapshotted = False
+
+    def _save_harness_source(self, build_result, harness_id: str) -> None:
+        """Copy this candidate's harness `.java` to
+        `<leg_dir>/harness_src/<attempt>.java`. No-op with the flag off.
+
+        MEASUREMENT ONLY, and fail-soft: a copy that does not happen costs
+        one harness in a later static-reach set and nothing else. The file
+        name is the attempt id the `.exec` dump carries, so the two
+        artifacts of one candidate line up by name."""
+        if not self._coverage_on() or not self.coverage_src_dir:
+            return
+        src = getattr(build_result, 'harness_path', '') or ''
+        if not src:
+            return
+        dest = os.path.join(self.coverage_src_dir,
+                            f'{harness_id or "harness"}.java')
+        try:
+            os.makedirs(self.coverage_src_dir, exist_ok=True)
+            shutil.copyfile(src, dest)
+        except OSError:
+            return
+        if dest not in self.coverage_sources:
+            self.coverage_sources.append(dest)
 
     def _coverage_snapshot_once(self) -> None:
         """Freeze the buggy build's classes for the `compiled` dumps.
@@ -2474,6 +2516,7 @@ class HarnessVerifier(_CoverageDumps):
         _cov_id = build_result.attempt_label or os.path.basename(harness_dir)
         _cov_dump = self._coverage_dump_path(_cov_id, 'compiled')
         _cov_out = self._coverage_output_path(_cov_id, 'compiled')
+        self._save_harness_source(build_result, _cov_id)
         try:
             outcome = run_jazzer(
                 jazzer_standalone_jar=self.jazzer_standalone_jar,
