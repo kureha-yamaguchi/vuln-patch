@@ -1792,6 +1792,34 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.51 H_N vs H_R PILOT (2026-09-04/05; evaluation only)
+**Runs:** pilot_HR_20260904_112437 and pilot_HN_20260904_150008 — 20 dev
+legs each (5 crashing + 5 semantic bugs, one correct + one overfitting
+patch per bug), same flags, both with --coverage (kept + all compiled
+harnesses, dyn + stat, method/line/branch). H_N = level B naive: patch +
+failing test kept, neighbourhood removed (verified from traces: 0/20
+legs carry <root_cause_reachable>/<xref>; harness prompt 10.6k vs 28.5k
+chars). CAVEAT: the rule-synthesis prompt's "Reachable API" line was NOT
+removed by --naive (9 occurrences in both arms) — a small leak to fix.
+**Verdicts:** H_R TP7 FN2 FP3 TN7 F1 0.74; H_N TP4 FN5 FP0 TN10 F1 0.62
+(recall 0.78 vs 0.44; naive raised no false alarms).
+**Coverage (kept harnesses, method level): RCC(R0) = 1.00 for BOTH arms;
+all-compiled candidates: 1.00 for both; compiled/accepted counts identical
+(114/99 vs 114/100).** PSC(method) 0.85 vs 0.80; line and branch RCC
+differ by ±0.1 in either direction across builds/sets. Static reach:
+0.64 (H_R) vs 0.45 (H_N) — naive harnesses call the seed less directly.
+**Reading:** level-B naive harnesses reach the developer's method exactly
+as often as conditioned ones, because the failing test + patch diff
+already localise the bug; the neighbourhood context changes WHAT the
+harnesses check (oracles/relations → +0.13 F1, +3 FP), not WHERE they
+go. Hypothesis RCC(H_N) << 1 is NOT supported at level B. A naive set
+that strips the patch/test too (level C, function-only / OSS-Fuzz-Gen
+style) is what the hypothesis actually needs; at level B the story is
+"conditioning buys oracles, not reach".
+**Single-draw caveat:** one run per arm; smoke/A-B showed verdict flips
+between same-code runs; repetitions on dev + bug bootstrap needed for
+CIs before any claim.
+
 ### 8.50 ROOT-CAUSE MEASUREMENT LAYER (2026-09-04)
 **Built:** `src/java/measurements/` (MEASUREMENT ONLY; README for outsiders)
 implementing the paper's formal objects — P (patch-derived set: seeds +
