@@ -40,7 +40,17 @@ CSM = |{c in C : site(c) in R}| / |C|   how often a crash landed inside the
 
 Three axes multiply every metric
 --------------------------------
-granularity  ``method`` or ``line``.
+granularity  ``method``, ``line`` or ``branch``.  ``branch`` counts
+             BRANCH OUTCOMES on a set of lines rather than the lines
+             themselves: for a set of lines L, ``total(L)`` is the sum of
+             JaCoCo's ``mb + cb`` over L and ``taken(L)`` the sum of its
+             ``cb``, so a two-way ``if`` on a line of L contributes 2 to
+             the denominator and 0, 1 or 2 to the numerator.  It is a
+             re-weighting of the SAME line sets, which is why it carries
+             the line R-variants and no set of its own.  CSM has no
+             branch form — a crash site is a stack frame, not a branch
+             outcome — and neither has ``rcr_cross``, which counts
+             locations.
 R-variant    ``R0``   = the seed ring alone (the methods the developer
                         actually changed);
              ``R1``   = R0 plus the manifest (the frames of the failing
@@ -138,7 +148,17 @@ BUILDS = ('buggy', 'patched', BUILD_COMPILED)
 STATIC_SETS = ('kept', BUILD_COMPILED)
 STATIC_BUILD_SLOT = {'kept': 'buggy', BUILD_COMPILED: BUILD_COMPILED}
 
-GRANULARITIES = ('method', 'line')
+#: ``branch`` is the third and finest: the branch outcomes ON a set of
+#: lines (`_branch_counts`).  It is not a third kind of location — the sets
+#: are still line sets — so it uses `R_VARIANTS_LINE` like ``line`` does,
+#: and every ``branch`` key needs a build's coverage to exist, RCR
+#: included, because the branch counts come out of the JaCoCo report.
+GRANULARITIES = ('method', 'line', 'branch')
+
+#: The granularities whose sets are LINE sets, so a line-only R-variant
+#: (``Rbody``) is meaningful for them.
+GRANULARITIES_LINE_LIKE = ('line', 'branch')
+
 R_VARIANTS = ('R0', 'R1', 'full')
 
 #: The R-variants that exist at LINE granularity.  ``R1`` has no line-level
@@ -310,7 +330,13 @@ class _Coverage:
     Shape read (all keys optional except the two set lists):
     ``{'build': 'buggy', 'methods': [MethodRef dicts],
        'lines': [LineRef dicts], 'all_methods': [MethodRef dicts],
-       'branches_covered': int, 'branches_total': int}``"""
+       'branches_covered': int, 'branches_total': int,
+       'line_branches': [{'class_top_fq':.., 'line':.., 'covered':..,
+                          'total':..}], 'branches_from': str}``
+
+    ``line_branches`` is what the ``branch`` granularity counts; a
+    coverage file written before that key existed reads back as an empty
+    map and the leg then emits no ``branch`` keys at all."""
 
     def __init__(self, d: dict, build: str):
         self.build = d.get('build') or build
@@ -322,6 +348,11 @@ class _Coverage:
             loc.MethodRef.from_dict(x) for x in (d.get('all_methods') or [])}
         self.branches_covered = int(d.get('branches_covered') or 0)
         self.branches_total = int(d.get('branches_total') or 0)
+        self.line_branches: Dict[loc.LineRef, Tuple[int, int]] = {}
+        for x in (d.get('line_branches') or []):
+            self.line_branches[loc.LineRef.from_dict(x)] = (
+                int(x.get('covered') or 0), int(x.get('total') or 0))
+        self.branches_from = d.get('branches_from') or ''
 
 
 def _load_coverage(mdir: str) -> Dict[str, _Coverage]:
@@ -616,6 +647,80 @@ def _line_ring(lset: loc.LineSet):
 
 
 # ---------------------------------------------------------------------------
+# branch granularity
+# ---------------------------------------------------------------------------
+#
+# A branch set is "the branch outcomes ON a set of lines".  JaCoCo reports,
+# per source line, how many outcomes that line's decision point has (`mb +
+# cb`) and how many were taken (`cb`); `coverage.Coverage.line_branches`
+# holds that pair for every line that has a decision point at all.  So for
+# a set of lines L:
+#
+#     total(L) = sum over L of (mb + cb)      the outcomes present
+#     taken(L) = sum over L of cb             the outcomes exercised
+#
+# and the four metrics that have a branch form are the same ratios as at
+# line granularity with counts of lines replaced by counts of outcomes.
+#
+# What this does and does not count is worth being blunt about: it counts
+# the outgoing edges of DECISION POINTS only.  The single edge out of a
+# straight-line statement is not a JaCoCo branch and is invisible here, so
+# this is not the paper's control-flow-edge granularity — it is the nearest
+# thing the existing instrumentation can observe.  See the README, 4.6.
+
+
+def _branch_counts(line_branches: Dict[loc.LineRef, Tuple[int, int]],
+                   refs: Iterable[loc.LineRef]) -> Tuple[int, int]:
+    """(taken, total) branch outcomes on `refs`.
+
+    Lines with no decision point are absent from `line_branches` and so
+    contribute nothing to either count — which is the point: a region of
+    fifty straight-line statements has a branch denominator of zero and
+    reports ``value: null``, not a misleading 1.0."""
+    taken = total = 0
+    for ref in refs:
+        c, t = line_branches.get(ref, (0, 0))
+        taken += c
+        total += t
+    return taken, total
+
+
+def _branch_sizes(line_branches, refs) -> dict:
+    """``{'taken': .., 'total': ..}`` for one set of lines — what
+    ``sizes.branches`` reports next to each set's size in lines."""
+    taken, total = _branch_counts(line_branches, refs)
+    return {'taken': taken, 'total': total}
+
+
+def _branch_ratio(line_branches, refs) -> dict:
+    """taken(refs) / total(refs), in the usual ``{value, num, den}``."""
+    taken, total = _branch_counts(line_branches, refs)
+    return _ratio(taken, total)
+
+
+def _branch_by_ring(line_branches, refs, ring_of,
+                    rings: Sequence[str] = RING_ORDER) -> dict:
+    """One branch ratio per ring of the denominator set — the branch-level
+    twin of `_by_ring_ratio`, so the rings' denominators add up to the
+    aggregate denominator exactly as they do there."""
+    return {ring: _branch_ratio(line_branches,
+                                [r for r in refs if ring_of(r) == ring])
+            for ring in rings}
+
+
+def _branch_decompose(line_branches, refs, ring_of, den: int) -> dict:
+    """Split ONE branch denominator (the outcomes taken anywhere) across
+    the ring of R̂ each taken outcome fell in, ``outside`` for the rest —
+    the branch-level twin of `_decompose`, summing to 1."""
+    out = {}
+    for ring in RING_ORDER_OUT:
+        taken, _total = _branch_counts(
+            line_branches, [r for r in refs if ring_of(r) == ring])
+        out[ring] = _ratio(taken, den)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # per-leg entry point
 # ---------------------------------------------------------------------------
 
@@ -867,8 +972,24 @@ def compute_leg(leg_dir: str) -> dict:
         'Fstat_harnesses': {k: len(v.harnesses) for k, v in statics.items()},
         'Fstat_source': {k: v.source for k, v in statics.items()},
         'Fstat_unmatched': {k: len(v.unmatched) for k, v in statics.items()},
-        'branches': {b: {'covered': c.branches_covered,
-                         'total': c.branches_total} for b, c in covs.items()},
+        # Per build: the whole-build branch counters JaCoCo reports at
+        # method level ('covered'/'total'), then the per-SET totals the
+        # branch granularity is built from — 'all_lines' is every line
+        # with a decision point (RCP's denominator lives here), 'R' is per
+        # R̂ variant and 'P' is the patch-derived set.  'source' says
+        # whether the counts came from a merged JaCoCo report (exact for a
+        # harness set) or from adding the per-harness reports up (an upper
+        # bound); see `coverage.union`.
+        'branches': {b: dict(
+            {'covered': c.branches_covered, 'total': c.branches_total,
+             'source': c.branches_from,
+             'lines_with_branches': len(c.line_branches)},
+            all_lines=_branch_sizes(c.line_branches, list(c.line_branches)),
+            R={k: _branch_sizes(c.line_branches, v.refs())
+               for k, v in rvars_line.items()},
+            P=(_branch_sizes(c.line_branches, p_lines.refs())
+               if p_lines is not None else None),
+        ) for b, c in covs.items()},
         'manifest_method': len(manifest) if manifest is not None else None,
         # Where the CALLER ring came from: the call graph, or the source
         # scan that fills in for it when the graph resolved no caller.
@@ -1031,6 +1152,57 @@ def compute_leg(leg_dir: str) -> dict:
             out[metric_key('psc', 'line', None, build)] = dict(
                 _ratio(len(pl & fl), len(pl)),
                 by_ring=_by_ring_ratio(pl, _line_ring(p_lines), fl))
+
+    # -- branch granularity ------------------------------------------------
+    # The SAME line sets as above, counted by branch outcome instead of by
+    # line (`_branch_counts`).  Every branch key needs a build's JaCoCo
+    # branch data, RCR included — the outcome counts live in the coverage
+    # report and nowhere else — so a leg whose coverage files predate
+    # `line_branches` emits none of these keys.  There is no CSM at branch
+    # level: a crash site is a stack frame, not a branch outcome.
+    branch_builds = {b: c for b, c in covs.items() if c.line_branches}
+    rcr_branch_build = next((b for b in BUILDS if b in branch_builds), None)
+    for rvar, rlset in rvars_line.items():
+        rl = list(rlset.refs())
+        ring_of = _line_ring(rlset)
+        if p_lines is not None and rcr_branch_build is not None:
+            # RCR judges P against R̂ and reads no coverage, but the branch
+            # WEIGHTS have to come from some report; the primary build's is
+            # used, the same convention the method-level RCR follows for
+            # its identity space.  Both builds' totals are the same code.
+            lb = branch_builds[rcr_branch_build].line_branches
+            pl = set(p_lines.refs())
+            hit = [r for r in rl if r in pl]
+            out[metric_key('rcr', 'branch', rvar, None)] = dict(
+                _ratio(_branch_counts(lb, hit)[1],
+                       _branch_counts(lb, rl)[1]),
+                by_ring={ring: _ratio(
+                    _branch_counts(lb, [r for r in hit
+                                        if ring_of(r) == ring])[1],
+                    _branch_counts(lb, [r for r in rl
+                                        if ring_of(r) == ring])[1])
+                    for ring in RING_ORDER},
+                weights_from=rcr_branch_build,
+                branches_from=branch_builds[rcr_branch_build].branches_from)
+        for build, cov in branch_builds.items():
+            lb = cov.line_branches
+            all_taken = sum(c for c, _t in lb.values())
+            out[metric_key('rcc', 'branch', rvar, build)] = dict(
+                _branch_ratio(lb, rl),
+                by_ring=_branch_by_ring(lb, rl, ring_of),
+                branches_from=cov.branches_from)
+            out[metric_key('rcp', 'branch', rvar, build)] = dict(
+                _ratio(_branch_counts(lb, rl)[0], all_taken),
+                by_ring=_branch_decompose(lb, list(lb), ring_of, all_taken),
+                branches_from=cov.branches_from)
+    if p_lines is not None:
+        pl = list(p_lines.refs())
+        p_ring = _line_ring(p_lines)
+        for build, cov in branch_builds.items():
+            out[metric_key('psc', 'branch', None, build)] = dict(
+                _branch_ratio(cov.line_branches, pl),
+                by_ring=_branch_by_ring(cov.line_branches, pl, p_ring),
+                branches_from=cov.branches_from)
 
     # -- crash-site match --------------------------------------------------
     if sites is not None:

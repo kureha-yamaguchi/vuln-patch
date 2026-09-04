@@ -53,7 +53,12 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 from . import metrics as M
 
 BUG_KINDS = ('crashing', 'semantic', 'all')
-GRANULARITIES = ('method', 'line')
+
+#: The three granularity rows every Table 3 block carries.  ``branch``
+#: counts branch OUTCOMES on the same line sets ``line`` counts lines of
+#: (see `metrics.GRANULARITIES`); it has no CSM column — a crash site is a
+#: stack frame, not a branch outcome — so that cell prints ``n/a``.
+GRANULARITIES = M.GRANULARITIES
 
 #: RCC bins for the RCC-versus-caught table (lower bound inclusive, upper
 #: exclusive; the last bin includes 1.0).

@@ -33,6 +33,32 @@ Two conventions matter for the numbers to mean what the paper says:
 method JaCoCo saw after those two filters. `all_methods` is the
 reference population you hand to `locations.MethodIndex` when you need
 to resolve a name from some other tool onto a real method.
+
+Branches, and why a MERGED report exists
+----------------------------------------
+JaCoCo also reports, on every source line, how many branch outcomes that
+line has and how many were taken (`<line nr=".." mi=".." ci=".." mb=".."
+cb=".."/>`: `mb` missed, `cb` covered). `Coverage.line_branches` keeps
+that pair per line, which is what the `branch` granularity of
+`metrics.py` counts.
+
+Those are COUNTS, not identities. The XML never says WHICH outcome of a
+line was taken, so the union of two harnesses' branch coverage cannot be
+computed from two per-harness reports: harness A taking outcome 1 and
+harness B taking outcome 1 of the same line looks exactly like the two of
+them taking outcome 1 and outcome 2. Method and line sets do not have
+this problem — they are sets of identities and union exactly — so only
+the branch numbers need help.
+
+The help is JaCoCo's own merge: all of a build's `.exec` files are handed
+to ONE `report` call, which merges the execution data before it counts
+anything, so the branch counts in the resulting `merged_<build>.xml` are
+the harness SET's, exactly. `collect_leg` writes that report and reads
+the whole per-build `Coverage` from it, recording `branches_from =
+'merged'`. When it cannot (a leg archived with its XML reports but
+without its `.exec` files, or a JaCoCo CLI that will not run) it falls
+back to `union` of the per-harness reports and records `branches_from =
+'union-upper-bound'` — see `union` for what that bound is.
 """
 from __future__ import annotations
 
@@ -42,7 +68,7 @@ import subprocess
 import urllib.request
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from java.measurements.locations import (LineRef, MethodRef, from_jacoco,
                                          top_level_of)
@@ -66,6 +92,17 @@ BUILD_COMPILED = 'compiled'
 #: Every build token a `.exec` dump can carry. No token may contain an
 #: underscore: `_split_exec_name` splits a dump's name on the LAST one.
 BUILDS = (BUILD_BUGGY, BUILD_PATCHED, BUILD_COMPILED)
+
+#: How a `Coverage`'s branch numbers were obtained. `merged` means one
+#: JaCoCo report over ALL of that build's `.exec` files, so the counts are
+#: the harness set's own and are exact. `union-upper-bound` means the
+#: per-harness reports were added up because no merged report could be
+#: produced, which can only over-count (see `union`).
+BRANCHES_MERGED = 'merged'
+BRANCHES_UNION = 'union-upper-bound'
+
+#: The file a build's merged report is written to, inside the leg's `cov/`.
+MERGED_XML = 'merged_{build}.xml'
 
 
 def _is_harness_class(class_fq: str) -> bool:
@@ -109,6 +146,16 @@ class Coverage:
     lines             source lines with covered instructions (ci > 0)
     branches_covered  branch outcomes taken, summed over the same methods
     branches_total    branch outcomes present, summed over the same methods
+    line_branches     per source line, (taken, present) branch outcomes —
+                      JaCoCo's `cb` and `mb + cb`. Only lines that HAVE a
+                      decision point appear; a line with no branch is
+                      absent rather than stored as (0, 0).
+    branches_from     how the branch numbers were obtained:
+                      `BRANCHES_MERGED` (one JaCoCo report over all the
+                      build's .exec files — exact for a harness SET) or
+                      `BRANCHES_UNION` (per-harness reports added up, an
+                      upper bound; see `union`). Empty when no branch data
+                      was read at all.
     all_methods       every method JaCoCo saw (covered or not), after the
                       harness / synthetic / package filters — the
                       denominator, and the population for MethodIndex
@@ -119,6 +166,8 @@ class Coverage:
     lines: Set[LineRef] = field(default_factory=set)
     branches_covered: int = 0
     branches_total: int = 0
+    line_branches: Dict[LineRef, Tuple[int, int]] = field(default_factory=dict)
+    branches_from: str = ''
     all_methods: Set[MethodRef] = field(default_factory=set)
     build: str = ''
     harness: str = ''
@@ -129,6 +178,11 @@ class Coverage:
             'lines': [l.to_dict() for l in sorted(self.lines)],
             'branches_covered': int(self.branches_covered),
             'branches_total': int(self.branches_total),
+            'line_branches': [dict(ref.to_dict(), covered=int(c),
+                                   total=int(t))
+                              for ref, (c, t) in sorted(
+                                  self.line_branches.items())],
+            'branches_from': self.branches_from,
             'all_methods': [m.to_dict() for m in sorted(self.all_methods)],
             'build': self.build,
             'harness': self.harness,
@@ -136,11 +190,21 @@ class Coverage:
 
     @classmethod
     def from_dict(cls, d: dict) -> 'Coverage':
+        # `line_branches` and `branches_from` are younger than the rest of
+        # the file, so a coverage JSON written before the branch
+        # granularity existed simply has neither and reads back as an
+        # empty map and an empty flag.
+        lb: Dict[LineRef, Tuple[int, int]] = {}
+        for x in d.get('line_branches') or []:
+            lb[LineRef.from_dict(x)] = (int(x.get('covered', 0)),
+                                        int(x.get('total', 0)))
         return cls(
             methods={MethodRef.from_dict(m) for m in d.get('methods', [])},
             lines={LineRef.from_dict(l) for l in d.get('lines', [])},
             branches_covered=int(d.get('branches_covered', 0)),
             branches_total=int(d.get('branches_total', 0)),
+            line_branches=lb,
+            branches_from=d.get('branches_from', ''),
             all_methods={MethodRef.from_dict(m)
                          for m in d.get('all_methods', [])},
             build=d.get('build', ''),
@@ -151,13 +215,23 @@ class Coverage:
 def union(covs: Iterable[Coverage]) -> Coverage:
     """F(H) for a whole harness SET: the union of what each harness ran.
 
-    Branch counts are the one part that cannot simply be added — two
-    harnesses covering the same branch would be counted twice — so the
-    result keeps the largest `branches_covered` seen and the largest
-    `branches_total` seen. `branches_total` is a property of the code,
-    so it is the same in every input anyway; `branches_covered` is
-    therefore a LOWER BOUND on the union's true branch coverage. Use
-    method and line sets when you need an exact union.
+    Method and line sets are sets of IDENTITIES, so they union exactly.
+    Branch data is counts, not identities (see the module docstring), so
+    it cannot be unioned exactly here at all, and the two ways it is
+    reported bracket the truth from opposite sides:
+
+    * `branches_covered` / `branches_total` are the whole-build scalars
+      and keep the largest value seen, a LOWER bound on the set's branch
+      coverage (the harnesses may between them have taken outcomes that
+      no single one of them took).
+    * `line_branches` keeps, per line, the SUM of the per-harness taken
+      counts, capped at that line's total, an UPPER bound (two harnesses
+      taking the SAME outcome are counted twice). `branches_from` is set
+      to `BRANCHES_UNION` to say so.
+
+    The exact answer for a harness set comes from a merged JaCoCo report,
+    which is what `collect_leg` produces whenever the `.exec` files are
+    there; this function is the fallback for when they are not.
 
     `build` survives only if every input agrees on it; `harness` becomes
     the '+'-joined sorted list of the harness names.
@@ -171,10 +245,21 @@ def union(covs: Iterable[Coverage]) -> Coverage:
         out.all_methods |= set(c.all_methods)
         out.branches_covered = max(out.branches_covered, c.branches_covered)
         out.branches_total = max(out.branches_total, c.branches_total)
+        for ref, (cov_n, tot_n) in c.line_branches.items():
+            have_c, have_t = out.line_branches.get(ref, (0, 0))
+            # The total is a property of the compiled code, so every
+            # report agrees on it; max() rather than a sum.
+            out.line_branches[ref] = (have_c + cov_n, max(have_t, tot_n))
         if c.build:
             builds.add(c.build)
         if c.harness:
             harnesses.add(c.harness)
+    # Cap each line's taken count at the outcomes that line actually has:
+    # summing per-harness counts can otherwise exceed the total.
+    out.line_branches = {ref: (min(c, t), t)
+                         for ref, (c, t) in out.line_branches.items()}
+    if out.line_branches:
+        out.branches_from = BRANCHES_UNION
     out.build = builds.pop() if len(builds) == 1 else ''
     out.harness = '+'.join(sorted(harnesses))
     return out
@@ -208,9 +293,16 @@ def parse_jacoco_xml(path: str,
 
     A method counts as covered when its METHOD counter has covered > 0.
     A line counts as covered when it has at least one covered
-    instruction (ci > 0) — `mb`/`cb` are the branch halves of the same
-    line and are read from the method counters instead, so a line with
-    ci=0 but cb>0 cannot happen.
+    instruction (ci > 0).
+
+    `mb`/`cb` are the branch halves of the same line: how many of that
+    line's branch outcomes were missed and how many were covered. They
+    go into `line_branches` as (cb, mb + cb) for every line that has any
+    — that is the per-line data the `branch` granularity is counted from.
+    The whole-build `branches_covered` / `branches_total` scalars are
+    read from the method-level BRANCH counters instead and are
+    unchanged; the two agree on a report, because they are the same
+    numbers grouped two ways.
 
     Lines are keyed by package + sourcefilename, which is exactly what
     `LineRef` wants: nested classes share their outer class's file, so
@@ -270,9 +362,18 @@ def parse_jacoco_xml(path: str,
             elif tag == 'line':
                 if src_skipped:
                     continue
+                ref = LineRef(top_level_of(src_class_top),
+                              int(el.get('nr') or 0))
                 if int(el.get('ci') or 0) > 0:
-                    cov.lines.add(LineRef(top_level_of(src_class_top),
-                                          int(el.get('nr') or 0)))
+                    cov.lines.add(ref)
+                # The branch halves of the same element. A line with no
+                # decision point has mb = cb = 0 and is left out, so
+                # `line_branches` holds exactly the lines that CAN branch.
+                mb = int(el.get('mb') or 0)
+                cb = int(el.get('cb') or 0)
+                if mb or cb:
+                    have_c, have_t = cov.line_branches.get(ref, (0, 0))
+                    cov.line_branches[ref] = (have_c + cb, have_t + mb + cb)
             elif tag == 'counter':
                 # Counters appear at method, class, package and report
                 # level. Only the method-level ones are read, so nothing
@@ -443,6 +544,11 @@ def _dirs_for_build(dirs: List[str], build: str) -> List[str]:
     return picked or list(dirs)
 
 
+def _merged_xml_path(cov_dir: str, build: str) -> str:
+    """Where one build's merged report lives: `cov/merged_<build>.xml`."""
+    return os.path.join(cov_dir, MERGED_XML.format(build=build))
+
+
 def collect_leg(leg_dir: str) -> Dict[str, Coverage]:
     """Coverage for one run leg, one `Coverage` per build.
 
@@ -467,10 +573,32 @@ def collect_leg(leg_dir: str) -> Dict[str, Coverage]:
     For each `.exec` an XML report is written NEXT TO IT
     (`<harness>_<build>.xml`) and reused if it already exists — running
     the CLI is the slow part and the archived `.exec` never changes.
-    The per-build unions are written to
+
+    Per BUILD a second, MERGED report is then produced: every `.exec` of
+    that build in ONE `jacoco report` call, written to
+    `cov/merged_<build>.xml`. That report is where the build's `Coverage`
+    is read from, because it is the only place the harness SET's BRANCH
+    counts are correct — the per-harness XMLs carry counts, not branch
+    identities, so they cannot be unioned exactly (module docstring).
+    Everything else in the object is taken from the same report too, so
+    one build's numbers all come from one place; methods and lines are
+    unaffected by the choice, since JaCoCo's merge and a set union give
+    the same answer for them. A build with a single `.exec` needs no
+    second call: its per-harness report already IS the merged one.
+
+    When no merged report can be produced — a leg archived with its XML
+    reports but WITHOUT its `.exec` files, or a JaCoCo CLI that will not
+    run — the per-harness reports are unioned instead and the result
+    records `branches_from = BRANCHES_UNION`, an upper bound on the
+    branch counts. A leg with no `.exec` files at all still yields
+    coverage: the `<harness>_<build>.xml` reports left in `cov/` are read
+    directly.
+
+    The per-build results are written to
     `<leg_dir>/measurements/coverage_<build>.json` and returned.
 
-    Builds with no `.exec` file are simply absent from the result.
+    Builds with no coverage of either kind are simply absent from the
+    result.
     """
     cov_dir = os.path.join(leg_dir, 'cov')
     with open(os.path.join(cov_dir, 'classpath.json')) as fh:
@@ -480,8 +608,12 @@ def collect_leg(leg_dir: str) -> Dict[str, Coverage]:
     include_glob = cp.get('include_glob') or ''
     prefix = _normalise_prefix(include_glob) if include_glob else None
 
+    names = sorted(os.listdir(cov_dir))
     per_build: Dict[str, List[Coverage]] = {}
-    for fname in sorted(os.listdir(cov_dir)):
+    execs: Dict[str, List[str]] = {}
+    xmls: Dict[str, List[str]] = {}
+
+    for fname in names:
         if not fname.endswith('.exec'):
             continue
         split = _split_exec_name(fname[:-len('.exec')])
@@ -496,14 +628,73 @@ def collect_leg(leg_dir: str) -> Dict[str, Coverage]:
         cov = parse_jacoco_xml(xml_path, include_prefix=prefix)
         cov.build, cov.harness = build, harness
         per_build.setdefault(build, []).append(cov)
+        execs.setdefault(build, []).append(exec_path)
+        xmls.setdefault(build, []).append(xml_path)
+
+    # An archive that kept the reports but not the execution data: read
+    # the per-harness XMLs straight off disk. `merged_<build>.xml` is not
+    # one of them — it is this function's own output — and is skipped.
+    if not execs:
+        for fname in names:
+            if not fname.endswith('.xml') or fname.startswith('merged_'):
+                continue
+            split = _split_exec_name(fname[:-len('.xml')])
+            if split is None:
+                continue
+            harness, build = split
+            xml_path = os.path.join(cov_dir, fname)
+            cov = parse_jacoco_xml(xml_path, include_prefix=prefix)
+            cov.build, cov.harness = build, harness
+            per_build.setdefault(build, []).append(cov)
+            xmls.setdefault(build, []).append(xml_path)
 
     out_dir = os.path.join(leg_dir, 'measurements')
     os.makedirs(out_dir, exist_ok=True)
     result: Dict[str, Coverage] = {}
     for build, covs in sorted(per_build.items()):
-        merged = union(covs)
-        merged.build = build
+        harness = '+'.join(sorted(c.harness for c in covs if c.harness))
+        merged_xml = _merged_report(cov_dir, build, execs.get(build) or [],
+                                    xmls.get(build) or [],
+                                    class_dirs, source_dirs)
+        if merged_xml is not None:
+            merged = parse_jacoco_xml(merged_xml, include_prefix=prefix)
+            merged.branches_from = BRANCHES_MERGED
+        else:
+            merged = union(covs)
+        merged.build, merged.harness = build, harness
         result[build] = merged
         with open(os.path.join(out_dir, f'coverage_{build}.json'), 'w') as fh:
             json.dump(merged.to_dict(), fh, indent=1)
     return result
+
+
+def _merged_report(cov_dir: str, build: str, exec_paths: List[str],
+                   xml_paths: List[str], class_dirs: List[str],
+                   source_dirs: List[str]) -> Optional[str]:
+    """The XML holding ONE build's whole harness set, or None.
+
+    Three cases, in order:
+
+    * one `.exec` — its own per-harness report already covers the whole
+      set, so it is returned as-is and no second CLI call is made;
+    * several `.exec` — they go into one `jacoco report` call whose output
+      is `cov/merged_<build>.xml`, reused when it is already on disk;
+    * no `.exec` — nothing can be merged, so None comes back and the
+      caller falls back to `union`.
+
+    A CLI failure is also None rather than an exception: a merged report
+    is an improvement on the union, not a precondition for measuring a
+    leg at all.
+    """
+    if not exec_paths:
+        return None
+    if len(exec_paths) == 1:
+        return xml_paths[0] if xml_paths else None
+    out_xml = _merged_xml_path(cov_dir, build)
+    if os.path.isfile(out_xml):
+        return out_xml
+    try:
+        return report(sorted(exec_paths), _dirs_for_build(class_dirs, build),
+                      _dirs_for_build(source_dirs, build), out_xml)
+    except (RuntimeError, OSError):
+        return None

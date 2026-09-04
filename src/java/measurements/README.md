@@ -27,7 +27,7 @@ harnesses are meant to be *conditioned on the root cause*: the prompt shows
 the model the code around the patch so its harnesses head for the right
 region. This package checks whether that actually happens.
 
-## 2. Code locations and the two granularities
+## 2. Code locations and the three granularities
 
 Everything below is a *set of code locations*. We use two kinds of location:
 
@@ -48,11 +48,36 @@ same number of parameters". Every count that depends on matching also
 records how many names could not be matched, so a low number can be traced
 to a naming gap rather than mistaken for a real finding.
 
-The paper also mentions *control-flow edge* granularity. We do not measure
-that: it would need bytecode-level control-flow analysis nobody has built.
-Lines are the fine granularity we can actually observe for all three sets
-below, and coverage of *branches* (the two outcomes of each `if`) is reported
-alongside as a coarse stand-in.
+On top of those two kinds of location there is a third **granularity**,
+which is not a third kind of location at all:
+
+- **Branch granularity.** The same *line* sets, counted by **branch
+  outcome** instead of by line. The coverage tool already tells us, for
+  every source line, how many branch outcomes that line's decision point
+  has and how many of them were taken — a two-way `if` on a line has two,
+  a three-case `switch` has three, and `a && b` on one line has four. So a
+  "branch set" is *the branch outcomes on a set of lines*: for a set of
+  lines L,
+
+  - `total(L)` = the outcomes present on those lines,
+  - `taken(L)` = the outcomes among them that some harness actually took.
+
+  A line with no decision point on it contributes nothing to either count,
+  so a region of fifty straight-line statements has a branch denominator of
+  zero and reports "undefined" rather than a misleading 1.0. Section 4.3
+  gives the metric formulas.
+
+The paper also mentions *control-flow edge* granularity. The branch
+granularity is the nearest thing we can actually observe, and it is not the
+same thing: it counts **the outgoing edges of decision points only**. The
+single edge out of a straight-line statement into the next one is a
+control-flow edge but not a branch, so it is not represented anywhere in
+these numbers. A real control-flow-edge version would mean walking the
+bytecode with ASM and placing our own probes at every edge instead of
+relying on the branch counters the coverage tool already emits; that is
+future work, and until it exists no row or column anywhere in this package
+is labelled with the paper's word for it. Lines and branches are what we
+report.
 
 ## 3. The three sets
 
@@ -313,7 +338,8 @@ where the keys are listed.
 
 All are ratios of set sizes. Each is reported with its numerator and
 denominator, is undefined (`null`) when the denominator is empty, and is
-computed at both granularities and for both R̂ variants.
+computed at every granularity that applies and for both R̂ variants. CSM is
+the exception: it has no branch form at all (section 4.3).
 
 | metric | formula | plain reading |
 |---|---|---|
@@ -367,6 +393,72 @@ patches, is a caught patch one whose harnesses had high RCC? The aggregate
 command produces the H_N / H_R / difference table and the RCC-versus-caught
 table for exactly these questions.
 
+### 4.3 The branch granularity
+
+The branch granularity re-weights the *line* metrics of section 2: the sets
+stay the same line sets, and what changes is what gets counted in them. For
+a set of lines L, `total(L)` is the branch outcomes present on those lines
+and `taken(L)` the ones some harness took, so:
+
+| metric | formula |
+|---|---|
+| **RCC** at branch level | `taken(R̂ lines) / total(R̂ lines)` |
+| **PSC** at branch level | `taken(P lines) / total(P lines)` |
+| **RCP** at branch level | `taken(R̂ lines) / taken(all lines)` |
+| **RCR** at branch level | `total(R̂ ∩ P lines) / total(R̂ lines)` |
+
+RCC and PSC read the same way as at line granularity, but ask a harder
+question: not "was this line reached at all" but "were the decisions on it
+driven both ways". RCP's denominator is every outcome the harnesses took
+anywhere, so it decomposes the fuzzing budget across the rings exactly as
+the line-level RCP does. RCR is still a statement about the patch-derived
+set P and reads no coverage — but the *weights* have to come from somewhere,
+and outcome counts only exist inside a coverage report, so it borrows the
+primary build's report and records which one under `weights_from`. The
+counts are a property of the compiled code, so the two builds agree on them.
+
+**CSM has no branch form.** The site of a crash is a stack frame — a method
+and a line — and there is no branch outcome to compare it against, so no
+`csm__branch__…` key is ever emitted and the tables print a dash in that
+cell.
+
+**What it counts, and what it does not.** Only the outgoing edges of
+decision points. A straight-line statement's fallthrough edge into the next
+statement is a control-flow edge, and it is invisible here, because the
+coverage tool never reports it. This is therefore the nearest *observable*
+stand-in for the paper's edge level and not that level itself; a full
+control-flow-edge version (walking the bytecode with ASM and placing our
+own probes) is future work.
+
+**Why a merged coverage report exists.** Methods and lines are sets of
+identities, so the union over a harness set is exact: a method either is or
+is not in the set. Branch data is not. The report gives *counts* per line —
+"two of this line's four outcomes were taken" — and never says *which* two,
+so two harnesses that each took outcome 1 are indistinguishable from two
+harnesses that took outcome 1 and outcome 2, and no arithmetic on two
+per-harness reports can tell them apart.
+
+The fix is to let the coverage tool merge before it counts. `collect_leg`
+hands *all* of a build's `.exec` files to one report call and writes the
+result to `<leg>/cov/merged_<build>.xml`; the whole per-build coverage
+object is then read from that one report, so the branch counts are the
+harness *set*'s and are exact. Each coverage file records which route it
+took under `branches_from`:
+
+- `merged` — one report over all of that build's execution data, exact. A
+  build with a single harness needs no extra work: its own report already
+  is the merged one.
+- `union-upper-bound` — no merged report could be made (a run archived with
+  its XML reports but without the `.exec` files they came from, or a
+  coverage tool that would not run), so the per-harness reports were added
+  up per line and capped at each line's own total. Two harnesses taking the
+  same outcome are counted twice, so this can only over-count: it is an
+  upper bound on the set's real branch coverage.
+
+Because branch counts live only in a coverage report, a leg whose coverage
+files were written before this existed carries no branch keys at all,
+rather than zero-valued ones.
+
 ## 5. Averaging
 
 Patches of one bug are not independent samples: they share the bug, its
@@ -385,10 +477,10 @@ Bugs with large call graphs therefore do not dominate the result.
 | `neighbourhood.py` | the seed/caller/callee builder used for both P and R̂, on the pipeline's fuzz-introspector call graph, with the pipeline's caps; `SourceScan` is the source-text caller fallback of section 3.1 | no |
 | `patch_derived.py` | P from a run's `context.json` (or, for older runs, the same JSON block inside `trace.md`); `lines_for` turns methods into line sets | no |
 | `root_cause.py` | R̂: reads the Defects4J developer patch (`<D4J_HOME>/framework/projects/<Project>/patches/<bug>.src.patch`, fixed→buggy direction, verified at run time) or falls back to diffing a fixed checkout; seeds, lines, and the manifestation frames from `failing_tests` | **yes — the only one** |
-| `coverage.py` | F(H): parses JaCoCo XML reports, runs the JaCoCo command-line tool on the `.exec` dumps a `--coverage` run leaves behind, unions per build | no |
+| `coverage.py` | F(H): parses JaCoCo XML reports, runs the JaCoCo command-line tool on the `.exec` dumps a `--coverage` run leaves behind, and per build reads one MERGED report over all of them (section 4.3), falling back to a union of the per-harness reports | no |
 | `static_reach.py` | F_stat: the library methods a harness source calls (javalang), and the bounded call-graph walk down from them; the `kept`/`compiled` harness sets, with the `trace.md` fallback for archived legs | no |
 | `crash_sites.py` | crash sites from raw Jazzer output (`fuzz_out/` of a `--coverage` run) or from the evidence blocks archived in `trace.md` | no |
-| `metrics.py` | the five metrics per leg, aggregate and per ring, from the JSON files below only | no |
+| `metrics.py` | the five metrics per leg, at method, line and branch granularity, aggregate and per ring, from the JSON files below only | no |
 | `aggregate.py` | macro-averages, the H_N/H_R/delta table, the RCC-versus-caught table | no |
 | `paper_tables.py` | the paper's Table 3 and Table 4, in markdown or LaTeX, from a measured run (section 6.5) | no |
 | `judge_view.py` | RCR for the one-shot LLM judge: the neighbourhood the *baseline* was shown, against the same R̂ (section 7) | no |
@@ -429,6 +521,16 @@ in the leg's `measurements/errors.json` and the run continues.
 
 ### 6.3 What it writes
 
+Per leg, under `<leg>/cov/`: one JaCoCo XML report per harness and build,
+`<harness>_<build>.xml`, plus a MERGED report per build,
+`merged_<build>.xml`, holding all of that build's execution data in one
+report. The merged one is what the build's coverage is read from, because
+it is the only place the harness set's *branch* counts are right (section
+4.3); a build with a single harness needs none, since its own report
+already is the merged one. A leg archived without its `.exec` files can
+still be measured from the per-harness reports, and its coverage then says
+so under `branches_from`.
+
 Per leg, under `<leg>/measurements/`: `patch_derived.json`,
 `patch_derived_lines.json`, `root_cause.json` (which holds `methods`,
 `lines`, `body_lines` and `manifest`), `coverage_buggy.json`,
@@ -438,7 +540,10 @@ how each was found (`provenance`: `introspector` or `source-scan`), and the
 names that could not be matched. The three coverage files are the
 three harness-set/build combinations of section 3.3.1: the kept harnesses
 on the buggy and the patched build, and every harness that compiled (on the
-buggy build). A leg's `result.jsonl` says which harnesses each set is over,
+buggy build). Each also holds `line_branches` — per source line, how many
+branch outcomes it has and how many were taken, which is what the branch
+granularity counts — and `branches_from`, either `merged` (exact) or
+`union-upper-bound` (the per-harness reports added up; section 4.3). A leg's `result.jsonl` says which harnesses each set is over,
 under `coverage`: `compiled_attempts` (every candidate the acceptance check
 ran), `accepted_attempts` (the ones it kept) and `sources` (the saved
 harness sources).
@@ -489,6 +594,22 @@ in `aggregate.py` that pick those columns take an `fkind` argument that
 defaults to `dyn`. A run that measured F_stat gets its own extra Table 3
 block, whose header says `static reach`.
 
+A third granularity, `branch`, sits beside `method` and `line`. It counts
+branch OUTCOMES on the same line sets rather than lines (section 4.3), so
+its keys are `rcc__branch__R0__buggy__dyn`,
+`rcp__branch__full__patched__dyn`, `psc__branch__na__compiled__dyn` and
+`rcr__branch__R0__na`, with the line R-variants (`R0`, `full`, `Rbody`) and
+never `R1`. Two things are true of every `branch` key and of no other:
+**there is no CSM at branch level** — a crash site is a stack frame, not a
+branch outcome, so no `csm__branch__…` is ever emitted (and neither is
+`rcr_cross__branch__…`, which counts locations) — and **every branch key,
+RCR included, needs a coverage report**, because outcome counts exist
+nowhere else. RCR's branch form therefore borrows the primary build's
+report for its weights and names it in the value's `weights_from`. Each
+branch value also carries `branches_from`, saying whether the counts came
+from a merged report or from the per-harness upper bound. A leg whose
+coverage files predate `line_branches` emits no branch keys at all.
+
 Each value is an object `{value, num, den, by_ring}`; `value` is `null` when
 the denominator is empty; `by_ring` holds one ratio per ring for RCR/RCC/PSC
 and a seed/caller/callee/outside decomposition summing to one for RCP/CSM.
@@ -500,7 +621,8 @@ line rows carry three variants and the function rows two, e.g.
 `rcc__line__Rbody__buggy__dyn`, `rcp__line__Rbody__patched__dyn`,
 `csm__line__Rbody__na` and `rcr__line__Rbody__na` (the last one measured
 against P's line set, like every other RCR), with the region's size under
-`sizes.R_line['Rbody']`. `Rbody` is read from `root_cause.json`'s
+`sizes.R_line['Rbody']`. The branch rows carry the same three variants,
+since they count the same line sets. `Rbody` is read from `root_cause.json`'s
 `body_lines`; a leg whose file predates that key emits none of these keys,
 and `available.root_cause_body_lines` says which case a leg is in.
 `rcr_cross__…` is the ring-of-R̂ by ring-of-P count table. Every line also
@@ -516,6 +638,11 @@ the methods of the root-cause region the harnesses could reach but never
 ran (a fuzzing failure: the inputs never drove them there) and the ones
 they ran although no call in their source leads there (the static
 analysis's blind spot: reflection, a lambda, an unresolved virtual call);
+`branches`, per build slot, which now holds the whole-build
+branch counters (`covered`, `total`) it always did plus, beside them,
+`source` (the `branches_from` flag), `lines_with_branches`, and the
+per-set outcome totals the branch granularity divides — `all_lines`
+(RCP's denominator), `R` per R̂ variant and `P`, each `{taken, total}`;
 and `P_caller_provenance` /
 `R_caller_provenance`, the caller ring split into the members the call
 graph found and the ones the source scan of section 3.1 did), `matching`
@@ -537,7 +664,9 @@ and `render_markdown`'s `build` argument renders one of them on its own.
 
 The paper's two result tables (Table 3, the main result; Table 4, coverage
 of the root-cause region plus the classification) are rendered straight
-from a measured run by `paper_tables.py`:
+from a measured run by `paper_tables.py`. Both carry three granularities:
+Table 3 has a Function, a Line and a Branch row per bug class, and Table 4
+has a Function-level, a Line-level and a Branch-level column pair.
 
 ```bash
 # from src/, on any machine that has the archived run directory:
@@ -547,8 +676,9 @@ python -m java.measurements.paper_tables \
     [--fkind dyn|stat]          # which kind of F(H) the RCC/RCP/PSC columns read
     [--build buggy|patched|compiled]   # i.e. which harness set
     [--rvar R0|R1|full|Rbody]   # which root-cause region variant
-                                # (Rbody is line-only: the Line rows read it
-                                #  and the Function rows fall back to R0)
+                                # (Rbody is line-only: the Line and Branch
+                                #  rows read it, the Function rows fall
+                                #  back to R0)
     [--fmt md|latex]            # markdown for the writeup, LaTeX for the paper
     [--dp 2]                    # decimal places; RCP often needs 3
     [--out FILE]
@@ -570,22 +700,24 @@ spells out the set actually used, so a number can always be traced back.
 | RCC_g(H) | `rcc__<gran>__<rvar>__<build>__<fkind>` | |
 | RCP_g(H) | `rcp__<gran>__<rvar>__<build>__<fkind>` | |
 | PSC_g(H) | `psc__<gran>__na__<build>__<fkind>` | no R-side, so no R-variant |
-| CSM_g(H) | `csm__<gran>__<rvar>__na` | crash sites, not coverage |
+| CSM_g(H) | `csm__<gran>__<rvar>__na` | crash sites, not coverage; **no branch form** — a crash site is a stack frame, so the Branch row's CSM cell is always a dash |
 | F1(H) | none — counted from each leg's `outcome` | caught/missed/false_alarm/clean = TP/FN/FP/TN, overfitting is the positive case |
 | ℝ | `<rvar>` = `R0` by default: the methods the developer changed | section 3.2 |
-| function granularity | `<gran>` = `method` | |
-| **edge granularity** | `<gran>` = `line` — **rendered "Line", never "Edge"** | we do not measure control-flow edges (section 2) |
+| function granularity | `<gran>` = `method`, rendered "Function" | |
+| line granularity | `<gran>` = `line`, rendered "Line" | |
+| **edge granularity** | `<gran>` = `branch` — **rendered "Branch", never "Edge"** | branch outcomes on the line sets: decision-point edges only, the nearest observable stand-in (sections 2 and 4.3). A full control-flow-edge version is future work |
 | H_N / H_R | the `--hn` / `--hr` run directory | |
 | n | bugs and legs per bug class, in each table's notes | |
 
 **What prints an en dash.** The RCR difference (RCR judges the
 patch-derived set, which is built before any harness exists, so H_R − H_N
 is not defined), CSM for semantic bugs (nothing crashes in the library, so
-there is no site to match), every cell of an arm that was not given, and
+there is no site to match), CSM on the Branch row (a crash site is a stack
+frame, not a branch outcome), every cell of an arm that was not given, and
 any ratio whose denominator was empty. Table 3's F1 column belongs to a
 (harness set, bug class) rather than to a granularity, so it is printed on
-the Function row and spans the pair; Table 4's RCR spans the two harness
-columns for the same reason — unless the two runs' patch-derived sets
+the Function row and spans the three granularity rows; Table 4's RCR spans
+the two harness columns for the same reason — unless the two runs' patch-derived sets
 actually disagree, in which case both values are printed and a note says
 why.
 

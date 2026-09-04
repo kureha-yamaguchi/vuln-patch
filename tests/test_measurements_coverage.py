@@ -290,9 +290,21 @@ def test_collect_leg_unions_per_build_and_writes_json(fake_java, tmp_path):
     assert out['buggy'].harness == 'attempt_002'
     # include_glob from classpath.json was applied at parse time
     assert OTHER_GO not in keys(out['patched'].all_methods)
-    # one report per .exec, and an XML cached next to it
-    assert len(fake_java) == 3
+    # one report per .exec, and an XML cached next to it, plus ONE merged
+    # report for the only build that has more than one .exec — `buggy` has
+    # a single dump, so its per-harness report already is the merged one.
+    assert len(fake_java) == 4
     assert (cov_dir / 'attempt_002_buggy.xml').is_file()
+    assert (cov_dir / 'merged_patched.xml').is_file()
+    assert not (cov_dir / 'merged_buggy.xml').exists()
+    merged_cmd = [c for c in fake_java
+                  if c[c.index('--xml') + 1].endswith('merged_patched.xml')]
+    assert len(merged_cmd) == 1
+    assert sorted(a for a in merged_cmd[0] if a.endswith('.exec')) == [
+        str(cov_dir / 'attempt_002_patched.exec'),
+        str(cov_dir / 'attempt_003_patched.exec')]
+    assert out['patched'].branches_from == cov_mod.BRANCHES_MERGED
+    assert out['buggy'].branches_from == cov_mod.BRANCHES_MERGED
     # the per-build unions are written where the CLI expects them
     for build in ('buggy', 'patched'):
         path = leg / 'measurements' / f'coverage_{build}.json'

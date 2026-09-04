@@ -232,6 +232,8 @@ def test_the_fine_granularity_is_line_and_never_edge(hr, hn):
         for text in (PT.table3(hr, hn, fmt=fmt), PT.table4(hr, hn, fmt=fmt)):
             assert 'Edge' not in text and 'edge' in text  # only the note
             assert 'Line' in text and 'Function' in text
+            # the third row/column pair is Branch, never Edge
+            assert 'Branch' in text
             assert 'control-flow edge' in text
 
 
@@ -337,13 +339,17 @@ def test_table3_latex_structure(hr, hn):
     assert '\\bottomrule' in text and '\\end{tabular}' in text
     assert ('Harness & Bug class & Granularity & RCR$_g$ & RCC$_g$(H) & '
             'RCP$_g$(H) & PSC$_g$(H) & CSM$_g$(H) & F1 (H) \\\\') in text
-    assert ('\\multirow{6}{*}{$H_R$} & \\multirow{2}{*}{All} & Function '
+    # three granularity rows per bug class now (Function, Line, Branch),
+    # so a block spans 9 rows and a bug class 3.
+    assert ('\\multirow{9}{*}{$H_R$} & \\multirow{3}{*}{All} & Function '
             '& 0.62 & 0.25 & 0.12 & 0.33 & 0.50 & '
-            '\\multirow{2}{*}{0.67} \\\\') in text
+            '\\multirow{3}{*}{0.67} \\\\') in text
     # the difference block: RCR undefined, en dash written the LaTeX way
-    assert ('\\multirow{6}{*}{$\\Delta(H_R - H_N)$} & \\multirow{2}{*}{All} '
+    assert ('\\multirow{9}{*}{$\\Delta(H_R - H_N)$} & \\multirow{3}{*}{All} '
             '& Function & -- & +0.00 & +0.00 & +0.33 & +0.00 & '
-            '\\multirow{2}{*}{+0.00} \\\\') in text
+            '\\multirow{3}{*}{+0.00} \\\\') in text
+    # the Branch row is rendered, and CSM has no branch cell at all
+    assert ' &  & Branch & ' in text
     # every body row ends in a row break and separates cells with &
     body = [l for l in text.splitlines() if l.startswith(('\\multirow', ' &'))]
     assert body and all(l.endswith('\\\\') and ' & ' in l for l in body)
@@ -354,20 +360,26 @@ def test_table3_latex_structure(hr, hn):
 
 def test_table4_latex_structure(hr, hn):
     text = PT.table4(hr, hn, fmt='latex')
-    assert '\\begin{tabular}{lcccc}' in text            # panel (a)
+    assert '\\begin{tabular}{lcccccc}' in text          # panel (a)
     assert '\\begin{tabular}{lcccccccc}' in text        # panel (b)
     assert (' & \\multicolumn{2}{c}{Function-level} & '
-            '\\multicolumn{2}{c}{Line-level} \\\\') in text
-    assert 'Metric & $H_N$ & $H_R$ & $H_N$ & $H_R$ \\\\' in text
-    assert ('\\quad Root-cause coverage, RCC & 0.50 $\\pm$ 0.00 & '
-            '0.50 $\\pm$ 0.00 & 0.50 $\\pm$ 0.00 & 0.50 $\\pm$ 0.00 \\\\') \
+            '\\multicolumn{2}{c}{Line-level} & '
+            '\\multicolumn{2}{c}{Branch-level} \\\\') in text
+    assert ('\\cmidrule(lr){2-3} \\cmidrule(lr){4-5} '
+            '\\cmidrule(lr){6-7}') in text
+    assert 'Metric & $H_N$ & $H_R$ & $H_N$ & $H_R$ & $H_N$ & $H_R$ \\\\' \
         in text
+    # this aggregate has no branch keys, so its Branch pair is a dash pair
+    assert ('\\quad Root-cause coverage, RCC & 0.50 $\\pm$ 0.00 & '
+            '0.50 $\\pm$ 0.00 & 0.50 $\\pm$ 0.00 & 0.50 $\\pm$ 0.00 & '
+            '-- & -- \\\\') in text
     assert ('Bug kind & $D_{ovf}$ & $D_{cor}$ & P & R & F1 & P & R & F1 \\\\') \
         in text
     assert 'Crashing & 2 & 0 & 1.00 & 0.50 & 0.67 & 1.00 & 0.50 & 0.67 \\\\' \
         in text
     assert 'Semantic & 0 & 1 & -- & -- & -- & -- & -- & -- \\\\' in text
-    assert '\\quad Crash-site match, CSM & -- & -- & -- & -- \\\\' in text
+    assert ('\\quad Crash-site match, CSM & -- & -- & -- & -- & -- & -- '
+            '\\\\') in text
     assert 'n = 1 bug, 2 legs' in text
 
 
@@ -375,7 +387,8 @@ def test_table4_latex_spans_rcr_with_multicolumn(hr):
     text = PT.table4(hr, hr, fmt='latex')
     assert ('\\quad Root-cause recovery, RCR & '
             '\\multicolumn{2}{c}{0.25 $\\pm$ 0.00} & '
-            '\\multicolumn{2}{c}{0.25 $\\pm$ 0.00} \\\\') in text
+            '\\multicolumn{2}{c}{0.25 $\\pm$ 0.00} & '
+            '\\multicolumn{2}{c}{--} \\\\') in text
 
 
 def test_an_unknown_format_is_refused(hr):

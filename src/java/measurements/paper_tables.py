@@ -19,13 +19,24 @@ Both come in two renderings, chosen with ``fmt``: ``md`` for the writeup
 and ``latex`` for the paper (a booktabs tabular, cells like
 ``0.71 $\\pm$ 0.12``).
 
-Function and LINE, never edge
------------------------------
+Function, LINE and BRANCH, never edge
+-------------------------------------
 The paper's fine granularity is the control-flow edge.  We do not measure
-control-flow edges: that would need bytecode-level control-flow analysis
-nobody has built (see the README, section 2).  Our fine granularity is the
-source LINE, so the fine row is labelled ``Line`` everywhere here and a
-note on every table says so.  The string "Edge" is never emitted.
+control-flow edges: a full CFG-edge version would need bytecode-level
+analysis (ASM plus JaCoCo probes) nobody has built (see the README,
+section 2).  Three rows are rendered instead:
+
+* ``Function`` — the Java method or constructor;
+* ``Line``     — the source line;
+* ``Branch``   — the branch OUTCOMES on those same lines, from JaCoCo's
+  per-line ``mb``/``cb``.  That counts the outgoing edges of decision
+  points only: the fallthrough edge of a straight-line statement is not a
+  JaCoCo branch and is not represented.  It is the closest observable
+  stand-in for the paper's edge level, and it is labelled ``Branch``, not
+  ``Edge``.
+
+The string "Edge" is never emitted.  CSM has no Branch cell — a crash site
+is a stack frame, not a branch outcome — so it prints an en dash there.
 
 What is undefined, and why
 --------------------------
@@ -70,11 +81,11 @@ AGGREGATE_FILE = 'aggregate.json'
 BUG_CLASSES = ('all', 'crashing', 'semantic')
 CLASS_LABELS = {'all': 'All', 'crashing': 'Crashing', 'semantic': 'Semantic'}
 
-#: Our granularities and the names the tables give them.  ``line`` is the
-#: fine one; the paper calls its fine granularity "Edge" and we do not
-#: measure that, so the label is ``Line`` and never ``Edge``.
-GRANULARITIES = ('method', 'line')
-GRAN_LABELS = {'method': 'Function', 'line': 'Line'}
+#: Our granularities and the names the tables give them.  The paper calls
+#: its fine granularity "Edge" and we do not measure control-flow edges, so
+#: the labels are ``Line`` and ``Branch`` and never ``Edge``.
+GRANULARITIES = M.GRANULARITIES
+GRAN_LABELS = {'method': 'Function', 'line': 'Line', 'branch': 'Branch'}
 
 #: The five set metrics, in the paper's column / row order, with the flag
 #: that says whether the metric reads the fuzzer-reachable set F(H) (those
@@ -332,14 +343,16 @@ def rvar_for(gran: str, rvar: str) -> str:
     """The R-variant a cell of granularity `gran` can actually read.
 
     ``Rbody`` (and any other line-only variant, see
-    `metrics.R_VARIANTS_LINE_ONLY`) exists at line granularity only: the
-    body of a developer-changed method IS that method, so at method
-    granularity the variant would be R0 under another name and no such key
-    is emitted.  A table fixes one R-variant for both of its rows, so the
-    Function row falls back to `DEFAULT_RVAR` and the Line row keeps what
-    was asked for.  The fallback is visible in each row's ``keys`` entry
+    `metrics.R_VARIANTS_LINE_ONLY`) exists for the LINE-SHAPED
+    granularities only — ``line`` and ``branch``, which count the same
+    line sets two ways.  The body of a developer-changed method IS that
+    method, so at method granularity the variant would be R0 under another
+    name and no such key is emitted.  A table fixes one R-variant for all
+    of its rows, so the Function row falls back to `DEFAULT_RVAR` and the
+    Line and Branch rows keep what was asked for.  The fallback is visible in each row's ``keys`` entry
     and in the table's key note."""
-    if gran != 'line' and rvar in M.R_VARIANTS_LINE_ONLY:
+    if (gran not in M.GRANULARITIES_LINE_LIKE
+            and rvar in M.R_VARIANTS_LINE_ONLY):
         return DEFAULT_RVAR
     return rvar
 
@@ -363,12 +376,17 @@ def metric_field(metric: str, gran: str, rvar: str = DEFAULT_RVAR,
     return M.metric_key(m, gran, rvar, build, fkind)
 
 
-def is_undefined(metric: str, bug_class: str, is_delta: bool = False) -> bool:
-    """The cells the PAPER defines as undefined, before any data is read:
-    CSM for semantic bugs (nothing crashes, so there is no site to match)
-    and the RCR difference (RCR does not depend on the harness method)."""
+def is_undefined(metric: str, bug_class: str, is_delta: bool = False,
+                 gran: Optional[str] = None) -> bool:
+    """The cells that are undefined before any data is read: CSM for
+    semantic bugs (nothing crashes, so there is no site to match), CSM at
+    branch granularity (a crash site is a stack frame, not a branch
+    outcome, so `metrics.py` emits no such key), and the RCR difference
+    (RCR does not depend on the harness method)."""
     m = metric.lower()
     if m == 'csm' and bug_class == 'semantic':
+        return True
+    if m == 'csm' and gran == 'branch':
         return True
     if m == 'rcr' and is_delta:
         return True
@@ -439,10 +457,20 @@ def _key_note(fkind: str, build: str, rvar: str) -> str:
     return note
 
 
-GRAN_NOTE = ('Granularity: "Function" is the Java method or constructor; '
-             'the fine row is the source LINE, not the control-flow edge '
-             'of the paper\'s draft — control-flow edges are not measured '
-             'anywhere in this pipeline.')
+GRAN_NOTE = ('Granularity: "Function" is the Java method or constructor, '
+             '"Line" the source line, "Branch" the branch outcomes on '
+             'those same lines (JaCoCo\'s per-line mb/cb). "Branch" '
+             'counts the outgoing edges of DECISION POINTS only — a '
+             'straight-line statement\'s fallthrough edge is not a JaCoCo '
+             'branch and is not represented — so it is the nearest '
+             'observable stand-in for the paper\'s edge level, not that '
+             'level itself; a full control-flow edge version (ASM plus '
+             'JaCoCo probes) is future work.')
+
+BRANCH_CSM_NOTE = ('CSM has no Branch cell: a crash site is a stack frame, '
+                   'so it is matched against the root-cause region at '
+                   'function and line granularity and there is no branch '
+                   'outcome to match.')
 
 RCR_NOTE = ('RCR judges the patch-derived set P, which is built before any '
             'harness exists, so it is identical for the two harness methods '
@@ -531,7 +559,7 @@ def table3_rows(hr: Arm, hn: Optional[Arm] = None,
                 undefined = {}
                 for metric, _label, _uses_f in SET_METRICS:
                     key = metric_field(metric, gran, rvar, build, fkind)
-                    if is_undefined(metric, cls, is_delta):
+                    if is_undefined(metric, cls, is_delta, gran):
                         cells[metric] = None
                         undefined[metric] = True
                         continue
@@ -570,7 +598,8 @@ def table3(hr: Arm, hn: Optional[Arm] = None, fmt: str = 'md',
         raise ValueError(f'unknown format {fmt!r}; expected one of {FORMATS}')
     rows = table3_rows(hr, hn, fkind=fkind, build=build, rvar=rvar)
     notes = [_n_note(hr, hn, rows[0]['pairing']), _key_note(fkind, build, rvar), GRAN_NOTE,
-             ALL_NOTE, RCR_NOTE + ' (a)', CSM_NOTE + ' (b)', F1_NOTE]
+             BRANCH_CSM_NOTE, ALL_NOTE, RCR_NOTE + ' (a)',
+             CSM_NOTE + ' (b)', F1_NOTE]
     render = _table3_latex if fmt == 'latex' else _table3_md
     return render(rows, notes, fkind, dp)
 
@@ -630,11 +659,11 @@ def _table3_latex(rows: Sequence[dict], notes: Sequence[str], fkind: str,
                  else row['block'])
         block_cell = (f'\\multirow{{{per_block}}}{{*}}{{${block}$}}'
                       if first_of_block else '')
-        class_cell = (f'\\multirow{{2}}{{*}}{{'
+        class_cell = (f'\\multirow{{{len(GRANULARITIES)}}}{{*}}{{'
                       f'{CLASS_LABELS[row["bug_class"]]}}}'
                       if first_of_class else '')
         cells = [_t3_cell(row, m, 'latex', dp) for m, _l, _u in SET_METRICS]
-        f1 = (f'\\multirow{{2}}{{*}}{{'
+        f1 = (f'\\multirow{{{len(GRANULARITIES)}}}{{*}}{{'
               f'{_cell(row["f1"], "latex", signed=row["is_delta"], dp=dp)}}}'
               if first_of_class else '')
         out.append(' & '.join([block_cell, class_cell, row['gran_label']]
@@ -668,9 +697,14 @@ def table4_rows(hr: Arm, hn: Optional[Arm] = None,
                      'harness_independent': metric == 'RCR',
                      'has_hn': hn_p is not None,
                      'undefined': is_undefined(metric, cls),
-                     'by_gran': {}}
+                     # CSM is undefined at branch granularity but defined
+                     # at the other two, so the flag is also kept per
+                     # granularity and the cell renderer reads that one.
+                     'undefined_by_gran': {}, 'by_gran': {}}
             for gran in GRANULARITIES:
                 key = metric_field(metric, gran, rvar, build, fkind)
+                entry['undefined_by_gran'][gran] = is_undefined(
+                    metric, cls, gran=gran)
                 entry['by_gran'][gran] = {
                     'key': key,
                     'HN': (hn_p.stat(key, cls) if hn_p else None),
@@ -706,7 +740,7 @@ def table4(hr: Arm, hn: Optional[Arm] = None, fmt: str = 'md',
     data = table4_rows(hr, hn, fkind=fkind, build=build, rvar=rvar)
     notes = [_n_note(hr, hn, data['pairing']), _class_n_note(hr), _key_note(fkind, build,
                                                                 rvar),
-             GRAN_NOTE, ALL_NOTE,
+             GRAN_NOTE, BRANCH_CSM_NOTE, ALL_NOTE,
              'RCR spans the two harness columns: it judges the '
              'patch-derived set, not the harnesses, so one number holds '
              'for both. (a)',
@@ -730,6 +764,8 @@ def _t4_spans(entry: dict, gran: str) -> bool:
     other's, so a disagreement is shown as two cells instead."""
     if not entry['harness_independent'] or entry['undefined']:
         return False
+    if entry.get('undefined_by_gran', {}).get(gran):
+        return False
     if not entry['has_hn']:
         # No naive run was given at all: its column is a dash, not a copy
         # of the conditioned arm's number.
@@ -744,7 +780,8 @@ def _t4_spans(entry: dict, gran: str) -> bool:
 def _t4_cells(entry: dict, gran: str, fmt: str,
               dp: int = DEFAULT_DP) -> List[str]:
     """The two harness cells of one metric at one granularity."""
-    if entry['undefined']:
+    if entry['undefined'] or entry.get(
+            'undefined_by_gran', {}).get(gran):
         return [_dash(fmt), _dash(fmt)]
     slot = entry['by_gran'][gran]
     if _t4_spans(entry, gran):
@@ -772,22 +809,25 @@ def _split_rcr(data: dict) -> List[str]:
 def _table4_md(data: dict, notes: Sequence[str],
                dp: int = DEFAULT_DP) -> str:
     head = ['Metric', 'Function-level H_N', 'Function-level H_R',
-            'Line-level H_N', 'Line-level H_R']
+            'Line-level H_N', 'Line-level H_R',
+            'Branch-level H_N', 'Branch-level H_R']
     out = [f'### {TABLE4_TITLE}', '',
            '**(a) Coverage of the root-cause region**', '',
            '| ' + ' | '.join(head) + ' |',
            '| ' + ' | '.join('---' for _ in head) + ' |']
     for block in data['coverage']:
-        out.append(f'| **{CLASS_LABELS[block["bug_class"]]} bugs '
-                   f'(n = {_plural(block["n_bugs"], "bug")}, '
-                   f'{_plural(block["n_legs"], "leg")})** |  |  |  |  |')
+        label = (f'**{CLASS_LABELS[block["bug_class"]]} bugs '
+                 f'(n = {_plural(block["n_bugs"], "bug")}, '
+                 f'{_plural(block["n_legs"], "leg")})**')
+        out.append('| ' + ' | '.join([label] + [''] * (len(head) - 1)) + ' |')
         for entry in block['metrics']:
-            cells = (_t4_cells(entry, 'method', 'md', dp)
-                     + _t4_cells(entry, 'line', 'md', dp))
+            cells = []
+            for gran in GRANULARITIES:
+                cells += _t4_cells(entry, gran, 'md', dp)
             out.append('| ' + ' | '.join([entry['label']] + cells) + ' |')
     head_b = ['Bug kind', 'D_ovf', 'D_cor', 'H_N P', 'H_N R', 'H_N F1',
               'H_R P', 'H_R R', 'H_R F1']
-    out += ['', '**(b) Classification of patches (both granularities)**', '',
+    out += ['', '**(b) Classification of patches (all granularities)**', '',
             '| ' + ' | '.join(head_b) + ' |',
             '| ' + ' | '.join('---' for _ in head_b) + ' |']
     for row in data['classification']:
@@ -808,19 +848,22 @@ def _table4_latex(data: dict, notes: Sequence[str],
     out = [f'% {TABLE4_TITLE}',
            _render_notes(notes, 'latex'),
            '% needs \\usepackage{booktabs}',
-           '\\begin{tabular}{lcccc}',
+           '\\begin{tabular}{l' + 'c' * (2 * len(GRANULARITIES)) + '}',
            '\\toprule',
-           ' & \\multicolumn{2}{c}{Function-level} '
-           '& \\multicolumn{2}{c}{Line-level} \\\\',
-           '\\cmidrule(lr){2-3} \\cmidrule(lr){4-5}',
-           'Metric & $H_N$ & $H_R$ & $H_N$ & $H_R$ \\\\',
+           ' & ' + ' & '.join(
+               f'\\multicolumn{{2}}{{c}}{{{GRAN_LABELS[g]}-level}}'
+               for g in GRANULARITIES) + ' \\\\',
+           ' '.join(f'\\cmidrule(lr){{{2 + 2 * i}-{3 + 2 * i}}}'
+                    for i in range(len(GRANULARITIES))),
+           'Metric & ' + ' & '.join(
+               '$H_N$ & $H_R$' for _ in GRANULARITIES) + ' \\\\',
            '\\midrule',
-           '\\multicolumn{5}{l}{\\textit{(a) Coverage of the root-cause '
-           'region}} \\\\']
+           f'\\multicolumn{{{1 + 2 * len(GRANULARITIES)}}}{{l}}'
+           '{\\textit{(a) Coverage of the root-cause region}} \\\\']
     for i, block in enumerate(data['coverage']):
         if i:
             out.append('\\addlinespace')
-        out.append(f'\\multicolumn{{5}}{{l}}{{'
+        out.append(f'\\multicolumn{{{1 + 2 * len(GRANULARITIES)}}}{{l}}{{'
                    f'{CLASS_LABELS[block["bug_class"]]} bugs '
                    f'(n = {_plural(block["n_bugs"], "bug")}, '
                    f'{_plural(block["n_legs"], "leg")})'
@@ -844,7 +887,7 @@ def _table4_latex(data: dict, notes: Sequence[str],
             'Bug kind & $D_{ovf}$ & $D_{cor}$ & P & R & F1 & P & R & F1 \\\\',
             '\\midrule',
             '\\multicolumn{9}{l}{\\textit{(b) Classification of patches '
-            '(both granularities)}} \\\\']
+            '(all granularities)}} \\\\']
     for row in data['classification']:
         cells = [CLASS_LABELS[row['bug_class']], str(row['D_ovf']),
                  str(row['D_cor'])]
@@ -891,8 +934,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help='the root-cause region variant (default: '
                         '%(default)s, the methods the developer changed). '
                         'Rbody is line-only — every line of the body of '
-                        'each changed method — so the Line rows read it '
-                        'and the Function rows fall back to R0')
+                        'each changed method — so the Line and Branch rows '
+                        'read it and the Function rows fall back to R0')
     p.add_argument('--fmt', default='md', choices=FORMATS,
                    help='markdown for the writeup, latex for the paper')
     p.add_argument('--dp', type=int, default=DEFAULT_DP,

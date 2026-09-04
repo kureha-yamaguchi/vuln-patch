@@ -367,7 +367,12 @@ def test_sizes_and_available_flags(run_dir):
     assert s['F_method'] == {'buggy': 4} and s['F_line'] == {'buggy': 4}
     assert s['F_kind'] == {'buggy': ['dyn']}
     assert s['F_all_methods'] == {'buggy': 7}
-    assert s['branches'] == {'buggy': {'covered': 5, 'total': 10}}
+    # The whole-build branch counters are still there; the branch
+    # granularity added the per-set totals beside them.
+    b = s['branches']['buggy']
+    assert (b['covered'], b['total']) == (5, 10)
+    assert b['lines_with_branches'] == 0     # this fixture has no per-line
+    assert b['all_lines'] == {'taken': 0, 'total': 0}   # branch data
     assert (s['crash_sites_total'], s['crash_sites_library'],
             s['crash_sites_harness_only']) == (3, 2, 1)
 
@@ -524,7 +529,8 @@ def test_compiled_build_gets_its_own_f_metrics(tmp_path):
     assert s['F_line'] == {'buggy': 1, 'compiled': 4}
     assert s['F_all_methods'] == {'buggy': 4, 'compiled': 4}
     assert s['F_kind'] == {'buggy': ['dyn'], 'compiled': ['dyn']}
-    assert s['branches']['compiled'] == {'covered': 7, 'total': 10}
+    b = s['branches']['compiled']
+    assert (b['covered'], b['total']) == (7, 10)
     # RCR and CSM never read F, so they are unchanged and build-free
     assert 'rcr__method__R0__compiled' not in row
     assert _v(row, 'rcr__method__R0__na') == 0.5
