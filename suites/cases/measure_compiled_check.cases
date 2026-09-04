@@ -1,0 +1,7 @@
+# One-leg live check of the kept-vs-compiled coverage hook (2026-09-04):
+# expects <leg>/cov/attempt_NNN_compiled.exec for EVERY compiled candidate.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl --coverage"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Lang/patch1-Lang-39-SimFix.patch"
+)
