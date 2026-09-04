@@ -19,8 +19,22 @@ from java.parsing.java_source import highlight_trigger_calls
 class PromptBuilder:
     """Builds chat-completion messages from a PatchContext."""
 
-    def __init__(self, language: str = 'Java'):
+    def __init__(self, language: str = 'Java', naive: bool = False):
         self.language = language
+        # --naive (the paper's H_N arm): build the harness prompt WITHOUT
+        # the three root-cause-conditioning insertions —
+        #   (1) the variant-analysis / <root_cause_reachable> block (both
+        #       the crashing and the semantic path), which also carries the
+        #       covered_functions / found_signatures steering,
+        #   (2) the call-site <xref> examples in each function block,
+        #   (3) the clause of the propagation rule that widens the accepted
+        #       stack region to "a function listed in
+        #       <root_cause_reachable>" — a dangling reference once (1) is
+        #       gone.
+        # Everything else is identical. Defaults to False everywhere, and
+        # with it False every branch below takes the path it always took,
+        # so the prompt text is byte-for-byte unchanged.
+        self.naive = naive
 
     def build(self, buggy_dir: str,
               context: PatchContext,
@@ -126,7 +140,7 @@ class PromptBuilder:
             sections.append(precond)
         if sibling_hints:
             sections.append(sibling_hints)
-        if context.root_cause_reachable:
+        if context.root_cause_reachable and not self.naive:
             sections.append(self._variant_analysis_block(
                 context.root_cause_reachable,
                 covered_functions or [],
@@ -219,7 +233,7 @@ class PromptBuilder:
                 synthesized_relations or [])
             if rel_block:
                 sections.append(rel_block)
-        if context.root_cause_reachable:
+        if context.root_cause_reachable and not self.naive:
             sections.append(self._variant_analysis_block(
                 context.root_cause_reachable,
                 covered_functions or [],
@@ -488,7 +502,7 @@ class PromptBuilder:
             fn.func_source,
             "</code>",
         ]
-        if fn.xrefs:
+        if fn.xrefs and not self.naive:
             parts.append(
                 "Call-site examples (use these as a guide for constructing"
                 " the target call):"
@@ -714,6 +728,13 @@ class PromptBuilder:
             target_methods = ', '.join(
                 f'`{m}`' for m in (method_names or [])
             ) or 'the patched method(s)'
+            # --naive drops the variant-analysis block, so the region this
+            # clause widens the propagation rule to does not exist in that
+            # prompt. Naming a section that isn't there is worse than not
+            # widening: the rule stays "the patched method(s)".
+            reachable_clause = (
+                '' if self.naive
+                else " or a function listed in <root_cause_reachable>")
             parts.append(
                 "On the buggy version the root cause surfaces as: "
                 f"{joined} (or a sibling failure with a different signature "
@@ -735,8 +756,8 @@ class PromptBuilder:
                 "the root cause — its class matches the ground-truth throwable "
                 "below, or it is your own assertion/metamorphic "
                 "RuntimeException — AND (2) its stack trace passes through "
-                f"{target_methods} or a function listed in "
-                "<root_cause_reachable>. Any other throwable — INCLUDING the "
+                f"{target_methods}{reachable_clause}"
+                ". Any other throwable — INCLUDING the "
                 "same exception class thrown from a different location — must "
                 "be swallowed: it is a pre-existing defect outside this "
                 "patch's scope, it will crash every version including "

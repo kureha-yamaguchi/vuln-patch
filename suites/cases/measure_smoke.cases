@@ -1,0 +1,18 @@
+# MEASUREMENT SMOKE (2026-09-04): 7 dev legs whose verdicts never flipped
+# across past runs (crashing: both eval_dev runs agree; semantic: >=7
+# archived runs with one constant verdict). Purpose: (1) confirm the
+# measurement hooks (context.json, --coverage, fuzz_out) leave verdicts and
+# behaviour unchanged, (2) first real P / R-hat / F(H) measurements.
+# Expected: Math-32-Elixir TP, Lang-39-SimFix TN, Lang-6-Elixir TN,
+# Math-82-HDRepair TP, Math-82-ACS TN, Chart-26-Jaid-plausible TP, Chart-26-Jaid TN.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl --coverage"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Elixir/Math/patch1-Math-32-Elixir-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Lang/patch1-Lang-39-SimFix.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Elixir/Lang/patch1-Lang-6-Elixir.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/HDRepair/Math/patch1-Math-82-HDRepair.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/ACS/Math/patch1-Math-82-ACS.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Jaid/Chart/patch1-Chart-26-Jaid-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Chart/patch1-Chart-26-Jaid.patch"
+)

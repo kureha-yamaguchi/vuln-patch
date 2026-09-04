@@ -25,6 +25,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import Optional
 
 sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents if (p / 'config.py').exists())))
 
@@ -979,6 +980,29 @@ def parse_args():
                              "OFF by default; feeds no verifier evidence and "
                              "no gate or verdict. See "
                              "docs/divcap-build-2026-08-10.md.")
+    parser.add_argument("--coverage", action="store_true",
+                        help="MEASUREMENT ONLY. Ask Jazzer for a JaCoCo "
+                             "execution-data dump from every harness run "
+                             "(the patched-build fuzz and the buggy-build "
+                             "keep-going scan), into <leg_dir>/cov/, "
+                             "alongside a classpath.json and a copy of the "
+                             "class files that were instrumented. The "
+                             "report is built POST-HOC by the measurements "
+                             "CLI, never in the pipeline. OFF by default; "
+                             "with the flag off the Jazzer command line and "
+                             "environment are byte-for-byte unchanged, and "
+                             "with it on nothing collected feeds a prompt, "
+                             "the verifier, a gate, or a verdict.")
+    parser.add_argument("--naive", action="store_true",
+                        help="ABLATION. Build the paper's H_N harnesses: "
+                             "drop the three root-cause-conditioning "
+                             "insertions from the harness prompt (the "
+                             "variant-analysis / <root_cause_reachable> "
+                             "block, the call-site <xref> examples, and the "
+                             "reachable-region clause of the propagation "
+                             "rule) and leave every other section "
+                             "identical. OFF by default; with the flag off "
+                             "the prompt text is byte-for-byte what it was.")
     parser.add_argument("--results_json", type=str, default=None,
                         metavar="PATH",
                         help="append a one-line JSON record describing this "
@@ -1064,6 +1088,135 @@ def _record_divcap(result, record_extras) -> None:
                          f"{result.get('patched_observations', 0)} patched "
                          f"observation(s) — {result.get('status')}"),
                  detail={'divergences': divergences})
+
+
+def _leg_dir(args) -> Optional[str]:
+    """The directory this LEG's artifacts go in — the one holding
+    result.jsonl and trace.md — or None when the caller gave no
+    `--results_json` (an ad-hoc run with nowhere to put them)."""
+    path = getattr(args, 'results_json', None)
+    if not path:
+        return None
+    return os.path.dirname(os.path.abspath(path))
+
+
+def _write_context_json(args, context) -> None:
+    """Write `<leg_dir>/context.json`: the analysis station's context dict
+    exactly as the trace already records it.
+
+    A FILE WRITE AND NOTHING ELSE. The dict is `context.as_dict()`, the
+    same object `record_event('analysis (TargetAnalyzer)')` is handed a few
+    lines above; persisting it changes no prompt, no command, and no
+    verdict. It exists because the measurements CLI needs the run's own
+    idea of the touched methods and their call-graph neighbourhood, and
+    trace.md is markdown prose that cannot be parsed back into one.
+    Fail-soft: a write error is reported and the run continues.
+    """
+    leg = _leg_dir(args)
+    if not leg:
+        return
+    try:
+        os.makedirs(leg, exist_ok=True)
+        with open(os.path.join(leg, 'context.json'), 'w',
+                  encoding='utf-8') as fh:
+            json.dump(context.as_dict(), fh, indent=1, default=str)
+    except (OSError, TypeError, ValueError) as exc:
+        print(f"  [context.json] not written ({exc})")
+
+
+def _coverage_include_glob(context) -> str:
+    """The Jazzer `--instrumentation_includes` glob for this project:
+    its package prefix plus '.**'.
+
+    Prefers `PatchContext.package` (the package the touched file declares);
+    falls back to the package of the touched functions' declaring class
+    when the file had none. Returns '' when neither is known — the caller
+    then leaves coverage off rather than instrumenting the whole JVM.
+    """
+    from java.bug_context.call_graph import project_prefix
+    package = getattr(context, 'package', None)
+    if not package:
+        for fn in (getattr(context, 'functions', None) or []):
+            fq = getattr(fn, 'func_class_fq', None)
+            if fq and '.' in fq:
+                package = fq.rsplit('.', 1)[0]
+                break
+    prefix = project_prefix(package)
+    return f"{prefix}.**" if prefix else ''
+
+
+def _coverage_setup(args, context):
+    """`(cov_dir, include_glob, out_dir)` for --coverage, or
+    `(None, '', None)` when the flag is off or the run has
+    nowhere/nothing to instrument.
+
+    Two directories, because the two artifacts are read by different
+    things: `<leg_dir>/cov` holds the JaCoCo `.exec` dumps the
+    measurements CLI turns into a report, and `<leg_dir>/fuzz_out` holds
+    the raw stdout+stderr of the same runs, which a human reads.
+    """
+    if not getattr(args, 'coverage', False):
+        return None, '', None
+    leg = _leg_dir(args)
+    if not leg:
+        print("  [coverage] --coverage needs --results_json to know where "
+              "the leg's artifacts go — coverage collection is OFF")
+        return None, '', None
+    glob_ = _coverage_include_glob(context)
+    if not glob_:
+        print("  [coverage] no package could be resolved for this patch — "
+              "coverage collection is OFF (instrumenting everything would "
+              "cost the fuzz budget and measure the JDK)")
+        return None, '', None
+    cov_dir = os.path.join(leg, 'cov')
+    out_dir = os.path.join(leg, 'fuzz_out')
+    try:
+        os.makedirs(cov_dir, exist_ok=True)
+        os.makedirs(out_dir, exist_ok=True)
+    except OSError as exc:
+        print(f"  [coverage] cannot create {cov_dir} ({exc}) — OFF")
+        return None, '', None
+    print(f"  [coverage] dumps -> {cov_dir}, raw output -> {out_dir} "
+          f"(includes {glob_})")
+    return cov_dir, glob_, out_dir
+
+
+def _record_coverage(runners, cov_dir, record_extras) -> None:
+    """Persist this leg's coverage dump inventory into result.jsonl
+    (`coverage`).
+
+    MEASUREMENT ONLY, and this is the boundary, stated where the records
+    are collected: `coverage` names files on disk for a post-hoc JaCoCo
+    report. It is deliberately NOT passed to any prompt, to the verifier's
+    evidence, or to any gate or verdict — a coverage number says nothing
+    about whether a patch is correct, and a decision that read one would be
+    reading a signal that has never been validated.
+    """
+    if not cov_dir:
+        return
+    dumps = []
+    outputs = []
+    for runner in runners:
+        for rec in (getattr(runner, 'coverage_dumps', None) or []):
+            if rec not in dumps:
+                dumps.append(rec)
+        for path in (getattr(runner, 'coverage_outputs', None) or []):
+            if path not in outputs:
+                outputs.append(path)
+    classpath_path = os.path.join(cov_dir, 'classpath.json')
+    record_extras['coverage'] = {
+        'dumps': dumps,
+        'outputs': outputs,
+        'classpath': (classpath_path if os.path.exists(classpath_path)
+                      else None),
+        'dir': cov_dir,
+    }
+    record_event('deterministic', method='coverage',
+                 target='jazzer coverage dumps',
+                 output=(f"{sum(1 for d in dumps if d.get('exists'))}/"
+                         f"{len(dumps)} dump(s) written under {cov_dir}; "
+                         f"{len(outputs)} raw fuzz log(s)"),
+                 detail=record_extras['coverage'])
 
 
 def _emit_record(path, *, label, status, selection=None,
@@ -1780,6 +1933,14 @@ def main():
                      output=context.as_dict())
     except Exception:
         pass
+    # Same station, same object, one extra artifact: the machine-readable
+    # twin of the trace entry above. File write only (see _write_context_json).
+    _write_context_json(args, context)
+    # --coverage (measurement only): where the Jazzer dumps go and what to
+    # instrument. (None, '') with the flag off, and then every reader below
+    # is a no-op.
+    _cov_dir, _cov_glob, _cov_out_dir = _coverage_setup(args, context)
+    _fr_lat = None      # the buggy-side keep-going runner, if it ever runs
 
     # Empty touched-function extraction silently disables everything that
     # keys on the patched method — the function blocks in the prompt,
@@ -1797,6 +1958,12 @@ def main():
         print("!! synthesis are disabled for this run.")
         print("!" * 60)
     record_extras = {"context_degraded": context_degraded}
+    if getattr(args, 'naive', False):
+        # ABLATION MARKER (measurement only): this leg's harnesses were
+        # generated from the unconditioned prompt (H_N). Written so a
+        # record can never be misread as a normal-arm result; read by
+        # nothing in this run.
+        record_extras['naive'] = True
 
     # H4/H5: same-name overloads, shared-prefix method families, and the
     # class's readable no-arg state — the mechanically-listed raw material
@@ -2115,7 +2282,8 @@ def main():
     #    harness set spreads across all of the bug's failing behaviours rather
     #    than piling onto the first. The campaign passes no attempt index, so
     #    the closure keeps its own counter (one tick per fresh prompt build).
-    prompt_builder = PromptBuilder(language=args.language)
+    prompt_builder = PromptBuilder(language=args.language,
+                                  naive=getattr(args, 'naive', False))
     # Relations actually shown to the harness generator. Filled after
     # screening (6a-pre): at most 2 of this leg's OWN relations, best-first.
     # Pooled sibling-leg relations never enter the prompt — injected pool
@@ -2680,9 +2848,15 @@ def main():
             timeout_seconds=args.fuzz_timeout,
             expected_exceptions=expected_exceptions,
             jazzer_api_jar=jazzer_api_jar,
+            coverage_dir=_cov_dir,
+            coverage_include=_cov_glob,
+            coverage_out_dir=_cov_out_dir,
         )
         if buggy_cp is None:
             buggy_cp = builder.test_classpath(selection.buggy_dir)
+        # --coverage: freeze the BUGGY build's class files for the post-hoc
+        # report, beside the patched ones. No-op with the flag off.
+        _fr_lat.snapshot_coverage_build(selection.buggy_dir, 'buggy')
         print("\n" + "#" * 20 + " latent-oracle scan (buggy) " + "#" * 20)
         for br in result.successful_results:
             try:
@@ -2727,6 +2901,7 @@ def main():
     # 7) Fuzz every successful harness against the patched code to check
     #    whether the vulnerability is still reachable (overfitting signal).
     fuzz_results = None
+    _runner = None
     if args.fuzz_timeout > 0 and result.successful_results:
         print("\n" + "#" * 20 + " fuzzing patched code " + "#" * 20)
         try:
@@ -2737,6 +2912,9 @@ def main():
                 jazzer_api_jar=jazzer_api_jar,
                 seed_literals=seed_literals,
                 diffcov=args.diffcov,
+                coverage_dir=_cov_dir,
+                coverage_include=_cov_glob,
+                coverage_out_dir=_cov_out_dir,
             )
             fuzz_results = _runner.run_all(
                 successful_results=result.successful_results,
@@ -2786,6 +2964,10 @@ def main():
             sys.exit(5)
         except Exception as exc:
             print(f"  patched-code fuzzing failed: {exc}")
+    # --coverage inventory for this leg, collected once from both runners
+    # that could have produced a dump. No-op with the flag off.
+    _record_coverage([r for r in (_runner, _fr_lat) if r is not None],
+                     _cov_dir, record_extras)
 
     # 7b) Differential-firing ATTRIBUTION check — mechanical, label-free,
     #     and independent of the LLM verifier (which judges oracle

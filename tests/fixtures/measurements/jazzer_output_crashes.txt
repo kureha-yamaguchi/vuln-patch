@@ -1,0 +1,28 @@
+INFO: Instrumented org.jfree.demo.Widget (took 12 ms, size +18%)
+INFO: found LLVMFuzzerCustomMutator
+#2	pulse  ft: 12 exec/s: 0 rss: 512Mb
+
+== Java Exception: com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:label-metadata] consistency violation: recorded metadata disagrees with getters
+	at org.jfree.demo.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:152)
+	at com.code_intelligence.jazzer.driver.FuzzTargetRunner.runOne(FuzzTargetRunner.java:120)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+== Java Exception: com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:draw-null-info] semantic mismatch: expected draw(..., null, null) to succeed
+	at org.jfree.demo.FuzzHarness.runOracle(FuzzHarness.java:64)
+	at org.jfree.demo.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:39)
+Caused by: java.lang.StringIndexOutOfBoundsException: begin 5, end 3, length 7
+	at java.base/java.lang.String.checkBoundsBeginEnd(String.java:3319)
+	at java.base/java.lang.String.substring(String.java:1874)
+	at org.jfree.demo.TextMeasurer.getStringWidth(TextMeasurer.java:78)
+	at org.jfree.demo.Widget$Inner.compute(Widget.java:60)
+	at org.jfree.demo.Widget.draw(Widget.java:20)
+	... 14 more
+== libFuzzer crashing input ==
+
+== Java Exception: java.lang.NullPointerException
+	at org.jfree.demo.Widget.draw(Widget.java:21)
+	at org.jfree.demo.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:12)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+== libFuzzer crashing input ==
+artifact_prefix='/tmp/demo_buggy/fuzz/attempt_002/crashes/'; Test unit written to /tmp/demo_buggy/fuzz/attempt_002/crashes/crash-da39a3

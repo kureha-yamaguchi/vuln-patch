@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<report name="demo">
+  <sessioninfo id="demo" start="0" dump="1"/>
+  <package name="org/jfree/demo">
+    <class name="org/jfree/demo/Widget" sourcefilename="Widget.java">
+      <method name="&lt;init&gt;" desc="()V" line="10">
+        <counter type="INSTRUCTION" missed="0" covered="3"/>
+        <counter type="LINE" missed="0" covered="1"/>
+        <counter type="METHOD" missed="0" covered="1"/>
+      </method>
+      <method name="draw" desc="(Ljava/awt/Graphics2D;I)V" line="20">
+        <counter type="INSTRUCTION" missed="2" covered="5"/>
+        <counter type="BRANCH" missed="1" covered="3"/>
+        <counter type="LINE" missed="0" covered="1"/>
+        <counter type="METHOD" missed="0" covered="1"/>
+      </method>
+      <method name="lambda$draw$0" desc="(Ljava/lang/String;)Z" line="25">
+        <counter type="INSTRUCTION" missed="0" covered="4"/>
+        <counter type="BRANCH" missed="0" covered="2"/>
+        <counter type="LINE" missed="0" covered="1"/>
+        <counter type="METHOD" missed="0" covered="1"/>
+      </method>
+      <method name="unusedHelper" desc="([IZ)V" line="40">
+        <counter type="INSTRUCTION" missed="4" covered="0"/>
+        <counter type="BRANCH" missed="2" covered="0"/>
+        <counter type="LINE" missed="1" covered="0"/>
+        <counter type="METHOD" missed="1" covered="0"/>
+      </method>
+      <counter type="INSTRUCTION" missed="6" covered="12"/>
+      <counter type="BRANCH" missed="3" covered="5"/>
+      <counter type="METHOD" missed="1" covered="3"/>
+    </class>
+    <class name="org/jfree/demo/Widget$Inner" sourcefilename="Widget.java">
+      <method name="compute" desc="(I)I" line="60">
+        <counter type="INSTRUCTION" missed="0" covered="6"/>
+        <counter type="BRANCH" missed="0" covered="2"/>
+        <counter type="LINE" missed="0" covered="1"/>
+        <counter type="METHOD" missed="0" covered="1"/>
+      </method>
+      <counter type="INSTRUCTION" missed="0" covered="6"/>
+      <counter type="BRANCH" missed="0" covered="2"/>
+      <counter type="METHOD" missed="0" covered="1"/>
+    </class>
+    <class name="org/jfree/demo/FuzzHarness" sourcefilename="FuzzHarness.java">
+      <method name="fuzzerTestOneInput" desc="(Ljava/lang/String;)V" line="5">
+        <counter type="INSTRUCTION" missed="0" covered="9"/>
+        <counter type="BRANCH" missed="1" covered="1"/>
+        <counter type="LINE" missed="0" covered="1"/>
+        <counter type="METHOD" missed="0" covered="1"/>
+      </method>
+      <counter type="INSTRUCTION" missed="0" covered="9"/>
+      <counter type="BRANCH" missed="1" covered="1"/>
+      <counter type="METHOD" missed="0" covered="1"/>
+    </class>
+    <sourcefile name="Widget.java">
+      <line nr="10" mi="0" ci="3" mb="0" cb="0"/>
+      <line nr="20" mi="2" ci="5" mb="1" cb="3"/>
+      <line nr="40" mi="4" ci="0" mb="2" cb="0"/>
+      <line nr="60" mi="0" ci="6" mb="0" cb="2"/>
+      <counter type="INSTRUCTION" missed="6" covered="14"/>
+    </sourcefile>
+    <sourcefile name="FuzzHarness.java">
+      <line nr="5" mi="0" ci="9" mb="1" cb="1"/>
+      <counter type="INSTRUCTION" missed="0" covered="9"/>
+    </sourcefile>
+    <counter type="INSTRUCTION" missed="6" covered="27"/>
+    <counter type="BRANCH" missed="4" covered="8"/>
+    <counter type="METHOD" missed="1" covered="5"/>
+  </package>
+  <package name="org/other">
+    <class name="org/other/Thing" sourcefilename="Thing.java">
+      <method name="go" desc="()V" line="7">
+        <counter type="INSTRUCTION" missed="0" covered="1"/>
+        <counter type="LINE" missed="0" covered="1"/>
+        <counter type="METHOD" missed="0" covered="1"/>
+      </method>
+      <counter type="INSTRUCTION" missed="0" covered="1"/>
+      <counter type="METHOD" missed="0" covered="1"/>
+    </class>
+    <sourcefile name="Thing.java">
+      <line nr="7" mi="0" ci="1" mb="0" cb="0"/>
+      <counter type="INSTRUCTION" missed="0" covered="1"/>
+    </sourcefile>
+    <counter type="INSTRUCTION" missed="0" covered="1"/>
+    <counter type="METHOD" missed="0" covered="1"/>
+  </package>
+  <counter type="INSTRUCTION" missed="6" covered="28"/>
+  <counter type="BRANCH" missed="4" covered="8"/>
+  <counter type="METHOD" missed="1" covered="6"/>
+</report>

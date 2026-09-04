@@ -117,20 +117,31 @@ def changed_lines_by_file(patch_text: str) -> Dict[str, List[int]]:
             if not m:
                 continue
             new_ln = int(m.group(3))
-            recorded = False
+            # A deletion is "pending" until we know whether the same change
+            # group also ADDS lines (then the added lines already mark the
+            # spot) or ends at a context line / the hunk end (then the
+            # deletion collapsed onto the previous new-file line). Tracking
+            # this per change group — not per hunk — means a modification
+            # never records the untouched line above it, and a later pure
+            # deletion in the same hunk is not lost.
+            pending_deletion = False   # a '-' seen in the current group
+            group_has_add = False      # a '+' seen in the current group
             for raw in body[1:]:
                 if raw.startswith('\\'):
                     continue
                 if raw.startswith('+'):
                     lines_for_file.append(new_ln)
-                    recorded = True
+                    group_has_add = True
                     new_ln += 1
                 elif raw.startswith('-'):
-                    if not recorded:
+                    pending_deletion = True
+                else:  # context line (' ' or an empty line) ends the group
+                    if pending_deletion and not group_has_add:
                         lines_for_file.append(max(new_ln - 1, 1))
-                        recorded = True
-                else:  # context line (' ' or an empty line)
+                    pending_deletion = group_has_add = False
                     new_ln += 1
+            if pending_deletion and not group_has_add:
+                lines_for_file.append(max(new_ln - 1, 1))
     return {p: list(dict.fromkeys(lns)) for p, lns in out.items() if lns}
 
 
