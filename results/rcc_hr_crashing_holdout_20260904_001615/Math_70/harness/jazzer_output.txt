@@ -1,0 +1,182 @@
+DEDUP_TOKEN: fa9e98f0ff1fed64
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.analysis.solvers.FuzzHarness (took 76 ms, size +74%)
+INFO: Instrumented org.apache.commons.math.analysis.UnivariateRealFunction (took 0 ms, size +0%)
+INFO: found LLVMFuzzerCustomMutator (0x71f1cf776cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2958376605
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x71f2685433b0, 0x71f2685435b0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x71f2684a9de0,0x71f2684abde0), 
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.analysis.SinFunction (took 2 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.analysis.DifferentiableUnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BisectionSolver (took 3 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl (took 7 ms, size +12%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolver (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithm (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithmImpl (took 4 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MaxIterationsExceededException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.ConvergenceException (took 1 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.MathException (took 5 ms, size +26%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils (took 4 ms, size +13%)
+
+== Java Exception: java.lang.NullPointerException
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:88)
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:66)
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:72)
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.runOne(FuzzHarness.java:83)
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:14)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/tmp/d4j/Math_70_buggy/fuzz/attempt_001/crashes/'; Test unit written to /tmp/d4j/Math_70_buggy/fuzz/attempt_001/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/tmp/d4j/Math_70_buggy/fuzz/attempt_001/crashes'; Java reproducer written to /tmp/d4j/Math_70_buggy/fuzz/attempt_001/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+
+INFO: A corpus is not provided, starting from an empty corpus
+#2	INITED cov: 29 ft: 29 corp: 1/1b exec/s: 0 rss: 1292Mb
+#20000	DONE   cov: 29 ft: 29 corp: 1/1b lim: 198 exec/s: 0 rss: 1297Mb
+Done 20000 runs in 0 second(s)
+
+DEDUP_TOKEN: 77963cf76b8f38bb
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.analysis.solvers.FuzzHarness (took 72 ms, size +67%)
+INFO: Instrumented org.apache.commons.math.analysis.UnivariateRealFunction (took 0 ms, size +0%)
+INFO: found LLVMFuzzerCustomMutator (0x7ca6b5776cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 379243008
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7ca6fc56aca0, 0x7ca6fc56aea0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7ca6fc4ce330,0x7ca6fc4d0330), 
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.analysis.SinFunction (took 2 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.analysis.DifferentiableUnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BisectionSolver (took 4 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl (took 7 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolver (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithm (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithmImpl (took 4 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MaxIterationsExceededException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.ConvergenceException (took 1 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.MathException (took 5 ms, size +26%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils (took 3 ms, size +13%)
+
+== Java Exception: java.lang.RuntimeException: [oracle:valid-solve] metamorphic violation: valid bisection input should solve tag=anchor min=3.0 max=3.2 initial=3.1 expected=3.141592653589793
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.runKnownValidCase(FuzzHarness.java:90)
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:11)
+Caused by: java.lang.NullPointerException
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:88)
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:66)
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:72)
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.runKnownValidCase(FuzzHarness.java:54)
+	... 1 more
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/tmp/d4j/Math_70_buggy/fuzz/attempt_002/crashes/'; Test unit written to /tmp/d4j/Math_70_buggy/fuzz/attempt_002/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/tmp/d4j/Math_70_buggy/fuzz/attempt_002/crashes'; Java reproducer written to /tmp/d4j/Math_70_buggy/fuzz/attempt_002/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+
+INFO: A corpus is not provided, starting from an empty corpus
+#2	INITED cov: 25 ft: 25 corp: 1/1b exec/s: 0 rss: 1291Mb
+#20000	DONE   cov: 25 ft: 25 corp: 1/1b lim: 198 exec/s: 0 rss: 1297Mb
+Done 20000 runs in 0 second(s)
+
+DEDUP_TOKEN: 975215577c10547c
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.analysis.solvers.FuzzHarness (took 74 ms, size +34%)
+INFO: Instrumented org.apache.commons.math.analysis.UnivariateRealFunction (took 0 ms, size +0%)
+INFO: found LLVMFuzzerCustomMutator (0x7b3491976cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2052016702
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7b34c05b9150, 0x7b34c05b9350), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7b34c0517730,0x7b34c0519730), 
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.analysis.SinFunction (took 2 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.analysis.DifferentiableUnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BisectionSolver (took 3 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl (took 7 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolver (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithm (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithmImpl (took 4 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MaxIterationsExceededException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.ConvergenceException (took 2 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.MathException (took 5 ms, size +26%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils (took 3 ms, size +13%)
+
+== Java Exception: java.lang.RuntimeException: [oracle:nested-root] metamorphic violation: valid sin interval triggered root-cause failure in solve(f,min,max,initial) interval=[3.0,3.2] initial=3.1
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.trySolve4(FuzzHarness.java:93)
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:21)
+Caused by: java.lang.NullPointerException
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:88)
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:66)
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:72)
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.trySolve4(FuzzHarness.java:87)
+	... 1 more
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/tmp/d4j/Math_70_buggy/fuzz/attempt_003/crashes/'; Test unit written to /tmp/d4j/Math_70_buggy/fuzz/attempt_003/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/tmp/d4j/Math_70_buggy/fuzz/attempt_003/crashes'; Java reproducer written to /tmp/d4j/Math_70_buggy/fuzz/attempt_003/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+
+INFO: A corpus is not provided, starting from an empty corpus
+#2	INITED cov: 23 ft: 23 corp: 1/1b exec/s: 0 rss: 1276Mb
+#20000	DONE   cov: 23 ft: 23 corp: 1/1b lim: 198 exec/s: 0 rss: 1279Mb
+Done 20000 runs in 0 second(s)

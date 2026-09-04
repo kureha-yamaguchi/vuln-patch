@@ -1,0 +1,366 @@
+DEDUP_TOKEN: 1516e5347c4a7586
+DEDUP_TOKEN: 0580e6836107c406
+
+INFO: Loaded 325 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 84 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.lang3.FuzzHarness (took 90 ms, size +41%)
+INFO: found LLVMFuzzerCustomMutator (0x7d2687976cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 3592025160
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7d27f85e1680, 0x7d27f85e1880), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7d27f854da50,0x7d27f854fa50), 
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.lang3.FuzzHarness$1 (took 1 ms, size +25%)
+INFO: New number of coverage counters: 1024
+INFO: New number of coverage counters: 2048
+WARN: Some hooks could not be applied to class files built for Java 7 or lower.
+                       Ensure that the fuzz target and its dependencies are compiled with
+                       -target 8 or higher to identify as many bugs as possible.
+INFO: Instrumented org.apache.commons.lang3.StringUtils (took 88 ms, size +38%)
+
+== Java Exception: java.lang.NullPointerException
+	at org.apache.commons.lang3.StringUtils.join(StringUtils.java:3298)
+	at org.apache.commons.lang3.FuzzHarness.anchor(FuzzHarness.java:59)
+	at org.apache.commons.lang3.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:22)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/tmp/d4j/Lang_20_buggy/fuzz/attempt_001/crashes/'; Test unit written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_001/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/tmp/d4j/Lang_20_buggy/fuzz/attempt_001/crashes'; Java reproducer written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_001/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+
+INFO: A corpus is not provided, starting from an empty corpus
+#2	INITED cov: 25 ft: 25 corp: 1/1b exec/s: 0 rss: 1291Mb
+
+== Java Exception: java.lang.NullPointerException
+== libFuzzer crashing input ==
+MS: 6 ChangeBit-Custom-CrossOver-Custom-ChangeBinInt-Custom-; base unit: adc83b19e793491b1c6ea0fd8b46cd9f32e592fc
+0xf,0xb,
+\017\013
+artifact_prefix='/tmp/d4j/Lang_20_buggy/fuzz/attempt_001/crashes/'; Test unit written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_001/crashes/crash-cd38125c6aaa34c4416e52c8a7a8a5f8a7d05415
+Base64: Dws=
+reproducer_path='/tmp/d4j/Lang_20_buggy/fuzz/attempt_001/crashes'; Java reproducer written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_001/crashes/Crash_cd38125c6aaa34c4416e52c8a7a8a5f8a7d05415.java
+
+#3090	NEW    cov: 27 ft: 48 corp: 2/3b lim: 33 exec/s: 0 rss: 1291Mb L: 2/2 MS: 6 ChangeBit-Custom-CrossOver-Custom-ChangeBinInt-Custom-
+#3091	NEW    cov: 27 ft: 50 corp: 3/5b lim: 33 exec/s: 0 rss: 1291Mb L: 2/2 MS: 2 ChangeBit-Custom-
+#3107	REDUCE cov: 27 ft: 50 corp: 3/4b lim: 33 exec/s: 0 rss: 1291Mb L: 1/2 MS: 2 EraseBytes-Custom-
+#20000	DONE   cov: 27 ft: 50 corp: 3/4b lim: 198 exec/s: 0 rss: 1291Mb
+Done 20000 runs in 0 second(s)
+
+DEDUP_TOKEN: 4c2d94feeb589cac
+DEDUP_TOKEN: 19f4e3fc02df3af7
+DEDUP_TOKEN: 1154e47a5e06ab51
+
+INFO: Loaded 325 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 84 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.lang3.FuzzHarness (took 76 ms, size +42%)
+INFO: found LLVMFuzzerCustomMutator (0x731dac176cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 18890881
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x731dd85ebca0, 0x731dd85ebea0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x731dd855c7a0,0x731dd855e7a0), 
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: New number of coverage counters: 1024
+INFO: New number of coverage counters: 2048
+WARN: Some hooks could not be applied to class files built for Java 7 or lower.
+                       Ensure that the fuzz target and its dependencies are compiled with
+                       -target 8 or higher to identify as many bugs as possible.
+INFO: Instrumented org.apache.commons.lang3.StringUtils (took 86 ms, size +37%)
+INFO: Instrumented org.apache.commons.lang3.FuzzHarness$NullToString (took 1 ms, size +20%)
+
+== Java Exception: java.lang.NullPointerException
+	at org.apache.commons.lang3.StringUtils.join(StringUtils.java:3298)
+	at org.apache.commons.lang3.FuzzHarness.runAnchors(FuzzHarness.java:73)
+	at org.apache.commons.lang3.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:25)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/tmp/d4j/Lang_20_buggy/fuzz/attempt_002/crashes/'; Test unit written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_002/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/tmp/d4j/Lang_20_buggy/fuzz/attempt_002/crashes'; Java reproducer written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_002/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+
+INFO: A corpus is not provided, starting from an empty corpus
+#2	INITED cov: 15 ft: 15 corp: 1/1b exec/s: 0 rss: 1282Mb
+
+== Java Exception: java.lang.NullPointerException
+	at org.apache.commons.lang3.StringUtils.join(StringUtils.java:3383)
+	at org.apache.commons.lang3.FuzzHarness.exerciseString(FuzzHarness.java:122)
+	at org.apache.commons.lang3.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:62)
+== libFuzzer crashing input ==
+MS: 4 ShuffleBytes-Custom-ChangeByte-Custom-; base unit: adc83b19e793491b1c6ea0fd8b46cd9f32e592fc
+0x0,
+\000
+artifact_prefix='/tmp/d4j/Lang_20_buggy/fuzz/attempt_002/crashes/'; Test unit written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_002/crashes/crash-5ba93c9db0cff93f52b521d7420e43f6eda2784f
+Base64: AA==
+reproducer_path='/tmp/d4j/Lang_20_buggy/fuzz/attempt_002/crashes'; Java reproducer written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_002/crashes/Crash_5ba93c9db0cff93f52b521d7420e43f6eda2784f.java
+
+#11609	NEW    cov: 32 ft: 46 corp: 2/2b lim: 116 exec/s: 0 rss: 1282Mb L: 1/1 MS: 4 ShuffleBytes-Custom-ChangeByte-Custom-
+#11610	NEW    cov: 35 ft: 71 corp: 3/3b lim: 116 exec/s: 0 rss: 1282Mb L: 1/1 MS: 2 ChangeByte-Custom-
+#11613	NEW    cov: 35 ft: 74 corp: 4/4b lim: 116 exec/s: 0 rss: 1282Mb L: 1/1 MS: 6 ChangeBinInt-Custom-ShuffleBytes-Custom-ChangeBit-Custom-
+#11615	NEW    cov: 37 ft: 77 corp: 5/6b lim: 116 exec/s: 0 rss: 1282Mb L: 2/2 MS: 4 ChangeByte-Custom-CopyPart-Custom-
+#11617	NEW    cov: 37 ft: 79 corp: 6/8b lim: 116 exec/s: 0 rss: 1282Mb L: 2/2 MS: 4 CopyPart-Custom-InsertByte-Custom-
+#11619	NEW    cov: 37 ft: 82 corp: 7/9b lim: 116 exec/s: 0 rss: 1282Mb L: 1/2 MS: 4 ChangeByte-Custom-ChangeBit-Custom-
+
+== Java Exception: java.lang.NullPointerException
+	at org.apache.commons.lang3.StringUtils.join(StringUtils.java:3298)
+	at org.apache.commons.lang3.FuzzHarness.exerciseChar(FuzzHarness.java:94)
+	at org.apache.commons.lang3.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:59)
+== libFuzzer crashing input ==
+MS: 2 InsertRepeatedBytes-Custom-; base unit: f62e0ea6edbc4288ff84c8da24f410ecf986229d
+0x3a,0x3a,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,0xf9,
+::\371\371\371\371\371\371\371\371\371\371\371\371\371\371\371\371\371\371
+artifact_prefix='/tmp/d4j/Lang_20_buggy/fuzz/attempt_002/crashes/'; Test unit written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_002/crashes/crash-2a60c609ff4c02de473eab2815898dce0423876a
+Base64: Ojr5+fn5+fn5+fn5+fn5+fn5+fk=
+reproducer_path='/tmp/d4j/Lang_20_buggy/fuzz/attempt_002/crashes'; Java reproducer written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_002/crashes/Crash_2a60c609ff4c02de473eab2815898dce0423876a.java
+
+#11620	NEW    cov: 45 ft: 95 corp: 8/29b lim: 116 exec/s: 0 rss: 1282Mb L: 20/20 MS: 2 InsertRepeatedBytes-Custom-
+#11622	NEW    cov: 45 ft: 99 corp: 9/34b lim: 116 exec/s: 0 rss: 1282Mb L: 5/20 MS: 4 ShuffleBytes-Custom-CMP-Custom- DE: "\377\377\377\377"-
+#11624	NEW    cov: 45 ft: 101 corp: 10/37b lim: 116 exec/s: 0 rss: 1282Mb L: 3/20 MS: 4 ChangeBit-Custom-InsertByte-Custom-
+#11625	NEW    cov: 46 ft: 106 corp: 11/151b lim: 116 exec/s: 0 rss: 1282Mb L: 114/114 MS: 2 InsertRepeatedBytes-Custom-
+#11627	NEW    cov: 46 ft: 111 corp: 12/166b lim: 116 exec/s: 0 rss: 1282Mb L: 15/114 MS: 4 CrossOver-Custom-InsertRepeatedBytes-Custom-
+#11628	NEW    cov: 46 ft: 115 corp: 13/186b lim: 116 exec/s: 0 rss: 1282Mb L: 20/114 MS: 2 CopyPart-Custom-
+#11631	NEW    cov: 46 ft: 116 corp: 14/236b lim: 116 exec/s: 0 rss: 1282Mb L: 50/114 MS: 6 ChangeBinInt-Custom-ChangeASCIIInt-Custom-InsertRepeatedBytes-Custom-
+#11637	NEW    cov: 46 ft: 117 corp: 15/241b lim: 116 exec/s: 0 rss: 1282Mb L: 5/114 MS: 2 PersAutoDict-Custom- DE: "\377\377\377\377"-
+#11640	NEW    cov: 46 ft: 118 corp: 16/254b lim: 116 exec/s: 0 rss: 1282Mb L: 13/114 MS: 6 ShuffleBytes-Custom-CrossOver-Custom-EraseBytes-Custom-
+#11642	NEW    cov: 47 ft: 120 corp: 17/271b lim: 116 exec/s: 0 rss: 1282Mb L: 17/114 MS: 4 ChangeBit-Custom-CrossOver-Custom-
+#11645	NEW    cov: 47 ft: 121 corp: 18/319b lim: 116 exec/s: 0 rss: 1282Mb L: 48/114 MS: 6 CMP-Custom-CopyPart-Custom-InsertRepeatedBytes-Custom- DE: "\377\377\377\377"-
+#11648	NEW    cov: 48 ft: 122 corp: 19/336b lim: 116 exec/s: 0 rss: 1282Mb L: 17/114 MS: 6 CopyPart-Custom-ShuffleBytes-Custom-CMP-Custom- DE: "\377\377"-
+#11655	NEW    cov: 48 ft: 125 corp: 20/374b lim: 116 exec/s: 0 rss: 1282Mb L: 38/114 MS: 4 CrossOver-Custom-InsertRepeatedBytes-Custom-
+#11659	NEW    cov: 48 ft: 126 corp: 21/386b lim: 116 exec/s: 0 rss: 1282Mb L: 12/114 MS: 8 ChangeBinInt-Custom-ChangeByte-Custom-InsertByte-Custom-CrossOver-Custom-
+#11672	REDUCE cov: 48 ft: 126 corp: 21/366b lim: 116 exec/s: 0 rss: 1282Mb L: 28/114 MS: 6 ChangeByte-Custom-PersAutoDict-Custom-EraseBytes-Custom- DE: "\377\377\377\377"-
+#11673	NEW    cov: 48 ft: 127 corp: 22/479b lim: 116 exec/s: 0 rss: 1282Mb L: 113/114 MS: 2 InsertRepeatedBytes-Custom-
+#11676	NEW    cov: 50 ft: 129 corp: 23/503b lim: 116 exec/s: 0 rss: 1282Mb L: 24/114 MS: 6 ChangeBinInt-Custom-InsertRepeatedBytes-Custom-ShuffleBytes-Custom-
+#11683	NEW    cov: 50 ft: 130 corp: 24/527b lim: 116 exec/s: 0 rss: 1282Mb L: 24/114 MS: 4 ChangeBit-Custom-CMP-Custom- DE: "\001\000\000\000"-
+#11713	REDUCE cov: 50 ft: 130 corp: 24/526b lim: 116 exec/s: 0 rss: 1282Mb L: 16/114 MS: 10 ChangeBit-Custom-ChangeBit-Custom-EraseBytes-Custom-ShuffleBytes-Custom-ShuffleBytes-Custom-
+#11729	REDUCE cov: 50 ft: 130 corp: 24/523b lim: 116 exec/s: 0 rss: 1282Mb L: 47/114 MS: 2 EraseBytes-Custom-
+#11756	REDUCE cov: 50 ft: 130 corp: 24/521b lim: 116 exec/s: 0 rss: 1282Mb L: 10/114 MS: 4 ChangeBinInt-Custom-EraseBytes-Custom-
+#11780	NEW    cov: 50 ft: 131 corp: 25/602b lim: 116 exec/s: 0 rss: 1282Mb L: 81/114 MS: 8 EraseBytes-Custom-CopyPart-Custom-ShuffleBytes-Custom-InsertRepeatedBytes-Custom-
+#11803	REDUCE cov: 50 ft: 131 corp: 25/559b lim: 116 exec/s: 0 rss: 1282Mb L: 70/114 MS: 6 InsertByte-Custom-InsertByte-Custom-EraseBytes-Custom-
+#11805	REDUCE cov: 50 ft: 131 corp: 25/558b lim: 116 exec/s: 0 rss: 1282Mb L: 14/114 MS: 4 CopyPart-Custom-EraseBytes-Custom-
+#11818	NEW    cov: 50 ft: 132 corp: 26/583b lim: 116 exec/s: 0 rss: 1282Mb L: 25/114 MS: 6 ChangeBit-Custom-ShuffleBytes-Custom-InsertByte-Custom-
+#11821	REDUCE cov: 50 ft: 132 corp: 26/581b lim: 116 exec/s: 0 rss: 1282Mb L: 14/114 MS: 6 ShuffleBytes-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#11864	NEW    cov: 50 ft: 133 corp: 27/673b lim: 116 exec/s: 0 rss: 1282Mb L: 92/114 MS: 6 CrossOver-Custom-CrossOver-Custom-InsertRepeatedBytes-Custom-
+#11870	NEW    cov: 50 ft: 134 corp: 28/742b lim: 116 exec/s: 0 rss: 1282Mb L: 69/114 MS: 2 InsertRepeatedBytes-Custom-
+#11888	REDUCE cov: 50 ft: 134 corp: 28/740b lim: 116 exec/s: 0 rss: 1282Mb L: 36/114 MS: 6 ChangeBit-Custom-CrossOver-Custom-EraseBytes-Custom-
+#11939	NEW    cov: 50 ft: 135 corp: 29/832b lim: 116 exec/s: 0 rss: 1282Mb L: 92/114 MS: 2 CopyPart-Custom-
+#12002	NEW    cov: 50 ft: 136 corp: 30/901b lim: 116 exec/s: 0 rss: 1282Mb L: 69/114 MS: 6 PersAutoDict-Custom-ChangeBit-Custom-CopyPart-Custom- DE: "\001\000\000\000"-
+#12041	REDUCE cov: 50 ft: 136 corp: 30/898b lim: 116 exec/s: 0 rss: 1282Mb L: 17/114 MS: 8 ShuffleBytes-Custom-ChangeBinInt-Custom-EraseBytes-Custom-PersAutoDict-Custom- DE: "\377\377"-
+#12050	REDUCE cov: 50 ft: 136 corp: 30/897b lim: 116 exec/s: 0 rss: 1282Mb L: 68/114 MS: 8 ShuffleBytes-Custom-ShuffleBytes-Custom-PersAutoDict-Custom-EraseBytes-Custom- DE: "\377\377"-
+#12133	REDUCE cov: 50 ft: 136 corp: 30/895b lim: 116 exec/s: 0 rss: 1282Mb L: 66/114 MS: 6 ChangeBinInt-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#12140	REDUCE cov: 50 ft: 136 corp: 30/889b lim: 116 exec/s: 0 rss: 1282Mb L: 108/108 MS: 4 ChangeBit-Custom-EraseBytes-Custom-
+#12298	REDUCE cov: 50 ft: 136 corp: 30/851b lim: 116 exec/s: 0 rss: 1282Mb L: 43/108 MS: 6 ChangeByte-Custom-InsertByte-Custom-EraseBytes-Custom-
+#12334	REDUCE cov: 50 ft: 136 corp: 30/825b lim: 116 exec/s: 0 rss: 1282Mb L: 66/108 MS: 2 EraseBytes-Custom-
+#12376	REDUCE cov: 50 ft: 136 corp: 30/815b lim: 116 exec/s: 0 rss: 1282Mb L: 56/108 MS: 4 CopyPart-Custom-EraseBytes-Custom-
+#12383	REDUCE cov: 50 ft: 136 corp: 30/795b lim: 116 exec/s: 0 rss: 1282Mb L: 36/108 MS: 4 ChangeBinInt-Custom-EraseBytes-Custom-
+#12385	REDUCE cov: 50 ft: 136 corp: 30/794b lim: 116 exec/s: 0 rss: 1282Mb L: 13/108 MS: 4 InsertByte-Custom-EraseBytes-Custom-
+#12425	NEW    cov: 50 ft: 137 corp: 31/891b lim: 116 exec/s: 0 rss: 1282Mb L: 97/108 MS: 10 EraseBytes-Custom-InsertByte-Custom-ChangeByte-Custom-CrossOver-Custom-InsertRepeatedBytes-Custom-
+#12472	REDUCE cov: 50 ft: 137 corp: 31/890b lim: 116 exec/s: 0 rss: 1282Mb L: 4/108 MS: 4 ChangeBit-Custom-EraseBytes-Custom-
+#12482	REDUCE cov: 50 ft: 137 corp: 31/885b lim: 116 exec/s: 0 rss: 1282Mb L: 8/108 MS: 10 ChangeBinInt-Custom-CMP-Custom-ChangeBinInt-Custom-EraseBytes-Custom-ShuffleBytes-Custom- DE: "\000\010"-
+#12494	REDUCE cov: 50 ft: 137 corp: 31/884b lim: 116 exec/s: 0 rss: 1282Mb L: 9/108 MS: 4 PersAutoDict-Custom-EraseBytes-Custom- DE: "\001\000\000\000"-
+#12562	REDUCE cov: 50 ft: 137 corp: 31/864b lim: 116 exec/s: 0 rss: 1282Mb L: 23/108 MS: 6 EraseBytes-Custom-EraseBytes-Custom-CopyPart-Custom-
+#12653	REDUCE cov: 50 ft: 137 corp: 31/854b lim: 116 exec/s: 0 rss: 1282Mb L: 26/108 MS: 2 EraseBytes-Custom-
+#12674	REDUCE cov: 50 ft: 137 corp: 31/829b lim: 116 exec/s: 0 rss: 1282Mb L: 67/108 MS: 2 EraseBytes-Custom-
+#12743	REDUCE cov: 50 ft: 137 corp: 31/822b lim: 116 exec/s: 0 rss: 1282Mb L: 59/108 MS: 8 ChangeBinInt-Custom-InsertByte-Custom-PersAutoDict-Custom-EraseBytes-Custom- DE: "\000\010"-
+#12839	REDUCE cov: 50 ft: 137 corp: 31/801b lim: 116 exec/s: 0 rss: 1282Mb L: 49/108 MS: 2 EraseBytes-Custom-
+#12886	REDUCE cov: 50 ft: 137 corp: 31/796b lim: 116 exec/s: 0 rss: 1282Mb L: 42/108 MS: 4 ChangeBit-Custom-EraseBytes-Custom-
+#12943	REDUCE cov: 50 ft: 137 corp: 31/785b lim: 116 exec/s: 0 rss: 1282Mb L: 48/108 MS: 4 ShuffleBytes-Custom-EraseBytes-Custom-
+#12948	REDUCE cov: 50 ft: 137 corp: 31/778b lim: 116 exec/s: 0 rss: 1282Mb L: 101/101 MS: 10 CrossOver-Custom-CopyPart-Custom-EraseBytes-Custom-CopyPart-Custom-InsertRepeatedBytes-Custom-
+#13026	REDUCE cov: 50 ft: 137 corp: 31/777b lim: 116 exec/s: 0 rss: 1282Mb L: 23/101 MS: 6 ChangeBit-Custom-CrossOver-Custom-EraseBytes-Custom-
+#13050	REDUCE cov: 50 ft: 137 corp: 31/765b lim: 116 exec/s: 0 rss: 1282Mb L: 36/101 MS: 8 CMP-Custom-ChangeBinInt-Custom-PersAutoDict-Custom-EraseBytes-Custom- DE: "\000\000\000\000\000\000\000\000"-"\001\000\000\000"-
+#13053	REDUCE cov: 50 ft: 137 corp: 31/755b lim: 116 exec/s: 0 rss: 1282Mb L: 13/101 MS: 6 EraseBytes-Custom-InsertByte-Custom-ShuffleBytes-Custom-
+#13054	REDUCE cov: 50 ft: 137 corp: 31/754b lim: 116 exec/s: 0 rss: 1282Mb L: 7/101 MS: 2 EraseBytes-Custom-
+#13108	REDUCE cov: 50 ft: 137 corp: 31/730b lim: 116 exec/s: 0 rss: 1282Mb L: 73/101 MS: 8 InsertByte-Custom-ChangeBinInt-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#13128	REDUCE cov: 50 ft: 137 corp: 31/725b lim: 116 exec/s: 0 rss: 1282Mb L: 37/101 MS: 10 ChangeBinInt-Custom-ChangeBit-Custom-ShuffleBytes-Custom-ChangeByte-Custom-CrossOver-Custom-
+#13278	REDUCE cov: 50 ft: 137 corp: 31/718b lim: 116 exec/s: 0 rss: 1282Mb L: 62/101 MS: 10 CrossOver-Custom-ChangeBinInt-Custom-ChangeBit-Custom-PersAutoDict-Custom-EraseBytes-Custom- DE: "\377\377"-
+#13467	REDUCE cov: 50 ft: 137 corp: 31/716b lim: 116 exec/s: 0 rss: 1282Mb L: 12/101 MS: 8 ChangeByte-Custom-InsertByte-Custom-ChangeBinInt-Custom-EraseBytes-Custom-
+#13553	NEW    cov: 50 ft: 138 corp: 32/804b lim: 116 exec/s: 0 rss: 1282Mb L: 88/101 MS: 2 InsertRepeatedBytes-Custom-
+#13736	REDUCE cov: 50 ft: 138 corp: 32/802b lim: 116 exec/s: 0 rss: 1282Mb L: 35/101 MS: 6 ChangeBinInt-Custom-ChangeBinInt-Custom-EraseBytes-Custom-
+#13833	REDUCE cov: 50 ft: 138 corp: 32/782b lim: 116 exec/s: 0 rss: 1282Mb L: 53/101 MS: 4 CrossOver-Custom-EraseBytes-Custom-
+#13889	REDUCE cov: 54 ft: 142 corp: 33/817b lim: 116 exec/s: 0 rss: 1282Mb L: 35/101 MS: 2 CrossOver-Custom-
+#13909	REDUCE cov: 54 ft: 142 corp: 33/794b lim: 116 exec/s: 0 rss: 1282Mb L: 39/101 MS: 10 CopyPart-Custom-EraseBytes-Custom-ChangeBit-Custom-CopyPart-Custom-CrossOver-Custom-
+#13930	REDUCE cov: 54 ft: 142 corp: 33/786b lim: 116 exec/s: 0 rss: 1282Mb L: 16/101 MS: 2 EraseBytes-Custom-
+#13974	REDUCE cov: 54 ft: 142 corp: 33/784b lim: 116 exec/s: 0 rss: 1282Mb L: 23/101 MS: 8 CrossOver-Custom-ShuffleBytes-Custom-ChangeBit-Custom-EraseBytes-Custom-
+#14068	REDUCE cov: 54 ft: 142 corp: 33/782b lim: 116 exec/s: 0 rss: 1282Mb L: 14/101 MS: 8 CrossOver-Custom-ChangeByte-Custom-CrossOver-Custom-EraseBytes-Custom-
+#14274	REDUCE cov: 54 ft: 142 corp: 33/772b lim: 116 exec/s: 0 rss: 1282Mb L: 26/101 MS: 2 EraseBytes-Custom-
+#14328	REDUCE cov: 54 ft: 142 corp: 33/756b lim: 116 exec/s: 0 rss: 1282Mb L: 72/101 MS: 8 InsertRepeatedBytes-Custom-ChangeByte-Custom-EraseBytes-Custom-CrossOver-Custom-
+#14634	REDUCE cov: 54 ft: 142 corp: 33/755b lim: 116 exec/s: 0 rss: 1282Mb L: 8/101 MS: 2 EraseBytes-Custom-
+#14865	REDUCE cov: 54 ft: 142 corp: 33/749b lim: 116 exec/s: 0 rss: 1282Mb L: 20/101 MS: 2 EraseBytes-Custom-
+#14889	REDUCE cov: 54 ft: 142 corp: 33/748b lim: 116 exec/s: 0 rss: 1282Mb L: 35/101 MS: 8 InsertRepeatedBytes-Custom-ChangeBinInt-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#14975	REDUCE cov: 54 ft: 142 corp: 33/735b lim: 116 exec/s: 0 rss: 1282Mb L: 22/101 MS: 2 EraseBytes-Custom-
+#15061	REDUCE cov: 54 ft: 142 corp: 33/725b lim: 116 exec/s: 0 rss: 1282Mb L: 57/101 MS: 2 EraseBytes-Custom-
+#15113	REDUCE cov: 54 ft: 142 corp: 33/717b lim: 116 exec/s: 0 rss: 1282Mb L: 27/101 MS: 4 PersAutoDict-Custom-EraseBytes-Custom- DE: "\001\000\000\000"-
+INFO: Instrumented org.apache.commons.lang3.FuzzHarness$1 (took 0 ms, size +0%)
+#15149	REDUCE cov: 54 ft: 142 corp: 33/716b lim: 116 exec/s: 0 rss: 1282Mb L: 19/101 MS: 2 EraseBytes-Custom-
+#15210	REDUCE cov: 54 ft: 142 corp: 33/710b lim: 116 exec/s: 0 rss: 1282Mb L: 7/101 MS: 2 EraseBytes-Custom-
+#15332	REDUCE cov: 54 ft: 142 corp: 33/708b lim: 116 exec/s: 0 rss: 1282Mb L: 17/101 MS: 4 InsertByte-Custom-EraseBytes-Custom-
+#15356	REDUCE cov: 54 ft: 142 corp: 33/705b lim: 116 exec/s: 0 rss: 1282Mb L: 11/101 MS: 8 ChangeBit-Custom-CrossOver-Custom-ChangeBit-Custom-EraseBytes-Custom-
+#15364	REDUCE cov: 54 ft: 142 corp: 33/694b lim: 116 exec/s: 0 rss: 1282Mb L: 46/101 MS: 6 InsertByte-Custom-CopyPart-Custom-EraseBytes-Custom-
+#15555	REDUCE cov: 54 ft: 142 corp: 33/693b lim: 116 exec/s: 0 rss: 1282Mb L: 6/101 MS: 2 EraseBytes-Custom-
+#15822	REDUCE cov: 54 ft: 142 corp: 33/691b lim: 116 exec/s: 0 rss: 1282Mb L: 99/99 MS: 4 ChangeBit-Custom-EraseBytes-Custom-
+#15898	REDUCE cov: 54 ft: 142 corp: 33/686b lim: 116 exec/s: 0 rss: 1282Mb L: 41/99 MS: 2 EraseBytes-Custom-
+#15924	REDUCE cov: 54 ft: 142 corp: 33/683b lim: 116 exec/s: 0 rss: 1282Mb L: 23/99 MS: 2 EraseBytes-Custom-
+#15947	REDUCE cov: 54 ft: 142 corp: 33/682b lim: 116 exec/s: 0 rss: 1282Mb L: 71/99 MS: 6 ChangeByte-Custom-PersAutoDict-Custom-EraseBytes-Custom- DE: "\377\377"-
+#16039	REDUCE cov: 54 ft: 142 corp: 33/681b lim: 116 exec/s: 0 rss: 1282Mb L: 34/99 MS: 4 CMP-Custom-EraseBytes-Custom- DE: "\001\000"-
+#16067	REDUCE cov: 54 ft: 142 corp: 33/678b lim: 116 exec/s: 0 rss: 1282Mb L: 8/99 MS: 6 ChangeBit-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#16250	REDUCE cov: 54 ft: 142 corp: 33/659b lim: 116 exec/s: 0 rss: 1282Mb L: 34/99 MS: 6 CopyPart-Custom-CopyPart-Custom-EraseBytes-Custom-
+#16411	REDUCE cov: 54 ft: 142 corp: 33/658b lim: 116 exec/s: 0 rss: 1282Mb L: 7/99 MS: 2 EraseBytes-Custom-
+#16538	REDUCE cov: 54 ft: 142 corp: 33/657b lim: 116 exec/s: 0 rss: 1282Mb L: 6/99 MS: 4 PersAutoDict-Custom-EraseBytes-Custom- DE: "\001\000"-
+#16646	REDUCE cov: 54 ft: 142 corp: 33/652b lim: 116 exec/s: 0 rss: 1282Mb L: 17/99 MS: 6 ChangeByte-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#16867	REDUCE cov: 54 ft: 142 corp: 33/650b lim: 116 exec/s: 0 rss: 1282Mb L: 47/99 MS: 2 EraseBytes-Custom-
+#16873	REDUCE cov: 54 ft: 142 corp: 33/648b lim: 116 exec/s: 0 rss: 1282Mb L: 15/99 MS: 2 EraseBytes-Custom-
+#16874	REDUCE cov: 54 ft: 142 corp: 33/644b lim: 116 exec/s: 0 rss: 1282Mb L: 13/99 MS: 2 EraseBytes-Custom-
+#16904	REDUCE cov: 54 ft: 142 corp: 33/641b lim: 116 exec/s: 0 rss: 1282Mb L: 12/99 MS: 10 ShuffleBytes-Custom-PersAutoDict-Custom-ChangeByte-Custom-ShuffleBytes-Custom-EraseBytes-Custom- DE: "\000\000\000\000\000\000\000\000"-
+#17020	REDUCE cov: 54 ft: 142 corp: 33/637b lim: 116 exec/s: 0 rss: 1282Mb L: 9/99 MS: 2 EraseBytes-Custom-
+#17032	REDUCE cov: 54 ft: 142 corp: 33/633b lim: 116 exec/s: 0 rss: 1282Mb L: 8/99 MS: 4 InsertByte-Custom-EraseBytes-Custom-
+#17040	REDUCE cov: 54 ft: 142 corp: 33/632b lim: 116 exec/s: 0 rss: 1282Mb L: 8/99 MS: 6 InsertByte-Custom-ChangeByte-Custom-EraseBytes-Custom-
+#17258	REDUCE cov: 54 ft: 142 corp: 33/631b lim: 116 exec/s: 0 rss: 1282Mb L: 6/99 MS: 6 InsertByte-Custom-EraseBytes-Custom-CrossOver-Custom-
+#17520	REDUCE cov: 54 ft: 142 corp: 33/630b lim: 116 exec/s: 0 rss: 1282Mb L: 11/99 MS: 4 ChangeBit-Custom-EraseBytes-Custom-
+#17877	REDUCE cov: 54 ft: 142 corp: 33/625b lim: 116 exec/s: 0 rss: 1282Mb L: 22/99 MS: 4 EraseBytes-Custom-CMP-Custom- DE: "\001\000\000\000\000\000\000\000"-
+#17979	REDUCE cov: 54 ft: 142 corp: 33/622b lim: 116 exec/s: 0 rss: 1282Mb L: 5/99 MS: 4 ChangeByte-Custom-EraseBytes-Custom-
+#18085	REDUCE cov: 54 ft: 142 corp: 33/621b lim: 116 exec/s: 0 rss: 1282Mb L: 27/99 MS: 2 EraseBytes-Custom-
+#18322	REDUCE cov: 54 ft: 142 corp: 33/620b lim: 116 exec/s: 0 rss: 1282Mb L: 5/99 MS: 4 CopyPart-Custom-EraseBytes-Custom-
+#18703	REDUCE cov: 54 ft: 142 corp: 33/616b lim: 116 exec/s: 0 rss: 1282Mb L: 35/99 MS: 2 EraseBytes-Custom-
+#19234	REDUCE cov: 54 ft: 142 corp: 33/615b lim: 116 exec/s: 0 rss: 1282Mb L: 4/99 MS: 2 EraseBytes-Custom-
+#19244	REDUCE cov: 54 ft: 142 corp: 33/609b lim: 116 exec/s: 0 rss: 1282Mb L: 17/99 MS: 10 ChangeBit-Custom-ChangeBit-Custom-CopyPart-Custom-EraseBytes-Custom-EraseBytes-Custom-
+#19724	REDUCE cov: 54 ft: 142 corp: 33/608b lim: 116 exec/s: 0 rss: 1282Mb L: 34/99 MS: 10 ChangeByte-Custom-CopyPart-Custom-ShuffleBytes-Custom-InsertRepeatedBytes-Custom-CrossOver-Custom-
+#19787	REDUCE cov: 54 ft: 142 corp: 33/607b lim: 116 exec/s: 0 rss: 1282Mb L: 98/98 MS: 6 ShuffleBytes-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#20000	DONE   cov: 54 ft: 142 corp: 33/607b lim: 116 exec/s: 0 rss: 1282Mb
+###### Recommended dictionary. ######
+"\377\377\377\377" # Uses: 158
+"\377\377" # Uses: 140
+"\001\000\000\000" # Uses: 119
+"\000\010" # Uses: 110
+"\000\000\000\000\000\000\000\000" # Uses: 108
+"\001\000" # Uses: 50
+"\001\000\000\000\000\000\000\000" # Uses: 24
+###### End of recommended dictionary. ######
+Done 20000 runs in 0 second(s)
+
+DEDUP_TOKEN: 0e2441b38fd22099
+DEDUP_TOKEN: 1a29b299041da1c9
+DEDUP_TOKEN: 6feab65b36a3e8f1
+
+INFO: Loaded 325 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 84 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.lang3.FuzzHarness (took 80 ms, size +30%)
+INFO: found LLVMFuzzerCustomMutator (0x7d17bdb76cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 3782031293
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7d17f46731f0, 0x7d17f46733f0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7d17f45a8f00,0x7d17f45aaf00), 
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.lang3.FuzzHarness$1 (took 1 ms, size +25%)
+INFO: New number of coverage counters: 1024
+INFO: New number of coverage counters: 2048
+WARN: Some hooks could not be applied to class files built for Java 7 or lower.
+                       Ensure that the fuzz target and its dependencies are compiled with
+                       -target 8 or higher to identify as many bugs as possible.
+INFO: Instrumented org.apache.commons.lang3.StringUtils (took 84 ms, size +37%)
+
+== Java Exception: java.lang.RuntimeException: [oracle:anchor-char-npe] metamorphic violation: valid single/ranged join input threw root-cause NPE
+	at org.apache.commons.lang3.FuzzHarness.handleJoinThrowable(FuzzHarness.java:162)
+	at org.apache.commons.lang3.FuzzHarness.runAnchors(FuzzHarness.java:66)
+	at org.apache.commons.lang3.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:23)
+Caused by: java.lang.NullPointerException
+	at org.apache.commons.lang3.StringUtils.join(StringUtils.java:3298)
+	at org.apache.commons.lang3.FuzzHarness.runAnchors(FuzzHarness.java:62)
+	... 1 more
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/tmp/d4j/Lang_20_buggy/fuzz/attempt_003/crashes/'; Test unit written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_003/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/tmp/d4j/Lang_20_buggy/fuzz/attempt_003/crashes'; Java reproducer written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_003/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+
+INFO: A corpus is not provided, starting from an empty corpus
+#2	INITED cov: 14 ft: 14 corp: 1/1b exec/s: 0 rss: 1276Mb
+
+== Java Exception: java.lang.RuntimeException: [oracle:anchor-string-npe] metamorphic violation: valid single/ranged join input threw root-cause NPE
+	at org.apache.commons.lang3.FuzzHarness.handleJoinThrowable(FuzzHarness.java:162)
+	at org.apache.commons.lang3.FuzzHarness.runAnchors(FuzzHarness.java:74)
+	at org.apache.commons.lang3.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:23)
+Caused by: java.lang.NullPointerException
+	at org.apache.commons.lang3.StringUtils.join(StringUtils.java:3383)
+	at org.apache.commons.lang3.FuzzHarness.runAnchors(FuzzHarness.java:70)
+	... 1 more
+== libFuzzer crashing input ==
+MS: 10 ShuffleBytes-Custom-CrossOver-Custom-InsertRepeatedBytes-Custom-CrossOver-Custom-ShuffleBytes-Custom-; base unit: adc83b19e793491b1c6ea0fd8b46cd9f32e592fc
+0xa,0x5e,0x5e,0x5e,0x5e,0x5e,0x5e,0xa,0x5e,0x5e,0x5e,0x5e,0x5e,0x5e,0x5e,
+\012^^^^^^\012^^^^^^^
+artifact_prefix='/tmp/d4j/Lang_20_buggy/fuzz/attempt_003/crashes/'; Test unit written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_003/crashes/crash-13e82fb1641c7825839b92ff5cb662504663c6ef
+Base64: Cl5eXl5eXgpeXl5eXl5e
+reproducer_path='/tmp/d4j/Lang_20_buggy/fuzz/attempt_003/crashes'; Java reproducer written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_003/crashes/Crash_13e82fb1641c7825839b92ff5cb662504663c6ef.java
+
+#6582	NEW    cov: 20 ft: 34 corp: 2/16b lim: 68 exec/s: 0 rss: 1276Mb L: 15/15 MS: 10 ShuffleBytes-Custom-CrossOver-Custom-InsertRepeatedBytes-Custom-CrossOver-Custom-ShuffleBytes-Custom-
+#6583	NEW    cov: 20 ft: 46 corp: 3/31b lim: 68 exec/s: 0 rss: 1276Mb L: 15/15 MS: 2 CrossOver-Custom-
+#6589	REDUCE cov: 20 ft: 46 corp: 3/24b lim: 68 exec/s: 0 rss: 1276Mb L: 8/15 MS: 2 EraseBytes-Custom-
+#6611	REDUCE cov: 20 ft: 46 corp: 3/21b lim: 68 exec/s: 0 rss: 1276Mb L: 5/15 MS: 4 ChangeByte-Custom-EraseBytes-Custom-
+#6638	REDUCE cov: 20 ft: 46 corp: 3/19b lim: 68 exec/s: 0 rss: 1276Mb L: 3/15 MS: 4 ChangeByte-Custom-CrossOver-Custom-
+#6667	REDUCE cov: 20 ft: 46 corp: 3/18b lim: 68 exec/s: 0 rss: 1276Mb L: 2/15 MS: 8 ChangeBit-Custom-InsertByte-Custom-ChangeBit-Custom-EraseBytes-Custom-
+#6668	REDUCE cov: 20 ft: 46 corp: 3/17b lim: 68 exec/s: 0 rss: 1276Mb L: 1/15 MS: 2 EraseBytes-Custom-
+
+== Java Exception: java.lang.RuntimeException: [oracle:mixed-array] metamorphic violation: expected foo for documented fixture
+	at org.apache.commons.lang3.FuzzHarness.runAnchors(FuzzHarness.java:100)
+	at org.apache.commons.lang3.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:23)
+== libFuzzer crashing input ==
+MS: 8 CrossOver-Custom-EraseBytes-Custom-InsertByte-Custom-ShuffleBytes-Custom-; base unit: adc83b19e793491b1c6ea0fd8b46cd9f32e592fc
+0xa,0x63,
+\012c
+artifact_prefix='/tmp/d4j/Lang_20_buggy/fuzz/attempt_003/crashes/'; Test unit written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_003/crashes/crash-762bcfdd1ed638857f2ec9da566b274cf8f35b43
+Base64: CmM=
+reproducer_path='/tmp/d4j/Lang_20_buggy/fuzz/attempt_003/crashes'; Java reproducer written to /tmp/d4j/Lang_20_buggy/fuzz/attempt_003/crashes/Crash_762bcfdd1ed638857f2ec9da566b274cf8f35b43.java
+
+#11922	NEW    cov: 48 ft: 76 corp: 4/19b lim: 116 exec/s: 0 rss: 1276Mb L: 2/15 MS: 8 CrossOver-Custom-EraseBytes-Custom-InsertByte-Custom-ShuffleBytes-Custom-
+#20000	DONE   cov: 48 ft: 76 corp: 4/19b lim: 191 exec/s: 0 rss: 1276Mb
+Done 20000 runs in 0 second(s)
