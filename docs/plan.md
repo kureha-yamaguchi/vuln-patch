@@ -1830,11 +1830,14 @@ virtual calls); introspector mislabels receivers (Rectangle2D methods as
 `Axis.*`) — such entries land in `unmatched`, never in denominators;
 third-party jars are outside the JaCoCo population.
 **User decisions:** naive = level B; measure coverage on BOTH kept and all
-compiled harnesses (done). HARD RULE (user, 2026-09-04): root-cause
-ground truth (R-hat) and every metric on it — RCR, RCC, RCP, CSM — are
-for END evaluation/measurement only; never used to improve scores, not
-even as aggregate diagnostics. Only P-side signals (PSC, raw coverage of
-the shown neighbourhood) may feed back into the pipeline. Next: holdout_v2 root-cause pass
+compiled harnesses (done). RULE (user, 2026-09-04): root-cause ground
+truth (R-hat) and the metrics on it — RCR, RCC, RCP, CSM — are post-hoc
+evaluation/measurement tools. A GENERIC pattern found in them (aggregate,
+dev bugs) may motivate a GENERAL mechanism applied uniformly; nothing
+bug-specific may flow from the developer fix, and nothing R-hat-based
+runs inside the pipeline — at run time only P-side signals (PSC, raw
+coverage of the shown neighbourhood) exist. Record which finding
+motivated which mechanism. Next: holdout_v2 root-cause pass
 (RCR/CSM at scale, running), then H_N vs H_R on dev bugs.
 
 ### 8.49 FROZEN-QUEUE V2 + CERTIFICATION SWEEP (2026-08-26/27; analyse-only throughout)
