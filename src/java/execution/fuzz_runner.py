@@ -157,6 +157,8 @@ def run_jazzer(jazzer_standalone_jar: str,
                corpus_dir: Optional[str] = None,
                input_file: Optional[str] = None,
                diffcov_out: Optional[str] = None,
+               coverage_dump: Optional[str] = None,
+               instrumentation_includes: Optional[str] = None,
                ) -> JazzerOutcome:
     """Run one Jazzer harness against `project_cp` and report whether it
     crashed within `timeout_seconds`. Shared by the buggy-version gate
@@ -167,6 +169,19 @@ def run_jazzer(jazzer_standalone_jar: str,
     ['java.lang.NullPointerException', 'NullPointerException']) used to
     recognise a deterministic first-input crash even when Jazzer exits
     without its usual finding banner.
+
+    `coverage_dump` asks Jazzer to write a JaCoCo .exec file on exit, and
+    `instrumentation_includes` (e.g. 'org.apache.commons.lang3.**') limits
+    what Jazzer instruments. Both are MEASUREMENT ONLY, for `src/metrics`;
+    they are off unless a caller passes them, and nothing about a normal run
+    changes when they are off.
+
+    Jazzer writes the coverage dump from a JVM shutdown hook. Neither of
+    this runner's abnormal exits runs one: the wall-clock cap below SIGKILLs
+    the JVM, and libFuzzer ends a finding run from native code. So a
+    measurement run must mute the harness oracles and finish its own budget.
+    A missing dump is an infrastructure error, never zero coverage —
+    `metrics.reached` refuses to read it as one.
 
     `jazzer_api_jar` is the jazzer-api jar containing FuzzedDataProvider.
     The standalone driver jar does NOT bundle the API classes in every
@@ -194,6 +209,14 @@ def run_jazzer(jazzer_standalone_jar: str,
         f'--target_class={target_class}',
         f'--reproducer_path={artifact_dir}',
     ]
+    if coverage_dump:
+        try:
+            os.unlink(coverage_dump)   # never read a previous run's dump
+        except OSError:
+            pass
+        cmd.append(f'--coverage_dump={coverage_dump}')
+    if instrumentation_includes:
+        cmd.append(f'--instrumentation_includes={instrumentation_includes}')
     if keep_going > 0:
         # Continue past the first finding and collect up to `keep_going`
         # DISTINCT crashes (deduped by Jazzer on stack signature). This is

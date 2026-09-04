@@ -1094,6 +1094,16 @@ def _emit_record(path, *, label, status, selection=None,
         # failure mode — without rerunning anything.
         "accepted_trigger_details": list(
             getattr(result, "accepted_trigger_details", []) or []),
+        # Where each ACCEPTED harness's source and class live, so a later
+        # pass can re-run the set without regenerating it. MEASUREMENT
+        # ONLY — `src/metrics` reads this to compute RCC. Nothing in the
+        # pipeline reads it back.
+        "accepted_harnesses": [
+            {"harness_path": getattr(br, "harness_path", ""),
+             "class_name": getattr(br, "class_name", ""),
+             "classpath": getattr(br, "classpath", ""),
+             "attempt_label": getattr(br, "attempt_label", "")}
+            for br in (getattr(result, "successful_results", []) or [])],
         "harnesses_run": 0,
         "harnesses_crashed": 0,
         # crashed_on_patch: did ANY harness still crash the patched code?
