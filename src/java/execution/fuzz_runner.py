@@ -160,6 +160,7 @@ def run_jazzer(jazzer_standalone_jar: str,
                coverage_dump: Optional[str] = None,
                coverage_include: Optional[str] = None,
                output_dump: Optional[str] = None,
+               instrumentation_includes: Optional[str] = None,
                ) -> JazzerOutcome:
     """Run one Jazzer harness against `project_cp` and report whether it
     crashed within `timeout_seconds`. Shared by the buggy-version gate
@@ -170,6 +171,22 @@ def run_jazzer(jazzer_standalone_jar: str,
     ['java.lang.NullPointerException', 'NullPointerException']) used to
     recognise a deterministic first-input crash even when Jazzer exits
     without its usual finding banner.
+
+    `coverage_dump` asks Jazzer to write a JaCoCo .exec file on exit, and
+    `coverage_include` (alias `instrumentation_includes`, e.g.
+    'org.apache.commons.lang3.**') limits what Jazzer instruments. Both are
+    MEASUREMENT ONLY (`src/metrics`, `src/java/measurements`); the two
+    flags are added only when BOTH are given, and nothing about a normal
+    run changes when they are off. `instrumentation_includes` exists so the
+    `src/metrics` re-measurement pass and the `--coverage` hook share one
+    code path.
+
+    Jazzer writes the coverage dump from a JVM shutdown hook. Neither of
+    this runner's abnormal exits runs one: the wall-clock cap below SIGKILLs
+    the JVM, and libFuzzer ends a finding run from native code. So a
+    measurement run must mute the harness oracles and finish its own budget.
+    A missing dump is an infrastructure error, never zero coverage —
+    `metrics.reached` refuses to read it as one.
 
     `jazzer_api_jar` is the jazzer-api jar containing FuzzedDataProvider.
     The standalone driver jar does NOT bundle the API classes in every
@@ -213,6 +230,7 @@ def run_jazzer(jazzer_standalone_jar: str,
         f'--target_class={target_class}',
         f'--reproducer_path={artifact_dir}',
     ]
+    coverage_include = coverage_include or instrumentation_includes
     if keep_going > 0:
         # Continue past the first finding and collect up to `keep_going`
         # DISTINCT crashes (deduped by Jazzer on stack signature). This is

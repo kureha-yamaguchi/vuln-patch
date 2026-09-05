@@ -320,6 +320,40 @@ APR_TOOLS = [
 # inspection) instead of sharing /tmp/d4j and wiping each other's evidence.
 D4J_CHECKOUT_ROOT = os.getenv('D4J_CHECKOUT_ROOT', '/tmp/d4j')
 
+# Root of the Defects4J checkout itself (the clone, not a materialised bug).
+# `src/metrics` reads the developer fix from
+# <D4J_HOME>/framework/projects/<Project>/patches/<id>.src.patch.
+D4J_HOME = os.getenv(
+    'D4J_HOME',
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                 'defects4j'),
+)
+
+# --- JaCoCo (coverage measurement only) -----------------------------------
+# Jazzer writes a JaCoCo .exec file with --coverage_dump. The JaCoCo command
+# line turns that binary dump into the jacoco.xml that `src/metrics` reads.
+# Measurement only: nothing in the harness pipeline depends on this jar.
+JACOCO_VERSION = os.getenv('JACOCO_VERSION', '0.8.12')
+JACOCO_CLI_JAR = os.getenv(
+    'JACOCO_CLI_JAR',
+    os.path.expanduser(f'~/.cache/jacoco/jacococli-{JACOCO_VERSION}.jar'),
+)
+JACOCO_CLI_URL = (
+    f'https://repo.maven.apache.org/maven2/org/jacoco/org.jacoco.cli/'
+    f'{JACOCO_VERSION}/org.jacoco.cli-{JACOCO_VERSION}-nodeps.jar'
+)
+
+# The JaCoCo agent, used ONLY to cover the bug's own triggering test. The
+# harness runs get their dump from Jazzer's --coverage_dump instead.
+JACOCO_AGENT_JAR = os.getenv(
+    'JACOCO_AGENT_JAR',
+    os.path.expanduser(f'~/.cache/jacoco/jacocoagent-{JACOCO_VERSION}.jar'),
+)
+JACOCO_AGENT_URL = (
+    f'https://repo.maven.apache.org/maven2/org/jacoco/org.jacoco.agent/'
+    f'{JACOCO_VERSION}/org.jacoco.agent-{JACOCO_VERSION}-runtime.jar'
+)
+
 # --- Linux kernel CVE sibling database ------------------------------------
 # Root directory for kernel worktrees created by checkout_pair.py.
 LINUX_CHECKOUT_ROOT = os.getenv('LINUX_CHECKOUT_ROOT', '/tmp/cve_sibling_checkouts')

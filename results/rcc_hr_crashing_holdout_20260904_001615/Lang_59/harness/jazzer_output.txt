@@ -1,0 +1,153 @@
+DEDUP_TOKEN: 7b9dfe8b8e589996
+
+INFO: Loaded 324 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 84 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.lang.text.FuzzHarness (took 75 ms, size +60%)
+INFO: found LLVMFuzzerCustomMutator (0x73dd97176cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 3914787470
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x73de0c609bc0, 0x73de0c609dc0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x73de0c57b880,0x73de0c57d880), 
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: New number of coverage counters: 1024
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder (took 51 ms, size +27%)
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder$StrBuilderWriter (took 3 ms, size +8%)
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder$StrBuilderReader (took 4 ms, size +33%)
+INFO: Instrumented org.apache.commons.lang.text.StrTokenizer (took 26 ms, size +16%)
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder$StrBuilderTokenizer (took 1 ms, size +12%)
+
+== Java Exception: java.lang.ArrayIndexOutOfBoundsException
+	at java.lang.String.getChars(String.java:826)
+	at org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(StrBuilder.java:884)
+	at org.apache.commons.lang.text.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:9)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/tmp/d4j/Lang_59_buggy/fuzz/attempt_001/crashes/'; Test unit written to /tmp/d4j/Lang_59_buggy/fuzz/attempt_001/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/tmp/d4j/Lang_59_buggy/fuzz/attempt_001/crashes'; Java reproducer written to /tmp/d4j/Lang_59_buggy/fuzz/attempt_001/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+
+INFO: A corpus is not provided, starting from an empty corpus
+#2	INITED cov: 17 ft: 17 corp: 1/1b exec/s: 0 rss: 1291Mb
+#20000	DONE   cov: 17 ft: 17 corp: 1/1b lim: 198 exec/s: 0 rss: 1299Mb
+Done 20000 runs in 0 second(s)
+
+DEDUP_TOKEN: 26a75d915bcdc686
+
+INFO: Loaded 324 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 84 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.lang.text.FuzzHarness (took 78 ms, size +48%)
+INFO: found LLVMFuzzerCustomMutator (0x7e9bc4376cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 480004563
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7e9c085f22b0, 0x7e9c085f24b0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7e9c085dad20,0x7e9c085dcd20), 
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: New number of coverage counters: 1024
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder (took 50 ms, size +27%)
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder$StrBuilderWriter (took 3 ms, size +8%)
+INFO: Instrumented org.apache.commons.lang.text.StrTokenizer (took 24 ms, size +16%)
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder$StrBuilderTokenizer (took 2 ms, size +12%)
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder$StrBuilderReader (took 4 ms, size +33%)
+
+== Java Exception: java.lang.ArrayIndexOutOfBoundsException
+	at java.lang.String.getChars(String.java:826)
+	at org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(StrBuilder.java:884)
+	at org.apache.commons.lang.text.FuzzHarness.runAnchor(FuzzHarness.java:60)
+	at org.apache.commons.lang.text.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:8)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/tmp/d4j/Lang_59_buggy/fuzz/attempt_002/crashes/'; Test unit written to /tmp/d4j/Lang_59_buggy/fuzz/attempt_002/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/tmp/d4j/Lang_59_buggy/fuzz/attempt_002/crashes'; Java reproducer written to /tmp/d4j/Lang_59_buggy/fuzz/attempt_002/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+
+INFO: A corpus is not provided, starting from an empty corpus
+#2	INITED cov: 23 ft: 23 corp: 1/1b exec/s: 0 rss: 1284Mb
+#20000	DONE   cov: 23 ft: 23 corp: 1/1b lim: 198 exec/s: 0 rss: 1288Mb
+Done 20000 runs in 0 second(s)
+
+DEDUP_TOKEN: 7b9dfe8b8e589996
+
+INFO: Loaded 324 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 84 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.lang.text.FuzzHarness (took 76 ms, size +73%)
+INFO: found LLVMFuzzerCustomMutator (0x7b04e3376cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2355062166
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7b05185f94f0, 0x7b05185f96f0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7b05185eeec0,0x7b05185f0ec0), 
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: New number of coverage counters: 1024
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder (took 51 ms, size +27%)
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder$StrBuilderWriter (took 3 ms, size +8%)
+INFO: Instrumented org.apache.commons.lang.text.StrTokenizer (took 24 ms, size +16%)
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder$StrBuilderTokenizer (took 1 ms, size +12%)
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder$StrBuilderReader (took 3 ms, size +33%)
+
+== Java Exception: java.lang.ArrayIndexOutOfBoundsException
+	at java.lang.String.getChars(String.java:826)
+	at org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(StrBuilder.java:884)
+	at org.apache.commons.lang.text.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:9)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/tmp/d4j/Lang_59_buggy/fuzz/attempt_003/crashes/'; Test unit written to /tmp/d4j/Lang_59_buggy/fuzz/attempt_003/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/tmp/d4j/Lang_59_buggy/fuzz/attempt_003/crashes'; Java reproducer written to /tmp/d4j/Lang_59_buggy/fuzz/attempt_003/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+
+INFO: A corpus is not provided, starting from an empty corpus
+#2	INITED cov: 20 ft: 20 corp: 1/1b exec/s: 0 rss: 1305Mb
+#20000	DONE   cov: 20 ft: 20 corp: 1/1b lim: 198 exec/s: 0 rss: 1310Mb
+Done 20000 runs in 0 second(s)
