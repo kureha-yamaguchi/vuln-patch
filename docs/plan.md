@@ -1792,6 +1792,26 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.52 MERGE WITH KUREHA'S src/metrics (2026-09-05; local only, not pushed)
+Merged origin/main 56735ae (src/metrics: RCC(H_R), crashing holdout, 9/9
+= 1.0) into local main (6abf492); one conflict (run_jazzer kwargs)
+resolved on a single coverage code path (coverage_include, alias
+instrumentation_includes; both flags only when both given; off path
+pinned). Ported into src/java/measurements (a847466): frame repair of
+JaCoCo's exit-probe miss (Math-70 recovers exactly her two methods),
+trigger-test JaCoCo gate (--trigger_gate; also fills R-hat-1),
+fixed-budget re-measurement (--remeasure, build token `remeasure`,
+reusing her collect.harness_coverage), config constants unified, README
+§8 "Relation to src/metrics". Import rule: measurements may import
+metrics, never the reverse (tested). CROSS-CHECK on her 9 archived
+reports: RCC identical on all 9; |F| differs on 4/9 by exactly one method
+— her loader (fuzz_introspector.load_jvm_coverage) credits a method with
+the next N covered lines from its declaration, over-running into the next
+method (StringUtils.<clinit>, an uncovered UnivariateRealSolverImpl
+ctor); ours uses JaCoCo's METHOD counter and is a strict subset. Layout
+decision pending: move the language-agnostic core into src/metrics/ and
+keep src/java/measurements as the Java backend (not yet done).
+
 ### 8.51 H_N vs H_R PILOT (2026-09-04/05; evaluation only)
 **Runs:** pilot_HR_20260904_112437 and pilot_HN_20260904_150008 — 20 dev
 legs each (5 crashing + 5 semantic bugs, one correct + one overfitting
@@ -1816,6 +1836,13 @@ go. Hypothesis RCC(H_N) << 1 is NOT supported at level B. A naive set
 that strips the patch/test too (level C, function-only / OSS-Fuzz-Gen
 style) is what the hypothesis actually needs; at level B the story is
 "conditioning buys oracles, not reach".
+**Second leak (found 2026-09-05 while closing the first):** the harness
+prompt's related-callees block (names/signatures/bodies of the methods the
+patched function calls) was never gated by --naive, so the H_N arm saw the
+callee half of the neighbourhood. Both leaks are now closed (synthesis
+"Reachable API" line + related-callees block; `naive_scope` recorded in
+the leg record). The level-B H_N arm must be RERUN with the closed flag
+before the reach result is quoted.
 **Single-draw caveat:** one run per arm; smoke/A-B showed verdict flips
 between same-code runs; repetitions on dev + bug bootstrap needed for
 CIs before any claim.
