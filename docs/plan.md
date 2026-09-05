@@ -1849,6 +1849,15 @@ callee half of the neighbourhood. Both leaks are now closed (synthesis
 "Reachable API" line + related-callees block; `naive_scope` recorded in
 the leg record). The level-B H_N arm must be RERUN with the closed flag
 before the reach result is quoted.
+**Trigger gate (ported from Kureha, run 2026-09-05 on pilot_HR):** 20/20
+legs pass — every developer-changed method is reached by the bug's own
+failing test, so R-hat is trustworthy on this population. Fixed-budget
+re-measurement could not run on pilot_HR (records predate the
+accepted_harnesses field); it is validated on the r1/r2 suites instead.
+**Level C naive** (`--naive function`: touched function source only, no
+patch, no failing test, no neighbourhood) implemented 2026-09-05 (7b18679),
+not yet run. Repetition plan reduced by the user to three suites: H_N r1
+(closed flag), H_R r2, H_N r2 → two draws per arm.
 **Single-draw caveat:** one run per arm; smoke/A-B showed verdict flips
 between same-code runs; repetitions on dev + bug bootstrap needed for
 CIs before any claim.
