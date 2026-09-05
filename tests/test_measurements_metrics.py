@@ -355,7 +355,8 @@ def test_sizes_and_available_flags(run_dir):
         'root_cause': True, 'root_cause_body_lines': False,
         'root_cause_manifest': True,
         'coverage_buggy': True, 'coverage_patched': False,
-        'coverage_compiled': False, 'static_kept': False,
+        'coverage_compiled': False, 'coverage_remeasure': False,
+        'trigger_gate': False, 'static_kept': False,
         'static_compiled': False, 'crash_sites': True}
     assert row['builds'] == ['buggy']
     s = row['sizes']
@@ -456,7 +457,8 @@ def test_cli_main_without_checkouts_still_writes_metrics(tmp_path, monkeypatch,
         'root_cause': False, 'root_cause_body_lines': False,
         'root_cause_manifest': False,
         'coverage_buggy': False, 'coverage_patched': False,
-        'coverage_compiled': False, 'static_kept': False,
+        'coverage_compiled': False, 'coverage_remeasure': False,
+        'trigger_gate': False, 'static_kept': False,
         'static_compiled': False, 'crash_sites': False}
     errors = json.loads((leg / 'measurements' / 'errors.json').read_text())
     assert set(errors) == {'checkout', 'patch_derived', 'patch_derived_lines',
@@ -547,7 +549,8 @@ def test_csm_ignores_compiled_build_crash_sites(tmp_path):
     assert (csm['den'], csm['num'], csm['value']) == (1, 1, 1.0)
     assert csm['harness_only'] == 0
     # counting all three would have given 2/3
-    assert row['crash_by_build'] == {'buggy': 1, 'patched': 0, 'compiled': 2}
+    assert row['crash_by_build'] == {'buggy': 1, 'patched': 0, 'compiled': 2,
+                                     'remeasure': 0}
     assert row['crash_total'] == 3 and row['crash_library'] == 3
     assert row['crash_compiled'] == 2
     assert row['sizes']['crash_sites_compiled'] == 2
@@ -568,3 +571,98 @@ def test_rcr_cross_table(run_dir):
     # counts, not ratios: the aggregator must not try to average them
     from java.measurements import aggregate as A
     assert not [k for k in A.leg_values(row) if k.startswith('rcr_cross')]
+
+
+# --- the probe repair and the gate, as the metrics see them ----------------
+
+def test_frame_added_is_counted_per_build(tmp_path):
+    """`coverage.py` unions the stack-frame evidence into `methods` and
+    keeps the probe half beside it, so the metrics can say how big JaCoCo's
+    probe limitation was on this leg without changing what F(H) is."""
+    cov = _cov('buggy', [A_a, B_c, B_d], [A10], [A_a, A_b, B_c, B_d])
+    cov['methods_from_probes'] = [A_a.to_dict(), B_c.to_dict()]
+    cov['frame_methods'] = [B_c.to_dict(), B_d.to_dict()]
+    leg = _write_leg(
+        str(tmp_path / 'run'), '01_patch1-Chart-1-Arja_o',
+        {'label': 'overfitting', 'status': 'evaluated', 'bug_kind': 'crashing',
+         'project': 'Chart', 'bug_id': '1', 'apr_tool': 'Arja',
+         'crashed_on_patch': True},
+        patch_derived=_mset([(A_a, loc.SEED)]),
+        root_cause=chart1_root_cause(), coverage={'buggy': cov})
+
+    row = M.compute_leg(leg)
+    assert row['sizes']['F_method'] == {'buggy': 3}
+    assert row['sizes']['F_method_probes'] == {'buggy': 2}
+    # only Beta.d was added by a frame; Beta.c was seen both ways
+    assert row['sizes']['F_frame_added'] == {'buggy': 1}
+    # F itself is the union, so RCC reads the repaired set
+    assert row['rcc__method__R0__buggy__dyn']['num'] == 1
+
+
+def test_a_coverage_file_from_before_the_repair_counts_no_frames(tmp_path):
+    """An older `coverage_<build>.json` has neither key: everything in it
+    came from a probe, and nothing came from a frame."""
+    leg = _write_leg(
+        str(tmp_path / 'run'), '01_patch1-Chart-1-Arja_o',
+        {'label': 'overfitting', 'status': 'evaluated', 'bug_kind': 'crashing',
+         'project': 'Chart', 'bug_id': '1', 'apr_tool': 'Arja',
+         'crashed_on_patch': True},
+        root_cause=chart1_root_cause(),
+        coverage={'buggy': _cov('buggy', [A_a], [A10], [A_a, A_b])})
+    row = M.compute_leg(leg)
+    assert row['sizes']['F_method_probes'] == {'buggy': 1}
+    assert row['sizes']['F_frame_added'] == {'buggy': 0}
+
+
+def _gated_leg(tmp_path, gate):
+    rc = chart1_root_cause()
+    if gate is not None:
+        rc['trigger_gate'] = gate
+    return _write_leg(
+        str(tmp_path / 'run'), '01_patch1-Chart-1-Arja_o',
+        {'label': 'overfitting', 'status': 'evaluated', 'bug_kind': 'crashing',
+         'project': 'Chart', 'bug_id': '1', 'apr_tool': 'Arja',
+         'crashed_on_patch': True},
+        root_cause=rc,
+        coverage={'buggy': _cov('buggy', [A_a], [A10], [A_a, A_b])})
+
+
+def test_the_trigger_gate_travels_with_the_row(tmp_path):
+    row = M.compute_leg(_gated_leg(tmp_path, {
+        'passed': False, 'missed': ['org.ex.Alpha.b(String)'],
+        'reached_size': 12, 'detail': 'the triggering tests did not run ...'}))
+    assert row['available']['trigger_gate'] is True
+    assert row['sizes']['trigger_gate_passed'] is False
+    assert row['sizes']['trigger_gate_missed'] == ['org.ex.Alpha.b(String)']
+
+
+def test_a_gate_that_was_not_run_is_none_not_false(tmp_path):
+    """Not asked and failed are different things, and only one of them is
+    a reason to drop the leg from an aggregate."""
+    row = M.compute_leg(_gated_leg(tmp_path, None))
+    assert row['available']['trigger_gate'] is False
+    assert row['sizes']['trigger_gate_passed'] is None
+    assert row['sizes']['trigger_gate_missed'] is None
+
+
+def test_remeasure_is_a_build_slot_of_its_own(tmp_path):
+    """The kept harnesses re-run on a fixed input budget are the same
+    harnesses on the same build, so their numbers must never be averaged
+    into the as-run ones: they get their own key slot."""
+    leg = _write_leg(
+        str(tmp_path / 'run'), '01_patch1-Chart-1-Arja_o',
+        {'label': 'overfitting', 'status': 'evaluated', 'bug_kind': 'crashing',
+         'project': 'Chart', 'bug_id': '1', 'apr_tool': 'Arja',
+         'crashed_on_patch': True},
+        patch_derived=_mset([(A_a, loc.SEED)]),
+        root_cause=chart1_root_cause(),
+        coverage={'buggy': _cov('buggy', [A_a], [A10], [A_a, A_b, B_c]),
+                  'remeasure': _cov('remeasure', [A_a, B_c], [A10],
+                                    [A_a, A_b, B_c])})
+    row = M.compute_leg(leg)
+    assert row['builds'] == ['buggy', 'remeasure']
+    assert row['available']['coverage_remeasure'] is True
+    assert row['sizes']['F_method'] == {'buggy': 1, 'remeasure': 2}
+    assert row['rcc__method__R0__buggy__dyn']['num'] == 1
+    assert row['rcc__method__R0__remeasure__dyn']['num'] == 1
+    assert row['rcp__method__R0__remeasure__dyn']['den'] == 2

@@ -994,15 +994,19 @@ def parse_args():
                              "with it on nothing collected feeds a prompt, "
                              "the verifier, a gate, or a verdict.")
     parser.add_argument("--naive", action="store_true",
-                        help="ABLATION. Build the paper's H_N harnesses: "
-                             "drop the three root-cause-conditioning "
-                             "insertions from the harness prompt (the "
-                             "variant-analysis / <root_cause_reachable> "
-                             "block, the call-site <xref> examples, and the "
+                        help="ABLATION. Build the paper's H_N leg: "
+                             "drop every root-cause-NEIGHBOURHOOD insertion "
+                             "from the harness prompt (the variant-analysis "
+                             "/ <root_cause_reachable> block with its "
+                             "coverage steering, the call-site <xref> "
+                             "examples, the <callee> declarations, and the "
                              "reachable-region clause of the propagation "
-                             "rule) and leave every other section "
-                             "identical. OFF by default; with the flag off "
-                             "the prompt text is byte-for-byte what it was.")
+                             "rule) AND from the relation-synthesis prompt "
+                             "(the \"Reachable API\" line), leaving the "
+                             "patch, the failing test and every other "
+                             "section identical. OFF by default; with the "
+                             "flag off the prompt text is byte-for-byte "
+                             "what it was.")
     parser.add_argument("--results_json", type=str, default=None,
                         metavar="PATH",
                         help="append a one-line JSON record describing this "
@@ -2024,6 +2028,21 @@ def main():
         # record can never be misread as a normal-arm result; read by
         # nothing in this run.
         record_extras['naive'] = True
+        # Which model-facing prompt builders of this leg honoured the flag,
+        # i.e. where the root-cause neighbourhood was actually removed. A
+        # leg record that says only `naive: True` cannot distinguish "the
+        # whole leg was unconditioned" from "the harness prompt was, and
+        # some other prompt still carried the neighbourhood" — which is
+        # exactly the leak the first --naive pilot shipped with.
+        record_extras['naive_scope'] = [
+            'harness_prompt (harness/prompts.py PromptBuilder: '
+            'variant-analysis <root_cause_reachable> block incl. '
+            'covered_functions/found_signatures coverage steering; '
+            '<xref> caller call-sites; <callee> declarations; the '
+            'propagation rule\'s reachable-region clause)',
+            'relation_synth (relations/relation_synth.py '
+            'RelationSynthesizer: "Reachable API" line)',
+        ]
 
     # H4/H5: same-name overloads, shared-prefix method families, and the
     # class's readable no-arg state — the mechanically-listed raw material
@@ -2232,7 +2251,8 @@ def main():
             synthesizer = RelationSynthesizer(
                 HarnessGenerator(model=synth_model,
                                  temperature=0.3, top_p=1.0),
-                focused=getattr(args, 'focused_synthesis', False))
+                focused=getattr(args, 'focused_synthesis', False),
+                naive=getattr(args, 'naive', False))
             # P2.1: hand synthesis the bug's own failing test — the one
             # trusted source of the correct DIRECTION. Was '' for the whole
             # project history, so synthesis read only the buggy body and

@@ -254,6 +254,10 @@ def test_ensure_jacoco_cli_returns_an_existing_jar(monkeypatch, tmp_path):
 
 
 def test_ensure_jacoco_cli_downloads_into_the_cache(monkeypatch, tmp_path):
+    """The jar's name and its URL come from `config`, which is where
+    `src/metrics` reads them too: one JaCoCo for both packages."""
+    import config
+
     monkeypatch.delenv('JACOCO_CLI_JAR', raising=False)
     seen = {}
 
@@ -263,9 +267,26 @@ def test_ensure_jacoco_cli_downloads_into_the_cache(monkeypatch, tmp_path):
 
     monkeypatch.setattr(cov_mod.urllib.request, 'urlretrieve', _fetch)
     jar = cov_mod.ensure_jacoco_cli(cache_dir=str(tmp_path / 'cache'))
-    assert jar.endswith('-nodeps.jar')
-    assert seen['url'].startswith('https://repo1.maven.org/maven2/org/jacoco/')
+    assert os.path.basename(jar) == os.path.basename(config.JACOCO_CLI_JAR)
+    assert os.path.dirname(jar) == str(tmp_path / 'cache')
+    assert seen['url'] == config.JACOCO_CLI_URL == cov_mod.JACOCO_CLI_URL
     assert seen['dest'] == jar
+
+
+def test_ensure_jacoco_cli_defaults_to_the_config_path(monkeypatch):
+    """With no cache directory and no override, the jar is exactly the one
+    `config.JACOCO_CLI_JAR` names — the same file `metrics.reached
+    .ensure_cli_jar` would use."""
+    import config
+
+    monkeypatch.delenv('JACOCO_CLI_JAR', raising=False)
+
+    def _fetch(url, dest):
+        raise AssertionError(f'should not download in this test: {dest}')
+
+    monkeypatch.setattr(cov_mod.urllib.request, 'urlretrieve', _fetch)
+    monkeypatch.setattr(cov_mod.os.path, 'isfile', lambda p: True)
+    assert cov_mod.ensure_jacoco_cli() == config.JACOCO_CLI_JAR
 
 
 # ------------------------------------------------------------ collect_leg
@@ -378,11 +399,13 @@ def test_collect_leg_collects_the_compiled_candidate_set(fake_java, tmp_path):
 
 
 def test_dirs_for_build_maps_compiled_to_the_buggy_side():
-    """`compiled` names a harness SET, not a different build of the code —
-    the acceptance gate runs on the buggy build — so it must resolve to the
-    same directories `buggy` does."""
+    """`compiled` names a harness SET and `remeasure` a budget, not a
+    different build of the code — the acceptance gate and the fixed-budget
+    re-run both run on the buggy build — so both must resolve to the same
+    directories `buggy` does."""
     dirs = ['/cov/classes_buggy', '/cov/classes_patched']
     assert cov_mod._dirs_for_build(dirs, 'compiled') == \
+        cov_mod._dirs_for_build(dirs, 'remeasure') == \
         cov_mod._dirs_for_build(dirs, 'buggy') == ['/cov/classes_buggy']
     assert cov_mod._dirs_for_build(dirs, 'patched') == ['/cov/classes_patched']
     # an older layout that names neither build still uses everything
@@ -390,10 +413,10 @@ def test_dirs_for_build_maps_compiled_to_the_buggy_side():
         ['/one', '/two']
 
 
-def test_split_exec_name_knows_the_three_build_tokens():
+def test_split_exec_name_knows_the_build_tokens():
     assert cov_mod._split_exec_name('attempt_003_compiled') == \
         ('attempt_003', 'compiled')
-    assert cov_mod.BUILDS == ('buggy', 'patched', 'compiled')
+    assert cov_mod.BUILDS == ('buggy', 'patched', 'compiled', 'remeasure')
     # the split is on the LAST underscore, so no token may contain one
     for build in cov_mod.BUILDS:
         assert '_' not in build
@@ -406,3 +429,270 @@ def test_the_real_runner_is_a_plain_subprocess_call():
     assert cov_mod._run.__module__ == cov_mod.__name__
     assert 'subprocess' in cov_mod.__dict__
     assert cov_mod.subprocess is subprocess
+
+
+# --------------------------------------------------- the probe limitation
+
+# Two overloads of one name, so a frame's LINE has to do the work its
+# missing parameter types cannot.  Written inline rather than added to the
+# shared fixture, because nothing else needs an overload pair.
+_OVERLOAD_XML = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<report name="demo">
+  <package name="org/jfree/demo">
+    <class name="org/jfree/demo/Solver" sourcefilename="Solver.java">
+      <method name="solve" desc="(DD)D" line="66">
+        <counter type="LINE" missed="1" covered="0"/>
+        <counter type="METHOD" missed="1" covered="0"/>
+      </method>
+      <method name="solve" desc="(Ljava/lang/Object;DDD)D" line="72">
+        <counter type="LINE" missed="1" covered="0"/>
+        <counter type="METHOD" missed="1" covered="0"/>
+      </method>
+    </class>
+    <sourcefile name="Solver.java">
+      <line nr="66" mi="1" ci="0"/>
+      <line nr="72" mi="1" ci="0"/>
+    </sourcefile>
+  </package>
+</report>
+"""
+
+
+def _overload_report(tmp_path):
+    path = tmp_path / 'overloads.xml'
+    path.write_text(_OVERLOAD_XML)
+    return str(path)
+
+
+def test_method_line_owners_splits_a_file_at_the_next_declaration():
+    """The report says where a method starts and, separately, which lines
+    ran.  Ownership is the gap to the next declaration in the same SOURCE
+    FILE — nested classes included, or the ranges would overlap."""
+    owners = cov_mod.method_line_owners(JACOCO_XML)
+    by_key = {r.strict_key: rng for r, rng in owners.items()}
+    assert by_key[W_INIT] == (10, 20)
+    assert by_key[W_DRAW] == (20, 40)
+    assert by_key[W_HELPER] == (40, 60)
+    # the nested class's method is last in Widget.java, so it owns the rest
+    assert by_key[W_INNER][0] == 60 and by_key[W_INNER][1] > 10000
+    # harness classes and synthetic members never get a range
+    assert not any(k.startswith('org.jfree.demo.FuzzHarness') for k in by_key)
+    assert not any('lambda$' in k for k in by_key)
+
+
+def test_a_throwing_method_reads_as_missed_from_probes_alone():
+    """JaCoCo puts a method's probe after its exit, so a method that throws
+    through its only call is reported as never executed.  `unusedHelper`
+    is that method in the fixture."""
+    cov = cov_mod.parse_jacoco_xml(JACOCO_XML)
+    assert W_HELPER not in keys(cov.methods)
+
+
+def test_a_stack_frame_recovers_that_method():
+    """A frame is proof the method was entered.  The two sources union;
+    the frame set never replaces the probe set."""
+    cov = cov_mod.parse_jacoco_xml(JACOCO_XML)
+    trace = ('java.lang.IllegalStateException: boom\n'
+             '\tat org.jfree.demo.Widget.unusedHelper(Widget.java:41)\n'
+             '\tat org.jfree.demo.FuzzHarness.fuzzerTestOneInput'
+             '(FuzzHarness.java:5)\n')
+    cov_mod.repair_from_frames(cov, JACOCO_XML, trace)
+    assert keys(cov.frame_added) == {W_HELPER}
+    assert W_HELPER in keys(cov.methods)
+    assert W_HELPER not in keys(cov.methods_from_probes)
+    assert cov.methods_from_probes < cov.methods
+    # the harness's own frame resolves to nothing: it is not library code
+    assert not any('FuzzHarness' in m.class_fq for m in cov.frame_methods)
+
+
+def test_the_frame_line_tells_two_overloads_apart(tmp_path):
+    """A frame carries no parameter types, so the LINE picks the overload.
+    Matching on the name alone would credit both."""
+    report = _overload_report(tmp_path)
+    cov = cov_mod.parse_jacoco_xml(report)
+    cov_mod.repair_from_frames(
+        cov, report, '\tat org.jfree.demo.Solver.solve(Solver.java:73)\n')
+    assert {m.strict_key for m in cov.frame_methods} == {
+        'org.jfree.demo.Solver.solve(Object,double,double,double)'}
+
+
+def test_a_frame_without_a_line_number_adds_nothing(tmp_path):
+    """Without a line there is nothing to tell the overloads apart, so the
+    frame is dropped rather than credited to a guess."""
+    report = _overload_report(tmp_path)
+    cov = cov_mod.parse_jacoco_xml(report)
+    cov_mod.repair_from_frames(
+        cov, report, '\tat org.jfree.demo.Solver.solve(Unknown Source)\n')
+    assert cov.frame_methods == set()
+
+
+def test_frames_outside_the_report_add_nothing():
+    cov = cov_mod.parse_jacoco_xml(JACOCO_XML)
+    before = set(cov.methods)
+    cov_mod.repair_from_frames(cov, JACOCO_XML, (
+        '\tat java.lang.String.charAt(String.java:100)\n'
+        '\tat org.junit.runners.Suite.run(Suite.java:100)\n'
+        '\tat com.code_intelligence.jazzer.Bits.go(Bits.java:12)\n'))
+    assert cov.frame_methods == set() and cov.methods == before
+
+
+def test_frame_methods_survive_a_round_trip_through_dict():
+    cov = cov_mod.parse_jacoco_xml(JACOCO_XML)
+    cov_mod.repair_from_frames(
+        cov, JACOCO_XML,
+        '\tat org.jfree.demo.Widget.unusedHelper(Widget.java:41)\n')
+    back = Coverage.from_dict(json.loads(json.dumps(cov.to_dict())))
+    assert back.methods == cov.methods
+    assert back.frame_methods == cov.frame_methods
+    assert back.methods_from_probes == cov.methods_from_probes
+    assert back.frame_added == cov.frame_added
+
+
+def test_a_coverage_file_written_before_the_repair_reads_as_all_probes():
+    """An older `coverage_<build>.json` has neither key, and every method
+    in it came from a probe.  It must not read back as "no probes"."""
+    old = {'methods': [MethodRef('org.ex.A', 'a', ()).to_dict()],
+           'lines': [], 'all_methods': []}
+    back = Coverage.from_dict(old)
+    assert back.methods == back.methods_from_probes
+    assert back.frame_methods == set() and back.frame_added == set()
+
+
+def test_collect_leg_repairs_each_build_from_its_own_fuzzer_output(fake_java,
+                                                                   tmp_path):
+    """The frames unioned into a build's coverage are the frames of THAT
+    build's runs: `fuzz_out/<harness>_<build>.txt` carries the token."""
+    leg = tmp_path / 'leg'
+    cov_dir = leg / 'cov'
+    cov_dir.mkdir(parents=True)
+    for name in ('attempt_001_buggy.exec', 'attempt_001_patched.exec'):
+        (cov_dir / name).write_text('')
+    (cov_dir / 'classpath.json').write_text(json.dumps(
+        {'class_dirs': [], 'source_dirs': [], 'include_glob': ''}))
+    fo = leg / 'fuzz_out'
+    fo.mkdir()
+    (fo / 'attempt_001_buggy.txt').write_text(
+        '\tat org.jfree.demo.Widget.unusedHelper(Widget.java:41)\n')
+    (fo / 'attempt_001_patched.txt').write_text('no frames here\n')
+
+    out = cov_mod.collect_leg(str(leg))
+
+    assert keys(out['buggy'].frame_added) == {W_HELPER}
+    assert W_HELPER in keys(out['buggy'].methods)
+    assert out['patched'].frame_methods == set()
+    assert W_HELPER not in keys(out['patched'].methods)
+    # and it is in the file the metrics read
+    written = Coverage.from_dict(json.loads(
+        (leg / 'measurements' / 'coverage_buggy.json').read_text()))
+    assert keys(written.frame_added) == {W_HELPER}
+
+
+# --------------------------------------------------------- remeasure_leg
+
+class _FakeHarnessRun:
+    def __init__(self, report, trace=''):
+        self.report = report
+        self.trace = trace
+        self.per_harness = []
+
+
+@pytest.fixture
+def fake_collect(monkeypatch, tmp_path):
+    """Stand in for `metrics.collect`, the sibling package's runner.
+
+    `remeasure_leg` imports it inside the function, so replacing the two
+    functions on the real module is enough and nothing has to run
+    Defects4J or Jazzer."""
+    from metrics import collect
+
+    seen = {}
+
+    def _harness_coverage(buggy_dir, accepted, out_dir, includes='',
+                          runs=20000, keep_going=1000, timeout_seconds=300):
+        seen.update(buggy_dir=buggy_dir, accepted=accepted, out_dir=out_dir,
+                    includes=includes, runs=runs, keep_going=keep_going)
+        os.makedirs(out_dir, exist_ok=True)
+        report = os.path.join(out_dir, 'jacoco.xml')
+        with open(JACOCO_XML) as src, open(report, 'w') as dst:
+            dst.write(src.read())
+        return _FakeHarnessRun(report, seen.get('trace', ''))
+
+    def _ensure_buggy_build(project, bug_id):
+        seen['built'] = (project, bug_id)
+        return str(tmp_path / f'{project}_{bug_id}_buggy')
+
+    monkeypatch.setattr(collect, 'harness_coverage', _harness_coverage)
+    monkeypatch.setattr(collect, 'ensure_buggy_build', _ensure_buggy_build)
+    return seen
+
+
+def _remeasure_leg(tmp_path, accepted=True, include_glob='org.jfree.**'):
+    leg = tmp_path / 'leg'
+    (leg / 'cov').mkdir(parents=True)
+    (leg / 'cov' / 'classpath.json').write_text(json.dumps(
+        {'class_dirs': [], 'source_dirs': [], 'include_glob': include_glob}))
+    record = {'project': 'Chart', 'bug_id': '5', 'label': 'overfitting'}
+    if accepted:
+        record['accepted_harnesses'] = [
+            {'harness_path': '/h/FuzzHarness.java', 'class_name': 'FuzzHarness',
+             'classpath': '/cp', 'attempt_label': 'attempt_002'},
+            {'harness_path': '/h/FuzzHarness.java', 'class_name': 'FuzzHarness',
+             'classpath': '/cp', 'attempt_label': 'attempt_001'}]
+    (leg / 'result.jsonl').write_text(json.dumps(record) + '\n')
+    return leg
+
+
+def test_remeasure_leg_runs_the_kept_set_on_a_fixed_input_budget(
+        fake_collect, tmp_path):
+    """`buggy` is the as-run coverage, under the pipeline's wall clock;
+    `remeasure` is the same harnesses re-run with `-runs=N`, so the number
+    does not move with the load on the machine."""
+    leg = _remeasure_leg(tmp_path)
+    cov = cov_mod.remeasure_leg(str(leg), runs=20000, keep_going=1000)
+
+    assert fake_collect['runs'] == 20000
+    assert fake_collect['keep_going'] == 1000
+    assert fake_collect['includes'] == 'org.jfree.**'
+    assert [e['attempt_label'] for e in fake_collect['accepted']] == [
+        'attempt_002', 'attempt_001']
+    assert fake_collect['out_dir'] == str(leg / 'cov' / 'remeasure')
+    assert fake_collect['built'] == ('Chart', '5')
+
+    assert cov.build == 'remeasure'
+    assert cov.harness == 'attempt_001+attempt_002'
+    # the include glob from classpath.json was applied at parse time
+    assert OTHER_GO not in keys(cov.all_methods)
+    written = Coverage.from_dict(json.loads(
+        (leg / 'measurements' / 'coverage_remeasure.json').read_text()))
+    assert written.build == 'remeasure' and written.methods == cov.methods
+
+
+def test_remeasure_leg_repairs_its_own_run_from_its_own_frames(fake_collect,
+                                                               tmp_path):
+    leg = _remeasure_leg(tmp_path, include_glob='')
+    fake_collect['trace'] = (
+        '\tat org.jfree.demo.Widget.unusedHelper(Widget.java:41)\n')
+    cov = cov_mod.remeasure_leg(str(leg))
+    assert keys(cov.frame_added) == {W_HELPER}
+
+
+def test_remeasure_leg_without_accepted_harnesses_returns_none(fake_collect,
+                                                               tmp_path):
+    """A leg archived before `accepted_harnesses` existed, or one that
+    accepted none: there is no set to re-run, which is not a set of
+    nothing."""
+    leg = _remeasure_leg(tmp_path, accepted=False)
+    assert cov_mod.remeasure_leg(str(leg)) is None
+    assert not (leg / 'measurements').exists()
+
+
+def test_remeasure_is_a_build_token_collect_leg_never_produces(fake_java,
+                                                               tmp_path):
+    """`remeasure` is a re-run, not a reading of what the leg left behind,
+    so scanning a leg's `cov/` must not invent one."""
+    leg = tmp_path / 'leg'
+    (leg / 'cov' / 'remeasure').mkdir(parents=True)
+    (leg / 'cov' / 'remeasure' / 'attempt_001.exec').write_text('')
+    (leg / 'cov' / 'classpath.json').write_text(json.dumps(
+        {'class_dirs': [], 'source_dirs': [], 'include_glob': ''}))
+    assert cov_mod.collect_leg(str(leg)) == {}

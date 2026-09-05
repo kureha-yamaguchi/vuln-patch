@@ -231,3 +231,46 @@ def test_aggregate_survives_error_rows(tmp_path, conditioned):
         fh.write(json.dumps({'leg': '99_broken_c', 'error': 'boom'}) + '\n')
     agg = A.aggregate(conditioned)
     assert agg['n_errors'] == 1 and agg['n_legs'] == 3 and agg['n_bugs'] == 2
+
+
+# --- the triggering-test gate ---------------------------------------------
+
+def _set_gate(run_dir, leg_name, passed):
+    """Rewrite one leg's metrics row with a gate verdict on it."""
+    path = os.path.join(run_dir, 'metrics.jsonl')
+    rows = [json.loads(line) for line in open(path) if line.strip()]
+    for row in rows:
+        if row.get('leg') == leg_name:
+            row.setdefault('sizes', {})['trigger_gate_passed'] = passed
+    with open(path, 'w') as fh:
+        for row in rows:
+            fh.write(json.dumps(row) + '\n')
+
+
+def test_gated_only_drops_the_legs_whose_bug_failed_the_gate(conditioned):
+    """A bug whose own triggering tests do not reach every method the
+    developer fix changed has an R̂ that cannot be trusted, so its RCC
+    describes our extraction rather than the harness set."""
+    _set_gate(conditioned, '03_patch1-Lang-24-ACS_c', False)
+    full = A.aggregate(conditioned)
+    gated = A.aggregate(conditioned, gated_only=True)
+
+    assert full['n_legs'] == 3 and full['n_bugs'] == 2
+    assert gated['n_legs'] == 2 and gated['n_bugs'] == 1
+    assert 'Lang-24' not in gated['per_bug']
+    # the count that left is reported either way, so a mean is never
+    # printed without it
+    assert full['n_gate_failed'] == gated['n_gate_failed'] == 1
+    assert full['gated_only'] is False and gated['gated_only'] is True
+
+
+def test_a_gate_that_was_not_run_is_not_a_failed_gate(conditioned):
+    """The gate is slow and off by default, so most runs have no answer.
+    Treating "not asked" as "failed" would empty them."""
+    _set_gate(conditioned, '01_patch1-Chart-1-Arja_o', True)
+    agg = A.aggregate(conditioned, gated_only=True)
+    assert agg['n_legs'] == 3 and agg['n_gate_failed'] == 0
+    rows = M.read_metrics(conditioned)
+    passed = {row['leg']: A.gate_passed(row) for row in rows}
+    assert passed['01_patch1-Chart-1-Arja_o'] is True
+    assert passed['03_patch1-Lang-24-ACS_c'] is None

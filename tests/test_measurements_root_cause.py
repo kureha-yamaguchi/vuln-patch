@@ -496,3 +496,176 @@ def test_locations_types_are_used_as_given():
         '\tat org.example.Widget$Inner.compute(Widget.java:29)')
     assert ref == MethodRef('org.example.Widget.Inner', 'compute')
     assert line == 29
+
+
+# --- the triggering-test gate ---------------------------------------------
+
+MEASUREMENT_FIXTURES = FIXTURES
+JACOCO_XML = os.path.join(FIXTURES, 'jacoco_example.xml')
+
+# The fixture report's library methods: `draw` and the constructor ran,
+# `unusedHelper` did not (its probe never fired).
+DRAW = MethodRef('org.jfree.demo.Widget', 'draw', ('Graphics2D', 'int'))
+HELPER = MethodRef('org.jfree.demo.Widget', 'unusedHelper',
+                   ('int[]', 'boolean'))
+
+
+class _FakeTriggerRun:
+    def __init__(self, report, trace):
+        self.report = report
+        self.trace = trace
+
+
+@pytest.fixture
+def fake_collect(monkeypatch, tmp_path):
+    """Stand in for `metrics.collect`, the sibling package's runner.
+
+    `trigger_gate` imports it inside the function, so replacing the two
+    functions on the real module is enough: no Defects4J, no JVM."""
+    from metrics import collect
+
+    seen = {'trace': ''}
+
+    def _trigger_tests(buggy_dir):
+        seen['tests_for'] = buggy_dir
+        return ['org.jfree.demo.WidgetTest::testDraw']
+
+    def _trigger_coverage(buggy_dir, out_dir, tests=None):
+        seen['out_dir'] = out_dir
+        seen['tests'] = tests
+        return _FakeTriggerRun(JACOCO_XML, seen['trace'])
+
+    monkeypatch.setattr(collect, 'trigger_tests', _trigger_tests)
+    monkeypatch.setattr(collect, 'trigger_coverage', _trigger_coverage)
+    return seen
+
+
+def _rc_with_seeds(*refs):
+    rc = root_cause.RootCause()
+    for ref in refs:
+        rc.methods.add(ref, SEED, 0)
+    return rc
+
+
+def test_gate_passes_when_the_triggering_tests_run_every_seed(fake_collect,
+                                                              buggy_dir):
+    gate = root_cause.trigger_gate(buggy_dir, _rc_with_seeds(DRAW),
+                                   os.path.join(buggy_dir, 'trigger'))
+    assert gate['passed'] is True
+    assert gate['missed'] == []
+    assert gate['tests'] == ['org.jfree.demo.WidgetTest::testDraw']
+    assert gate['detail'] == 'all 1 method(s) reached'
+    assert gate['reached_size'] == gate['probe_size'] == 4
+
+
+def test_gate_fails_when_a_seed_was_never_reached(fake_collect, buggy_dir):
+    """Without this check a name mismatch or a bad extraction would give
+    RCC = 0 on every bug, which reads exactly like a real finding."""
+    gate = root_cause.trigger_gate(buggy_dir, _rc_with_seeds(DRAW, HELPER),
+                                   os.path.join(buggy_dir, 'trigger'))
+    assert gate['passed'] is False
+    assert gate['missed'] == [str(HELPER)]
+    assert 'did not run' in gate['detail']
+
+
+def test_gate_uses_the_frames_too(fake_collect, buggy_dir):
+    """The probe limitation applies to the triggering test as much as to a
+    harness: the test fails BY throwing, so the method it throws out of can
+    read as missed from probes alone."""
+    fake_collect['trace'] = (
+        '--- org.jfree.demo.WidgetTest::testDraw\n'
+        'java.lang.IllegalStateException: boom\n'
+        '\tat org.jfree.demo.Widget.unusedHelper(Widget.java:41)\n')
+    gate = root_cause.trigger_gate(buggy_dir, _rc_with_seeds(DRAW, HELPER),
+                                   os.path.join(buggy_dir, 'trigger'))
+    assert gate['passed'] is True
+    assert gate['frame_added'] == [str(HELPER)]
+    assert gate['probe_size'] == 4 and gate['reached_size'] == 5
+
+
+def test_gate_writes_the_trace_where_the_manifest_reads_it(fake_collect,
+                                                           buggy_dir):
+    """R̂₁ comes from `<checkout>/failing_tests`, which Defects4J writes only
+    once a test has been run — so a fresh checkout has an empty manifest for
+    want of a trace.  The gate runs the tests, so it leaves the trace."""
+    fake_collect['trace'] = (
+        '--- org.jfree.demo.WidgetTest::testDraw\n'
+        'java.lang.IllegalStateException: boom\n'
+        '\tat org.example.Widget.grow(Widget.java:20)\n')
+    rc = _rc_with_seeds(DRAW)
+    assert len(rc.manifest) == 0
+    rc.gate = root_cause.trigger_gate(buggy_dir, rc,
+                                      os.path.join(buggy_dir, 'trigger'))
+    written = os.path.join(buggy_dir, root_cause.MANIFEST_FILE)
+    assert os.path.isfile(written)
+    root_cause.refresh_manifest(rc, buggy_dir)
+    assert set(rc.manifest.refs()) == {MethodRef('org.example.Widget', 'grow')}
+    assert rc.manifest_source == root_cause.MANIFEST_FILE
+
+
+def test_gate_on_an_empty_region_fails_without_running_anything(buggy_dir):
+    """No seeds, no denominator: the bug leaves the population, and there is
+    nothing to spend a `defects4j test` on."""
+    gate = root_cause.trigger_gate(buggy_dir, root_cause.RootCause(),
+                                   os.path.join(buggy_dir, 'trigger'))
+    assert gate['passed'] is False
+    assert 'R-hat is empty' in gate['detail']
+
+
+def test_the_gate_result_round_trips_through_root_cause_json(fake_collect,
+                                                             buggy_dir):
+    """`metrics.py` reads the gate out of `root_cause.json` as plain JSON,
+    so it has to survive the dict on the way in and out."""
+    rc = _rc_with_seeds(DRAW)
+    rc.gate = root_cause.trigger_gate(buggy_dir, rc,
+                                      os.path.join(buggy_dir, 'trigger'))
+    d = rc.to_dict()
+    assert d['trigger_gate']['passed'] is True
+    assert root_cause.RootCause.from_dict(d).gate == rc.gate
+    # a file written before the gate existed, and a run that did not ask
+    # for it, both read back as "not run" — which is not "failed"
+    assert root_cause.RootCause.from_dict({}).gate is None
+
+
+# --- the population summary ------------------------------------------------
+
+def test_population_check_counts_every_exclusion():
+    """A mean is only honest beside the count of what left the population,
+    and an unavailable measurement is never a zero."""
+    records = [
+        {'project': 'Chart', 'bug_id': '5', 'status': 'ok', 'rcc': 1.0},
+        {'project': 'Math', 'bug_id': '70', 'status': 'ok', 'rcc': 0.5},
+        {'project': 'Lang', 'bug_id': '43', 'status': 'no_harnesses'},
+        {'project': 'Lang', 'bug_id': '1', 'status': 'excluded_empty_region'},
+        {'project': 'Lang', 'bug_id': '2', 'status': 'excluded_gate_failed'},
+        {'project': 'Lang', 'bug_id': '3', 'status': 'infra_error'},
+    ]
+    summary = root_cause.population_check(records)
+    assert summary['n_records'] == 6 and summary['n_scored'] == 2
+    assert summary['mean'] == 0.75
+    assert list(summary['counts']) == list(root_cause.POPULATION_STATUSES)
+    assert summary['counts'] == {'ok': 2, 'excluded_empty_region': 1,
+                                 'excluded_gate_failed': 1,
+                                 'no_harnesses': 1, 'infra_error': 1}
+    assert summary['scored'] == ['Chart-5', 'Math-70']
+    assert summary['bugs']['no_harnesses'] == ['Lang-43']
+
+
+def test_population_check_of_nothing_has_no_mean():
+    summary = root_cause.population_check([])
+    assert summary == {'n_records': 0, 'n_scored': 0, 'scored': [],
+                       'mean': None, 'counts': {}, 'bugs': {}}
+
+
+def test_gate_separates_a_naming_fault_from_a_coverage_fault(fake_collect,
+                                                             buggy_dir):
+    """A seed the report holds no method for at all is a naming or
+    extraction fault — the fault the gate exists to catch — and it reads
+    differently from a method the tests simply did not run."""
+    ghost = MethodRef('org.jfree.demo.Widget', 'noSuchMethod', ())
+    gate = root_cause.trigger_gate(buggy_dir, _rc_with_seeds(DRAW, ghost),
+                                   os.path.join(buggy_dir, 'trigger'))
+    assert gate['passed'] is False
+    assert gate['unresolved'] == [str(ghost)]
+    assert gate['missed'] == [str(ghost)]
+    assert 'no method in the coverage report matches' in gate['detail']

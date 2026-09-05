@@ -564,11 +564,21 @@ class RelationSynthesizer:
     """Proposes candidate relations (unscreened) for a semantic bug."""
 
     def __init__(self, generator: Optional[HarnessGenerator] = None,
-                 focused: bool = False):
+                 focused: bool = False, naive: bool = False):
         self._gen = generator or HarnessGenerator(temperature=0.3, top_p=1.0)
         # focused=True runs per-source passes (formula/throws/family/state)
         # and unions the survivors, instead of one broad synthesis call.
         self.focused = focused
+        # --naive (the paper's H_N arm), same contract as PromptBuilder.naive:
+        # build this prompt WITHOUT any root-cause-NEIGHBOURHOOD conditioning.
+        # Here that is exactly one insertion: the "Reachable API" line, which
+        # is the callee/reachable set (context.root_cause_reachable) rendered
+        # as a name list. Everything else the synthesis prompt shows — the
+        # failing test, the patch, the patched class's own source/javadoc/
+        # imports — is level-B-permitted and unaffected. Defaults to False,
+        # and with it False every branch below takes the path it always took,
+        # so the prompt text is byte-for-byte unchanged.
+        self.naive = naive
         # Full record of every LLM call this synthesizer makes (synthesis,
         # compile-repair, soundness-harden) — prompt messages + raw output —
         # so a run can dump a complete, auditable pipeline trace.
@@ -726,7 +736,7 @@ class RelationSynthesizer:
                 " layout may differ, and a wrong package means the relation"
                 " cannot compile and is discarded unread:\n"
                 + "\n".join(source_imports[:60]))
-        if reachable:
+        if reachable and not self.naive:
             ctx.append("Reachable API (call these, do not reimplement): "
                        + ", ".join(reachable[:30]))
         if trigger_methods:

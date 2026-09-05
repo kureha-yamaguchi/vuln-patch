@@ -71,7 +71,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from java.measurements.locations import (LineRef, MethodRef, from_jacoco,
-                                         top_level_of)
+                                         from_stack_frame, top_level_of)
 
 # --------------------------------------------------------------------------
 # The coverage object
@@ -88,10 +88,19 @@ BUILD_PATCHED = 'patched'
 #: SET: all compiled candidates, versus the kept ones the other two tokens
 #: cover. See the README, "Kept versus all compiled harnesses".
 BUILD_COMPILED = 'compiled'
+#: The FIXED-INPUT-BUDGET re-run of the kept harness set on the buggy build
+#: (`remeasure_leg`). `buggy` is the coverage of the run the verdict rests
+#: on, and that run had a wall-clock budget, so its numbers move with the
+#: load on the machine that produced them. `remeasure` re-runs exactly the
+#: kept harnesses with `-runs=N` instead, so the same archive measured on
+#: two machines gives the same set. Same build, same harnesses, different
+#: budget — which is why it is a build token of its own and not a second
+#: reading of `buggy`. See the README, "3.3.3 As-run and re-measured".
+BUILD_REMEASURE = 'remeasure'
 
 #: Every build token a `.exec` dump can carry. No token may contain an
 #: underscore: `_split_exec_name` splits a dump's name on the LAST one.
-BUILDS = (BUILD_BUGGY, BUILD_PATCHED, BUILD_COMPILED)
+BUILDS = (BUILD_BUGGY, BUILD_PATCHED, BUILD_COMPILED, BUILD_REMEASURE)
 
 #: How a `Coverage`'s branch numbers were obtained. `merged` means one
 #: JaCoCo report over ALL of that build's `.exec` files, so the counts are
@@ -142,7 +151,25 @@ def _in_prefix(dotted: str, prefix: Optional[str]) -> bool:
 class Coverage:
     """One build's executed locations, plus the population they live in.
 
-    methods           methods with JaCoCo METHOD counter covered > 0
+    methods           the methods this build ran: the JaCoCo METHOD
+                      counter's covered set, UNIONED with `frame_methods`
+                      once `collect_leg` has repaired the probe miss (see
+                      `frame_methods` below and `methods_from_frames`)
+    methods_from_probes
+                      the probe half of `methods` on its own: methods with
+                      JaCoCo METHOD counter covered > 0. `parse_jacoco_xml`
+                      fills it with the same set it puts in `methods`, and
+                      the frame repair never touches it, so the two
+                      provenances stay countable
+    frame_methods     methods a STACK FRAME in the raw fuzzer output proves
+                      were entered, resolved against `all_methods` by class,
+                      name and a line the report shows the method owns.
+                      JaCoCo places a method's probe after the method's
+                      exit, so a method that throws through its only call
+                      reads as missed from probes alone; a frame is proof it
+                      ran. Not a subset of `methods_from_probes` and not
+                      disjoint from it either — a method can be seen both
+                      ways, and `frame_added` is the part probes missed
     lines             source lines with covered instructions (ci > 0)
     branches_covered  branch outcomes taken, summed over the same methods
     branches_total    branch outcomes present, summed over the same methods
@@ -163,6 +190,8 @@ class Coverage:
     harness           the harness (or '+'-joined harnesses) this came from
     """
     methods: Set[MethodRef] = field(default_factory=set)
+    methods_from_probes: Set[MethodRef] = field(default_factory=set)
+    frame_methods: Set[MethodRef] = field(default_factory=set)
     lines: Set[LineRef] = field(default_factory=set)
     branches_covered: int = 0
     branches_total: int = 0
@@ -172,9 +201,26 @@ class Coverage:
     build: str = ''
     harness: str = ''
 
+    @property
+    def methods_from_frames(self) -> Set[MethodRef]:
+        """The other name for `frame_methods`, so a reader who has the
+        probe half in hand (`methods_from_probes`) can ask for the frame
+        half by the matching name."""
+        return self.frame_methods
+
+    @property
+    def frame_added(self) -> Set[MethodRef]:
+        """What the frames added that the probes did not have. This is the
+        size of the probe limitation on this build, and it is what
+        `metrics.py` reports as `F_frame_added`."""
+        return self.frame_methods - self.methods_from_probes
+
     def to_dict(self) -> dict:
         return {
             'methods': [m.to_dict() for m in sorted(self.methods)],
+            'methods_from_probes': [m.to_dict()
+                                    for m in sorted(self.methods_from_probes)],
+            'frame_methods': [m.to_dict() for m in sorted(self.frame_methods)],
             'lines': [l.to_dict() for l in sorted(self.lines)],
             'branches_covered': int(self.branches_covered),
             'branches_total': int(self.branches_total),
@@ -198,8 +244,20 @@ class Coverage:
         for x in d.get('line_branches') or []:
             lb[LineRef.from_dict(x)] = (int(x.get('covered', 0)),
                                         int(x.get('total', 0)))
+        methods = {MethodRef.from_dict(m) for m in d.get('methods', [])}
+        # `methods_from_probes` and `frame_methods` are younger than
+        # `methods`. A coverage JSON written before the frame repair existed
+        # has neither, and every method in it came from a probe, so the
+        # probe half reads back as the whole set and the frame half as
+        # empty — which is exactly what that file recorded.
+        probes = ({MethodRef.from_dict(m) for m in d['methods_from_probes']}
+                  if isinstance(d.get('methods_from_probes'), list)
+                  else set(methods))
         return cls(
-            methods={MethodRef.from_dict(m) for m in d.get('methods', [])},
+            methods=methods,
+            methods_from_probes=probes,
+            frame_methods={MethodRef.from_dict(m)
+                           for m in d.get('frame_methods', [])},
             lines={LineRef.from_dict(l) for l in d.get('lines', [])},
             branches_covered=int(d.get('branches_covered', 0)),
             branches_total=int(d.get('branches_total', 0)),
@@ -241,6 +299,8 @@ def union(covs: Iterable[Coverage]) -> Coverage:
     builds, harnesses = set(), set()
     for c in covs:
         out.methods |= set(c.methods)
+        out.methods_from_probes |= set(c.methods_from_probes)
+        out.frame_methods |= set(c.frame_methods)
         out.lines |= set(c.lines)
         out.all_methods |= set(c.all_methods)
         out.branches_covered = max(out.branches_covered, c.branches_covered)
@@ -404,7 +464,199 @@ def parse_jacoco_xml(path: str,
             pkg_dotted = ''
         el.clear()
 
+    # Everything in `methods` came from a METHOD counter, i.e. from a
+    # probe. The frame repair (`repair_from_frames`) adds to `methods`
+    # later and leaves this half alone, which is how the two provenances
+    # stay countable.
+    cov.methods_from_probes = set(cov.methods)
     return cov
+
+
+# --------------------------------------------------------------------------
+# The probe limitation, and the stack frames that repair it
+# --------------------------------------------------------------------------
+
+def method_line_owners(path: str,
+                       include_prefix: Optional[str] = None
+                       ) -> Dict[MethodRef, Tuple[int, int]]:
+    """Which lines of its source file each method owns: `{ref: [start, end)}`.
+
+    The JaCoCo report says where every method STARTS (`<method line="72">`)
+    and, separately, which lines of each source file were executed
+    (`<sourcefile><line nr="72" .../>`). It never says which method a line
+    belongs to. So ownership is reconstructed the only way the report
+    allows: within one source file, the methods are sorted by their
+    declaration line and each one owns from its own line up to the next
+    method's, the last one to the end of the file.
+
+    A source file, not a class: a nested class's methods sit inside the
+    outer class's file, so `Widget` and `Widget$Inner` are sorted together
+    or the ranges would overlap. Two methods declared on the SAME line
+    (JaCoCo does this for a constructor pair that shares a signature line)
+    get the same range and are therefore indistinguishable by line — the
+    one case where a frame credits both.
+
+    Only used by `frame_methods`. The same harness / synthetic / package
+    filters as `parse_jacoco_xml` are applied, so every ref this returns is
+    one `all_methods` can also contain.
+    """
+    prefix = _normalise_prefix(include_prefix) if include_prefix else None
+    per_file: Dict[Tuple[str, str], List[Tuple[int, MethodRef]]] = {}
+
+    pkg_dotted = ''
+    class_fq = ''
+    class_skipped = True
+    src_name = ''
+    for event, el in ET.iterparse(path, events=('start', 'end')):
+        if event == 'start':
+            if el.tag == 'package':
+                pkg_dotted = (el.get('name') or '').replace('/', '.')
+            elif el.tag == 'class':
+                raw = el.get('name') or ''
+                class_fq = raw.replace('/', '.').replace('$', '.')
+                src_name = el.get('sourcefilename') or ''
+                class_skipped = (_is_harness_class(raw)
+                                 or not _in_prefix(class_fq, prefix)
+                                 or not src_name)
+            elif el.tag == 'method':
+                name = el.get('name') or ''
+                start = int(el.get('line') or 0)
+                if class_skipped or _is_synthetic_method(name) or start <= 0:
+                    continue
+                try:
+                    ref = from_jacoco(class_fq, name, el.get('desc') or '()V')
+                except (AssertionError, KeyError, ValueError):
+                    continue
+                per_file.setdefault((pkg_dotted, src_name), []).append(
+                    (start, ref))
+            continue
+        if el.tag == 'class':
+            class_fq, src_name, class_skipped = '', '', True
+        elif el.tag == 'package':
+            pkg_dotted = ''
+        el.clear()
+
+    owners: Dict[MethodRef, Tuple[int, int]] = {}
+    for entries in per_file.values():
+        entries.sort(key=lambda e: (e[0], e[1]))
+        starts = sorted({start for start, _ in entries})
+        after = {s: n for s, n in zip(starts, starts[1:])}
+        for start, ref in entries:
+            end = after.get(start, 1 << 30)
+            have = owners.get(ref)
+            # One ref, two declarations (a report merged over builds): keep
+            # the widest range rather than whichever came last.
+            owners[ref] = ((min(have[0], start), max(have[1], end))
+                           if have else (start, end))
+    return owners
+
+
+def stack_frames(text: str) -> Set[Tuple[str, str, int]]:
+    """Every stack frame in some fuzzer output, as (class, method, line).
+
+    Frames are read with `locations.from_stack_frame`, the same parser the
+    manifest set and the crash sites use, so a module prefix
+    (`java.base/java.lang.String.charAt`) or a class-loader prefix
+    (`app//org.jfree.Foo.bar`) does not become part of the class name. A
+    frame with no line number is dropped: the line is what tells two
+    overloads apart, and without it a frame could credit either.
+
+    Nothing is filtered by package here. A JDK, JUnit or harness frame
+    simply resolves against no method of the library's report, because
+    `all_methods` holds the library's methods and nothing else.
+    """
+    out: Set[Tuple[str, str, int]] = set()
+    for raw in (text or '').split('\n'):
+        parsed = from_stack_frame(raw)
+        if parsed is None:
+            continue
+        ref, lineno = parsed
+        if lineno is None or not ref.class_fq:
+            continue
+        out.add((ref.class_fq, ref.name, int(lineno)))
+    return out
+
+
+def frame_methods(report_xml: str, text: str,
+                  include_prefix: Optional[str] = None) -> Set[MethodRef]:
+    """The methods a run's stack traces PROVE were entered.
+
+    THE PROBE LIMITATION. JaCoCo marks a line covered when a probe on it
+    executes, and it places a method's probe after the method's exit. A
+    method whose body is a single `return other(x);` therefore reads as
+    MISSED when `other` throws, because the probe after the call never
+    runs. Every bug in the crashing split ends in a throw, so this
+    under-reports exactly the path the measurement is about. Math-70 is the
+    recorded case: the trace names `BisectionSolver.solve` at line 72 and
+    JaCoCo reports line 72 as never covered.
+
+    A stack frame is proof the method was entered, so the two sources
+    union: probes are the lower bound, frames add what the probes provably
+    missed. `Coverage.methods_from_probes` and `Coverage.frame_methods`
+    keep them apart afterwards, so a frame-only hit is never mistaken for a
+    probe hit.
+
+    A frame gives a class, a method name and a LINE, but no parameter
+    types. `method_line_owners` gives each method the lines it owns, so
+    matching on the line is what separates two overloads of one name — a
+    name-only match would credit both.
+    """
+    frames = stack_frames(text)
+    if not frames:
+        return set()
+    owners = method_line_owners(report_xml, include_prefix)
+    found: Set[MethodRef] = set()
+    for ref, (start, end) in owners.items():
+        for cls, name, line in frames:
+            if cls == ref.class_fq and name == ref.name and start <= line < end:
+                found.add(ref)
+                break
+    return found
+
+
+def repair_from_frames(cov: Coverage, report_xml: str, text: str,
+                       include_prefix: Optional[str] = None) -> Coverage:
+    """Union a run's frame-proven methods into `cov`, in place.
+
+    `cov.methods_from_probes` is left as it was, so the two provenances
+    stay countable; `cov.frame_methods` records what the frames found, and
+    `cov.frame_added` is the part the probes had missed."""
+    cov.frame_methods = frame_methods(report_xml, text, include_prefix)
+    # Only methods the report knows about: a frame that resolves to nothing
+    # in this build's population is not evidence about this build.
+    if cov.all_methods:
+        cov.frame_methods &= cov.all_methods
+    cov.methods |= cov.frame_methods
+    return cov
+
+
+def fuzzer_output(leg_dir: str, build: str) -> str:
+    """Every raw Jazzer log a leg kept for ONE build, concatenated.
+
+    A `--coverage` run saves each Jazzer run's output to
+    `<leg>/fuzz_out/<harness>_<build>.txt`; the build token in the name is
+    the same one the `.exec` dumps carry, so the frames repaired into a
+    build's coverage are the frames of that build's own runs and no
+    other's. Missing directory, missing files: the empty string, which
+    adds no frames.
+    """
+    fo_dir = os.path.join(leg_dir, 'fuzz_out')
+    if not os.path.isdir(fo_dir):
+        return ''
+    parts = []
+    for fname in sorted(os.listdir(fo_dir)):
+        if not fname.endswith('.txt'):
+            continue
+        split = _split_exec_name(fname[:-len('.txt')])
+        if split is None or split[1] != build:
+            continue
+        try:
+            with open(os.path.join(fo_dir, fname), encoding='utf-8',
+                      errors='replace') as fh:
+                parts.append(fh.read())
+        except OSError:
+            continue
+    return '\n'.join(parts)
 
 
 # --------------------------------------------------------------------------
@@ -419,12 +671,26 @@ from java.execution.coverage_flags import jazzer_coverage_args  # noqa: E402,F40
 # The JaCoCo command-line tool
 # --------------------------------------------------------------------------
 
-JACOCO_VERSION = os.getenv('JACOCO_VERSION', '0.8.12')
-JACOCO_CLI_URL = (
-    'https://repo1.maven.org/maven2/org/jacoco/org.jacoco.cli/'
-    f'{JACOCO_VERSION}/org.jacoco.cli-{JACOCO_VERSION}-nodeps.jar'
-)
-JACOCO_CACHE_DIR = os.path.expanduser('~/.cache/jacoco')
+#: The jar, its download URL and its version all come from `src/config.py`,
+#: which is also where `src/metrics` reads them (`metrics.reached
+#: .ensure_cli_jar`). One jar, one cache, one version, whichever package
+#: asks for it. The fallbacks below are used only where `config` cannot be
+#: imported at all — a measurement copied out of the repo — and they name
+#: the same artifact.
+try:                                                # pragma: no cover
+    import config as _config
+    JACOCO_VERSION = _config.JACOCO_VERSION
+    JACOCO_CLI_JAR = _config.JACOCO_CLI_JAR
+    JACOCO_CLI_URL = _config.JACOCO_CLI_URL
+except Exception:                                   # pragma: no cover
+    JACOCO_VERSION = os.getenv('JACOCO_VERSION', '0.8.12')
+    JACOCO_CLI_JAR = os.path.expanduser(
+        f'~/.cache/jacoco/jacococli-{JACOCO_VERSION}.jar')
+    JACOCO_CLI_URL = (
+        'https://repo.maven.apache.org/maven2/org/jacoco/org.jacoco.cli/'
+        f'{JACOCO_VERSION}/org.jacoco.cli-{JACOCO_VERSION}-nodeps.jar'
+    )
+JACOCO_CACHE_DIR = os.path.dirname(JACOCO_CLI_JAR)
 
 
 def ensure_jacoco_cli(cache_dir: Optional[str] = None) -> str:
@@ -432,20 +698,25 @@ def ensure_jacoco_cli(cache_dir: Optional[str] = None) -> str:
 
     Mirrors `java.execution.jazzer.JazzerEnvironment._ensure_jar`: if the
     jar is already on disk return its path, otherwise fetch it from
-    Maven Central into the cache directory. The 'nodeps' classifier is
-    the shaded build that runs with plain `java -jar`.
+    Maven Central. The jar's name, its version and the URL are
+    `config.JACOCO_*`, so this package and `src/metrics` download the same
+    file to the same place and neither can be on a different JaCoCo.
 
-    `JACOCO_CLI_JAR` overrides the location entirely (point it at a jar
-    you already have, or at the path you want the download to land in).
+    `JACOCO_CLI_JAR` in the environment overrides the location entirely
+    (point it at a jar you already have, or at the path you want the
+    download to land in); it is read live rather than at import, so a test
+    can set it. `cache_dir` moves the download into another directory
+    under the same file name, and the environment override wins over it.
     """
     override = os.getenv('JACOCO_CLI_JAR')
     if override:
         jar = override
         cache_dir = os.path.dirname(jar) or '.'
+    elif cache_dir:
+        jar = os.path.join(cache_dir, os.path.basename(JACOCO_CLI_JAR))
     else:
-        cache_dir = cache_dir or JACOCO_CACHE_DIR
-        jar = os.path.join(
-            cache_dir, f'org.jacoco.cli-{JACOCO_VERSION}-nodeps.jar')
+        jar = JACOCO_CLI_JAR
+        cache_dir = os.path.dirname(jar) or '.'
     if os.path.isfile(jar):
         return jar
     os.makedirs(cache_dir, exist_ok=True)
@@ -534,8 +805,9 @@ def _dirs_for_build(dirs: List[str], build: str) -> List[str]:
     matches (an older layout) all directories are used, as before.
 
     `compiled` is the acceptance gate's run of every compiled candidate,
-    and that gate runs on the BUGGY build, so it takes the buggy build's
-    directories — anything that is not `patched` does.
+    and `remeasure` is the fixed-budget re-run of the kept set; both happen
+    on the BUGGY build, so both take the buggy build's directories —
+    anything that is not `patched` does.
     """
     def is_patched(d: str) -> bool:
         return any('patched' in seg for seg in d.replace('\\', '/').split('/'))
@@ -558,11 +830,20 @@ def collect_leg(leg_dir: str) -> Dict[str, Coverage]:
         <leg_dir>/cov/<harness>_<build>.exec     one per harness+build
         <leg_dir>/cov/classpath.json             where the classes live
 
-    Three build tokens appear (`BUILDS`): `buggy` and `patched` are the
-    KEPT harnesses on the two builds, and `compiled` is every compiled
+    Three build tokens appear here (`BUILDS`): `buggy` and `patched` are
+    the KEPT harnesses on the two builds, and `compiled` is every compiled
     candidate on the buggy build, from the acceptance gate's own run. They
     are grouped and unioned separately, so a leg with a `compiled` dump
-    gets a third output file, `coverage_compiled.json`.
+    gets a third output file, `coverage_compiled.json`. The fourth token,
+    `remeasure`, is not produced here: it is a re-run rather than a reading
+    of what the leg already left behind (`remeasure_leg`).
+
+    Each build's methods are then repaired against that build's own raw
+    fuzzer output, `fuzz_out/<harness>_<build>.txt`: a method that throws
+    through its only call reads as missed from JaCoCo's probes alone, and a
+    stack frame is proof it ran (`frame_methods`). The frames are unioned
+    into `methods`, and `methods_from_probes` / `frame_methods` keep the
+    two provenances apart.
 
     `classpath.json` holds ``{"class_dirs": [...], "source_dirs": [...],
     "include_glob": "org.jfree.**"}``. Both directory lists are the
@@ -662,6 +943,16 @@ def collect_leg(leg_dir: str) -> Dict[str, Coverage]:
         else:
             merged = union(covs)
         merged.build, merged.harness = build, harness
+        # The probe repair, on the build's OWN raw fuzzer output. A method
+        # that throws through its only call reads as missed from probes
+        # alone (`frame_methods`), and every bug in the crashing split ends
+        # in a throw. Without a merged report there is no line-ownership
+        # map to resolve a frame against, so that leg keeps the probe set
+        # and records no frames.
+        if merged_xml is not None:
+            text = fuzzer_output(leg_dir, build)
+            if text:
+                repair_from_frames(merged, merged_xml, text, prefix)
         result[build] = merged
         with open(os.path.join(out_dir, f'coverage_{build}.json'), 'w') as fh:
             json.dump(merged.to_dict(), fh, indent=1)
@@ -698,3 +989,97 @@ def _merged_report(cov_dir: str, build: str, exec_paths: List[str],
                       _dirs_for_build(source_dirs, build), out_xml)
     except (RuntimeError, OSError):
         return None
+
+
+# --------------------------------------------------------------------------
+# Re-measuring a leg on a fixed input budget
+# --------------------------------------------------------------------------
+
+def remeasure_leg(leg_dir: str, runs: int = 20000, keep_going: int = 1000,
+                  buggy_dir: Optional[str] = None,
+                  includes: Optional[str] = None,
+                  timeout_seconds: int = 300) -> Optional[Coverage]:
+    """Re-run a leg's KEPT harnesses on the buggy build with `-runs=N`.
+
+    Two different questions, two build tokens:
+
+    * `buggy` is the AS-RUN coverage — the harnesses as the pipeline
+      actually ran them, under the wall-clock budget the verdict rests on.
+      It is the honest record of the run, and it is also machine-dependent:
+      a loaded machine gets through fewer inputs in 20 seconds, so the same
+      archive re-measured elsewhere would not give the same set.
+    * `remeasure` is the same harnesses on the same build with a FIXED
+      INPUT budget (`-runs`, `--keep_going`) instead of a clock. The number
+      of inputs is the experiment's parameter, so two machines agree.
+
+    Which harnesses: `result.jsonl`'s `accepted_harnesses`, the field
+    `java.run` records for exactly this purpose (harness path, class name,
+    classpath, attempt label). A leg without it — an archive older than
+    that field — returns None rather than a coverage of nothing.
+
+    The run itself is `metrics.collect.harness_coverage`, imported from the
+    sibling package: it already knows the three rules a measurement pass
+    has to follow (a large `--keep_going`, because an accepted harness
+    crashes the buggy build by design; `-runs` rather than a clock; one
+    dump per harness, merged by JaCoCo). The dumps land in
+    `<leg>/cov/remeasure/<attempt>.exec` and the merged report beside them
+    as `jacoco.xml`, and the parsed result is written to
+    `<leg>/measurements/coverage_remeasure.json`.
+
+    The import goes one way only: this package may read `metrics`, and
+    `metrics` never reads this one (see the README, "Relation to
+    src/metrics").
+    """
+    from metrics import collect                      # one-way: see docstring
+
+    result = {}
+    result_path = os.path.join(leg_dir, 'result.jsonl')
+    if os.path.isfile(result_path):
+        with open(result_path, encoding='utf-8', errors='replace') as fh:
+            for line in fh:
+                line = line.strip()
+                if line:
+                    result = json.loads(line)
+                    break
+    accepted = list(result.get('accepted_harnesses') or [])
+    if not accepted:
+        return None
+
+    if buggy_dir is None:
+        project = result.get('project')
+        bug_id = result.get('bug_id')
+        if not project or bug_id is None:
+            raise RuntimeError('no project/bug_id in result.jsonl, so the '
+                               'buggy checkout cannot be located')
+        buggy_dir = collect.ensure_buggy_build(project, bug_id)
+
+    if includes is None:
+        cp_path = os.path.join(leg_dir, 'cov', 'classpath.json')
+        includes = ''
+        if os.path.isfile(cp_path):
+            with open(cp_path) as fh:
+                includes = json.load(fh).get('include_glob') or ''
+
+    out_dir = os.path.join(leg_dir, 'cov', BUILD_REMEASURE)
+    run = collect.harness_coverage(buggy_dir, accepted, out_dir,
+                                   includes=includes, runs=runs,
+                                   keep_going=keep_going,
+                                   timeout_seconds=timeout_seconds)
+    prefix = _normalise_prefix(includes) if includes else None
+    cov = parse_jacoco_xml(run.report, include_prefix=prefix)
+    cov.branches_from = BRANCHES_MERGED
+    cov.build = BUILD_REMEASURE
+    cov.harness = '+'.join(sorted(
+        str(e.get('attempt_label') or '') for e in accepted
+        if e.get('attempt_label')))
+    # The same probe repair the as-run coverage gets, from this pass's own
+    # Jazzer output rather than the leg's archived one.
+    if run.trace:
+        repair_from_frames(cov, run.report, run.trace, prefix)
+
+    mdir = os.path.join(leg_dir, 'measurements')
+    os.makedirs(mdir, exist_ok=True)
+    with open(os.path.join(mdir, f'coverage_{BUILD_REMEASURE}.json'),
+              'w') as fh:
+        json.dump(cov.to_dict(), fh, indent=1)
+    return cov

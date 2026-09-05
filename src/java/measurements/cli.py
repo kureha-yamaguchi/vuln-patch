@@ -2,7 +2,7 @@
 
     python -m java.measurements.cli <run_dir> \
         [--checkout_root DIR] [--d4j_home DIR] [--introspector]
-        [--coverage] [--naive_run DIR]
+        [--coverage] [--trigger_gate] [--remeasure] [--naive_run DIR]
 
 For every leg of `run_dir` this writes the JSON files `metrics.py` reads:
 
@@ -12,7 +12,9 @@ For every leg of `run_dir` this writes the JSON files `metrics.py` reads:
     <leg>/measurements/coverage_<build>.json     Coverage   (F)  --coverage
         <build> is `buggy` / `patched` (the harnesses the acceptance gate
         KEPT) or `compiled` (every candidate that compiled, on the buggy
-        build) — see the README, "Kept versus all compiled harnesses"
+        build) — see the README, "Kept versus all compiled harnesses" — or
+        `remeasure` (--remeasure: the kept set re-run on the buggy build
+        with a fixed input budget instead of a clock)
     <leg>/measurements/static_<set>.json         StaticReach (F_stat)
         <set> is `kept` (the harnesses the acceptance gate kept) or
         `compiled` (every candidate that compiled); written only with
@@ -55,6 +57,20 @@ ERRORS_FILE = 'errors.json'
 # ---------------------------------------------------------------------------
 # the buggy checkout
 # ---------------------------------------------------------------------------
+
+def default_d4j_home() -> Optional[str]:
+    """The Defects4J installation, from `config.D4J_HOME`.
+
+    The same constant `src/metrics` reads the developer fix through, so the
+    two packages cannot end up pointed at different Defects4J checkouts.
+    `--d4j_home` still wins, and `root_cause.defects4j_home` has its own
+    last-resort search for a machine with neither."""
+    try:
+        import config                                  # src/config.py
+        return config.D4J_HOME
+    except Exception:
+        return os.getenv('D4J_HOME')
+
 
 def default_checkout_root() -> str:
     """Where the pipeline keeps its Defects4J checkouts
@@ -151,7 +167,9 @@ def build_introspector_project(buggy_dir: str, language: str = 'jvm'):
 
 def measure_leg(leg_dir: str, *, checkout_root: Optional[str] = None,
                 d4j_home: Optional[str] = None, introspector: bool = False,
-                coverage: bool = False) -> dict:
+                coverage: bool = False, trigger_gate: bool = False,
+                remeasure: bool = False, runs: int = 20000,
+                keep_going: int = 1000) -> dict:
     """Produce every measurement JSON for one leg.
 
     Returns a status row: which stages produced a file, and the error text
@@ -218,24 +236,65 @@ def measure_leg(leg_dir: str, *, checkout_root: Optional[str] = None,
             fi['project'] = build_introspector_project(buggy['dir'])
         stage('introspector', _introspector)
 
+    rcause: Dict[str, object] = {'rc': None}
+
     def _root_cause():
         if not buggy['dir']:
             raise RuntimeError('no buggy checkout')
         rc = _mod_root_cause().compute(
-            project, bug_id, buggy['dir'], d4j_home=d4j_home,
+            project, bug_id, buggy['dir'], d4j_home=d4j_home or
+            default_d4j_home(),
             introspector_project=fi['project'],
             # The buggy checkout is the source the call graph was built
             # from, so it is also where a seed's callers are read from
             # when the frontend resolved none (neighbourhood.SourceScan).
             source_root=buggy['dir'])
+        rcause['rc'] = rc
         loc.dump(rc, os.path.join(mdir, M.F_ROOT_CAUSE))
     stage('root_cause', _root_cause)
+
+    # -- the triggering-test gate ------------------------------------------
+    # SLOW: `defects4j test -t` once per triggering test, under the JaCoCo
+    # agent, so it is off unless asked for. It answers whether this bug's
+    # R̂ is measurable at all — if the bug's own triggering tests do not
+    # reach every method the developer fix changed, the fault is in the
+    # extraction or the plumbing, and the leg's RCC would be a number about
+    # us. It also leaves `failing_tests` in the checkout, which is where
+    # the manifestation set (R̂₁) comes from, so R̂₁ is re-read afterwards.
+    if trigger_gate:
+        def _trigger_gate():
+            rc = rcause['rc']
+            if rc is None:
+                raise RuntimeError('no root cause to gate')
+            rcm = _mod_root_cause()
+            rc.gate = rcm.trigger_gate(
+                buggy['dir'], rc,
+                os.path.join(leg_dir, 'cov', 'trigger'))
+            rcm.refresh_manifest(rc, buggy['dir'])
+            loc.dump(rc, os.path.join(mdir, M.F_ROOT_CAUSE))
+        stage('trigger_gate', _trigger_gate)
 
     # -- F ------------------------------------------------------------------
     if coverage:
         def _coverage():
             _mod_coverage().collect_leg(leg_dir)
         stage('coverage', _coverage)
+
+    # -- F on a fixed input budget -----------------------------------------
+    # SLOW: it re-runs the kept harnesses. `buggy` coverage is what the
+    # pipeline's own wall-clock run reached (the runs the verdict rests
+    # on); `remeasure` is the same harnesses on the same build with
+    # `-runs=N`, so it does not move with the load on the machine.
+    if remeasure:
+        def _remeasure():
+            cov = _mod_coverage().remeasure_leg(
+                leg_dir, runs=runs, keep_going=keep_going,
+                buggy_dir=buggy['dir'])
+            if cov is None:
+                raise RuntimeError(
+                    'no accepted_harnesses in result.jsonl: this leg was '
+                    'archived before the field existed, or accepted none')
+        stage('remeasure', _remeasure)
 
     # -- F_stat -------------------------------------------------------------
     # What the harnesses COULD reach, as against what they did. It needs the
@@ -313,6 +372,25 @@ def build_parser() -> argparse.ArgumentParser:
                         'the seed ring alone)')
     p.add_argument('--coverage', action='store_true',
                    help='collect JaCoCo coverage per leg (slow)')
+    p.add_argument('--trigger_gate', action='store_true',
+                   help="run the bug's own triggering tests under JaCoCo "
+                        'and check they reach every method the developer '
+                        'fix changed (slow: one `defects4j test -t` per '
+                        'triggering test); also fills R-hat-1, whose stack '
+                        'frames come from the trace those tests leave')
+    p.add_argument('--remeasure', action='store_true',
+                   help='re-run the kept harnesses on the buggy build with '
+                        'a fixed input budget (--runs), writing the '
+                        '`remeasure` coverage slot (slow)')
+    p.add_argument('--runs', type=int, default=20000,
+                   help='libFuzzer inputs per harness in --remeasure')
+    p.add_argument('--keep_going', type=int, default=1000,
+                   help='findings to run past in --remeasure (an accepted '
+                        'harness crashes the buggy build by design)')
+    p.add_argument('--gated_only', action='store_true',
+                   help='aggregate only the legs whose bug PASSED the '
+                        'triggering-test gate (legs where it was not run '
+                        'are kept)')
     p.add_argument('--naive_run', default=None,
                    help='a naive-harness run to compare against; prints the '
                         'H_R - H_N table instead of the single-run table')
@@ -330,7 +408,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         st = measure_leg(leg, checkout_root=args.checkout_root,
                          d4j_home=args.d4j_home,
                          introspector=args.introspector,
-                         coverage=args.coverage)
+                         coverage=args.coverage,
+                         trigger_gate=args.trigger_gate,
+                         remeasure=args.remeasure,
+                         runs=args.runs, keep_going=args.keep_going)
         statuses.append(st)
         note = (' ; '.join(f'{k}: {v}' for k, v in sorted(
             st['errors'].items())) or 'ok')
@@ -339,7 +420,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     rows = M.write_metrics(run_dir)
     print(f"metrics.jsonl: {len(rows)} row(s)")
 
-    agg = A.aggregate(run_dir)
+    agg = A.aggregate(run_dir, gated_only=args.gated_only)
     with open(os.path.join(run_dir, 'aggregate.json'), 'w') as fh:
         json.dump(agg, fh, indent=1, sort_keys=True)
 

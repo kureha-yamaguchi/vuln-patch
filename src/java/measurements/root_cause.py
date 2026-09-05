@@ -60,7 +60,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Sequence, Tuple
 
 from java.measurements.locations import (
-    LineRef, LineSet, MethodRef, MethodSet, SEED,
+    LineRef, LineSet, MethodIndex, MethodRef, MethodSet, SEED,
     class_top_from_source, from_javalang, from_stack_frame,
 )
 
@@ -112,6 +112,13 @@ class RootCause:
                       recorded rather than dropped, because "the fix changed
                       nothing method-shaped" is itself a reading of a bug.
     manifest_source   'failing_tests' or 'absent'.
+    gate              the triggering-test gate's result dict, or None when
+                      the gate was not run (it is slow, and off by
+                      default). See `trigger_gate`: a bug whose own
+                      triggering tests do not reach every seed has an R̂
+                      that cannot be trusted, so its metrics should be
+                      reported apart from the rest (`aggregate.aggregate`'s
+                      `gated_only`).
     notes             anything that degraded (e.g. no neighbourhood module).
     """
     methods: MethodSet = field(default_factory=MethodSet)
@@ -123,6 +130,7 @@ class RootCause:
     direction_assumed: str = DIR_ASSUMED
     unmapped_hunks: List[dict] = field(default_factory=list)
     manifest_source: str = MANIFEST_ABSENT
+    gate: Optional[dict] = None
     notes: List[str] = field(default_factory=list)
 
     @property
@@ -140,6 +148,9 @@ class RootCause:
             'direction_assumed': self.direction_assumed,
             'unmapped_hunks': list(self.unmapped_hunks),
             'manifest_source': self.manifest_source,
+            # `metrics.py` reads this file as plain JSON, so the gate
+            # travels as a dict under the name the CLI's flag has.
+            'trigger_gate': self.gate,
             'notes': list(self.notes),
         }
 
@@ -158,6 +169,11 @@ class RootCause:
             direction_assumed=d.get('direction_assumed') or DIR_ASSUMED,
             unmapped_hunks=list(d.get('unmapped_hunks') or []),
             manifest_source=d.get('manifest_source') or MANIFEST_ABSENT,
+            # Absent from any root_cause.json written before the gate
+            # existed, and absent from every run that did not ask for it:
+            # both read back as "not run", which is not the same as failed.
+            gate=(d.get('trigger_gate')
+                  if isinstance(d.get('trigger_gate'), dict) else None),
             notes=list(d.get('notes') or []),
         )
 
@@ -742,6 +758,172 @@ def _manifest_source(buggy_dir: str) -> str:
     return (MANIFEST_FILE
             if os.path.isfile(os.path.join(buggy_dir, MANIFEST_FILE))
             else MANIFEST_ABSENT)
+
+
+# ---------------------------------------------------------------------------
+# The trigger-test gate: is this bug's R-hat measurable at all?
+# ---------------------------------------------------------------------------
+
+#: Statuses a bug can carry in a measurement population, in the order a
+#: report should print them. `ok` is the only one that carries a number.
+STATUS_OK = 'ok'
+STATUS_EMPTY_REGION = 'excluded_empty_region'
+STATUS_GATE_FAILED = 'excluded_gate_failed'
+STATUS_NO_HARNESSES = 'no_harnesses'
+STATUS_INFRA_ERROR = 'infra_error'
+POPULATION_STATUSES = (STATUS_OK, STATUS_EMPTY_REGION, STATUS_GATE_FAILED,
+                       STATUS_NO_HARNESSES, STATUS_INFRA_ERROR)
+
+
+def trigger_gate(buggy_dir: str, root_cause: 'RootCause',
+                 out_dir: str) -> dict:
+    """Do the bug's OWN triggering tests run every method of R̂₀?
+
+    Every Defects4J bug has a triggering test, and that test fails BECAUSE
+    of the code the developer fix changed. So the triggering test must run
+    every method the fix changed. When it does not, either R̂ was extracted
+    wrongly or the coverage plumbing is mis-naming methods, and this bug's
+    RCC would be a number about our tooling rather than about the harness
+    set. Without the gate such a bug reads as RCC = 0, which looks exactly
+    like a real finding.
+
+    The run is `metrics.collect.trigger_coverage` from the sibling package:
+    it runs `defects4j test -t <test>` under the JaCoCo agent, one
+    triggering test at a time, so exactly the triggering method runs and
+    not its whole class (a whole class covers more, which would make the
+    gate easier to pass and therefore weaker). The matching is OURS:
+    `coverage.parse_jacoco_xml` for the report, `frame_methods` for the
+    probe repair, and `locations.MethodIndex` for the name matching, so the
+    gate answers the question in the same identities R̂ and F(H) are
+    compared in.
+
+    SLOW: a `defects4j test` per triggering test, on a compiled checkout.
+    It is off by default in the CLI (`--trigger_gate`).
+
+    Returns ``{passed, missed, reached_size, detail, ...}`` — a plain dict,
+    because it is written into `root_cause.json` and read back by
+    `metrics.py`, which never imports this module.
+
+    It also writes the tests' failure traces to `<buggy_dir>/failing_tests`,
+    which is where `trigger_frames` looks for the manifestation set. So a
+    run with the gate on gets a populated R̂₁ as a side effect of the gate:
+    the trace the gate needs and the trace the manifest set needs are the
+    same trace, and Defects4J only writes it when a test has been run.
+    """
+    from metrics import collect                    # one-way: measurements
+    from java.measurements import coverage as cov_mod
+
+    seeds = root_cause.methods.refs(SEED)
+    if not seeds:
+        return {'passed': False, 'missed': [], 'reached_size': 0,
+                'detail': 'R-hat is empty: the developer fix changed no '
+                          'method body',
+                'tests': [], 'probe_size': 0, 'frame_added': []}
+
+    detail_prefix = ''
+    tests = collect.trigger_tests(buggy_dir)
+    run = collect.trigger_coverage(buggy_dir, out_dir, tests)
+
+    # The trace goes where `trigger_frames` reads it. `defects4j test`
+    # rewrites `failing_tests` per invocation, so after a run of several
+    # triggering tests only the last one's frames would be left; the gate
+    # concatenated them all, so it writes the whole thing back.
+    if run.trace:
+        try:
+            with open(os.path.join(buggy_dir, MANIFEST_FILE), 'w',
+                      encoding='utf-8') as fh:
+                fh.write(run.trace)
+        except OSError as exc:                     # noqa: BLE001 - fail soft
+            detail_prefix = f'(could not write failing_tests: {exc}) '
+
+    cov = cov_mod.parse_jacoco_xml(run.report)
+    probe_size = len(cov.methods)
+    cov_mod.repair_from_frames(cov, run.report, run.trace)
+
+    # Two ways a seed can fail the gate, and they mean different things.
+    # `unresolved` is a seed the report holds no method for at all — a
+    # naming or extraction fault, which is the fault the gate exists to
+    # catch. `missed` is a seed the report knows and the tests did not run.
+    # Both leave the population; only the message tells them apart.
+    index = MethodIndex(cov.all_methods or cov.methods)
+    missed, unresolved = [], []
+    for ref in sorted(seeds, key=str):
+        hit = index.lookup(ref)
+        if hit is None:
+            unresolved.append(str(ref))
+        elif hit not in cov.methods:
+            missed.append(str(ref))
+    passed = not (missed or unresolved)
+    parts = []
+    if missed:
+        parts.append('the triggering tests did not run ' + ', '.join(missed))
+    if unresolved:
+        parts.append('no method in the coverage report matches '
+                     + ', '.join(unresolved))
+    detail = ('; '.join(parts) if parts
+              else f'all {len(seeds)} method(s) reached')
+    return {
+        'passed': passed,
+        'missed': missed + unresolved,
+        'unresolved': unresolved,
+        'reached_size': len(cov.methods),
+        'probe_size': probe_size,
+        'frame_added': sorted(str(m) for m in cov.frame_added),
+        'tests': list(tests),
+        'detail': detail_prefix + detail,
+    }
+
+
+def refresh_manifest(root_cause: 'RootCause', buggy_dir: str) -> 'RootCause':
+    """Re-read the manifestation set after something has run the tests.
+
+    `compute` reads `failing_tests` as it finds it, and Defects4J writes
+    that file only once `defects4j test` has run on the checkout. So on a
+    fresh checkout R̂₁ is empty for want of a trace, not for want of frames.
+    `trigger_gate` runs the triggering tests and leaves the trace there, and
+    this puts the frames it now names into the region."""
+    root_cause.manifest = trigger_frames(buggy_dir)
+    root_cause.manifest_source = _manifest_source(buggy_dir)
+    return root_cause
+
+
+def population_check(records: Sequence[dict]) -> dict:
+    """Summarise a measurement population the way a report has to state it.
+
+    An unavailable measurement is never a zero. A bug whose developer fix
+    changed no method body has no denominator; a bug that fails the
+    triggering-test gate has an unreadable one; a bug whose pipeline leg
+    accepted no harness has no H to measure. Each of those LEAVES the
+    population, and a mean is only honest beside the count of what left it.
+
+    `records` are the per-bug records of a sweep — dicts carrying `status`
+    and, for a scored bug, a numeric `rcc` (the field
+    `src/metrics/rcc_sweep.py` writes) or, when the caller prefers, no
+    score at all. Returns the per-status counts, the bugs behind each, and
+    the scored population.
+    """
+    by_status: dict = {}
+    scored: List[str] = []
+    values: List[float] = []
+    for record in records or []:
+        name = (f"{record.get('project')}-{record.get('bug_id')}"
+                if record.get('project') else str(record.get('bug') or '?'))
+        status = record.get('status') or STATUS_OK
+        by_status.setdefault(status, []).append(name)
+        value = record.get('rcc')
+        if isinstance(value, (int, float)):
+            scored.append(name)
+            values.append(float(value))
+    ordered = [s for s in POPULATION_STATUSES if s in by_status]
+    ordered += [s for s in sorted(by_status) if s not in POPULATION_STATUSES]
+    return {
+        'n_records': len(records or []),
+        'n_scored': len(scored),
+        'scored': scored,
+        'mean': (sum(values) / len(values)) if values else None,
+        'counts': {s: len(by_status[s]) for s in ordered},
+        'bugs': {s: by_status[s] for s in ordered},
+    }
 
 
 # ---------------------------------------------------------------------------

@@ -208,6 +208,38 @@ The rings around R̂₀ let us ask an empirical question the paper leaves open:
 pipeline catches, the crash lands in R̂'s seeds, its callers, its callees, or
 outside all three. That histogram is the closest we can get to observing ℝ.
 
+**Is R̂ measurable at all? The triggering-test gate.** Every Defects4J bug
+comes with a *triggering test*: a test that fails on the buggy code and
+passes on the fixed code. That test fails *because of* the code the
+developer fix changed, so it must run every method in R̂₀. When it does not,
+one of two things is wrong — R̂ was extracted from the wrong place, or the
+coverage plumbing is spelling methods differently on the two sides — and
+this bug's RCC would then be a number about our tooling rather than about
+the harness set. Without the check, a name mismatch gives RCC = 0 on every
+bug, which reads exactly like a real finding.
+
+So `root_cause.trigger_gate` runs the bug's own triggering tests on the
+buggy build under the JaCoCo agent (one `defects4j test -t <test>` per
+triggering test, so exactly the triggering method runs and not its whole
+class — a whole class would cover more and make the gate weaker) and checks
+R̂₀ against what they reached. It separates the two ways a seed can fail:
+one the report holds no method for at all (`unresolved` — a naming or
+extraction fault, the one the gate exists to catch) and one the report knows
+that the tests simply did not run. The verdict travels in `root_cause.json`
+as `trigger_gate`, reaches every metrics row as `available.trigger_gate` and
+`sizes.trigger_gate_passed`, and `aggregate.aggregate(gated_only=True)`
+drops the legs whose bug failed it. A gate that was **not run** is a third
+value, not a failure: the gate is slow, it is off unless `--trigger_gate`
+is given, and treating "not asked" as "failed" would empty most runs.
+
+The gate has a second use. R̂₁'s stack frames come from
+`<checkout>/failing_tests`, which Defects4J writes only once a test has been
+run — so on a fresh checkout the manifestation set is empty for want of a
+trace, not for want of frames. The gate runs those very tests, so it leaves
+the trace where `trigger_frames` reads it and the CLI re-reads the manifest
+afterwards. A run with `--trigger_gate` therefore gets a populated R̂₁ as a
+side effect.
+
 **The firewall.** The developer fix is held back from the pipeline on
 purpose: a pipeline that had seen the fix could not be evaluated fairly.
 So R̂ is computed *after* a run, by a separate command, from the archived
@@ -239,9 +271,37 @@ builds; line identities are defined on the buggy tree. A third coverage set
 is collected for *every harness that compiled*, not only the ones the
 pipeline kept — section 3.3.1 says why.
 
+**The probe limitation, and the frames that repair it.** JaCoCo marks a
+line as covered when a *probe* on it executes, and it places a method's
+probe **after** the method's exit. A method whose body is a single
+`return other(x);` therefore reads as *missed* whenever `other` throws,
+because the probe after the call never runs. Every bug in the crashing
+split ends in a throw, so this under-reports exactly the path the whole
+measurement is about. The recorded case is Math-70: the stack trace names
+`BisectionSolver.solve` at line 72 and JaCoCo reports line 72 as never
+covered, which would have made that bug's RCC a false 0.
+
+A stack frame is proof that a method was entered, so the two sources are
+unioned: the probes are the lower bound, and the frames add what the probes
+provably missed. The frames come from the raw fuzzer output the run saved
+(`fuzz_out/<harness>_<build>.txt`, so a build is only ever repaired from
+its own runs), and each frame is resolved against the report's own method
+list by class, method name and **line** — a frame carries no parameter
+types, so the line is what tells two overloads of one name apart. Which
+lines a method owns is reconstructed from the report: within one source
+file the methods are sorted by their declaration line and each owns the gap
+to the next (nested classes included, since they share the file).
+
+The two provenances stay apart afterwards. `Coverage.methods` is the union
+and is what every metric reads; `methods_from_probes` is the probe half;
+`frame_methods` is what the frames proved; and `sizes.F_frame_added` per
+build is the size of the probe limitation on that leg — how many methods
+would have been reported as never executed on the evidence of the probes
+alone. A frame-only hit is never mistaken for a probe hit.
+
 **Static variant.** F is *dynamic*: it is what ran. Its static
 counterpart F_stat — what the harnesses *could* have run — is section
-3.3.2.
+3.3.3.
 
 ### 3.3.1 Kept versus all compiled harnesses
 
@@ -282,7 +342,39 @@ build — that is what the check tests — so counting them in CSM would
 measure the check rather than the harness set. They are recorded, and
 counted per build, but kept out of CSM's denominator.
 
-### 3.3.2 F_stat — what the harnesses *could* reach
+### 3.3.2 As-run and re-measured coverage
+
+The pipeline fuzzes each harness under a **wall-clock** budget (`--fuzz_timeout`
+seconds). That is the right budget for the pipeline — it is what the verdict
+rests on — but it is a poor budget for a measurement, because a loaded
+machine gets through fewer inputs in twenty seconds than an idle one. The
+coverage under the `buggy` token is therefore the **as-run** coverage: an
+honest record of the run that produced the verdict, and machine-dependent.
+
+`remeasure` is the same kept harnesses on the same buggy build, re-run with
+a fixed **input** budget: `-runs=20000` inputs per harness and
+`--keep_going=1000` findings to run past (an accepted harness crashes the
+buggy build by design, so without a large `--keep_going` the run would end
+on its first input). The number of inputs is the experiment's parameter, so
+two machines agree on the answer. Same build, same harnesses, different
+budget — which is why it is a build token of its own and never averaged
+into `buggy`.
+
+It is a re-run, not a re-reading, so it costs a fuzzing pass per leg and is
+off unless `--remeasure` is given. The harnesses come from `result.jsonl`'s
+`accepted_harnesses`, which the pipeline records for exactly this purpose; a
+leg archived before that field existed has no set to re-run and is skipped
+rather than measured as empty. The run itself is `metrics.collect
+.harness_coverage` from the sibling package (section 8).
+
+| build token | harness set | budget | build |
+|---|---|---|---|
+| `buggy` | kept | wall clock, as run | buggy |
+| `patched` | kept | wall clock, as run | patched |
+| `compiled` | every candidate that compiled | wall clock, as run | buggy |
+| `remeasure` | kept | fixed input count | buggy |
+
+### 3.3.3 F_stat — what the harnesses *could* reach
 
 F as described above is *dynamic*: it is what ran. Its static counterpart,
 **F_stat**, is what the harnesses could have run at all. It answers a
@@ -476,8 +568,8 @@ Bugs with large call graphs therefore do not dominate the result.
 | `locations.py` | the shared data model: `MethodRef`, `LineRef`, ring-tagged `MethodSet`/`LineSet`, and `MethodIndex` for matching names across tools | no |
 | `neighbourhood.py` | the seed/caller/callee builder used for both P and R̂, on the pipeline's fuzz-introspector call graph, with the pipeline's caps; `SourceScan` is the source-text caller fallback of section 3.1 | no |
 | `patch_derived.py` | P from a run's `context.json` (or, for older runs, the same JSON block inside `trace.md`); `lines_for` turns methods into line sets | no |
-| `root_cause.py` | R̂: reads the Defects4J developer patch (`<D4J_HOME>/framework/projects/<Project>/patches/<bug>.src.patch`, fixed→buggy direction, verified at run time) or falls back to diffing a fixed checkout; seeds, lines, and the manifestation frames from `failing_tests` | **yes — the only one** |
-| `coverage.py` | F(H): parses JaCoCo XML reports, runs the JaCoCo command-line tool on the `.exec` dumps a `--coverage` run leaves behind, and per build reads one MERGED report over all of them (section 4.3), falling back to a union of the per-harness reports | no |
+| `root_cause.py` | R̂: reads the Defects4J developer patch (`<D4J_HOME>/framework/projects/<Project>/patches/<bug>.src.patch`, fixed→buggy direction, verified at run time) or falls back to diffing a fixed checkout; seeds, lines, and the manifestation frames from `failing_tests`; `trigger_gate` (section 3.2) and `population_check`, which states a population's exclusions | **yes — the only one** |
+| `coverage.py` | F(H): parses JaCoCo XML reports, runs the JaCoCo command-line tool on the `.exec` dumps a `--coverage` run leaves behind, and per build reads one MERGED report over all of them (section 4.3), falling back to a union of the per-harness reports; repairs the probe miss from the run's stack frames (section 3.3) and re-runs the kept set on a fixed input budget (`remeasure_leg`, section 3.3.2) | no |
 | `static_reach.py` | F_stat: the library methods a harness source calls (javalang), and the bounded call-graph walk down from them; the `kept`/`compiled` harness sets, with the `trace.md` fallback for archived legs | no |
 | `crash_sites.py` | crash sites from raw Jazzer output (`fuzz_out/` of a `--coverage` run) or from the evidence blocks archived in `trace.md` | no |
 | `metrics.py` | the five metrics per leg, at method, line and branch granularity, aggregate and per ring, from the JSON files below only | no |
@@ -495,9 +587,16 @@ harnesses (`FuzzRunner`) and the acceptance check of every compiled
 candidate (`HarnessVerifier`, section 3.3.1) — snapshots the compiled
 classes, saves raw fuzzer output, and copies every compiled candidate's
 harness source to `<leg>/harness_src/<attempt>.java` (the source F_stat is
-read from, section 3.3.2); `--naive` removes the root-cause
-context from the prompts. With the flags off the pipeline's
-prompts and commands are byte-for-byte unchanged, and tests pin that.
+read from, section 3.3.3); `--naive` removes the root-cause NEIGHBOURHOOD
+(level B: the patch diff and the failing test stay; callers, callees and
+coverage steering go) from every model-facing prompt of a leg — harness
+generation (`harness/prompts.py`: the variant-analysis `<root_cause_reachable>` block
+with its covered-functions/found-signatures steering, the `<xref>` call-site
+examples, the `<callee>` declarations, and the propagation rule's
+reachable-region clause) AND relation synthesis (`relations/relation_synth.py`:
+the "Reachable API" line), with the honoured builders listed in the leg
+record's `naive_scope`. With the flags off the pipeline's prompts and
+commands are byte-for-byte unchanged, and tests pin that.
 
 ### 6.2 Running it
 
@@ -508,6 +607,13 @@ python -m java.measurements.cli <run_dir> \
     --d4j_home /home/code/defects4j \
     --introspector          # build the call graph so R̂ gets its rings
     [--coverage]            # also turn cov/*.exec into coverage JSON
+    [--trigger_gate]        # run the bug's own triggering tests and check
+                            #  they reach R̂₀ (slow: one `defects4j test -t`
+                            #  each); also fills R̂₁, section 3.2
+    [--remeasure]           # re-run the kept harnesses on a fixed input
+                            #  budget (--runs / --keep_going), section 3.3.2
+    [--gated_only]          # aggregate only the legs whose bug PASSED the
+                            #  gate (legs where it was not run are kept)
     #  (F_stat is computed whenever --introspector is on: it needs the
     #   call graph, and it reads harness_src/ or falls back to trace.md)
     [--naive_run <run_dir>] # a --naive run to diff against (Table 3 delta)
@@ -533,8 +639,10 @@ so under `branches_from`.
 
 Per leg, under `<leg>/measurements/`: `patch_derived.json`,
 `patch_derived_lines.json`, `root_cause.json` (which holds `methods`,
-`lines`, `body_lines` and `manifest`), `coverage_buggy.json`,
-`coverage_patched.json`, `coverage_compiled.json`, `crash_sites.json`,
+`lines`, `body_lines`, `manifest` and, with `--trigger_gate`,
+`trigger_gate`), `coverage_buggy.json`,
+`coverage_patched.json`, `coverage_compiled.json`, `coverage_remeasure.json`
+(with `--remeasure`), `crash_sites.json`,
 `errors.json`. Each set file is a list of locations with their ring tags,
 how each was found (`provenance`: `introspector` or `source-scan`), and the
 names that could not be matched. The three coverage files are the
@@ -542,13 +650,16 @@ three harness-set/build combinations of section 3.3.1: the kept harnesses
 on the buggy and the patched build, and every harness that compiled (on the
 buggy build). Each also holds `line_branches` — per source line, how many
 branch outcomes it has and how many were taken, which is what the branch
-granularity counts — and `branches_from`, either `merged` (exact) or
-`union-upper-bound` (the per-harness reports added up; section 4.3). A leg's `result.jsonl` says which harnesses each set is over,
+granularity counts — `branches_from`, either `merged` (exact) or
+`union-upper-bound` (the per-harness reports added up; section 4.3), and
+the two provenance halves of `methods`: `methods_from_probes` (JaCoCo's own
+counters) and `frame_methods` (what the run's stack traces proved,
+section 3.3). A leg's `result.jsonl` says which harnesses each set is over,
 under `coverage`: `compiled_attempts` (every candidate the acceptance check
 ran), `accepted_attempts` (the ones it kept) and `sources` (the saved
 harness sources).
 
-Two more files hold F_stat (section 3.3.2): `static_kept.json` and
+Two more files hold F_stat (section 3.3.3): `static_kept.json` and
 `static_compiled.json`, one per harness set. Each holds `methods` (the set
 itself), `entries` (the library methods the harness sources call directly),
 `edges` (the call-graph edges the walk crossed), `unmatched` (calls that
@@ -576,7 +687,7 @@ the build slot: `rcc__method__R0__compiled__dyn`,
 `psc__line__na__compiled__dyn`. Two kinds exist (`F_KINDS` in
 `metrics.py`). `dyn` is the dynamic set of section 3.3 — what the harnesses
 actually executed, from JaCoCo coverage. `stat` is the static set of
-section 3.3.2 — what they could have executed — and its keys are
+section 3.3.3 — what they could have executed — and its keys are
 `rcc__method__R0__buggy__stat`, `rcp__method__full__buggy__stat`,
 `psc__method__na__buggy__stat` and the same three with `compiled` in the
 build slot. Two things are true of every `stat` key and of no `dyn` key:
@@ -627,7 +738,12 @@ since they count the same line sets. `Rbody` is read from `root_cause.json`'s
 and `available.root_cause_body_lines` says which case a leg is in.
 `rcr_cross__…` is the ring-of-R̂ by ring-of-P count table. Every line also
 carries `available` (which inputs existed), `sizes` (|P|, |R̂|, |F| and
-their per-ring counts, plus `F_kind`, which records per build slot which
+their per-ring counts, plus `F_method_probes` and `F_frame_added`, the two
+provenances of F per build — the probes' own count, and how many methods
+only a stack frame proved ran (section 3.3); `trigger_gate_passed` and
+`trigger_gate_missed`, the gate's verdict for this bug and the seeds it
+did not reach, both `null` when the gate was not run (section 3.2); plus
+`F_kind`, which records per build slot which
 *kinds* of F that slot carries — a list, `["dyn"]`, `["stat"]` or both;
 `Fstat_method` / `Fstat_entries` / `Fstat_harnesses` / `Fstat_unmatched` /
 `Fstat_source`, the static set's size, its entry count, how many harnesses
@@ -907,3 +1023,69 @@ run's `metrics.jsonl`. A record with no matching leg, no root-cause file or
 no evidence still gets a row: `available` is false and `reason` says which
 input was missing. `--out` writes one JSON object per record; without it
 nothing is written at all.
+
+
+## 8. Relation to `src/metrics`
+
+There are two implementations of root-cause coverage in this repository,
+and they are kept apart on purpose.
+
+`src/metrics` is the smaller and older one: RCC at method level for one
+harness set, on one bug at a time, plus the sweeps that drive it end to end
+(`sweep.py` for the region and the gate, `rcc_sweep.py` for the whole
+experiment). Its region comes from `execution.diffcov`, its F(H) is read
+through fuzz-introspector's JaCoCo loader, and its method identity is
+`metrics.keys.MethodKey`. It is what produced
+`results/rcc_hr_crashing_holdout_*`.
+
+`src/java/measurements` — this package — is the superset: five metrics, not
+one; three granularities (method, line, branch); the ring-tagged regions
+R̂₀/R̂₁/R̂body and the caller/callee neighbourhood; the kept and all-compiled
+harness sets; the naive arm and the H_R − H_N delta; and the paper's tables.
+It parses the JaCoCo XML itself and its identity is `locations.MethodRef`.
+
+**What was ported from `src/metrics` into this package**
+
+| piece | there | here |
+|---|---|---|
+| the frame repair of JaCoCo's probe miss | `reached.reached_from_stack` | `coverage.frame_methods` / `repair_from_frames`, wired into `collect_leg` per build (section 3.3) |
+| the triggering-test gate | `collect.trigger_coverage` + `rcc.trigger_gate` | `root_cause.trigger_gate`, which **calls hers** to run the tests and does the matching here (section 3.2) |
+| the fixed-input-budget measurement pass | `collect.harness_coverage` | `coverage.remeasure_leg`, which **calls hers** to run the harnesses (section 3.3.2) |
+| the population table | `sweep.py`'s summary | `root_cause.population_check` |
+| the JaCoCo jar and the Defects4J home | `config.JACOCO_CLI_*`, `config.D4J_HOME` | the same constants, read by `coverage.ensure_jacoco_cli` and the CLI's `--d4j_home` default |
+
+The two runners were reused rather than rewritten because both are *how a
+process is started*, not *what a number means*: which flags a measurement
+pass must pass to Jazzer, and how to reach a forked test JVM with the JaCoCo
+agent. Rewriting them would have created a second place for those flags to
+drift. The matching, the region and the metric stay here.
+
+**The import rule is one-way.** `java.measurements` may import `metrics`;
+`metrics` must never import `java.measurements`. The reason is the firewall
+of section 3.2: `root_cause.py` is the only module in the repository allowed
+to read a developer fix, and `tests/test_measurements_firewall.py` enforces
+that nothing the pipeline can reach imports it. `metrics` is imported by the
+sweeps, which the pipeline's own runner is invoked from, so an edge from
+`metrics` into this package would put the quarantined module one import
+closer to the pipeline. Both imports here are made inside the function that
+needs them, so importing `java.measurements.coverage` does not drag the
+sibling package (or Defects4J, or Jazzer) in with it.
+
+**Do the two agree?** On the one real dataset both have run —
+`results/rcc_hr_crashing_holdout_20260904_001615`, nine scored crashing
+bugs — RCC agrees on every bug (1.0 everywhere) and the frame repair
+recovers the same two methods on Math-70, the one bug that needs it.
+|F(H)| does *not* agree everywhere: on four of the nine bugs `src/metrics`
+counts one method more than we do. The difference is fuzz-introspector's,
+and it is a false positive rather than something we lose. Its loader decides
+which lines belong to a method by taking, from the method's declaration
+line, as many entries of the source file's line list as the method's LINE
+counter says the method has; that window runs past the method whenever the
+two disagree, and a covered line belonging to a *later* method is then
+credited to the earlier one. In all four cases the extra method is one
+JaCoCo's own METHOD counter reports as never executed
+(`StringUtils.<clinit>` on Lang-16 and Lang-20, and the uncovered
+`UnivariateRealSolverImpl.<init>` overload that shares its declaration line
+with a covered one on Math-70 and Math-85). We count a method when JaCoCo
+says it was executed. `tests/test_measurements_crosscheck.py` pins all of
+this, per bug, against the real reports, and fails if the gap moves.

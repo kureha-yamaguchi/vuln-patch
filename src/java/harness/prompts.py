@@ -26,7 +26,9 @@ class PromptBuilder:
         #   (1) the variant-analysis / <root_cause_reachable> block (both
         #       the crashing and the semantic path), which also carries the
         #       covered_functions / found_signatures steering,
-        #   (2) the call-site <xref> examples in each function block,
+        #   (2) the call-site <xref> examples in each function block and
+        #       the related-callee declarations block beside them (the
+        #       caller and callee halves of the neighbourhood),
         #   (3) the clause of the propagation rule that widens the accepted
         #       stack region to "a function listed in
         #       <root_cause_reachable>" — a dangling reference once (1) is
@@ -556,6 +558,13 @@ class PromptBuilder:
         USED; the declarations below show what they return and how real
         implementations behave — the context needed to reason about a
         fault that spans a caller and a callee."""
+        # --naive: this is the CALLEE half of the root-cause neighbourhood
+        # (names, signatures, bodies and concrete implementations of the
+        # methods downstream of the patched one), the mirror of the <xref>
+        # caller half already dropped above. Level B keeps the patch and the
+        # failing test and removes the neighbourhood, so it goes too.
+        if self.naive:
+            return ''
         callees = getattr(fn, 'related_callees', None)
         if not callees:
             return ''

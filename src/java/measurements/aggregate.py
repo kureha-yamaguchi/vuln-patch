@@ -3,7 +3,7 @@
 `metrics.write_metrics` leaves one line per leg in ``metrics.jsonl``.  This
 module rolls those lines up:
 
-`aggregate(run_dir)`
+`aggregate(run_dir, gated_only=...)`
     Macro-averages, in this order (the order matters):
       1. per BUG — the mean over that bug's legs, so a bug that several APR
          tools patched counts exactly once;
@@ -13,6 +13,11 @@ module rolls those lines up:
     rate at which the pipeline caught the patch inside each RCC bin, and
     the mean RCC of the caught legs against the missed ones.  That table is
     per leg, not per bug — it is asking about individual decisions.
+    With `gated_only`, legs whose bug failed the triggering-test gate are
+    dropped first: their own triggering tests do not reach every method the
+    developer fix changed, so their R̂ or their coverage plumbing is wrong
+    and their RCC is a number about the tooling. The count that left is
+    always reported (`n_gate_failed`), gated or not.
 
 `delta(naive_run, conditioned_run)`
     Joins the two runs' legs on (project, bug_id, apr_tool, label), keeps
@@ -97,6 +102,7 @@ BUILD_LABELS = {
     'buggy': 'kept harnesses',
     'patched': 'kept harnesses',
     'compiled': 'all compiled harnesses',
+    'remeasure': 'kept harnesses, fixed input budget',
 }
 
 
@@ -307,13 +313,35 @@ def rcc_vs_caught(legs: Sequence[dict], rcc_key: Optional[str] = None,
     }
 
 
+def gate_passed(leg: dict) -> Optional[bool]:
+    """Did this leg's bug pass the triggering-test gate?
+
+    None when the gate was not run — it is slow and off by default, so most
+    runs have no answer, and "not asked" is not "failed"."""
+    sizes = leg.get('sizes') or {}
+    value = sizes.get('trigger_gate_passed')
+    return bool(value) if value is not None else None
+
+
 def aggregate_legs(legs: Sequence[dict], run_dir: Optional[str] = None,
-                   fkind: str = DEFAULT_F_KIND) -> dict:
+                   fkind: str = DEFAULT_F_KIND,
+                   gated_only: bool = False) -> dict:
     """Aggregate an explicit list of leg rows (used by `aggregate` and by
     `delta`, which needs the same maths over a restricted set of legs).
 
     Every metric present is averaged whatever its key, F-using or not;
-    `fkind` only picks the RCC column of the RCC-versus-caught table."""
+    `fkind` only picks the RCC column of the RCC-versus-caught table.
+
+    `gated_only` drops the legs whose bug FAILED the triggering-test gate:
+    the bug's own triggering tests did not reach every method the developer
+    fix changed, so its R̂ or the coverage plumbing is wrong and its RCC
+    describes our tooling rather than the harness set. Legs whose gate was
+    not run are KEPT — the gate is off by default, and treating "not asked"
+    as "failed" would empty most runs. The count that left is reported as
+    `n_gate_failed` either way, so a mean is never printed without it."""
+    failed = [leg for leg in legs if gate_passed(leg) is False]
+    if gated_only:
+        legs = [leg for leg in legs if gate_passed(leg) is not False]
     scored = [leg for leg in legs if 'error' not in leg]
     bugs = _per_bug(scored)
     return {
@@ -321,6 +349,8 @@ def aggregate_legs(legs: Sequence[dict], run_dir: Optional[str] = None,
         'n_legs': len(scored),
         'n_bugs': len(bugs),
         'n_errors': len(legs) - len(scored),
+        'n_gate_failed': len(failed),
+        'gated_only': bool(gated_only),
         'f_kind': fkind,
         'by_kind': _per_kind(bugs),
         'per_bug': bugs,
@@ -328,10 +358,11 @@ def aggregate_legs(legs: Sequence[dict], run_dir: Optional[str] = None,
     }
 
 
-def aggregate(run_dir: str, fkind: str = DEFAULT_F_KIND) -> dict:
+def aggregate(run_dir: str, fkind: str = DEFAULT_F_KIND,
+              gated_only: bool = False) -> dict:
     """Read ``<run_dir>/metrics.jsonl`` and roll it up (see module docstring)."""
     return aggregate_legs(M.read_metrics(run_dir), run_dir=run_dir,
-                          fkind=fkind)
+                          fkind=fkind, gated_only=gated_only)
 
 
 # ---------------------------------------------------------------------------

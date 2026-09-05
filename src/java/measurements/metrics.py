@@ -133,7 +133,15 @@ METRICS_FILE = 'metrics.jsonl'
 #: not the prompt, decide RCC; see the README, "Kept versus all compiled
 #: harnesses".  ``buggy`` stays first: it is the primary build.
 BUILD_COMPILED = 'compiled'
-BUILDS = ('buggy', 'patched', BUILD_COMPILED)
+#: ``remeasure`` is the same KEPT harnesses on the same buggy build as
+#: ``buggy``, re-run with a fixed INPUT budget (``-runs=N``) instead of the
+#: wall-clock budget the pipeline ran them under.  ``buggy`` is the as-run
+#: coverage — the runs the verdict rests on, and machine-dependent because
+#: a clock is — and ``remeasure`` is the reproducible re-reading of the same
+#: set (`coverage.remeasure_leg`).  They are separate slots because their
+#: budgets differ, so a mean must never mix them.
+BUILD_REMEASURE = 'remeasure'
+BUILDS = ('buggy', 'patched', BUILD_COMPILED, BUILD_REMEASURE)
 
 #: The harness sets the STATIC reachable set F_stat is computed for, and
 #: the build slot each one's metric keys use.  ``kept`` is the harnesses the
@@ -301,6 +309,23 @@ def _load_line_set(path: str) -> Optional[loc.LineSet]:
     return loc.LineSet.from_dict(d) if isinstance(d, dict) else None
 
 
+def _trigger_gate(path: str) -> Optional[dict]:
+    """``root_cause.json``'s ``trigger_gate`` block, or None when the gate
+    was not run.
+
+    The gate asks whether the bug's OWN triggering tests reach every method
+    the developer fix changed.  When they do not, R̂ or the coverage
+    plumbing is wrong for that bug and its RCC is a number about our
+    tooling — so the flag travels with every metrics row, and
+    `aggregate.aggregate(gated_only=True)` drops those legs.  Not run and
+    failed are different things, and None is the first of them."""
+    d = _read_json(path)
+    if not isinstance(d, dict):
+        return None
+    gate = d.get('trigger_gate')
+    return gate if isinstance(gate, dict) else None
+
+
 def _root_cause_parts(path: str):
     """``root_cause.json`` -> (methods MethodSet, lines LineSet, body_lines
     LineSet, manifest MethodSet).  Any part that is absent comes back None;
@@ -342,6 +367,16 @@ class _Coverage:
         self.build = d.get('build') or build
         self.methods: Set[loc.MethodRef] = {
             loc.MethodRef.from_dict(x) for x in (d.get('methods') or [])}
+        # The probe/frame split of `methods`.  A coverage file written
+        # before the frame repair existed has neither key: every method in
+        # it came from a probe, so the probe half is the whole set and the
+        # frame half is empty.  See `coverage.frame_methods`.
+        self.methods_from_probes: Set[loc.MethodRef] = (
+            {loc.MethodRef.from_dict(x) for x in d['methods_from_probes']}
+            if isinstance(d.get('methods_from_probes'), list)
+            else set(self.methods))
+        self.frame_methods: Set[loc.MethodRef] = {
+            loc.MethodRef.from_dict(x) for x in (d.get('frame_methods') or [])}
         self.lines: Set[loc.LineRef] = {
             loc.LineRef.from_dict(x) for x in (d.get('lines') or [])}
         self.all_methods: Set[loc.MethodRef] = {
@@ -353,6 +388,14 @@ class _Coverage:
             self.line_branches[loc.LineRef.from_dict(x)] = (
                 int(x.get('covered') or 0), int(x.get('total') or 0))
         self.branches_from = d.get('branches_from') or ''
+
+    @property
+    def frame_added(self) -> Set[loc.MethodRef]:
+        """Methods only a stack FRAME proves ran: JaCoCo's probe sits
+        after a method's exit, so a method that throws through its only
+        call reads as missed from probes alone.  Reported per build as
+        ``sizes.F_frame_added``."""
+        return self.frame_methods - self.methods_from_probes
 
 
 def _load_coverage(mdir: str) -> Dict[str, _Coverage]:
@@ -378,6 +421,16 @@ class _Static:
         self.source = d.get('source') or ''
         self.methods: Set[loc.MethodRef] = {
             loc.MethodRef.from_dict(x) for x in (d.get('methods') or [])}
+        # The probe/frame split of `methods`.  A coverage file written
+        # before the frame repair existed has neither key: every method in
+        # it came from a probe, so the probe half is the whole set and the
+        # frame half is empty.  See `coverage.frame_methods`.
+        self.methods_from_probes: Set[loc.MethodRef] = (
+            {loc.MethodRef.from_dict(x) for x in d['methods_from_probes']}
+            if isinstance(d.get('methods_from_probes'), list)
+            else set(self.methods))
+        self.frame_methods: Set[loc.MethodRef] = {
+            loc.MethodRef.from_dict(x) for x in (d.get('frame_methods') or [])}
         self.entries: Set[loc.MethodRef] = {
             loc.MethodRef.from_dict(x) for x in (d.get('entries') or [])}
         self.harnesses: List[str] = list(d.get('harnesses') or [])
@@ -901,6 +954,7 @@ def compute_leg(leg_dir: str) -> dict:
     p_lines = _load_line_set(os.path.join(mdir, F_PATCH_DERIVED_LINES))
     r_methods, r_lines, r_body_lines, manifest = _root_cause_parts(
         os.path.join(mdir, F_ROOT_CAUSE))
+    gate = _trigger_gate(os.path.join(mdir, F_ROOT_CAUSE))
     p_methods, p_jdk = _strip_jdk(p_methods)
     r_methods, r_jdk = _strip_jdk(r_methods)
     manifest, _ = _strip_jdk(manifest)
@@ -929,6 +983,10 @@ def compute_leg(leg_dir: str) -> dict:
         'coverage_buggy': 'buggy' in covs,
         'coverage_patched': 'patched' in covs,
         'coverage_compiled': BUILD_COMPILED in covs,
+        'coverage_remeasure': BUILD_REMEASURE in covs,
+        # Whether the triggering-test gate was RUN for this leg — not
+        # whether it passed, which is `sizes.trigger_gate_passed`.
+        'trigger_gate': gate is not None,
         'static_kept': 'kept' in statics,
         'static_compiled': BUILD_COMPILED in statics,
         'crash_sites': sites is not None,
@@ -961,6 +1019,13 @@ def compute_leg(leg_dir: str) -> dict:
         # there.  See F_KINDS.
         'F_kind': _f_kinds(covs, statics),
         'F_method': {b: len(c.methods) for b, c in covs.items()},
+        # The probe/frame split of F, per build.  ``F_frame_added`` is the
+        # size of JaCoCo's probe limitation on this leg: methods a stack
+        # frame proves ran that the probes missed, because the probe sits
+        # after the method's exit and the method threw through it.
+        'F_method_probes': {b: len(c.methods_from_probes)
+                            for b, c in covs.items()},
+        'F_frame_added': {b: len(c.frame_added) for b, c in covs.items()},
         'F_line': {b: len(c.lines) for b, c in covs.items()},
         'F_all_methods': {b: len(c.all_methods) for b, c in covs.items()},
         # The static reachable set, per HARNESS SET (not per build: static
@@ -991,6 +1056,13 @@ def compute_leg(leg_dir: str) -> dict:
                if p_lines is not None else None),
         ) for b, c in covs.items()},
         'manifest_method': len(manifest) if manifest is not None else None,
+        # None when the gate was not run; True/False when it was.  A leg
+        # with False has an R̂ its own triggering tests do not reach, so its
+        # RCC measures the extraction rather than the harness set.
+        'trigger_gate_passed': (bool(gate.get('passed'))
+                                if gate is not None else None),
+        'trigger_gate_missed': (list(gate.get('missed') or [])
+                                if gate is not None else None),
         # Where the CALLER ring came from: the call graph, or the source
         # scan that fills in for it when the graph resolved no caller.
         'P_caller_provenance': _caller_provenance(p_methods),

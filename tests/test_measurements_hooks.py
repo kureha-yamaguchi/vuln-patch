@@ -14,9 +14,17 @@ rule and it is the rule that can silently break.
     `FuzzRunner` (the KEPT harnesses, builds `patched` and `buggy`) and
     `HarnessVerifier`, whose acceptance run is the only time every
     COMPILED candidate is executed (build `compiled`).
-  * HOOK 3 — harness prompt assembly, harness/prompts.py. `--naive`
-    builds the paper's unconditioned H_N prompt by dropping the three
-    root-cause-conditioning insertions.
+  * HOOK 3 — prompt assembly, harness/prompts.py AND
+    relations/relation_synth.py. `--naive` builds the paper's
+    unconditioned H_N leg by dropping every root-cause-NEIGHBOURHOOD
+    insertion from BOTH model-facing prompt builders: the harness prompt
+    (variant-analysis / <root_cause_reachable> block with its coverage
+    steering, <xref> caller call-sites, <callee> declarations, and the
+    reachable-region clause of the propagation rule) and the
+    relation-synthesis prompt (the "Reachable API" line). A leg whose
+    harness prompt is unconditioned while its rule-synthesis prompt still
+    lists the reachable set is not an H_N leg, and nothing but a test
+    says so.
 
 Failure mode they target: a measurement that changes the thing it
 measures. Every hook is flag-gated (hook 1 is a file write and nothing
@@ -37,10 +45,11 @@ sys.path.insert(0, os.path.join(ROOT, 'src'))
 
 from java.bug_context import call_graph                    # noqa: E402
 from java.bug_context.analysis import (                     # noqa: E402
-    PatchContext, TargetAnalyzer, TouchedFunction)
+    PatchContext, RelatedCallee, TargetAnalyzer, TouchedFunction)
 from java.bug_context.failure_test import FailureTest       # noqa: E402
 from java.execution import fuzz_runner                      # noqa: E402
 from java.harness.prompts import PromptBuilder              # noqa: E402
+from java.relations.relation_synth import RelationSynthesizer  # noqa: E402
 import run as run_mod                                       # noqa: E402
 
 
@@ -753,6 +762,10 @@ def test_record_coverage_accepts_no_harnesses_at_all(tmp_path):
 VARIANT_MARKERS = ['<root_cause_reachable>',
                    'This harness is ONE of a set probing the root cause']
 XREF_MARKERS = ['<xref>', 'Call-site examples']
+# The callee half of the same neighbourhood: declarations (and concrete
+# implementations) of what the patched method calls.
+CALLEE_MARKERS = ['<callee', 'whose behaviour the patched',
+                  'indexOfIgnoreCase']
 CLAUSE_MARKER = 'or a function listed in'
 
 
@@ -769,6 +782,13 @@ def prompt_context():
         xrefs=['void caller() { StringUtils.substringBetween("", "x"); }'],
         xref_names=['[org.apache.commons.lang3.Caller].caller()'],
         reachable=['[org.apache.commons.lang3.StringUtils].substring(int)'],
+        related_callees=[RelatedCallee(
+            name='indexOfIgnoreCase',
+            source_file='StringUtils.java',
+            signature='static int indexOfIgnoreCase(CharSequence, int)',
+            source=('static int indexOfIgnoreCase(CharSequence s, int p) '
+                    '{\n    return -1;\n}'),
+        )],
     )
     return PatchContext(
         modified_files=['src/main/java/org/apache/commons/lang3/'
@@ -829,7 +849,7 @@ def test_conditioned_prompt_carries_all_three_insertions(
     if bug_kind == 'semantic':
         kw['semantic_test'] = prompt_test
     text = _text(PromptBuilder(), prompt_context, [prompt_test], **kw)
-    for marker in VARIANT_MARKERS:
+    for marker in VARIANT_MARKERS + CALLEE_MARKERS:
         assert marker in text
     if bug_kind == 'crashing':
         # The xref and propagation-clause insertions live on the crashing
@@ -853,7 +873,8 @@ def test_naive_prompt_drops_all_three_insertions(
         kw['semantic_test'] = prompt_test
     text = _text(PromptBuilder(naive=True), prompt_context,
                  [prompt_test], **kw)
-    for marker in VARIANT_MARKERS + XREF_MARKERS + [CLAUSE_MARKER]:
+    for marker in (VARIANT_MARKERS + XREF_MARKERS + CALLEE_MARKERS
+                   + [CLAUSE_MARKER]):
         assert marker not in text, marker
 
 
@@ -873,7 +894,12 @@ def test_naive_only_ever_removes_text(prompt_context, prompt_test, bug_kind):
     naive = _text(PromptBuilder(naive=True), prompt_context,
                   [prompt_test], **kw)
     a, b = full.splitlines(), naive.splitlines()
-    insertion_markers = VARIANT_MARKERS + XREF_MARKERS + [
+    # The callee block is rendered from the fixture, so its exact lines are
+    # available rather than guessed at with substrings.
+    callee_lines = set(PromptBuilder()._related_callees_block(
+        prompt_context.functions[0]).splitlines())
+    assert callee_lines
+    insertion_markers = VARIANT_MARKERS + XREF_MARKERS + CALLEE_MARKERS + [
         'Already covered by earlier harnesses',
         'Functions covered:', 'Crashes already found:',
         'Uncovered functions to steer toward:',
@@ -900,7 +926,8 @@ def test_naive_only_ever_removes_text(prompt_context, prompt_test, bug_kind):
         # blank line that separated the block from its neighbour).
         removed = '\n'.join(a[i1:i2])
         assert (not removed.strip()
-                or any(m in removed for m in insertion_markers)), removed
+                or any(m in removed for m in insertion_markers)
+                or set(a[i1:i2]) <= callee_lines), removed
     # And the sections that have nothing to do with conditioning survive.
     assert prompt_context.patch_text in naive
     assert prompt_context.functions[0].func_source in naive
@@ -916,3 +943,126 @@ def test_naive_keeps_the_propagation_rule_minus_the_reachable_clause(
     # region the naive prompt no longer describes is gone.
     assert 'PROPAGATE a throwable only when BOTH hold' in naive
     assert 'its stack trace passes through `substringBetween`.' in naive
+
+
+# ===========================================================================
+# HOOK 3b — --naive drops the neighbourhood from the RULE-SYNTHESIS prompt
+# ===========================================================================
+#
+# The first --naive pilot ablated only the harness prompt. The synthesis
+# prompt kept its "Reachable API" line, so both arms of the comparison were
+# handed the callee set and the ablation measured less than it claimed.
+# These tests pin the same three properties as the harness-prompt ones: the
+# OFF path is byte-identical, the flag defaults to False, and the ON path
+# differs by removals only.
+
+REACHABLE_MARKER = 'Reachable API (call these, do not reimplement):'
+
+
+class _NullGenerator:
+    """A generator that returns nothing. `synthesize` stashes the exact
+    prompt in `last_prompt` before parsing, so the prompt text is testable
+    without an LLM (the empty reply just yields zero candidates)."""
+
+    def __init__(self):
+        self.calls = []
+
+    def generate(self, messages):
+        self.calls.append(messages)
+        return ''
+
+
+SYNTH_REACHABLE = ['StringUtils.substring', 'StringUtils.indexOf']
+
+
+def _synth_prompt(**kw):
+    """Build the synthesis prompt and return (context, instructions)."""
+    synth = RelationSynthesizer(_NullGenerator(), **kw)
+    synth.synthesize(
+        patched_sources=['public static String substringBetween(String s,'
+                         ' String tag) {\n    return s.substring(1);\n}'],
+        class_name='StringUtils',
+        reachable=SYNTH_REACHABLE,
+        mined_tests=[],
+        trigger_summary='StringIndexOutOfBoundsException',
+        patch_text=('--- a/StringUtils.java\n+++ b/StringUtils.java\n'
+                    '-    return s.substring(1);\n'
+                    '+    if (s.isEmpty()) return null;\n'),
+        javadocs=['/** Returns the substring between the tags. */'],
+        class_context=['<class name="StringUtils" role="patched"/>'],
+        source_imports=['import java.util.List;'],
+        trigger_test_block='// StringUtilsTest::testSubstringBetween',
+        trigger_methods=['substringBetween'],
+    )
+    return synth.last_prompt['context'], synth.last_prompt['instructions']
+
+
+@pytest.mark.parametrize('focused', [False, True])
+def test_default_synthesis_prompt_is_unchanged_and_defaults_to_false(focused):
+    """(ii) The OFF path: the synthesizer built WITHOUT the new argument
+    must produce exactly the prompt the synthesizer built with it
+    explicitly False produces, on both the broad and the focused path."""
+    before = _synth_prompt(focused=focused)
+    after = _synth_prompt(focused=focused, naive=False)
+    assert before == after
+    assert RelationSynthesizer(_NullGenerator()).naive is False
+
+
+@pytest.mark.parametrize('focused', [False, True])
+def test_conditioned_synthesis_prompt_carries_the_reachable_line(focused):
+    """The guard that keeps the naive assertion from being vacuous."""
+    ctx, _instr = _synth_prompt(focused=focused)
+    assert REACHABLE_MARKER in ctx
+    for name in SYNTH_REACHABLE:
+        assert name in ctx
+
+
+@pytest.mark.parametrize('focused', [False, True])
+def test_naive_synthesis_prompt_drops_the_reachable_line(focused):
+    """(i) With the flag, the callee set is gone — the line AND the method
+    names it listed. This is the leak the pilot shipped with: nine
+    occurrences of this line in each arm's trace."""
+    ctx, _instr = _synth_prompt(focused=focused, naive=True)
+    assert REACHABLE_MARKER not in ctx
+    for name in SYNTH_REACHABLE:
+        assert name not in ctx
+
+
+@pytest.mark.parametrize('focused', [False, True])
+def test_naive_synthesis_only_ever_removes_text(focused):
+    """"Everything else identical", line by line: every difference must be
+    a DELETION of the reachable line. The permitted level-B grounding —
+    the failing test, the patch, the patched class's own source, javadoc
+    and imports — must survive untouched."""
+    import difflib
+    full_ctx, full_instr = _synth_prompt(focused=focused)
+    naive_ctx, naive_instr = _synth_prompt(focused=focused, naive=True)
+    assert full_instr == naive_instr
+    a, b = full_ctx.splitlines(), naive_ctx.splitlines()
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(
+            None, a, b).get_opcodes():
+        if tag == 'equal':
+            continue
+        assert tag == 'delete', (tag, a[i1:i2], b[j1:j2])
+        removed = '\n'.join(a[i1:i2])
+        assert not removed.strip() or REACHABLE_MARKER in removed, removed
+    assert '// StringUtilsTest::testSubstringBetween' in naive_ctx
+    assert 'return s.substring(1);' in naive_ctx
+    assert 'import java.util.List;' in naive_ctx
+    assert 'Returns the substring between the tags.' in naive_ctx
+    assert 'THE PATCH-CHANGED CLASS: StringUtils' in naive_ctx
+
+
+def test_naive_scope_is_recorded_and_names_both_prompt_builders():
+    """The leg record must say WHICH prompt builders honoured the flag —
+    `naive: True` alone cannot distinguish a fully unconditioned leg from
+    one whose synthesis prompt still carried the neighbourhood."""
+    src = open(os.path.join(ROOT, 'src', 'java', 'run.py'),
+               encoding='utf-8').read()
+    assert "record_extras['naive_scope']" in src
+    i = src.index("record_extras['naive_scope']")
+    block = src[i:i + 900]
+    assert 'harness_prompt' in block
+    assert 'relation_synth' in block
+    # And the synthesizer is actually constructed with the flag.
+    assert "naive=getattr(args, 'naive', False))" in src
