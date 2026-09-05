@@ -1811,6 +1811,12 @@ method (StringUtils.<clinit>, an uncovered UnivariateRealSolverImpl
 ctor); ours uses JaCoCo's METHOD counter and is a strict subset. Layout
 decision pending: move the language-agnostic core into src/metrics/ and
 keep src/java/measurements as the Java backend (not yet done).
+**RESOLVED (2026-09-05):** done, then finished — src/metrics/ is now
+core/ and nothing else (`core/ratios.py` renamed `core/definitions.py`),
+and Kureha's eight modules, being Defects4J/JaCoCo/Jazzer-specific, moved
+into the Java backend at src/java/measurements/d4j_rcc_sweep/ with her
+README beside them. No shims were left at the old paths; every reference
+was repointed. README §8 is now "Relation to `d4j_rcc_sweep`".
 
 ### 8.51 H_N vs H_R PILOT (2026-09-04/05; evaluation only)
 **Runs:** pilot_HR_20260904_112437 and pilot_HN_20260904_150008 — 20 dev

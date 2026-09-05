@@ -55,7 +55,7 @@ import os
 import statistics
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
-from . import ratios as M
+from . import definitions as M
 
 BUG_KINDS = ('crashing', 'semantic', 'all')
 

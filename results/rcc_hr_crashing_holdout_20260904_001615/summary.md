@@ -7,6 +7,12 @@ Harness budget `-n 3 -m 8 --fuzz_timeout 20`; measurement pass
 `R-hat` is the set of methods the Defects4J developer fix changes.
 `F(H)` is the set of methods the accepted harness set ran.
 
+Produced by the sweep that then lived at `src/metrics/rcc_sweep.py`; it
+is now `src/java/measurements/d4j_rcc_sweep/rcc_sweep.py`, unchanged
+apart from its imports. The tracebacks recorded in the JSONL beside this
+file still name the old paths, because that is where the code was when
+the run happened.
+
 | bug | leg | \|R-hat\| | \|H\| | \|F(H)\| | RCC |
 |---|---|---:|---:|---:|---:|
 | Chart-5 | overfitting | 1 | 3 | 17 | 1.000 |
@@ -42,7 +48,7 @@ empty and RCC is undefined. That is a pipeline outcome, not a low score.
    a method's probe after the method's exit, so Math-70's
    `BisectionSolver.solve` reads as missed from probes alone. Without the
    repair its RCC would have been a false 0.000. See the probe limitation
-   in `src/metrics/README.md`.
+   in `src/java/measurements/d4j_rcc_sweep/README.md`.
 
 ## What this does not measure
 

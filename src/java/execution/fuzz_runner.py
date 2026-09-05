@@ -175,10 +175,10 @@ def run_jazzer(jazzer_standalone_jar: str,
     `coverage_dump` asks Jazzer to write a JaCoCo .exec file on exit, and
     `coverage_include` (alias `instrumentation_includes`, e.g.
     'org.apache.commons.lang3.**') limits what Jazzer instruments. Both are
-    MEASUREMENT ONLY (`src/metrics`, `src/java/measurements`); the two
-    flags are added only when BOTH are given, and nothing about a normal
-    run changes when they are off. `instrumentation_includes` exists so the
-    `src/metrics` re-measurement pass and the `--coverage` hook share one
+    MEASUREMENT ONLY (`src/java/measurements`); the two flags are added
+    only when BOTH are given, and nothing about a normal run changes when
+    they are off. `instrumentation_includes` exists so the
+    `d4j_rcc_sweep` re-measurement pass and the `--coverage` hook share one
     code path.
 
     Jazzer writes the coverage dump from a JVM shutdown hook. Neither of
@@ -186,7 +186,7 @@ def run_jazzer(jazzer_standalone_jar: str,
     the JVM, and libFuzzer ends a finding run from native code. So a
     measurement run must mute the harness oracles and finish its own budget.
     A missing dump is an infrastructure error, never zero coverage —
-    `metrics.reached` refuses to read it as one.
+    `java.measurements.d4j_rcc_sweep.reached` refuses to read it as one.
 
     `jazzer_api_jar` is the jazzer-api jar containing FuzzedDataProvider.
     The standalone driver jar does NOT bundle the API classes in every

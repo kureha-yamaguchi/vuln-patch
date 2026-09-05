@@ -255,7 +255,7 @@ def test_ensure_jacoco_cli_returns_an_existing_jar(monkeypatch, tmp_path):
 
 def test_ensure_jacoco_cli_downloads_into_the_cache(monkeypatch, tmp_path):
     """The jar's name and its URL come from `config`, which is where
-    `src/metrics` reads them too: one JaCoCo for both packages."""
+    `d4j_rcc_sweep.reached` reads them too: one JaCoCo for both."""
     import config
 
     monkeypatch.delenv('JACOCO_CLI_JAR', raising=False)
@@ -275,8 +275,8 @@ def test_ensure_jacoco_cli_downloads_into_the_cache(monkeypatch, tmp_path):
 
 def test_ensure_jacoco_cli_defaults_to_the_config_path(monkeypatch):
     """With no cache directory and no override, the jar is exactly the one
-    `config.JACOCO_CLI_JAR` names — the same file `metrics.reached
-    .ensure_cli_jar` would use."""
+    `config.JACOCO_CLI_JAR` names — the same file
+    `d4j_rcc_sweep.reached.ensure_cli_jar` would use."""
     import config
 
     monkeypatch.delenv('JACOCO_CLI_JAR', raising=False)
@@ -598,12 +598,12 @@ class _FakeHarnessRun:
 
 @pytest.fixture
 def fake_collect(monkeypatch, tmp_path):
-    """Stand in for `metrics.collect`, the sibling package's runner.
+    """Stand in for `d4j_rcc_sweep.collect`, the sweep package's runner.
 
     `remeasure_leg` imports it inside the function, so replacing the two
     functions on the real module is enough and nothing has to run
     Defects4J or Jazzer."""
-    from metrics import collect
+    from java.measurements.d4j_rcc_sweep import collect
 
     seen = {}
 

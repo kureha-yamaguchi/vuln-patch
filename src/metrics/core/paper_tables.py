@@ -72,7 +72,7 @@ import sys
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from . import aggregate as A
-from . import ratios as M
+from . import definitions as M
 
 AGGREGATE_FILE = 'aggregate.json'
 

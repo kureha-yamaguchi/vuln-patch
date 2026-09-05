@@ -2,10 +2,10 @@
 
 Everything it needs already exists on disk: the developer fix, the buggy
 checkout, and one or more JaCoCo reports from the fuzz run. It runs no
-fuzzer and no build. See `src/metrics/README.md` for how to produce the
+fuzzer and no build. See `src/java/measurements/d4j_rcc_sweep/README.md` for how to produce the
 reports.
 
-    python src/metrics/cli.py --project Lang --bug 1 \
+    python src/java/measurements/d4j_rcc_sweep/cli.py --project Lang --bug 1 \
         --buggy-dir /tmp/d4j/Lang_1_buggy \
         --report runs/lang1/set/jacoco.xml \
         --trigger-report runs/lang1/trigger/jacoco.xml
@@ -14,9 +14,12 @@ import argparse
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# src/ on the path: this file is src/java/measurements/d4j_rcc_sweep/<name>.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))))))
 
-from metrics import rcc, reached, region as region_mod   # noqa: E402
+from java.measurements.d4j_rcc_sweep import rcc, reached          # noqa: E402
+from java.measurements.d4j_rcc_sweep import region as region_mod  # noqa: E402
 
 
 def _build_region(args):

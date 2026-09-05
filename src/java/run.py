@@ -1321,7 +1321,8 @@ def _emit_record(path, *, label, status, selection=None,
             getattr(result, "accepted_trigger_details", []) or []),
         # Where each ACCEPTED harness's source and class live, so a later
         # pass can re-run the set without regenerating it. MEASUREMENT
-        # ONLY — `src/metrics` reads this to compute RCC. Nothing in the
+        # ONLY — the measurement layer reads this to compute RCC. Nothing
+        # in the
         # pipeline reads it back.
         "accepted_harnesses": [
             {"harness_path": getattr(br, "harness_path", ""),

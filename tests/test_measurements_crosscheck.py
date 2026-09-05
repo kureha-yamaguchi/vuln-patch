@@ -1,15 +1,16 @@
 """Two implementations of root-cause coverage, on the same real reports.
 
-`src/metrics` and `src/java/measurements` both compute RCC = |R̂ ∩ F(H)| /
-|R̂|, and they share nothing: different region extractors, different method
-identities, different readers of the JaCoCo XML. `src/metrics` reads the
-report through fuzz-introspector; this package parses the XML itself. Two
+`java.measurements.d4j_rcc_sweep` (Kureha's earlier sweep) and the rest of
+`src/java/measurements` both compute RCC = |R̂ ∩ F(H)| / |R̂|, and they share
+nothing: different region extractors, different method identities,
+different readers of the JaCoCo XML. The sweep reads the report through
+fuzz-introspector; the general layer parses the XML itself. Two
 independent paths to one number are only worth having if somebody checks
 that they agree, which is what this file does — on the real reports of
 
     results/rcc_hr_crashing_holdout_20260904_001615/
 
-the crashing-split holdout sweep `src/metrics/rcc_sweep.py` produced, with
+the crashing-split holdout sweep `d4j_rcc_sweep/rcc_sweep.py` produced, with
 its per-bug records in `rcc.jsonl` and the merged harness-set report of each
 bug in `<bug>/harness/jacoco.xml`.
 
@@ -75,7 +76,8 @@ def _scored():
     return out
 
 
-# `metrics.keys.MethodKey.__str__`: the SIMPLE class name, the method name,
+# `d4j_rcc_sweep.keys.MethodKey.__str__`: the SIMPLE class name, the method
+# name,
 # and the simple parameter types, comma-space separated —
 # `StringUtils.join(Object[], String, int, int)`. A constructor is
 # `Widget.<init>(int)`.
@@ -126,7 +128,8 @@ def candidates(ref, population, index):
 
     Exact parameter types first, then `MethodIndex`'s fallback for an
     unqualified ref, which is (simple class, name, arity). That is her
-    order too: `metrics.rcc.ReachedSet` compares types and falls back to
+    order too: `d4j_rcc_sweep.rcc.ReachedSet` compares types and falls back
+    to
     the argument count."""
     exact = [m for m in sorted(population)
              if m.class_simple == ref.class_simple and m.name == ref.name
@@ -167,7 +170,7 @@ def test_rcc_agrees_on_every_scored_bug():
         value, covered, missed = our_rcc(record, our_coverage(record, report))
         ours[bug] = value
         assert value == record['rcc'], (
-            f'{bug}: src/metrics says RCC={record["rcc"]}, we say {value} '
+            f'{bug}: the sweep says RCC={record["rcc"]}, we say {value} '
             f'(covered {covered}, missed {missed})')
     assert ours == {'Chart-5': 1.0, 'Lang-16': 1.0, 'Lang-20': 1.0,
                     'Lang-45': 1.0, 'Lang-58': 1.0, 'Lang-59': 1.0,
@@ -300,7 +303,7 @@ def test_f_sizes_match_within_the_known_window_artefact():
                     for bug, (ours, hers, _why) in EXPECTED_F.items()}
     # Never the other way round: everything we count, she counts too.
     for bug, (ours, hers) in seen.items():
-        assert ours <= hers, f'{bug}: we count more than src/metrics does'
+        assert ours <= hers, f'{bug}: we count more than the sweep does'
 
 
 def test_probe_halves_agree_wherever_the_window_does_not_over_run():
@@ -344,7 +347,8 @@ def test_an_unavailable_measurement_is_never_a_zero():
 
 
 def test_population_statuses_are_the_ones_the_sweep_can_write():
-    """Every status `src/metrics/sweep.py` and `rcc_sweep.py` can record has
+    """Every status `d4j_rcc_sweep/sweep.py` and `rcc_sweep.py` can record
+    has
     a slot here, so a population summary can never silently drop a class of
     exclusion."""
     for status in ('ok', 'excluded_empty_region', 'excluded_gate_failed',
@@ -358,25 +362,28 @@ def test_population_statuses_are_the_ones_the_sweep_can_write():
 # 5. the direction of the dependency
 # ---------------------------------------------------------------------------
 
-def test_the_import_between_the_two_packages_is_one_way():
-    """`java.measurements` may read `metrics`; `metrics` may never read
-    `java.measurements`.
+def test_the_import_between_the_two_implementations_is_one_way():
+    """The general layer may read `d4j_rcc_sweep`; the sweep may never read
+    the general layer.
 
-    The reason is the firewall: `root_cause.py` is the only module allowed
-    to read a developer fix, and nothing the pipeline can reach may import
-    it. `metrics` is imported by the sweeps, which start the pipeline's own
-    runner, so an edge from `metrics` into this package would put the
-    quarantined module one import closer to the pipeline.
-    `tests/test_measurements_firewall.py` is the general enforcement; this
-    names the specific direction."""
+    Both now live in `src/java/measurements/`, so the direction is no longer
+    a package boundary and has to be named. The reason is the firewall:
+    `root_cause.py` is the only module of the general layer allowed to read
+    a developer fix, and nothing the pipeline can reach may import it. The
+    sweep starts the pipeline's own runner, so an edge from the sweep into
+    the general layer would put the quarantined module one import closer to
+    the pipeline. `tests/test_measurements_firewall.py` is the general
+    enforcement; this names the specific direction."""
     import ast
 
-    metrics_dir = os.path.join(REPO, 'src', 'metrics')
+    sweep_dir = os.path.join(REPO, 'src', 'java', 'measurements',
+                             'd4j_rcc_sweep')
+    own = {'d4j_rcc_sweep'}
     offenders = []
-    for name in sorted(os.listdir(metrics_dir)):
+    for name in sorted(os.listdir(sweep_dir)):
         if not name.endswith('.py'):
             continue
-        with open(os.path.join(metrics_dir, name), encoding='utf-8') as fh:
+        with open(os.path.join(sweep_dir, name), encoding='utf-8') as fh:
             tree = ast.parse(fh.read())
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -386,7 +393,10 @@ def test_the_import_between_the_two_packages_is_one_way():
             else:
                 continue
             for imported in names:
-                if 'measurements' in imported.split('.'):
+                parts = imported.lstrip('.').split('.')
+                # its own modules are `java.measurements.d4j_rcc_sweep.*`
+                if 'measurements' in parts and not own & set(parts):
                     offenders.append((name, imported))
     assert not offenders, (
-        f'src/metrics must not import the measurement package: {offenders}')
+        'd4j_rcc_sweep must not import the general measurement layer: '
+        f'{offenders}')

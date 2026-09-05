@@ -518,11 +518,11 @@ class _FakeTriggerRun:
 
 @pytest.fixture
 def fake_collect(monkeypatch, tmp_path):
-    """Stand in for `metrics.collect`, the sibling package's runner.
+    """Stand in for `d4j_rcc_sweep.collect`, the sweep package's runner.
 
     `trigger_gate` imports it inside the function, so replacing the two
     functions on the real module is enough: no Defects4J, no JVM."""
-    from metrics import collect
+    from java.measurements.d4j_rcc_sweep import collect
 
     seen = {'trace': ''}
 

@@ -59,7 +59,7 @@ class MethodKey:
     def loose(self) -> Tuple[str, str, int]:
         """The same method without its exact parameter types.
 
-        A fallback only. `metrics.rcc` uses it when no exact match exists,
+        A fallback only. `d4j_rcc_sweep.rcc` uses it when no exact match exists,
         so that one unusual type spelling cannot turn a covered method into
         a missed one. It cannot separate two overloads of equal arity."""
         return (self.class_name, self.method_name, self.arity)

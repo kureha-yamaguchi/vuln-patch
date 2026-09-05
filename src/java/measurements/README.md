@@ -364,8 +364,9 @@ It is a re-run, not a re-reading, so it costs a fuzzing pass per leg and is
 off unless `--remeasure` is given. The harnesses come from `result.jsonl`'s
 `accepted_harnesses`, which the pipeline records for exactly this purpose; a
 leg archived before that field existed has no set to re-run and is skipped
-rather than measured as empty. The run itself is `metrics.collect
-.harness_coverage` from the sibling package (section 8).
+rather than measured as empty. The run itself is
+`d4j_rcc_sweep.collect.harness_coverage` from the sweep package inside
+this one (section 8).
 
 | build token | harness set | budget | build |
 |---|---|---|---|
@@ -565,7 +566,8 @@ Bugs with large call graphs therefore do not dominate the result.
 
 The layer is split in two. The **core** — the shared data model, the five
 metrics, the averaging and the paper tables — is language-agnostic and
-lives in `src/metrics/core/`; it computes numbers from JSON that a backend
+lives in `src/metrics/core/`, which now holds nothing else; it computes
+numbers from JSON that a backend
 has already written and never parses a language's syntax. This package is
 the **Java backend**: the extractors that produce that JSON (patch diffs,
 call graphs, JaCoCo XML, Jazzer stack frames, the Defects4J run layout) and
@@ -583,7 +585,7 @@ Core (`src/metrics/core/`), language-agnostic:
 | file | what it does | reads the developer fix? |
 |---|---|---|
 | `locations.py` | the shared data model: `MethodRef`, `LineRef`, ring-tagged `MethodSet`/`LineSet`, and `MethodIndex` for matching names across tools | no |
-| `ratios.py` | the five metrics per leg, at method, line and branch granularity, aggregate and per ring, from the JSON files below only (was `metrics.py`) | no |
+| `definitions.py` | **the metric definitions**: the five metrics per leg, at method, line and branch granularity, aggregate and per ring, from the JSON files below only (was `metrics.py`, then `ratios.py`) | no |
 | `aggregate.py` | macro-averages, the H_N/H_R/delta table, the RCC-versus-caught table | no |
 | `paper_tables.py` | the paper's Table 3 and Table 4, in markdown or LaTeX, from a measured run (section 6.5) | no |
 
@@ -593,12 +595,13 @@ Java backend (`src/java/measurements/`), this package:
 |---|---|---|
 | `neighbourhood.py` | the seed/caller/callee builder used for both P and R̂, on the pipeline's fuzz-introspector call graph, with the pipeline's caps; `SourceScan` is the source-text caller fallback of section 3.1 | no |
 | `patch_derived.py` | P from a run's `context.json` (or, for older runs, the same JSON block inside `trace.md`); `lines_for` turns methods into line sets | no |
-| `root_cause.py` | R̂: reads the Defects4J developer patch (`<D4J_HOME>/framework/projects/<Project>/patches/<bug>.src.patch`, fixed→buggy direction, verified at run time) or falls back to diffing a fixed checkout; seeds, lines, and the manifestation frames from `failing_tests`; `trigger_gate` (section 3.2) and `population_check`, which states a population's exclusions | **yes — the only one** |
+| `root_cause.py` | R̂: reads the Defects4J developer patch (`<D4J_HOME>/framework/projects/<Project>/patches/<bug>.src.patch`, fixed→buggy direction, verified at run time) or falls back to diffing a fixed checkout; seeds, lines, and the manifestation frames from `failing_tests`; `trigger_gate` (section 3.2) and `population_check`, which states a population's exclusions | **yes — the only one in the general layer** |
 | `coverage.py` | F(H): parses JaCoCo XML reports, runs the JaCoCo command-line tool on the `.exec` dumps a `--coverage` run leaves behind, and per build reads one MERGED report over all of them (section 4.3), falling back to a union of the per-harness reports; repairs the probe miss from the run's stack frames (section 3.3) and re-runs the kept set on a fixed input budget (`remeasure_leg`, section 3.3.2) | no |
 | `static_reach.py` | F_stat: the library methods a harness source calls (javalang), and the bounded call-graph walk down from them; the `kept`/`compiled` harness sets, with the `trace.md` fallback for archived legs | no |
 | `crash_sites.py` | crash sites from raw Jazzer output (`fuzz_out/` of a `--coverage` run) or from the evidence blocks archived in `trace.md` | no |
 | `judge_view.py` | RCR for the one-shot LLM judge: the neighbourhood the *baseline* was shown, against the same R̂ (section 7). Backend-side, not core: it parses Java signatures and the `<xref>`/`<callee>` evidence blocks out of judge records, and pairs those records with Defects4J leg directories | no |
 | `cli.py` | runs everything over a run directory | imports `root_cause` (allowed here only) |
+| `d4j_rcc_sweep/` | Kureha's earlier RCC(H_R) sweep over the crashing Defects4J split, kept so its results stay reproducible (section 8); its own README is beside it | **yes**, in its own `region.py` — the sweep is self-contained, measurement-only, and nothing the pipeline imports reaches it |
 
 The pipeline side has three flag-gated hooks (`src/java/run.py`,
 `src/java/execution/fuzz_runner.py`, `src/java/harness/prompts.py`), all
@@ -1063,27 +1066,36 @@ input was missing. `--out` writes one JSON object per record; without it
 nothing is written at all.
 
 
-## 8. Relation to `src/metrics`
+## 8. Relation to `d4j_rcc_sweep`
 
-**Since the core/backend split, `src/metrics` is two things.**
-`src/metrics/core/` is the shared, language-agnostic core described in
-section 6.1 — the one definition of every metric, which this package
-imports. `src/metrics/*.py` (the modules named in the rest of this section:
-`rcc.py`, `reached.py`, `region.py`, `keys.py`, `collect.py`, `sweep.py`,
-`rcc_sweep.py`, `cli.py`) is the older, separate RCC implementation, which
-is unchanged and still runs. The rest of this section is about that older
-implementation; it does not describe `metrics.core`.
+**Where the two names now live.** `src/metrics/` is the shared,
+language-agnostic core described in section 6.1 — the one definition of
+every metric (`metrics.core.definitions`), which this package imports — and
+it holds nothing else. Kureha's older, separate RCC implementation
+(`rcc.py`, `reached.py`, `region.py`, `keys.py`, `collect.py`, `sweep.py`,
+`rcc_sweep.py`, `cli.py`) used to sit beside it; it is
+Java/Defects4J/JaCoCo/Jazzer-specific, so it now lives inside this package,
+at `src/java/measurements/d4j_rcc_sweep/`, with its own README. The code is
+unchanged apart from its imports and still runs. The rest of this section
+is about that sweep.
 
 There are two implementations of root-cause coverage in this repository,
 and they are kept apart on purpose.
 
-`src/metrics` is the smaller and older one: RCC at method level for one
+`d4j_rcc_sweep` is the smaller and older one: RCC at method level for one
 harness set, on one bug at a time, plus the sweeps that drive it end to end
 (`sweep.py` for the region and the gate, `rcc_sweep.py` for the whole
 experiment). Its region comes from `execution.diffcov`, its F(H) is read
 through fuzz-introspector's JaCoCo loader, and its method identity is
-`metrics.keys.MethodKey`. It is what produced
+`d4j_rcc_sweep.keys.MethodKey`. It is what produced
 `results/rcc_hr_crashing_holdout_*`.
+
+```bash
+# from the repo root; both also run as
+# `python -m java.measurements.d4j_rcc_sweep.<name>` from src/
+python src/java/measurements/d4j_rcc_sweep/sweep.py --help
+python src/java/measurements/d4j_rcc_sweep/rcc_sweep.py --help
+```
 
 `src/java/measurements` — this package — is the superset: five metrics, not
 one; three granularities (method, line, branch); the ring-tagged regions
@@ -1091,7 +1103,7 @@ R̂₀/R̂₁/R̂body and the caller/callee neighbourhood; the kept and all-comp
 harness sets; the naive arm and the H_R − H_N delta; and the paper's tables.
 It parses the JaCoCo XML itself and its identity is `locations.MethodRef`.
 
-**What was ported from `src/metrics` into this package**
+**What was ported from the sweep into the general layer**
 
 | piece | there | here |
 |---|---|---|
@@ -1107,25 +1119,26 @@ pass must pass to Jazzer, and how to reach a forked test JVM with the JaCoCo
 agent. Rewriting them would have created a second place for those flags to
 drift. The matching, the region and the metric stay here.
 
-**The import rule is one-way.** `java.measurements` may import `metrics`;
-`metrics` must never import `java.measurements`. (The core/backend split
-adds the same rule one level down: this package imports `metrics.core`,
-and `metrics.core` imports no backend at all —
-`tests/test_metrics_core_layering.py` checks both directions.) The reason is the firewall
-of section 3.2: `root_cause.py` is the only module in the repository allowed
-to read a developer fix, and `tests/test_measurements_firewall.py` enforces
-that nothing the pipeline can reach imports it. `metrics` is imported by the
-sweeps, which the pipeline's own runner is invoked from, so an edge from
-`metrics` into this package would put the quarantined module one import
-closer to the pipeline. Both imports here are made inside the function that
-needs them, so importing `java.measurements.coverage` does not drag the
-sibling package (or Defects4J, or Jazzer) in with it.
+**The import rule is one-way.** The general layer may import the sweep;
+the sweep must never import the general layer. (The core/backend split adds
+the same rule one level up: this package imports `metrics.core`, and
+`metrics.core` imports no backend at all —
+`tests/test_metrics_core_layering.py` checks both directions, and that
+`src/metrics/` still holds nothing but `core/`.) The reason is the firewall
+of section 3.2: within the general layer `root_cause.py` is the only module
+allowed to read a developer fix, and `tests/test_measurements_firewall.py`
+enforces that nothing the pipeline can reach imports it. The sweep drives
+the pipeline's own runner, so an edge from the sweep into the general layer
+would put the quarantined module one import closer to the pipeline. Both
+imports here are made inside the function that needs them, so importing
+`java.measurements.coverage` does not drag the sweep (or Defects4J, or
+Jazzer) in with it.
 
 **Do the two agree?** On the one real dataset both have run —
 `results/rcc_hr_crashing_holdout_20260904_001615`, nine scored crashing
 bugs — RCC agrees on every bug (1.0 everywhere) and the frame repair
 recovers the same two methods on Math-70, the one bug that needs it.
-|F(H)| does *not* agree everywhere: on four of the nine bugs `src/metrics`
+|F(H)| does *not* agree everywhere: on four of the nine bugs the sweep
 counts one method more than we do. The difference is fuzz-introspector's,
 and it is a false positive rather than something we lose. Its loader decides
 which lines belong to a method by taking, from the method's declaration

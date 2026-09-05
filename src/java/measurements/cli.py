@@ -47,7 +47,7 @@ from typing import Dict, List, Optional
 
 from metrics.core import aggregate as A
 from metrics.core import locations as loc
-from metrics.core import ratios as M
+from metrics.core import definitions as M
 
 TRACE_FILE = 'trace.md'
 CONTEXT_FILE = 'context.json'
@@ -61,8 +61,9 @@ ERRORS_FILE = 'errors.json'
 def default_d4j_home() -> Optional[str]:
     """The Defects4J installation, from `config.D4J_HOME`.
 
-    The same constant `src/metrics` reads the developer fix through, so the
-    two packages cannot end up pointed at different Defects4J checkouts.
+    The same constant `d4j_rcc_sweep.region` reads the developer fix
+    through, so the two implementations cannot end up pointed at different
+    Defects4J checkouts.
     `--d4j_home` still wins, and `root_cause.defects4j_home` has its own
     last-resort search for a machine with neither."""
     try:

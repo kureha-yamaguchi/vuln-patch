@@ -30,7 +30,7 @@ from typing import List, Set
 
 import config
 from java.execution.diffcov import ChangedMethod, changed_methods
-from metrics.keys import MethodKey, key_from_changed_method
+from java.measurements.d4j_rcc_sweep.keys import MethodKey, key_from_changed_method
 
 
 @dataclass

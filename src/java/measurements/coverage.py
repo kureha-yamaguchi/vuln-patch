@@ -672,11 +672,11 @@ from java.execution.coverage_flags import jazzer_coverage_args  # noqa: E402,F40
 # --------------------------------------------------------------------------
 
 #: The jar, its download URL and its version all come from `src/config.py`,
-#: which is also where `src/metrics` reads them (`metrics.reached
-#: .ensure_cli_jar`). One jar, one cache, one version, whichever package
-#: asks for it. The fallbacks below are used only where `config` cannot be
-#: imported at all — a measurement copied out of the repo — and they name
-#: the same artifact.
+#: which is also where the sweep package reads them
+#: (`d4j_rcc_sweep.reached.ensure_cli_jar`). One jar, one cache, one
+#: version, whichever module asks for it. The fallbacks below are used
+#: only where `config` cannot be imported at all — a measurement copied
+#: out of the repo — and they name the same artifact.
 try:                                                # pragma: no cover
     import config as _config
     JACOCO_VERSION = _config.JACOCO_VERSION
@@ -699,8 +699,9 @@ def ensure_jacoco_cli(cache_dir: Optional[str] = None) -> str:
     Mirrors `java.execution.jazzer.JazzerEnvironment._ensure_jar`: if the
     jar is already on disk return its path, otherwise fetch it from
     Maven Central. The jar's name, its version and the URL are
-    `config.JACOCO_*`, so this package and `src/metrics` download the same
-    file to the same place and neither can be on a different JaCoCo.
+    `config.JACOCO_*`, so this module and `d4j_rcc_sweep.reached` download
+    the same file to the same place and neither can be on a different
+    JaCoCo.
 
     `JACOCO_CLI_JAR` in the environment overrides the location entirely
     (point it at a jar you already have, or at the path you want the
@@ -1017,20 +1018,20 @@ def remeasure_leg(leg_dir: str, runs: int = 20000, keep_going: int = 1000,
     classpath, attempt label). A leg without it — an archive older than
     that field — returns None rather than a coverage of nothing.
 
-    The run itself is `metrics.collect.harness_coverage`, imported from the
-    sibling package: it already knows the three rules a measurement pass
-    has to follow (a large `--keep_going`, because an accepted harness
+    The run itself is `d4j_rcc_sweep.collect.harness_coverage`, imported
+    from the sweep package: it already knows the three rules a measurement
+    pass has to follow (a large `--keep_going`, because an accepted harness
     crashes the buggy build by design; `-runs` rather than a clock; one
     dump per harness, merged by JaCoCo). The dumps land in
     `<leg>/cov/remeasure/<attempt>.exec` and the merged report beside them
     as `jacoco.xml`, and the parsed result is written to
     `<leg>/measurements/coverage_remeasure.json`.
 
-    The import goes one way only: this package may read `metrics`, and
-    `metrics` never reads this one (see the README, "Relation to
-    src/metrics").
+    The sweep package is the earlier RCC-only implementation, kept for
+    reproducibility; it does not read this module (see the README,
+    "Relation to `d4j_rcc_sweep`").
     """
-    from metrics import collect                      # one-way: see docstring
+    from java.measurements.d4j_rcc_sweep import collect   # see docstring
 
     result = {}
     result_path = os.path.join(leg_dir, 'result.jsonl')

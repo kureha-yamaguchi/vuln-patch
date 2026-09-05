@@ -6,7 +6,7 @@ and so do the sibling bugs.
 Two jobs:
 
   1. `trigger_coverage` runs the bug's OWN triggering test under the JaCoCo
-     agent. `metrics.rcc.trigger_gate` reads the result. The test is run
+     agent. `d4j_rcc_sweep.rcc.trigger_gate` reads the result. The test is run
      through `defects4j test -t`, so exactly the triggering method runs and
      not its whole class. A whole class would cover more, which would make
      the gate easier to pass and therefore weaker.
@@ -19,7 +19,7 @@ Two jobs:
      It also returns the test's failure stack trace, which Defects4J writes
      to `failing_tests`. The trace is not a convenience: JaCoCo's probe sits
      after a method's exit, so a method that throws through it reads as
-     missed. See the probe limitation in `metrics.reached`.
+     missed. See the probe limitation in `d4j_rcc_sweep.reached`.
 
   2. `harness_coverage` runs an accepted harness set and returns F(H). See
      that function for the three rules a measurement run must follow.
@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 import config
-from metrics import reached
+from java.measurements.d4j_rcc_sweep import reached
 
 # `defects4j test -t` on a bug whose test fails is normal, so a non-zero
 # exit is not by itself an error. A missing dump is.

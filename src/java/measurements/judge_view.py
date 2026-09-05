@@ -108,7 +108,7 @@ import sys
 from typing import Dict, List, Optional, Tuple
 
 from metrics.core import locations as loc
-from metrics.core import ratios as M
+from metrics.core import definitions as M
 from . import patch_derived as PD
 
 __all__ = ['PROVENANCE', 'judge_shown_set', 'shown_sources',

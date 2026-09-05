@@ -31,14 +31,16 @@ import subprocess
 import sys
 import traceback
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# src/ on the path: this file is src/java/measurements/d4j_rcc_sweep/<name>.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))))))
 
 import config                                                    # noqa: E402
-from metrics import collect, rcc, reached, sweep                 # noqa: E402
-from metrics import region as region_mod                         # noqa: E402
+from java.measurements.d4j_rcc_sweep import collect, rcc, reached, sweep    # noqa: E402
+from java.measurements.d4j_rcc_sweep import region as region_mod            # noqa: E402
 
-REPO = os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__))))
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))))))
 SRC = os.path.join(REPO, 'src')
 
 

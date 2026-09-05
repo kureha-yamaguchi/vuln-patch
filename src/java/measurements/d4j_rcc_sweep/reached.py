@@ -26,7 +26,7 @@ Two things this module refuses to guess.
 
 `load_jvm_coverage` also skips a method when the class carries no debug
 information, or when it cannot find the declaration line in the source-file
-map. It skips it without a warning. That is why `metrics.rcc.trigger_gate`
+map. It skips it without a warning. That is why `d4j_rcc_sweep.rcc.trigger_gate`
 exists.
 
 THE PROBE LIMITATION, and it matters most for exactly our population.
@@ -53,7 +53,7 @@ import urllib.request
 from typing import Iterable, Optional, Set, Tuple
 
 import config
-from metrics.keys import MethodKey, key_from_mangled
+from java.measurements.d4j_rcc_sweep.keys import MethodKey, key_from_mangled
 
 REPORT_NAME = 'jacoco.xml'
 

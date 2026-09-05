@@ -787,8 +787,8 @@ def trigger_gate(buggy_dir: str, root_cause: 'RootCause',
     set. Without the gate such a bug reads as RCC = 0, which looks exactly
     like a real finding.
 
-    The run is `metrics.collect.trigger_coverage` from the sibling package:
-    it runs `defects4j test -t <test>` under the JaCoCo agent, one
+    The run is `d4j_rcc_sweep.collect.trigger_coverage`, from the sweep
+    package: it runs `defects4j test -t <test>` under the JaCoCo agent, one
     triggering test at a time, so exactly the triggering method runs and
     not its whole class (a whole class covers more, which would make the
     gate easier to pass and therefore weaker). The matching is OURS:
@@ -802,7 +802,7 @@ def trigger_gate(buggy_dir: str, root_cause: 'RootCause',
 
     Returns ``{passed, missed, reached_size, detail, ...}`` — a plain dict,
     because it is written into `root_cause.json` and read back by
-    `metrics.py`, which never imports this module.
+    `metrics.core.definitions`, which never imports this module.
 
     It also writes the tests' failure traces to `<buggy_dir>/failing_tests`,
     which is where `trigger_frames` looks for the manifestation set. So a
@@ -810,7 +810,7 @@ def trigger_gate(buggy_dir: str, root_cause: 'RootCause',
     the trace the gate needs and the trace the manifest set needs are the
     same trace, and Defects4J only writes it when a test has been run.
     """
-    from metrics import collect                    # one-way: measurements
+    from java.measurements.d4j_rcc_sweep import collect   # see docstring
     from java.measurements import coverage as cov_mod
 
     seeds = root_cause.methods.refs(SEED)
@@ -898,7 +898,7 @@ def population_check(records: Sequence[dict]) -> dict:
 
     `records` are the per-bug records of a sweep — dicts carrying `status`
     and, for a scored bug, a numeric `rcc` (the field
-    `src/metrics/rcc_sweep.py` writes) or, when the caller prefers, no
+    `d4j_rcc_sweep/rcc_sweep.py` writes) or, when the caller prefers, no
     score at all. Returns the per-status counts, the bugs behind each, and
     the scored population.
     """

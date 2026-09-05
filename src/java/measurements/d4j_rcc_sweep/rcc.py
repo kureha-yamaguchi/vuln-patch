@@ -3,9 +3,9 @@
 Plain English: of the methods the maintainer had to change to fix the bug,
 what share did the harness set actually run?
 
-  * R-hat comes from `metrics.region` — the developer fix.
-  * F(H) comes from `metrics.reached` — a JaCoCo report of the fuzz run.
-  * Both are sets of `metrics.keys.MethodKey`, so this file is set algebra
+  * R-hat comes from `d4j_rcc_sweep.region` — the developer fix.
+  * F(H) comes from `d4j_rcc_sweep.reached` — a JaCoCo report of the fuzz run.
+  * Both are sets of `d4j_rcc_sweep.keys.MethodKey`, so this file is set algebra
     and nothing else.
 
 `trigger_gate` is the check that must pass first. Every Defects4J bug has a
@@ -20,8 +20,8 @@ MEASUREMENT ONLY.
 from dataclasses import dataclass, field
 from typing import List, Optional, Set
 
-from metrics.keys import MethodKey
-from metrics.region import Region
+from java.measurements.d4j_rcc_sweep.keys import MethodKey
+from java.measurements.d4j_rcc_sweep.region import Region
 
 # How a method in R-hat matched the reached set.
 EXACT = 'exact'    # same class, name and parameter types

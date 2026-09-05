@@ -71,7 +71,7 @@ import config
 from java.bug_context.call_graph import bfs_callees_with_edges, function_map
 from metrics.core.locations import (MethodIndex, MethodRef,
                                          from_introspector, simple_type)
-from metrics.core.ratios import is_jdk
+from metrics.core.definitions import is_jdk
 
 __all__ = ['StaticReach', 'harness_entries', 'static_reach', 'collect_leg',
            'project_index', 'harness_sources_from_trace',
