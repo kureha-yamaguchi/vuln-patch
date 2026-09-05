@@ -1,5 +1,45 @@
 # `src/metrics` — root-cause coverage
 
+## Layout
+
+This directory holds two things.
+
+**`core/` — the language-agnostic core of the measurement layer.** One
+definition of every metric, shared by every language backend:
+
+| file | what it is |
+|---|---|
+| `core/locations.py` | the code-identity model: `MethodRef`, `LineRef`, ring-tagged `MethodSet`/`LineSet`, and `MethodIndex` for matching the same method across tools |
+| `core/ratios.py` | the five metrics (RCR, RCC, RCP, PSC, CSM) at method, line and branch granularity, computed from JSON a backend already wrote |
+| `core/aggregate.py` | macro-averaging across the legs of a run; the H_N/H_R/delta table |
+| `core/paper_tables.py` | the paper's Table 3 and Table 4, in markdown or LaTeX |
+
+Nothing in `core/` parses a language's syntax or runs a tool: it reads JSON
+and does set arithmetic. The **extractors** that produce that JSON are
+language-specific and live in a backend. Today there is one backend,
+`src/java/measurements/` (patch diffs, call graphs, JaCoCo XML, Jazzer
+stack frames, the Defects4J run layout); a C backend would be a sibling
+package importing the same `core/`.
+
+The rule is one-way: **a backend imports core, core never imports a
+backend.** `tests/test_metrics_core_layering.py` enforces it by reading
+import statements.
+
+`src/java/measurements/README.md` is the full write-up: what each metric
+means, what the three sets are, how the three granularities differ, and how
+to run the measurement. Read that for the definitions; this file is about
+the RCC sweep below.
+
+**The rest of this directory — the RCC sweep.** `rcc.py`, `reached.py`,
+`region.py`, `keys.py`, `collect.py`, `sweep.py`, `rcc_sweep.py`, `cli.py`
+are the older, separate, method-level RCC implementation and the sweeps
+that drive it end to end. It is independent of `core/` — it has its own
+method identity (`keys.MethodKey`) and its own region
+(`region.py`, from `execution.diffcov`) — and it is what the rest of this
+file documents.
+
+## The RCC sweep
+
 Current implementation of calculating $RCC(H_R)$:
 - currently just an implementation of $RCC(H_R)$, where $H_R$ is the root-cause conditioned harness set
 - taking function-level representations of $\mathbb{P}$, $\mathbb{R}$, and $\mathbb{F}(H)$

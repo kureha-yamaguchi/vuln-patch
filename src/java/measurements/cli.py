@@ -45,9 +45,9 @@ import subprocess
 import sys
 from typing import Dict, List, Optional
 
-from . import aggregate as A
-from . import locations as loc
-from . import metrics as M
+from metrics.core import aggregate as A
+from metrics.core import locations as loc
+from metrics.core import ratios as M
 
 TRACE_FILE = 'trace.md'
 CONTEXT_FILE = 'context.json'

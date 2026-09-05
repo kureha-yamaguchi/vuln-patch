@@ -55,7 +55,7 @@ from typing import Dict, List, Optional, Tuple
 
 import config
 from java.bug_context.call_graph import bfs_callees_with_edges, function_map
-from java.measurements.locations import (CALLEE, CALLER, SEED, MethodIndex,
+from metrics.core.locations import (CALLEE, CALLER, SEED, MethodIndex,
                                          MethodRef, MethodSet,
                                          from_introspector, from_javalang)
 

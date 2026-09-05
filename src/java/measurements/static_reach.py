@@ -69,9 +69,9 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import config
 from java.bug_context.call_graph import bfs_callees_with_edges, function_map
-from java.measurements.locations import (MethodIndex, MethodRef,
+from metrics.core.locations import (MethodIndex, MethodRef,
                                          from_introspector, simple_type)
-from java.measurements.metrics import is_jdk
+from metrics.core.ratios import is_jdk
 
 __all__ = ['StaticReach', 'harness_entries', 'static_reach', 'collect_leg',
            'project_index', 'harness_sources_from_trace',

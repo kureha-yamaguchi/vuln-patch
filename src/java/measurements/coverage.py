@@ -70,7 +70,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
-from java.measurements.locations import (LineRef, MethodRef, from_jacoco,
+from metrics.core.locations import (LineRef, MethodRef, from_jacoco,
                                          from_stack_frame, top_level_of)
 
 # --------------------------------------------------------------------------

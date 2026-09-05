@@ -38,7 +38,7 @@ import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-from java.measurements.locations import MethodRef, from_stack_frame
+from metrics.core.locations import MethodRef, from_stack_frame
 
 # --------------------------------------------------------------------------
 # What counts as library / harness / infrastructure

@@ -59,7 +59,7 @@ import subprocess
 from dataclasses import dataclass, field
 from typing import List, Optional, Sequence, Tuple
 
-from java.measurements.locations import (
+from metrics.core.locations import (
     LineRef, LineSet, MethodIndex, MethodRef, MethodSet, SEED,
     class_top_from_source, from_javalang, from_stack_frame,
 )

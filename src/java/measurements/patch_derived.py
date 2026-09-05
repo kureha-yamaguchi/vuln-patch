@@ -48,7 +48,7 @@ import re
 from typing import Dict, List, Optional, Tuple
 
 from java.execution import diffcov
-from java.measurements.locations import (CALLEE, CALLER, SEED, LineRef,
+from metrics.core.locations import (CALLEE, CALLER, SEED, LineRef,
                                          LineSet, MethodIndex, MethodRef,
                                          MethodSet, class_top_from_source,
                                          from_introspector, from_javalang,

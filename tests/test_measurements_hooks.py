@@ -1066,3 +1066,259 @@ def test_naive_scope_is_recorded_and_names_both_prompt_builders():
     assert 'relation_synth' in block
     # And the synthesizer is actually constructed with the flag.
     assert "naive=getattr(args, 'naive', False))" in src
+
+
+# ===========================================================================
+# HOOK 3c — --naive is a LADDER: level B (neighbourhood) and level C
+#           (function-only, the OSS-Fuzz-Gen-style baseline)
+# ===========================================================================
+#
+# Level B is the ablation the tests above pin. Level C removes a second,
+# much wider band: everything that says WHERE the bug is. What makes the
+# ladder trustworthy is (a) that level B did not move when level C was
+# added — the two arms of the earlier comparison must still be the same
+# text — and (b) that level C really carries none of the localisers, which
+# is only meaningful if the same fixture carries all of them at level A.
+
+# What level C must never show, with the fixture value that would prove it
+# leaked. Substrings, so a rename of the surrounding wording cannot hide a
+# leak.
+LEVEL_C_FORBIDDEN_MARKERS = [
+    '<patch>',                       # the patch block
+    '+    if (s.isEmpty()) return null;',   # a patch-added line
+    'testSubstringBetween',          # the failing test's method name
+    'EXPECTED_LITERAL_XYZ',          # the value that test asserts
+    'StringIndexOutOfBoundsException',      # the trigger exception
+    '<xref',                         # caller half of the neighbourhood
+    '<callee',                       # callee half
+    'indexOfIgnoreCase',             # ... and its body
+    '<root_cause_reachable>',        # the variant-analysis block
+    'Call-site examples',
+    'POST-CONDITION / METAMORPHIC',  # oracle guidance, patch-derived
+    'ANCHOR: call the target with the exact input',
+]
+
+
+@pytest.fixture
+def prompt_test_with_literal():
+    """A failing test carrying an expected literal, so "level C shows no
+    expected values" is a real assertion and not a vacuous one."""
+    return FailureTest(
+        test_class='org.apache.commons.lang3.StringUtilsTest',
+        test_method='testSubstringBetween',
+        source_path='/checkout/StringUtilsTest.java',
+        method_source=('public void testSubstringBetween() {\n'
+                       '    assertEquals("EXPECTED_LITERAL_XYZ",\n'
+                       '        StringUtils.substringBetween("", "x"));\n}'),
+        exception_type='java.lang.StringIndexOutOfBoundsException',
+    )
+
+
+def test_naive_is_a_level_flag_with_a_bare_default(monkeypatch):
+    """argparse: bare --naive keeps meaning level B, each level name is
+    accepted, and anything else is rejected rather than silently treated
+    as "on" (an unrecognised level that ran as level B would produce a
+    mislabelled arm, which is worse than a crash)."""
+    def parsed(argv):
+        monkeypatch.setattr(sys, 'argv', ['run.py'] + argv)
+        return run_mod.parse_args()
+
+    assert parsed([]).naive is None
+    assert parsed(['--naive']).naive == 'neighbourhood'
+    assert parsed(['--naive', 'neighbourhood']).naive == 'neighbourhood'
+    assert parsed(['--naive', 'function']).naive == 'function'
+    for bad in ('B', 'C', 'true', 'neighborhood', 'functions'):
+        with pytest.raises(SystemExit):
+            parsed(['--naive', bad])
+
+
+def test_naive_level_normalisation_keeps_the_old_boolean_working():
+    """The legacy booleans are the ladder's bottom two rungs: False is off,
+    True is level B. Both prompt builders expose the level, and keep
+    `.naive` as the bool every existing caller and record reads."""
+    from java.harness.prompts import naive_level_of
+
+    assert naive_level_of(False) is None
+    assert naive_level_of(None) is None
+    assert naive_level_of(True) == 'neighbourhood'
+    assert naive_level_of('neighbourhood') == 'neighbourhood'
+    assert naive_level_of('function') == 'function'
+    with pytest.raises(ValueError):
+        naive_level_of('nope')
+
+    for builder in (PromptBuilder, lambda **kw: RelationSynthesizer(
+            _NullGenerator(), **kw)):
+        assert builder().naive_level is None
+        assert builder().naive is False
+        assert builder(naive=True).naive_level == 'neighbourhood'
+        assert builder(naive=True).naive is True
+        assert builder(naive='function').naive_level == 'function'
+        assert builder(naive='function').naive is True
+
+
+@pytest.mark.parametrize('bug_kind', ['crashing', 'semantic'])
+def test_level_b_prompt_is_exactly_what_the_boolean_built(
+        prompt_context, prompt_test, bug_kind):
+    """The ladder must not have moved level B. `naive=True` (what the
+    earlier pilot ran) and `naive='neighbourhood'` are the same text, and
+    the OFF path is still the same text as `naive=None`."""
+    kw = {'bug_kind': bug_kind}
+    if bug_kind == 'semantic':
+        kw['semantic_test'] = prompt_test
+    boolean = _text(PromptBuilder(naive=True), prompt_context,
+                    [prompt_test], **kw)
+    named = _text(PromptBuilder(naive='neighbourhood'), prompt_context,
+                  [prompt_test], **kw)
+    assert boolean == named
+    off = _text(PromptBuilder(), prompt_context, [prompt_test], **kw)
+    assert off == _text(PromptBuilder(naive=None), prompt_context,
+                        [prompt_test], **kw)
+    assert off != named
+
+
+def test_level_a_prompt_carries_every_localiser_level_c_must_drop(
+        prompt_context, prompt_test_with_literal):
+    """The guard that keeps the level-C assertions from being vacuous:
+    with the flag off, every marker the next test forbids is present."""
+    text = _text(PromptBuilder(), prompt_context, [prompt_test_with_literal],
+                 bug_kind='crashing')
+    for marker in LEVEL_C_FORBIDDEN_MARKERS:
+        assert marker in text, marker
+    assert prompt_context.patch_text in text
+
+
+def test_level_c_prompt_is_the_function_and_nothing_that_localises(
+        prompt_context, prompt_test_with_literal):
+    """(i) Level C shows the touched function — declaring class, signature,
+    body — plus the skeleton and the fuzzer API rules, and none of the
+    localisers."""
+    text = _text(PromptBuilder(naive='function'), prompt_context,
+                 [prompt_test_with_literal], bug_kind='crashing')
+    fn = prompt_context.functions[0]
+    # Kept.
+    assert fn.func_signature in text
+    assert fn.func_source in text
+    assert fn.func_class_fq in text          # what the call needs to compile
+    assert f'package {prompt_context.package};' in text
+    assert '<skeleton>' in text
+    assert 'public class FuzzHarness {' in text
+    assert 'consumeString(int maxLength)' in text     # the FDP reference
+    # Dropped.
+    assert prompt_context.patch_text not in text
+    for marker in LEVEL_C_FORBIDDEN_MARKERS:
+        assert marker not in text, marker
+
+
+def test_level_c_is_the_same_prompt_for_both_bug_kinds(
+        prompt_context, prompt_test_with_literal):
+    """A semantic bug's oracle is lifted out of its failing test, which
+    level C may not show — so there is no semantic variant of this prompt.
+    Both kinds get the one function-only prompt, and the lifted-assertion
+    machinery is absent."""
+    crashing = _text(PromptBuilder(naive='function'), prompt_context,
+                     [prompt_test_with_literal], bug_kind='crashing')
+    semantic = _text(PromptBuilder(naive='function'), prompt_context,
+                     [prompt_test_with_literal], bug_kind='semantic',
+                     semantic_test=prompt_test_with_literal)
+    assert crashing == semantic
+    assert 'LIFT EVERY ASSERTION' not in semantic
+    assert 'NON-CRASHING (SEMANTIC) BUG' not in semantic
+
+
+def test_level_c_prompt_drops_more_than_level_b_does(
+        prompt_context, prompt_test_with_literal):
+    """The rungs are ordered: whatever level C keeps, level B kept too
+    (the ladder removes bands, it does not swap them) — with the one
+    documented exception of the declaring-class line, which level C ADDS
+    because the patch header it would otherwise be read off is gone."""
+    b = _text(PromptBuilder(naive='neighbourhood'), prompt_context,
+              [prompt_test_with_literal], bug_kind='crashing')
+    c = _text(PromptBuilder(naive='function'), prompt_context,
+              [prompt_test_with_literal], bug_kind='crashing')
+    assert len(c) < len(b)
+    added = [ln for ln in c.splitlines()
+             if ln not in b.splitlines()]
+    assert added == [
+        'Codebase: `lang_1_buggy`. Write a fuzz harness for the function(s)'
+        ' shown below.',
+        "Call them through the library's real public API, with inputs built"
+        " from the FuzzedDataProvider, and exercise as much of each"
+        " function's behaviour as you can: vary lengths, sizes, signs and"
+        " contents, cover empty and boundary values, and try the argument"
+        " combinations the signature allows. Construct whatever real"
+        " library objects the call needs. A throwable that escapes"
+        " fuzzerTestOneInput is reported as a finding, so let exceptions"
+        " from the code under test propagate.",
+        f'Function `{prompt_context.functions[0].func_name}` — declared in'
+        f' `{prompt_context.functions[0].func_class_fq}`:',
+    ]
+
+
+# --- the synthesis prompt at each level ------------------------------------
+
+@pytest.mark.parametrize('focused', [False, True])
+def test_level_b_synthesis_prompt_is_exactly_what_the_boolean_built(focused):
+    """Same no-drift check on the synthesizer: `naive=True` and
+    `naive='neighbourhood'` build one prompt, and OFF is still OFF."""
+    assert (_synth_prompt(focused=focused, naive=True)
+            == _synth_prompt(focused=focused, naive='neighbourhood'))
+    assert (_synth_prompt(focused=focused)
+            == _synth_prompt(focused=focused, naive=None))
+    assert (_synth_prompt(focused=focused)
+            != _synth_prompt(focused=focused, naive='function'))
+
+
+@pytest.mark.parametrize('focused', [False, True])
+def test_level_c_synthesis_prompt_is_the_method_source_only(focused):
+    """Level C withholds the failing test AND the patch, so the synthesis
+    context collapses to the method source plus the class-under-test line
+    the unchanged output spec's two-tier catch is written in terms of.
+    Nothing is left to lift a test oracle from — which is why level C is
+    meaningful for crashing bugs only. The INSTRUCTIONS are untouched at
+    every level."""
+    ctx, instr = _synth_prompt(focused=focused, naive='function')
+    full_ctx, full_instr = _synth_prompt(focused=focused)
+    assert instr == full_instr
+    # Kept.
+    assert 'return s.substring(1);' in ctx
+    assert 'THE CLASS UNDER TEST: StringUtils' in ctx
+    # Dropped: the failing test, the patch and its distilled lines, class
+    # context, javadoc, imports, the reachable set, trigger methods.
+    assert '// StringUtilsTest::testSubstringBetween' not in ctx
+    assert '<patch>' not in ctx
+    assert 'if (s.isEmpty()) return null;' not in ctx
+    assert 'ADDED  :' not in ctx
+    assert 'THE PATCH-CHANGED CLASS' not in ctx
+    assert 'Returns the substring between the tags.' not in ctx
+    assert 'import java.util.List;' not in ctx
+    assert REACHABLE_MARKER not in ctx
+    for name in SYNTH_REACHABLE:
+        assert name not in ctx
+    assert 'StringIndexOutOfBoundsException' not in ctx
+    assert len(ctx) < len(full_ctx)
+
+
+def test_naive_level_and_the_level_c_semantic_stamp_are_recorded():
+    """The leg record must carry the RUNG, not just "naive": a level-B leg
+    (patch + failing test kept) and a level-C leg (function source only)
+    are not comparable to each other, and `naive: True` cannot tell them
+    apart. It must also stamp the semantic legs level C cannot supply an
+    oracle for, so the measurement layer can hold them apart instead of
+    pooling them into one number."""
+    src = open(os.path.join(ROOT, 'src', 'java', 'run.py'),
+               encoding='utf-8').read()
+    assert "record_extras['naive_level'] = _naive_level" in src
+    i = src.index("record_extras['naive_level']")
+    block = src[i:i + 3000]
+    # Both rungs describe their own scope, and each names both builders.
+    assert "if _naive_level == 'function':" in block
+    for half in ('harness_prompt', 'relation_synth'):
+        assert block.count(half) >= 2, half
+    assert ("record_extras['naive_level_c_semantic'] = True" in src)
+    j = src.index("record_extras['naive_level_c_semantic']")
+    assert "_naive_level == 'function' and bug_kind == 'semantic'" \
+        in src[j - 900:j]
+    # And the level reaches both prompt builders unchanged (the flag value
+    # is the level string now, and getattr's False default only applies to
+    # an args object that never had the flag at all).
+    assert src.count("naive=getattr(args, 'naive', False))") == 2

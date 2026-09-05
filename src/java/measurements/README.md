@@ -563,19 +563,41 @@ Bugs with large call graphs therefore do not dominate the result.
 
 ### 6.1 Modules
 
+The layer is split in two. The **core** — the shared data model, the five
+metrics, the averaging and the paper tables — is language-agnostic and
+lives in `src/metrics/core/`; it computes numbers from JSON that a backend
+has already written and never parses a language's syntax. This package is
+the **Java backend**: the extractors that produce that JSON (patch diffs,
+call graphs, JaCoCo XML, Jazzer stack frames, the Defects4J run layout) and
+the CLI that drives them. A backend imports core; core never imports a
+backend, and `tests/test_metrics_core_layering.py` enforces it. A C backend
+would be a sibling package reusing the same `metrics.core`.
+
+The four moved modules keep working under their old names —
+`java.measurements.locations`, `.metrics`, `.aggregate`, `.paper_tables`
+are deprecated re-export shims that bind the same module object — so no
+existing import, test or command changed.
+
+Core (`src/metrics/core/`), language-agnostic:
+
 | file | what it does | reads the developer fix? |
 |---|---|---|
 | `locations.py` | the shared data model: `MethodRef`, `LineRef`, ring-tagged `MethodSet`/`LineSet`, and `MethodIndex` for matching names across tools | no |
+| `ratios.py` | the five metrics per leg, at method, line and branch granularity, aggregate and per ring, from the JSON files below only (was `metrics.py`) | no |
+| `aggregate.py` | macro-averages, the H_N/H_R/delta table, the RCC-versus-caught table | no |
+| `paper_tables.py` | the paper's Table 3 and Table 4, in markdown or LaTeX, from a measured run (section 6.5) | no |
+
+Java backend (`src/java/measurements/`), this package:
+
+| file | what it does | reads the developer fix? |
+|---|---|---|
 | `neighbourhood.py` | the seed/caller/callee builder used for both P and R̂, on the pipeline's fuzz-introspector call graph, with the pipeline's caps; `SourceScan` is the source-text caller fallback of section 3.1 | no |
 | `patch_derived.py` | P from a run's `context.json` (or, for older runs, the same JSON block inside `trace.md`); `lines_for` turns methods into line sets | no |
 | `root_cause.py` | R̂: reads the Defects4J developer patch (`<D4J_HOME>/framework/projects/<Project>/patches/<bug>.src.patch`, fixed→buggy direction, verified at run time) or falls back to diffing a fixed checkout; seeds, lines, and the manifestation frames from `failing_tests`; `trigger_gate` (section 3.2) and `population_check`, which states a population's exclusions | **yes — the only one** |
 | `coverage.py` | F(H): parses JaCoCo XML reports, runs the JaCoCo command-line tool on the `.exec` dumps a `--coverage` run leaves behind, and per build reads one MERGED report over all of them (section 4.3), falling back to a union of the per-harness reports; repairs the probe miss from the run's stack frames (section 3.3) and re-runs the kept set on a fixed input budget (`remeasure_leg`, section 3.3.2) | no |
 | `static_reach.py` | F_stat: the library methods a harness source calls (javalang), and the bounded call-graph walk down from them; the `kept`/`compiled` harness sets, with the `trace.md` fallback for archived legs | no |
 | `crash_sites.py` | crash sites from raw Jazzer output (`fuzz_out/` of a `--coverage` run) or from the evidence blocks archived in `trace.md` | no |
-| `metrics.py` | the five metrics per leg, at method, line and branch granularity, aggregate and per ring, from the JSON files below only | no |
-| `aggregate.py` | macro-averages, the H_N/H_R/delta table, the RCC-versus-caught table | no |
-| `paper_tables.py` | the paper's Table 3 and Table 4, in markdown or LaTeX, from a measured run (section 6.5) | no |
-| `judge_view.py` | RCR for the one-shot LLM judge: the neighbourhood the *baseline* was shown, against the same R̂ (section 7) | no |
+| `judge_view.py` | RCR for the one-shot LLM judge: the neighbourhood the *baseline* was shown, against the same R̂ (section 7). Backend-side, not core: it parses Java signatures and the `<xref>`/`<callee>` evidence blocks out of judge records, and pairs those records with Defects4J leg directories | no |
 | `cli.py` | runs everything over a run directory | imports `root_cause` (allowed here only) |
 
 The pipeline side has three flag-gated hooks (`src/java/run.py`,
@@ -587,16 +609,32 @@ harnesses (`FuzzRunner`) and the acceptance check of every compiled
 candidate (`HarnessVerifier`, section 3.3.1) — snapshots the compiled
 classes, saves raw fuzzer output, and copies every compiled candidate's
 harness source to `<leg>/harness_src/<attempt>.java` (the source F_stat is
-read from, section 3.3.3); `--naive` removes the root-cause NEIGHBOURHOOD
-(level B: the patch diff and the failing test stay; callers, callees and
-coverage steering go) from every model-facing prompt of a leg — harness
-generation (`harness/prompts.py`: the variant-analysis `<root_cause_reachable>` block
+read from, section 3.3.3); `--naive {neighbourhood,function}` is a LADDER of
+two ablation levels applied to every model-facing prompt of a leg, and bare
+`--naive` means `neighbourhood`. **Level B (`neighbourhood`)** removes the
+root-cause NEIGHBOURHOOD — the patch diff and the failing test stay; callers,
+callees and coverage steering go — from harness generation
+(`harness/prompts.py`: the variant-analysis `<root_cause_reachable>` block
 with its covered-functions/found-signatures steering, the `<xref>` call-site
 examples, the `<callee>` declarations, and the propagation rule's
-reachable-region clause) AND relation synthesis (`relations/relation_synth.py`:
-the "Reachable API" line), with the honoured builders listed in the leg
-record's `naive_scope`. With the flags off the pipeline's prompts and
-commands are byte-for-byte unchanged, and tests pin that.
+reachable-region clause) AND from relation synthesis
+(`relations/relation_synth.py`: the "Reachable API" line). **Level C
+(`function`)** is the OSS-Fuzz-Gen-style baseline: the harness prompt keeps
+only the hard constraints/package line, a patch-free intro, each touched
+function's declaring class + `<signature>` + `<code>`, the
+FuzzedDataProvider reference and the skeleton, and drops everything that
+localises the bug (the patch block, source imports, the whole failing-test
+block with its trigger exception, crash input, entry-point hint and
+propagation rule, javadoc preconditions, sibling hints, class context, the
+lifted-assertion, synthesized-relation and metamorphic blocks, and the
+neighbourhood) — both bug kinds take that one prompt; relation synthesis at
+level C sees the method source plus the class-under-test line and nothing
+else, so no oracle can be lifted from the failing test and the level is only
+MEANINGFUL for crashing bugs (a semantic leg still runs and stamps
+`naive_level_c_semantic: true`). The leg record carries the rung in
+`naive_level` and the honoured builders, with what each dropped, in
+`naive_scope`. With the flags off the pipeline's prompts and commands are
+byte-for-byte unchanged, and tests pin that.
 
 ### 6.2 Running it
 
@@ -1027,6 +1065,15 @@ nothing is written at all.
 
 ## 8. Relation to `src/metrics`
 
+**Since the core/backend split, `src/metrics` is two things.**
+`src/metrics/core/` is the shared, language-agnostic core described in
+section 6.1 — the one definition of every metric, which this package
+imports. `src/metrics/*.py` (the modules named in the rest of this section:
+`rcc.py`, `reached.py`, `region.py`, `keys.py`, `collect.py`, `sweep.py`,
+`rcc_sweep.py`, `cli.py`) is the older, separate RCC implementation, which
+is unchanged and still runs. The rest of this section is about that older
+implementation; it does not describe `metrics.core`.
+
 There are two implementations of root-cause coverage in this repository,
 and they are kept apart on purpose.
 
@@ -1061,7 +1108,10 @@ agent. Rewriting them would have created a second place for those flags to
 drift. The matching, the region and the metric stay here.
 
 **The import rule is one-way.** `java.measurements` may import `metrics`;
-`metrics` must never import `java.measurements`. The reason is the firewall
+`metrics` must never import `java.measurements`. (The core/backend split
+adds the same rule one level down: this package imports `metrics.core`,
+and `metrics.core` imports no backend at all —
+`tests/test_metrics_core_layering.py` checks both directions.) The reason is the firewall
 of section 3.2: `root_cause.py` is the only module in the repository allowed
 to read a developer fix, and `tests/test_measurements_firewall.py` enforces
 that nothing the pipeline can reach imports it. `metrics` is imported by the
