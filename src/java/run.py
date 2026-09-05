@@ -42,7 +42,7 @@ from llm import (HarnessGenerator, reset_token_usage, token_usage,
                  usage_totals, enable_recording, reset_events, get_events,
                  record_event)
 from java.bug_context.patches import DeprecatedBugError, PatchSelector
-from java.harness.prompts import PromptBuilder
+from java.harness.prompts import PromptBuilder, naive_level_of
 from java.parsing.java_source import candidate_anchor_literals, expected_assert_literals
 from java.relations.judge_decision import adjudicate
 
@@ -993,19 +993,37 @@ def parse_args():
                              "environment are byte-for-byte unchanged, and "
                              "with it on nothing collected feeds a prompt, "
                              "the verifier, a gate, or a verdict.")
-    parser.add_argument("--naive", action="store_true",
-                        help="ABLATION. Build the paper's H_N leg: "
-                             "drop every root-cause-NEIGHBOURHOOD insertion "
-                             "from the harness prompt (the variant-analysis "
-                             "/ <root_cause_reachable> block with its "
-                             "coverage steering, the call-site <xref> "
-                             "examples, the <callee> declarations, and the "
-                             "reachable-region clause of the propagation "
-                             "rule) AND from the relation-synthesis prompt "
-                             "(the \"Reachable API\" line), leaving the "
-                             "patch, the failing test and every other "
-                             "section identical. OFF by default; with the "
-                             "flag off the prompt text is byte-for-byte "
+    parser.add_argument("--naive", nargs='?', default=None,
+                        const='neighbourhood',
+                        choices=['neighbourhood', 'function'],
+                        metavar="LEVEL",
+                        help="ABLATION LADDER. How much root-cause "
+                             "conditioning to strip out of the two "
+                             "model-facing prompts. Bare --naive means "
+                             "'neighbourhood'. "
+                             "'neighbourhood' (level B, the paper's H_N "
+                             "leg): drop every root-cause-NEIGHBOURHOOD "
+                             "insertion from the harness prompt (the "
+                             "variant-analysis / <root_cause_reachable> "
+                             "block with its coverage steering, the "
+                             "call-site <xref> examples, the <callee> "
+                             "declarations, and the reachable-region "
+                             "clause of the propagation rule) AND from "
+                             "the relation-synthesis prompt (the "
+                             "\"Reachable API\" line), leaving the patch, "
+                             "the failing test and every other section "
+                             "identical. "
+                             "'function' (level C, the OSS-Fuzz-Gen-style "
+                             "baseline): show the touched function(s) — "
+                             "declaring class, signature, body — plus the "
+                             "harness skeleton and the fuzzer API rules, "
+                             "and NOTHING that localises the bug: no "
+                             "patch, no failing test, no trigger "
+                             "exception, no neighbourhood; synthesis sees "
+                             "the method source alone, so no lifted-test "
+                             "oracle is possible and level C is meaningful "
+                             "for CRASHING bugs only. OFF by default; with "
+                             "the flag off the prompt text is byte-for-byte "
                              "what it was.")
     parser.add_argument("--results_json", type=str, default=None,
                         metavar="PATH",
@@ -2022,27 +2040,62 @@ def main():
         print("!! synthesis are disabled for this run.")
         print("!" * 60)
     record_extras = {"context_degraded": context_degraded}
-    if getattr(args, 'naive', False):
+    _naive_level = naive_level_of(getattr(args, 'naive', False))
+    if _naive_level:
         # ABLATION MARKER (measurement only): this leg's harnesses were
-        # generated from the unconditioned prompt (H_N). Written so a
-        # record can never be misread as a normal-arm result; read by
-        # nothing in this run.
+        # generated from an ablated prompt. Written so a record can never
+        # be misread as a normal-arm result; read by nothing in this run.
         record_extras['naive'] = True
+        # WHICH rung of the ladder. `naive: True` alone cannot tell a
+        # level-B leg (patch + failing test kept, neighbourhood dropped)
+        # from a level-C one (function source only), and the two are not
+        # comparable to each other or to the same baseline.
+        record_extras['naive_level'] = _naive_level
         # Which model-facing prompt builders of this leg honoured the flag,
-        # i.e. where the root-cause neighbourhood was actually removed. A
-        # leg record that says only `naive: True` cannot distinguish "the
-        # whole leg was unconditioned" from "the harness prompt was, and
-        # some other prompt still carried the neighbourhood" — which is
-        # exactly the leak the first --naive pilot shipped with.
-        record_extras['naive_scope'] = [
-            'harness_prompt (harness/prompts.py PromptBuilder: '
-            'variant-analysis <root_cause_reachable> block incl. '
-            'covered_functions/found_signatures coverage steering; '
-            '<xref> caller call-sites; <callee> declarations; the '
-            'propagation rule\'s reachable-region clause)',
-            'relation_synth (relations/relation_synth.py '
-            'RelationSynthesizer: "Reachable API" line)',
-        ]
+        # and what each of them dropped. A leg record that says only
+        # `naive: True` cannot distinguish "the whole leg was
+        # unconditioned" from "the harness prompt was, and some other
+        # prompt still carried the neighbourhood" — which is exactly the
+        # leak the first --naive pilot shipped with.
+        if _naive_level == 'function':
+            record_extras['naive_scope'] = [
+                'harness_prompt (harness/prompts.py PromptBuilder: '
+                'function-only baseline — kept: hard constraints/package, '
+                'intro, per-function declaring class + <signature> + '
+                '<code>, FuzzedDataProvider reference, skeleton; dropped: '
+                'the patch block, source imports, <xref> call-sites, '
+                '<callee> declarations, field siblings, the failing-test '
+                'block incl. trigger exception/crash input/entry-point '
+                'hint/propagation rule, javadoc preconditions, sibling '
+                'hints, class context, the lifted-assertion and '
+                'synthesized-relation blocks, the metamorphic block, and '
+                'the variant-analysis <root_cause_reachable> block)',
+                'relation_synth (relations/relation_synth.py '
+                'RelationSynthesizer: context collapsed to the method '
+                'source + the class-under-test line; dropped: the failing '
+                'test, the patch and its added/removed lines, class '
+                'context, javadocs, source imports, "Reachable API", '
+                'trigger methods, mined tests, trigger summary, '
+                'divergences)',
+            ]
+        else:
+            record_extras['naive_scope'] = [
+                'harness_prompt (harness/prompts.py PromptBuilder: '
+                'variant-analysis <root_cause_reachable> block incl. '
+                'covered_functions/found_signatures coverage steering; '
+                '<xref> caller call-sites; <callee> declarations; the '
+                'propagation rule\'s reachable-region clause)',
+                'relation_synth (relations/relation_synth.py '
+                'RelationSynthesizer: "Reachable API" line)',
+            ]
+        if _naive_level == 'function' and bug_kind == 'semantic':
+            # Level C may not show the failing test, and a semantic bug's
+            # oracle is lifted OUT of that test — so no lifted-test oracle
+            # can exist on this leg. The run proceeds exactly as it would
+            # otherwise; this stamp is what lets the measurement layer hold
+            # these legs apart from the crashing ones the level is
+            # meaningful for, instead of pooling them into one number.
+            record_extras['naive_level_c_semantic'] = True
 
     # H4/H5: same-name overloads, shared-prefix method families, and the
     # class's readable no-arg state — the mechanically-listed raw material

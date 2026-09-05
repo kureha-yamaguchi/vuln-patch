@@ -15,14 +15,56 @@ from java.bug_context.failure_test import FailureTest
 from java.parsing.java_source import highlight_trigger_calls
 
 
+# The --naive ablation LADDER. Each level removes a further band of
+# root-cause conditioning from the model-facing prompts; the level names
+# are what argparse accepts after --naive, what the leg record stores in
+# `naive_level`, and what both prompt builders branch on.
+#
+#   None (flag absent)  level A — the full pipeline prompt.
+#   'neighbourhood'     level B — patch + failing test kept, root-cause
+#                       NEIGHBOURHOOD dropped (variant-analysis /
+#                       <root_cause_reachable> block with its coverage
+#                       steering, <xref> caller call-sites, <callee>
+#                       declarations, the reachable-region clause of the
+#                       propagation rule, and the synthesis prompt's
+#                       "Reachable API" line).
+#   'function'          level C — the OSS-Fuzz-Gen-style baseline: the
+#                       touched function(s) and nothing that localises the
+#                       bug. No patch, no failing test, no neighbourhood.
+NAIVE_LEVELS = ('neighbourhood', 'function')
+
+
+def naive_level_of(naive) -> Optional[str]:
+    """Normalise a --naive value to a level name, or None when the flag is off.
+
+    Accepts what argparse produces (None / 'neighbourhood' / 'function')
+    AND the historical booleans, because `naive=True` was the whole flag
+    before this ladder existed: True maps to 'neighbourhood', so every
+    caller written against the old boolean keeps building byte-for-byte the
+    prompt it built then, and False/None keep taking the untouched path.
+    """
+    if naive is None or naive is False:
+        return None
+    if naive is True:
+        return 'neighbourhood'
+    if naive in NAIVE_LEVELS:
+        return naive
+    raise ValueError(
+        f"unknown --naive level {naive!r}; expected one of {NAIVE_LEVELS} "
+        "(or the legacy True/False)")
+
 
 class PromptBuilder:
     """Builds chat-completion messages from a PatchContext."""
 
-    def __init__(self, language: str = 'Java', naive: bool = False):
+    def __init__(self, language: str = 'Java', naive=False):
         self.language = language
-        # --naive (the paper's H_N arm): build the harness prompt WITHOUT
-        # the three root-cause-conditioning insertions —
+        # --naive: which rung of the ablation ladder (NAIVE_LEVELS) this
+        # prompt is built at. `naive` accepts the level name, or the legacy
+        # bool (True == 'neighbourhood').
+        #
+        # LEVEL B ('neighbourhood', the paper's H_N arm): build the harness
+        # prompt WITHOUT the three root-cause-conditioning insertions —
         #   (1) the variant-analysis / <root_cause_reachable> block (both
         #       the crashing and the semantic path), which also carries the
         #       covered_functions / found_signatures steering,
@@ -33,10 +75,21 @@ class PromptBuilder:
         #       stack region to "a function listed in
         #       <root_cause_reachable>" — a dangling reference once (1) is
         #       gone.
-        # Everything else is identical. Defaults to False everywhere, and
-        # with it False every branch below takes the path it always took,
-        # so the prompt text is byte-for-byte unchanged.
-        self.naive = naive
+        # Everything else — the patch, the failing test, the javadoc
+        # preconditions, the oracle guidance — is identical.
+        #
+        # LEVEL C ('function'): the OSS-Fuzz-Gen-style baseline. `build`
+        # short-circuits to _build_function_only, which shows the touched
+        # function(s) and NOTHING that localises the bug (see that method).
+        #
+        # `naive_level` is the accessor everything else branches on;
+        # `self.naive` stays the bool it always was (level B or C == True)
+        # so callers and records written against it keep working. Both
+        # default to off, and with the flag off every branch below takes
+        # the path it always took, so the prompt text is byte-for-byte
+        # unchanged.
+        self.naive_level = naive_level_of(naive)
+        self.naive = self.naive_level is not None
 
     def build(self, buggy_dir: str,
               context: PatchContext,
@@ -102,7 +155,15 @@ class PromptBuilder:
             the patched code disagrees. ``semantic_test`` is the single
             trigger test to lift from this attempt (the caller round-robins
             across the bug's trigger tests so each harness checks a
-            different one)."""
+            different one).
+
+        At ``naive_level == 'function'`` (level C) every argument except
+        ``buggy_dir`` and ``context`` is IGNORED — including ``bug_kind``:
+        that baseline shows the touched function(s) and nothing else, and
+        there is no oracle material left to build a semantic variant out
+        of (see _build_function_only)."""
+        if self.naive_level == 'function':
+            return self._build_function_only(buggy_dir, context)
         if bug_kind == "semantic":
             return self._build_semantic(
                 buggy_dir, context,
@@ -169,6 +230,107 @@ class PromptBuilder:
                 'outside the file.'},
             {'role': 'user', 'content': prompt},
         ]
+
+    # --- level C: the function-only (OSS-Fuzz-Gen-style) baseline --------
+
+    def _build_function_only(self, buggy_dir: str,
+                             context: PatchContext) -> List[Dict[str, str]]:
+        """Build the level-C (`--naive function`) prompt.
+
+        This is the OSS-Fuzz-Gen-style baseline: the model is asked to fuzz
+        a FUNCTION, not to reproduce a KNOWN BUG. It is shown
+
+          * the harness hard constraints (class name, entrypoint, package,
+            reach-the-real-code rule) — the fuzzer API rules,
+          * a bug-free intro naming the codebase,
+          * for each touched function: its declaring class (so the call
+            compiles), its signature, and its source body, exactly as the
+            pipeline already extracted them,
+          * the FuzzedDataProvider reference and the harness skeleton,
+
+        and NOTHING that localises the defect: no patch diff, no failing
+        test (source, name, expected values, or entry-point hint), no
+        trigger exception type, no crash input, no javadoc preconditions,
+        no mined sibling hints, no class-level context beyond the declaring
+        class name, and no root-cause neighbourhood (<xref> call sites,
+        <callee> declarations, field siblings, <root_cause_reachable>).
+        The metamorphic / post-condition block goes too: it is oracle
+        guidance derived from knowing a patch is under analysis, and the
+        baseline's only oracle is an escaping throwable.
+
+        Both bug kinds take this path. A semantic bug's oracle is lifted
+        out of its failing test, and level C may not show the failing test,
+        so there is nothing to lift — the run proceeds (the leg record
+        stamps ``naive_level_c_semantic`` so the measurement layer can hold
+        those legs apart) but level C is only MEANINGFUL for crashing bugs.
+        """
+        codebase = os.path.basename(buggy_dir.rstrip('/'))
+
+        sections: List[str] = [
+            self._hard_constraints(context.package),
+            self._intro_function_only(codebase),
+        ]
+        for fn in context.functions:
+            sections.append(self._function_block_function_only(fn))
+        sections.append(self._fdp_reference())
+        sections.append(self._skeleton_block(context.package))
+
+        prompt = '\n\n'.join(sections)
+
+        print("#" * 20 + " prompt (naive: function-only) " + "#" * 20)
+        print(prompt)
+        print("#" * 48)
+
+        return [
+            {'role': 'system', 'content':
+                f'You are an expert {self.language} security engineer '
+                'who writes Jazzer fuzzing harnesses. Return a single '
+                'compilable .java file — no markdown fences, no prose '
+                'outside the file.'},
+            {'role': 'user', 'content': prompt},
+        ]
+
+    def _intro_function_only(self, codebase: str) -> str:
+        """Level-C intro: says what to fuzz, never that anything is wrong.
+
+        The level-A/B intro points at "the patch below"; there is no patch
+        here, and naming one would tell the model a specific change is
+        under suspicion — the exact conditioning this level removes."""
+        return '\n'.join([
+            f"Codebase: `{codebase}`. Write a fuzz harness for the"
+            " function(s) shown below.",
+            "",
+            "Call them through the library's real public API, with inputs"
+            " built from the FuzzedDataProvider, and exercise as much of"
+            " each function's behaviour as you can: vary lengths, sizes,"
+            " signs and contents, cover empty and boundary values, and try"
+            " the argument combinations the signature allows. Construct"
+            " whatever real library objects the call needs. A throwable"
+            " that escapes fuzzerTestOneInput is reported as a finding, so"
+            " let exceptions from the code under test propagate.",
+        ])
+
+    def _function_block_function_only(self, fn: TouchedFunction) -> str:
+        """Level-C function block: declaring class, signature, body.
+
+        The declaring class is the one thing added rather than removed —
+        without it the call cannot be written, and at level A/B the model
+        reads it off the patch header, which is gone here. Everything the
+        level-A/B block attaches (call-site <xref> examples, <callee>
+        declarations, field siblings) is neighbourhood and stays out."""
+        cls = getattr(fn, 'func_class_fq', '') or getattr(fn, 'func_class', '')
+        header = f"Function `{fn.func_name}`"
+        if cls:
+            header += f" — declared in `{cls}`"
+        return '\n'.join([
+            header + ":",
+            "<signature>",
+            fn.func_signature,
+            "</signature>",
+            "<code>",
+            fn.func_source,
+            "</code>",
+        ])
 
     # --- semantic (non-crashing) path ------------------------------------
 

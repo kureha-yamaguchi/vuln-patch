@@ -26,6 +26,7 @@ import json
 import re
 
 from llm import HarnessGenerator
+from java.harness.prompts import naive_level_of
 
 _SYSTEM = (
     "You are a software-verification expert. Given a patched Java method and"
@@ -564,21 +565,32 @@ class RelationSynthesizer:
     """Proposes candidate relations (unscreened) for a semantic bug."""
 
     def __init__(self, generator: Optional[HarnessGenerator] = None,
-                 focused: bool = False, naive: bool = False):
+                 focused: bool = False, naive=False):
         self._gen = generator or HarnessGenerator(temperature=0.3, top_p=1.0)
         # focused=True runs per-source passes (formula/throws/family/state)
         # and unions the survivors, instead of one broad synthesis call.
         self.focused = focused
-        # --naive (the paper's H_N arm), same contract as PromptBuilder.naive:
-        # build this prompt WITHOUT any root-cause-NEIGHBOURHOOD conditioning.
-        # Here that is exactly one insertion: the "Reachable API" line, which
-        # is the callee/reachable set (context.root_cause_reachable) rendered
-        # as a name list. Everything else the synthesis prompt shows — the
+        # --naive: which rung of the ablation ladder (prompts.NAIVE_LEVELS)
+        # this prompt is built at. Same contract as PromptBuilder — the
+        # level name, or the legacy bool (True == 'neighbourhood').
+        #
+        # LEVEL B ('neighbourhood', the paper's H_N arm): build this prompt
+        # WITHOUT any root-cause-NEIGHBOURHOOD conditioning. Here that is
+        # exactly one insertion: the "Reachable API" line, which is the
+        # callee/reachable set (context.root_cause_reachable) rendered as a
+        # name list. Everything else the synthesis prompt shows — the
         # failing test, the patch, the patched class's own source/javadoc/
-        # imports — is level-B-permitted and unaffected. Defaults to False,
-        # and with it False every branch below takes the path it always took,
-        # so the prompt text is byte-for-byte unchanged.
-        self.naive = naive
+        # imports — is level-B-permitted and unaffected.
+        #
+        # LEVEL C ('function'): the context collapses to the method source
+        # alone (see _function_only_context).
+        #
+        # `naive_level` is what the code branches on; `self.naive` stays
+        # the bool it always was. Both default to off, and with the flag
+        # off every branch below takes the path it always took, so the
+        # prompt text is byte-for-byte unchanged.
+        self.naive_level = naive_level_of(naive)
+        self.naive = self.naive_level is not None
         # Full record of every LLM call this synthesizer makes (synthesis,
         # compile-repair, soundness-harden) — prompt messages + raw output —
         # so a run can dump a complete, auditable pipeline trace.
@@ -766,6 +778,14 @@ class RelationSynthesizer:
         _div = divergence_block(divergences)
         if _div:
             ctx.append(_div)
+        if self.naive_level == 'function':
+            # LEVEL C. Everything assembled above is discarded wholesale:
+            # at this level the synthesizer may see the method source and
+            # nothing else. Building it first and dropping it here (rather
+            # than guarding each append) is deliberate — it keeps the
+            # level-A/B assembly one unbroken, unindented block, so the
+            # off-path and level-B prompt text stay provably untouched.
+            ctx = self._function_only_context(patched_sources, class_name)
         ctx_str = "\n".join(ctx)
 
         # FOCUSED (per-source) synthesis: several narrow passes unioned,
@@ -849,6 +869,49 @@ class RelationSynthesizer:
                     " input, check) — no prose, no fences."},
             ]
         return []
+
+    @staticmethod
+    def _function_only_context(patched_sources: List[str],
+                               class_name: str) -> List[str]:
+        """The level-C (`--naive function`) synthesis context: the method
+        source, and the name of the class it lives in.
+
+        Level C withholds the failing test AND the patch. The failing test
+        is the only trusted statement of the CORRECT direction, so with it
+        gone no oracle can be lifted from it — level C therefore cannot
+        produce a lifted-test oracle at all, and is only MEANINGFUL for
+        crashing bugs, whose oracle is an escaping throwable rather than a
+        relation. For a semantic bug the leg still runs (its record is
+        stamped ``naive_level_c_semantic``) but its relations are proposed
+        from the buggy body alone, with nothing to check their direction
+        against; downstream screening is unchanged, so unsound proposals
+        die where they always did.
+
+        The class name is kept because the unchanged output spec's
+        two-tier catch is written in terms of it (calls on the class under
+        test are the PROBE tier, calls on any other class are setup) and
+        because a check that cannot name the class cannot compile. It is
+        reworded to drop "PATCH-CHANGED": at this level the model is not
+        told a patch exists.
+        """
+        ctx: List[str] = [
+            "METHOD(S) UNDER TEST — source as it stands in the checkout."
+            " Use it to see the code shape and API, NEVER as a model of"
+            " correct behaviour (it is the code as written, not a"
+            " specification):",
+        ]
+        for src in patched_sources:
+            ctx += ["<code>", src, "</code>"]
+        if class_name:
+            ctx.append(
+                f"THE CLASS UNDER TEST: {class_name}. Calls on THIS class"
+                " are the PROBE tier of the two-tier catch in the output"
+                " spec: once you have declared the input valid by"
+                " construction, an exception from one of them is a"
+                " reportable result, never a rejection to skip. Calls on"
+                " any OTHER class are setup, where a caught exception"
+                " still means skip this input.")
+        return ctx
 
     def repair_check(self, rel: 'Relation', javac_error: str,
                      imports: Optional[List[str]] = None) -> Optional[str]:
