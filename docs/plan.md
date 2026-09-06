@@ -1858,6 +1858,22 @@ accepted_harnesses field); it is validated on the r1/r2 suites instead.
 patch, no failing test, no neighbourhood) implemented 2026-09-05 (7b18679),
 not yet run. Repetition plan reduced by the user to three suites: H_N r1
 (closed flag), H_R r2, H_N r2 → two draws per arm.
+**TWO DRAWS PER ARM (2026-09-05/06; pilot_HR r1+r2, pilot_HN r1+r2 with
+both leaks closed; all measured incl. trigger gate 20/20 and fixed-budget
+remeasure):** Reach identical in all four draws — RCC(dev method) = 1.00
+on kept, all-compiled and re-measured sets. Finer levels favour H_R
+consistently but slightly: dev lines 0.81 vs 0.74, fixed-method branches
+0.70 vs 0.66, PSC branches 0.68 vs 0.65. CSM 0.82 vs 0.67 (naive crashes
+land outside the developer's method more often); static reach 0.64 vs
+0.50. Verdicts (summary.md): H_R F1 0.74 / 0.63, H_N 0.50 / 0.43 — the
+arm gap (~0.2) exceeds the within-arm spread (~0.1). Per patch: Chart-3
+Elixir and Closure-62 Jaid caught 2/2 by H_R and 0/2 by H_N (the
+conditioning-dependent catches); Closure-33, Lang-6 SketchFix, Math-79
+never caught by either; Chart-7, Chart-9, Math-2 caught by both always.
+RCC(body branches) for caught vs missed overfitting legs: 0.64 vs 0.62 —
+coverage depth does NOT predict detection on this data. Re-measured F
+equals as-run F leg by leg. Remaining single-draw caveat below applies
+to the OLD partial-naive run only.
 **Single-draw caveat:** one run per arm; smoke/A-B showed verdict flips
 between same-code runs; repetitions on dev + bug bootstrap needed for
 CIs before any claim.
