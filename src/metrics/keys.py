@@ -21,10 +21,13 @@ The two sides of RCC name a method differently:
 Overloads stay apart, because the parameter types belong to the key.
 """
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import tuple
 
 from java.bug_context.call_graph import (
-    fi_method_name, mangled_param_types, receiver_of, simple_type,
+    fi_method_name,
+    mangled_param_types,
+    receiver_of,
+    simple_type,
 )
 
 # The JVM, and therefore JaCoCo, calls a constructor `<init>`. javalang names
@@ -49,14 +52,14 @@ class MethodKey:
     """One method or constructor, named the same way on both sides."""
     class_name: str               # fully qualified, nested types joined by '.'
     method_name: str              # simple name, or '<init>' for a constructor
-    param_types: Tuple[str, ...]  # simple type names, in declaration order
+    param_types: tuple[str, ...]  # simple type names, in declaration order
 
     @property
     def arity(self) -> int:
         return len(self.param_types)
 
     @property
-    def loose(self) -> Tuple[str, str, int]:
+    def loose(self) -> tuple[str, str, int]:
         """The same method without its exact parameter types.
 
         A fallback only. `metrics.scores` uses it when no exact match exists,
@@ -82,7 +85,7 @@ def key_from_changed_method(changed) -> MethodKey:
     )
 
 
-def key_from_mangled(mangled: str) -> Optional[MethodKey]:
+def key_from_mangled(mangled: str) -> MethodKey | None:
     """`MethodKey` for one fuzz-introspector name.
 
     None when the name carries no ``[pkg.Class]`` receiver. Such a name is a
