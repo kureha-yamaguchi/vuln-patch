@@ -232,6 +232,7 @@ src/Crash_*.java
 drr/*
 defects4j/*
 legacy/*
+oss-fuzz/*
 
 # cve_scan pipeline outputs — regenerate via run_p0_harvest + run_diff_relate.
 # Large machine-readable artifacts are gitignored; the human-readable
@@ -255,8 +256,6 @@ VERSION
 
 # Claude Code session/settings dir — local only, never commit (privacy)
 .claude/
-
-oss-fuzz/*
 
 # OSS-Fuzz sweep outputs (run_ossfuzz_suite.sh): logs, results.jsonl, summary.
 # The project list that produced them IS committed, under suites/.
