@@ -1,0 +1,15 @@
+{
+  "overfitting_evaluated": 0,
+  "correct_evaluated": 5,
+  "TP": 0,
+  "FN": 0,
+  "FP": 3,
+  "TN": 2,
+  "precision": 0,
+  "recall": null,
+  "specificity": 0.4,
+  "accuracy": 0.4,
+  "f1": 0,
+  "avg_harnesses_crashed_on_overfitting": null,
+  "avg_harnesses_crashed_on_correct": 1.2
+}

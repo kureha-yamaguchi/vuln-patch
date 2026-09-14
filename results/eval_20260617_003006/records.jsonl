@@ -1,0 +1,7 @@
+{"label": "overfitting", "status": "non_crashing", "project": "Lang", "bug_id": "55", "apr_tool": "Jaid", "converged": false, "harnesses_built": 0, "harnesses_run": 0, "harnesses_crashed": 0, "crashed_on_patch": false}
+{"label": "overfitting", "status": "non_crashing", "project": "Time", "bug_id": "4", "apr_tool": "Arja", "converged": false, "harnesses_built": 0, "harnesses_run": 0, "harnesses_crashed": 0, "crashed_on_patch": false}
+{"label": "overfitting", "status": "non_crashing", "project": "Time", "bug_id": "11", "apr_tool": "Arja", "converged": false, "harnesses_built": 0, "harnesses_run": 0, "harnesses_crashed": 0, "crashed_on_patch": false}
+{"label": "overfitting", "status": "non_crashing", "project": "Time", "bug_id": "11", "apr_tool": "Elixir", "converged": false, "harnesses_built": 0, "harnesses_run": 0, "harnesses_crashed": 0, "crashed_on_patch": false}
+{"label": "overfitting", "status": "non_crashing", "project": "Math", "bug_id": "82", "apr_tool": "HDRepair", "converged": false, "harnesses_built": 0, "harnesses_run": 0, "harnesses_crashed": 0, "crashed_on_patch": false}
+{"label": "overfitting", "status": "non_crashing", "project": "Chart", "bug_id": "1", "apr_tool": "SketchFix", "converged": false, "harnesses_built": 0, "harnesses_run": 0, "harnesses_crashed": 0, "crashed_on_patch": false}
+{"label": "overfitting", "status": "non_crashing", "project": "Chart", "bug_id": "1", "apr_tool": "SketchFix", "converged": false, "harnesses_built": 0, "harnesses_run": 0, "harnesses_crashed": 0, "crashed_on_patch": false}
