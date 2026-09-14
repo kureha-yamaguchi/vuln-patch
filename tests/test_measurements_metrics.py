@@ -331,7 +331,9 @@ def test_none_when_denominator_is_zero(run_dir):
     assert no_crashes['csm__method__full__na'] == {
         'value': None, 'num': 0, 'den': 0,
         'by_ring': no_crashes['csm__method__full__na']['by_ring'],
-        'harness_only': 0}
+        'harness_only': 0,
+        'resolution': {'line': 0, 'name': 0,
+                       'name-ambiguous-nearest-ring': 0}}
     only_harness = M.compute_leg(_leg(run_dir, 2))
     assert _v(only_harness, 'csm__method__R0__na') is None      # 0 library sites
     assert only_harness['crash_harness_only'] == 1

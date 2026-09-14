@@ -440,15 +440,75 @@ the exception: it has no branch form at all (section 4.3).
 | **RCC** root-cause coverage | \|R̂ ∩ F(H)\| / \|R̂\| | How much of the developer's region did the harnesses actually execute? |
 | **RCP** root-cause precision | \|R̂ ∩ F(H)\| / \|F(H)\| | Of everything the harnesses executed, what share was root cause? The budget-focus number. |
 | **PSC** patch-derived-set coverage | \|P ∩ F(H)\| / \|P\| | How much of our *own* neighbourhood did the harnesses execute? Did they do what the prompt asked? The only metric that never looks at the developer fix. |
-| **CSM** crash-site match | \|{c ∈ C : site(c) ∈ R̂}\| / \|C\| | Of the crashes the harnesses produced, how many happened *in* the root-cause region? Are the crashes the right crashes? |
+| **CSM** crash-site match | \|{c ∈ C : site(c) ∈ R̂}\| / \|C\| | Of the crashes the harnesses produced, how many happened *in* the root-cause region? Are the crashes the right crashes? Two denominators are reported: C = the crashes with a library site (`csm__*`) and C = every crash (`csm_strict__*`). |
 
-**Crash sites.** The site of a crash is the deepest stack frame inside the
-library under test. A harness's own assertion frame does not count. For
-bugs that do not crash (the pipeline's *semantic* bugs), the harness detects
-a wrong *value* and raises the alarm itself, so the stack often contains no
-library frame at all; such crashes are counted separately as
-`harness_only` and excluded from CSM's denominator, and the README of the
-main pipeline explains why value bugs need different oracles.
+**Crash sites.** The site of a crash is the frame the fault really happened
+in, and three rules find it.
+
+1. *Follow the cause chain to its end.* A harness that catches a library
+   throwable and rethrows it as its own oracle alarm puts **itself** at the
+   top of the trace, so the headline describes the alarm and the deepest
+   `Caused by:` describes the fault. The site is the first library frame of
+   that deepest cause; shallower causes are tried next, and the headline's
+   own first library frame only stands in when the whole chain is
+   infrastructure and harness. The headline frame is kept beside the site as
+   `headline_site` and is never scored — it is there so a reader can see
+   where the alarm was raised when the two differ.
+2. *Skip the infrastructure.* Frames in `com.code_intelligence.jazzer`,
+   `java.`, `javax.`, `jdk.`, `sun.`, `junit.` and `org.junit.` are never the
+   library under test. (`javax.` and `org.junit.` were added to match
+   `d4j_rcc_sweep`, which filtered them from the start; `$` is normalised to
+   `.` on every frame class, so a nested class is spelled one way.)
+3. *Skip the harness.* The harness class sits in the project package, so a
+   plain "first project frame" rule would name the harness on every crash the
+   harness itself throws. A frame is the harness when its class is one of the
+   run record's `accepted_harnesses[].class_name` (the measurement CLI passes
+   them in) **or** when it has the `FuzzHarness*` / `fuzzerTestOneInput` shape
+   the generator always produces. The two rules are OR-ed: the record is the
+   authority when there is one, and an archived leg read back from `trace.md`
+   alone has none, so the shape rule has to stand by itself there.
+
+**Which overload: resolving a site by line.** A stack frame gives a class, a
+method name and a source line, but no parameter types, so by name alone a
+crash in `solve(f, min, max)` is indistinguishable from one in
+`solve(f, min, max, initial)`. Every build's coverage now carries a
+line-ownership map (`coverage_<build>.json`'s `method_lines`: the half-open
+range of source lines each method owns, the same map the probe repair of
+section 3.3 uses), so the site's line names exactly one overload, and that
+overload — with its real parameter types — is what is looked up in R̂. A
+crash resolved this way can land **outside** an R̂ that contains a different
+overload of the same name, which is the point: `solve/3` crashing is not
+`solve/4` being the root cause. When there is no line, no ownership map (a
+leg whose coverage JSON predates the key) or no method owns the line, the
+old name-based rule is used instead, and when that finds several same-name
+candidates in R̂ it takes the one in the nearest ring. Every site records
+which rule placed it — `line`, `name`, `name-ambiguous-nearest-ring` — and
+the counts are in the metrics row as `sizes.csm_resolution` and on each
+`csm__method__*` entry as `resolution`.
+
+**Two denominators, both reported.** A crash that never left the harness has
+no site to score: for a bug that does not crash (the pipeline's *semantic*
+bugs) the harness detects a wrong *value* and raises the alarm itself, so the
+stack contains no library frame at all. Whether such a crash belongs in CSM's
+denominator is a judgement, not a fact, so both answers are computed.
+
+| key | denominator | reads |
+|---|---|---|
+| `csm__<gran>__<R̂>__na` | crashes with a **library site** | "of the crashes that landed in the library, how many landed in the root cause?" — the harness-only ones are reported beside it as `harness_only` and in `crash_harness_only` |
+| `csm_strict__<gran>__<R̂>__na` | **every** crash the kept harness set reported, harness-only and unplaceable ones included | "of everything the set reported, how many landed in the root cause?" — the definition `d4j_rcc_sweep.crashes` uses |
+
+The numerator is the same in both. `csm_strict` is never larger than `csm`,
+and the gap between them is exactly the share of findings that named no
+library code. Both exclude the acceptance gate's own `compiled`-build
+crashes, for the reason in section 3.3.1.
+
+One difference with `d4j_rcc_sweep` that the strict denominator does **not**
+remove: it counts *reports*, we count *distinct crashes*. Jazzer deduplicates
+within one process, so two harnesses that find the same fault report it
+twice; `d4j_rcc_sweep` leaves both in, and `crash_sites.py` collapses crashes
+with the same `(build, exception, frames)` across harnesses into one. So the
+two numbers can differ on a leg where several harnesses found one fault, even
+with the same denominator rule.
 
 ### 4.1 Per-ring versions
 
@@ -695,7 +755,12 @@ granularity counts — `branches_from`, either `merged` (exact) or
 `union-upper-bound` (the per-harness reports added up; section 4.3), and
 the two provenance halves of `methods`: `methods_from_probes` (JaCoCo's own
 counters) and `frame_methods` (what the run's stack traces proved,
-section 3.3). A leg's `result.jsonl` says which harnesses each set is over,
+section 3.3), and `method_lines` — the half-open range of source lines each
+method of the population owns, which is what resolves a stack frame (and so
+a crash site) to one overload rather than to a name. `crash_sites.json`
+holds one record per crash: its `top_library` site and `top_library_line`,
+the `headline_site` beside it, the frames, and `site_kind`
+(`library` / `harness_only`); all of section 4's crash-site rules. A leg's `result.jsonl` says which harnesses each set is over,
 under `coverage`: `compiled_attempts` (every candidate the acceptance check
 ran), `accepted_attempts` (the ones it kept) and `sources` (the saved
 harness sources).
@@ -715,10 +780,11 @@ layout and the RCC-versus-caught table as Markdown.
 Metric keys in `metrics.jsonl` come in two shapes, depending on whether the
 metric reads the fuzzer-reachable set F(H).
 
-RCR, CSM and the cross-table do not read F, and keep four slots,
+RCR, CSM (in both its denominators, `csm__*` and `csm_strict__*`) and the
+cross-table do not read F, and keep four slots,
 `<metric>__<granularity>__<R-variant>__<build>`, with `na` in a slot the
 metric does not use: `rcr__method__R0__na`, `csm__method__R0__na`,
-`rcr_cross__line__full__na`.
+`csm_strict__method__R0__na`, `rcr_cross__line__full__na`.
 
 RCC, RCP and PSC are computed from F, and add a fifth slot naming the *kind*
 of F the number came from: `rcc__method__R0__buggy__dyn`,

@@ -325,6 +325,14 @@ def measure_leg(leg_dir: str, *, checkout_root: Optional[str] = None,
         # `compiled` crash is attributed to that build and metrics.py
         # keeps it out of CSM's denominator.
         fo_dir = os.path.join(leg_dir, 'fuzz_out')
+        # The classes the run actually accepted as harnesses, so a frame on
+        # one of them is never scored as a library site even when the
+        # generator did not follow the `FuzzHarness*` naming convention.
+        # `from_trace` gets none — an archived leg's trace is read without
+        # its record — and falls back to the shape rule.
+        harness_classes = [e.get('class_name') for e in
+                           (result.get('accepted_harnesses') or [])
+                           if isinstance(e, dict)]
         sites = []
         if os.path.isdir(fo_dir):
             for fname in sorted(os.listdir(fo_dir)):
@@ -334,8 +342,9 @@ def measure_leg(leg_dir: str, *, checkout_root: Optional[str] = None,
                 with open(os.path.join(fo_dir, fname), encoding='utf-8',
                           errors='replace') as fh:
                     text = fh.read()
-                for site in cs.from_jazzer_output(text, build=build,
-                                                  harness=harness):
+                for site in cs.from_jazzer_output(
+                        text, build=build, harness=harness,
+                        harness_classes=harness_classes):
                     site.source = f'fuzz_out/{fname}'
                     sites.append(site)
         if not sites:

@@ -480,6 +480,48 @@ def test_method_line_owners_splits_a_file_at_the_next_declaration():
     assert not any('lambda$' in k for k in by_key)
 
 
+def test_parse_carries_the_same_ownership_map_as_the_standalone_reader():
+    """`Coverage.method_lines` is filled from the same pass that reads the
+    rest of the report, through the shared `_ownership` helper, so it
+    cannot drift from `method_line_owners` — which is what a crash site is
+    resolved against when the coverage JSON is all a reader has."""
+    cov = cov_mod.parse_jacoco_xml(JACOCO_XML)
+    assert cov.method_lines == cov_mod.method_line_owners(JACOCO_XML)
+    # the same package filter applies to both
+    cov = cov_mod.parse_jacoco_xml(JACOCO_XML, include_prefix='org.jfree')
+    assert cov.method_lines == cov_mod.method_line_owners(JACOCO_XML,
+                                                          'org.jfree')
+    # every ref with a range is one the population also holds
+    assert set(cov.method_lines) <= set(cov.all_methods)
+
+
+def test_the_ownership_map_survives_the_json_round_trip():
+    cov = cov_mod.parse_jacoco_xml(JACOCO_XML)
+    back = cov_mod.Coverage.from_dict(json.loads(json.dumps(cov.to_dict())))
+    assert back.method_lines == cov.method_lines
+
+
+def test_a_coverage_json_written_before_ownership_existed_reads_back():
+    """An archived leg has no `method_lines` key.  It must read back as an
+    empty map — "this file records no ownership" — and never as a map that
+    claims no method owns any line."""
+    d = cov_mod.parse_jacoco_xml(JACOCO_XML).to_dict()
+    del d['method_lines']
+    back = cov_mod.Coverage.from_dict(d)
+    assert back.method_lines == {}
+    assert back.methods == cov_mod.parse_jacoco_xml(JACOCO_XML).methods
+
+
+def test_union_keeps_the_widest_range_for_a_method():
+    """Two per-harness reports of one build agree on ownership; a merge
+    over two revisions might not, and the union then keeps the range that
+    contains both rather than whichever came last."""
+    draw = MethodRef('org.jfree.demo.Widget', 'draw', ('Graphics2D', 'int'))
+    a = cov_mod.Coverage(method_lines={draw: (20, 40)})
+    b = cov_mod.Coverage(method_lines={draw: (18, 45)})
+    assert cov_mod.union([a, b]).method_lines == {draw: (18, 45)}
+
+
 def test_a_throwing_method_reads_as_missed_from_probes_alone():
     """JaCoCo puts a method's probe after its exit, so a method that throws
     through its only call is reported as never executed.  `unusedHelper`

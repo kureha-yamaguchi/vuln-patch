@@ -186,6 +186,16 @@ class Coverage:
     all_methods       every method JaCoCo saw (covered or not), after the
                       harness / synthetic / package filters — the
                       denominator, and the population for MethodIndex
+    method_lines      the same population's LINE OWNERSHIP: `{ref: (start,
+                      end)}`, the half-open range of source lines each
+                      method owns, reconstructed by `method_line_owners`.
+                      This is what lets a stack frame — a class, a name and
+                      a line, but no parameter types — be resolved to ONE
+                      overload, both for the probe repair (`frame_methods`)
+                      and for a crash site (`metrics._resolve_crash_site`).
+                      Empty on a coverage JSON written before this key
+                      existed, and a reader must then fall back to matching
+                      by name
     build             'buggy', 'patched' or '' when not attributed
     harness           the harness (or '+'-joined harnesses) this came from
     """
@@ -198,6 +208,8 @@ class Coverage:
     line_branches: Dict[LineRef, Tuple[int, int]] = field(default_factory=dict)
     branches_from: str = ''
     all_methods: Set[MethodRef] = field(default_factory=set)
+    method_lines: Dict[MethodRef, Tuple[int, int]] = field(
+        default_factory=dict)
     build: str = ''
     harness: str = ''
 
@@ -230,6 +242,9 @@ class Coverage:
                                   self.line_branches.items())],
             'branches_from': self.branches_from,
             'all_methods': [m.to_dict() for m in sorted(self.all_methods)],
+            'method_lines': [dict(m.to_dict(), start=int(a), end=int(b))
+                             for m, (a, b) in sorted(
+                                 self.method_lines.items())],
             'build': self.build,
             'harness': self.harness,
         }
@@ -265,6 +280,13 @@ class Coverage:
             branches_from=d.get('branches_from', ''),
             all_methods={MethodRef.from_dict(m)
                          for m in d.get('all_methods', [])},
+            # `method_lines` is younger than the rest of the file. A
+            # coverage JSON written before it existed reads back as an
+            # empty map, which says "this file records no line ownership"
+            # — never "no method owns any line".
+            method_lines={MethodRef.from_dict(m): (int(m.get('start', 0)),
+                                                   int(m.get('end', 0)))
+                          for m in d.get('method_lines') or []},
             build=d.get('build', ''),
             harness=d.get('harness', ''),
         )
@@ -303,6 +325,14 @@ def union(covs: Iterable[Coverage]) -> Coverage:
         out.frame_methods |= set(c.frame_methods)
         out.lines |= set(c.lines)
         out.all_methods |= set(c.all_methods)
+        # Line ownership is a property of the SOURCE, so every report of
+        # the same build agrees on it; where two disagree (a report merged
+        # over builds), the widest range is kept, exactly as
+        # `method_line_owners` does for one report.
+        for ref, (a, b) in c.method_lines.items():
+            have = out.method_lines.get(ref)
+            out.method_lines[ref] = ((min(have[0], a), max(have[1], b))
+                                     if have else (a, b))
         out.branches_covered = max(out.branches_covered, c.branches_covered)
         out.branches_total = max(out.branches_total, c.branches_total)
         for ref, (cov_n, tot_n) in c.line_branches.items():
@@ -385,10 +415,14 @@ def parse_jacoco_xml(path: str,
     pkg_dotted = ''           # current <package>, dotted
     class_fq = ''             # current <class>, dotted, '$' -> '.'
     class_skipped = True      # is the current <class> filtered out?
+    class_src = ''            # the current <class>'s sourcefilename
     src_skipped = True        # is the current <sourcefile> filtered out?
     src_class_top = ''        # LineRef key for the current <sourcefile>
     method: Optional[MethodRef] = None
     method_skipped = True
+    # (package, sourcefilename) -> [(declaration line, method)], the raw
+    # material `_ownership` turns into each method's line range.
+    declared: Dict[Tuple[str, str], List[Tuple[int, MethodRef]]] = {}
 
     for event, el in ET.iterparse(path, events=('start', 'end')):
         tag = el.tag
@@ -399,6 +433,7 @@ def parse_jacoco_xml(path: str,
             elif tag == 'class':
                 raw = el.get('name') or ''
                 class_fq = raw.replace('/', '.').replace('$', '.')
+                class_src = el.get('sourcefilename') or ''
                 class_skipped = (_is_harness_class(raw)
                                  or not _in_prefix(class_fq, prefix))
             elif tag == 'sourcefile':
@@ -419,6 +454,13 @@ def parse_jacoco_xml(path: str,
                     # something a measurement should crash on; skip it.
                     method = None
                 method_skipped = method is None
+                # The declaration line, for the ownership map. A method
+                # whose class carries no sourcefilename, or no debug line,
+                # simply owns nothing: it can never be resolved by line.
+                start = int(el.get('line') or 0)
+                if method is not None and class_src and start > 0:
+                    declared.setdefault((pkg_dotted, class_src), []).append(
+                        (start, method))
             elif tag == 'line':
                 if src_skipped:
                     continue
@@ -457,7 +499,7 @@ def parse_jacoco_xml(path: str,
                 cov.all_methods.add(method)
             method, method_skipped = None, True
         elif tag == 'class':
-            class_fq, class_skipped = '', True
+            class_fq, class_src, class_skipped = '', '', True
         elif tag == 'sourcefile':
             src_class_top, src_skipped = '', True
         elif tag == 'package':
@@ -469,6 +511,11 @@ def parse_jacoco_xml(path: str,
     # later and leaves this half alone, which is how the two provenances
     # stay countable.
     cov.methods_from_probes = set(cov.methods)
+    # Line ownership, from the same pass and the same filters, so that
+    # every ref in `method_lines` is one `all_methods` also holds. It is
+    # what resolves a stack frame (class, name, line — no parameter types)
+    # to ONE overload; see `method_line_owners`.
+    cov.method_lines = _ownership(declared)
     return cov
 
 
@@ -496,9 +543,12 @@ def method_line_owners(path: str,
     get the same range and are therefore indistinguishable by line — the
     one case where a frame credits both.
 
-    Only used by `frame_methods`. The same harness / synthetic / package
-    filters as `parse_jacoco_xml` are applied, so every ref this returns is
-    one `all_methods` can also contain.
+    Used by `frame_methods`, and by `parse_jacoco_xml` through the shared
+    `_ownership` helper, which is how `Coverage.method_lines` — the same
+    map, serialised with the rest of a build's coverage — is filled. The
+    same harness / synthetic / package filters as `parse_jacoco_xml` are
+    applied, so every ref this returns is one `all_methods` can also
+    contain.
     """
     prefix = _normalise_prefix(include_prefix) if include_prefix else None
     per_file: Dict[Tuple[str, str], List[Tuple[int, MethodRef]]] = {}
@@ -536,13 +586,34 @@ def method_line_owners(path: str,
             pkg_dotted = ''
         el.clear()
 
+    return _ownership(per_file)
+
+
+#: The end of the last method in a file: everything after its declaration.
+OWNS_TO_EOF = 1 << 30
+
+
+def _ownership(per_file: Dict[Tuple[str, str], List[Tuple[int, MethodRef]]]
+               ) -> Dict[MethodRef, Tuple[int, int]]:
+    """`{(package, sourcefile): [(declaration line, method)]}` -> the line
+    range each method owns, half-open.
+
+    Within one source file the methods are sorted by declaration line and
+    each owns from its own line up to the next declaration, the last one to
+    the end of the file (`OWNS_TO_EOF`). Two methods declared on the SAME
+    line share a range and are therefore indistinguishable by line — the
+    one case where a frame credits both.
+
+    Kept apart from the two parsers so `parse_jacoco_xml` (which collects
+    the declarations as it goes) and `method_line_owners` (which re-reads
+    the report for them alone) cannot drift."""
     owners: Dict[MethodRef, Tuple[int, int]] = {}
     for entries in per_file.values():
         entries.sort(key=lambda e: (e[0], e[1]))
         starts = sorted({start for start, _ in entries})
         after = {s: n for s, n in zip(starts, starts[1:])}
         for start, ref in entries:
-            end = after.get(start, 1 << 30)
+            end = after.get(start, OWNS_TO_EOF)
             have = owners.get(ref)
             # One ref, two declarations (a report merged over builds): keep
             # the widest range rather than whichever came last.

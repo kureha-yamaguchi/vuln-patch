@@ -222,10 +222,17 @@ def test_harness_detection():
 def test_infrastructure_detection():
     for c in ('com.code_intelligence.jazzer.driver.FuzzTargetRunner',
               'java.lang.String', 'jdk.internal.X', 'sun.misc.Y',
-              'junit.framework.Assert'):
+              'junit.framework.Assert',
+              # added to match d4j_rcc_sweep, which filtered them from the
+              # start: the JDK's extension half and JUnit 4/5
+              'javax.swing.JLabel', 'javax.xml.parsers.SAXParser',
+              'org.junit.Assert', 'org.junit.jupiter.api.Assertions'):
         assert cs._is_excluded(c), c
     assert not cs._is_excluded('org.jfree.chart.axis.Axis')
-    assert not cs._is_excluded('javax.swing.JLabel')
+    # a project package that merely STARTS like an excluded one is not
+    # excluded: the test is on the package boundary
+    assert not cs._is_excluded('javaxtools.compiler.Foo')
+    assert not cs._is_excluded('org.junitish.Helper')
 
 
 def test_signature_without_a_frame_is_not_a_crash_site():
@@ -237,3 +244,124 @@ def test_signature_without_a_frame_is_not_a_crash_site():
     got = cs._sig_site('java.lang.NullPointerException@org.jfree.A.b',
                        'buggy', '', 'x')
     assert got is not None and str(got.top_library) == 'org.jfree.A.b()'
+
+
+# ------------------------------------------- the cause chain is the site
+
+#: A headline that has a library frame OF ITS OWN and a `Caused by:` chain
+#: under it. The old rule scored the headline frame; the site is the
+#: deepest cause's first library frame, because that is where the fault
+#: was, and the headline frame is kept beside it for reference.
+LAUNDERED_WITH_HEADLINE_FRAME = """\
+== Java Exception: java.lang.IllegalStateException: renderer said no
+\tat org.jfree.demo.Plot.report(Plot.java:400)
+\tat org.jfree.demo.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:30)
+Caused by: java.lang.RuntimeException: wrapped
+\tat org.jfree.demo.Middle.relay(Middle.java:120)
+Caused by: java.lang.ArithmeticException: / by zero
+\tat org.jfree.demo.Deep.divide(Deep.java:88)
+\tat org.jfree.demo.Middle.relay(Middle.java:118)
+\t... 3 more
+== libFuzzer crashing input ==
+"""
+
+
+def test_deepest_cause_is_the_site_and_the_headline_is_kept_beside_it():
+    c = cs.from_jazzer_output(LAUNDERED_WITH_HEADLINE_FRAME)[0]
+    assert c.causes == ['java.lang.RuntimeException',
+                        'java.lang.ArithmeticException']
+    # the DEEPEST cause, not the headline and not the middle link
+    assert str(c.top_library) == 'org.jfree.demo.Deep.divide()'
+    assert c.top_library_line == 88
+    # the headline's own first library frame is recorded, never scored
+    assert str(c.headline_site) == 'org.jfree.demo.Plot.report()'
+    assert c.headline_site_line == 400
+    assert c.site_kind == 'library'
+
+
+def test_headline_stands_in_when_the_chain_has_no_library_frame():
+    """A cause whose frames are all JDK leaves nothing to score, so the
+    headline's own library frame is the site rather than nothing."""
+    text = """\
+== Java Exception: java.lang.IllegalStateException: bad state
+\tat org.jfree.demo.Plot.report(Plot.java:400)
+Caused by: java.lang.NumberFormatException: For input string: "x"
+\tat java.base/java.lang.Integer.parseInt(Integer.java:652)
+== libFuzzer crashing input ==
+"""
+    c = cs.from_jazzer_output(text)[0]
+    assert str(c.top_library) == 'org.jfree.demo.Plot.report()'
+    assert c.top_library_line == 400
+    assert c.headline_site == c.top_library
+
+
+def test_a_crash_with_no_chain_has_headline_site_equal_to_the_site():
+    c = sites()[2]
+    assert c.headline_site == c.top_library
+    assert c.headline_site_line == c.top_library_line
+
+
+def test_headline_site_survives_the_round_trip():
+    c = cs.from_jazzer_output(LAUNDERED_WITH_HEADLINE_FRAME)[0]
+    back = CrashSite.from_dict(json.loads(json.dumps(c.to_dict())))
+    assert back.headline_site == c.headline_site
+    assert back.headline_site_line == c.headline_site_line
+    assert back.top_library == c.top_library
+
+
+def test_a_record_written_before_headline_site_existed_reads_back():
+    d = sites()[2].to_dict()
+    del d['headline_site']
+    del d['headline_site_line']
+    back = CrashSite.from_dict(d)
+    assert back.headline_site is None
+    assert back.top_library == sites()[2].top_library
+
+
+# --------------------------------------- the harness by its record names
+
+#: A harness the generator did NOT name `FuzzHarness*`: only the run
+#: record knows it is a harness.
+ODD_NAMED_HARNESS = """\
+== Java Exception: java.lang.AssertionError: oracle disagreed
+\tat org.jfree.demo.OracleProbe$Body.check(OracleProbe.java:55)
+\tat org.jfree.demo.OracleProbe.entry(OracleProbe.java:20)
+\tat org.jfree.demo.Widget.draw(Widget.java:21)
+== libFuzzer crashing input ==
+"""
+
+
+def test_harness_detection_uses_the_record_class_names():
+    """Without the record the probe class looks like library code and
+    takes the site; with it, the site is the first frame below it."""
+    without = cs.from_jazzer_output(ODD_NAMED_HARNESS)[0]
+    assert str(without.top_library) == 'org.jfree.demo.OracleProbe.Body.check()'
+
+    with_record = cs.from_jazzer_output(
+        ODD_NAMED_HARNESS,
+        harness_classes=['org.jfree.demo.OracleProbe$Body',
+                         'org.jfree.demo.OracleProbe'])[0]
+    assert str(with_record.top_library) == 'org.jfree.demo.Widget.draw()'
+    assert with_record.top_library_line == 21
+    # the harness frames are kept and flagged, as before
+    assert with_record.harness_frames == [True, True, False]
+
+
+def test_record_names_normalise_the_dollar_like_frames_do():
+    """A nested harness class is written `Outer$Inner` in the record and
+    `Outer.Inner` on a frame; both spellings must match."""
+    ref = MethodRef('org.jfree.demo.OracleProbe.Body', 'check')
+    assert cs._is_harness(ref, ['org.jfree.demo.OracleProbe$Body'])
+    assert cs._is_harness(ref, ['org.jfree.demo.OracleProbe.Body'])
+    assert not cs._is_harness(ref, ['org.jfree.demo.Other'])
+
+
+def test_the_shape_rule_still_stands_without_a_record():
+    """`from_trace` has no run record beside it, so the FuzzHarness* /
+    fuzzerTestOneInput rule has to work alone."""
+    assert cs._is_harness(MethodRef('org.jfree.demo.FuzzHarness', 'helper'),
+                          [])
+    assert cs._is_harness(MethodRef('org.jfree.demo.Target',
+                                    'fuzzerTestOneInput'), None)
+    got = cs.from_trace(TRACE_MD)
+    assert [c for c in got if c.site_kind == 'harness_only']

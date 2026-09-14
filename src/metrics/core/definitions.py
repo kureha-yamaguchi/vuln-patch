@@ -34,9 +34,22 @@ RCP = |R n F| / |F|   how much of what the harness ran was root cause, i.e.
 PSC = |P n F| / |P|   how much of what the generator was told about it
                       managed to reach.
 CSM = |{c in C : site(c) in R}| / |C|   how often a crash landed inside the
-                      root cause.  Only crashes whose deepest frame is in
-                      library code count; ``harness_only`` crashes are
-                      reported separately, not in the denominator.
+                      root cause.  TWO denominators, both reported.
+                      ``csm__*`` counts only the crashes whose site is in
+                      library code (``harness_only`` crashes are reported
+                      beside it, not in the denominator); ``csm_strict__*``
+                      keeps every crash the kept set reported, harness-only
+                      and unplaceable ones included, which is the
+                      definition `d4j_rcc_sweep.crashes` uses.  Same
+                      numerator, so csm_strict <= csm always.
+
+                      site(c) is the first library frame of the DEEPEST
+                      ``Caused by:`` (see `crash_sites`), resolved to one
+                      overload by its source LINE against the build's
+                      line-ownership map when there is one, and by class
+                      and name against R when there is not
+                      (`_resolve_crash_site`).  Which rule placed each site
+                      is counted in ``sizes.csm_resolution``.
 
 Three axes multiply every metric
 --------------------------------
@@ -205,7 +218,8 @@ DEFAULT_F_KIND = 'dyn'
 F_KIND_STATIC = 'stat'
 
 #: The metrics whose value depends on F(H), so their keys carry the F kind.
-#: ``rcr``, ``csm`` and ``rcr_cross`` never read F and keep 4-slot keys.
+#: ``rcr``, ``csm``, ``csm_strict`` and ``rcr_cross`` never read F and keep
+#: 4-slot keys.
 F_METRICS = ('rcc', 'rcp', 'psc')
 
 LEG_RE = re.compile(r'^(?P<index>\d+)_(?P<patch>.+)_(?P<arm>[oc])$')
@@ -220,7 +234,7 @@ def metric_key(metric: str, gran: str, rvar: Optional[str],
     """The flat field name a metric lands under.
 
     Metrics that do not read the fuzzer-reachable set F(H) — ``rcr``,
-    ``csm``, ``rcr_cross`` — have four slots,
+    ``csm``, ``csm_strict``, ``rcr_cross`` — have four slots,
     ``<metric>__<granularity>__<R-variant>__<build>``, with the literal
     ``na`` in a slot the metric does not use, e.g. ``rcr__method__R0__na``,
     ``csm__line__full__na``.
@@ -357,11 +371,20 @@ class _Coverage:
        'lines': [LineRef dicts], 'all_methods': [MethodRef dicts],
        'branches_covered': int, 'branches_total': int,
        'line_branches': [{'class_top_fq':.., 'line':.., 'covered':..,
-                          'total':..}], 'branches_from': str}``
+                          'total':..}], 'branches_from': str,
+       'method_lines': [{'class_fq':.., 'name':.., 'params':[..],
+                         'start': int, 'end': int}]}``
 
     ``line_branches`` is what the ``branch`` granularity counts; a
     coverage file written before that key existed reads back as an empty
-    map and the leg then emits no ``branch`` keys at all."""
+    map and the leg then emits no ``branch`` keys at all.
+
+    ``method_lines`` is the build's LINE OWNERSHIP: the half-open range of
+    source lines each method of the population owns
+    (`coverage.method_line_owners`).  It is what resolves a crash frame —
+    a class, a name and a line, with no parameter types — to ONE overload;
+    a coverage file written before the key existed reads back empty and
+    CSM falls back to matching the frame by name (`_resolve_crash_site`)."""
 
     def __init__(self, d: dict, build: str):
         self.build = d.get('build') or build
@@ -388,6 +411,10 @@ class _Coverage:
             self.line_branches[loc.LineRef.from_dict(x)] = (
                 int(x.get('covered') or 0), int(x.get('total') or 0))
         self.branches_from = d.get('branches_from') or ''
+        self.method_lines: Dict[loc.MethodRef, Tuple[int, int]] = {}
+        for x in (d.get('method_lines') or []):
+            self.method_lines[loc.MethodRef.from_dict(x)] = (
+                int(x.get('start') or 0), int(x.get('end') or 0))
 
     @property
     def frame_added(self) -> Set[loc.MethodRef]:
@@ -468,11 +495,20 @@ class _CrashSite:
             loc.MethodRef.from_dict(tl) if isinstance(tl, dict) else None
         line = d.get('top_library_line')
         self.line: Optional[loc.LineRef] = None
+        # The bare line NUMBER, whichever shape it was written in.  The
+        # LineRef above is keyed by the source FILE (the top-level class),
+        # which is what the line-granularity sets are in; the number on its
+        # own is what resolves the frame to one overload of the method.
+        self.line_no: Optional[int] = None
         if isinstance(line, dict):
             self.line = loc.LineRef.from_dict(line)
+            self.line_no = self.line.line
         elif isinstance(line, int) and self.method is not None:
             self.line = loc.LineRef(loc.top_level_of(self.method.class_fq),
                                     line)
+            self.line_no = int(line)
+        elif isinstance(line, int):
+            self.line_no = int(line)
 
 
 def _load_crash_sites(mdir: str) -> Optional[List[_CrashSite]]:
@@ -631,29 +667,112 @@ def _project(rset: loc.MethodSet, pset: Optional[loc.MethodSet],
                        stats, index)
 
 
-def _site_in(index: loc.MethodIndex, ref: Optional[loc.MethodRef],
-             rset: Optional[loc.MethodSet] = None):
-    """Resolve a crash frame against an index.  Frames carry no parameter
-    types, so a ref with no params is matched with ``frame=True`` (arity
-    ignored); anything else goes through the normal strict/loose path.
+#: How a crash site was resolved to a method, recorded per site and
+#: counted per leg (``sizes.csm_resolution``).
+#:
+#: ``line``    the site's SOURCE LINE was matched against the build's
+#:             line-ownership map, so the overload is exact: a frame in
+#:             ``solve(double,double,double)`` is that method and not the
+#:             four-argument ``solve`` of the same name, whatever R̂ holds.
+#: ``name``    no line, or no ownership map, or no method owns that line:
+#:             the frame was matched by class and name against R̂ instead,
+#:             arity ignored (a frame carries no parameter types).
+#: ``name-ambiguous-nearest-ring``
+#:             the name rule found SEVERAL same-name candidates in R̂ and
+#:             took the one in the nearest ring.  The site is inside R̂
+#:             either way — which is the question CSM asks — but which
+#:             overload it was is a guess.
+RESOLUTION_LINE = 'line'
+RESOLUTION_NAME = 'name'
+RESOLUTION_NAME_RING = 'name-ambiguous-nearest-ring'
+SITE_RESOLUTIONS = (RESOLUTION_LINE, RESOLUTION_NAME, RESOLUTION_NAME_RING)
+
+
+def _site_in_ruled(index: loc.MethodIndex, ref: Optional[loc.MethodRef],
+                   rset: Optional[loc.MethodSet] = None):
+    """Resolve a crash frame against an index BY NAME, with the rule that
+    did it.  Returns ``(hit or None, rule)``.
+
+    Frames carry no parameter types, so a ref with no params is matched
+    with ``frame=True`` (arity ignored); anything else goes through the
+    normal strict/loose path.
 
     A frame inside an OVERLOADED method (two `replaceEach` arities both in
     the set) is ambiguous by name alone. The site is then still inside the
     set — the question CSM asks — so among the same-name candidates the
-    one in the nearest ring is taken rather than reporting 'outside'."""
+    one in the nearest ring is taken rather than reporting 'outside', and
+    the rule says so."""
     if ref is None:
-        return None
+        return None, RESOLUTION_NAME
     hit = index.lookup(ref, frame=not ref.params)
     if hit is not None or ref.params or rset is None:
-        return hit
+        return hit, RESOLUTION_NAME
     cands = index.by_name.get(f"{ref.class_simple}.{ref.name}", [])
     if ref.is_qualified:
         cands = [c for c in cands
                  if not c.is_qualified or c.class_fq == ref.class_fq]
     cands = [c for c in cands if c in rset]
     if not cands:
+        return None, RESOLUTION_NAME
+    return (min(cands, key=lambda c: (_rank(rset.ring_of(c)), c.strict_key)),
+            RESOLUTION_NAME_RING)
+
+
+def _site_in(index: loc.MethodIndex, ref: Optional[loc.MethodRef],
+             rset: Optional[loc.MethodSet] = None):
+    """`_site_in_ruled` without the rule."""
+    return _site_in_ruled(index, ref, rset)[0]
+
+
+def _owner_index(owners: Dict[loc.MethodRef, Tuple[int, int]]) -> dict:
+    """A build's line ownership, keyed for lookup by ``(class, name)``."""
+    idx: Dict[Tuple[str, str], List[Tuple[int, int, loc.MethodRef]]] = {}
+    for ref, (start, end) in (owners or {}).items():
+        idx.setdefault((ref.class_fq, ref.name), []).append((start, end, ref))
+    return idx
+
+
+def _owner_of_line(owner_idx: dict, ref: Optional[loc.MethodRef],
+                   line: Optional[int]) -> Optional[loc.MethodRef]:
+    """The method that owns ``line`` in ``ref``'s class, or None.
+
+    This is what tells two overloads apart.  A frame gives a class, a name
+    and a line; the ownership map gives each method the half-open range of
+    lines it owns, so the line names exactly one of them — the same
+    resolution `coverage.frame_methods` uses for the probe repair and
+    `d4j_rcc_sweep.reached.resolve_frame` for F(H).  None when there is no
+    line, no map, or no method of that name owns it, and the caller then
+    falls back to the name rule."""
+    if ref is None or line is None or not owner_idx:
         return None
-    return min(cands, key=lambda c: (_rank(rset.ring_of(c)), c.strict_key))
+    cands = [m for start, end, m in owner_idx.get((ref.class_fq, ref.name), [])
+             if start <= line < end]
+    if not cands:
+        return None
+    # Two methods declared on the same line share a range (JaCoCo does this
+    # for a constructor pair); take the stable one rather than an arbitrary.
+    return min(cands, key=lambda m: m.strict_key)
+
+
+def _resolve_crash_site(site, owner_idx: dict, index: loc.MethodIndex,
+                        rset: Optional[loc.MethodSet]):
+    """Where one crash's site sits in R̂: ``(hit or None, rule)``.
+
+    Line first: when the build's ownership map places the frame's line in
+    exactly one method, that method — with its real parameter types — is
+    the site, and it is then looked up in R̂ strictly.  A site resolved
+    this way can fall OUTSIDE an R̂ that holds a different overload of the
+    same name, which is the whole point: `solve(f,min,max)` crashing is
+    not `solve(f,min,max,initial)` being the root cause.
+
+    Name second, and only then: an archived leg whose coverage predates
+    the ownership map, a frame with no line number (a crash identity
+    recovered from a one-line note in a trace), or a line no method of
+    that name owns."""
+    exact = _owner_of_line(owner_idx, site.method, site.line_no)
+    if exact is not None:
+        return index.lookup(exact), RESOLUTION_LINE
+    return _site_in_ruled(index, site.method, rset)
 
 
 # ---------------------------------------------------------------------------
@@ -679,6 +798,19 @@ def _decompose(members: Set, ring_of, den: int) -> dict:
     for ring in RING_ORDER_OUT:
         out[ring] = _ratio(sum(1 for m in members if ring_of(m) == ring), den)
     return out
+
+
+def _all_rings(kept: Sequence, lib_rings: Sequence[str]) -> List[str]:
+    """One ring per crash in `kept`, for the STRICT CSM denominator.
+
+    A library-site crash keeps the ring its site fell in; a crash with no
+    library site at all — the harness's own oracle fired on a wrong value,
+    so nothing in the library threw — is ``outside``.  `lib_rings` is in
+    the order the library-site crashes appear in `kept`, which is how
+    `compute_leg` builds it."""
+    rings = iter(lib_rings)
+    return [next(rings) if s.site_kind == 'library' else loc.OUTSIDE
+            for s in kept]
 
 
 def _cross(members, ring_a, ring_b) -> dict:
@@ -1082,6 +1214,10 @@ def compute_leg(leg_dir: str) -> dict:
         sizes['crash_sites_library'] = None
         sizes['crash_sites_harness_only'] = None
         sizes['crash_sites_compiled'] = None
+        # How each site was resolved to a method (`SITE_RESOLUTIONS`),
+        # filled in with the CSM computation below; None when the leg has
+        # no crash sites file at all.
+        sizes['csm_resolution'] = None
     out['sizes'] = sizes
 
     matching: dict = {}
@@ -1295,17 +1431,49 @@ def compute_leg(leg_dir: str) -> dict:
         out['crash_compiled'] = len(sites) - len(kept)
         lib = lib_kept
         sites_csm = kept
+
+        # The line-ownership map each crash is resolved against: its OWN
+        # build's, falling back to the primary build's when that build
+        # carries no coverage (or a coverage file written before the map
+        # existed).  Built once per build; see `_resolve_crash_site`.
+        owner_idxs = {b: _owner_index(c.method_lines) for b, c in covs.items()
+                      if c.method_lines}
+        default_owner_idx = owner_idxs.get(primary) or {}
+
+        def _owners_for(site) -> dict:
+            return owner_idxs.get(site.build) or default_owner_idx
+
+        def _resolution_counts(rules) -> dict:
+            return {r: sum(1 for x in rules if x == r)
+                    for r in SITE_RESOLUTIONS}
+
+        resolution_by_rvar: Dict[str, dict] = {}
         for rvar, rset in rvars.items():
             index = loc.MethodIndex(rset.refs())
-            resolved = [_site_in(index, s.method, rset) for s in lib]
+            pairs = [_resolve_crash_site(s, _owners_for(s), index, rset)
+                     for s in lib]
             ring_of_site = [rset.ring_of(r) if r is not None else loc.OUTSIDE
-                            for r in resolved]
+                            for r, _rule in pairs]
+            counts = _resolution_counts([rule for _r, rule in pairs])
+            resolution_by_rvar[rvar] = counts
             num = sum(1 for g in ring_of_site if g != loc.OUTSIDE)
             out[metric_key('csm', 'method', rvar, None)] = dict(
                 _ratio(num, len(lib)),
                 by_ring=_decompose(list(range(len(ring_of_site))),
                                    lambda i: ring_of_site[i], len(lib)),
-                harness_only=len(sites_csm) - len(lib))
+                harness_only=len(sites_csm) - len(lib),
+                resolution=counts)
+            # The STRICT denominator: every crash the kept set reported,
+            # harness-only ones included.  Same numerator.  See the README,
+            # section 4, "Two denominators".
+            all_rings = _all_rings(kept, ring_of_site)
+            out[metric_key('csm_strict', 'method', rvar, None)] = dict(
+                _ratio(num, len(sites_csm)),
+                by_ring=_decompose(list(range(len(all_rings))),
+                                   lambda i: all_rings[i], len(sites_csm)),
+                harness_only=len(sites_csm) - len(lib),
+                library=len(lib),
+                resolution=counts)
         for rvar, rlset in rvars_line.items():
             rings = [rlset.ring_of(s.line) if s.line is not None
                      else loc.OUTSIDE for s in lib]
@@ -1315,6 +1483,21 @@ def compute_leg(leg_dir: str) -> dict:
                 by_ring=_decompose(list(range(len(rings))),
                                    lambda i: rings[i], len(lib)),
                 harness_only=len(sites_csm) - len(lib))
+            all_rings = _all_rings(kept, rings)
+            out[metric_key('csm_strict', 'line', rvar, None)] = dict(
+                _ratio(num, len(sites_csm)),
+                by_ring=_decompose(list(range(len(all_rings))),
+                                   lambda i: all_rings[i], len(sites_csm)),
+                harness_only=len(sites_csm) - len(lib),
+                library=len(lib))
+        # One leg-level count of how the sites were resolved.  The ``full``
+        # variant is the one reported: the nearest-ring tie-break can only
+        # differ between variants, and ``full`` is the widest R̂ and so the
+        # one where it is most likely to have been needed.
+        sizes['csm_resolution'] = (
+            resolution_by_rvar.get('full')
+            or (list(resolution_by_rvar.values()) or [None])[0]
+            or {r: 0 for r in SITE_RESOLUTIONS})
 
     out['matching'] = matching
     return out
