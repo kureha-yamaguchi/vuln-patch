@@ -898,7 +898,7 @@ def population_check(records: Sequence[dict]) -> dict:
 
     `records` are the per-bug records of a sweep — dicts carrying `status`
     and, for a scored bug, a numeric `rcc` (the field
-    `d4j_rcc_sweep/rcc_sweep.py` writes) or, when the caller prefers, no
+    `d4j_rcc_sweep/sweep_full.py` writes) or, when the caller prefers, no
     score at all. Returns the per-status counts, the bugs behind each, and
     the scored population.
     """

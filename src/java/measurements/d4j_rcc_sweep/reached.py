@@ -26,7 +26,7 @@ Two things this module refuses to guess.
 
 `load_jvm_coverage` also skips a method when the class carries no debug
 information, or when it cannot find the declaration line in the source-file
-map. It skips it without a warning. That is why `d4j_rcc_sweep.rcc.trigger_gate`
+map. It skips it without a warning. That is why `d4j_rcc_sweep.scores.trigger_gate`
 exists.
 
 THE PROBE LIMITATION, and it matters most for exactly our population.
@@ -50,7 +50,7 @@ import os
 import re
 import subprocess
 import urllib.request
-from typing import Iterable, Optional, Set, Tuple
+from typing import Dict, Iterable, Optional, Set, Tuple
 
 import config
 from java.measurements.d4j_rcc_sweep.keys import MethodKey, key_from_mangled
@@ -174,14 +174,12 @@ def stack_frames(text: str) -> Set[Tuple[str, str, int]]:
     return frames
 
 
-def reached_from_stack(report_path: str, text: str) -> Set[MethodKey]:
-    """Methods named by a stack trace, resolved against the report.
+def method_lines(report_path: str) -> Dict[MethodKey, Set[int]]:
+    """Every method in the report, with the source lines it owns.
 
-    A frame gives a class, a method name and a LINE, but no parameter types.
-    The report gives each method the lines it owns. Matching on the line is
-    therefore exact: it tells two overloads of one name apart, which a
-    name-only match could not.
-    """
+    A line here is a line the report KNOWS about, covered or not. That is
+    what makes it usable to place a stack frame on a method that the probes
+    read as missed."""
     from fuzz_introspector import code_coverage
 
     if os.path.basename(report_path) != REPORT_NAME:
@@ -189,19 +187,40 @@ def reached_from_stack(report_path: str, text: str) -> Set[MethodKey]:
             f"the report must be named {REPORT_NAME}; got {report_path}")
     profile = code_coverage.load_jvm_coverage(os.path.dirname(report_path))
 
-    frames = stack_frames(text)
-    if not frames:
-        return set()
-
-    found: Set[MethodKey] = set()
+    owners: Dict[MethodKey, Set[int]] = {}
     for mangled, lines in profile.covmap.items():
         key = key_from_mangled(mangled)
         if key is None:
             continue
-        owned = {line for line, _ in lines}
-        for cls, method, line in frames:
-            if cls == key.class_name and method == key.method_name \
-                    and line in owned:
-                found.add(key)
-                break
+        owners.setdefault(key, set()).update(line for line, _ in lines)
+    return owners
+
+
+def resolve_frame(frame: Tuple[str, str, int],
+                  owners: Dict[MethodKey, Set[int]]) -> Optional[MethodKey]:
+    """The method one stack frame names, or None.
+
+    A frame gives a class, a method name and a LINE, but no parameter types.
+    `owners` gives each method the lines it owns. Matching on the line is
+    therefore exact: it tells two overloads of one name apart, which a
+    name-only match could not."""
+    cls, method, line = frame
+    for key, owned in owners.items():
+        if cls == key.class_name and method == key.method_name \
+                and line in owned:
+            return key
+    return None
+
+
+def reached_from_stack(report_path: str, text: str) -> Set[MethodKey]:
+    """Methods named by a stack trace, resolved against the report."""
+    frames = stack_frames(text)
+    if not frames:
+        return set()
+    owners = method_lines(report_path)
+    found: Set[MethodKey] = set()
+    for frame in frames:
+        key = resolve_frame(frame, owners)
+        if key is not None:
+            found.add(key)
     return found

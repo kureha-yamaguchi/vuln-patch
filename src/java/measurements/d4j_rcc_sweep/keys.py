@@ -21,10 +21,16 @@ The two sides of RCC name a method differently:
 Overloads stay apart, because the parameter types belong to the key.
 """
 from dataclasses import dataclass
-from typing import Optional, Tuple
 
+# No `typing` import: the annotations below are PEP 585 builtin generics
+# (`tuple[str, ...]`), which need none, and `tuple(...)` is used as the
+# builtin constructor in this file. Upstream b66d37b had
+# `from typing import tuple` here, which is an ImportError on every Python.
 from java.bug_context.call_graph import (
-    fi_method_name, mangled_param_types, receiver_of, simple_type,
+    fi_method_name,
+    mangled_param_types,
+    receiver_of,
+    simple_type,
 )
 
 # The JVM, and therefore JaCoCo, calls a constructor `<init>`. javalang names
@@ -49,17 +55,17 @@ class MethodKey:
     """One method or constructor, named the same way on both sides."""
     class_name: str               # fully qualified, nested types joined by '.'
     method_name: str              # simple name, or '<init>' for a constructor
-    param_types: Tuple[str, ...]  # simple type names, in declaration order
+    param_types: tuple[str, ...]  # simple type names, in declaration order
 
     @property
     def arity(self) -> int:
         return len(self.param_types)
 
     @property
-    def loose(self) -> Tuple[str, str, int]:
+    def loose(self) -> tuple[str, str, int]:
         """The same method without its exact parameter types.
 
-        A fallback only. `d4j_rcc_sweep.rcc` uses it when no exact match exists,
+        A fallback only. `d4j_rcc_sweep.scores` uses it when no exact match exists,
         so that one unusual type spelling cannot turn a covered method into
         a missed one. It cannot separate two overloads of equal arity."""
         return (self.class_name, self.method_name, self.arity)
@@ -82,7 +88,7 @@ def key_from_changed_method(changed) -> MethodKey:
     )
 
 
-def key_from_mangled(mangled: str) -> Optional[MethodKey]:
+def key_from_mangled(mangled: str) -> MethodKey | None:
     """`MethodKey` for one fuzz-introspector name.
 
     None when the name carries no ``[pkg.Class]`` receiver. Such a name is a

@@ -8,7 +8,7 @@ Harness budget `-n 3 -m 8 --fuzz_timeout 20`; measurement pass
 `F(H)` is the set of methods the accepted harness set ran.
 
 Produced by the sweep that then lived at `src/metrics/rcc_sweep.py`; it
-is now `src/java/measurements/d4j_rcc_sweep/rcc_sweep.py`, unchanged
+is now `src/java/measurements/d4j_rcc_sweep/sweep_full.py`, unchanged
 apart from its imports. The tracebacks recorded in the JSONL beside this
 file still name the old paths, because that is where the code was when
 the run happened.

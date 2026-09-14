@@ -22,10 +22,10 @@ import pytest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'src'))
 
-from java.measurements.d4j_rcc_sweep import rcc, reached           # noqa: E402
-from java.measurements.d4j_rcc_sweep import region as region_mod   # noqa: E402
-from java.measurements.d4j_rcc_sweep.keys import (   # noqa: E402
-    MethodKey, key_from_mangled, normalise_type)
+from java.measurements.d4j_rcc_sweep import crashes, reached, scores             # noqa: E402
+from java.measurements.d4j_rcc_sweep import region as region_mod                 # noqa: E402
+from java.measurements.d4j_rcc_sweep.keys import (MethodKey, key_from_mangled,   # noqa: E402
+                          normalise_type)
 
 FIXTURES = os.path.join(ROOT, 'tests', 'fixtures')
 WIDGET_REL = 'source/org/example/Widget.java'
@@ -96,7 +96,7 @@ def test_a_source_and_descriptor_spell_the_same_method(tmp_path, tree_dir):
     report = _report(tmp_path, [
         ('indexOf', '(Ljava.lang.String;I)I', True),
     ])
-    result = rcc.root_cause_coverage(region,
+    result = scores.root_cause_coverage(region,
                                      reached.reached_from_report(report))
     assert result.value == 1.0
     assert not result.by_arity_only, 'this must match exactly, not by arity'
@@ -107,7 +107,7 @@ def test_a_the_other_overload_is_not_counted(tmp_path, tree_dir):
     the key precisely so a same-named overload cannot be credited."""
     region = _region('overload', tree_dir)
     report = _report(tmp_path, [('indexOf', '(Ljava.lang.Object;)I', True)])
-    result = rcc.root_cause_coverage(region,
+    result = scores.root_cause_coverage(region,
                                      reached.reached_from_report(report))
     assert result.value == 0.0
 
@@ -121,7 +121,7 @@ def test_a_a_constructor_is_init_on_the_jacoco_side(tmp_path, tree_dir):
         ('<init>', '()V', True),
         ('<init>', '(I)V', True),
     ])
-    result = rcc.root_cause_coverage(region,
+    result = scores.root_cause_coverage(region,
                                      reached.reached_from_report(report))
     assert result.value == 1.0
 
@@ -131,7 +131,7 @@ def test_a_an_uncovered_method_is_missed_not_absent(tmp_path, tree_dir):
     is the reading the metric exists to produce."""
     region = _region('overload', tree_dir)
     report = _report(tmp_path, [('indexOf', '(Ljava.lang.String;I)I', False)])
-    result = rcc.root_cause_coverage(region,
+    result = scores.root_cause_coverage(region,
                                      reached.reached_from_report(report))
     assert result.value == 0.0
     assert [str(k) for k in result.missed] == ['Widget.indexOf(String, int)']
@@ -182,7 +182,7 @@ def test_c_the_gate_passes_when_the_trigger_test_runs_the_region(
         tmp_path, tree_dir):
     region = _region('overload', tree_dir)
     report = _report(tmp_path, [('indexOf', '(Ljava.lang.String;I)I', True)])
-    gate = rcc.trigger_gate(region, reached.reached_from_report(report))
+    gate = scores.trigger_gate(region, reached.reached_from_report(report))
     assert gate.passed
 
 
@@ -193,7 +193,7 @@ def test_c_the_gate_fails_when_the_trigger_test_misses_the_region(
     gate that fault would read as RCC = 0 on every bug."""
     region = _region('overload', tree_dir)
     report = _report(tmp_path, [('indexOf', '(Ljava.lang.String;I)I', False)])
-    gate = rcc.trigger_gate(region, reached.reached_from_report(report))
+    gate = scores.trigger_gate(region, reached.reached_from_report(report))
     assert not gate.passed
     assert 'indexOf' in gate.detail
 
@@ -204,8 +204,8 @@ def test_c_a_fields_only_fix_leaves_the_population(tree_dir):
     region = _region('fields_only', tree_dir)
     assert region.is_empty
     assert region.unmapped
-    assert rcc.root_cause_coverage(region, set()).value is None
-    assert not rcc.trigger_gate(region, set()).passed
+    assert scores.root_cause_coverage(region, set()).value is None
+    assert not scores.trigger_gate(region, set()).passed
 
 
 # --- (d) the probe limitation, and the frames that repair it -------------
@@ -254,3 +254,121 @@ def test_d_library_and_engine_frames_are_dropped(tmp_path):
 def test_d_no_trace_adds_nothing(tmp_path):
     report = _report(tmp_path, [('solve', '(DD)D', True)])
     assert reached.reached_from_stack(report, '') == set()
+
+
+# --- (e) the other three set metrics, and their denominators -------------
+
+def _keys(*specs):
+    """A set of MethodKeys from `Class.method(T1, T2)` style specs."""
+    made = set()
+    for spec in specs:
+        head, _, tail = spec.partition('(')
+        cls, _, name = head.rpartition('.')
+        params = [p.strip() for p in tail.rstrip(')').split(',') if p.strip()]
+        made.add(MethodKey(cls, name, tuple(params)))
+    return made
+
+
+def test_e_each_metric_uses_its_own_denominator(tree_dir):
+    """RCC and RCP share a numerator. Only the denominator separates them,
+    and mixing the two is the easiest error to make here."""
+    region = _region('overload', tree_dir)          # Widget.indexOf(String, int)
+    patch = _keys('org.example.Widget.indexOf(String, int)',
+                  'org.example.Widget.resize(int)')
+    fuzzer = _keys('org.example.Widget.indexOf(String, int)',
+                   'org.example.Widget.resize(int)',
+                   'org.example.Widget.paint()',
+                   'org.example.Widget.clear()')
+    sets = scores.set_metrics(region, patch, fuzzer)
+    assert sets.rcc == 1.0          # 1 of 1 method in R-hat
+    assert sets.rcr == 1.0          # P recovers that method
+    assert sets.rcp == 0.25         # 1 of the 4 methods F(H) ran
+    assert sets.psc == 1.0          # both members of P were run
+
+
+def test_e_recovery_is_static_and_ignores_the_fuzzer(tree_dir):
+    """RCR scores the EXTRACTION. A harness set that ran everything cannot
+    raise it, and one that ran nothing cannot lower it."""
+    region = _region('overload', tree_dir)
+    patch = _keys('org.example.Widget.resize(int)')
+    assert scores.set_metrics(region, patch, set()).rcr == 0.0
+    assert scores.set_metrics(region, patch, region.keys).rcr == 0.0
+
+
+def test_e_an_empty_denominator_is_undefined_not_zero(tree_dir):
+    """An empty P leaves PSC's population. Reading it as 0.0 would put a
+    failed static analysis into the mean as a bad harness set."""
+    region = _region('overload', tree_dir)
+    sets = scores.set_metrics(region, set(), set())
+    assert sets.psc is None
+    assert sets.rcp is None
+    assert sets.rcr == 0.0          # R-hat is not empty, so RCR is defined
+
+
+# --- (f) the crashes, and where they happened ----------------------------
+
+_HARNESS = 'org.example.FuzzHarness'
+
+
+def _crash_output(*blocks) -> str:
+    return '\n'.join(blocks)
+
+
+def test_f_one_banner_is_one_crash():
+    text = _crash_output(
+        '== Java Exception: java.lang.IllegalStateException: a\n'
+        '\tat org.example.Widget.solve(Widget.java:100)\n',
+        '== Java Exception: java.lang.IllegalStateException: b\n'
+        '\tat org.example.Widget.solve(Widget.java:110)\n')
+    assert len(crashes.crash_blocks(text)) == 2
+
+
+def test_f_the_site_is_the_deepest_cause_not_the_harness_alarm():
+    """A harness that catches a library throwable and rethrows its own
+    alarm puts ITSELF at the top. The deepest `Caused by:` is the fault."""
+    block = ('== Java Exception: java.lang.RuntimeException: [oracle:x]\n'
+             '\tat org.example.FuzzHarness.check(FuzzHarness.java:85)\n'
+             'Caused by: java.lang.IndexOutOfBoundsException: -1\n'
+             '\tat java.util.ArrayList.add(ArrayList.java:479)\n'
+             '\tat org.example.Widget.solve(Widget.java:100)\n'
+             '\tat org.example.FuzzHarness.check(FuzzHarness.java:78)\n')
+    assert crashes.site_frame(block, [_HARNESS]) == ('org.example.Widget',
+                                                     'solve', 100)
+
+
+def test_f_a_harness_only_crash_has_no_site():
+    """An oracle that fires on a wrong VALUE names no library method. That
+    is a real outcome, and it must not be confused with a lookup failure."""
+    block = ('== Java Exception: java.lang.RuntimeException: [oracle:y]\n'
+             '\tat org.example.FuzzHarness.fuzzerTestOneInput'
+             '(FuzzHarness.java:64)\n')
+    assert crashes.site_frame(block, [_HARNESS]) is None
+
+
+def test_f_csm_counts_only_crashes_inside_the_region(tmp_path, tree_dir):
+    """CSM's denominator is every crash, including the ones with no site."""
+    region = _region('overload', tree_dir)     # Widget.indexOf(String, int)
+    report = _report(tmp_path, [
+        ('indexOf', '(Ljava.lang.String;I)I', True),    # line 100
+        ('resize', '(I)V', True),                       # line 110
+    ])
+    text = _crash_output(
+        '== Java Exception: java.lang.IllegalStateException: in region\n'
+        '\tat org.example.Widget.indexOf(Widget.java:100)\n',
+        '== Java Exception: java.lang.IllegalStateException: elsewhere\n'
+        '\tat org.example.Widget.resize(Widget.java:110)\n',
+        '== Java Exception: java.lang.RuntimeException: [oracle:z]\n'
+        '\tat org.example.FuzzHarness.fuzzerTestOneInput'
+        '(FuzzHarness.java:64)\n')
+    found = crashes.crashes(report, text, [_HARNESS])
+    match = scores.crash_site_match(region, found)
+    assert (match.total, match.matched) == (3, 1)
+    assert (match.off_region, match.no_frame, match.unresolved) == (1, 1, 0)
+    assert match.value == pytest.approx(1 / 3)
+
+
+def test_f_no_crash_leaves_csm_undefined(tmp_path, tree_dir):
+    region = _region('overload', tree_dir)
+    report = _report(tmp_path, [('indexOf', '(Ljava.lang.String;I)I', True)])
+    assert crashes.crashes(report, 'no findings here') == []
+    assert scores.crash_site_match(region, []).value is None

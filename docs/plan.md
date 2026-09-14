@@ -1817,6 +1817,18 @@ and Kureha's eight modules, being Defects4J/JaCoCo/Jazzer-specific, moved
 into the Java backend at src/java/measurements/d4j_rcc_sweep/ with her
 README beside them. No shims were left at the old paths; every reference
 was repointed. README §8 is now "Relation to `d4j_rcc_sweep`".
+**SECOND MERGE (2026-09-14, origin/main b66d37b; local only, not pushed):**
+upstream Kureha had meanwhile extended the same files IN PLACE at
+src/metrics/, so every one of our moves came back as a rename/rename or
+modify/delete conflict. Resolved the same way as before: her current
+versions now sit in src/java/measurements/d4j_rcc_sweep/ with the imports
+rewritten, and src/metrics/ is still core/ and nothing else. The sweep is
+now five metrics rather than RCC alone — new modules scores.py (absorbed
+rcc.py), patchset.py (P) and crashes.py (C), and the scripts renamed:
+sweep.py -> sweep_gate.py, rcc_sweep.py -> sweep_full.py, cli.py ->
+score_one.py, plus a new rescore.py. tests/test_metrics_rcc.py is now
+tests/test_metrics.py. Her five-metric re-score of the 2026-09-04 holdout
+run (metrics.jsonl / metrics_summary.md) came with it.
 
 ### 8.51 H_N vs H_R PILOT (2026-09-04/05; evaluation only)
 **Runs:** pilot_HR_20260904_112437 and pilot_HN_20260904_150008 — 20 dev

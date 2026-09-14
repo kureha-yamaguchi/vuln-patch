@@ -11,9 +11,9 @@ The measurement layer is split in two:
                              that JSON (patch diffs, call graphs, JaCoCo
                              XML, Jazzer stack frames, the Defects4J run
                              layout), including `d4j_rcc_sweep/`, the
-                             earlier Defects4J-specific RCC sweep. A future
-                             C backend lives elsewhere and reuses the same
-                             core.
+                             earlier Defects4J-specific five-metric sweep.
+                             A future C backend lives elsewhere and reuses
+                             the same core.
 
 The rule is one-way: a backend imports core, core never imports a backend.
 `src/metrics/` holds nothing but `core/`: anything that knows about a
@@ -171,7 +171,23 @@ def test_the_d4j_rcc_sweep_lives_in_the_java_backend():
     rest of `java.*`; core must still not import it."""
     sweep_dir = os.path.join(SRC, 'java', 'measurements', 'd4j_rcc_sweep')
     assert os.path.isdir(sweep_dir), (
-        'the d4j RCC sweep belongs under src/java/measurements/')
+        'the d4j sweep belongs under src/java/measurements/')
+
+    # The sweep's own modules, by their current names. `scores.py` holds the
+    # five metrics and the gate (it absorbed the old `rcc.py`); the four
+    # entry points are `sweep_gate`, `sweep_full`, `rescore` and `score_one`
+    # (formerly `sweep.py`, `rcc_sweep.py` and `cli.py`).
+    expected = {
+        '__init__.py', 'README.md',
+        'region.py', 'reached.py', 'keys.py', 'collect.py', 'scores.py',
+        'patchset.py', 'crashes.py',
+        'sweep_gate.py', 'sweep_full.py', 'rescore.py', 'score_one.py',
+    }
+    present = {n for n in os.listdir(sweep_dir) if n != '__pycache__'}
+    assert present == expected, (
+        'the d4j sweep package should hold exactly its current modules; '
+        f'missing={sorted(expected - present)} '
+        f'unexpected={sorted(present - expected)}')
 
     offenders = []
     for path in _python_files(CORE_DIR):

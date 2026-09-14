@@ -10,9 +10,12 @@ that they agree, which is what this file does — on the real reports of
 
     results/rcc_hr_crashing_holdout_20260904_001615/
 
-the crashing-split holdout sweep `d4j_rcc_sweep/rcc_sweep.py` produced, with
-its per-bug records in `rcc.jsonl` and the merged harness-set report of each
-bug in `<bug>/harness/jacoco.xml`.
+the crashing-split holdout sweep `d4j_rcc_sweep/sweep_full.py` produced,
+with its per-bug records in `rcc.jsonl` and the merged harness-set report of
+each bug in `<bug>/harness/jacoco.xml`. The same directory now also carries
+`metrics.jsonl` and `metrics_summary.md` — the five-metric re-score of that
+same run, written later by `d4j_rcc_sweep/rescore.py`. This file still reads
+`rcc.jsonl`, because RCC is the number the two implementations share.
 
 The whole file skips when that directory is not on the machine. It reads it
 and writes nothing.
@@ -59,6 +62,19 @@ pytestmark = pytest.mark.skipif(
 def _records():
     with open(RECORDS, encoding='utf-8') as fh:
         return [json.loads(line) for line in fh if line.strip()]
+
+
+def test_the_run_also_carries_her_five_metric_rescore():
+    """The run directory grew two files after this cross-check was written:
+    `rescore.py` re-scored the same run for all five metrics and left
+    `metrics.jsonl` beside `rcc.jsonl`, with its reading in
+    `metrics_summary.md`. Nothing here reads them — RCC is the one number
+    the two implementations both compute, so `rcc.jsonl` stays the input —
+    but a missing re-score would mean the run directory is not the one these
+    numbers were checked against."""
+    for name in ('rcc.jsonl', 'metrics.jsonl', 'metrics_summary.md'):
+        assert os.path.isfile(os.path.join(RUN_DIR, name)), (
+            f'{name} is missing from {RUN_DIR}')
 
 
 def _bug_dir(record):
@@ -128,7 +144,7 @@ def candidates(ref, population, index):
 
     Exact parameter types first, then `MethodIndex`'s fallback for an
     unqualified ref, which is (simple class, name, arity). That is her
-    order too: `d4j_rcc_sweep.rcc.ReachedSet` compares types and falls back
+    order too: `d4j_rcc_sweep.scores.KeySet` compares types and falls back
     to
     the argument count."""
     exact = [m for m in sorted(population)
@@ -347,8 +363,8 @@ def test_an_unavailable_measurement_is_never_a_zero():
 
 
 def test_population_statuses_are_the_ones_the_sweep_can_write():
-    """Every status `d4j_rcc_sweep/sweep.py` and `rcc_sweep.py` can record
-    has
+    """Every status `d4j_rcc_sweep/sweep_gate.py` and `sweep_full.py` can
+    record has
     a slot here, so a population summary can never silently drop a class of
     exclusion."""
     for status in ('ok', 'excluded_empty_region', 'excluded_gate_failed',

@@ -1072,8 +1072,9 @@ nothing is written at all.
 language-agnostic core described in section 6.1 — the one definition of
 every metric (`metrics.core.definitions`), which this package imports — and
 it holds nothing else. Kureha's older, separate RCC implementation
-(`rcc.py`, `reached.py`, `region.py`, `keys.py`, `collect.py`, `sweep.py`,
-`rcc_sweep.py`, `cli.py`) used to sit beside it; it is
+(`region.py`, `reached.py`, `keys.py`, `collect.py`, `scores.py`,
+`patchset.py`, `crashes.py`, `sweep_gate.py`, `sweep_full.py`, `rescore.py`,
+`score_one.py`) used to sit beside it; it is
 Java/Defects4J/JaCoCo/Jazzer-specific, so it now lives inside this package,
 at `src/java/measurements/d4j_rcc_sweep/`, with its own README. The code is
 unchanged apart from its imports and still runs. The rest of this section
@@ -1082,19 +1083,22 @@ is about that sweep.
 There are two implementations of root-cause coverage in this repository,
 and they are kept apart on purpose.
 
-`d4j_rcc_sweep` is the smaller and older one: RCC at method level for one
-harness set, on one bug at a time, plus the sweeps that drive it end to end
-(`sweep.py` for the region and the gate, `rcc_sweep.py` for the whole
-experiment). Its region comes from `execution.diffcov`, its F(H) is read
-through fuzz-introspector's JaCoCo loader, and its method identity is
-`d4j_rcc_sweep.keys.MethodKey`. It is what produced
-`results/rcc_hr_crashing_holdout_*`.
+`d4j_rcc_sweep` is the smaller and older one: the five metrics at method
+level for one harness set, on one bug at a time, plus the sweeps that drive
+it end to end (`sweep_gate.py` for the region and the gate, `sweep_full.py`
+for the whole experiment, `rescore.py` to re-score a finished run and
+`score_one.py` for a single bug). Its region comes from
+`execution.diffcov`, its F(H) is read through fuzz-introspector's JaCoCo
+loader, and its method identity is `d4j_rcc_sweep.keys.MethodKey`. It is
+what produced `results/rcc_hr_crashing_holdout_*`.
 
 ```bash
 # from the repo root; both also run as
 # `python -m java.measurements.d4j_rcc_sweep.<name>` from src/
-python src/java/measurements/d4j_rcc_sweep/sweep.py --help
-python src/java/measurements/d4j_rcc_sweep/rcc_sweep.py --help
+python src/java/measurements/d4j_rcc_sweep/sweep_gate.py --help
+python src/java/measurements/d4j_rcc_sweep/sweep_full.py --help
+python src/java/measurements/d4j_rcc_sweep/rescore.py --help
+python src/java/measurements/d4j_rcc_sweep/score_one.py --help
 ```
 
 `src/java/measurements` — this package — is the superset: five metrics, not
@@ -1108,9 +1112,9 @@ It parses the JaCoCo XML itself and its identity is `locations.MethodRef`.
 | piece | there | here |
 |---|---|---|
 | the frame repair of JaCoCo's probe miss | `reached.reached_from_stack` | `coverage.frame_methods` / `repair_from_frames`, wired into `collect_leg` per build (section 3.3) |
-| the triggering-test gate | `collect.trigger_coverage` + `rcc.trigger_gate` | `root_cause.trigger_gate`, which **calls hers** to run the tests and does the matching here (section 3.2) |
+| the triggering-test gate | `collect.trigger_coverage` + `scores.trigger_gate` | `root_cause.trigger_gate`, which **calls hers** to run the tests and does the matching here (section 3.2) |
 | the fixed-input-budget measurement pass | `collect.harness_coverage` | `coverage.remeasure_leg`, which **calls hers** to run the harnesses (section 3.3.2) |
-| the population table | `sweep.py`'s summary | `root_cause.population_check` |
+| the population table | `sweep_gate.py`'s summary | `root_cause.population_check` |
 | the JaCoCo jar and the Defects4J home | `config.JACOCO_CLI_*`, `config.D4J_HOME` | the same constants, read by `coverage.ensure_jacoco_cli` and the CLI's `--d4j_home` default |
 
 The two runners were reused rather than rewritten because both are *how a

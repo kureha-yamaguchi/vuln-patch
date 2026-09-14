@@ -1,0 +1,13 @@
+{
+  "overfitting_evaluated": 15,
+  "correct_evaluated": 13,
+  "TP": 15,
+  "FN": 0,
+  "FP": 4,
+  "TN": 9,
+  "precision": 0.7894736842105263,
+  "recall": 1,
+  "specificity": 0.6923076923076923,
+  "accuracy": 0.8571428571428571,
+  "f1": 0.8823529411764706
+}
