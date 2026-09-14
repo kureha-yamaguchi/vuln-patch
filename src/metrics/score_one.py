@@ -1,11 +1,16 @@
-"""Command line for one bug's RCC number.
+"""Command line for one bug's RCC, from reports already on disk.
 
 Everything it needs already exists on disk: the developer fix, the buggy
 checkout, and one or more JaCoCo reports from the fuzz run. It runs no
 fuzzer and no build. See `src/metrics/README.md` for how to produce the
 reports.
 
-    python src/metrics/cli.py --project Lang --bug 1 \
+RCC ONLY. The other four metrics need P and C, and neither is among this
+script's inputs: P needs the APR patch under analysis, and C needs the fuzz
+run's Jazzer output. Use `rescore.py` on a finished run directory for all
+five.
+
+    python src/metrics/score_one.py --project Lang --bug 1 \
         --buggy-dir /tmp/d4j/Lang_1_buggy \
         --report runs/lang1/set/jacoco.xml \
         --trigger-report runs/lang1/trigger/jacoco.xml
@@ -16,7 +21,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from metrics import rcc, reached, region as region_mod   # noqa: E402
+from metrics import reached, region as region_mod        # noqa: E402
+from metrics import scores                               # noqa: E402
 
 
 def _build_region(args):
@@ -60,7 +66,7 @@ def main(argv=None) -> int:
         return 2
 
     if args.trigger_report:
-        gate = rcc.trigger_gate(
+        gate = scores.trigger_gate(
             region, reached.reached_from_report(args.trigger_report))
         print(f'\ntrigger gate: {"PASS" if gate.passed else "FAIL"} '
               f'— {gate.detail}')
@@ -71,7 +77,7 @@ def main(argv=None) -> int:
         print('\ntrigger gate: NOT RUN (no --trigger-report). The number '
               'below is unverified.')
 
-    result = rcc.root_cause_coverage(
+    result = scores.root_cause_coverage(
         region, reached.reached_from_reports(args.report))
     print(f'\nF(H): {result.reached_size} method(s) reached')
     for key in _in_patch_order(result):

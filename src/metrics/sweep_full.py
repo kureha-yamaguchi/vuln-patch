@@ -1,4 +1,4 @@
-"""Measure RCC(H_R) over one split, end to end.
+"""Measure the five region metrics for H_R over one split, end to end.
 
 For each bug in the split this script:
 
@@ -6,10 +6,14 @@ For each bug in the split this script:
   2. runs the harness pipeline on that leg, which produces the accepted
      harness set H_R and records where each harness lives;
   3. builds R-hat from the developer fix, and runs the triggering-test gate;
-  4. re-runs the accepted harnesses for coverage only, and computes RCC.
+  4. re-runs the accepted harnesses for coverage, which gives F(H_R) and the
+     Jazzer findings C;
+  5. builds P from the same leg's patch, and computes RCC, RCR, RCP, PSC
+     and CSM.
 
-Step 2 costs model calls and fuzz time. Steps 3 and 4 cost neither, so
-`sweep.py` can run them alone first to check the population.
+Step 2 costs model calls and fuzz time. Steps 3, 4 and 5 cost neither, so
+`sweep_gate.py` can run the cheap half first to check the population, and
+`rescore.py` can re-score a finished run without repeating step 2.
 
 WHY ONE LEG PER BUG. The harness set is conditioned on the patch under
 analysis, so H_R differs from leg to leg. R-hat, however, comes from the
@@ -34,7 +38,8 @@ import traceback
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config                                                    # noqa: E402
-from metrics import collect, rcc, reached, sweep                 # noqa: E402
+from metrics import collect, crashes, patchset, reached          # noqa: E402
+from metrics import scores, sweep_gate                            # noqa: E402
 from metrics import region as region_mod                         # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(
@@ -87,7 +92,7 @@ def run_leg(patch_file: str, kind: str, out_dir: str, model: str,
 
 def measure_bug(project: str, bug_id, out_root: str, args) -> dict:
     """R-hat, the gate, H_R and RCC for one bug. Never raises."""
-    record = sweep.sweep_bug(project, bug_id, out_root)
+    record = sweep_gate.sweep_bug(project, bug_id, out_root)
     if record['status'] != 'ok':
         return record
 
@@ -125,11 +130,33 @@ def measure_bug(project: str, bug_id, out_root: str, args) -> dict:
         record['fuzzer_probe_size'] = len(probe)
         record['fuzzer_frame_added'] = sorted(str(k) for k in frame - probe)
 
-        result = rcc.root_cause_coverage(region, probe | frame)
+        result = scores.root_cause_coverage(region, probe | frame)
         record['rcc'] = result.value
         record['rcc_covered'] = [str(k) for k in result.covered]
         record['rcc_missed'] = [str(k) for k in result.missed]
         record['rcc_by_arity_only'] = [str(k) for k in result.by_arity_only]
+
+        # The other four metrics. P is the SAME static analysis the pipeline
+        # ran on this leg, and C is the measurement pass's own findings, so
+        # neither costs a model call or a second fuzz run.
+        patch = patchset.patch_set_from_patch(patch_file, buggy_dir)
+        sets = scores.set_metrics(region, patch.keys, probe | frame)
+        found = crashes.crashes(run.report, run.trace,
+                                [e.get('class_name', '') for e in accepted])
+        match = scores.crash_site_match(region, found)
+        record['patch_size'] = patch.size
+        record['patch_touched_size'] = len(patch.touched)
+        record['patch_notes'] = patch.notes
+        record['rcr'] = sets.rcr
+        record['rcp'] = sets.rcp
+        record['psc'] = sets.psc
+        record['csm'] = match.value
+        record['crashes_total'] = match.total
+        record['crashes_in_region'] = match.matched
+        record['crashes_off_region'] = match.off_region
+        record['crashes_no_frame'] = match.no_frame
+        record['crashes_unresolved'] = match.unresolved
+        record['region_in_patch'] = [str(k) for k in sets.region_in_patch]
     except Exception as exc:                       # noqa: BLE001
         record['status'] = 'infra_error'
         record['error'] = f'{type(exc).__name__}: {exc}'
@@ -179,25 +206,32 @@ def main(argv=None) -> int:
 
 
 def _summary(records) -> None:
-    print(f'\n{"bug":<10} {"leg":<12} {"|R-hat|":>7} {"|H|":>4} '
-          f'{"|F(H)|":>7} {"RCC":>6}  status')
-    scored = []
+    names = ['rcc', 'rcr', 'rcp', 'psc', 'csm']
+    print(f'\n{"bug":<10} {"|R|":>4} {"|P|":>5} {"|H|":>4} {"|F|":>5} '
+          f'{"|C|":>4}  ' + '  '.join(f'{n.upper():>6}' for n in names)
+          + '  status')
     for record in records:
         name = f'{record["project"]}-{record["bug_id"]}'
-        value = record.get('rcc')
-        if value is not None:
-            scored.append(value)
-        print(f'{name:<10} {str(record.get("leg_kind", "-")):<12} '
-              f'{str(record.get("region_size", "-")):>7} '
+        print(f'{name:<10} {str(record.get("region_size", "-")):>4} '
+              f'{str(record.get("patch_size", "-")):>5} '
               f'{str(record.get("harness_set_size", "-")):>4} '
-              f'{str(record.get("fuzzer_reached_size", "-")):>7} '
-              f'{("%.3f" % value) if value is not None else "-":>6}  '
-              f'{record["status"]}')
-    if scored:
-        print(f'\nscored bugs: {len(scored)}/{len(records)}')
-        print(f'mean RCC(H_R) = {sum(scored) / len(scored):.3f}')
-        print(f'bugs with RCC = 1.0: '
-              f'{sum(1 for v in scored if v == 1.0)}/{len(scored)}')
+              f'{str(record.get("fuzzer_reached_size", "-")):>5} '
+              f'{str(record.get("crashes_total", "-")):>4}  '
+              + '  '.join(f'{_fmt(record.get(n)):>6}' for n in names)
+              + f'  {record["status"]}')
+    print()
+    for metric in names:
+        scored = [r[metric] for r in records
+                  if isinstance(r.get(metric), float)]
+        if scored:
+            print(f'mean {metric.upper()} = {sum(scored) / len(scored):.3f}  '
+                  f'over {len(scored)}/{len(records)} bug(s)')
+        else:
+            print(f'mean {metric.upper()} = undefined (no scored bug)')
+
+
+def _fmt(value) -> str:
+    return f'{value:.3f}' if isinstance(value, float) else '-'
 
 
 if __name__ == '__main__':

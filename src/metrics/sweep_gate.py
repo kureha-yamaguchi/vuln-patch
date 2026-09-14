@@ -1,17 +1,18 @@
 """Run the R-hat construction and the triggering-test gate over one split.
 
-This is the half of the RCC measurement that needs no fuzzer, no model and
-no harness. It answers two questions for every bug in a split:
+This is the half of the measurement that needs no fuzzer, no model and no
+harness. It answers two questions for every bug in a split:
 
   1. How big is R-hat? These denominators are small, and the metric's
      meaning depends on knowing how small.
   2. Does the bug's own triggering test run all of R-hat? A bug that fails
-     that gate leaves the population, because its RCC would be unreadable.
+     that gate leaves the population, because its numbers would be
+     unreadable.
 
 Run it before spending anything on harness generation. A bug that fails here
 would fail no matter how good its harness set is.
 
-    python src/metrics/sweep.py \
+    python src/metrics/sweep_gate.py \
         --split suites/splits/crashing_split.jsonl --side holdout \
         --out results/rcc_crashing_holdout
 
@@ -25,7 +26,8 @@ import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from metrics import collect, rcc, reached, region as region_mod  # noqa: E402
+from metrics import collect, reached, scores              # noqa: E402
+from metrics import region as region_mod                  # noqa: E402
 
 
 def sweep_bug(project: str, bug_id, out_root: str) -> dict:
@@ -56,7 +58,7 @@ def sweep_bug(project: str, bug_id, out_root: str) -> dict:
         by_probe = reached.reached_from_report(run.report)
         by_frame = reached.reached_from_stack(run.report, run.trace)
         trigger_reached = by_probe | by_frame
-        gate = rcc.trigger_gate(region, trigger_reached)
+        gate = scores.trigger_gate(region, trigger_reached)
         record['trigger_reached_size'] = len(trigger_reached)
         record['trigger_probe_size'] = len(by_probe)
         record['trigger_frame_added'] = sorted(

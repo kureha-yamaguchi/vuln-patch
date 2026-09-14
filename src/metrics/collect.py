@@ -1,4 +1,4 @@
-"""Collect the coverage artifacts one bug's RCC number needs.
+"""Collect the coverage artifacts one bug's five metrics need.
 
 Everything here runs against the BUGGY build. The root cause lives there,
 and so do the sibling bugs.
@@ -6,7 +6,7 @@ and so do the sibling bugs.
 Two jobs:
 
   1. `trigger_coverage` runs the bug's OWN triggering test under the JaCoCo
-     agent. `metrics.rcc.trigger_gate` reads the result. The test is run
+     agent. `metrics.scores.trigger_gate` reads the result. The test is run
      through `defects4j test -t`, so exactly the triggering method runs and
      not its whole class. A whole class would cover more, which would make
      the gate easier to pass and therefore weaker.
