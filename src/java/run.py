@@ -822,6 +822,12 @@ def parse_args():
     parser.add_argument("-m", "--max_attempts", type=int, default=50,
                         help="Hard cap on total generation attempts "
                              "(default: 50)")
+    parser.add_argument("--candidate_budget", type=int, default=None,
+                        help="Comparison experiment: generate exactly N candidate "
+                             "responses (invalid responses and repairs count), "
+                             "record compile/buggy-acceptance outcomes and stop "
+                             "before extra retries or patched-build evaluation. "
+                             "Requires --coverage and --results_json; overrides -n/-m.")
     parser.add_argument("--max_repair_failures", type=int, default=3,
                         help="maximum number of failures in a row before resetting the prompt context")
     parser.add_argument("--reachable_node_cap", type=int, default=None,
@@ -1844,6 +1850,12 @@ def flag_overfitting(record_extras, site, reason, **detail):
 
 def main():
     args = parse_args()
+    if args.candidate_budget is not None:
+        if (args.candidate_budget < 1 or not args.coverage
+                or not args.results_json or not args.require_trigger):
+            raise SystemExit('--candidate_budget needs N > 0, --coverage, '
+                             '--results_json and the buggy trigger gate')
+        args.target_successes = args.max_attempts = args.candidate_budget
     # Token totals are process-global; start this patch's accounting from
     # zero so a future multi-patch-per-process driver can't accumulate.
     reset_token_usage()
@@ -2847,12 +2859,34 @@ def main():
         verifier=verifier,
         require_trigger=args.require_trigger,
         trigger_wrong_values=trigger_wrong_values,
+        function_only=_naive_level == 'function',
+        count_invalid_attempts=args.candidate_budget is not None,
+        max_invalid_responses=max(100, args.candidate_budget or 0),
     )
     result = campaign.run(messages, selection.buggy_dir,
                           prompt_factory=prompt_factory,
                           patch_text=context.patch_text)
 
     _print_summary(selection, result)
+
+    if args.candidate_budget is not None:
+        # Freeze H at the buggy acceptance gate, before any downstream
+        # filtering or extra retry can change the comparison population.
+        _record_coverage([verifier], _cov_dir, record_extras,
+                         accepted=[br.attempt_label
+                                   for br in result.successful_results])
+        record_extras['candidate_budget'] = args.candidate_budget
+        record_extras['candidate_attempts'] = result.candidate_attempts
+        _emit_record(args.results_json,
+                     label='correct' if args.correct else 'overfitting',
+                     status='candidate_experiment', selection=selection,
+                     result=result, bug_kind=bug_kind, extras=record_extras)
+        _write_trace_md(os.path.join(_leg_dir(args), 'trace.md'),
+                        f'{selection.project_name}-{selection.bug_id}',
+                        'correct' if args.correct else 'overfitting',
+                        get_events(), outcome='candidate_experiment (buggy build only)')
+        _print_token_usage()
+        return
 
     # RETRY (one aimed extra attempt): when the ACCEPTED set is dominated
     # by test-copy / crash-reproduction checks, an overfitting patch
@@ -2921,6 +2955,7 @@ def main():
                 verifier=verifier,
                 require_trigger=args.require_trigger,
                 trigger_wrong_values=trigger_wrong_values,
+                function_only=_naive_level == 'function',
             )
             _retry_result = _retry_campaign.run(
                 _retry_messages, selection.buggy_dir,

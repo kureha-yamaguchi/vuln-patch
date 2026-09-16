@@ -218,6 +218,9 @@ class CampaignResult:
     # assertion), which is what post-run analysis needs to judge whether
     # the set carries symptom-independent oracles.
     accepted_trigger_details: List[str] = field(default_factory=list)
+    # Measurement ledger, including pre-compile rejects. Coverage dump
+    # presence is deliberately not used as a compilation-success proxy.
+    candidate_attempts: List[dict] = field(default_factory=list)
 
     @property
     def converged(self) -> bool:
@@ -254,7 +257,9 @@ class HarnessCampaign:
                  max_invalid_responses: int = 100,
                  verifier: Optional[HarnessVerifier] = None,
                  require_trigger: bool = True,
-                 trigger_wrong_values: Optional[List[str]] = None):
+                 trigger_wrong_values: Optional[List[str]] = None,
+                 count_invalid_attempts: bool = False,
+                 function_only: bool = False):
         if target_successes < 1:
             raise ValueError("target_successes must be at least 1")
         if max_attempts < target_successes:
@@ -298,6 +303,8 @@ class HarnessCampaign:
         # scenario is not the test's scenario (setup divergence), and its
         # firing would measure the divergence, not the patch.
         self.trigger_wrong_values = trigger_wrong_values or []
+        self.count_invalid_attempts = count_invalid_attempts
+        self.function_only = function_only
 
     def run(self, messages: List[Dict[str, str]],
             buggy_dir: str,
@@ -315,7 +322,7 @@ class HarnessCampaign:
         `patch_text` is included verbatim in the no-trigger repair message
         so the model can re-read exactly what changed when its harness
         compiles but doesn't crash the buggy version."""
-        self._patch_text = patch_text
+        self._patch_text = '' if self.function_only else patch_text
         result = CampaignResult(
             target_successes=self.target_successes,
             achieved_successes=0,
@@ -366,6 +373,12 @@ class HarnessCampaign:
             is_repair_attempt = len(current_messages) > len(original_messages)
 
             raw = self.generator.generate(current_messages)
+            candidate = {'attempt_label': f'attempt_{result.attempts + 1:03d}',
+                         'compiled': False, 'crashed_buggy': False,
+                         'accepted': False}
+            if self.count_invalid_attempts:
+                result.attempts += 1
+                result.candidate_attempts.append(candidate)
 
             # --- gate -1: structurally a harness at all? ----------------
             # Reject prose / markdown / JUnit-test / main()-demo responses
@@ -376,6 +389,7 @@ class HarnessCampaign:
             # to return just the file, and after a cold chain we reset.
             invalid_reason = self.builder.looks_like_harness(raw)
             if invalid_reason is not None:
+                candidate['invalid_reason'] = invalid_reason
                 invalid_responses += 1
                 self._print_invalid_response(invalid_reason,
                                              invalid_responses)
@@ -393,7 +407,9 @@ class HarnessCampaign:
                 )
                 continue
 
-            result.attempts += 1
+            if not self.count_invalid_attempts:
+                result.attempts += 1
+                result.candidate_attempts.append(candidate)
             attempt_label = f'attempt_{result.attempts:03d}'
             self._print_attempt_header(result.attempts, is_repair_attempt)
             self._print_raw(raw)
@@ -629,6 +645,7 @@ class HarnessCampaign:
             )
 
             result.results.append(build)
+            candidate['compiled'] = bool(build.compiled)
 
             # --- gate 1: must compile ---------------------------------
             if not build.compiled:
@@ -649,6 +666,7 @@ class HarnessCampaign:
             # --- gate 2: must trigger on the buggy version ------------
             if self.require_trigger:
                 verification = self.verifier.verify(build)
+                candidate['crashed_buggy'] = bool(verification.crashed)
                 if not verification.crashed:
                     self._print_no_trigger(verification)
                     repair_failures, current_messages, original_messages = (
@@ -706,6 +724,11 @@ class HarnessCampaign:
                     repair_failures, current_messages, original_messages = (
                         self._handle_failure(
                             diagnostic=(
+                                "The acceptance check rejected this candidate. "
+                                "Generate another harness using only the supplied "
+                                "function source and fuzzer API. Return the full "
+                                "FuzzHarness.java as raw Java source."
+                                if self.function_only else
                                 "Your test-copy check fired on the buggy "
                                 "build, but it observed a DIFFERENT wrong "
                                 f"value ({_observed}) than the real test "
@@ -740,6 +763,7 @@ class HarnessCampaign:
 
             # --- accepted ---------------------------------------------
             result.successful_results.append(build)
+            candidate['accepted'] = True
             result.achieved_successes += 1
             _rep_for_this = _repaired_attempts.get(attempt_label)
             record_event('deterministic', method='harness-attempt',
@@ -929,6 +953,14 @@ class HarnessCampaign:
              code" into "crashed the code".
 
         Signature is unchanged so the call site needs no edits."""
+        if self.function_only:
+            # Repair turns are model-facing too: do not put the withheld
+            # patch, failing-test values or neighbourhood back in here.
+            return (
+                "This harness compiled, but its execution produced no finding. "
+                "Try different inputs using the supplied function source and "
+                "fuzzer API. Let unexpected throwables escape. Return the full "
+                "FuzzHarness.java as raw Java source, without markdown.")
         # Why no crash: a timeout means the harness ran the full budget
         # without Jazzer finding anything (often: it never drove input
         # into the changed code, or always took a safe branch); a clean

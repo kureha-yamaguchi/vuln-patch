@@ -1222,3 +1222,14 @@ JaCoCo's own METHOD counter reports as never executed
 with a covered one on Math-70 and Math-85). We count a method when JaCoCo
 says it was executed. `tests/test_measurements_crosscheck.py` pins all of
 this, per bug, against the real reports, and fails if the gap moves.
+
+
+## 9. Paired comparison on the frozen heldouts
+
+`scripts/compare_heldout_rcc.sh` runs N candidate attempts per certified
+patch (default 30, `-N N`) in H_N level B, H_N level C, and H_R, covering all frozen crashing and semantic heldout
+bugs and reporting the two kinds separately. It reports compilation, buggy
+crash and acceptance proportions, each candidate's RCC, accepted-set RCC,
+and paired whole-bug bootstrap confidence intervals. See
+[heldout_comparison/README.md](heldout_comparison/README.md) for the protocol,
+command and report details.
