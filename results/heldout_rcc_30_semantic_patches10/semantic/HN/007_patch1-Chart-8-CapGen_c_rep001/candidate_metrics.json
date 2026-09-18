@@ -1,17 +1,28 @@
 {
   "acceptance_rate": 0.6333333333333333,
   "accepted": 19,
+  "accepted_set_f_size": 24,
+  "accepted_set_psc": 1.0,
   "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.041666666666666664,
   "attempts": 30,
   "buggy_crash_rate": 0.6333333333333333,
+  "candidate_f_size": 13,
+  "candidate_psc": 1.0,
   "candidate_rcc": 0.7666666666666667,
+  "candidate_rcc_compiled": 1.0,
+  "candidate_rcp": 0.08225536216751607,
   "candidates": [
     {
       "accepted": true,
       "attempt_label": "attempt_001",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 21,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.047619047619047616,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -20,16 +31,24 @@
       "accepted": false,
       "attempt_label": "attempt_002",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": false,
       "attempt_label": "attempt_003",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": false,
+      "f_size": 12,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.08333333333333333,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -38,8 +57,12 @@
       "accepted": true,
       "attempt_label": "attempt_004",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.08333333333333333,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -48,8 +71,12 @@
       "accepted": true,
       "attempt_label": "attempt_005",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 8,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.125,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -58,16 +85,24 @@
       "accepted": false,
       "attempt_label": "attempt_006",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_007",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 11,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.09090909090909091,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -76,16 +111,24 @@
       "accepted": false,
       "attempt_label": "attempt_008",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_009",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 8,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.125,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -94,8 +137,12 @@
       "accepted": true,
       "attempt_label": "attempt_010",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.08333333333333333,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -104,8 +151,12 @@
       "accepted": true,
       "attempt_label": "attempt_011",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -114,8 +165,12 @@
       "accepted": false,
       "attempt_label": "attempt_012",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": false,
+      "f_size": 17,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.058823529411764705,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -124,8 +179,12 @@
       "accepted": true,
       "attempt_label": "attempt_013",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 9,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.1111111111111111,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -134,16 +193,24 @@
       "accepted": false,
       "attempt_label": "attempt_014",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_015",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -152,8 +219,12 @@
       "accepted": true,
       "attempt_label": "attempt_016",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -162,16 +233,24 @@
       "accepted": false,
       "attempt_label": "attempt_017",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_018",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 23,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.043478260869565216,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -180,8 +259,12 @@
       "accepted": true,
       "attempt_label": "attempt_019",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 10,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.1,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -190,8 +273,12 @@
       "accepted": true,
       "attempt_label": "attempt_020",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -200,8 +287,12 @@
       "accepted": false,
       "attempt_label": "attempt_021",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": false,
+      "f_size": 13,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07692307692307693,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -210,8 +301,12 @@
       "accepted": true,
       "attempt_label": "attempt_022",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 9,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.1111111111111111,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -220,8 +315,12 @@
       "accepted": true,
       "attempt_label": "attempt_023",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 15,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.06666666666666667,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -230,8 +329,12 @@
       "accepted": false,
       "attempt_label": "attempt_024",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": false,
+      "f_size": 11,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.09090909090909091,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -240,16 +343,24 @@
       "accepted": false,
       "attempt_label": "attempt_025",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_026",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.08333333333333333,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -258,8 +369,12 @@
       "accepted": true,
       "attempt_label": "attempt_027",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 13,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07692307692307693,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -268,16 +383,24 @@
       "accepted": false,
       "attempt_label": "attempt_028",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_029",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 13,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07692307692307693,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -286,8 +409,12 @@
       "accepted": true,
       "attempt_label": "attempt_030",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.jfree.data.time.Week.<init>(Date,TimeZone)"
       ]
@@ -295,8 +422,16 @@
   ],
   "compile_rate": 0.7666666666666667,
   "compiled": 23,
+  "compiled_set_f_size": 24,
+  "compiled_set_psc": 1.0,
   "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.041666666666666664,
   "crashed_buggy": 19,
+  "p_size": 1,
+  "p_unmatched": 0,
+  "r0_size": 1,
+  "rcr": 1.0,
+  "replayed_candidates": 0,
   "root_methods": [
     "org.jfree.data.time.Week.<init>(Date,TimeZone)"
   ]

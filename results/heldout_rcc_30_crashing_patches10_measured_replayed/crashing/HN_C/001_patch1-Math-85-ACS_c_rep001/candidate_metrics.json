@@ -1,10 +1,17 @@
 {
   "acceptance_rate": 0.5333333333333333,
   "accepted": 16,
+  "accepted_set_f_size": 15,
+  "accepted_set_psc": 0.75,
   "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.06666666666666667,
   "attempts": 30,
   "buggy_crash_rate": 0.5333333333333333,
+  "candidate_f_size": 6.6875,
+  "candidate_psc": 0.6875,
   "candidate_rcc": 0.5333333333333333,
+  "candidate_rcc_compiled": 1.0,
+  "candidate_rcp": 0.1538690476190476,
   "candidates": [
     {
       "accepted": false,
@@ -12,7 +19,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -21,7 +31,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -32,7 +45,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -41,7 +57,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -52,7 +71,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -61,7 +83,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -72,7 +97,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -83,7 +111,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -92,7 +123,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -101,7 +135,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -112,7 +149,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -123,7 +163,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -132,7 +175,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -141,7 +187,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -152,7 +201,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -161,7 +213,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -172,7 +227,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -181,7 +239,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -192,7 +253,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -201,7 +265,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 7,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.14285714285714285,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -212,7 +279,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -221,7 +291,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 10,
+      "psc": 0.25,
       "rcc": 1.0,
+      "rcp": 0.1,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -232,7 +305,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 7,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.14285714285714285,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -243,7 +319,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -252,7 +331,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -263,7 +345,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 10,
+      "psc": 0.25,
       "rcc": 1.0,
+      "rcp": 0.1,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -274,7 +359,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -283,7 +371,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 7,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.14285714285714285,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -294,7 +385,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -303,7 +397,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.75,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
       ]
@@ -311,8 +408,15 @@
   ],
   "compile_rate": 0.5333333333333333,
   "compiled": 16,
+  "compiled_set_f_size": 15,
+  "compiled_set_psc": 0.75,
   "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.06666666666666667,
   "crashed_buggy": 16,
+  "p_size": 4,
+  "p_unmatched": 3,
+  "r0_size": 1,
+  "rcr": 1.0,
   "replayed_candidates": 0,
   "root_methods": [
     "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"

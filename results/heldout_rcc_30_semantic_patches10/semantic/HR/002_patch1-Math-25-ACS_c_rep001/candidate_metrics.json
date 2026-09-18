@@ -1,17 +1,28 @@
 {
   "acceptance_rate": 0.7666666666666667,
   "accepted": 23,
+  "accepted_set_f_size": 164,
+  "accepted_set_psc": 0.6666666666666666,
   "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.006097560975609756,
   "attempts": 30,
   "buggy_crash_rate": 0.7666666666666667,
+  "candidate_f_size": 33.46153846153846,
+  "candidate_psc": 0.5,
   "candidate_rcc": 0.8666666666666667,
+  "candidate_rcc_compiled": 1.0,
+  "candidate_rcp": 0.046743657559332366,
   "candidates": [
     {
       "accepted": true,
       "attempt_label": "attempt_001",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 17,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.058823529411764705,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -20,8 +31,12 @@
       "accepted": true,
       "attempt_label": "attempt_002",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 16,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.0625,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -30,8 +45,12 @@
       "accepted": true,
       "attempt_label": "attempt_003",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 16,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.0625,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -40,8 +59,12 @@
       "accepted": true,
       "attempt_label": "attempt_004",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 16,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.0625,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -50,16 +73,24 @@
       "accepted": false,
       "attempt_label": "attempt_005",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_006",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 17,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.058823529411764705,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -68,8 +99,12 @@
       "accepted": true,
       "attempt_label": "attempt_007",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 16,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.0625,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -78,8 +113,12 @@
       "accepted": true,
       "attempt_label": "attempt_008",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -88,8 +127,12 @@
       "accepted": true,
       "attempt_label": "attempt_009",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 74,
+      "psc": 0.3333333333333333,
       "rcc": 1.0,
+      "rcp": 0.013513513513513514,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -98,8 +141,12 @@
       "accepted": true,
       "attempt_label": "attempt_010",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 16,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.0625,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -108,8 +155,12 @@
       "accepted": true,
       "attempt_label": "attempt_011",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 16,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.0625,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -118,8 +169,12 @@
       "accepted": true,
       "attempt_label": "attempt_012",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 21,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.047619047619047616,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -128,16 +183,24 @@
       "accepted": false,
       "attempt_label": "attempt_013",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_014",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 78,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.01282051282051282,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -146,8 +209,12 @@
       "accepted": true,
       "attempt_label": "attempt_015",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 17,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.058823529411764705,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -156,8 +223,12 @@
       "accepted": true,
       "attempt_label": "attempt_016",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 16,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.0625,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -166,8 +237,12 @@
       "accepted": true,
       "attempt_label": "attempt_017",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 17,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.058823529411764705,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -176,8 +251,12 @@
       "accepted": false,
       "attempt_label": "attempt_018",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": false,
+      "f_size": 35,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.02857142857142857,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -186,8 +265,12 @@
       "accepted": true,
       "attempt_label": "attempt_019",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 16,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.0625,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -196,8 +279,12 @@
       "accepted": true,
       "attempt_label": "attempt_020",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 146,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.00684931506849315,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -206,8 +293,12 @@
       "accepted": false,
       "attempt_label": "attempt_021",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": false,
+      "f_size": 39,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.02564102564102564,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -216,8 +307,12 @@
       "accepted": true,
       "attempt_label": "attempt_022",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 16,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.0625,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -226,16 +321,24 @@
       "accepted": false,
       "attempt_label": "attempt_023",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_024",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 27,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.037037037037037035,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -244,8 +347,12 @@
       "accepted": false,
       "attempt_label": "attempt_025",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": false,
+      "f_size": 96,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.010416666666666666,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -254,8 +361,12 @@
       "accepted": true,
       "attempt_label": "attempt_026",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 16,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.0625,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -264,16 +375,24 @@
       "accepted": false,
       "attempt_label": "attempt_027",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_028",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 17,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.058823529411764705,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -282,8 +401,12 @@
       "accepted": true,
       "attempt_label": "attempt_029",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 67,
+      "psc": 0.3333333333333333,
       "rcc": 1.0,
+      "rcp": 0.014925373134328358,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -292,8 +415,12 @@
       "accepted": true,
       "attempt_label": "attempt_030",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 17,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.058823529411764705,
       "root_methods_hit": [
         "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
       ]
@@ -301,8 +428,16 @@
   ],
   "compile_rate": 0.8666666666666667,
   "compiled": 26,
+  "compiled_set_f_size": 169,
+  "compiled_set_psc": 0.6666666666666666,
   "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.005917159763313609,
   "crashed_buggy": 23,
+  "p_size": 6,
+  "p_unmatched": 1,
+  "r0_size": 1,
+  "rcr": 1.0,
+  "replayed_candidates": 0,
   "root_methods": [
     "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser.guessAOmega()"
   ]

@@ -1,10 +1,17 @@
 {
   "acceptance_rate": 0.5,
   "accepted": 15,
+  "accepted_set_f_size": 24,
+  "accepted_set_psc": 1.0,
   "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.041666666666666664,
   "attempts": 30,
   "buggy_crash_rate": 0.5,
+  "candidate_f_size": 13.266666666666667,
+  "candidate_psc": 1.0,
   "candidate_rcc": 0.5,
+  "candidate_rcc_compiled": 1.0,
+  "candidate_rcp": 0.07696275946275946,
   "candidates": [
     {
       "accepted": false,
@@ -12,7 +19,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -21,7 +31,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 16,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.0625,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -32,7 +45,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -41,7 +57,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -52,7 +71,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -61,7 +83,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -72,7 +97,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -81,7 +109,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -92,7 +123,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -101,7 +135,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -112,7 +149,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -121,7 +161,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -132,7 +175,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -141,7 +187,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 10,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.1,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -152,7 +201,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -161,7 +213,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -172,7 +227,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -181,7 +239,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 13,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07692307692307693,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -192,7 +253,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -201,7 +265,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 13,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07692307692307693,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -212,7 +279,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 10,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.1,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -223,7 +293,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -232,7 +305,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -243,7 +319,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -252,7 +331,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 14,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.07142857142857142,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -263,7 +345,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -272,7 +357,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 15,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.06666666666666667,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -283,7 +371,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -292,7 +383,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 10,
+      "psc": 1.0,
       "rcc": 1.0,
+      "rcp": 0.1,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
       ]
@@ -303,14 +397,24 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     }
   ],
   "compile_rate": 0.5,
   "compiled": 15,
+  "compiled_set_f_size": 24,
+  "compiled_set_psc": 1.0,
   "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.041666666666666664,
   "crashed_buggy": 15,
+  "p_size": 2,
+  "p_unmatched": 1,
+  "r0_size": 1,
+  "rcr": 1.0,
   "replayed_candidates": 0,
   "root_methods": [
     "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"

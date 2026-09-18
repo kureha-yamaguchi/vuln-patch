@@ -1,10 +1,17 @@
 {
   "acceptance_rate": 0.9,
   "accepted": 27,
+  "accepted_set_f_size": 4,
+  "accepted_set_psc": 0.4,
   "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.25,
   "attempts": 30,
   "buggy_crash_rate": 0.9,
+  "candidate_f_size": 3.037037037037037,
+  "candidate_psc": 0.4,
   "candidate_rcc": 0.9,
+  "candidate_rcc_compiled": 1.0,
+  "candidate_rcp": 0.3302469135802469,
   "candidates": [
     {
       "accepted": true,
@@ -12,7 +19,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -23,7 +33,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -34,7 +47,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -45,7 +61,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -56,7 +75,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -67,7 +89,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -78,7 +103,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -89,7 +117,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -100,7 +131,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -111,7 +145,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -122,7 +159,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -133,7 +173,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -144,7 +187,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -155,7 +201,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -166,7 +215,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -177,7 +229,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -188,7 +243,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -199,7 +257,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 4,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.25,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -210,7 +271,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -221,7 +285,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -232,7 +299,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -243,7 +313,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -254,7 +327,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -263,7 +339,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -272,7 +351,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -283,7 +365,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -294,7 +379,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -305,7 +393,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -316,7 +407,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -325,7 +419,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
       ]
@@ -333,8 +430,15 @@
   ],
   "compile_rate": 0.9,
   "compiled": 27,
+  "compiled_set_f_size": 4,
+  "compiled_set_psc": 0.4,
   "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.25,
   "crashed_buggy": 27,
+  "p_size": 5,
+  "p_unmatched": 0,
+  "r0_size": 1,
+  "rcr": 1.0,
   "replayed_candidates": 0,
   "root_methods": [
     "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"

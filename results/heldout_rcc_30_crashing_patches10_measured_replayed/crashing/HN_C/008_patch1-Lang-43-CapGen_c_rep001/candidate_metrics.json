@@ -1,10 +1,17 @@
 {
   "acceptance_rate": 0.3,
   "accepted": 9,
+  "accepted_set_f_size": 24,
+  "accepted_set_psc": 0.6666666666666666,
   "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.041666666666666664,
   "attempts": 30,
   "buggy_crash_rate": 0.3,
+  "candidate_f_size": 7.434782608695652,
+  "candidate_psc": 0.34782608695652173,
   "candidate_rcc": 0.36666666666666664,
+  "candidate_rcc_compiled": 0.4782608695652174,
+  "candidate_rcp": 0.05972449239039628,
   "candidates": [
     {
       "accepted": false,
@@ -12,7 +19,10 @@
       "compiled": true,
       "coverage_origin": "replay",
       "crashed_buggy": false,
+      "f_size": 9,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.1111111111111111,
       "root_methods_hit": [
         "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"
       ]
@@ -23,7 +33,10 @@
       "compiled": true,
       "coverage_origin": "replay",
       "crashed_buggy": false,
+      "f_size": 6,
+      "psc": 0.3333333333333333,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"
       ]
@@ -34,7 +47,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 4,
+      "psc": 0.16666666666666666,
       "rcc": 0.0,
+      "rcp": 0.0,
       "root_methods_hit": []
     },
     {
@@ -43,7 +59,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -52,7 +71,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 4,
+      "psc": 0.16666666666666666,
       "rcc": 0.0,
+      "rcp": 0.0,
       "root_methods_hit": []
     },
     {
@@ -61,7 +83,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": false,
+      "f_size": 4,
+      "psc": 0.16666666666666666,
       "rcc": 0.0,
+      "rcp": 0.0,
       "root_methods_hit": []
     },
     {
@@ -70,7 +95,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -79,7 +107,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 4,
+      "psc": 0.16666666666666666,
       "rcc": 0.0,
+      "rcp": 0.0,
       "root_methods_hit": []
     },
     {
@@ -88,7 +119,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -97,7 +131,10 @@
       "compiled": true,
       "coverage_origin": "replay",
       "crashed_buggy": false,
+      "f_size": 8,
+      "psc": 0.3333333333333333,
       "rcc": 0.0,
+      "rcp": 0.0,
       "root_methods_hit": []
     },
     {
@@ -106,7 +143,10 @@
       "compiled": true,
       "coverage_origin": "replay",
       "crashed_buggy": false,
+      "f_size": 5,
+      "psc": 0.3333333333333333,
       "rcc": 1.0,
+      "rcp": 0.2,
       "root_methods_hit": [
         "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"
       ]
@@ -117,7 +157,10 @@
       "compiled": true,
       "coverage_origin": "replay",
       "crashed_buggy": false,
+      "f_size": 5,
+      "psc": 0.3333333333333333,
       "rcc": 1.0,
+      "rcp": 0.2,
       "root_methods_hit": [
         "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"
       ]
@@ -128,7 +171,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 5,
+      "psc": 0.16666666666666666,
       "rcc": 0.0,
+      "rcp": 0.0,
       "root_methods_hit": []
     },
     {
@@ -137,7 +183,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -146,7 +195,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 4,
+      "psc": 0.16666666666666666,
       "rcc": 0.0,
+      "rcp": 0.0,
       "root_methods_hit": []
     },
     {
@@ -155,7 +207,10 @@
       "compiled": true,
       "coverage_origin": "replay",
       "crashed_buggy": false,
+      "f_size": 5,
+      "psc": 0.3333333333333333,
       "rcc": 0.0,
+      "rcp": 0.0,
       "root_methods_hit": []
     },
     {
@@ -164,7 +219,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -173,7 +231,10 @@
       "compiled": true,
       "coverage_origin": "replay",
       "crashed_buggy": false,
+      "f_size": 20,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.05,
       "root_methods_hit": [
         "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"
       ]
@@ -184,7 +245,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 21,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.047619047619047616,
       "root_methods_hit": [
         "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"
       ]
@@ -195,7 +259,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -204,7 +271,10 @@
       "compiled": true,
       "coverage_origin": "replay",
       "crashed_buggy": false,
+      "f_size": 7,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.14285714285714285,
       "root_methods_hit": [
         "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"
       ]
@@ -215,7 +285,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": false,
+      "f_size": 5,
+      "psc": 0.16666666666666666,
       "rcc": 0.0,
+      "rcp": 0.0,
       "root_methods_hit": []
     },
     {
@@ -224,7 +297,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 19,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.05263157894736842,
       "root_methods_hit": [
         "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"
       ]
@@ -235,7 +311,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -244,7 +323,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 4,
+      "psc": 0.16666666666666666,
       "rcc": 0.0,
+      "rcp": 0.0,
       "root_methods_hit": []
     },
     {
@@ -253,7 +335,10 @@
       "compiled": true,
       "coverage_origin": "replay",
       "crashed_buggy": false,
+      "f_size": 8,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.125,
       "root_methods_hit": [
         "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"
       ]
@@ -264,7 +349,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 7,
+      "psc": 0.3333333333333333,
       "rcc": 0.0,
+      "rcp": 0.0,
       "root_methods_hit": []
     },
     {
@@ -273,7 +361,10 @@
       "compiled": true,
       "coverage_origin": "replay",
       "crashed_buggy": false,
+      "f_size": 9,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.1111111111111111,
       "root_methods_hit": [
         "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"
       ]
@@ -284,7 +375,10 @@
       "compiled": true,
       "coverage_origin": "replay",
       "crashed_buggy": false,
+      "f_size": 2,
+      "psc": 0.16666666666666666,
       "rcc": 0.0,
+      "rcp": 0.0,
       "root_methods_hit": []
     },
     {
@@ -293,7 +387,10 @@
       "compiled": true,
       "coverage_origin": "replay",
       "crashed_buggy": false,
+      "f_size": 6,
+      "psc": 0.5,
       "rcc": 1.0,
+      "rcp": 0.16666666666666666,
       "root_methods_hit": [
         "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"
       ]
@@ -301,8 +398,15 @@
   ],
   "compile_rate": 0.7666666666666667,
   "compiled": 23,
+  "compiled_set_f_size": 25,
+  "compiled_set_psc": 0.6666666666666666,
   "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.04,
   "crashed_buggy": 9,
+  "p_size": 6,
+  "p_unmatched": 1,
+  "r0_size": 1,
+  "rcr": 1.0,
   "replayed_candidates": 12,
   "root_methods": [
     "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"

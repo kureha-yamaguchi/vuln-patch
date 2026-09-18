@@ -1,17 +1,28 @@
 {
   "acceptance_rate": 0.8666666666666667,
   "accepted": 26,
+  "accepted_set_f_size": 42,
+  "accepted_set_psc": 0.8571428571428571,
   "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.023809523809523808,
   "attempts": 30,
   "buggy_crash_rate": 0.8666666666666667,
+  "candidate_f_size": 41.5,
+  "candidate_psc": 0.8571428571428571,
   "candidate_rcc": 0.8666666666666667,
+  "candidate_rcc_compiled": 1.0,
+  "candidate_rcp": 0.024220032840722494,
   "candidates": [
     {
       "accepted": true,
       "attempt_label": "attempt_001",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -20,8 +31,12 @@
       "accepted": true,
       "attempt_label": "attempt_002",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -30,8 +45,12 @@
       "accepted": true,
       "attempt_label": "attempt_003",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -40,8 +59,12 @@
       "accepted": true,
       "attempt_label": "attempt_004",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -50,8 +73,12 @@
       "accepted": true,
       "attempt_label": "attempt_005",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -60,16 +87,24 @@
       "accepted": false,
       "attempt_label": "attempt_006",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_007",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -78,8 +113,12 @@
       "accepted": true,
       "attempt_label": "attempt_008",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -88,8 +127,12 @@
       "accepted": true,
       "attempt_label": "attempt_009",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -98,8 +141,12 @@
       "accepted": true,
       "attempt_label": "attempt_010",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -108,8 +155,12 @@
       "accepted": true,
       "attempt_label": "attempt_011",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -118,8 +169,12 @@
       "accepted": true,
       "attempt_label": "attempt_012",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -128,8 +183,12 @@
       "accepted": true,
       "attempt_label": "attempt_013",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -138,8 +197,12 @@
       "accepted": true,
       "attempt_label": "attempt_014",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -148,8 +211,12 @@
       "accepted": true,
       "attempt_label": "attempt_015",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -158,8 +225,12 @@
       "accepted": true,
       "attempt_label": "attempt_016",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -168,8 +239,12 @@
       "accepted": true,
       "attempt_label": "attempt_017",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 29,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.034482758620689655,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -178,16 +253,24 @@
       "accepted": false,
       "attempt_label": "attempt_018",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_019",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -196,8 +279,12 @@
       "accepted": true,
       "attempt_label": "attempt_020",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -206,16 +293,24 @@
       "accepted": false,
       "attempt_label": "attempt_021",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_022",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -224,8 +319,12 @@
       "accepted": true,
       "attempt_label": "attempt_023",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -234,8 +333,12 @@
       "accepted": true,
       "attempt_label": "attempt_024",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -244,8 +347,12 @@
       "accepted": true,
       "attempt_label": "attempt_025",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -254,8 +361,12 @@
       "accepted": true,
       "attempt_label": "attempt_026",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -264,8 +375,12 @@
       "accepted": true,
       "attempt_label": "attempt_027",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -274,16 +389,24 @@
       "accepted": false,
       "attempt_label": "attempt_028",
       "compiled": false,
+      "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
       "accepted": true,
       "attempt_label": "attempt_029",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -292,8 +415,12 @@
       "accepted": true,
       "attempt_label": "attempt_030",
       "compiled": true,
+      "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.8571428571428571,
       "rcc": 1.0,
+      "rcp": 0.023809523809523808,
       "root_methods_hit": [
         "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
       ]
@@ -301,8 +428,16 @@
   ],
   "compile_rate": 0.8666666666666667,
   "compiled": 26,
+  "compiled_set_f_size": 42,
+  "compiled_set_psc": 0.8571428571428571,
   "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.023809523809523808,
   "crashed_buggy": 26,
+  "p_size": 7,
+  "p_unmatched": 12,
+  "r0_size": 1,
+  "rcr": 1.0,
+  "replayed_candidates": 0,
   "root_methods": [
     "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
   ]

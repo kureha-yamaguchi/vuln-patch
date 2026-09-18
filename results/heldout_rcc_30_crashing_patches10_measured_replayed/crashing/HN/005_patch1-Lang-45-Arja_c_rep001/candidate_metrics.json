@@ -1,10 +1,17 @@
 {
   "acceptance_rate": 1.0,
   "accepted": 30,
+  "accepted_set_f_size": 2,
+  "accepted_set_psc": 0.6666666666666666,
   "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.5,
   "attempts": 30,
   "buggy_crash_rate": 1.0,
+  "candidate_f_size": 2,
+  "candidate_psc": 0.6666666666666666,
   "candidate_rcc": 1.0,
+  "candidate_rcc_compiled": 1.0,
+  "candidate_rcp": 0.5,
   "candidates": [
     {
       "accepted": true,
@@ -12,7 +19,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -23,7 +33,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -34,7 +47,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -45,7 +61,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -56,7 +75,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -67,7 +89,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -78,7 +103,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -89,7 +117,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -100,7 +131,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -111,7 +145,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -122,7 +159,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -133,7 +173,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -144,7 +187,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -155,7 +201,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -166,7 +215,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -177,7 +229,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -188,7 +243,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -199,7 +257,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -210,7 +271,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -221,7 +285,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -232,7 +299,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -243,7 +313,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -254,7 +327,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -265,7 +341,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -276,7 +355,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -287,7 +369,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -298,7 +383,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -309,7 +397,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -320,7 +411,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -331,7 +425,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.6666666666666666,
       "rcc": 1.0,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
       ]
@@ -339,8 +436,15 @@
   ],
   "compile_rate": 1.0,
   "compiled": 30,
+  "compiled_set_f_size": 2,
+  "compiled_set_psc": 0.6666666666666666,
   "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.5,
   "crashed_buggy": 30,
+  "p_size": 3,
+  "p_unmatched": 1,
+  "r0_size": 1,
+  "rcr": 1.0,
   "replayed_candidates": 0,
   "root_methods": [
     "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"

@@ -1,10 +1,17 @@
 {
   "acceptance_rate": 0.8666666666666667,
   "accepted": 26,
+  "accepted_set_f_size": 25,
+  "accepted_set_psc": 0.4,
   "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.04,
   "attempts": 30,
   "buggy_crash_rate": 0.8666666666666667,
+  "candidate_f_size": 25,
+  "candidate_psc": 0.4,
   "candidate_rcc": 0.8666666666666667,
+  "candidate_rcc_compiled": 1.0,
+  "candidate_rcp": 0.04,
   "candidates": [
     {
       "accepted": true,
@@ -12,7 +19,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -23,7 +33,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -34,7 +47,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -45,7 +61,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -54,7 +73,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -65,7 +87,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -74,7 +99,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -85,7 +113,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -96,7 +127,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -107,7 +141,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -118,7 +155,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -129,7 +169,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -140,7 +183,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -151,7 +197,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -162,7 +211,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -171,7 +223,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -182,7 +237,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -193,7 +251,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -204,7 +265,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -215,7 +279,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -226,7 +293,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -237,7 +307,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -248,7 +321,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -259,7 +335,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -270,7 +349,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -281,7 +363,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -292,7 +377,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -303,7 +391,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -312,7 +403,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -323,7 +417,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.04,
       "root_methods_hit": [
         "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"
       ]
@@ -331,8 +428,15 @@
   ],
   "compile_rate": 0.8666666666666667,
   "compiled": 26,
+  "compiled_set_f_size": 25,
+  "compiled_set_psc": 0.4,
   "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.04,
   "crashed_buggy": 26,
+  "p_size": 5,
+  "p_unmatched": 6,
+  "r0_size": 1,
+  "rcr": 1.0,
   "replayed_candidates": 0,
   "root_methods": [
     "org.apache.commons.math.optimization.fitting.GaussianFitter.fit()"

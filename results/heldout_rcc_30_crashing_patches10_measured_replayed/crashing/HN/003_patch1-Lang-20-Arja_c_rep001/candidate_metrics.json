@@ -1,10 +1,17 @@
 {
   "acceptance_rate": 0.9333333333333333,
   "accepted": 28,
+  "accepted_set_f_size": 10,
+  "accepted_set_psc": 0.4,
   "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.2,
   "attempts": 30,
   "buggy_crash_rate": 0.9333333333333333,
+  "candidate_f_size": 4.107142857142857,
+  "candidate_psc": 0.24285714285714288,
   "candidate_rcc": 0.5666666666666667,
+  "candidate_rcc_compiled": 0.6071428571428571,
+  "candidate_rcp": 0.3086734693877551,
   "candidates": [
     {
       "accepted": true,
@@ -12,7 +19,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -23,7 +33,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -34,7 +47,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -45,7 +61,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -56,7 +75,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -67,7 +89,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 5,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.2,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],String,int,int)"
       ]
@@ -78,7 +103,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],String,int,int)",
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
@@ -90,7 +118,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 5,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.2,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -101,7 +132,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 5,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.2,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -112,7 +146,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],String,int,int)",
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
@@ -124,7 +161,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 2,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.5,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -135,7 +175,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -146,7 +189,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -157,7 +203,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -168,7 +217,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 5,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.2,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],String,int,int)"
       ]
@@ -179,7 +231,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -188,7 +243,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -199,7 +257,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -210,7 +271,10 @@
       "compiled": false,
       "coverage_origin": "not_compiled",
       "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
       "rcc": 0.0,
+      "rcp": null,
       "root_methods_hit": []
     },
     {
@@ -219,7 +283,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],String,int,int)",
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
@@ -231,7 +298,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 7,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.14285714285714285,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -242,7 +312,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -253,7 +326,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -264,7 +340,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 5,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.2,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],String,int,int)"
       ]
@@ -275,7 +354,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -286,7 +368,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],String,int,int)",
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
@@ -298,7 +383,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -309,7 +397,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 0.2,
       "rcc": 0.5,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
       ]
@@ -320,7 +411,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],String,int,int)",
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
@@ -332,7 +426,10 @@
       "compiled": true,
       "coverage_origin": "original",
       "crashed_buggy": true,
+      "f_size": 6,
+      "psc": 0.4,
       "rcc": 1.0,
+      "rcp": 0.3333333333333333,
       "root_methods_hit": [
         "org.apache.commons.lang3.StringUtils.join(Object[],String,int,int)",
         "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)"
@@ -341,8 +438,15 @@
   ],
   "compile_rate": 0.9333333333333333,
   "compiled": 28,
+  "compiled_set_f_size": 10,
+  "compiled_set_psc": 0.4,
   "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.2,
   "crashed_buggy": 28,
+  "p_size": 5,
+  "p_unmatched": 2,
+  "r0_size": 2,
+  "rcr": 1.0,
   "replayed_candidates": 0,
   "root_methods": [
     "org.apache.commons.lang3.StringUtils.join(Object[],String,int,int)",
