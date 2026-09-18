@@ -358,3 +358,198 @@ def test_verbose_logging_streams_both_outputs_and_preserves_failure(tmp_path, ca
     assert 'exit=7' in console
     assert 'elapsed=' in console
     assert str(log) in console
+
+
+def existing_run(tmp_path):
+    source = tmp_path / 'source'
+    jobs = []
+    for bug in ('1', '2', '3'):
+        for arm in cli.ARMS:
+            leg = make_leg(source / 'crashing' / arm / bug, [(True, True)])
+            rec = json.loads((leg / 'result.jsonl').read_text())
+            rec.update(project='P', bug_id=bug, bug_kind='crashing',
+                       naive=arm != 'HR', naive_level=cli.ARMS[arm])
+            (leg / 'result.jsonl').write_text(json.dumps(rec) + '\n')
+            report.write_json(leg / 'execution.json',
+                              {'returncode': 1 if bug == '1' and arm == 'HR' else 0})
+            jobs.append(dict(leg=str(leg.relative_to(source)), project='P', bug_id=bug,
+                             kind='crashing', arm=arm, patch_id=bug, repetition=1))
+    report.write_json(source / 'manifest.json', {
+        'options': dict(attempts=1, repetitions=1, checkout_root=str(source / 'checkouts'),
+                        d4j_home='/d4j', model='original-model', verify_timeout=20),
+        'arms': list(cli.ARMS), 'jobs': jobs,
+        'populations': {'crashing': {'patches': 3, 'bugs': [('P', b) for b in ('1', '2', '3')]}}})
+    (source / 'provenance/crashing').mkdir(parents=True)
+    (source / 'provenance/crashing/queue.txt').write_text('original queue\n')
+    return source
+
+
+def test_measure_existing_selects_complete_groups_and_reports_subset(tmp_path):
+    source = existing_run(tmp_path)
+    args = cli.parser().parse_args(['-N', '1', '--kind', 'crashing', '--max-patches', '2',
+                                  '--measure-existing', str(source), '--bootstrap', '20'])
+    args.out = tmp_path / 'measured'
+    before = (source / 'manifest.json').read_bytes()
+    manifest = cli.prepare_run(args)
+    assert {j['patch_id'] for j in manifest['jobs']} == {'2', '3'}
+    assert len(manifest['jobs']) == 6
+    assert manifest['excluded_patches'][0]['patch_id'] == '1'
+    assert manifest['options']['model'] == 'original-model'
+    assert manifest['options']['checkout_root'] == str(source / 'checkouts')
+    assert cli.summarize(manifest, args.out) == 0
+    result = report.read_json(args.out / 'comparison.json')
+    assert set(result['groups']) == {'crashing'}
+    assert result['groups']['crashing']['n_bugs'] == 2
+    assert '2/3 certified patches' in (args.out / 'comparison.md').read_text()
+    assert '**Subset**' in (args.out / 'comparison.md').read_text()
+    assert (source / 'manifest.json').read_bytes() == before
+    assert not list(source.rglob('candidate_metrics.json'))
+    # A failed new measurement cannot be masked by older valid source coverage.
+    report.write_json(args.out / 'execution_errors.json',
+                      [{'leg': manifest['jobs'][0]['leg'], 'error': 'measurement failed'}])
+    assert cli.summarize(manifest, args.out) == 2
+    assert not (args.out / 'comparison.md').exists()
+
+
+def test_existing_selection_requires_budget_and_enough_complete_patches(tmp_path):
+    source = existing_run(tmp_path)
+    args = cli.parser().parse_args(['--kind', 'crashing', '--max-patches', '2',
+                                  '--measure-existing', str(source)])
+    with pytest.raises(ValueError, match='must match'):
+        cli.select_existing(args)
+    args.attempts = 1
+    args.max_patches = 3
+    with pytest.raises(ValueError, match='only 2 complete patches'):
+        cli.select_existing(args)
+    args.max_patches = None
+    assert len(cli.select_existing(args)[2]) == 6
+
+
+def test_semantic_cap_selects_only_requested_kind(monkeypatch, tmp_path):
+    repo = tmp_path / 'repo'
+    (repo / 'suites/splits').mkdir(parents=True)
+    (repo / 'suites/labels').mkdir(parents=True)
+    (repo / 'suites/splits/semantic_split.jsonl').write_text('\n'.join(
+        json.dumps(dict(project='P', bug_id=str(b), side='holdout')) for b in (1, 2)))
+    for name in ('verified_correct', 'verified_incorrect', 'excluded'):
+        (repo / f'suites/labels/{name}.jsonl').write_text('')
+    paths = [repo / f'patch{i}-P-{i}-tool.patch' for i in (1, 2)]
+    for path in paths:
+        path.write_text('patch contents')
+
+    def run(cmd, **kwargs):
+        if cmd[0] == 'git':
+            return SimpleNamespace(stdout='test-sha')
+        assert cmd[cmd.index('--kind') + 1] == 'semantic'
+        Path(cmd[cmd.index('--out') + 1]).write_text(''.join(f'-c {p}\n' for p in paths))
+
+    monkeypatch.setattr(cli, 'REPO', repo)
+    monkeypatch.setattr(cli.subprocess, 'run', run)
+    args = cli.parser().parse_args(['--kind', 'semantic', '--max-patches', '1'])
+    args.out = cli.output_dir(args.attempts, args.kind, args.max_patches)
+    manifest = cli.prepare_run(args)
+    assert args.out.name == 'heldout_rcc_30_semantic_patches1'
+    assert set(manifest['populations']) == {'semantic'}
+    assert manifest['populations']['semantic']['patches'] == 1
+    assert manifest['populations']['semantic']['full_patches'] == 2
+    assert {j['arm'] for j in manifest['jobs']} == set(cli.ARMS)
+    assert {j['bug_id'] for j in manifest['jobs']} == {'1'}
+    assert cli.output_dir(30, 'crashing', 10, True).name == 'heldout_rcc_30_crashing_patches10_measured'
+    assert cli.main(['--max-patches', '0']) == 2
+
+
+def test_existing_mode_launches_only_measurement_workers(monkeypatch, tmp_path):
+    source = existing_run(tmp_path)
+    args = cli.parser().parse_args(['-N', '1', '--kind', 'crashing', '--max-patches', '2',
+                                  '--measure-existing', str(source)])
+    args.out = tmp_path / 'measured'
+    manifest = cli.prepare_run(args)
+    d4j = tmp_path / 'd4j/framework/bin/defects4j'
+    d4j.parent.mkdir(parents=True)
+    d4j.touch()
+    manifest['options']['d4j_home'] = str(tmp_path / 'd4j')
+    monkeypatch.setattr(cli.shutil, 'which', lambda name: '/bin/java')
+    commands = []
+
+    def logged(cmd, log, env):
+        commands.append(cmd)
+        assert '--measure-job' in cmd
+        assert cmd[cmd.index('--manifest') + 1] == str(args.out / 'manifest.json')
+        assert env['D4J_CHECKOUT_ROOT'].startswith(str(source / 'checkouts'))
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(cli, 'run_logged', logged)
+    monkeypatch.setattr(cli, 'command', lambda *a: pytest.fail('must not generate'))
+    cli.run_jobs(manifest, args.out)
+    assert len(commands) == 6
+
+
+def test_existing_worker_measures_source_and_writes_status_to_new_output(monkeypatch, tmp_path):
+    import java.measurements.cli as measurements
+
+    source = existing_run(tmp_path)
+    args = cli.parser().parse_args(['-N', '1', '--kind', 'crashing', '--max-patches', '2',
+                                  '--measure-existing', str(source)])
+    args.out = tmp_path / 'measured'
+    manifest = cli.prepare_run(args)
+    job = manifest['jobs'][0]
+    calls = []
+
+    def measure(leg, **kwargs):
+        calls.append((leg, kwargs))
+        return {'errors': {}}
+
+    monkeypatch.setattr(measurements, 'measure_leg', measure)
+    assert cli.main(['--manifest', str(args.out / 'manifest.json'), '--measure-job', '0']) == 0
+    assert calls[0][0] == str(source / job['leg'])
+    assert calls[0][1]['coverage'] is True
+    assert (args.out / job['leg'] / 'measurement_status.json').is_file()
+    assert not (source / job['leg'] / 'measurement_status.json').exists()
+
+
+def test_replay_plan_only_missing_rejected_candidates(tmp_path):
+    from java.measurements.heldout_comparison import replay
+    source = existing_run(tmp_path)
+    manifest = report.read_json(source / 'manifest.json')
+    leg = source / manifest['jobs'][0]['leg']
+    (leg / 'cov/attempt_001_compiled.xml').unlink()
+    with pytest.raises(ValueError, match='accepted candidate'):
+        replay.plan(manifest, source)
+    rec = json.loads((leg / 'result.jsonl').read_text())
+    rec['candidate_attempts'][0].update(accepted=False, crashed_buggy=False)
+    (leg / 'result.jsonl').write_text(json.dumps(rec))
+    (leg / 'harness_src').mkdir()
+    (leg / 'harness_src/attempt_001.java').write_text(SOURCE)
+    (leg / 'fuzz_out/attempt_001_compiled.txt').write_text('INFO: Seed: 12345\n')
+    tasks = replay.plan(manifest, source)
+    assert len(tasks) == 1
+    assert tasks[0]['seed'] == 12345
+    (leg / 'cov/attempt_001_compiled.exec').touch()
+    with pytest.raises(ValueError, match='convert it instead'):
+        replay.plan(manifest, source)
+
+
+def test_replay_coverage_keeps_original_outcomes_and_requires_provenance(tmp_path):
+    import shutil
+    leg = make_leg(tmp_path, [(True, False), (True, True)])
+    (leg / 'harness_src').mkdir()
+    src = leg / 'harness_src/attempt_001.java'
+    src.write_text(SOURCE)
+    replay = tmp_path / 'replay/attempt_001'
+    replay.mkdir(parents=True)
+    shutil.move(leg / 'cov/attempt_001_compiled.xml', replay / 'coverage.xml')
+    (replay / 'fuzzer.log').write_text('replayed output')
+    with pytest.raises(FileNotFoundError):
+        report.score_leg(leg, 2, replay_dir=replay.parent)
+    status = {'attempt_label': 'attempt_001', 'source_sha256': cli.sha256(src)}
+    report.write_json(replay / 'status.json', status)
+    scores = report.score_leg(leg, 2, replay_dir=replay.parent)
+    assert scores['candidate_rcc'] == .5
+    assert scores['accepted_set_rcc'] == .5
+    assert scores['accepted'] == 1
+    assert scores['replayed_candidates'] == 1
+    assert scores['candidates'][0]['coverage_origin'] == 'replay'
+    assert scores['candidates'][1]['coverage_origin'] == 'original'
+    src.write_text('changed candidate')
+    with pytest.raises(ValueError, match='does not match'):
+        report.score_leg(leg, 2, replay_dir=replay.parent)

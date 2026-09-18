@@ -1,6 +1,7 @@
 """Offline candidate and paired, bug-weighted RCC reporting. No model calls."""
 from __future__ import annotations
 
+import hashlib
 import json
 import random
 from collections import defaultdict
@@ -47,7 +48,7 @@ def read_record(leg, budget):
     return result
 
 
-def score_leg(leg, budget, require_gate=True):
+def score_leg(leg, budget, require_gate=True, replay_dir=None):
     """RCC uses R0 methods and each candidate's buggy acceptance execution.
 
     Pre-execution rejects contribute zero. A compiled candidate with missing
@@ -68,12 +69,24 @@ def score_leg(leg, budget, require_gate=True):
         cp = read_json(leg / 'cov/classpath.json')
         prefix = coverage._normalise_prefix(cp.get('include_glob') or '') or None
     hits_by_candidate = {}
+    replayed = set()
     canonical = None
     for attempt in compiled:
         name = attempt['attempt_label']
         xml = leg / 'cov' / f'{name}_compiled.xml'
-        cov = coverage.parse_jacoco_xml(str(xml), include_prefix=prefix)
         raw = leg / 'fuzz_out' / f'{name}_compiled.txt'
+        if not xml.exists() and replay_dir is not None:
+            if attempt['accepted']:
+                raise ValueError('rejected-only replay cannot replace accepted coverage')
+            replay = Path(replay_dir) / name
+            status = read_json(replay / 'status.json')
+            if (status['attempt_label'] != name or
+                    status['source_sha256'] != hashlib.sha256(
+                        (leg / 'harness_src' / f'{name}.java').read_bytes()).hexdigest()):
+                raise ValueError('replay does not match archived candidate')
+            xml, raw = replay / 'coverage.xml', replay / 'fuzzer.log'
+            replayed.add(name)
+        cov = coverage.parse_jacoco_xml(str(xml), include_prefix=prefix)
         # Without raw output, throws that miss JaCoCo's exit probes cannot
         # be repaired consistently across all arms.
         coverage.repair_from_frames(cov, str(xml), raw.read_text(errors='replace'), prefix)
@@ -93,13 +106,15 @@ def score_leg(leg, budget, require_gate=True):
     for attempt in attempts:
         hits = hits_by_candidate.get(attempt['attempt_label'], set())
         row = {**attempt, 'rcc': len(hits) / len(canonical),
+               'coverage_origin': 'replay' if attempt['attempt_label'] in replayed else
+                                  ('original' if attempt['compiled'] else 'not_compiled'),
                'root_methods_hit': sorted(map(str, hits))}
         rows.append(row)
         all_reached |= hits
         if attempt['accepted']:
             accepted_reached |= hits
     return {
-        'attempts': budget, 'compiled': len(compiled),
+        'attempts': budget, 'compiled': len(compiled), 'replayed_candidates': len(replayed),
         'crashed_buggy': sum(a['crashed_buggy'] for a in attempts),
         'accepted': sum(a['accepted'] for a in attempts),
         'compile_rate': len(compiled) / budget,
@@ -188,22 +203,41 @@ def render(report):
              'Missing coverage or failed region gates make the report incomplete.', '',
              'HN = level B (no neighbourhood); HN_C = level C (function-only; no patch, failing tests, or neighbourhood); HR = full context.',
              'Semantic level C has no lifted-test oracle; its acceptance/crash rate measures escaping findings without that oracle.', '']
+    if report.get('replay'):
+        lines += ['**Remeasured coverage:** ' + report['replay']['protocol'],
+                  f"{report['replay']['candidates']} rejected candidates selected for replay. "
+                  'Candidate RCC combines original and replay executions; acceptance outcomes remain original.', '']
     if not report['complete']:
-        lines += ['**INCOMPLETE — no full-heldout estimates.**', '']
+        lines += ['**INCOMPLETE — some selected measurements are missing.**', '']
         lines += [f"- {e['leg']}: {e['error']}" for e in report['errors']]
+    if report.get('source_run'):
+        lines += [f"Measured existing artifacts from `{report['source_run']}`.",
+                  f"Excluded {len(report.get('excluded_patches', []))} failed or unfinished patch groups; "
+                  'details are in manifest.json.', '']
     for kind, summary in report['groups'].items():
+        pop = report.get('populations', {}).get(kind, {})
+        if 'full_patches' in pop:
+            scope = 'Subset' if pop['patches'] < pop['full_patches'] else 'Full heldout set'
+            lines += [f"{kind.capitalize()} — **{scope}**: "
+                      f"{pop['patches']}/{pop['full_patches']} certified patches; "
+                      f"{len(pop['bugs'])}/{len(pop['full_bugs'])} frozen bugs.",
+                      f"Selection: {pop['selection']}. "
+                      'Subset intervals describe only the selected bugs.', '']
         lines += [f'## {kind.capitalize()}', '',
                   f"{summary['n_bugs']} bugs; {summary['n_legs_per_arm']} patch/repetition legs per arm.", '',
-                  '| Arm | Accepted / tries | Compiled / tries | Compiled + crashed / tries | Mean candidate RCC | Accepted-set RCC |',
-                  '|---|---:|---:|---:|---:|---:|']
-        for arm, estimates in summary['estimates'].items():
+                  '| Arm | Compiled / tries | Accepted / tries | Mean candidate RCC | Accepted-set RCC |',
+                  '|---|---:|---:|---:|---:|']
+        for arm, label in (('HN', 'H_N'), ('HN_C', 'H_N_C'), ('HR', 'H_R')):
+            if arm not in summary['estimates']:
+                continue
+            estimates = summary['estimates'][arm]
             cells = []
-            for metric in METRICS:
+            for metric in ('compile_rate', 'acceptance_rate', 'candidate_rcc', 'accepted_set_rcc'):
                 stat = estimates[metric]
                 ci = stat['ci95']
                 cells.append(f"{stat['mean']:.4f}" +
                              (f" [{ci[0]:.4f}, {ci[1]:.4f}]" if ci else ' [CI undefined]'))
-            lines.append('| ' + arm + ' | ' + ' | '.join(cells) + ' |')
+            lines.append('| ' + label + ' | ' + ' | '.join(cells) + ' |')
         lines += ['', 'Raw counts (pooled counts; table rates above are bug-weighted):', '']
         for arm, t in summary['totals'].items():
             lines.append(f"- {arm}: {t['accepted']}/{t['attempts']} accepted; "
