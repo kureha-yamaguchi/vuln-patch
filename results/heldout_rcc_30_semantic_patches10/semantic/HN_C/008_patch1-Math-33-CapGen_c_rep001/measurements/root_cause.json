@@ -1,0 +1,405 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+    "name": "exercise",
+    "params": [
+     "SimplexTableau",
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+    "name": "exerciseBoundaryTableau",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+    "name": "exerciseCase",
+    "params": [
+     "FuzzedDataProvider",
+     "int",
+     "GoalType",
+     "boolean",
+     "double",
+     "int",
+     "int"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+    "name": "exerciseMutatedTableau",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+    "name": "exerciseSmallDenseTableau",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "name": "dropPhase1Objective",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "exercise",
+     "params": [
+      "SimplexTableau",
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "dropPhase1Objective",
+     "params": []
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "exerciseBoundaryTableau",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "dropPhase1Objective",
+     "params": []
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "exerciseCase",
+     "params": [
+      "FuzzedDataProvider",
+      "int",
+      "GoalType",
+      "boolean",
+      "double",
+      "int",
+      "int"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "dropPhase1Objective",
+     "params": []
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "exerciseMutatedTableau",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "dropPhase1Objective",
+     "params": []
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "exerciseSmallDenseTableau",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "dropPhase1Objective",
+     "params": []
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+  ],
+  "provenance": {
+   "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()": "introspector",
+   "org.apache.commons.math3.optimization.linear.FuzzHarness.exercise(SimplexTableau,FuzzedDataProvider)": "source-scan",
+   "org.apache.commons.math3.optimization.linear.FuzzHarness.exerciseBoundaryTableau(FuzzedDataProvider)": "source-scan",
+   "org.apache.commons.math3.optimization.linear.FuzzHarness.exerciseCase(FuzzedDataProvider,int,GoalType,boolean,double,int,int)": "source-scan",
+   "org.apache.commons.math3.optimization.linear.FuzzHarness.exerciseMutatedTableau(FuzzedDataProvider)": "source-scan",
+   "org.apache.commons.math3.optimization.linear.FuzzHarness.exerciseSmallDenseTableau(FuzzedDataProvider)": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 338,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 327,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 328,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 329,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 330,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 331,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 332,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 333,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 334,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 335,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 336,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 337,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 338,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 339,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 340,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 341,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 342,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 343,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 344,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 345,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 346,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 347,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 348,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 349,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 350,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 351,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 352,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 353,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 354,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 355,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 356,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 357,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 358,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 359,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 360,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 361,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 362,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 363,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 364,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 365,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 366,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+    "line": 367,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.apache.commons.math3.optimization.linear.SimplexSolverTest.testMath781()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/main/java/org/apache/commons/math3/optimization/linear/SimplexTableau.java b/src/main/java/org/apache/commons/math3/optimization/linear/SimplexTableau.java\nindex 327b2ae..9a6993a 100644\n--- a/src/main/java/org/apache/commons/math3/optimization/linear/SimplexTableau.java\n+++ b/src/main/java/org/apache/commons/math3/optimization/linear/SimplexTableau.java\n@@ -335,7 +335,7 @@ class SimplexTableau implements Serializable {\n         // positive cost non-artificial variables\n         for (int i = getNumObjectiveFunctions(); i < getArtificialVariableOffset(); i++) {\n             final double entry = tableau.getEntry(0, i);\n-            if (Precision.compareTo(entry, 0d, epsilon) > 0) {\n+            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {\n                 columnsToDrop.add(i);\n             }\n         }\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 105,
+  "probe_size": 105,
+  "frame_added": [],
+  "tests": [
+   "org.apache.commons.math3.optimization.linear.SimplexSolverTest::testMath781"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

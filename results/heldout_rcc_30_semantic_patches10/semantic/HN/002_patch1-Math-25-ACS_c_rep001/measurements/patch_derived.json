@@ -1,0 +1,68 @@
+{
+ "granularity": "method",
+ "items": [
+  {
+   "class_fq": "org.apache.commons.math3.exception.ZeroException",
+   "name": "<init>",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math3.exception.ZeroException",
+   "name": "<init>",
+   "params": [
+    "ZeroException"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math3.geometry.euclidean.oned.Vector1D",
+   "name": "getX",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math3.geometry.euclidean.threed.Vector3D",
+   "name": "getY",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser",
+   "name": "guess",
+   "params": [],
+   "ring": "caller",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser",
+   "name": "guessAOmega",
+   "params": [],
+   "ring": "seed",
+   "depth": 0
+  },
+  {
+   "class_fq": "org.apache.commons.math3.util.FastMath",
+   "name": "sqrt",
+   "params": [
+    "ParameterGuesser"
+   ],
+   "ring": "callee",
+   "depth": 1
+  }
+ ],
+ "multi": {},
+ "edges": [],
+ "unmatched": [
+  "observations[0].getX()",
+  "observations[0].getY()",
+  "observations[i].getX()",
+  "observations[i].getY()",
+  "observations[last].getX()"
+ ],
+ "provenance": {}
+}

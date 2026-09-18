@@ -1,0 +1,11 @@
+{
+  "classpath": "/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/004_patch1-Lang-43-Arja_c_rep001/Lang_43_buggy/target/classes:/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/004_patch1-Lang-43-Arja_c_rep001/Lang_43_buggy/target/tests:/datadrive/vuln-patch/defects4j/framework/projects/lib/junit-4.11.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar",
+  "corpus_sha256": {
+    "23eb4d3f4155395a74e9d534f97ff4c1908f5aac": "18f5384d58bcb1bba0bcd9e6a6781d1a6ac2cc280c330ecbab6cb7931b721552",
+    "4d11df9e2fa3f8695566c40aafb2a6844737b1a0": "a4c272a33886272990a0888f2fa2c1684e54a465ed95c566f03e1b4bf3b89d74",
+    "e2930204b0b7e1b2d64b982c57e575020ce808ec": "7074788ee6aa5a57fe0bd65fc78b648a23cdf30be20e77c741b7016f1d35fa8b",
+    "seed_000": "52d6e6a56b62af80fcbcbac9ec7f3f33f9e0525a2967cbb3bd52d828a2d48631",
+    "seed_001": "9c0c87dcefd1eb4862940a8cfde8a07fb32b3060cc3a183b00ebb57e438e51bd",
+    "seed_002": "ceec12762e66397b56dad64fd270bb3d694c78fb9cd665354383c0626dbab013"
+  }
+}

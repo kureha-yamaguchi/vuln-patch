@@ -1,0 +1,331 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+    "name": "anchorTrigger",
+    "params": [],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+    "name": "exerciseCase",
+    "params": [
+     "String",
+     "String",
+     "int",
+     "char",
+     "int",
+     "boolean"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+    "name": "exerciseValidCase",
+    "params": [
+     "String",
+     "String",
+     "int",
+     "char"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+    "name": "fuzzerTestOneInput",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+    "name": "runAnchor",
+    "params": [],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang.text.StrBuilder",
+    "name": "appendFixedWidthPadRight",
+    "params": [
+     "Object",
+     "int",
+     "char"
+    ],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "anchorTrigger",
+     "params": []
+    },
+    {
+     "class_fq": "org.apache.commons.lang.text.StrBuilder",
+     "name": "appendFixedWidthPadRight",
+     "params": [
+      "Object",
+      "int",
+      "char"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "exerciseCase",
+     "params": [
+      "String",
+      "String",
+      "int",
+      "char",
+      "int",
+      "boolean"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang.text.StrBuilder",
+     "name": "appendFixedWidthPadRight",
+     "params": [
+      "Object",
+      "int",
+      "char"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "exerciseValidCase",
+     "params": [
+      "String",
+      "String",
+      "int",
+      "char"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang.text.StrBuilder",
+     "name": "appendFixedWidthPadRight",
+     "params": [
+      "Object",
+      "int",
+      "char"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang.text.StrBuilder",
+     "name": "appendFixedWidthPadRight",
+     "params": [
+      "Object",
+      "int",
+      "char"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "runAnchor",
+     "params": []
+    },
+    {
+     "class_fq": "org.apache.commons.lang.text.StrBuilder",
+     "name": "appendFixedWidthPadRight",
+     "params": [
+      "Object",
+      "int",
+      "char"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+  ],
+  "provenance": {
+   "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)": "introspector",
+   "org.apache.commons.lang.text.FuzzHarness.anchorTrigger()": "source-scan",
+   "org.apache.commons.lang.text.FuzzHarness.exerciseCase(String,String,int,char,int,boolean)": "source-scan",
+   "org.apache.commons.lang.text.FuzzHarness.exerciseValidCase(String,String,int,char)": "source-scan",
+   "org.apache.commons.lang.text.FuzzHarness.fuzzerTestOneInput(FuzzedDataProvider)": "source-scan",
+   "org.apache.commons.lang.text.FuzzHarness.runAnchor()": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 884,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 878,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 879,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 880,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 881,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 882,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 883,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 884,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 885,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 886,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 887,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 888,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 889,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 890,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 891,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 892,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 893,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 894,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 895,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 907,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 908,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+    "line": 909,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.lang.text.StrBuilder",
+    "name": "appendFixedWidthPadRight",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.apache.commons.lang.text.StrBuilderAppendInsertTest.testLang299()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/java/org/apache/commons/lang/text/StrBuilder.java b/src/java/org/apache/commons/lang/text/StrBuilder.java\nindex 4c14509..886d424 100644\n--- a/src/java/org/apache/commons/lang/text/StrBuilder.java\n+++ b/src/java/org/apache/commons/lang/text/StrBuilder.java\n@@ -881,7 +881,7 @@ public class StrBuilder implements Cloneable {\n             String str = (obj == null ? getNullText() : obj.toString());\n             int strLen = str.length();\n             if (strLen >= width) {\n-                str.getChars(0, width, buffer, size);\n+                str.getChars(0, strLen, buffer, size);\n             } else {\n                 int padLen = width - strLen;\n                 str.getChars(0, strLen, buffer, size);\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 3,
+  "probe_size": 3,
+  "frame_added": [],
+  "tests": [
+   "org.apache.commons.lang.text.StrBuilderAppendInsertTest::testLang299"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

@@ -1,0 +1,230 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 57,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 58,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 59,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 60,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 64,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 65,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 66,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 67,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 70,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 71,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 72,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 73,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 76,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 77,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 78,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 79,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 80,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 81,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 82,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 83,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 84,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 85,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 86,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 87,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 88,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 89,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 90,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 91,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 92,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 93,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 94,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 95,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 96,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 97,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 98,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 99,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 100,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 101,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 102,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 103,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 104,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 105,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 106,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 107,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "line": 108,
+   "ring": "callee"
+  }
+ ]
+}

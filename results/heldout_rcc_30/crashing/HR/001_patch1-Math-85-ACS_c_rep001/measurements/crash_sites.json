@@ -1,0 +1,2001 @@
+[
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "org.apache.commons.math.MathException: org.apache.commons.math.ConvergenceException: number of iterations=1, maximum iterations=2,147,483,647, initial=1, lower bound=0, upper bound=179,769,313,486,231,570,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000, final a value=0, final b value=2, f(a)=-0.477, f(b)=0",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "throwUnchecked",
+     "params": []
+    },
+    "line": 208,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 31,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 19,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:anchor-seed] metamorphic violation: valid probability rejected p=0.9772498680518209 expected=2.0 mean=0.0 sd=1.0",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkMustReturnQuantile",
+     "params": []
+    },
+    "line": 61,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 12,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkMustReturnQuantile",
+     "params": []
+    },
+    "line": 49,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:anchor-exact] ground-truth failure reproduced through NormalDistribution seed",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "anchorSeed",
+     "params": []
+    },
+    "line": 29,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 12,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "anchorSeed",
+     "params": []
+    },
+    "line": 20,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:seed-valid-probability] metamorphic violation: inverse CDF rejected a valid probability from the public regression seed",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runExactRegressionAnchor",
+     "params": []
+    },
+    "line": 106,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 9,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runExactRegressionAnchor",
+     "params": []
+    },
+    "line": 94,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_005",
+  "source": "fuzz_out/attempt_005_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:endpoint-root-anchor] metamorphic violation: valid probability from the regression seed triggered the old endpoint-root bracketing bug",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runAnchor",
+     "params": []
+    },
+    "line": 45,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 9,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runAnchor",
+     "params": []
+    },
+    "line": 34,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:endpoint-zero-accepted] unexpected rejection: a correct bracket implementation must accept an interval whose endpoint value is exactly zero tag=base root=-1000 initial=-999.0 lower=-1002.0 upper=-998.0 maxIterations=1 thrown=org.apache.commons.math.ConvergenceException",
+  "causes": [
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "mustBracketExactEndpointRoot",
+     "params": []
+    },
+    "line": 91,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 36,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "mustBracketExactEndpointRoot",
+     "params": []
+    },
+    "line": 80,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_007",
+  "source": "fuzz_out/attempt_007_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:anchor-valid-inverse-reject] valid standard-normal probability rejected by inverseCumulativeProbability",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runExactAnchor",
+     "params": []
+    },
+    "line": 141,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 10,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runExactAnchor",
+     "params": []
+    },
+    "line": 133,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:mutable-endpoint-state] metamorphic violation: after mutating mean, inverseCumulativeProbability(cumulativeProbability(mean+2)) must recover mean+2 for a valid normal distribution state mean=-125.0 x=-123.0 p=0.9772498680518209",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "probeMutableEndpointState",
+     "params": []
+    },
+    "line": 71,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 16,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "probeMutableEndpointState",
+     "params": []
+    },
+    "line": 65,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_009",
+  "source": "fuzz_out/attempt_009_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathException",
+  "message": "org.apache.commons.math.ConvergenceException: number of iterations=1, maximum iterations=2,147,483,647, initial=1, lower bound=0, upper bound=179,769,313,486,231,570,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000, final a value=0, final b value=2, f(a)=-0.477, f(b)=0",
+  "causes": [
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runAnchor",
+     "params": []
+    },
+    "line": 18,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 10,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+   "name": "inverseCumulativeProbability",
+   "params": []
+  },
+  "headline_site_line": 104,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:inverse-anchor-bracket-root] valid NormalDistribution inverse on the regression seed propagated a rooted bracketing failure through the real public API",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runAnchorThroughPublicApi",
+     "params": []
+    },
+    "line": 28,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 14,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runAnchorThroughPublicApi",
+     "params": []
+    },
+    "line": 22,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:seedplus1-recovery] metamorphic violation: valid constructed probability rejected mean=-100.0 sd=1.0 x=-98.0 p=0.9772498680518209",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkConstructedEndpointQuantile",
+     "params": []
+    },
+    "line": 67,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 13,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkConstructedEndpointQuantile",
+     "params": []
+    },
+    "line": 52,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "org.apache.commons.math.ConvergenceException: number of iterations=1, maximum iterations=1, initial=-1,001, lower bound=-1,002, upper bound=-1,000, final a value=-1,002, final b value=-1,000, f(a)=2,000, f(b)=0",
+  "causes": [
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "throwUnchecked",
+     "params": []
+    },
+    "line": 144,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkEndpointRootViaRealFunction",
+     "params": []
+    },
+    "line": 92,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 17,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkEndpointRootViaRealFunction",
+     "params": []
+    },
+    "line": 52,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_013",
+  "source": "fuzz_out/attempt_013_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathException",
+  "message": "org.apache.commons.math.ConvergenceException: number of iterations=1, maximum iterations=2,147,483,647, initial=1, lower bound=0, upper bound=179,769,313,486,231,570,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000, final a value=0, final b value=2, f(a)=-0.477, f(b)=0",
+  "causes": [
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runExactAnchorFirst",
+     "params": []
+    },
+    "line": 18,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 10,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+   "name": "inverseCumulativeProbability",
+   "params": []
+  },
+  "headline_site_line": 104,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_014",
+  "source": "fuzz_out/attempt_014_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:inverse-on-valid-probability] metamorphic violation: inverseCumulativeProbability failed on valid constructed input label=literal-anchor p=0.9772498680518209",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkedInverse",
+     "params": []
+    },
+    "line": 115,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "verifyLiteralRegressionAnchor",
+     "params": []
+    },
+    "line": 34,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 16,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkedInverse",
+     "params": []
+    },
+    "line": 109,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_017",
+  "source": "fuzz_out/attempt_017_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:sin-endpoint-accept] metamorphic violation: valid endpoint-root input must be accepted via bracket, got org.apache.commons.math.ConvergenceException",
+  "causes": [
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "probeEndpointRootAcceptance",
+     "params": []
+    },
+    "line": 70,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 14,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "probeEndpointRootAcceptance",
+     "params": []
+    },
+    "line": 38,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_018",
+  "source": "fuzz_out/attempt_018_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.ConvergenceException",
+  "message": "number of iterations=1, maximum iterations=1, initial=0.5, lower bound=0, upper bound=1.5, final a value=0, final b value=1.5, f(a)=0, f(b)=0.997",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runEndpointRootBracketingChecks",
+     "params": []
+    },
+    "line": 49,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 14,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "headline_site_line": 199,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_019",
+  "source": "fuzz_out/attempt_019_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:quantile-interval-mass] metamorphic violation: interval mass mismatch pLeft=0.9772498680518208 pRight=0.977249868051821 xLeft=2.0 xRight=2.000000003467739 reportedMass=1.8722656758285439E-10 expectedMass=2.220446049250313E-16",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkQuantileIntervalMass",
+     "params": []
+    },
+    "line": 79,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 39,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathException",
+  "message": "org.apache.commons.math.ConvergenceException: number of iterations=1, maximum iterations=2,147,483,647, initial=1, lower bound=0, upper bound=179,769,313,486,231,570,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000, final a value=0, final b value=2, f(a)=-0.477, f(b)=0",
+  "causes": [
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "exerciseRegressionAnchor",
+     "params": []
+    },
+    "line": 19,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 10,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+   "name": "inverseCumulativeProbability",
+   "params": []
+  },
+  "headline_site_line": 104,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:dual-tail-cdf] metamorphic violation: p must be recovered from both tails k=1 p=0.841344746068543 q=1.0000002290142125 lower=0.8413448014832714 upperComplement=0.8413448014832714",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runConstructedQuantileDualTailCheck",
+     "params": []
+    },
+    "line": 70,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_023",
+  "source": "fuzz_out/attempt_023_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:rebracket-root] valid exact-endpoint root rejected on first bracketing",
+  "causes": [
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkRepeatedExactEndpointAcceptance",
+     "params": []
+    },
+    "line": 48,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 17,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkRepeatedExactEndpointAcceptance",
+     "params": []
+    },
+    "line": 45,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:public-anchor-throw] valid NormalDistribution inverseCumulativeProbability unexpectedly threw through bracket",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runPublicAnchorFirst",
+     "params": []
+    },
+    "line": 26,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 13,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runPublicAnchorFirst",
+     "params": []
+    },
+    "line": 20,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:seed-known-answer] metamorphic violation: valid regression input threw from inverse/bracket p=0.9772498680518209 expected=2.0",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runRegressionWitness",
+     "params": []
+    },
+    "line": 39,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 7,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runRegressionWitness",
+     "params": []
+    },
+    "line": 18,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_026",
+  "source": "fuzz_out/attempt_026_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:exact-endpoint-accepted] metamorphic violation: a valid interval with an exact endpoint root must be accepted by bracket; initial=1.0 lower=0.0 upper=2.0 maxIterations=1",
+  "causes": [
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "explorePatchedConditionDirectly",
+     "params": []
+    },
+    "line": 109,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 14,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "explorePatchedConditionDirectly",
+     "params": []
+    },
+    "line": 73,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:seed-literal-quantile] metamorphic violation: valid regression seed should be accepted and recover 2.0 p=0.9772498680518209",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "exactRegressionWitness",
+     "params": []
+    },
+    "line": 27,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 9,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "exactRegressionWitness",
+     "params": []
+    },
+    "line": 18,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_028",
+  "source": "fuzz_out/attempt_028_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:anchor-regression-throw] valid regression probability was rejected",
+  "causes": [
+   "org.apache.commons.math.MathException",
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runRegressionAnchor",
+     "params": []
+    },
+    "line": 95,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 9,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 104,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 162,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runRegressionAnchor",
+     "params": []
+    },
+    "line": 89,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+     "name": "inverseCumulativeProbability",
+     "params": []
+    },
+    "line": 85,
+    "harness": false
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

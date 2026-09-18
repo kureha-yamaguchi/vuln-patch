@@ -1,0 +1,389 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.joda.time.DateTimeZone",
+    "name": "forOffsetHoursMinutes",
+    "params": [
+     "int",
+     "int"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.joda.time.Days",
+    "name": "multipliedBy",
+    "params": [
+     "int"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.joda.time.Days",
+    "name": "toStandardHours",
+    "params": [],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.joda.time.Days",
+    "name": "toStandardMinutes",
+    "params": [],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.joda.time.Days",
+    "name": "toStandardSeconds",
+    "params": [],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.joda.time.field.FieldUtils",
+    "name": "safeMultiply",
+    "params": [
+     "long",
+     "int"
+    ],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.joda.time.DateTimeZone",
+     "name": "forOffsetHoursMinutes",
+     "params": [
+      "int",
+      "int"
+     ]
+    },
+    {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": [
+      "long",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.joda.time.Days",
+     "name": "multipliedBy",
+     "params": [
+      "int"
+     ]
+    },
+    {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": [
+      "long",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.joda.time.Days",
+     "name": "toStandardHours",
+     "params": []
+    },
+    {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": [
+      "long",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.joda.time.Days",
+     "name": "toStandardMinutes",
+     "params": []
+    },
+    {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": [
+      "long",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.joda.time.Days",
+     "name": "toStandardSeconds",
+     "params": []
+    },
+    {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": [
+      "long",
+      "int"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.joda.time.field.FieldUtils.safeMultiply(long,int)"
+  ],
+  "provenance": {
+   "org.joda.time.field.FieldUtils.safeMultiply(long,int)": "introspector",
+   "org.joda.time.DateTimeZone.forOffsetHoursMinutes(int,int)": "source-scan",
+   "org.joda.time.Days.multipliedBy(int)": "source-scan",
+   "org.joda.time.Days.toStandardHours()": "source-scan",
+   "org.joda.time.Days.toStandardMinutes()": "source-scan",
+   "org.joda.time.Days.toStandardSeconds()": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 137,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 138,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 118,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 119,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 120,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 121,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 122,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 123,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 124,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 135,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 136,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 137,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 138,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 139,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 140,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 141,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 142,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 143,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 144,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 145,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 146,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 147,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 148,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 149,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 159,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 160,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 161,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 162,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 163,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 164,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 165,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 166,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 167,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 168,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 169,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 170,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 171,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 172,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 173,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.joda.time.field.FieldUtils",
+    "line": 174,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.joda.time.field.TestFieldUtils.testSafeMultiplyLongInt()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/main/java/org/joda/time/field/FieldUtils.java b/src/main/java/org/joda/time/field/FieldUtils.java\nindex 1e045b2..a0fe7e2 100644\n--- a/src/main/java/org/joda/time/field/FieldUtils.java\n+++ b/src/main/java/org/joda/time/field/FieldUtils.java\n@@ -135,9 +135,6 @@ public class FieldUtils {\n     public static long safeMultiply(long val1, int val2) {\n         switch (val2) {\n             case -1:\n-                if (val1 == Long.MIN_VALUE) {\n-                    throw new ArithmeticException(\"Multiplication overflows a long: \" + val1 + \" * \" + val2);\n-                }\n                 return -val1;\n             case 0:\n                 return 0L;\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 546,
+  "probe_size": 546,
+  "frame_added": [],
+  "tests": [
+   "org.joda.time.field.TestFieldUtils::testSafeMultiplyLongInt"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

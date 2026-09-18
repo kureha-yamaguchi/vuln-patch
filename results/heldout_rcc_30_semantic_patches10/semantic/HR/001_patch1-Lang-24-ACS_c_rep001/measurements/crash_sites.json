@@ -1,0 +1,533 @@
+[
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-lang-664] semantic mismatch: NumberUtils.isNumber(1.1L) expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "assertIsNumber",
+     "params": []
+    },
+    "line": 22,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 106,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-isNumber-neg-24] semantic mismatch: api=NumberUtils.isNumber input=1.1L expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "assertBoolean",
+     "params": []
+    },
+    "line": 113,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 67,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-lang-664] semantic mismatch: NumberUtils.isNumber(\"1.1L\") expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "assertIsNumberFalse",
+     "params": []
+    },
+    "line": 267,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "checkLiftedTestOracles",
+     "params": []
+    },
+    "line": 148,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 8,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_005",
+  "source": "fuzz_out/attempt_005_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-lang] semantic mismatch: NumberUtils.isNumber(\"1.1L\") expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "requireBoolean",
+     "params": []
+    },
+    "line": 17,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "checkLiftedTestOracles",
+     "params": []
+    },
+    "line": 85,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 89,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-lang-664] semantic mismatch: NumberUtils.isNumber(\"1.1L\") expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "assertIsNumberExact",
+     "params": []
+    },
+    "line": 229,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "verifyLiftedJUnitOracles",
+     "params": []
+    },
+    "line": 147,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 8,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_007",
+  "source": "fuzz_out/attempt_007_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:unnamed-check] [oracle:lifted-test-lang-664] semantic mismatch: NumberUtils.isNumber(\"1.1L\") expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "requireExactBoolean",
+     "params": []
+    },
+    "line": 188,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "verifyLiftedIsNumberTest",
+     "params": []
+    },
+    "line": 118,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 12,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-seed-isnumber-negative] semantic mismatch: index=24 input=1.1L expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "verifyJUnitSeedPairs",
+     "params": []
+    },
+    "line": 170,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 9,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-isnumber-negative] semantic mismatch: NumberUtils.isNumber(1.1L) expected=false actual=true index=24",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fail",
+     "params": []
+    },
+    "line": 7,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "verifyLiftedNegativePairs",
+     "params": []
+    },
+    "line": 85,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 134,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:unnamed-check] [oracle:lifted-negative-isnumber-lang664] semantic mismatch: NumberUtils.isNumber(\"1.1L\") expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "verifyLiftedSuite",
+     "params": []
+    },
+    "line": 217,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 9,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_015",
+  "source": "fuzz_out/attempt_015_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lang664-literal] semantic mismatch: NumberUtils.isNumber(\"1.1L\") expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 24,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_017",
+  "source": "fuzz_out/attempt_017_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-negative-isnumber] semantic mismatch: index=24 NumberUtils.isNumber(1.1L) expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 92,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-lang-664] semantic mismatch: input=\"1.1L\" expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "assertIsNumberExpected",
+     "params": []
+    },
+    "line": 147,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "oracleLiftedNumberUtilsTest",
+     "params": []
+    },
+    "line": 72,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 7,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_021",
+  "source": "fuzz_out/attempt_021_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-isnumber-negative] semantic mismatch: index=24 input=1.1L expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 89,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-lang-664-isnumber] semantic mismatch: input=1.1L expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "assertSeed",
+     "params": []
+    },
+    "line": 129,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "verifyLiftedTestSeeds",
+     "params": []
+    },
+    "line": 65,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 8,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-isnumber-negative] semantic mismatch: index=24 input=\"1.1L\" expected=false actual=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "verifyLiftedTest",
+     "params": []
+    },
+    "line": 83,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 9,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_028",
+  "source": "fuzz_out/attempt_028_compiled.txt"
+ }
+]

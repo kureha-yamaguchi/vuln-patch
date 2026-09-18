@@ -1,0 +1,112 @@
+{
+ "modified_files": [
+  "src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java"
+ ],
+ "patch_text": "--- /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java\n+++ /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java\n@@ -1132,7 +1132,7 @@ public class EigenDecompositionImpl implements EigenDecomposition {\n     private boolean flipIfWarranted(final int n, final int step) {\n         if (1.5 * work[pingPong] < work[4 * (n - 1) + pingPong]) {\n             // flip array\n-            int j = 4 * n - 1;\n+            int j = 4 * (n - 1);\n             for (int i = 0; i < j; i += 4) {\n                 for (int k = 0; k < 4; k += step) {\n                     final double tmp = work[i + k];\n",
+ "functions": [
+  {
+   "func_name": "flipIfWarranted",
+   "func_signature": "private boolean flipIfWarranted(int n, int step)",
+   "func_source": "    private boolean flipIfWarranted(final int n, final int step) {\n        if (1.5 * work[pingPong] < work[4 * (n - 1) + pingPong]) {\n            // flip array\n            int j = 4 * n - 1;\n            for (int i = 0; i < j; i += 4) {\n                for (int k = 0; k < 4; k += step) {\n                    final double tmp = work[i + k];\n                    work[i + k] = work[j - k];\n                    work[j - k] = tmp;\n                }\n                j -= 4;\n            }\n            return true;\n        }\n        return false;\n    }",
+   "func_class": "EigenDecompositionImpl",
+   "func_class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "func_param_types": [
+    "int",
+    "int"
+   ],
+   "fi_name": "[org.apache.commons.math.linear.EigenDecompositionImpl].flipIfWarranted(int,int)",
+   "overload_types": [
+    [
+     "int",
+     "int"
+    ]
+   ],
+   "xrefs": [
+    "private void processGeneralBlock(final int n)\n        throws InvalidMatrixException {\n\n        // check decomposed matrix data range\n        double sumOffDiag = 0;\n        for (int i = 0; i < n - 1; ++i) {\n            final int fourI = 4 * i;\n            final double ei = work[fourI + 2];\n            sumOffDiag += ei;\n        }\n\n        if (sumOffDiag == 0) {\n            // matrix is already diagonal\n            return;\n        }\n\n        // initial checks for splits (see Parlett & Marques section 3.3)\n        flipIfWarranted(n, 2);\n\n        // two iterations with Li's test for initial splits\n        initialSplits(n);\n\n        // initialize parameters used by goodStep\n        tType = 0;\n        dMin1 = 0;\n        dMin2 = 0;\n        dN    = 0;\n        dN1   = 0;\n        dN2   = 0;\n        tau   = 0;\n\n        // process split segments\n        int i0 = 0;\n        int n0 = n;\n        while (n0 > 0) {\n\n            // retrieve shift that was temporarily stored as a negative off-diagonal element\n            sigma    = (n0 == n) ? 0 : -work[4 * n0 - 2];\n            sigmaLow = 0;\n\n            // find start of a new split segment to process\n            double offDiagMin = (i0 == n0) ? 0 : work[4 * n0 - 6];\n            double offDiagMax = 0;\n            double diagMax    = work[4 * n0 - 4];\n            double diagMin    = diagMax;\n            i0 = 0;\n            for (int i = 4 * (n0 - 2); i >= 0; i -= 4) {\n                if (work[i + 2] <= 0) {\n                    i0 = 1 + i / 4;\n                    break;\n                }\n                if (diagMin >= 4 * offDiagMax) {\n                    diagMin    = Math.min(diagMin, work[i + 4]);\n                    offDiagMax = Math.max(offDiagMax, work[i + 2]);\n                }\n                diagMax    = Math.max(diagMax, work[i] + work[i + 2]);\n                offDiagMin = Math.min(offDiagMin, work[i + 2]);\n            }\n            work[4 * n0 - 2] = offDiagMin;\n\n            // lower bound of Gershgorin disk\n            dMin = -Math.max(0, diagMin - 2 * Math.sqrt(diagMin * offDiagMax));\n\n            pingPong = 0;\n            int maxIter = 30 * (n0 - i0);\n            for (int k = 0; i0 < n0; ++k) {\n                if (k >= maxIter) {\n                    throw new InvalidMatrixException(new MaxIterationsExceededException(maxIter));\n                }\n\n                // perform one step\n                n0 = goodStep(i0, n0);\n                pingPong = 1 - pingPong;\n\n                // check for new splits after \"ping\" steps\n                // when the last elements of qd array are very small\n                if ((pingPong == 0) && (n0 - i0 > 3) &&\n                    (work[4 * n0 - 1] <= TOLERANCE_2 * diagMax) &&\n                    (work[4 * n0 - 2] <= TOLERANCE_2 * sigma)) {\n                    int split  = i0 - 1;\n                    diagMax    = work[4 * i0];\n                    offDiagMin = work[4 * i0 + 2];\n                    double previousEMin = work[4 * i0 + 3];\n                    for (int i = 4 * i0; i < 4 * n0 - 16; i += 4) {\n                        if ((work[i + 3] <= TOLERANCE_2 * work[i]) ||\n                            (work[i + 2] <= TOLERANCE_2 * sigma)) {\n                            // insert a split\n                            work[i + 2]  = -sigma;\n                            split        = i / 4;\n                            diagMax      = 0;\n                            offDiagMin   = work[i + 6];\n                            previousEMin = work[i + 7];\n                        } else {\n                            diagMax      = Math.max(diagMax, work[i + 4]);\n                            offDiagMin   = Math.min(offDiagMin, work[i + 2]);\n                            previousEMin = Math.min(previousEMin, work[i + 3]);\n                        }\n                    }\n                    work[4 * n0 - 2] = offDiagMin;\n                    work[4 * n0 - 1] = previousEMin;\n                    i0 = split + 1;\n                }\n            }\n\n        }\n\n    }"
+   ],
+   "xref_names": [
+    "[org.apache.commons.math.linear.EigenDecompositionImpl].processGeneralBlock(int)"
+   ],
+   "reachable_edges": [],
+   "reachable_depth": {
+    "[org.apache.commons.math.linear.EigenDecompositionImpl].flipIfWarranted(int,int)": 0
+   },
+   "reachable": [
+    "[org.apache.commons.math.linear.EigenDecompositionImpl].flipIfWarranted(int,int)"
+   ],
+   "related_callees": [],
+   "field_siblings": [
+    {
+     "name": "processGeneralBlock",
+     "signature": "private void processGeneralBlock(int n) throws InvalidMatrixException",
+     "shared_fields": [
+      "pingPong",
+      "work"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Find realEigenvalues using dqd/dqds algorithms. <p>This implementation is based on Beresford N. Parlett and Osni A. Marques paper <a href=\"http://www.netlib.org/lapack/lawnspdf/lawn155.pdf\">An Implementation of the dqds Algorithm (Positive Case)</a> and on the corresponding LAPACK routine DLASQ2.</p> @param n number of\u2026"
+    },
+    {
+     "name": "initialSplits",
+     "signature": "private void initialSplits(int n)",
+     "shared_fields": [
+      "pingPong",
+      "work"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Perform two iterations with Li's tests for initial splits. @param n number of rows of the matrix to process"
+    },
+    {
+     "name": "goodStep",
+     "signature": "private int goodStep(int start, int end)",
+     "shared_fields": [
+      "pingPong",
+      "work"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Perform one \"good\" dqd/dqds step. <p>This implementation is based on Beresford N. Parlett and Osni A. Marques paper <a href=\"http://www.netlib.org/lapack/lawnspdf/lawn155.pdf\">An Implementation of the dqds Algorithm (Positive Case)</a> and on the corresponding LAPACK routine DLAZQ3.</p> @param start start index @param \u2026"
+    },
+    {
+     "name": "dqds",
+     "signature": "private void dqds(int start, int end)",
+     "shared_fields": [
+      "pingPong",
+      "work"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Perform a dqds step, using current shift increment. <p>This implementation is a translation of the LAPACK routine DLASQ5.</p> @param start start index @param end end index"
+    },
+    {
+     "name": "dqd",
+     "signature": "private void dqd(int start, int end)",
+     "shared_fields": [
+      "pingPong",
+      "work"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Perform a dqd step. <p>This implementation is a translation of the LAPACK routine DLASQ6.</p> @param start start index @param end end index"
+    }
+   ]
+  }
+ ],
+ "package": "org.apache.commons.math.linear",
+ "root_cause_reachable": [],
+ "neighbourhood_notes": [],
+ "source_imports": [
+  "import java.util.ArrayList;",
+  "import java.util.Arrays;",
+  "import java.util.List;",
+  "import org.apache.commons.math.MathRuntimeException;",
+  "import org.apache.commons.math.MaxIterationsExceededException;",
+  "import org.apache.commons.math.util.MathUtils;"
+ ],
+ "reachable_edges": [],
+ "reachable_depth": {
+  "[org.apache.commons.math.linear.EigenDecompositionImpl].flipIfWarranted(int,int)": 0
+ }
+}

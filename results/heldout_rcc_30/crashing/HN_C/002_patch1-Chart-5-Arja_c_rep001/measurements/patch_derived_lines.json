@@ -1,0 +1,640 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 128,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 129,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 130,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 139,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 140,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 141,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 142,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 143,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 144,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 145,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 146,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 147,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 148,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 149,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.gantt.TaskSeries",
+   "line": 150,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.general.Series",
+   "line": 312,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.general.Series",
+   "line": 313,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.general.Series",
+   "line": 314,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.general.Series",
+   "line": 315,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.general.Series",
+   "line": 316,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.general.SeriesException",
+   "line": 60,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.general.SeriesException",
+   "line": 61,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.general.SeriesException",
+   "line": 62,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYDataItem",
+   "line": 72,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYDataItem",
+   "line": 73,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYDataItem",
+   "line": 74,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYDataItem",
+   "line": 75,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYDataItem",
+   "line": 76,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYDataItem",
+   "line": 77,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYDataItem",
+   "line": 78,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYDataItem",
+   "line": 86,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYDataItem",
+   "line": 87,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYDataItem",
+   "line": 88,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 185,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 186,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 187,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 242,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 243,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 244,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 245,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 418,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 419,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 420,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 421,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 422,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 432,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 433,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 434,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 526,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 527,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 528,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 540,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 541,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 542,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 543,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 544,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 545,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 546,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 547,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 548,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 549,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 550,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 551,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 552,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 553,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 554,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 555,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 556,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 557,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 558,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 559,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 560,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 561,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 562,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 563,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 564,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 565,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 566,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 567,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 568,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 569,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 570,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 571,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 572,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 573,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 574,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 575,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 576,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 588,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 589,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 590,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 591,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 592,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 593,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 594,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 595,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 596,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 597,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 598,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 599,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 600,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 601,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 678,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 679,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 680,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 681,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 682,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 683,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 684,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 685,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 686,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 687,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 688,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 689,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 690,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 691,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 692,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 693,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 694,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 695,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 696,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 697,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 698,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 699,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 700,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 701,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.data.xy.XYSeries",
+   "line": 702,
+   "ring": "callee"
+  }
+ ]
+}

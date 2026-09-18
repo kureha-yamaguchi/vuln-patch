@@ -1,0 +1,120 @@
+{
+ "granularity": "method",
+ "items": [
+  {
+   "class_fq": "IllegalArgumentException",
+   "name": "<init>",
+   "params": [
+    "String"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "Math",
+   "name": "max",
+   "params": [
+    "float",
+    "double"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "Math",
+   "name": "min",
+   "params": [
+    "float",
+    "double"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.ConvergenceException",
+   "name": "<init>",
+   "params": [
+    "String",
+    "UnivariateRealSolverUtils",
+    "int",
+    "double",
+    "double",
+    "double",
+    "UnivariateRealSolverUtils",
+    "UnivariateRealSolverUtils",
+    "double",
+    "double"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "buildMessage",
+   "params": [
+    "MathRuntimeException",
+    "String",
+    "Object[]"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": [
+    "String"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": [
+    "String",
+    "double",
+    "double",
+    "double"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": [
+    "String",
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.UnivariateRealFunction",
+   "name": "value",
+   "params": [
+    "UnivariateRealSolverUtils"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": [
+    "UnivariateRealFunction",
+    "double",
+    "double",
+    "double",
+    "int"
+   ],
+   "ring": "seed",
+   "depth": 0
+  }
+ ],
+ "multi": {},
+ "edges": [],
+ "unmatched": [],
+ "provenance": {}
+}

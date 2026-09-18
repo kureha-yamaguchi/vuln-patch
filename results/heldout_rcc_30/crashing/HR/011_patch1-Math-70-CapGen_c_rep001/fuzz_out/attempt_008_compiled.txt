@@ -1,0 +1,56 @@
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.analysis.solvers.FuzzHarness (took 72 ms, size +38%)
+INFO: Instrumented org.apache.commons.math.MaxIterationsExceededException (took 3 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.ConvergenceException (took 2 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.MathException (took 6 ms, size +25%)
+INFO: Instrumented org.apache.commons.math.FunctionEvaluationException (took 4 ms, size +5%)
+INFO: Instrumented org.apache.commons.math.analysis.UnivariateRealFunction (took 0 ms, size +0%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/011_patch1-Math-70-CapGen_c_rep001/Math_70_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x795986d76cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2129672756
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x795acc5762a0, 0x795acc5764a0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x795acc4aec60,0x795acc4b0c60), 
+INFO:       24 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/011_patch1-Math-70-CapGen_c_rep001/Math_70_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.analysis.SinFunction (took 1 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.analysis.DifferentiableUnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BisectionSolver (took 3 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl (took 6 ms, size +12%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolver (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithm (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithmImpl (took 4 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils (took 3 ms, size +13%)
+INFO: seed corpus: files: 24 min: 3b max: 4b total: 93b rss: 1270Mb
+#25	INITED cov: 49 ft: 51 corp: 2/7b exec/s: 0 rss: 1271Mb
+#43	REDUCE cov: 49 ft: 51 corp: 2/6b lim: 4 exec/s: 0 rss: 1271Mb L: 2/4 MS: 6 ShuffleBytes-Custom-ChangeASCIIInt-Custom-EraseBytes-Custom-
+#49	REDUCE cov: 49 ft: 51 corp: 2/5b lim: 4 exec/s: 0 rss: 1271Mb L: 1/4 MS: 2 EraseBytes-Custom-
+#134	REDUCE cov: 49 ft: 51 corp: 2/3b lim: 4 exec/s: 0 rss: 1271Mb L: 2/2 MS: 10 ChangeByte-Custom-ChangeByte-Custom-ChangeBit-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#206	REDUCE cov: 49 ft: 51 corp: 2/2b lim: 4 exec/s: 0 rss: 1271Mb L: 1/1 MS: 4 ChangeBit-Custom-EraseBytes-Custom-
+#1105	REDUCE cov: 54 ft: 56 corp: 3/11b lim: 11 exec/s: 0 rss: 1271Mb L: 9/9 MS: 8 ChangeByte-Custom-InsertRepeatedBytes-Custom-ChangeBit-Custom-CrossOver-Custom-
+#1168	REDUCE cov: 54 ft: 56 corp: 3/9b lim: 11 exec/s: 0 rss: 1271Mb L: 7/7 MS: 6 ChangeBit-Custom-CrossOver-Custom-EraseBytes-Custom-
+#1169	REDUCE cov: 54 ft: 56 corp: 3/8b lim: 11 exec/s: 0 rss: 1271Mb L: 6/6 MS: 2 EraseBytes-Custom-
+#1192	REDUCE cov: 54 ft: 56 corp: 3/7b lim: 11 exec/s: 0 rss: 1271Mb L: 5/5 MS: 6 InsertByte-Custom-ChangeBit-Custom-EraseBytes-Custom-
+#1371	REDUCE cov: 54 ft: 56 corp: 3/5b lim: 11 exec/s: 0 rss: 1271Mb L: 3/3 MS: 8 ChangeByte-Custom-ChangeBinInt-Custom-ChangeByte-Custom-EraseBytes-Custom-
+#1403	REDUCE cov: 54 ft: 56 corp: 3/4b lim: 11 exec/s: 0 rss: 1271Mb L: 2/2 MS: 4 ShuffleBytes-Custom-EraseBytes-Custom-
+#1438	REDUCE cov: 54 ft: 56 corp: 3/3b lim: 11 exec/s: 0 rss: 1271Mb L: 1/1 MS: 10 ChangeByte-Custom-ShuffleBytes-Custom-ChangeBinInt-Custom-ChangeBit-Custom-EraseBytes-Custom-
+#100000	DONE   cov: 54 ft: 56 corp: 3/3b lim: 985 exec/s: 0 rss: 1275Mb
+Done 100000 runs in 0 second(s)

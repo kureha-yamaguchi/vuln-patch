@@ -1,0 +1,59 @@
+DEDUP_TOKEN: 864d4a5cba7a1d95
+
+INFO: Loaded 317 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math3.optimization.fitting.FuzzHarness (took 74 ms, size +21%)
+INFO: Instrumented org.apache.commons.math3.exception.MathIllegalStateException (took 3 ms, size +8%)
+INFO: Instrumented org.apache.commons.math3.exception.util.ExceptionContextProvider (took 0 ms, size +0%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/002_patch1-Math-25-ACS_c_rep001/Math_25_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7640e4776cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 4203806590
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x76411866cc60, 0x76411866ce60), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x764118586920,0x764118588920), 
+INFO:       28 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/002_patch1-Math-25-ACS_c_rep001/Math_25_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math3.optimization.fitting.WeightedObservedPoint (took 2 ms, size +13%)
+INFO: Instrumented org.apache.commons.math3.optimization.fitting.HarmonicFitter$ParameterGuesser (took 4 ms, size +15%)
+INFO: Instrumented org.apache.commons.math3.exception.util.Localizable (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math3.exception.NumberIsTooSmallException (took 2 ms, size +17%)
+INFO: Instrumented org.apache.commons.math3.exception.MathIllegalNumberException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math3.exception.MathIllegalArgumentException (took 2 ms, size +9%)
+INFO: Instrumented org.apache.commons.math3.exception.ZeroException (took 1 ms, size +9%)
+INFO: New number of coverage counters: 1024
+INFO: Instrumented org.apache.commons.math3.util.FastMath (took 41 ms, size +21%)
+INFO: Instrumented org.apache.commons.math3.util.FastMath$CodyWaite (took 1 ms, size +11%)
+INFO: New number of coverage counters: 2048
+INFO: Instrumented org.apache.commons.math3.util.Precision (took 9 ms, size +28%)
+INFO: Instrumented org.apache.commons.math3.exception.MathArithmeticException (took 2 ms, size +9%)
+INFO: Instrumented org.apache.commons.math3.analysis.function.HarmonicOscillator (took 3 ms, size +8%)
+INFO: Instrumented org.apache.commons.math3.analysis.DifferentiableUnivariateFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math3.analysis.UnivariateFunction (took 0 ms, size +0%)
+
+== Java Exception: com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:math844-degenerate-return] semantic mismatch: MATH-844 sample should not yield a degenerate returned oscillator a=Infinity omega=0.0 phi=-0.0 valueAt0=Infinity valueAt1=Infinity observedY0=0.0 observedY1=1.0
+	at org.apache.commons.math3.optimization.fitting.FuzzHarness.checkMath844ReturnIsNotDegenerateModel(FuzzHarness.java:162)
+	at org.apache.commons.math3.optimization.fitting.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:20)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/002_patch1-Math-25-ACS_c_rep001/Math_25_buggy/fuzz/attempt_012/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/002_patch1-Math-25-ACS_c_rep001/Math_25_buggy/fuzz/attempt_012/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/002_patch1-Math-25-ACS_c_rep001/Math_25_buggy/fuzz/attempt_012/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/002_patch1-Math-25-ACS_c_rep001/Math_25_buggy/fuzz/attempt_012/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+

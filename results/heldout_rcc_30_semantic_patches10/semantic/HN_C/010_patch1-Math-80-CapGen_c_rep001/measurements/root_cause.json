@@ -1,0 +1,205 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "name": "flipIfWarranted",
+    "params": [
+     "int",
+     "int"
+    ],
+    "ring": "seed",
+    "depth": 0
+   },
+   {
+    "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "name": "goodStep",
+    "params": [
+     "int",
+     "int"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "name": "processGeneralBlock",
+    "params": [
+     "int"
+    ],
+    "ring": "caller",
+    "depth": 1
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "goodStep",
+     "params": [
+      "int",
+      "int"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "flipIfWarranted",
+     "params": [
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "processGeneralBlock",
+     "params": [
+      "int"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "flipIfWarranted",
+     "params": [
+      "int",
+      "int"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+  ],
+  "provenance": {
+   "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)": "introspector",
+   "org.apache.commons.math.linear.EigenDecompositionImpl.goodStep(int,int)": "source-scan",
+   "org.apache.commons.math.linear.EigenDecompositionImpl.processGeneralBlock(int)": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1135,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1132,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1133,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1134,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1135,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1136,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1137,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1138,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1139,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1140,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1141,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1142,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1143,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1144,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1145,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1146,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+    "line": 1147,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.apache.commons.math.linear.EigenDecompositionImplTest.testMathpbx02()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java b/src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java\nindex 9d1b797..3fc328d 100644\n--- a/src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java\n+++ b/src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java\n@@ -1132,7 +1132,7 @@ public class EigenDecompositionImpl implements EigenDecomposition {\n     private boolean flipIfWarranted(final int n, final int step) {\n         if (1.5 * work[pingPong] < work[4 * (n - 1) + pingPong]) {\n             // flip array\n-            int j = 4 * (n - 1);\n+            int j = 4 * n - 1;\n             for (int i = 0; i < j; i += 4) {\n                 for (int k = 0; k < 4; k += step) {\n                     final double tmp = work[i + k];\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 64,
+  "probe_size": 64,
+  "frame_added": [],
+  "tests": [
+   "org.apache.commons.math.linear.EigenDecompositionImplTest::testMathpbx02"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

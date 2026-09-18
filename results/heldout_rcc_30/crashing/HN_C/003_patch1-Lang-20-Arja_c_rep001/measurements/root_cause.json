@@ -1,0 +1,490 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.lang3.FuzzHarness",
+    "name": "fuzzerTestOneInput",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang3.StringUtils",
+    "name": "join",
+    "params": [
+     "Object[]",
+     "String"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang3.StringUtils",
+    "name": "join",
+    "params": [
+     "Object[]",
+     "String",
+     "int",
+     "int"
+    ],
+    "ring": "seed",
+    "depth": 0
+   },
+   {
+    "class_fq": "org.apache.commons.lang3.StringUtils",
+    "name": "join",
+    "params": [
+     "Object[]",
+     "char"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang3.StringUtils",
+    "name": "join",
+    "params": [
+     "Object[]",
+     "char",
+     "int",
+     "int"
+    ],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.apache.commons.lang3.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang3.StringUtils",
+     "name": "join",
+     "params": [
+      "Object[]",
+      "char",
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang3.StringUtils",
+     "name": "join",
+     "params": [
+      "Object[]",
+      "String"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang3.StringUtils",
+     "name": "join",
+     "params": [
+      "Object[]",
+      "char",
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang3.StringUtils",
+     "name": "join",
+     "params": [
+      "Object[]",
+      "char"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang3.StringUtils",
+     "name": "join",
+     "params": [
+      "Object[]",
+      "char",
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang3.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang3.StringUtils",
+     "name": "join",
+     "params": [
+      "Object[]",
+      "String",
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang3.StringUtils",
+     "name": "join",
+     "params": [
+      "Object[]",
+      "String"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang3.StringUtils",
+     "name": "join",
+     "params": [
+      "Object[]",
+      "String",
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang3.StringUtils",
+     "name": "join",
+     "params": [
+      "Object[]",
+      "char"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang3.StringUtils",
+     "name": "join",
+     "params": [
+      "Object[]",
+      "String",
+      "int",
+      "int"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)",
+   "org.apache.commons.lang3.StringUtils.join(Object[],String,int,int)"
+  ],
+  "provenance": {
+   "org.apache.commons.lang3.StringUtils.join(Object[],char,int,int)": "introspector",
+   "org.apache.commons.lang3.StringUtils.join(Object[],String,int,int)": "introspector",
+   "org.apache.commons.lang3.FuzzHarness.fuzzerTestOneInput(FuzzedDataProvider)": "source-scan",
+   "org.apache.commons.lang3.StringUtils.join(Object[],String)": "source-scan",
+   "org.apache.commons.lang3.StringUtils.join(Object[],char)": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3298,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3383,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3289,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3290,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3291,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3292,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3293,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3294,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3295,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3296,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3297,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3298,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3299,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3300,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3301,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3302,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3303,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3304,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3305,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3306,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3307,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3308,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3309,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3368,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3369,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3370,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3371,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3372,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3373,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3374,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3375,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3376,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3377,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3378,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3379,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3380,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3381,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3382,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3383,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3384,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3385,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3386,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3387,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3388,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3389,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3390,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3391,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3392,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3393,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.StringUtils",
+    "line": 3394,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.lang3.StringUtils",
+    "name": "join",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.apache.commons.lang3.StringUtilsTest.testJoin_ArrayChar()",
+   "org.apache.commons.lang3.StringUtilsTest.testJoin_Objectarray()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/main/java/org/apache/commons/lang3/StringUtils.java b/src/main/java/org/apache/commons/lang3/StringUtils.java\nindex 711852e..3c2cf3f 100644\n--- a/src/main/java/org/apache/commons/lang3/StringUtils.java\n+++ b/src/main/java/org/apache/commons/lang3/StringUtils.java\n@@ -3295,7 +3295,7 @@ public class StringUtils {\n             return EMPTY;\n         }\n         \n-        StringBuilder buf = new StringBuilder(noOfItems * 16);\n+        StringBuilder buf = new StringBuilder((array[startIndex] == null ? 16 : array[startIndex].toString().length()) + 1);\n \n         for (int i = startIndex; i < endIndex; i++) {\n             if (i > startIndex) {\n@@ -3380,7 +3380,7 @@ public class StringUtils {\n             return EMPTY;\n         }\n \n-        StringBuilder buf = new StringBuilder(noOfItems * 16);\n+        StringBuilder buf = new StringBuilder((array[startIndex] == null ? 16 : array[startIndex].toString().length()) + separator.length());\n \n         for (int i = startIndex; i < endIndex; i++) {\n             if (i > startIndex) {\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 6,
+  "probe_size": 6,
+  "frame_added": [],
+  "tests": [
+   "org.apache.commons.lang3.StringUtilsTest::testJoin_ArrayChar",
+   "org.apache.commons.lang3.StringUtilsTest::testJoin_Objectarray"
+  ],
+  "detail": "all 2 method(s) reached"
+ },
+ "notes": []
+}

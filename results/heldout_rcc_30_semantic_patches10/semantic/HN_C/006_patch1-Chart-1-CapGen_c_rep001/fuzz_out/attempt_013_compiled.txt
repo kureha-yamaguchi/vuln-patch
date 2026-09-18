@@ -1,0 +1,136 @@
+DEDUP_TOKEN: b3336855c353198d
+
+INFO: Loaded 314 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.jfree.chart.renderer.category.FuzzHarness (took 63 ms, size +18%)
+INFO: Instrumented org.jfree.chart.renderer.category.AbstractCategoryItemRenderer (took 40 ms, size +11%)
+INFO: Instrumented org.jfree.chart.renderer.category.CategoryItemRenderer (took 2 ms, size +0%)
+INFO: Instrumented org.jfree.chart.LegendItemSource (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.util.PublicCloneable (took 0 ms, size +0%)
+INFO: New number of coverage counters: 1024
+INFO: New number of coverage counters: 2048
+INFO: Instrumented org.jfree.chart.renderer.AbstractRenderer (took 66 ms, size +17%)
+INFO: Instrumented org.jfree.chart.renderer.category.BarRenderer (took 15 ms, size +15%)
+INFO: Instrumented org.jfree.chart.renderer.category.LineAndShapeRenderer (took 9 ms, size +13%)
+INFO: Instrumented org.jfree.chart.renderer.category.AreaRenderer (took 3 ms, size +12%)
+INFO: Instrumented org.jfree.chart.renderer.category.WaterfallBarRenderer (took 5 ms, size +13%)
+INFO: Instrumented org.jfree.data.category.CategoryDataset with custom hooks only (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.KeyedValues2D with custom hooks only (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.Values2D with custom hooks only (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.general.Dataset with custom hooks only (took 0 ms, size +0%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/006_patch1-Chart-1-CapGen_c_rep001/Chart_1_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7f9d5c376cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 1839263391
+INFO: Loaded 3 modules   (2048 inline 8-bit counters): 512 [0x7f9da45d7620, 0x7f9da45d7820), 512 [0x7f9da45d7820, 0x7f9da45d7a20), 1024 [0x7f9da45d7a20, 0x7f9da45d7e20), 
+INFO: Loaded 3 PC tables (2048 PCs): 512 [0x7f9da453dea0,0x7f9da453fea0), 512 [0x7f9da45a4b50,0x7f9da45a6b50), 1024 [0x7f9da45bd5e0,0x7f9da45c15e0), 
+INFO:       10 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/006_patch1-Chart-1-CapGen_c_rep001/Chart_1_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.jfree.chart.labels.CategorySeriesLabelGenerator (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.entity.ChartEntity (took 6 ms, size +26%)
+INFO: Instrumented org.jfree.chart.entity.CategoryItemEntity (took 2 ms, size +29%)
+INFO: Instrumented org.jfree.chart.renderer.category.BarPainter (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.util.GradientPaintTransformer (took 0 ms, size +0%)
+INFO: New number of coverage counters: 4096
+INFO: Instrumented org.jfree.chart.renderer.category.GradientBarPainter (took 3 ms, size +17%)
+INFO: Instrumented org.jfree.chart.util.BooleanList (took 1 ms, size +25%)
+INFO: Instrumented org.jfree.chart.util.AbstractObjectList (took 3 ms, size +28%)
+INFO: Instrumented org.jfree.chart.util.PaintList (took 2 ms, size +26%)
+INFO: Instrumented org.jfree.chart.util.StrokeList (took 2 ms, size +20%)
+INFO: Instrumented org.jfree.chart.util.ShapeList (took 2 ms, size +20%)
+INFO: Instrumented org.jfree.chart.util.ObjectList (took 1 ms, size +13%)
+INFO: Instrumented org.jfree.chart.labels.ItemLabelPosition (took 2 ms, size +17%)
+INFO: Instrumented org.jfree.chart.labels.ItemLabelAnchor (took 2 ms, size +38%)
+INFO: Instrumented org.jfree.chart.text.TextAnchor (took 2 ms, size +41%)
+INFO: Instrumented org.jfree.chart.renderer.RenderAttributes (took 14 ms, size +13%)
+INFO: Instrumented org.jfree.chart.labels.StandardCategorySeriesLabelGenerator (took 2 ms, size +33%)
+INFO: Instrumented org.jfree.chart.util.StandardGradientPaintTransformer (took 2 ms, size +15%)
+INFO: Instrumented org.jfree.chart.util.GradientPaintTransformType (took 1 ms, size +50%)
+INFO: Instrumented org.jfree.chart.event.RendererChangeEvent (took 1 ms, size +14%)
+INFO: Instrumented org.jfree.chart.event.ChartChangeEvent (took 1 ms, size +9%)
+INFO: Instrumented org.jfree.chart.event.ChartChangeEventType (took 1 ms, size +54%)
+INFO: Instrumented org.jfree.chart.LegendItemCollection (took 2 ms, size +16%)
+INFO: seed corpus: files: 10 min: 2b max: 4b total: 35b rss: 1286Mb
+INFO: Instrumented org.jfree.chart.renderer.AreaRendererEndType (took 1 ms, size +58%)
+#11	INITED cov: 113 ft: 133 corp: 5/17b exec/s: 0 rss: 1286Mb
+#12	NEW    cov: 113 ft: 146 corp: 6/19b lim: 4 exec/s: 0 rss: 1286Mb L: 2/4 MS: 2 CrossOver-Custom-
+#13	NEW    cov: 113 ft: 152 corp: 7/23b lim: 4 exec/s: 0 rss: 1286Mb L: 4/4 MS: 2 ChangeByte-Custom-
+#19	NEW    cov: 122 ft: 164 corp: 8/27b lim: 4 exec/s: 0 rss: 1287Mb L: 4/4 MS: 2 ChangeByte-Custom-
+#21	NEW    cov: 124 ft: 166 corp: 9/31b lim: 4 exec/s: 0 rss: 1287Mb L: 4/4 MS: 4 ChangeBinInt-Custom-ChangeBit-Custom-
+#23	REDUCE cov: 124 ft: 166 corp: 9/30b lim: 4 exec/s: 0 rss: 1287Mb L: 1/4 MS: 4 ChangeByte-Custom-EraseBytes-Custom-
+#26	NEW    cov: 124 ft: 173 corp: 10/33b lim: 4 exec/s: 0 rss: 1287Mb L: 3/4 MS: 6 CrossOver-Custom-ChangeBit-Custom-InsertByte-Custom-
+#27	NEW    cov: 124 ft: 175 corp: 11/37b lim: 4 exec/s: 0 rss: 1287Mb L: 4/4 MS: 2 InsertByte-Custom-
+INFO: Instrumented org.jfree.chart.plot.CategoryPlot (took 58 ms, size +20%)
+INFO: Instrumented org.jfree.chart.plot.ValueAxisPlot (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.plot.Pannable (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.plot.Selectable (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.plot.Zoomable (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.event.AnnotationChangeListener (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.event.RendererChangeListener (took 0 ms, size +0%)
+INFO: New number of coverage counters: 8192
+INFO: Instrumented org.jfree.chart.plot.Plot (took 16 ms, size +16%)
+INFO: Instrumented org.jfree.chart.event.AxisChangeListener (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.event.DatasetChangeListener with custom hooks only (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.event.MarkerChangeListener (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.plot.DrawingSupplier (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.text.TextMeasurer (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.entity.PlotEntity (took 2 ms, size +23%)
+INFO: Instrumented org.jfree.chart.util.ShadowGenerator (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.axis.Axis (took 16 ms, size +18%)
+INFO: Instrumented org.jfree.chart.axis.CategoryAxis (took 13 ms, size +15%)
+INFO: Instrumented org.jfree.chart.axis.ValueAxis (took 16 ms, size +16%)
+INFO: Instrumented org.jfree.chart.util.RectangleInsets (took 7 ms, size +15%)
+INFO: Instrumented org.jfree.chart.util.UnitType (took 1 ms, size +60%)
+INFO: Instrumented org.jfree.chart.util.ResourceBundleWrapper (took 1 ms, size +19%)
+INFO: Instrumented org.jfree.chart.plot.DefaultDrawingSupplier (took 4 ms, size +15%)
+INFO: Instrumented org.jfree.chart.ChartColor (took 1 ms, size +11%)
+INFO: Instrumented org.jfree.chart.plot.DatasetRenderingOrder (took 1 ms, size +56%)
+INFO: Instrumented org.jfree.chart.util.SortOrder (took 1 ms, size +59%)
+INFO: Instrumented org.jfree.chart.plot.PlotOrientation (took 1 ms, size +57%)
+INFO: Instrumented org.jfree.chart.axis.AxisLocation (took 1 ms, size +43%)
+INFO: Instrumented org.jfree.data.event.DatasetChangeEvent with custom hooks only (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.chart.event.DatasetChangeInfo (took 0 ms, size +29%)
+INFO: Instrumented org.jfree.chart.event.PlotChangeEvent (took 0 ms, size +18%)
+INFO: Instrumented org.jfree.chart.axis.CategoryAnchor (took 1 ms, size +60%)
+INFO: Instrumented org.jfree.chart.util.DefaultShadowGenerator (took 3 ms, size +15%)
+INFO: Instrumented org.jfree.data.category.DefaultCategoryDataset with custom hooks only (took 3 ms, size +0%)
+INFO: Instrumented org.jfree.data.category.SelectableCategoryDataset with custom hooks only (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.category.CategoryDatasetSelectionState with custom hooks only (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.general.DatasetSelectionState with custom hooks only (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.category.AbstractCategoryDataset with custom hooks only (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.general.AbstractDataset with custom hooks only (took 1 ms, size +5%)
+INFO: Instrumented org.jfree.data.general.DatasetGroup with custom hooks only (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.KeyedObjects2D with custom hooks only (took 2 ms, size +0%)
+INFO: Instrumented org.jfree.data.UnknownKeyException with custom hooks only (took 0 ms, size +0%)
+#32	REDUCE cov: 344 ft: 402 corp: 12/41b lim: 4 exec/s: 0 rss: 1292Mb L: 4/4 MS: 10 InsertByte-Custom-ChangeBit-Custom-ChangeASCIIInt-Custom-CrossOver-Custom-CMP-Custom- DE: "\001\000"-
+#36	NEW    cov: 344 ft: 407 corp: 13/42b lim: 4 exec/s: 0 rss: 1292Mb L: 1/4 MS: 8 EraseBytes-Custom-CopyPart-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#37	NEW    cov: 344 ft: 409 corp: 14/46b lim: 4 exec/s: 0 rss: 1292Mb L: 4/4 MS: 2 ChangeByte-Custom-
+#48	NEW    cov: 345 ft: 412 corp: 15/50b lim: 4 exec/s: 0 rss: 1292Mb L: 4/4 MS: 2 PersAutoDict-Custom- DE: "\001\000"-
+
+== Java Exception: java.lang.NullPointerException
+	at org.jfree.chart.renderer.category.AbstractCategoryItemRenderer.getLegendItems(AbstractCategoryItemRenderer.java:1800)
+	at org.jfree.chart.renderer.category.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:71)
+== libFuzzer crashing input ==
+MS: 6 ChangeByte-Custom-CopyPart-Custom-CrossOver-Custom-; base unit: 1e9e98696e1ddbf946cc578165ef88b45eb36142
+0x31,0x3f,0x2f,
+1?/
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/006_patch1-Chart-1-CapGen_c_rep001/Chart_1_buggy/fuzz/attempt_013/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/006_patch1-Chart-1-CapGen_c_rep001/Chart_1_buggy/fuzz/attempt_013/crashes/crash-f5fb2ce64ac05d16916bc290b87acf83511e64cb
+Base64: MT8v
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/006_patch1-Chart-1-CapGen_c_rep001/Chart_1_buggy/fuzz/attempt_013/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/006_patch1-Chart-1-CapGen_c_rep001/Chart_1_buggy/fuzz/attempt_013/crashes/Crash_f5fb2ce64ac05d16916bc290b87acf83511e64cb.java
+

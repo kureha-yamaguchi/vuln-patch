@@ -1,0 +1,553 @@
+{
+  "arms": [
+    "HN",
+    "HN_C",
+    "HR"
+  ],
+  "code_hash": "f3af713d376205bd950a3654d0bec4e53ee881665a8c0676e24aef84834c83b4",
+  "created_utc": "2026-09-17T10:58:02.850582+00:00",
+  "git_sha": "1ac28e12b4447c6ad51717ff73beb5695a24b71a",
+  "jobs": [
+    {
+      "arm": "HN",
+      "bug_id": "24",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN/001_patch1-Lang-24-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Lang/patch1-Lang-24-ACS.patch",
+      "patch_id": "001_patch1-Lang-24-ACS_c",
+      "patch_sha256": "dba54ecb1ecc5bfbe671c1fc0398650cd7d32a2748baebb4cf1d912d32b00165",
+      "project": "Lang",
+      "repetition": 1
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "24",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN_C/001_patch1-Lang-24-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Lang/patch1-Lang-24-ACS.patch",
+      "patch_id": "001_patch1-Lang-24-ACS_c",
+      "patch_sha256": "dba54ecb1ecc5bfbe671c1fc0398650cd7d32a2748baebb4cf1d912d32b00165",
+      "project": "Lang",
+      "repetition": 1
+    },
+    {
+      "arm": "HR",
+      "bug_id": "24",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HR/001_patch1-Lang-24-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Lang/patch1-Lang-24-ACS.patch",
+      "patch_id": "001_patch1-Lang-24-ACS_c",
+      "patch_sha256": "dba54ecb1ecc5bfbe671c1fc0398650cd7d32a2748baebb4cf1d912d32b00165",
+      "project": "Lang",
+      "repetition": 1
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "25",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN_C/002_patch1-Math-25-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Math/patch1-Math-25-ACS.patch",
+      "patch_id": "002_patch1-Math-25-ACS_c",
+      "patch_sha256": "f801743ea9f610e29f3fa003970037943d19916da8049c0c09318206f4ca6802",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HR",
+      "bug_id": "25",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HR/002_patch1-Math-25-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Math/patch1-Math-25-ACS.patch",
+      "patch_id": "002_patch1-Math-25-ACS_c",
+      "patch_sha256": "f801743ea9f610e29f3fa003970037943d19916da8049c0c09318206f4ca6802",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HN",
+      "bug_id": "25",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN/002_patch1-Math-25-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Math/patch1-Math-25-ACS.patch",
+      "patch_id": "002_patch1-Math-25-ACS_c",
+      "patch_sha256": "f801743ea9f610e29f3fa003970037943d19916da8049c0c09318206f4ca6802",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HR",
+      "bug_id": "99",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HR/003_patch1-Math-99-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Math/patch1-Math-99-ACS.patch",
+      "patch_id": "003_patch1-Math-99-ACS_c",
+      "patch_sha256": "4810562f5f5c6c5ff3f93133efcf8068debd32605cd1ef8081fe02c4994ba877",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HN",
+      "bug_id": "99",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN/003_patch1-Math-99-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Math/patch1-Math-99-ACS.patch",
+      "patch_id": "003_patch1-Math-99-ACS_c",
+      "patch_sha256": "4810562f5f5c6c5ff3f93133efcf8068debd32605cd1ef8081fe02c4994ba877",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "99",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN_C/003_patch1-Math-99-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Math/patch1-Math-99-ACS.patch",
+      "patch_id": "003_patch1-Math-99-ACS_c",
+      "patch_sha256": "4810562f5f5c6c5ff3f93133efcf8068debd32605cd1ef8081fe02c4994ba877",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HN",
+      "bug_id": "15",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN/004_patch1-Time-15-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Time/patch1-Time-15-ACS.patch",
+      "patch_id": "004_patch1-Time-15-ACS_c",
+      "patch_sha256": "2d0f994d6fbb700c5aac4524b8e626f70abbb39634fa1f02cdf619f7c971062a",
+      "project": "Time",
+      "repetition": 1
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "15",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN_C/004_patch1-Time-15-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Time/patch1-Time-15-ACS.patch",
+      "patch_id": "004_patch1-Time-15-ACS_c",
+      "patch_sha256": "2d0f994d6fbb700c5aac4524b8e626f70abbb39634fa1f02cdf619f7c971062a",
+      "project": "Time",
+      "repetition": 1
+    },
+    {
+      "arm": "HR",
+      "bug_id": "15",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HR/004_patch1-Time-15-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Time/patch1-Time-15-ACS.patch",
+      "patch_id": "004_patch1-Time-15-ACS_c",
+      "patch_sha256": "2d0f994d6fbb700c5aac4524b8e626f70abbb39634fa1f02cdf619f7c971062a",
+      "project": "Time",
+      "repetition": 1
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "50",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN_C/005_patch1-Math-50-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Math/patch1-Math-50-Arja.patch",
+      "patch_id": "005_patch1-Math-50-Arja_c",
+      "patch_sha256": "22737f6fd3c0a28cc10fa642029ff1de6439176fd9e0345b0b7de548ce92f2a4",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HR",
+      "bug_id": "50",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HR/005_patch1-Math-50-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Math/patch1-Math-50-Arja.patch",
+      "patch_id": "005_patch1-Math-50-Arja_c",
+      "patch_sha256": "22737f6fd3c0a28cc10fa642029ff1de6439176fd9e0345b0b7de548ce92f2a4",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HN",
+      "bug_id": "50",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN/005_patch1-Math-50-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Math/patch1-Math-50-Arja.patch",
+      "patch_id": "005_patch1-Math-50-Arja_c",
+      "patch_sha256": "22737f6fd3c0a28cc10fa642029ff1de6439176fd9e0345b0b7de548ce92f2a4",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HR",
+      "bug_id": "1",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HR/006_patch1-Chart-1-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Chart/patch1-Chart-1-CapGen.patch",
+      "patch_id": "006_patch1-Chart-1-CapGen_c",
+      "patch_sha256": "ff1f263767e7248aa9415257f3ed76cdd0db83ba7aa3838dd4697e46c63a5169",
+      "project": "Chart",
+      "repetition": 1
+    },
+    {
+      "arm": "HN",
+      "bug_id": "1",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN/006_patch1-Chart-1-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Chart/patch1-Chart-1-CapGen.patch",
+      "patch_id": "006_patch1-Chart-1-CapGen_c",
+      "patch_sha256": "ff1f263767e7248aa9415257f3ed76cdd0db83ba7aa3838dd4697e46c63a5169",
+      "project": "Chart",
+      "repetition": 1
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "1",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN_C/006_patch1-Chart-1-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Chart/patch1-Chart-1-CapGen.patch",
+      "patch_id": "006_patch1-Chart-1-CapGen_c",
+      "patch_sha256": "ff1f263767e7248aa9415257f3ed76cdd0db83ba7aa3838dd4697e46c63a5169",
+      "project": "Chart",
+      "repetition": 1
+    },
+    {
+      "arm": "HN",
+      "bug_id": "8",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN/007_patch1-Chart-8-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Chart/patch1-Chart-8-CapGen.patch",
+      "patch_id": "007_patch1-Chart-8-CapGen_c",
+      "patch_sha256": "821c47e4044df194e6081a49ab535ac90682d0cd3d868fdf6a9ad6075c086711",
+      "project": "Chart",
+      "repetition": 1
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "8",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN_C/007_patch1-Chart-8-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Chart/patch1-Chart-8-CapGen.patch",
+      "patch_id": "007_patch1-Chart-8-CapGen_c",
+      "patch_sha256": "821c47e4044df194e6081a49ab535ac90682d0cd3d868fdf6a9ad6075c086711",
+      "project": "Chart",
+      "repetition": 1
+    },
+    {
+      "arm": "HR",
+      "bug_id": "8",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HR/007_patch1-Chart-8-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Chart/patch1-Chart-8-CapGen.patch",
+      "patch_id": "007_patch1-Chart-8-CapGen_c",
+      "patch_sha256": "821c47e4044df194e6081a49ab535ac90682d0cd3d868fdf6a9ad6075c086711",
+      "project": "Chart",
+      "repetition": 1
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "33",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN_C/008_patch1-Math-33-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-33-CapGen.patch",
+      "patch_id": "008_patch1-Math-33-CapGen_c",
+      "patch_sha256": "c56c4fedb5239be31d7e772880ebe5db15a5fd6772a7cf4509507da831173826",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HR",
+      "bug_id": "33",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HR/008_patch1-Math-33-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-33-CapGen.patch",
+      "patch_id": "008_patch1-Math-33-CapGen_c",
+      "patch_sha256": "c56c4fedb5239be31d7e772880ebe5db15a5fd6772a7cf4509507da831173826",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HN",
+      "bug_id": "33",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN/008_patch1-Math-33-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-33-CapGen.patch",
+      "patch_id": "008_patch1-Math-33-CapGen_c",
+      "patch_sha256": "c56c4fedb5239be31d7e772880ebe5db15a5fd6772a7cf4509507da831173826",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HR",
+      "bug_id": "75",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HR/009_patch1-Math-75-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-75-CapGen.patch",
+      "patch_id": "009_patch1-Math-75-CapGen_c",
+      "patch_sha256": "b457e726436c37c8bb2355f2dbd9daa478a9633773a1f9be5a36ff4f199c250f",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HN",
+      "bug_id": "75",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN/009_patch1-Math-75-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-75-CapGen.patch",
+      "patch_id": "009_patch1-Math-75-CapGen_c",
+      "patch_sha256": "b457e726436c37c8bb2355f2dbd9daa478a9633773a1f9be5a36ff4f199c250f",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "75",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-75-CapGen.patch",
+      "patch_id": "009_patch1-Math-75-CapGen_c",
+      "patch_sha256": "b457e726436c37c8bb2355f2dbd9daa478a9633773a1f9be5a36ff4f199c250f",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HN",
+      "bug_id": "80",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN/010_patch1-Math-80-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-80-CapGen.patch",
+      "patch_id": "010_patch1-Math-80-CapGen_c",
+      "patch_sha256": "b8ddcbed588657d33026d726342503774247881072d0325c751398b957807d73",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "80",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-80-CapGen.patch",
+      "patch_id": "010_patch1-Math-80-CapGen_c",
+      "patch_sha256": "b8ddcbed588657d33026d726342503774247881072d0325c751398b957807d73",
+      "project": "Math",
+      "repetition": 1
+    },
+    {
+      "arm": "HR",
+      "bug_id": "80",
+      "flag": "-c",
+      "kind": "semantic",
+      "leg": "semantic/HR/010_patch1-Math-80-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-80-CapGen.patch",
+      "patch_id": "010_patch1-Math-80-CapGen_c",
+      "patch_sha256": "b8ddcbed588657d33026d726342503774247881072d0325c751398b957807d73",
+      "project": "Math",
+      "repetition": 1
+    }
+  ],
+  "options": {
+    "attempts": 30,
+    "bootstrap": 10000,
+    "checkout_root": "/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts",
+    "d4j_home": "/datadrive/vuln-patch/defects4j",
+    "kind": "semantic",
+    "max_patches": 10,
+    "measure_existing": null,
+    "model": "gpt-5.4",
+    "out": "/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10",
+    "patches": "/datadrive/vuln-patch/drr/Patches",
+    "repetitions": 1,
+    "seed": 20260916,
+    "verify_timeout": 20
+  },
+  "populations": {
+    "semantic": {
+      "bugs": [
+        [
+          "Chart",
+          "1"
+        ],
+        [
+          "Chart",
+          "8"
+        ],
+        [
+          "Lang",
+          "24"
+        ],
+        [
+          "Math",
+          "25"
+        ],
+        [
+          "Math",
+          "33"
+        ],
+        [
+          "Math",
+          "50"
+        ],
+        [
+          "Math",
+          "75"
+        ],
+        [
+          "Math",
+          "80"
+        ],
+        [
+          "Math",
+          "99"
+        ],
+        [
+          "Time",
+          "15"
+        ]
+      ],
+      "full_bugs": [
+        [
+          "Chart",
+          "1"
+        ],
+        [
+          "Chart",
+          "15"
+        ],
+        [
+          "Chart",
+          "25"
+        ],
+        [
+          "Chart",
+          "8"
+        ],
+        [
+          "Closure",
+          "115"
+        ],
+        [
+          "Closure",
+          "126"
+        ],
+        [
+          "Closure",
+          "18"
+        ],
+        [
+          "Closure",
+          "31"
+        ],
+        [
+          "Closure",
+          "57"
+        ],
+        [
+          "Lang",
+          "21"
+        ],
+        [
+          "Lang",
+          "24"
+        ],
+        [
+          "Lang",
+          "38"
+        ],
+        [
+          "Lang",
+          "55"
+        ],
+        [
+          "Math",
+          "25"
+        ],
+        [
+          "Math",
+          "33"
+        ],
+        [
+          "Math",
+          "34"
+        ],
+        [
+          "Math",
+          "41"
+        ],
+        [
+          "Math",
+          "50"
+        ],
+        [
+          "Math",
+          "6"
+        ],
+        [
+          "Math",
+          "63"
+        ],
+        [
+          "Math",
+          "71"
+        ],
+        [
+          "Math",
+          "75"
+        ],
+        [
+          "Math",
+          "80"
+        ],
+        [
+          "Math",
+          "88"
+        ],
+        [
+          "Math",
+          "99"
+        ],
+        [
+          "Time",
+          "15"
+        ],
+        [
+          "Time",
+          "19"
+        ]
+      ],
+      "full_patches": 69,
+      "input_sha256": {
+        "suites/labels/excluded.jsonl": "1e306ecf18f7c19e78f08dd1bd1b31b37e60de8e6c77818db5c4e66a2f4d9633",
+        "suites/labels/verified_correct.jsonl": "41e4220ab7a30fb1c6e1ebe5fc4a4243d37fb3aa405cca81f2591a4f04521f93",
+        "suites/labels/verified_incorrect.jsonl": "26fc364e4fae170621f031992e1091483e0afd86bf7ac4e059098db155f07169",
+        "suites/splits/semantic_split.jsonl": "86b688df4a2d1a131c8712486556f689d2ce27f7943aa5eb0c939018269abd37"
+      },
+      "patches": 10,
+      "selection": "first patches in certified queue order"
+    }
+  },
+  "schema": 2
+}

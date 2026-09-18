@@ -1,0 +1,48 @@
+DEDUP_TOKEN: 537a89e7979559a9
+
+INFO: Loaded 314 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.jfree.data.time.FuzzHarness (took 77 ms, size +28%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7907b6976cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2421844451
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x790854657f50, 0x790854658150), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7908545496a0,0x79085454b6a0), 
+INFO:       42 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.jfree.data.time.Week (took 15 ms, size +28%)
+INFO: Instrumented org.jfree.data.time.RegularTimePeriod (took 6 ms, size +44%)
+INFO: Instrumented org.jfree.data.time.TimePeriod (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.time.MonthConstants (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.time.TimePeriodFormatException (took 0 ms, size +22%)
+INFO: Instrumented org.jfree.data.time.Year (took 7 ms, size +15%)
+INFO: seed corpus: files: 42 min: 2b max: 17b total: 155b rss: 1291Mb
+
+== Java Exception: com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow: [oracle:first-ms-sibling] metamorphic violation: getFirstMillisecond() must agree with getFirstMillisecond(Calendar) week=9 year=7621 noArg=178332796800000 withCalendar=178333488000000 calendarTZ=Africa/Abidjan calendarFirstDay=2
+	at org.jfree.data.time.FuzzHarness.runSiblingAndHiddenStateChecks(FuzzHarness.java:230)
+	at org.jfree.data.time.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:19)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+0x45,0x75,0x72,0x6f,0x70,0x65,0x2f,0x43,0x6f,0x70,0x65,0x6e,0x68,0x61,0x67,0x65,0x6e,
+Europe/Copenhagen
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/attempt_001/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/attempt_001/crashes/crash-e67c350cf4d6641315dd60ef11a1b268f9e95de3
+Base64: RXVyb3BlL0NvcGVuaGFnZW4=
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/attempt_001/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/attempt_001/crashes/Crash_e67c350cf4d6641315dd60ef11a1b268f9e95de3.java
+

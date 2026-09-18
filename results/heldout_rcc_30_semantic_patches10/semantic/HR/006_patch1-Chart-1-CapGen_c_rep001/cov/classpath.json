@@ -1,0 +1,9 @@
+{
+ "class_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/semantic/HR/006_patch1-Chart-1-CapGen_c_rep001/cov/classes_buggy"
+ ],
+ "source_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/006_patch1-Chart-1-CapGen_c_rep001/Chart_1_buggy/source"
+ ],
+ "include_glob": "org.jfree.chart.**"
+}

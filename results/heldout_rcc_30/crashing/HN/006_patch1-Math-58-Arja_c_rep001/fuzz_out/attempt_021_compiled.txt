@@ -1,0 +1,142 @@
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.optimization.fitting.FuzzHarness (took 76 ms, size +39%)
+INFO: Instrumented org.apache.commons.math.optimization.DifferentiableMultivariateVectorialOptimizer (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.optimization.BaseMultivariateVectorialOptimizer (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.optimization.BaseOptimizer (took 0 ms, size +0%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN/006_patch1-Math-58-Arja_c_rep001/Math_58_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x754edc776cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2126649021
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x754f10559420, 0x754f10559620), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x754f104bc680,0x754f104be680), 
+INFO:       96 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN/006_patch1-Math-58-Arja_c_rep001/Math_58_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.optimization.fitting.GaussianFitter (took 2 ms, size +7%)
+INFO: Instrumented org.apache.commons.math.optimization.fitting.CurveFitter (took 4 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.analysis.MultivariateVectorialFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.ParametricUnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer (took 10 ms, size +21%)
+INFO: Instrumented org.apache.commons.math.optimization.general.AbstractLeastSquaresOptimizer (took 5 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.optimization.direct.BaseAbstractVectorialOptimizer (took 4 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.exception.NullArgumentException (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.exception.MathIllegalArgumentException (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.exception.MathRuntimeException (took 3 ms, size +6%)
+INFO: Instrumented org.apache.commons.math.exception.MathThrowable (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.exception.DimensionMismatchException (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.exception.MathIllegalNumberException (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.optimization.ConvergenceChecker (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.exception.MaxCountExceededException (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.exception.MathIllegalStateException (took 2 ms, size +7%)
+INFO: Instrumented org.apache.commons.math.exception.TooManyEvaluationsException (took 0 ms, size +12%)
+INFO: Instrumented org.apache.commons.math.exception.util.Localizable (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.exception.NumberIsTooSmallException (took 1 ms, size +16%)
+INFO: Instrumented org.apache.commons.math.exception.ConvergenceException (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.optimization.SimpleVectorialValueChecker (took 1 ms, size +16%)
+INFO: Instrumented org.apache.commons.math.optimization.AbstractConvergenceChecker (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.util.Incrementor (took 2 ms, size +25%)
+INFO: New number of coverage counters: 1024
+INFO: Instrumented org.apache.commons.math.optimization.fitting.WeightedObservedPoint (took 2 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.optimization.fitting.GaussianFitter$ParameterGuesser (took 3 ms, size +15%)
+INFO: Instrumented org.apache.commons.math.exception.ZeroException (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.exception.OutOfRangeException (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.optimization.fitting.GaussianFitter$ParameterGuesser$1 (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.exception.util.LocalizedFormats (took 14 ms, size +7%)
+INFO: Instrumented org.apache.commons.math.exception.util.ArgUtils (took 1 ms, size +33%)
+INFO: Instrumented org.apache.commons.math.analysis.function.Gaussian$Parametric (took 1 ms, size +17%)
+INFO: Instrumented org.apache.commons.math.exception.NotStrictlyPositiveException (took 0 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.optimization.fitting.CurveFitter$TheoreticalValuesFunction (took 1 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.analysis.DifferentiableMultivariateVectorialFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.MultivariateMatrixFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.optimization.fitting.CurveFitter$TheoreticalValuesFunction$1 (took 1 ms, size +11%)
+INFO: New number of coverage counters: 2048
+INFO: Instrumented org.apache.commons.math.util.FastMath (took 28 ms, size +22%)
+INFO: Instrumented org.apache.commons.math.analysis.function.Gaussian (took 2 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.analysis.DifferentiableUnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.UnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.optimization.VectorialPointValuePair (took 2 ms, size +27%)
+INFO: Instrumented org.apache.commons.math.optimization.fitting.GaussianFitter$1 (took 1 ms, size +9%)
+INFO: seed corpus: files: 96 min: 4b max: 23b total: 2072b rss: 1310Mb
+#97	INITED cov: 416 ft: 1152 corp: 31/601b exec/s: 0 rss: 1310Mb
+#99	NEW    cov: 416 ft: 1161 corp: 32/622b lim: 23 exec/s: 0 rss: 1310Mb L: 21/23 MS: 4 ShuffleBytes-Custom-CrossOver-Custom-
+#106	NEW    cov: 416 ft: 1163 corp: 33/629b lim: 23 exec/s: 0 rss: 1310Mb L: 7/23 MS: 4 ChangeASCIIInt-Custom-CrossOver-Custom-
+#111	NEW    cov: 416 ft: 1172 corp: 34/651b lim: 23 exec/s: 0 rss: 1310Mb L: 22/23 MS: 10 ChangeBinInt-Custom-ChangeBit-Custom-ChangeASCIIInt-Custom-ChangeBit-Custom-CrossOver-Custom-
+#112	REDUCE cov: 416 ft: 1172 corp: 34/645b lim: 23 exec/s: 0 rss: 1310Mb L: 16/23 MS: 2 EraseBytes-Custom-
+#113	NEW    cov: 416 ft: 1173 corp: 35/657b lim: 23 exec/s: 0 rss: 1310Mb L: 12/23 MS: 2 EraseBytes-Custom-
+#120	NEW    cov: 416 ft: 1174 corp: 36/680b lim: 23 exec/s: 0 rss: 1310Mb L: 23/23 MS: 4 ShuffleBytes-Custom-CrossOver-Custom-
+#124	NEW    cov: 416 ft: 1182 corp: 37/690b lim: 23 exec/s: 0 rss: 1310Mb L: 10/23 MS: 8 ChangeBinInt-Custom-ChangeBit-Custom-ChangeBit-Custom-ChangeBinInt-Custom-
+#126	REDUCE cov: 416 ft: 1182 corp: 37/677b lim: 23 exec/s: 0 rss: 1310Mb L: 10/23 MS: 4 EraseBytes-Custom-EraseBytes-Custom-
+#129	REDUCE cov: 416 ft: 1183 corp: 38/682b lim: 23 exec/s: 0 rss: 1310Mb L: 5/23 MS: 6 ChangeBinInt-Custom-EraseBytes-Custom-CrossOver-Custom-
+#131	NEW    cov: 422 ft: 1190 corp: 39/687b lim: 23 exec/s: 0 rss: 1310Mb L: 5/23 MS: 4 ShuffleBytes-Custom-CrossOver-Custom-
+#133	NEW    cov: 423 ft: 1209 corp: 40/691b lim: 23 exec/s: 0 rss: 1310Mb L: 4/23 MS: 4 ChangeASCIIInt-Custom-ChangeBit-Custom-
+#144	NEW    cov: 423 ft: 1212 corp: 41/702b lim: 23 exec/s: 0 rss: 1310Mb L: 11/23 MS: 2 EraseBytes-Custom-
+#151	NEW    cov: 424 ft: 1225 corp: 42/703b lim: 23 exec/s: 0 rss: 1310Mb L: 1/23 MS: 4 CrossOver-Custom-EraseBytes-Custom-
+#154	REDUCE cov: 424 ft: 1225 corp: 42/702b lim: 23 exec/s: 0 rss: 1310Mb L: 20/23 MS: 6 ChangeBinInt-Custom-ChangeASCIIInt-Custom-EraseBytes-Custom-
+#156	NEW    cov: 424 ft: 1228 corp: 43/724b lim: 23 exec/s: 0 rss: 1310Mb L: 22/23 MS: 4 ChangeByte-Custom-ChangeASCIIInt-Custom-
+#161	NEW    cov: 424 ft: 1234 corp: 44/740b lim: 23 exec/s: 0 rss: 1310Mb L: 16/23 MS: 10 ChangeBit-Custom-ChangeBinInt-Custom-CMP-Custom-CMP-Custom-InsertByte-Custom- DE: "@\337v\277\257\027\250^"-"\001\000\002\352"-
+#173	NEW    cov: 424 ft: 1251 corp: 45/754b lim: 23 exec/s: 0 rss: 1310Mb L: 14/23 MS: 4 EraseBytes-Custom-ShuffleBytes-Custom-
+#177	NEW    cov: 424 ft: 1252 corp: 46/775b lim: 23 exec/s: 0 rss: 1310Mb L: 21/23 MS: 8 PersAutoDict-Custom-InsertByte-Custom-ChangeBit-Custom-ShuffleBytes-Custom- DE: "@\337v\277\257\027\250^"-
+#182	NEW    cov: 425 ft: 1253 corp: 47/798b lim: 23 exec/s: 0 rss: 1310Mb L: 23/23 MS: 10 ChangeASCIIInt-Custom-InsertByte-Custom-PersAutoDict-Custom-ChangeBinInt-Custom-ChangeByte-Custom- DE: "@\337v\277\257\027\250^"-
+#183	NEW    cov: 426 ft: 1310 corp: 48/810b lim: 23 exec/s: 183 rss: 1310Mb L: 12/23 MS: 2 ChangeBinInt-Custom-
+#191	NEW    cov: 426 ft: 1311 corp: 49/830b lim: 23 exec/s: 191 rss: 1310Mb L: 20/23 MS: 6 ChangeASCIIInt-Custom-EraseBytes-Custom-InsertRepeatedBytes-Custom-
+#192	NEW    cov: 426 ft: 1316 corp: 50/842b lim: 23 exec/s: 192 rss: 1310Mb L: 12/23 MS: 2 ChangeASCIIInt-Custom-
+#204	NEW    cov: 426 ft: 1364 corp: 51/862b lim: 23 exec/s: 102 rss: 1310Mb L: 20/23 MS: 4 CopyPart-Custom-ChangeByte-Custom-
+#256	pulse  cov: 426 ft: 1364 corp: 51/862b lim: 23 exec/s: 128 rss: 1310Mb
+#274	NEW    cov: 426 ft: 1366 corp: 52/867b lim: 23 exec/s: 137 rss: 1310Mb L: 5/23 MS: 6 EraseBytes-Custom-ChangeByte-Custom-InsertByte-Custom-
+Slowest unit: 16 s:
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN/006_patch1-Math-58-Arja_c_rep001/Math_58_buggy/fuzz/attempt_021/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN/006_patch1-Math-58-Arja_c_rep001/Math_58_buggy/fuzz/attempt_021/crashes/slow-unit-88e72e88cf940fbe6485f1eda418049a5b3afc50
+Base64: NS43NTIxNDYyMgAAAAAAAAAAAAA=
+#280	NEW    cov: 426 ft: 1377 corp: 53/887b lim: 23 exec/s: 15 rss: 2167Mb L: 20/23 MS: 2 InsertRepeatedBytes-Custom-
+#290	NEW    cov: 426 ft: 1380 corp: 54/900b lim: 23 exec/s: 16 rss: 2169Mb L: 13/23 MS: 10 ShuffleBytes-Custom-CrossOver-Custom-InsertByte-Custom-CopyPart-Custom-ChangeBinInt-Custom-
+#292	NEW    cov: 426 ft: 1381 corp: 55/902b lim: 23 exec/s: 16 rss: 2169Mb L: 2/23 MS: 4 EraseBytes-Custom-CrossOver-Custom-
+#297	NEW    cov: 426 ft: 1386 corp: 56/916b lim: 23 exec/s: 16 rss: 2169Mb L: 14/23 MS: 10 CopyPart-Custom-CopyPart-Custom-ChangeBit-Custom-CopyPart-Custom-InsertRepeatedBytes-Custom-
+#298	NEW    cov: 426 ft: 1391 corp: 57/938b lim: 23 exec/s: 16 rss: 2169Mb L: 22/23 MS: 2 ChangeASCIIInt-Custom-
+#301	NEW    cov: 426 ft: 1392 corp: 58/961b lim: 23 exec/s: 16 rss: 2169Mb L: 23/23 MS: 6 ChangeByte-Custom-InsertByte-Custom-ChangeByte-Custom-
+#317	NEW    cov: 426 ft: 1398 corp: 59/975b lim: 23 exec/s: 17 rss: 2169Mb L: 14/23 MS: 2 PersAutoDict-Custom- DE: "\001\000\002\352"-
+#322	NEW    cov: 426 ft: 1405 corp: 60/996b lim: 23 exec/s: 17 rss: 2171Mb L: 21/23 MS: 10 ShuffleBytes-Custom-ChangeBinInt-Custom-PersAutoDict-Custom-ShuffleBytes-Custom-ChangeBit-Custom- DE: "@\337v\277\257\027\250^"-
+#333	NEW    cov: 426 ft: 1409 corp: 61/1018b lim: 23 exec/s: 18 rss: 2171Mb L: 22/23 MS: 2 ChangeASCIIInt-Custom-
+#338	NEW    cov: 426 ft: 1433 corp: 62/1038b lim: 23 exec/s: 17 rss: 2273Mb L: 20/23 MS: 10 ChangeBinInt-Custom-EraseBytes-Custom-CrossOver-Custom-CrossOver-Custom-PersAutoDict-Custom- DE: "@\337v\277\257\027\250^"-
+#339	REDUCE cov: 426 ft: 1433 corp: 62/1035b lim: 23 exec/s: 17 rss: 2273Mb L: 18/23 MS: 2 EraseBytes-Custom-
+#342	NEW    cov: 426 ft: 1434 corp: 63/1049b lim: 23 exec/s: 17 rss: 2273Mb L: 14/23 MS: 6 InsertByte-Custom-EraseBytes-Custom-CMP-Custom- DE: "\200\000\000\000\000\000\000\000"-
+#343	NEW    cov: 426 ft: 1443 corp: 64/1057b lim: 23 exec/s: 17 rss: 2273Mb L: 8/23 MS: 2 CMP-Custom- DE: "\371[\001\000"-
+#347	NEW    cov: 426 ft: 1447 corp: 65/1067b lim: 23 exec/s: 17 rss: 2273Mb L: 10/23 MS: 8 PersAutoDict-Custom-EraseBytes-Custom-ChangeByte-Custom-PersAutoDict-Custom- DE: "\001\000\002\352"-"\200\000\000\000\000\000\000\000"-
+#351	REDUCE cov: 426 ft: 1447 corp: 65/1062b lim: 23 exec/s: 17 rss: 2273Mb L: 18/23 MS: 8 ChangeBit-Custom-ChangeByte-Custom-ChangeASCIIInt-Custom-EraseBytes-Custom-
+#355	REDUCE cov: 426 ft: 1447 corp: 65/1056b lim: 23 exec/s: 17 rss: 2273Mb L: 15/23 MS: 8 ChangeBinInt-Custom-CrossOver-Custom-EraseBytes-Custom-ShuffleBytes-Custom-
+#358	NEW    cov: 426 ft: 1452 corp: 66/1078b lim: 23 exec/s: 17 rss: 2273Mb L: 22/23 MS: 6 ShuffleBytes-Custom-CopyPart-Custom-ChangeBinInt-Custom-
+#359	REDUCE cov: 426 ft: 1452 corp: 66/1068b lim: 23 exec/s: 17 rss: 2273Mb L: 12/23 MS: 2 EraseBytes-Custom-
+#360	NEW    cov: 426 ft: 1455 corp: 67/1079b lim: 23 exec/s: 18 rss: 2273Mb L: 11/23 MS: 2 CrossOver-Custom-
+#364	REDUCE cov: 426 ft: 1455 corp: 67/1071b lim: 23 exec/s: 18 rss: 2273Mb L: 13/23 MS: 8 EraseBytes-Custom-ChangeBit-Custom-ShuffleBytes-Custom-ChangeASCIIInt-Custom-
+#365	REDUCE cov: 426 ft: 1456 corp: 68/1089b lim: 23 exec/s: 18 rss: 2273Mb L: 18/23 MS: 2 CrossOver-Custom-
+#373	REDUCE cov: 426 ft: 1472 corp: 69/1106b lim: 23 exec/s: 18 rss: 2273Mb L: 17/23 MS: 6 ChangeASCIIInt-Custom-CMP-Custom-CrossOver-Custom- DE: "8uc\3421\241\336?"-
+#381	NEW    cov: 426 ft: 1487 corp: 70/1128b lim: 23 exec/s: 19 rss: 2273Mb L: 22/23 MS: 6 ChangeBit-Custom-ChangeBinInt-Custom-CopyPart-Custom-
+#382	NEW    cov: 426 ft: 1490 corp: 71/1142b lim: 23 exec/s: 19 rss: 2273Mb L: 14/23 MS: 2 InsertRepeatedBytes-Custom-
+#384	NEW    cov: 426 ft: 1491 corp: 72/1161b lim: 23 exec/s: 19 rss: 2273Mb L: 19/23 MS: 4 ChangeBit-Custom-InsertRepeatedBytes-Custom-
+#385	NEW    cov: 426 ft: 1501 corp: 73/1182b lim: 23 exec/s: 19 rss: 2273Mb L: 21/23 MS: 2 ChangeByte-Custom-
+#395	NEW    cov: 426 ft: 1506 corp: 74/1188b lim: 23 exec/s: 19 rss: 2273Mb L: 6/23 MS: 10 ChangeByte-Custom-ChangeASCIIInt-Custom-ChangeByte-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#396	NEW    cov: 426 ft: 1508 corp: 75/1208b lim: 23 exec/s: 18 rss: 2273Mb L: 20/23 MS: 2 ChangeBinInt-Custom-
+#396	DONE   cov: 426 ft: 1508 corp: 75/1208b lim: 23 exec/s: 18 rss: 2273Mb
+###### Recommended dictionary. ######
+"@\337v\277\257\027\250^" # Uses: 4
+"\001\000\002\352" # Uses: 3
+"\200\000\000\000\000\000\000\000" # Uses: 1
+"\371[\001\000" # Uses: 0
+"8uc\3421\241\336?" # Uses: 2
+###### End of recommended dictionary. ######
+Done 396 runs in 21 second(s)

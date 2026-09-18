@@ -1,0 +1,9 @@
+{
+ "class_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/005_patch1-Lang-45-Arja_c_rep001/cov/classes_buggy"
+ ],
+ "source_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/005_patch1-Lang-45-Arja_c_rep001/Lang_45_buggy/src/java"
+ ],
+ "include_glob": "org.apache.commons.**"
+}

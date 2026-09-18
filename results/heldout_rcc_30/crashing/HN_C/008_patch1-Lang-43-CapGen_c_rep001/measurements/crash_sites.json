@@ -1,0 +1,544 @@
+[
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "unknown format type: 'a''b'",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "applyPattern",
+     "params": []
+    },
+    "line": 144,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 101,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 90,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 131,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "top_library_line": 144,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "headline_site_line": 144,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "unknown format type: lower",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "applyPattern",
+     "params": []
+    },
+    "line": 144,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 101,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 67,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "top_library_line": 144,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "headline_site_line": 144,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_005",
+  "source": "fuzz_out/attempt_005_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "negative argument number: -3",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "applyPattern",
+     "params": []
+    },
+    "line": 144,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 101,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 90,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 141,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "top_library_line": 144,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "headline_site_line": 144,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "unknown format type: lower",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "applyPattern",
+     "params": []
+    },
+    "line": 144,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 101,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 90,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 68,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "top_library_line": 144,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "headline_site_line": 144,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_013",
+  "source": "fuzz_out/attempt_013_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "can't parse argument number:",
+  "causes": [
+   "java.lang.NumberFormatException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "applyPattern",
+     "params": []
+    },
+    "line": 144,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 101,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 90,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 48,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "top_library_line": 144,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "headline_site_line": 144,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_015",
+  "source": "fuzz_out/attempt_015_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "unknown format type: x",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "applyPattern",
+     "params": []
+    },
+    "line": 191,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 72,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "top_library_line": 191,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "headline_site_line": 191,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_019",
+  "source": "fuzz_out/attempt_019_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "unknown format type: ''''",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "applyPattern",
+     "params": []
+    },
+    "line": 191,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "exercise",
+     "params": []
+    },
+    "line": 10,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 81,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "top_library_line": 191,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "headline_site_line": 191,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_023",
+  "source": "fuzz_out/attempt_023_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "unknown format type: lower",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "applyPattern",
+     "params": []
+    },
+    "line": 144,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 101,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 90,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 94,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "top_library_line": 144,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "headline_site_line": 144,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Unmatched braces in the pattern.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "applyPattern",
+     "params": []
+    },
+    "line": 144,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 134,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "top_library_line": 144,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "headline_site_line": 144,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ }
+]

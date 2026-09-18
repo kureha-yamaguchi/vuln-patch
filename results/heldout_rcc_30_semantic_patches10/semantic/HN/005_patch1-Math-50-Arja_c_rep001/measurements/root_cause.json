@@ -1,0 +1,765 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+    "name": "solve",
+    "params": [
+     "int",
+     "FUNC",
+     "double",
+     "double",
+     "double"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "name": "doSolve",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   },
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+    "name": "fuzzerTestOneInput",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+     "name": "solve",
+     "params": [
+      "int",
+      "FUNC",
+      "double",
+      "double",
+      "double"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+     "name": "doSolve",
+     "params": []
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+     "name": "doSolve",
+     "params": []
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+  ],
+  "provenance": {
+   "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()": "introspector",
+   "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver.solve(int,FUNC,double,double,double)": "source-scan",
+   "org.apache.commons.math.analysis.solvers.FuzzHarness.fuzzerTestOneInput(FuzzedDataProvider)": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 187,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 188,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 189,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 190,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 128,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 129,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 130,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 131,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 132,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 133,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 134,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 135,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 136,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 137,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 138,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 139,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 140,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 141,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 142,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 143,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 144,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 145,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 146,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 147,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 148,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 149,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 150,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 151,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 152,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 153,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 154,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 155,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 156,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 157,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 158,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 159,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 160,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 161,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 162,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 163,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 164,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 165,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 166,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 167,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 168,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 169,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 170,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 171,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 172,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 173,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 174,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 175,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 176,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 177,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 178,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 179,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 180,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 181,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 182,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 183,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 184,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 185,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 186,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 187,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 188,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 189,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 190,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 191,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 192,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 193,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 194,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 195,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 196,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 197,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 198,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 199,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 200,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 201,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 202,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 203,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 204,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 205,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 206,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 207,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 208,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 209,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 210,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 211,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 212,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 213,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 214,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 215,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 216,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 217,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 218,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 219,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 220,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 221,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 222,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 223,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 224,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 225,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 226,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 227,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 228,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 229,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 230,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 231,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 232,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 233,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 234,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 235,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 236,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 237,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 238,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 239,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 240,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 241,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 242,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 243,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 244,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 245,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 246,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 247,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 248,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 249,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 250,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 251,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 252,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+    "line": 253,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [],
+  "multi": {},
+  "edges": [],
+  "unmatched": [],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/main/java/org/apache/commons/math/analysis/solvers/BaseSecantSolver.java b/src/main/java/org/apache/commons/math/analysis/solvers/BaseSecantSolver.java\nindex c781a90..e47d982 100644\n--- a/src/main/java/org/apache/commons/math/analysis/solvers/BaseSecantSolver.java\n+++ b/src/main/java/org/apache/commons/math/analysis/solvers/BaseSecantSolver.java\n@@ -184,6 +184,10 @@ public abstract class BaseSecantSolver\n                     break;\n                 case REGULA_FALSI:\n                     // Nothing.\n+                    if (x == x1) {\n+                        x0 = 0.5 * (x0 + x1 - FastMath.max(rtol * FastMath.abs(x1), atol));\n+                        f0 = computeObjectiveValue(x0);\n+                    }\n                     break;\n                 default:\n                     // Should never happen.\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 45,
+  "probe_size": 45,
+  "frame_added": [],
+  "tests": [
+   "org.apache.commons.math.analysis.solvers.RegulaFalsiSolverTest::testIssue631"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

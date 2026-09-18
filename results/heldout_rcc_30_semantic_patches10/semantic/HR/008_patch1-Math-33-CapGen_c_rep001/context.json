@@ -1,0 +1,421 @@
+{
+ "modified_files": [
+  "src/main/java/org/apache/commons/math3/optimization/linear/SimplexTableau.java"
+ ],
+ "patch_text": "--- /src/main/java/org/apache/commons/math3/optimization/linear/SimplexTableau.java\t\n+++ /src/main/java/org/apache/commons/math3/optimization/linear/SimplexTableau.java\t\n@@ -335,7 +335,7 @@\n         // positive cost non-artificial variables\n         for (int i = getNumObjectiveFunctions(); i < getArtificialVariableOffset(); i++) {\n             final double entry = tableau.getEntry(0, i);\n-            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {\n+            if (Precision.compareTo(entry, 0.0, epsilon) > 0) {\n                 columnsToDrop.add(i);\n             }\n         }\n",
+ "functions": [
+  {
+   "func_name": "dropPhase1Objective",
+   "func_signature": "protected void dropPhase1Objective()",
+   "func_source": "    protected void dropPhase1Objective() {\n        if (getNumObjectiveFunctions() == 1) {\n            return;\n        }\n\n        List<Integer> columnsToDrop = new ArrayList<Integer>();\n        columnsToDrop.add(0);\n\n        // positive cost non-artificial variables\n        for (int i = getNumObjectiveFunctions(); i < getArtificialVariableOffset(); i++) {\n            final double entry = tableau.getEntry(0, i);\n            if (Precision.compareTo(entry, 0d, maxUlps) > 0) {\n                columnsToDrop.add(i);\n            }\n        }\n\n        // non-basic artificial variables\n        for (int i = 0; i < getNumArtificialVariables(); i++) {\n          int col = i + getArtificialVariableOffset();\n          if (getBasicRow(col) == null) {\n            columnsToDrop.add(col);\n          }\n        }\n\n        double[][] matrix = new double[getHeight() - 1][getWidth() - columnsToDrop.size()];\n        for (int i = 1; i < getHeight(); i++) {\n          int col = 0;\n          for (int j = 0; j < getWidth(); j++) {\n            if (!columnsToDrop.contains(j)) {\n              matrix[i - 1][col++] = tableau.getEntry(i, j);\n            }\n          }\n        }\n\n        for (int i = columnsToDrop.size() - 1; i >= 0; i--) {\n          columnLabels.remove((int) columnsToDrop.get(i));\n        }\n\n        this.tableau = new Array2DRowRealMatrix(matrix);\n        this.numArtificialVariables = 0;\n    }",
+   "func_class": "SimplexTableau",
+   "func_class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "func_param_types": [],
+   "fi_name": "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "overload_types": [
+    []
+   ],
+   "xrefs": [
+    "@Override\n    public PointValuePair doOptimize()\n        throws MaxCountExceededException, UnboundedSolutionException, NoFeasibleSolutionException {\n        final SimplexTableau tableau =\n            new SimplexTableau(getFunction(),\n                               getConstraints(),\n                               getGoalType(),\n                               restrictToNonNegative(),\n                               epsilon,\n                               maxUlps);\n\n        solvePhase1(tableau);\n        tableau.dropPhase1Objective();\n\n        while (!tableau.isOptimal()) {\n            doIteration(tableau);\n        }\n        return tableau.getSolution();\n    }",
+    "@Test\n    public void testDropPhase1Objective() {\n        LinearObjectiveFunction f = createFunction();\n        Collection<LinearConstraint> constraints = createConstraints();\n        SimplexTableau tableau =\n            new SimplexTableau(f, constraints, GoalType.MAXIMIZE, false, 1.0e-6);\n        double[][] expectedTableau = {\n                                      { 1, -15, -10, 0, 0, 0, 0},\n                                      { 0,   1,   0, 1, 0, 0, 2},\n                                      { 0,   0,   1, 0, 1, 0, 3},\n                                      { 0,   1,   1, 0, 0, 1, 4}\n        };\n        tableau.dropPhase1Objective();\n        assertMatrixEquals(expectedTableau, tableau.getData());\n    }"
+   ],
+   "xref_names": [
+    "[org.apache.commons.math3.optimization.linear.SimplexSolver].doOptimize()",
+    "[org.apache.commons.math3.optimization.linear.SimplexTableauTest].testDropPhase1Objective()"
+   ],
+   "reachable_edges": [
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumObjectiveFunctions()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[java.util.ArrayList].<init>()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[java.util.ArrayList].add(int)"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumObjectiveFunctions()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getArtificialVariableOffset()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.linear.RealMatrix].getEntry(int,int)"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.util.Precision].compareTo(double,float,int)"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[java.util.ArrayList].add(int)"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumArtificialVariables()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getArtificialVariableOffset()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getBasicRow(org.apache.commons.math3.optimization.linear.SimplexTableau)"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[java.util.ArrayList].add(org.apache.commons.math3.optimization.linear.SimplexTableau)"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getHeight()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getWidth()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[java.util.ArrayList].size()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getHeight()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getWidth()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[java.util.ArrayList].contains(org.apache.commons.math3.optimization.linear.SimplexTableau)"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.linear.RealMatrix].getEntry(org.apache.commons.math3.optimization.linear.SimplexTableau,org.apache.commons.math3.optimization.linear.SimplexTableau)"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[java.util.ArrayList].size()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[java.util.ArrayList].get(org.apache.commons.math3.optimization.linear.SimplexTableau)"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[java.util.List<String>].remove(int)"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+     "[org.apache.commons.math3.linear.Array2DRowRealMatrix].<init>(org.apache.commons.math3.optimization.linear.SimplexTableau)"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getArtificialVariableOffset()",
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumObjectiveFunctions()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getHeight()",
+     "[org.apache.commons.math3.linear.RealMatrix].getRowDimension()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.linear.SimplexTableau].getWidth()",
+     "[org.apache.commons.math3.linear.RealMatrix].getColumnDimension()"
+    ]
+   ],
+   "reachable_depth": {
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()": 0,
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumObjectiveFunctions()": 1,
+    "[java.util.ArrayList].<init>()": 1,
+    "[java.util.ArrayList].add(int)": 1,
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getArtificialVariableOffset()": 1,
+    "[org.apache.commons.math3.linear.RealMatrix].getEntry(int,int)": 1,
+    "[org.apache.commons.math3.util.Precision].compareTo(double,float,int)": 1,
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumArtificialVariables()": 1,
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getBasicRow(org.apache.commons.math3.optimization.linear.SimplexTableau)": 1,
+    "[java.util.ArrayList].add(org.apache.commons.math3.optimization.linear.SimplexTableau)": 1,
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getHeight()": 1,
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getWidth()": 1,
+    "[java.util.ArrayList].size()": 1,
+    "[java.util.ArrayList].contains(org.apache.commons.math3.optimization.linear.SimplexTableau)": 1,
+    "[org.apache.commons.math3.linear.RealMatrix].getEntry(org.apache.commons.math3.optimization.linear.SimplexTableau,org.apache.commons.math3.optimization.linear.SimplexTableau)": 1,
+    "[java.util.ArrayList].get(org.apache.commons.math3.optimization.linear.SimplexTableau)": 1,
+    "[java.util.List<String>].remove(int)": 1,
+    "[org.apache.commons.math3.linear.Array2DRowRealMatrix].<init>(org.apache.commons.math3.optimization.linear.SimplexTableau)": 1,
+    "[org.apache.commons.math3.linear.RealMatrix].getRowDimension()": 2,
+    "[org.apache.commons.math3.linear.RealMatrix].getColumnDimension()": 2
+   },
+   "reachable": [
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumObjectiveFunctions()",
+    "[java.util.ArrayList].<init>()",
+    "[java.util.ArrayList].add(int)",
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getArtificialVariableOffset()",
+    "[org.apache.commons.math3.linear.RealMatrix].getEntry(int,int)",
+    "[org.apache.commons.math3.util.Precision].compareTo(double,float,int)",
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumArtificialVariables()",
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getBasicRow(org.apache.commons.math3.optimization.linear.SimplexTableau)",
+    "[java.util.ArrayList].add(org.apache.commons.math3.optimization.linear.SimplexTableau)",
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getHeight()",
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getWidth()",
+    "[java.util.ArrayList].size()",
+    "[java.util.ArrayList].contains(org.apache.commons.math3.optimization.linear.SimplexTableau)",
+    "[org.apache.commons.math3.linear.RealMatrix].getEntry(org.apache.commons.math3.optimization.linear.SimplexTableau,org.apache.commons.math3.optimization.linear.SimplexTableau)",
+    "[java.util.ArrayList].get(org.apache.commons.math3.optimization.linear.SimplexTableau)",
+    "[java.util.List<String>].remove(int)",
+    "[org.apache.commons.math3.linear.Array2DRowRealMatrix].<init>(org.apache.commons.math3.optimization.linear.SimplexTableau)",
+    "[org.apache.commons.math3.linear.RealMatrix].getRowDimension()",
+    "[org.apache.commons.math3.linear.RealMatrix].getColumnDimension()",
+    "[org.apache.commons.math3.optimization.linear.SimplexTableau].getBasicRow(int)"
+   ],
+   "related_callees": [
+    {
+     "name": "getNumObjectiveFunctions",
+     "source_file": "SimplexTableau.java",
+     "signature": "final protected int getNumObjectiveFunctions()",
+     "source": "    protected final int getNumObjectiveFunctions() {\n        return this.numArtificialVariables > 0 ? 2 : 1;\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "getArtificialVariableOffset",
+     "source_file": "SimplexTableau.java",
+     "signature": "final protected int getArtificialVariableOffset()",
+     "source": "    protected final int getArtificialVariableOffset() {\n        return getNumObjectiveFunctions() + numDecisionVariables + numSlackVariables;\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "getEntry",
+     "source_file": "SimplexTableau.java",
+     "signature": "final protected double getEntry(int row, int column)",
+     "source": "    protected final double getEntry(final int row, final int column) {\n        return tableau.getEntry(row, column);\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "getNumArtificialVariables",
+     "source_file": "SimplexTableau.java",
+     "signature": "final protected int getNumArtificialVariables()",
+     "source": "    protected final int getNumArtificialVariables() {\n        return numArtificialVariables;\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "getBasicRow",
+     "source_file": "SimplexTableau.java",
+     "signature": "protected Integer getBasicRow(int col)",
+     "source": "    protected Integer getBasicRow(final int col) {\n        Integer row = null;\n        for (int i = 0; i < getHeight(); i++) {\n            final double entry = getEntry(i, col);\n            if (Precision.equals(entry, 1d, maxUlps) && (row == null)) {\n                row = i;\n            } else if (!Precision.equals(entry, 0d, maxUlps)) {\n                return null;\n            }\n        }\n        return row;\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "getHeight",
+     "source_file": "SimplexTableau.java",
+     "signature": "final protected int getHeight()",
+     "source": "    protected final int getHeight() {\n        return tableau.getRowDimension();\n    }",
+     "is_abstract": false,
+     "impls": []
+    }
+   ],
+   "field_siblings": [
+    {
+     "name": "SimplexTableau",
+     "signature": "SimplexTableau(LinearObjectiveFunction f, Collection<LinearConstraint> constraints, GoalType goalType, boolean restrictToNonNegative, double epsilon, int maxUlps)",
+     "shared_fields": [
+      "maxUlps",
+      "numArtificialVariables",
+      "tableau"
+     ],
+     "is_constructor": true,
+     "source": "    SimplexTableau(final LinearObjectiveFunction f,\n                   final Collection<LinearConstraint> constraints,\n                   final GoalType goalType, final boolean restrictToNonNegative,\n                   final double epsilon,\n                   final int maxUlps) {\n        this.f                      = f;\n        this.constraints            = normalizeConstraints(constraints);\n        this.restrictToNonNegative  = restrictToNonNegative;\n        this.epsilon                = epsilon;\n        this.maxUlps                = maxUlps;\n        this.numDecisionVariables   = f.getCoefficients().getDimension() +\n                                      (restrictToNonNegative ? 0 : 1);\n        this.numSlackVariables      = getConstraintTypeCounts(Relationship.LEQ) +\n                                      getConstraintTypeCounts(Relationship.GEQ);\n        this.numArtificialVariables = getConstraintTypeCounts(Relationship.EQ) +\n                                      getConstraintTypeCounts(Relationship.GEQ);\n        this.tableau = createTableau(goalType == GoalType.MAXIMIZE);\n        initializeColumnLabels();\n    }",
+     "javadoc": "Build a tableau for a linear problem. @param f linear objective function @param constraints linear constraints @param goalType type of optimization goal: either {@link GoalType#MAXIMIZE} or {@link GoalType#MINIMIZE} @param restrictToNonNegative whether to restrict the variables to non-negative values @param epsilon amo\u2026"
+    },
+    {
+     "name": "equals",
+     "signature": "public boolean equals(Object other)",
+     "shared_fields": [
+      "maxUlps",
+      "numArtificialVariables"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "{@inheritDoc}"
+    },
+    {
+     "name": "hashCode",
+     "signature": "public int hashCode()",
+     "shared_fields": [
+      "maxUlps",
+      "numArtificialVariables"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "{@inheritDoc}"
+    },
+    {
+     "name": "createTableau",
+     "signature": "protected RealMatrix createTableau(boolean maximize)",
+     "shared_fields": [
+      "numArtificialVariables"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Create the tableau by itself. @param maximize if true, goal is to maximize the objective function @return created tableau"
+    },
+    {
+     "name": "writeObject",
+     "signature": "private void writeObject(ObjectOutputStream oos) throws IOException",
+     "shared_fields": [
+      "tableau"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Serialize the instance. @param oos stream where object should be written @throws IOException if object cannot be written to stream"
+    }
+   ]
+  }
+ ],
+ "package": "org.apache.commons.math3.optimization.linear",
+ "root_cause_reachable": [
+  "SimplexTableau.getNumObjectiveFunctions",
+  "SimplexTableau.getArtificialVariableOffset",
+  "RealMatrix.getEntry",
+  "Precision.compareTo",
+  "SimplexTableau.getNumArtificialVariables",
+  "SimplexTableau.getBasicRow",
+  "SimplexTableau.getHeight",
+  "SimplexTableau.getWidth",
+  "Array2DRowRealMatrix.<init>",
+  "RealMatrix.getRowDimension",
+  "RealMatrix.getColumnDimension"
+ ],
+ "neighbourhood_notes": [],
+ "source_imports": [
+  "import java.io.IOException;",
+  "import java.io.ObjectInputStream;",
+  "import java.io.ObjectOutputStream;",
+  "import java.io.Serializable;",
+  "import java.util.ArrayList;",
+  "import java.util.Collection;",
+  "import java.util.HashSet;",
+  "import java.util.List;",
+  "import java.util.Set;",
+  "import org.apache.commons.math3.linear.Array2DRowRealMatrix;",
+  "import org.apache.commons.math3.linear.MatrixUtils;",
+  "import org.apache.commons.math3.linear.RealMatrix;",
+  "import org.apache.commons.math3.linear.RealVector;",
+  "import org.apache.commons.math3.optimization.GoalType;",
+  "import org.apache.commons.math3.optimization.PointValuePair;",
+  "import org.apache.commons.math3.util.Precision;"
+ ],
+ "reachable_edges": [
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumObjectiveFunctions()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[java.util.ArrayList].<init>()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[java.util.ArrayList].add(int)"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].getArtificialVariableOffset()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[org.apache.commons.math3.linear.RealMatrix].getEntry(int,int)"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[org.apache.commons.math3.util.Precision].compareTo(double,float,int)"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumArtificialVariables()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].getBasicRow(org.apache.commons.math3.optimization.linear.SimplexTableau)"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[java.util.ArrayList].add(org.apache.commons.math3.optimization.linear.SimplexTableau)"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].getHeight()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].getWidth()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[java.util.ArrayList].size()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[java.util.ArrayList].contains(org.apache.commons.math3.optimization.linear.SimplexTableau)"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[org.apache.commons.math3.linear.RealMatrix].getEntry(org.apache.commons.math3.optimization.linear.SimplexTableau,org.apache.commons.math3.optimization.linear.SimplexTableau)"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[java.util.ArrayList].get(org.apache.commons.math3.optimization.linear.SimplexTableau)"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[java.util.List<String>].remove(int)"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()",
+   "[org.apache.commons.math3.linear.Array2DRowRealMatrix].<init>(org.apache.commons.math3.optimization.linear.SimplexTableau)"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].getArtificialVariableOffset()",
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumObjectiveFunctions()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].getHeight()",
+   "[org.apache.commons.math3.linear.RealMatrix].getRowDimension()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.linear.SimplexTableau].getWidth()",
+   "[org.apache.commons.math3.linear.RealMatrix].getColumnDimension()"
+  ]
+ ],
+ "reachable_depth": {
+  "[org.apache.commons.math3.optimization.linear.SimplexTableau].dropPhase1Objective()": 0,
+  "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumObjectiveFunctions()": 1,
+  "[java.util.ArrayList].<init>()": 1,
+  "[java.util.ArrayList].add(int)": 1,
+  "[org.apache.commons.math3.optimization.linear.SimplexTableau].getArtificialVariableOffset()": 1,
+  "[org.apache.commons.math3.linear.RealMatrix].getEntry(int,int)": 1,
+  "[org.apache.commons.math3.util.Precision].compareTo(double,float,int)": 1,
+  "[org.apache.commons.math3.optimization.linear.SimplexTableau].getNumArtificialVariables()": 1,
+  "[org.apache.commons.math3.optimization.linear.SimplexTableau].getBasicRow(org.apache.commons.math3.optimization.linear.SimplexTableau)": 1,
+  "[java.util.ArrayList].add(org.apache.commons.math3.optimization.linear.SimplexTableau)": 1,
+  "[org.apache.commons.math3.optimization.linear.SimplexTableau].getHeight()": 1,
+  "[org.apache.commons.math3.optimization.linear.SimplexTableau].getWidth()": 1,
+  "[java.util.ArrayList].size()": 1,
+  "[java.util.ArrayList].contains(org.apache.commons.math3.optimization.linear.SimplexTableau)": 1,
+  "[org.apache.commons.math3.linear.RealMatrix].getEntry(org.apache.commons.math3.optimization.linear.SimplexTableau,org.apache.commons.math3.optimization.linear.SimplexTableau)": 1,
+  "[java.util.ArrayList].get(org.apache.commons.math3.optimization.linear.SimplexTableau)": 1,
+  "[java.util.List<String>].remove(int)": 1,
+  "[org.apache.commons.math3.linear.Array2DRowRealMatrix].<init>(org.apache.commons.math3.optimization.linear.SimplexTableau)": 1,
+  "[org.apache.commons.math3.linear.RealMatrix].getRowDimension()": 2,
+  "[org.apache.commons.math3.linear.RealMatrix].getColumnDimension()": 2
+ }
+}

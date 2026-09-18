@@ -1,0 +1,70 @@
+DEDUP_TOKEN: 65e23fd419da9442
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.analysis.solvers.FuzzHarness (took 62 ms, size +20%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001/Math_70_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x74fd0e576cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2021148666
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x74fd54559980, 0x74fd54559b80), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x74fd5453ae80,0x74fd5453ce80), 
+INFO:       38 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001/Math_70_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.analysis.solvers.FuzzHarness$1Helper (took 6 ms, size +20%)
+INFO: Instrumented org.apache.commons.math.analysis.UnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.polynomials.PolynomialFunction (took 11 ms, size +19%)
+INFO: Instrumented org.apache.commons.math.analysis.DifferentiableUnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BisectionSolver (took 4 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl (took 7 ms, size +12%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolver (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithm (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithmImpl (took 4 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MaxIterationsExceededException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.ConvergenceException (took 1 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.MathException (took 5 ms, size +26%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils (took 3 ms, size +13%)
+INFO: seed corpus: files: 38 min: 1b max: 11b total: 149b rss: 1291Mb
+INFO: Instrumented org.apache.commons.math.MathRuntimeException (took 9 ms, size +14%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$10 (took 2 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$9 (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$8 (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$7 (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$6 (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$3 (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$2 (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$1 (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$4 (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$5 (took 1 ms, size +9%)
+
+== Java Exception: org.apache.commons.math.MathRuntimeException$4: endpoints do not specify an interval: [0, 0]
+	at org.apache.commons.math.MathRuntimeException.createIllegalArgumentException(MathRuntimeException.java:305)
+	at org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl.verifyInterval(UnivariateRealSolverImpl.java:209)
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:80)
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:66)
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:72)
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:111)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+0x33,0x2e,0x31,
+3.1
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001/Math_70_buggy/fuzz/attempt_014/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001/Math_70_buggy/fuzz/attempt_014/crashes/crash-916a3b37862d25c71eb7293f7b653e91636f92a7
+Base64: My4x
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001/Math_70_buggy/fuzz/attempt_014/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001/Math_70_buggy/fuzz/attempt_014/crashes/Crash_916a3b37862d25c71eb7293f7b653e91636f92a7.java
+

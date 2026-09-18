@@ -1,0 +1,460 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.apache.commons.math3.exception.ZeroException",
+   "line": 36,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.exception.ZeroException",
+   "line": 37,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.exception.ZeroException",
+   "line": 38,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.geometry.euclidean.oned.Vector1D",
+   "line": 127,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.geometry.euclidean.oned.Vector1D",
+   "line": 128,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.geometry.euclidean.oned.Vector1D",
+   "line": 129,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.geometry.euclidean.threed.Vector3D",
+   "line": 205,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.geometry.euclidean.threed.Vector3D",
+   "line": 206,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.geometry.euclidean.threed.Vector3D",
+   "line": 207,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 214,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 215,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 216,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 217,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 218,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 219,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 257,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 258,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 259,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 260,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 261,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 262,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 263,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 264,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 265,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 266,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 267,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 268,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 269,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 270,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 271,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 272,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 273,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 274,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 275,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 276,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 277,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 278,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 279,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 280,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 281,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 282,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 283,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 284,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 285,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 286,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 287,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 288,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 289,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 290,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 291,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 292,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 293,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 294,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 295,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 296,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 297,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 298,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 299,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 300,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 301,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 302,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 303,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 304,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 305,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 306,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 307,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 308,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 309,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 310,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 311,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 312,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 313,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 314,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 315,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 316,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 317,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 318,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 319,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 320,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 321,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 322,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 323,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 324,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 325,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 326,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 327,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 328,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+   "line": 329,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.FastMath",
+   "line": 374,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.FastMath",
+   "line": 375,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.FastMath",
+   "line": 376,
+   "ring": "callee"
+  }
+ ]
+}

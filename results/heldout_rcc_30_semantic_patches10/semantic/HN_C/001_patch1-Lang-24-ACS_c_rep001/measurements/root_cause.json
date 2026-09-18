@@ -1,0 +1,715 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+    "name": "callVariants",
+    "params": [
+     "String"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+    "name": "check",
+    "params": [
+     "String"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+    "name": "checkAgreement",
+    "params": [
+     "String",
+     "String"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+    "name": "checkCandidate",
+    "params": [
+     "String"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+    "name": "checkConsistency",
+    "params": [
+     "String"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "name": "isNumber",
+    "params": [
+     "String"
+    ],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "callVariants",
+     "params": [
+      "String"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+     "name": "isNumber",
+     "params": [
+      "String"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "check",
+     "params": [
+      "String"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+     "name": "isNumber",
+     "params": [
+      "String"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "checkAgreement",
+     "params": [
+      "String",
+      "String"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+     "name": "isNumber",
+     "params": [
+      "String"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "checkCandidate",
+     "params": [
+      "String"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+     "name": "isNumber",
+     "params": [
+      "String"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "checkConsistency",
+     "params": [
+      "String"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+     "name": "isNumber",
+     "params": [
+      "String"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+  ],
+  "provenance": {
+   "org.apache.commons.lang3.math.NumberUtils.isNumber(String)": "introspector",
+   "org.apache.commons.lang3.math.FuzzHarness.callVariants(String)": "source-scan",
+   "org.apache.commons.lang3.math.FuzzHarness.check(String)": "source-scan",
+   "org.apache.commons.lang3.math.FuzzHarness.checkAgreement(String,String)": "source-scan",
+   "org.apache.commons.lang3.math.FuzzHarness.checkCandidate(String)": "source-scan",
+   "org.apache.commons.lang3.math.FuzzHarness.checkConsistency(String)": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1413,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1319,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1320,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1321,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1322,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1323,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1324,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1325,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1326,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1327,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1328,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1329,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1330,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1331,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1332,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1333,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1334,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1335,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1336,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1337,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1338,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1339,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1340,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1341,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1342,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1343,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1344,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1345,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1346,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1347,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1348,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1349,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1350,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1351,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1352,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1353,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1354,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1355,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1356,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1357,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1358,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1359,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1360,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1361,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1362,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1363,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1364,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1365,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1366,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1367,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1368,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1369,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1370,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1371,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1372,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1373,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1374,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1375,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1376,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1377,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1378,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1379,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1380,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1381,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1382,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1383,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1384,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1385,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1386,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1387,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1388,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1389,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1390,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1391,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1392,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1393,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1394,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1395,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1396,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1397,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1398,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1399,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1400,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1401,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1402,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1403,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1404,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1405,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1406,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1407,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1408,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1409,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1410,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1411,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1412,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1413,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1414,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1415,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1416,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1417,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1418,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1419,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1420,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang3.math.NumberUtils",
+    "line": 1421,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.apache.commons.lang3.math.NumberUtilsTest.testIsNumber()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/main/java/org/apache/commons/lang3/math/NumberUtils.java b/src/main/java/org/apache/commons/lang3/math/NumberUtils.java\nindex d9b3c6d..4a1d845 100644\n--- a/src/main/java/org/apache/commons/lang3/math/NumberUtils.java\n+++ b/src/main/java/org/apache/commons/lang3/math/NumberUtils.java\n@@ -1410,7 +1410,7 @@ public class NumberUtils {\n             if (chars[i] == 'l'\n                 || chars[i] == 'L') {\n                 // not allowing L with an exponent or decimal point\n-                return foundDigit && !hasExp && !hasDecPoint;\n+                return foundDigit && !hasExp;\n             }\n             // last character is illegal\n             return false;\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 12,
+  "probe_size": 12,
+  "frame_added": [],
+  "tests": [
+   "org.apache.commons.lang3.math.NumberUtilsTest::testIsNumber"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

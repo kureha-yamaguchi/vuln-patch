@@ -1,0 +1,43 @@
+DEDUP_TOKEN: 5369221d3493bf2f
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.stat.FuzzHarness (took 77 ms, size +57%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001/Math_75_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7605e8576cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 71724198
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x76061c5c62c0, 0x76061c5c64c0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x76061c5671f0,0x76061c5691f0), 
+INFO:      115 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001/Math_75_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.stat.Frequency (took 19 ms, size +18%)
+INFO: seed corpus: files: 115 min: 1b max: 18b total: 656b rss: 1275Mb
+
+== Java Exception: java.lang.ClassCastException: java.lang.Object cannot be cast to java.lang.Comparable
+	at org.apache.commons.math.stat.Frequency.getPct(Frequency.java:303)
+	at org.apache.commons.math.stat.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:212)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+0x35,
+5
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001/Math_75_buggy/fuzz/attempt_023/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001/Math_75_buggy/fuzz/attempt_023/crashes/crash-ac3478d69a3c81fa62e60f5c3696165a4e5e6ac4
+Base64: NQ==
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001/Math_75_buggy/fuzz/attempt_023/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001/Math_75_buggy/fuzz/attempt_023/crashes/Crash_ac3478d69a3c81fa62e60f5c3696165a4e5e6ac4.java
+

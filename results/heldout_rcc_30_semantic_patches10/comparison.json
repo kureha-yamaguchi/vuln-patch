@@ -1,0 +1,645 @@
+{
+  "arms": [
+    "HN",
+    "HN_C",
+    "HR"
+  ],
+  "bootstrap": 10000,
+  "complete": true,
+  "errors": [],
+  "excluded_patches": [],
+  "expected_legs": 30,
+  "groups": {
+    "semantic": {
+      "estimates": {
+        "HN": {
+          "acceptance_rate": {
+            "ci95": [
+              0.66,
+              0.8733333333333333
+            ],
+            "mean": 0.77
+          },
+          "accepted_set_rcc": {
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "mean": 1.0
+          },
+          "buggy_crash_rate": {
+            "ci95": [
+              0.66,
+              0.8733333333333333
+            ],
+            "mean": 0.77
+          },
+          "candidate_rcc": {
+            "ci95": [
+              0.6566666666666666,
+              0.8733333333333333
+            ],
+            "mean": 0.7666666666666667
+          },
+          "compile_rate": {
+            "ci95": [
+              0.6766666666666666,
+              0.8866666666666667
+            ],
+            "mean": 0.7866666666666666
+          }
+        },
+        "HN_C": {
+          "acceptance_rate": {
+            "ci95": [
+              0.6066666666666667,
+              0.8300000000000001
+            ],
+            "mean": 0.7233333333333334
+          },
+          "accepted_set_rcc": {
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "mean": 1.0
+          },
+          "buggy_crash_rate": {
+            "ci95": [
+              0.6066666666666667,
+              0.8300000000000001
+            ],
+            "mean": 0.7233333333333334
+          },
+          "candidate_rcc": {
+            "ci95": [
+              0.4633333333333333,
+              0.8100416666666661
+            ],
+            "mean": 0.6516666666666666
+          },
+          "compile_rate": {
+            "ci95": [
+              0.7333333333333334,
+              0.8966666666666667
+            ],
+            "mean": 0.8200000000000001
+          }
+        },
+        "HR": {
+          "acceptance_rate": {
+            "ci95": [
+              0.6066666666666667,
+              0.84
+            ],
+            "mean": 0.7233333333333334
+          },
+          "accepted_set_rcc": {
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "mean": 1.0
+          },
+          "buggy_crash_rate": {
+            "ci95": [
+              0.6066666666666667,
+              0.84
+            ],
+            "mean": 0.7233333333333334
+          },
+          "candidate_rcc": {
+            "ci95": [
+              0.6616666666666666,
+              0.9133333333333333
+            ],
+            "mean": 0.795
+          },
+          "compile_rate": {
+            "ci95": [
+              0.6733333333333333,
+              0.9233333333333333
+            ],
+            "mean": 0.8066666666666666
+          }
+        },
+        "HR-HN": {
+          "acceptance_rate": {
+            "ci95": [
+              -0.08333333333333334,
+              -0.01333333333333333
+            ],
+            "mean": -0.04666666666666667
+          },
+          "accepted_set_rcc": {
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "mean": 0.0
+          },
+          "buggy_crash_rate": {
+            "ci95": [
+              -0.08333333333333334,
+              -0.01333333333333333
+            ],
+            "mean": -0.04666666666666667
+          },
+          "candidate_rcc": {
+            "ci95": [
+              -0.016666666666666663,
+              0.07333333333333332
+            ],
+            "mean": 0.028333333333333332
+          },
+          "compile_rate": {
+            "ci95": [
+              -0.023333333333333327,
+              0.06333333333333332
+            ],
+            "mean": 0.019999999999999997
+          }
+        },
+        "HR-HN_C": {
+          "acceptance_rate": {
+            "ci95": [
+              -0.1666666666666667,
+              0.18
+            ],
+            "mean": -1.1102230246251566e-17
+          },
+          "accepted_set_rcc": {
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "mean": 0.0
+          },
+          "buggy_crash_rate": {
+            "ci95": [
+              -0.1666666666666667,
+              0.18
+            ],
+            "mean": -1.1102230246251566e-17
+          },
+          "candidate_rcc": {
+            "ci95": [
+              -0.05666666666666669,
+              0.35000000000000003
+            ],
+            "mean": 0.14333333333333334
+          },
+          "compile_rate": {
+            "ci95": [
+              -0.18666666666666668,
+              0.15666666666666668
+            ],
+            "mean": -0.013333333333333341
+          }
+        }
+      },
+      "n_bugs": 10,
+      "n_legs_per_arm": 10,
+      "per_bug": [
+        {
+          "HN": {
+            "acceptance_rate": 0.9666666666666667,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.9666666666666667,
+            "candidate_rcc": 1.0,
+            "compile_rate": 1.0
+          },
+          "HN_C": {
+            "acceptance_rate": 0.5,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.5,
+            "candidate_rcc": 0.5,
+            "compile_rate": 0.5
+          },
+          "HR": {
+            "acceptance_rate": 0.9666666666666667,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.9666666666666667,
+            "candidate_rcc": 1.0,
+            "compile_rate": 1.0
+          },
+          "bug_id": "1",
+          "project": "Chart"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.6333333333333333,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.6333333333333333,
+            "candidate_rcc": 0.7666666666666667,
+            "compile_rate": 0.7666666666666667
+          },
+          "HN_C": {
+            "acceptance_rate": 0.7666666666666667,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.7666666666666667,
+            "candidate_rcc": 0.7666666666666667,
+            "compile_rate": 0.7666666666666667
+          },
+          "HR": {
+            "acceptance_rate": 0.5666666666666667,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.5666666666666667,
+            "candidate_rcc": 0.9333333333333333,
+            "compile_rate": 0.9333333333333333
+          },
+          "bug_id": "8",
+          "project": "Chart"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.6,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.6,
+            "candidate_rcc": 0.6,
+            "compile_rate": 0.6
+          },
+          "HN_C": {
+            "acceptance_rate": 0.43333333333333335,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.43333333333333335,
+            "candidate_rcc": 0.8666666666666667,
+            "compile_rate": 0.9
+          },
+          "HR": {
+            "acceptance_rate": 0.5,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.5,
+            "candidate_rcc": 0.5,
+            "compile_rate": 0.5
+          },
+          "bug_id": "24",
+          "project": "Lang"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.8333333333333334,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.8333333333333334,
+            "candidate_rcc": 0.8333333333333334,
+            "compile_rate": 0.8333333333333334
+          },
+          "HN_C": {
+            "acceptance_rate": 0.7333333333333333,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.7333333333333333,
+            "candidate_rcc": 0.1,
+            "compile_rate": 0.7333333333333333
+          },
+          "HR": {
+            "acceptance_rate": 0.7666666666666667,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.7666666666666667,
+            "candidate_rcc": 0.8666666666666667,
+            "compile_rate": 0.8666666666666667
+          },
+          "bug_id": "25",
+          "project": "Math"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.9333333333333333,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.9333333333333333,
+            "candidate_rcc": 0.9333333333333333,
+            "compile_rate": 0.9333333333333333
+          },
+          "HN_C": {
+            "acceptance_rate": 0.4666666666666667,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.4666666666666667,
+            "candidate_rcc": 0.7,
+            "compile_rate": 0.8333333333333334
+          },
+          "HR": {
+            "acceptance_rate": 0.9,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.9,
+            "candidate_rcc": 0.9,
+            "compile_rate": 0.9
+          },
+          "bug_id": "33",
+          "project": "Math"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.8666666666666667,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.8666666666666667,
+            "candidate_rcc": 0.8666666666666667,
+            "compile_rate": 0.8666666666666667
+          },
+          "HN_C": {
+            "acceptance_rate": 0.8666666666666667,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.8666666666666667,
+            "candidate_rcc": 0.8333333333333334,
+            "compile_rate": 0.8666666666666667
+          },
+          "HR": {
+            "acceptance_rate": 0.7,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.7,
+            "candidate_rcc": 0.9666666666666667,
+            "compile_rate": 0.9666666666666667
+          },
+          "bug_id": "50",
+          "project": "Math"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.9666666666666667,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.9666666666666667,
+            "candidate_rcc": 0.9666666666666667,
+            "compile_rate": 0.9666666666666667
+          },
+          "HN_C": {
+            "acceptance_rate": 0.7666666666666667,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.7666666666666667,
+            "candidate_rcc": 0.7,
+            "compile_rate": 0.8333333333333334
+          },
+          "HR": {
+            "acceptance_rate": 1.0,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 1.0,
+            "candidate_rcc": 1.0,
+            "compile_rate": 1.0
+          },
+          "bug_id": "75",
+          "project": "Math"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.43333333333333335,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.43333333333333335,
+            "candidate_rcc": 0.43333333333333335,
+            "compile_rate": 0.43333333333333335
+          },
+          "HN_C": {
+            "acceptance_rate": 0.8,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.8,
+            "candidate_rcc": 0.2,
+            "compile_rate": 0.8
+          },
+          "HR": {
+            "acceptance_rate": 0.4,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.4,
+            "candidate_rcc": 0.4,
+            "compile_rate": 0.4
+          },
+          "bug_id": "80",
+          "project": "Math"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.8333333333333334,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.8333333333333334,
+            "candidate_rcc": 0.6333333333333333,
+            "compile_rate": 0.8333333333333334
+          },
+          "HN_C": {
+            "acceptance_rate": 1.0,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 1.0,
+            "candidate_rcc": 0.9166666666666666,
+            "compile_rate": 1.0
+          },
+          "HR": {
+            "acceptance_rate": 0.7666666666666667,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.7666666666666667,
+            "candidate_rcc": 0.7166666666666667,
+            "compile_rate": 0.8333333333333334
+          },
+          "bug_id": "99",
+          "project": "Math"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.6333333333333333,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.6333333333333333,
+            "candidate_rcc": 0.6333333333333333,
+            "compile_rate": 0.6333333333333333
+          },
+          "HN_C": {
+            "acceptance_rate": 0.9,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.9,
+            "candidate_rcc": 0.9333333333333333,
+            "compile_rate": 0.9666666666666667
+          },
+          "HR": {
+            "acceptance_rate": 0.6666666666666666,
+            "accepted_set_rcc": 1.0,
+            "buggy_crash_rate": 0.6666666666666666,
+            "candidate_rcc": 0.6666666666666666,
+            "compile_rate": 0.6666666666666666
+          },
+          "bug_id": "15",
+          "project": "Time"
+        }
+      ],
+      "totals": {
+        "HN": {
+          "accepted": 231,
+          "attempts": 300,
+          "compiled": 236,
+          "crashed_buggy": 231
+        },
+        "HN_C": {
+          "accepted": 217,
+          "attempts": 300,
+          "compiled": 246,
+          "crashed_buggy": 217
+        },
+        "HR": {
+          "accepted": 217,
+          "attempts": 300,
+          "compiled": 242,
+          "crashed_buggy": 217
+        }
+      }
+    }
+  },
+  "populations": {
+    "semantic": {
+      "bugs": [
+        [
+          "Chart",
+          "1"
+        ],
+        [
+          "Chart",
+          "8"
+        ],
+        [
+          "Lang",
+          "24"
+        ],
+        [
+          "Math",
+          "25"
+        ],
+        [
+          "Math",
+          "33"
+        ],
+        [
+          "Math",
+          "50"
+        ],
+        [
+          "Math",
+          "75"
+        ],
+        [
+          "Math",
+          "80"
+        ],
+        [
+          "Math",
+          "99"
+        ],
+        [
+          "Time",
+          "15"
+        ]
+      ],
+      "full_bugs": [
+        [
+          "Chart",
+          "1"
+        ],
+        [
+          "Chart",
+          "15"
+        ],
+        [
+          "Chart",
+          "25"
+        ],
+        [
+          "Chart",
+          "8"
+        ],
+        [
+          "Closure",
+          "115"
+        ],
+        [
+          "Closure",
+          "126"
+        ],
+        [
+          "Closure",
+          "18"
+        ],
+        [
+          "Closure",
+          "31"
+        ],
+        [
+          "Closure",
+          "57"
+        ],
+        [
+          "Lang",
+          "21"
+        ],
+        [
+          "Lang",
+          "24"
+        ],
+        [
+          "Lang",
+          "38"
+        ],
+        [
+          "Lang",
+          "55"
+        ],
+        [
+          "Math",
+          "25"
+        ],
+        [
+          "Math",
+          "33"
+        ],
+        [
+          "Math",
+          "34"
+        ],
+        [
+          "Math",
+          "41"
+        ],
+        [
+          "Math",
+          "50"
+        ],
+        [
+          "Math",
+          "6"
+        ],
+        [
+          "Math",
+          "63"
+        ],
+        [
+          "Math",
+          "71"
+        ],
+        [
+          "Math",
+          "75"
+        ],
+        [
+          "Math",
+          "80"
+        ],
+        [
+          "Math",
+          "88"
+        ],
+        [
+          "Math",
+          "99"
+        ],
+        [
+          "Time",
+          "15"
+        ],
+        [
+          "Time",
+          "19"
+        ]
+      ],
+      "full_patches": 69,
+      "input_sha256": {
+        "suites/labels/excluded.jsonl": "1e306ecf18f7c19e78f08dd1bd1b31b37e60de8e6c77818db5c4e66a2f4d9633",
+        "suites/labels/verified_correct.jsonl": "41e4220ab7a30fb1c6e1ebe5fc4a4243d37fb3aa405cca81f2591a4f04521f93",
+        "suites/labels/verified_incorrect.jsonl": "26fc364e4fae170621f031992e1091483e0afd86bf7ac4e059098db155f07169",
+        "suites/splits/semantic_split.jsonl": "86b688df4a2d1a131c8712486556f689d2ce27f7943aa5eb0c939018269abd37"
+      },
+      "patches": 10,
+      "selection": "first patches in certified queue order"
+    }
+  },
+  "scored_legs": 30,
+  "seed": 20260916,
+  "source_run": null
+}

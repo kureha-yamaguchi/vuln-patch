@@ -1,0 +1,443 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.lang.FuzzHarness",
+    "name": "anchor",
+    "params": [],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang.FuzzHarness",
+    "name": "callAndCheckValid",
+    "params": [
+     "String",
+     "int",
+     "int",
+     "String"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang.FuzzHarness",
+    "name": "checkAbbreviateIdentity",
+    "params": [
+     "String",
+     "int",
+     "int",
+     "String",
+     "String",
+     "boolean"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang.FuzzHarness",
+    "name": "checkEquivalentUpperOracle",
+    "params": [
+     "String",
+     "int",
+     "String",
+     "int"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang.FuzzHarness",
+    "name": "checkNoSpaceFullReturnOracle",
+    "params": [
+     "String",
+     "int",
+     "int",
+     "String"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang.WordUtils",
+    "name": "abbreviate",
+    "params": [
+     "String",
+     "int",
+     "int",
+     "String"
+    ],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.apache.commons.lang.FuzzHarness",
+     "name": "anchor",
+     "params": []
+    },
+    {
+     "class_fq": "org.apache.commons.lang.WordUtils",
+     "name": "abbreviate",
+     "params": [
+      "String",
+      "int",
+      "int",
+      "String"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang.FuzzHarness",
+     "name": "callAndCheckValid",
+     "params": [
+      "String",
+      "int",
+      "int",
+      "String"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang.WordUtils",
+     "name": "abbreviate",
+     "params": [
+      "String",
+      "int",
+      "int",
+      "String"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang.FuzzHarness",
+     "name": "checkAbbreviateIdentity",
+     "params": [
+      "String",
+      "int",
+      "int",
+      "String",
+      "String",
+      "boolean"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang.WordUtils",
+     "name": "abbreviate",
+     "params": [
+      "String",
+      "int",
+      "int",
+      "String"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang.FuzzHarness",
+     "name": "checkEquivalentUpperOracle",
+     "params": [
+      "String",
+      "int",
+      "String",
+      "int"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang.WordUtils",
+     "name": "abbreviate",
+     "params": [
+      "String",
+      "int",
+      "int",
+      "String"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang.FuzzHarness",
+     "name": "checkNoSpaceFullReturnOracle",
+     "params": [
+      "String",
+      "int",
+      "int",
+      "String"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang.WordUtils",
+     "name": "abbreviate",
+     "params": [
+      "String",
+      "int",
+      "int",
+      "String"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+  ],
+  "provenance": {
+   "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)": "introspector",
+   "org.apache.commons.lang.FuzzHarness.anchor()": "source-scan",
+   "org.apache.commons.lang.FuzzHarness.callAndCheckValid(String,int,int,String)": "source-scan",
+   "org.apache.commons.lang.FuzzHarness.checkAbbreviateIdentity(String,int,int,String,String,boolean)": "source-scan",
+   "org.apache.commons.lang.FuzzHarness.checkEquivalentUpperOracle(String,int,String,int)": "source-scan",
+   "org.apache.commons.lang.FuzzHarness.checkNoSpaceFullReturnOracle(String,int,int,String)": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 615,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 616,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 605,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 606,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 607,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 608,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 609,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 610,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 611,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 612,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 613,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 614,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 615,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 616,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 617,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 618,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 619,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 620,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 621,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 622,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 623,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 624,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 625,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 626,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 627,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 628,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 629,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 630,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 631,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 632,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 633,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 634,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 635,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 636,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 637,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 638,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 639,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 640,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 641,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.WordUtils",
+    "line": 642,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.lang.WordUtils",
+    "name": "abbreviate",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.apache.commons.lang.WordUtilsTest.testAbbreviate()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/java/org/apache/commons/lang/WordUtils.java b/src/java/org/apache/commons/lang/WordUtils.java\nindex 91c6615..42bd883 100644\n--- a/src/java/org/apache/commons/lang/WordUtils.java\n+++ b/src/java/org/apache/commons/lang/WordUtils.java\n@@ -613,9 +613,6 @@ public class WordUtils {\n \n         // if the lower value is greater than the length of the string,\n         // set to the length of the string\n-        if (lower > str.length()) {\n-            lower = str.length();    \n-        }\n         // if the upper value is -1 (i.e. no limit) or is greater\n         // than the length of the string, set to the length of the string\n         if (upper == -1 || upper > str.length()) {\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 3,
+  "probe_size": 3,
+  "frame_added": [],
+  "tests": [
+   "org.apache.commons.lang.WordUtilsTest::testAbbreviate"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

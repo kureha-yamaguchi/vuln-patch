@@ -1,0 +1,70 @@
+[
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Unmatched braces in the pattern.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "applyPattern",
+     "params": []
+    },
+    "line": 144,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 127,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 101,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 90,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang.text.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 56,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "top_library_line": 144,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "name": "applyPattern",
+   "params": []
+  },
+  "headline_site_line": 144,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ }
+]

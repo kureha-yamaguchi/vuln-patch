@@ -1,0 +1,283 @@
+{
+  "acceptance_rate": 0.43333333333333335,
+  "accepted": 13,
+  "accepted_set_rcc": 1.0,
+  "attempts": 30,
+  "buggy_crash_rate": 0.43333333333333335,
+  "candidate_rcc": 0.43333333333333335,
+  "candidates": [
+    {
+      "accepted": false,
+      "attempt_label": "attempt_001",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_002",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_003",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_004",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_005",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_006",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_007",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_008",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_009",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_010",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_011",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_012",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_013",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_014",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_015",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_016",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_017",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_018",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_019",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_020",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_021",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_022",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_023",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_024",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_025",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_026",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_027",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_028",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_029",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_030",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+      ]
+    }
+  ],
+  "compile_rate": 0.43333333333333335,
+  "compiled": 13,
+  "compiled_set_rcc": 1.0,
+  "crashed_buggy": 13,
+  "root_methods": [
+    "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)"
+  ]
+}

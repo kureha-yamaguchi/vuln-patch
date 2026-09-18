@@ -1,0 +1,168 @@
+{
+ "granularity": "method",
+ "items": [
+  {
+   "class_fq": "java.util.ArrayList",
+   "name": "<init>",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.List",
+   "name": "add",
+   "params": [
+    "LegendItem"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.LegendItemCollection",
+   "name": "<init>",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.LegendItemCollection",
+   "name": "add",
+   "params": [
+    "LegendItem"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.plot.CategoryPlot",
+   "name": "getDataset",
+   "params": [
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.plot.CategoryPlot",
+   "name": "getIndexOf",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.plot.CategoryPlot",
+   "name": "getIndexOf",
+   "params": [
+    "CategoryItemRenderer"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.plot.CategoryPlot",
+   "name": "getRowRenderingOrder",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.renderer.AbstractRenderer",
+   "name": "isSeriesVisibleInLegend",
+   "params": [
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "equals",
+   "params": [
+    "Object"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItem",
+   "params": [
+    "int",
+    "AbstractCategoryItemRenderer"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItem",
+   "params": [
+    "int",
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": [],
+   "ring": "seed",
+   "depth": 0
+  },
+  {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "isSeriesVisibleInLegend",
+   "params": [
+    "AbstractCategoryItemRenderer"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.util.AbstractObjectList",
+   "name": "get",
+   "params": [
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.util.ObjectList",
+   "name": "get",
+   "params": [
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.util.ObjectList",
+   "name": "size",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.chart.util.SortOrder",
+   "name": "equals",
+   "params": [
+    "SortOrder"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.data.category.CategoryDataset",
+   "name": "getRowCount",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  }
+ ],
+ "multi": {},
+ "edges": [],
+ "unmatched": [],
+ "provenance": {}
+}

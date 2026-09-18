@@ -1,0 +1,1079 @@
+[
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'time' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 190,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 175,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 31,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 190,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 190,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'time' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 190,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 175,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 39,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 190,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 190,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Constructor behavior mismatch",
+  "causes": [
+   "java.lang.IllegalArgumentException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 45,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 193,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 37,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 193,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Year constructor: year (-21505) outside valid range.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Year",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 100,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "getYear",
+     "params": []
+    },
+    "line": 230,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 18,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Year",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 100,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Year",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 100,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_005",
+  "source": "fuzz_out/attempt_005_compiled.txt"
+ },
+ {
+  "exception": "org.jfree.data.time.TimePeriodFormatException",
+  "message": "Can't evaluate the year.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "parseWeek",
+     "params": []
+    },
+    "line": 561,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 111,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "parseWeek",
+   "params": []
+  },
+  "top_library_line": 561,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "parseWeek",
+   "params": []
+  },
+  "headline_site_line": 561,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'time' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 190,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 175,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 135,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 190,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 190,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_007",
+  "source": "fuzz_out/attempt_007_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "YEAR: 1970 -> 1969",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "getFirstMillisecond",
+     "params": []
+    },
+    "line": 390,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "peg",
+     "params": []
+    },
+    "line": 288,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 92,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "getFirstMillisecond",
+   "params": []
+  },
+  "top_library_line": 390,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "getFirstMillisecond",
+   "params": []
+  },
+  "headline_site_line": 390,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'time' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 190,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 175,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 14,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 190,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 190,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "first millisecond mismatch",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 61,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Week(Date, TimeZone) behavior diverges from Week(Date, TimeZone, Locale)",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 62,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Year constructor: year (654) outside valid range.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Year",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 100,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "getYear",
+     "params": []
+    },
+    "line": 230,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "compareTo",
+     "params": []
+    },
+    "line": 492,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 75,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Year",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 100,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Year",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 100,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_013",
+  "source": "fuzz_out/attempt_013_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'time' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 190,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 175,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 40,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 190,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 190,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_015",
+  "source": "fuzz_out/attempt_015_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Year constructor: year (-10000) outside valid range.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Year",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 100,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "getYear",
+     "params": []
+    },
+    "line": 230,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "compareTo",
+     "params": []
+    },
+    "line": 492,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 79,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Year",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 100,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Year",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 100,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_017",
+  "source": "fuzz_out/attempt_017_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'time' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 190,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 175,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 72,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 190,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 190,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_019",
+  "source": "fuzz_out/attempt_019_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'time' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 190,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 175,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 45,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 190,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 190,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'time' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 190,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 175,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 82,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 190,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 190,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_021",
+  "source": "fuzz_out/attempt_021_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Year constructor: year (-11566) outside valid range.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Year",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 100,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "getYear",
+     "params": []
+    },
+    "line": 230,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 82,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Year",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 100,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Year",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 100,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'time' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 190,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 175,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 57,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 190,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 190,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Constructor behavior mismatch",
+  "causes": [
+   "java.lang.IllegalArgumentException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "checkEquivalent",
+     "params": []
+    },
+    "line": 70,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 41,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 193,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "checkEquivalent",
+     "params": []
+    },
+    "line": 63,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 193,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'time' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 190,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 175,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 46,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 190,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 190,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_026",
+  "source": "fuzz_out/attempt_026_compiled.txt"
+ },
+ {
+  "exception": "org.jfree.data.time.TimePeriodFormatException",
+  "message": "Could not find separator.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "parseWeek",
+     "params": []
+    },
+    "line": 568,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 82,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "parseWeek",
+   "params": []
+  },
+  "top_library_line": 568,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Week",
+   "name": "parseWeek",
+   "params": []
+  },
+  "headline_site_line": 568,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Week number mismatch",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 103,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_028",
+  "source": "fuzz_out/attempt_028_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Year constructor: year (-27131) outside valid range.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Year",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 100,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "getYear",
+     "params": []
+    },
+    "line": 230,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 112,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.time.Year",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 100,
+  "headline_site": {
+   "class_fq": "org.jfree.data.time.Year",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 100,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

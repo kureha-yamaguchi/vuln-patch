@@ -1,0 +1,545 @@
+[
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:first-ms-sibling] metamorphic violation: getFirstMillisecond() must agree with getFirstMillisecond(Calendar) week=9 year=7621 noArg=178332796800000 withCalendar=178333488000000 calendarTZ=Africa/Abidjan calendarFirstDay=2",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "runSiblingAndHiddenStateChecks",
+     "params": []
+    },
+    "line": 230,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 19,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:ctor-equivalence-firstms] metamorphic violation: inputMillis=1167609600000 defaultLocale=en_US defaultZone=Africa/Abidjan argZone=Africa/Abidjan lhs=1167519600000 rhs=1167523200000",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "constructorEquivalenceOracle",
+     "params": []
+    },
+    "line": 149,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 17,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:ctor_zone_overload_agrees_with_explicit_default_locale] metamorphic violation: same date/zone/default-locale produced different (week,year): lhs=(51,1969) rhs=(52,1969)",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "relationCtorZoneOverloadAgreesWithExplicitDefaultLocale",
+     "params": []
+    },
+    "line": 120,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 14,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:overload-equivalence] metamorphic violation: Week(Date,TimeZone) != Week(Date,TimeZone,Locale.getDefault()) inputDate=0 zone=Asia/Tokyo locale=en_US lhsWeek=1 rhsWeek=1 lhsYear=1970 rhsYear=1970 lhsFirst=-349200000 rhsFirst=-378000000 lhsLast=255599999 rhsLast=226799999 lhsEqualsRhs=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 130,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_005",
+  "source": "fuzz_out/attempt_005_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:ctor-zone-overload-agrees] metamorphic violation: (week,year)=(8,1976) vs (7,1976)",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "relationCtorZoneOverloadAgreesWithExplicitDefaultLocale",
+     "params": []
+    },
+    "line": 147,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 15,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:constructor-overload-equivalence] metamorphic violation: Week(Date,TimeZone) != Week(Date,TimeZone,Locale.getDefault()) inputMillis=-1000000000 zone=GMT locale=en_US lhsWeek=51 rhsWeek=51 lhsYear=1969 rhsYear=1969 lhsFirst=-1558800000 rhsFirst=-1555200000 lhsLast=-954000001 rhsLast=-950400001 lhsSerial=104408 rhsSerial=104408",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 99,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_007",
+  "source": "fuzz_out/attempt_007_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:ctor_zone_overload_agrees_with_explicit_default_locale] metamorphic violation: Week(Date,TimeZone) must agree with Week(Date,TimeZone,Locale.getDefault()) on represented week/year, lhs=(15,1968) rhs=(14,1968) time=-54759540000 zone=America/Rainy_River defaultLocale=en_US defaultZone=Africa/Niamey",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "runCtorZoneOverloadAgreesWithExplicitDefaultLocale",
+     "params": []
+    },
+    "line": 163,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 15,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:ctor-equivalence] metamorphic violation: Week(Date,TimeZone) != Week(Date,TimeZone,Locale.getDefault()) time=1188104400000 defaultZone=America/Toronto explicitZone=America/Edmonton locale=en_US lhsWeek=35 rhsWeek=34 lhsYear=2007 rhsYear=2007 lhsSerial=106406 rhsSerial=106405",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "runMetamorphicOracle",
+     "params": []
+    },
+    "line": 111,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 17,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:ctor_zone_overload_agrees_with_explicit_default_locale] metamorphic violation: (week,year)=(2,1970) vs (1,1970)",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 99,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:ctor-equivalence-fuzz] metamorphic violation: Week(Date,TimeZone) vs Week(Date,TimeZone,Locale.getDefault()) input=-1000000000 zone=Africa/Abidjan defaultLocale=en_US lhsWeek=51 rhsWeek=51 lhsYear=1969 rhsYear=1969 lhsSerial=104408 rhsSerial=104408 lhsFirst=-1558800000 rhsFirst=-1555200000 lhsLast=-954000001 rhsLast=-950400001",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 146,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:ctor-zone-overload] metamorphic violation: Week(Date,TimeZone) must agree with Week(Date,TimeZone,Locale.getDefault()) weekYearA=52,1969 weekYearB=1,1970",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "relationCtorZoneOverloadAgreesWithExplicitDefaultLocale",
+     "params": []
+    },
+    "line": 157,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "runGeneralizedChecks",
+     "params": []
+    },
+    "line": 83,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 17,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_013",
+  "source": "fuzz_out/attempt_013_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:week-ctor-overload-agreement] semantic mismatch: label=week-boundary-1 defaultLocale=en_US defaultTimeZoneCaptured=Etc/UTC explicitZone=America/Los_Angeles time=1188088200000 lhsWeek=35 rhsWeek=34 lhsYear=2007 rhsYear=2007 lhsSerial=106406 rhsSerial=106405",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "report",
+     "params": []
+    },
+    "line": 31,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "compareFor",
+     "params": []
+    },
+    "line": 57,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 95,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_017",
+  "source": "fuzz_out/attempt_017_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:ctor-zone-overload-agreement] metamorphic violation: Week(Date,TimeZone) must agree with Week(Date,TimeZone,Locale.getDefault()) lhsWeek=52 lhsYear=1969 rhsWeek=51 rhsYear=1969",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "checkCtorZoneOverloadAgreesWithExplicitDefaultLocale",
+     "params": []
+    },
+    "line": 115,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 14,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_019",
+  "source": "fuzz_out/attempt_019_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "[oracle:overload-equivalence] metamorphic violation: Week(Date,TimeZone) must equal Week(Date,TimeZone,Locale.getDefault()) inputMillis=1852171886000 defaultLocale=da_DK defaultZone=Europe/Copenhagen zone=Asia/Tokyo lhsWeek=36 rhsWeek=36 lhsYear=2028 rhsYear=2028 lhsFirst=1851631200000 rhsFirst=1851606000000 lhsLast=1852235999999 rhsLast=1852210799999 lhsSerial=107520 rhsSerial=107520 lhsEqualsRhs=true",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "runMetamorphicChecks",
+     "params": []
+    },
+    "line": 150,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 33,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_021",
+  "source": "fuzz_out/attempt_021_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:ctor_zone_overload_agrees_with_explicit_default_locale] metamorphic violation: (week,year)=(52,1969) vs (1,1970) time=-286221679 zone=Pacific/Wake defaultLocale=da_DK",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "exerciseOverloadAgreementRelation",
+     "params": []
+    },
+    "line": 123,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 14,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:first-ms-overloads] relation sibling agreement violated: firstNoArgBefore=-2209075200000 firstWithCal=-2209057200000 firstNoArgAfter=-2209075200000 week=1 year=1900 tz=America/Indiana/Winamac locale=en_US",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "relationMillisecondOverloadsAgreeAndAreReadOnly",
+     "params": []
+    },
+    "line": 241,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "runGeneralizedChecks",
+     "params": []
+    },
+    "line": 80,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 17,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:seed-family] semantic mismatch: expected twoArgWeek=35 and threeArgWeek=34 actual twoArgWeek=35 actual threeArgWeek=34",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 93,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

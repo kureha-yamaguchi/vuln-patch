@@ -1,0 +1,75 @@
+DEDUP_TOKEN: 01bf27e10aba06df
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.analysis.solvers.FuzzHarness (took 65 ms, size +29%)
+INFO: Instrumented org.apache.commons.math.analysis.UnivariateRealFunction (took 0 ms, size +0%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001/Math_70_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7f874c376cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 3557224170
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7f87785ca020, 0x7f87785ca220), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7f87784eec70,0x7f87784f0c70), 
+INFO:       24 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001/Math_70_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.analysis.polynomials.PolynomialFunction (took 12 ms, size +19%)
+INFO: Instrumented org.apache.commons.math.analysis.DifferentiableUnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BisectionSolver (took 3 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl (took 7 ms, size +12%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolver (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithm (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithmImpl (took 4 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MaxIterationsExceededException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.ConvergenceException (took 1 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.MathException (took 5 ms, size +26%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils (took 3 ms, size +13%)
+INFO: seed corpus: files: 24 min: 3b max: 4b total: 93b rss: 1299Mb
+#25	INITED cov: 47 ft: 53 corp: 4/14b exec/s: 0 rss: 1300Mb
+#26	REDUCE cov: 47 ft: 53 corp: 4/12b lim: 4 exec/s: 0 rss: 1300Mb L: 1/4 MS: 2 CrossOver-Custom-
+#30	REDUCE cov: 47 ft: 56 corp: 5/16b lim: 4 exec/s: 0 rss: 1300Mb L: 4/4 MS: 8 ChangeASCIIInt-Custom-CrossOver-Custom-CopyPart-Custom-ChangeASCIIInt-Custom-
+#35	REDUCE cov: 47 ft: 56 corp: 5/15b lim: 4 exec/s: 0 rss: 1300Mb L: 2/4 MS: 10 ChangeByte-Custom-ChangeASCIIInt-Custom-CrossOver-Custom-EraseBytes-Custom-ChangeBit-Custom-
+#41	REDUCE cov: 47 ft: 56 corp: 5/13b lim: 4 exec/s: 0 rss: 1300Mb L: 2/4 MS: 2 EraseBytes-Custom-
+#57	REDUCE cov: 47 ft: 56 corp: 5/11b lim: 4 exec/s: 0 rss: 1300Mb L: 2/4 MS: 2 EraseBytes-Custom-
+#78	REDUCE cov: 47 ft: 56 corp: 5/10b lim: 4 exec/s: 0 rss: 1300Mb L: 3/3 MS: 2 CrossOver-Custom-
+#83	REDUCE cov: 47 ft: 59 corp: 6/13b lim: 4 exec/s: 0 rss: 1300Mb L: 3/3 MS: 10 ShuffleBytes-Custom-CrossOver-Custom-InsertByte-Custom-InsertByte-Custom-ChangeBinInt-Custom-
+#114	REDUCE cov: 47 ft: 59 corp: 6/12b lim: 4 exec/s: 0 rss: 1300Mb L: 1/3 MS: 2 EraseBytes-Custom-
+#137	REDUCE cov: 47 ft: 59 corp: 6/11b lim: 4 exec/s: 0 rss: 1300Mb L: 2/3 MS: 6 CopyPart-Custom-ChangeBit-Custom-EraseBytes-Custom-
+#158	REDUCE cov: 47 ft: 59 corp: 6/10b lim: 4 exec/s: 0 rss: 1300Mb L: 2/2 MS: 2 EraseBytes-Custom-
+#174	REDUCE cov: 47 ft: 59 corp: 6/9b lim: 4 exec/s: 0 rss: 1300Mb L: 1/2 MS: 2 EraseBytes-Custom-
+#175	REDUCE cov: 47 ft: 59 corp: 6/8b lim: 4 exec/s: 0 rss: 1300Mb L: 1/2 MS: 2 EraseBytes-Custom-
+#546	REDUCE cov: 47 ft: 59 corp: 6/7b lim: 6 exec/s: 0 rss: 1300Mb L: 1/2 MS: 2 EraseBytes-Custom-
+#892	REDUCE cov: 47 ft: 59 corp: 6/6b lim: 8 exec/s: 0 rss: 1300Mb L: 1/1 MS: 2 EraseBytes-Custom-
+#1235	REDUCE cov: 49 ft: 61 corp: 7/16b lim: 11 exec/s: 0 rss: 1300Mb L: 10/10 MS: 6 ChangeBit-Custom-CrossOver-Custom-InsertRepeatedBytes-Custom-
+#1389	REDUCE cov: 52 ft: 65 corp: 8/27b lim: 11 exec/s: 0 rss: 1300Mb L: 11/11 MS: 8 ChangeByte-Custom-ChangeBit-Custom-InsertRepeatedBytes-Custom-CMP-Custom- DE: "\001\000\000\000\000\000\000\000"-
+#1438	REDUCE cov: 53 ft: 66 corp: 9/37b lim: 11 exec/s: 0 rss: 1300Mb L: 10/11 MS: 8 InsertRepeatedBytes-Custom-ChangeByte-Custom-EraseBytes-Custom-InsertByte-Custom-
+#1503	REDUCE cov: 55 ft: 68 corp: 10/47b lim: 11 exec/s: 0 rss: 1300Mb L: 10/11 MS: 10 ChangeByte-Custom-PersAutoDict-Custom-ShuffleBytes-Custom-ChangeBit-Custom-InsertByte-Custom- DE: "\001\000\000\000\000\000\000\000"-
+
+== Java Exception: java.lang.NullPointerException
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:88)
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:66)
+	at org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:72)
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:73)
+== libFuzzer crashing input ==
+MS: 2 InsertRepeatedBytes-Custom-; base unit: 20cc0e6ed6e07b1b8e25210377d857c7ed9f9427
+0x44,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+D\001\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001/Math_70_buggy/fuzz/attempt_011/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001/Math_70_buggy/fuzz/attempt_011/crashes/crash-83b29f54d0643777d91ea77a6be9d423e7ad74e4
+Base64: RAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001/Math_70_buggy/fuzz/attempt_011/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001/Math_70_buggy/fuzz/attempt_011/crashes/Crash_83b29f54d0643777d91ea77a6be9d423e7ad74e4.java
+

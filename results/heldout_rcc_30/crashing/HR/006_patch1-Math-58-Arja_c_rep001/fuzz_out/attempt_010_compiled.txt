@@ -1,0 +1,78 @@
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.optimization.fitting.FuzzHarness (took 80 ms, size +36%)
+INFO: Instrumented org.apache.commons.math.optimization.DifferentiableMultivariateVectorialOptimizer (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.optimization.BaseMultivariateVectorialOptimizer (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.optimization.BaseOptimizer (took 0 ms, size +0%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/006_patch1-Math-58-Arja_c_rep001/Math_58_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x744620176cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2486534291
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x744680553140, 0x744680553340), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7446804a5810,0x7446804a7810), 
+INFO:      285 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/006_patch1-Math-58-Arja_c_rep001/Math_58_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.optimization.fitting.WeightedObservedPoint (took 2 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.optimization.fitting.GaussianFitter$ParameterGuesser (took 5 ms, size +15%)
+INFO: Instrumented org.apache.commons.math.exception.util.Localizable (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.exception.NullArgumentException (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.exception.MathIllegalArgumentException (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.exception.MathRuntimeException (took 3 ms, size +6%)
+INFO: Instrumented org.apache.commons.math.exception.MathThrowable (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.exception.NumberIsTooSmallException (took 2 ms, size +16%)
+INFO: Instrumented org.apache.commons.math.exception.MathIllegalNumberException (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.exception.ZeroException (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.exception.OutOfRangeException (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.optimization.fitting.GaussianFitter$ParameterGuesser$1 (took 1 ms, size +9%)
+INFO: New number of coverage counters: 1024
+INFO: Instrumented org.apache.commons.math.exception.util.LocalizedFormats (took 12 ms, size +7%)
+INFO: Instrumented org.apache.commons.math.exception.util.ArgUtils (took 1 ms, size +33%)
+INFO: Instrumented org.apache.commons.math.optimization.fitting.GaussianFitter (took 1 ms, size +7%)
+INFO: Instrumented org.apache.commons.math.optimization.fitting.CurveFitter (took 3 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.analysis.MultivariateVectorialFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.ParametricUnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer (took 7 ms, size +21%)
+INFO: Instrumented org.apache.commons.math.optimization.general.AbstractLeastSquaresOptimizer (took 5 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.optimization.direct.BaseAbstractVectorialOptimizer (took 4 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.exception.DimensionMismatchException (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.optimization.ConvergenceChecker (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.exception.MaxCountExceededException (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.exception.MathIllegalStateException (took 2 ms, size +7%)
+INFO: Instrumented org.apache.commons.math.exception.TooManyEvaluationsException (took 0 ms, size +12%)
+INFO: Instrumented org.apache.commons.math.exception.ConvergenceException (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.optimization.SimpleVectorialValueChecker (took 1 ms, size +16%)
+INFO: Instrumented org.apache.commons.math.optimization.AbstractConvergenceChecker (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.util.Incrementor (took 3 ms, size +25%)
+INFO: Instrumented org.apache.commons.math.analysis.function.Gaussian$Parametric (took 2 ms, size +17%)
+INFO: Instrumented org.apache.commons.math.exception.NotStrictlyPositiveException (took 0 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.optimization.fitting.CurveFitter$TheoreticalValuesFunction (took 1 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.analysis.DifferentiableMultivariateVectorialFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.MultivariateMatrixFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.optimization.fitting.CurveFitter$TheoreticalValuesFunction$1 (took 1 ms, size +11%)
+INFO: New number of coverage counters: 2048
+INFO: Instrumented org.apache.commons.math.util.FastMath (took 34 ms, size +22%)
+INFO: Instrumented org.apache.commons.math.analysis.function.Gaussian (took 2 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.analysis.DifferentiableUnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.UnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.optimization.VectorialPointValuePair (took 1 ms, size +27%)
+INFO: seed corpus: files: 285 min: 1b max: 23b total: 4584b rss: 1307Mb
+#16	pulse  cov: 411 ft: 949 corp: 12/25b exec/s: 8 rss: 1307Mb
+#32	pulse  cov: 419 ft: 1223 corp: 24/86b exec/s: 10 rss: 1307Mb
+#64	pulse  cov: 436 ft: 1397 corp: 44/259b exec/s: 21 rss: 1307Mb

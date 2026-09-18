@@ -1,0 +1,316 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.jfree.data.time.FuzzHarness",
+    "name": "checkCtorZoneOverloadAgreesWithExplicitDefaultLocale",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.jfree.data.time.FuzzHarness",
+    "name": "checkLiftedWeekTestsConstructorOracles",
+    "params": [],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.jfree.data.time.FuzzHarness",
+    "name": "checkReadOnlyAccessorsDoNotChangeObservableState",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.jfree.data.time.FuzzHarness",
+    "name": "checkYearAccessorsAgree",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.jfree.data.time.FuzzHarness",
+    "name": "compareFor",
+    "params": [
+     "Locale",
+     "TimeZone",
+     "Date",
+     "String"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.jfree.data.time.Week",
+    "name": "<init>",
+    "params": [
+     "Date",
+     "TimeZone"
+    ],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "checkCtorZoneOverloadAgreesWithExplicitDefaultLocale",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": [
+      "Date",
+      "TimeZone"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "checkLiftedWeekTestsConstructorOracles",
+     "params": []
+    },
+    {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": [
+      "Date",
+      "TimeZone"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "checkReadOnlyAccessorsDoNotChangeObservableState",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": [
+      "Date",
+      "TimeZone"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "checkYearAccessorsAgree",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": [
+      "Date",
+      "TimeZone"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.jfree.data.time.FuzzHarness",
+     "name": "compareFor",
+     "params": [
+      "Locale",
+      "TimeZone",
+      "Date",
+      "String"
+     ]
+    },
+    {
+     "class_fq": "org.jfree.data.time.Week",
+     "name": "<init>",
+     "params": [
+      "Date",
+      "TimeZone"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+  ],
+  "provenance": {
+   "org.jfree.data.time.Week.<init>(Date,TimeZone)": "introspector",
+   "org.jfree.data.time.FuzzHarness.checkCtorZoneOverloadAgreesWithExplicitDefaultLocale(FuzzedDataProvider)": "source-scan",
+   "org.jfree.data.time.FuzzHarness.checkLiftedWeekTestsConstructorOracles()": "source-scan",
+   "org.jfree.data.time.FuzzHarness.checkReadOnlyAccessorsDoNotChangeObservableState(FuzzedDataProvider)": "source-scan",
+   "org.jfree.data.time.FuzzHarness.checkYearAccessorsAgree(FuzzedDataProvider)": "source-scan",
+   "org.jfree.data.time.FuzzHarness.compareFor(Locale,TimeZone,Date,String)": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 175,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 127,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 128,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 129,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 130,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 131,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 132,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 133,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 134,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 135,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 143,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 144,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 145,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 146,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 147,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 148,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 149,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 150,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 151,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 173,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 174,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 175,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.time.Week",
+    "line": 176,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.jfree.data.time.junit.WeekTests.testConstructor()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/source/org/jfree/data/time/Week.java b/source/org/jfree/data/time/Week.java\nindex 8228589..3cc4138 100644\n--- a/source/org/jfree/data/time/Week.java\n+++ b/source/org/jfree/data/time/Week.java\n@@ -172,7 +172,7 @@ public class Week extends RegularTimePeriod implements Serializable {\n      */\n     public Week(Date time, TimeZone zone) {\n         // defer argument checking...\n-        this(time, zone, Locale.getDefault());\n+        this(time, RegularTimePeriod.DEFAULT_TIME_ZONE, Locale.getDefault());\n     }\n \n     /**\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 9,
+  "probe_size": 9,
+  "frame_added": [],
+  "tests": [
+   "org.jfree.data.time.junit.WeekTests::testConstructor"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

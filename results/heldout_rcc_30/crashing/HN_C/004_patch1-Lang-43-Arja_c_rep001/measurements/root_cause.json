@@ -1,0 +1,333 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "name": "appendQuotedString",
+    "params": [
+     "String",
+     "ParsePosition",
+     "StringBuffer",
+     "boolean"
+    ],
+    "ring": "seed",
+    "depth": 0
+   },
+   {
+    "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "name": "applyPattern",
+    "params": [
+     "String"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "name": "getQuotedString",
+    "params": [
+     "String",
+     "ParsePosition",
+     "boolean"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "name": "insertFormats",
+    "params": [
+     "String",
+     "ArrayList"
+    ],
+    "ring": "caller",
+    "depth": 1
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "applyPattern",
+     "params": [
+      "String"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "appendQuotedString",
+     "params": [
+      "String",
+      "ParsePosition",
+      "StringBuffer",
+      "boolean"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "getQuotedString",
+     "params": [
+      "String",
+      "ParsePosition",
+      "boolean"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "appendQuotedString",
+     "params": [
+      "String",
+      "ParsePosition",
+      "StringBuffer",
+      "boolean"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "insertFormats",
+     "params": [
+      "String",
+      "ArrayList"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+     "name": "appendQuotedString",
+     "params": [
+      "String",
+      "ParsePosition",
+      "StringBuffer",
+      "boolean"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)"
+  ],
+  "provenance": {
+   "org.apache.commons.lang.text.ExtendedMessageFormat.appendQuotedString(String,ParsePosition,StringBuffer,boolean)": "introspector",
+   "org.apache.commons.lang.text.ExtendedMessageFormat.applyPattern(String)": "source-scan",
+   "org.apache.commons.lang.text.ExtendedMessageFormat.getQuotedString(String,ParsePosition,boolean)": "source-scan",
+   "org.apache.commons.lang.text.ExtendedMessageFormat.insertFormats(String,ArrayList)": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 421,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 422,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 417,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 418,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 419,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 420,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 421,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 422,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 423,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 424,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 425,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 426,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 427,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 428,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 429,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 430,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 431,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 432,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 433,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 434,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 435,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 436,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 437,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 438,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 439,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 440,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 441,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 442,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 443,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "line": 444,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "name": "<init>",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   },
+   {
+    "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "name": "appendQuotedString",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   },
+   {
+    "class_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+    "name": "applyPattern",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.apache.commons.lang.text.ExtendedMessageFormatTest.testEscapedQuote_LANG_477()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/java/org/apache/commons/lang/text/ExtendedMessageFormat.java b/src/java/org/apache/commons/lang/text/ExtendedMessageFormat.java\nindex 4af3955..404be49 100644\n--- a/src/java/org/apache/commons/lang/text/ExtendedMessageFormat.java\n+++ b/src/java/org/apache/commons/lang/text/ExtendedMessageFormat.java\n@@ -419,7 +419,6 @@ public class ExtendedMessageFormat extends MessageFormat {\n         int start = pos.getIndex();\n         char[] c = pattern.toCharArray();\n         if (escapingOn && c[start] == QUOTE) {\n-            next(pos);\n             return appendTo == null ? null : appendTo.append(QUOTE);\n         }\n         int lastHold = start;\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 5,
+  "probe_size": 4,
+  "frame_added": [
+   "org.apache.commons.lang.text.ExtendedMessageFormat.<init>(String,Map)"
+  ],
+  "tests": [
+   "org.apache.commons.lang.text.ExtendedMessageFormatTest::testEscapedQuote_LANG_477"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

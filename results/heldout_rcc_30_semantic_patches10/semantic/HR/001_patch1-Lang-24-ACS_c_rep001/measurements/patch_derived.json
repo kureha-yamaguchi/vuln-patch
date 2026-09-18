@@ -1,0 +1,34 @@
+{
+ "granularity": "method",
+ "items": [
+  {
+   "class_fq": "String",
+   "name": "toCharArray",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.lang3.StringUtils",
+   "name": "isEmpty",
+   "params": [
+    "String"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+   "name": "isNumber",
+   "params": [
+    "String"
+   ],
+   "ring": "seed",
+   "depth": 0
+  }
+ ],
+ "multi": {},
+ "edges": [],
+ "unmatched": [],
+ "provenance": {}
+}

@@ -1,0 +1,434 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.jfree.data.time.TimeSeries",
+    "name": "addAndOrUpdate",
+    "params": [
+     "TimeSeries"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.jfree.data.time.TimeSeries",
+    "name": "addOrUpdate",
+    "params": [
+     "RegularTimePeriod",
+     "double"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.jfree.data.xy.FuzzHarness",
+    "name": "addOrUpdateMustSucceed",
+    "params": [
+     "XYSeries",
+     "Number",
+     "Number",
+     "String"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.jfree.data.xy.FuzzHarness",
+    "name": "applyBoth",
+    "params": [
+     "XYSeries",
+     "XYSeries",
+     "int",
+     "int",
+     "boolean"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.jfree.data.xy.FuzzHarness",
+    "name": "exerciseAnchor",
+    "params": [],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.jfree.data.xy.XYSeries",
+    "name": "addOrUpdate",
+    "params": [
+     "Number",
+     "Number"
+    ],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.jfree.data.time.TimeSeries",
+     "name": "addAndOrUpdate",
+     "params": [
+      "TimeSeries"
+     ]
+    },
+    {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": [
+      "Number",
+      "Number"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.jfree.data.time.TimeSeries",
+     "name": "addOrUpdate",
+     "params": [
+      "RegularTimePeriod",
+      "double"
+     ]
+    },
+    {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": [
+      "Number",
+      "Number"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "addOrUpdateMustSucceed",
+     "params": [
+      "XYSeries",
+      "Number",
+      "Number",
+      "String"
+     ]
+    },
+    {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": [
+      "Number",
+      "Number"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "applyBoth",
+     "params": [
+      "XYSeries",
+      "XYSeries",
+      "int",
+      "int",
+      "boolean"
+     ]
+    },
+    {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": [
+      "Number",
+      "Number"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "exerciseAnchor",
+     "params": []
+    },
+    {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": [
+      "Number",
+      "Number"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.jfree.data.xy.XYSeries.addOrUpdate(Number,Number)"
+  ],
+  "provenance": {
+   "org.jfree.data.xy.XYSeries.addOrUpdate(Number,Number)": "introspector",
+   "org.jfree.data.time.TimeSeries.addAndOrUpdate(TimeSeries)": "source-scan",
+   "org.jfree.data.time.TimeSeries.addOrUpdate(RegularTimePeriod,double)": "source-scan",
+   "org.jfree.data.xy.FuzzHarness.addOrUpdateMustSucceed(XYSeries,Number,Number,String)": "source-scan",
+   "org.jfree.data.xy.FuzzHarness.applyBoth(XYSeries,XYSeries,int,int,boolean)": "source-scan",
+   "org.jfree.data.xy.FuzzHarness.exerciseAnchor()": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 543,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 544,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 548,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 526,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 527,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 528,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 540,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 541,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 542,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 543,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 544,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 545,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 546,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 547,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 548,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 549,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 550,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 551,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 552,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 553,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 554,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 555,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 556,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 557,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 558,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 559,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 560,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 561,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 562,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 563,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 564,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 565,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 566,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 567,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 568,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 569,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 570,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 571,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 572,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 573,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 574,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 575,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.jfree.data.xy.XYSeries",
+    "line": 576,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.jfree.data.xy.XYSeries",
+    "name": "addOrUpdate",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.jfree.data.xy.junit.XYSeriesTests.testBug1955483()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/source/org/jfree/data/xy/XYSeries.java b/source/org/jfree/data/xy/XYSeries.java\nindex b26e11e..0b37e6e 100644\n--- a/source/org/jfree/data/xy/XYSeries.java\n+++ b/source/org/jfree/data/xy/XYSeries.java\n@@ -541,15 +541,11 @@ public class XYSeries extends Series implements Cloneable, Serializable {\n         if (x == null) {\n             throw new IllegalArgumentException(\"Null 'x' argument.\");\n         }\n-        if (this.allowDuplicateXValues) {\n-            add(x, y);\n-            return null;\n-        }\n \n         // if we get to here, we know that duplicate X values are not permitted\n         XYDataItem overwritten = null;\n         int index = indexOf(x);\n-        if (index >= 0) {\n+        if (index >= 0 && !this.allowDuplicateXValues) {\n             XYDataItem existing = (XYDataItem) this.data.get(index);\n             try {\n                 overwritten = (XYDataItem) existing.clone();\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 13,
+  "probe_size": 13,
+  "frame_added": [],
+  "tests": [
+   "org.jfree.data.xy.junit.XYSeriesTests::testBug1955483"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

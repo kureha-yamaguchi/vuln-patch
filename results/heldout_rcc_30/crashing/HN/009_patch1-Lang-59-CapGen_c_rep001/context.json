@@ -1,0 +1,239 @@
+{
+ "modified_files": [
+  "src/java/org/apache/commons/lang/text/StrBuilder.java"
+ ],
+ "patch_text": "--- /src/java/org/apache/commons/lang/text/StrBuilder.java\n+++ /src/java/org/apache/commons/lang/text/StrBuilder.java\n@@ -881,7 +881,7 @@ public class StrBuilder implements Cloneable {\n             String str = (obj == null ? getNullText() : obj.toString());\n             int strLen = str.length();\n             if (strLen >= width) {\n-                str.getChars(0, strLen, buffer, size);\n+                str.getChars(0, width, buffer, size);\n             } else {\n                 int padLen = width - strLen;\n                 str.getChars(0, strLen, buffer, size);",
+ "functions": [
+  {
+   "func_name": "appendFixedWidthPadRight",
+   "func_signature": "public StrBuilder appendFixedWidthPadRight(Object obj, int width, char padChar)",
+   "func_source": "    public StrBuilder appendFixedWidthPadRight(Object obj, int width, char padChar) {\n        if (width > 0) {\n            ensureCapacity(size + width);\n            String str = (obj == null ? getNullText() : obj.toString());\n            int strLen = str.length();\n            if (strLen >= width) {\n                str.getChars(0, strLen, buffer, size);\n            } else {\n                int padLen = width - strLen;\n                str.getChars(0, strLen, buffer, size);\n                for (int i = 0; i < padLen; i++) {\n                    buffer[size + strLen + i] = padChar;\n                }\n            }\n            size += width;\n        }\n        return this;\n    }",
+   "func_class": "StrBuilder",
+   "func_class_fq": "org.apache.commons.lang.text.StrBuilder",
+   "func_param_types": [
+    "Object",
+    "int",
+    "char"
+   ],
+   "fi_name": "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)",
+   "overload_types": [
+    [
+     "Object",
+     "int",
+     "char"
+    ],
+    [
+     "int",
+     "int",
+     "char"
+    ]
+   ],
+   "xrefs": [],
+   "xref_names": [],
+   "reachable_edges": [
+    [
+     "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)",
+     "[org.apache.commons.lang.text.StrBuilder].ensureCapacity(org.apache.commons.lang.text.StrBuilder)"
+    ],
+    [
+     "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)",
+     "[org.apache.commons.lang.text.StrBuilder].getNullText()"
+    ],
+    [
+     "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)",
+     "[Object].toString()"
+    ],
+    [
+     "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)",
+     "str.length()"
+    ],
+    [
+     "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)",
+     "str.getChars(int,org.apache.commons.lang.text.StrBuilder,char[],int)"
+    ],
+    [
+     "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)",
+     "str.getChars(int,org.apache.commons.lang.text.StrBuilder,char[],int)"
+    ]
+   ],
+   "reachable_depth": {
+    "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)": 0,
+    "[org.apache.commons.lang.text.StrBuilder].ensureCapacity(org.apache.commons.lang.text.StrBuilder)": 1,
+    "[org.apache.commons.lang.text.StrBuilder].getNullText()": 1,
+    "[Object].toString()": 1,
+    "str.length()": 1,
+    "str.getChars(int,org.apache.commons.lang.text.StrBuilder,char[],int)": 1
+   },
+   "reachable": [
+    "[org.apache.commons.lang.text.StrBuilder].ensureCapacity(org.apache.commons.lang.text.StrBuilder)",
+    "[org.apache.commons.lang.text.StrBuilder].getNullText()",
+    "[Object].toString()",
+    "str.length()",
+    "str.getChars(int,org.apache.commons.lang.text.StrBuilder,char[],int)",
+    "[org.apache.commons.lang.text.StrBuilder].ensureCapacity(int)"
+   ],
+   "related_callees": [
+    {
+     "name": "ensureCapacity",
+     "source_file": "StrBuilder.java",
+     "signature": "public StrBuilder ensureCapacity(int capacity)",
+     "source": "    public StrBuilder ensureCapacity(int capacity) {\n        if (capacity > buffer.length) {\n            char[] old = buffer;\n            buffer = new char[capacity];\n            System.arraycopy(old, 0, buffer, 0, size);\n        }\n        return this;\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "getNullText",
+     "source_file": "StrBuilder.java",
+     "signature": "public String getNullText()",
+     "source": "    public String getNullText() {\n        return nullText;\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "toString",
+     "source_file": "StrBuilder.java",
+     "signature": "public String toString()",
+     "source": "    public String toString() {\n        return new String(buffer, 0, size);\n    }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "StrBuilder.java",
+       "    public String toString() {\n        return new String(buffer, 0, size);\n    }"
+      ],
+      [
+       "StrTokenizer.java",
+       "    public String toString() {\n        if (tokens == null) {\n            return \"StrTokenizer[not tokenized yet]\";\n        } else {\n            return \"StrTokenizer\" + getTokenList();\n        }\n    }"
+      ]
+     ]
+    },
+    {
+     "name": "length",
+     "source_file": "StrBuilder.java",
+     "signature": "public int length()",
+     "source": "    public int length() {\n        return size;\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "getChars",
+     "source_file": "StrBuilder.java",
+     "signature": "public char[] getChars(char[] destination)",
+     "source": "    public char[] getChars(char[] destination) {\n        int len = length();\n        if (destination == null || destination.length < len) {\n            destination = new char[len];\n        }\n        System.arraycopy(buffer, 0, destination, 0, len);\n        return destination;\n    }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "StrBuilder.java",
+       "    public char[] getChars(char[] destination) {\n        int len = length();\n        if (destination == null || destination.length < len) {\n            destination = new char[len];\n        }\n        System.arraycopy(buffer, 0, destination, 0, len);\n        return destination;\n    }"
+      ],
+      [
+       "StrBuilder.java",
+       "    public void getChars(int startIndex, int endIndex, char destination[], int destinationIndex) {\n        if (startIndex < 0) {\n            throw new StringIndexOutOfBoundsException(startIndex);\n        }\n        if (endIndex < 0 || endIndex > length()) {\n            throw new StringIndexOutOfBoundsException(endIndex);\n        }\n        if (startIndex > endIndex) {\n            throw new StringIndexOutOfBoundsException(\"end < start\");\n        }\n        System.arraycopy(buffer, startIndex, destination, destinationIndex, endIndex - startIndex);\n    }"
+      ]
+     ]
+    }
+   ],
+   "field_siblings": [
+    {
+     "name": "setLength",
+     "signature": "public StrBuilder setLength(int length)",
+     "shared_fields": [
+      "buffer",
+      "size"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Updates the length of the builder by either dropping the last characters or adding filler of unicode zero. @param length  the length to set to, must be zero or positive @return this, to enable chaining @throws IndexOutOfBoundsException if the length is negative"
+    },
+    {
+     "name": "minimizeCapacity",
+     "signature": "public StrBuilder minimizeCapacity()",
+     "shared_fields": [
+      "buffer",
+      "size"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Minimizes the capacity to the actual length of the string. @return this, to enable chaining"
+    },
+    {
+     "name": "toCharArray",
+     "signature": "public char[] toCharArray()",
+     "shared_fields": [
+      "buffer",
+      "size"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Copies the builder's character array into a new character array. @return a new array that represents the contents of the builder"
+    },
+    {
+     "name": "append",
+     "signature": "public StrBuilder append(String str)",
+     "shared_fields": [
+      "buffer",
+      "size"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Appends a string to this string builder. Appending null will call {@link #appendNull()}. @param str  the string to append @return this, to enable chaining"
+    },
+    {
+     "name": "append",
+     "signature": "public StrBuilder append(String str, int startIndex, int length)",
+     "shared_fields": [
+      "buffer",
+      "size"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Appends part of a string to this string builder. Appending null will call {@link #appendNull()}. @param str  the string to append @param startIndex  the start index, inclusive, must be valid @param length  the length to append, must be valid @return this, to enable chaining"
+    }
+   ]
+  }
+ ],
+ "package": "org.apache.commons.lang.text",
+ "root_cause_reachable": [
+  "StrBuilder.ensureCapacity",
+  "StrBuilder.getNullText"
+ ],
+ "neighbourhood_notes": [],
+ "source_imports": [
+  "import java.io.Reader;",
+  "import java.io.Writer;",
+  "import java.util.Collection;",
+  "import java.util.Iterator;",
+  "import java.util.List;",
+  "import org.apache.commons.lang.ArrayUtils;",
+  "import org.apache.commons.lang.SystemUtils;"
+ ],
+ "reachable_edges": [
+  [
+   "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)",
+   "[org.apache.commons.lang.text.StrBuilder].ensureCapacity(org.apache.commons.lang.text.StrBuilder)"
+  ],
+  [
+   "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)",
+   "[org.apache.commons.lang.text.StrBuilder].getNullText()"
+  ],
+  [
+   "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)",
+   "[Object].toString()"
+  ],
+  [
+   "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)",
+   "str.length()"
+  ],
+  [
+   "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)",
+   "str.getChars(int,org.apache.commons.lang.text.StrBuilder,char[],int)"
+  ]
+ ],
+ "reachable_depth": {
+  "[org.apache.commons.lang.text.StrBuilder].appendFixedWidthPadRight(Object,int,char)": 0,
+  "[org.apache.commons.lang.text.StrBuilder].ensureCapacity(org.apache.commons.lang.text.StrBuilder)": 1,
+  "[org.apache.commons.lang.text.StrBuilder].getNullText()": 1,
+  "[Object].toString()": 1,
+  "str.length()": 1,
+  "str.getChars(int,org.apache.commons.lang.text.StrBuilder,char[],int)": 1
+ }
+}

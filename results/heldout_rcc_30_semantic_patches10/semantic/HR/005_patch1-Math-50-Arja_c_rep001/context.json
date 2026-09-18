@@ -1,0 +1,351 @@
+{
+ "modified_files": [
+  "src/main/java/org/apache/commons/math/analysis/solvers/BaseSecantSolver.java"
+ ],
+ "patch_text": "--- /src/main/java/org/apache/commons/math/analysis/solvers/BaseSecantSolver.java\n+++ /src/main/java/org/apache/commons/math/analysis/solvers/BaseSecantSolver.java\n@@ -184,10 +184,6 @@\n                     break;\n                 case REGULA_FALSI:\n                     // Nothing.\n-                    if (x == x1) {\n-                        x0 = 0.5 * (x0 + x1 - FastMath.max(rtol * FastMath.abs(x1), atol));\n-                        f0 = computeObjectiveValue(x0);\n-                    }\n                     break;\n                 default:\n                     // Should never happen.\n",
+ "functions": [
+  {
+   "func_name": "doSolve",
+   "func_signature": "final protected double doSolve()",
+   "func_source": "    protected final double doSolve() {\n        // Get initial solution\n        double x0 = getMin();\n        double x1 = getMax();\n        double f0 = computeObjectiveValue(x0);\n        double f1 = computeObjectiveValue(x1);\n\n        // If one of the bounds is the exact root, return it. Since these are\n        // not under-approximations or over-approximations, we can return them\n        // regardless of the allowed solutions.\n        if (f0 == 0.0) {\n            return x0;\n        }\n        if (f1 == 0.0) {\n            return x1;\n        }\n\n        // Verify bracketing of initial solution.\n        verifyBracketing(x0, x1);\n\n        // Get accuracies.\n        final double ftol = getFunctionValueAccuracy();\n        final double atol = getAbsoluteAccuracy();\n        final double rtol = getRelativeAccuracy();\n\n        // Keep track of inverted intervals, meaning that the left bound is\n        // larger than the right bound.\n        boolean inverted = false;\n\n        // Keep finding better approximations.\n        while (true) {\n            // Calculate the next approximation.\n            final double x = x1 - ((f1 * (x1 - x0)) / (f1 - f0));\n            final double fx = computeObjectiveValue(x);\n\n            // If the new approximation is the exact root, return it. Since\n            // this is not an under-approximation or an over-approximation,\n            // we can return it regardless of the allowed solutions.\n            if (fx == 0.0) {\n                return x;\n            }\n\n            // Update the bounds with the new approximation.\n            if (f1 * fx < 0) {\n                // The value of x1 has switched to the other bound, thus inverting\n                // the interval.\n                x0 = x1;\n                f0 = f1;\n                inverted = !inverted;\n            } else {\n                switch (method) {\n                case ILLINOIS:\n                    f0 *= 0.5;\n                    break;\n                case PEGASUS:\n                    f0 *= f1 / (f1 + fx);\n                    break;\n                case REGULA_FALSI:\n                    // Nothing.\n                    if (x == x1) {\n                        x0 = 0.5 * (x0 + x1 - FastMath.max(rtol * FastMath.abs(x1), atol));\n                        f0 = computeObjectiveValue(x0);\n                    }\n                    break;\n                default:\n                    // Should never happen.\n                    throw new MathInternalError();\n                }\n            }\n            // Update from [x0, x1] to [x0, x].\n            x1 = x;\n            f1 = fx;\n\n            // If the function value of the last approximation is too small,\n            // given the function value accuracy, then we can't get closer to\n            // the root than we already are.\n            if (FastMath.abs(f1) <= ftol) {\n                switch (allowed) {\n                case ANY_SIDE:\n                    return x1;\n                case LEFT_SIDE:\n                    if (inverted) {\n                        return x1;\n                    }\n                    break;\n                case RIGHT_SIDE:\n                    if (!inverted) {\n                        return x1;\n                    }\n                    break;\n                case BELOW_SIDE:\n                    if (f1 <= 0) {\n                        return x1;\n                    }\n                    break;\n                case ABOVE_SIDE:\n                    if (f1 >= 0) {\n                        return x1;\n                    }\n                    break;\n                default:\n                    throw new MathInternalError();\n                }\n            }\n\n            // If the current interval is within the given accuracies, we\n            // are satisfied with the current approximation.\n            if (FastMath.abs(x1 - x0) < FastMath.max(rtol * FastMath.abs(x1),\n                                                     atol)) {\n                switch (allowed) {\n                case ANY_SIDE:\n                    return x1;\n                case LEFT_SIDE:\n                    return inverted ? x1 : x0;\n                case RIGHT_SIDE:\n                    return inverted ? x0 : x1;\n                case BELOW_SIDE:\n                    return (f1 <= 0) ? x1 : x0;\n                case ABOVE_SIDE:\n                    return (f1 >= 0) ? x1 : x0;\n                default:\n                    throw new MathInternalError();\n                }\n            }\n        }\n    }",
+   "func_class": "BaseSecantSolver",
+   "func_class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+   "func_param_types": [],
+   "fi_name": "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+   "overload_types": [
+    []
+   ],
+   "xrefs": [],
+   "xref_names": [],
+   "reachable_edges": [
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getMin()"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getMax()"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].computeObjectiveValue(org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].computeObjectiveValue(org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].verifyBracketing(org.apache.commons.math.analysis.solvers.BaseSecantSolver,org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getFunctionValueAccuracy()"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getAbsoluteAccuracy()"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getRelativeAccuracy()"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].computeObjectiveValue(org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.util.FastMath].abs(org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.util.FastMath].max(org.apache.commons.math.analysis.solvers.BaseSecantSolver,org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].computeObjectiveValue(org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.exception.MathInternalError].<init>()"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.util.FastMath].abs(org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.exception.MathInternalError].<init>()"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.util.FastMath].abs(org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.util.FastMath].abs(org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.util.FastMath].max(org.apache.commons.math.analysis.solvers.BaseSecantSolver,org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+     "[org.apache.commons.math.exception.MathInternalError].<init>()"
+    ],
+    [
+     "[org.apache.commons.math.exception.MathInternalError].<init>()",
+     "[org.apache.commons.math.exception.MathInternalError].getContext()"
+    ],
+    [
+     "[org.apache.commons.math.exception.MathInternalError].<init>()",
+     "[org.apache.commons.math.exception.MathInternalError].addMessage(org.apache.commons.math.exception.MathInternalError,String)"
+    ]
+   ],
+   "reachable_depth": {
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()": 0,
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getMin()": 1,
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getMax()": 1,
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].computeObjectiveValue(org.apache.commons.math.analysis.solvers.BaseSecantSolver)": 1,
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].verifyBracketing(org.apache.commons.math.analysis.solvers.BaseSecantSolver,org.apache.commons.math.analysis.solvers.BaseSecantSolver)": 1,
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getFunctionValueAccuracy()": 1,
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getAbsoluteAccuracy()": 1,
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getRelativeAccuracy()": 1,
+    "[org.apache.commons.math.util.FastMath].abs(org.apache.commons.math.analysis.solvers.BaseSecantSolver)": 1,
+    "[org.apache.commons.math.util.FastMath].max(org.apache.commons.math.analysis.solvers.BaseSecantSolver,org.apache.commons.math.analysis.solvers.BaseSecantSolver)": 1,
+    "[org.apache.commons.math.exception.MathInternalError].<init>()": 1,
+    "[org.apache.commons.math.exception.MathInternalError].getContext()": 2,
+    "[org.apache.commons.math.exception.MathInternalError].addMessage(org.apache.commons.math.exception.MathInternalError,String)": 2
+   },
+   "reachable": [
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getMin()",
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getMax()",
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].computeObjectiveValue(org.apache.commons.math.analysis.solvers.BaseSecantSolver)",
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].verifyBracketing(org.apache.commons.math.analysis.solvers.BaseSecantSolver,org.apache.commons.math.analysis.solvers.BaseSecantSolver)",
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getFunctionValueAccuracy()",
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getAbsoluteAccuracy()",
+    "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getRelativeAccuracy()",
+    "[org.apache.commons.math.util.FastMath].abs(org.apache.commons.math.analysis.solvers.BaseSecantSolver)",
+    "[org.apache.commons.math.util.FastMath].max(org.apache.commons.math.analysis.solvers.BaseSecantSolver,org.apache.commons.math.analysis.solvers.BaseSecantSolver)",
+    "[org.apache.commons.math.exception.MathInternalError].<init>()",
+    "[org.apache.commons.math.exception.MathInternalError].getContext()",
+    "[org.apache.commons.math.exception.MathInternalError].addMessage(org.apache.commons.math.exception.MathInternalError,String)",
+    "[org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver].computeObjectiveValue(double)",
+    "[org.apache.commons.math.analysis.integration.UnivariateRealIntegrator].getAbsoluteAccuracy()",
+    "[org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver].getFunctionValueAccuracy()",
+    "[org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver].getMax()",
+    "[org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver].getMin()",
+    "[org.apache.commons.math.analysis.integration.UnivariateRealIntegrator].getRelativeAccuracy()",
+    "[org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver].verifyBracketing(double,double)"
+   ],
+   "related_callees": [
+    {
+     "name": "getMin",
+     "source_file": "BaseAbstractUnivariateRealSolver.java",
+     "signature": "public double getMin()",
+     "source": "    public double getMin() {\n        return searchMin;\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "getMax",
+     "source_file": "BaseAbstractUnivariateRealSolver.java",
+     "signature": "public double getMax()",
+     "source": "    public double getMax() {\n        return searchMax;\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "computeObjectiveValue",
+     "source_file": "BaseAbstractUnivariateRealSolver.java",
+     "signature": "protected double computeObjectiveValue(double point) throws TooManyEvaluationsException",
+     "source": "    protected double computeObjectiveValue(double point)\n        throws TooManyEvaluationsException {\n        incrementEvaluationCount();\n        return function.value(point);\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "verifyBracketing",
+     "source_file": "BaseAbstractUnivariateRealSolver.java",
+     "signature": "protected void verifyBracketing(double lower, double upper)",
+     "source": "    protected void verifyBracketing(final double lower,\n                                    final double upper) {\n        UnivariateRealSolverUtils.verifyBracketing(function, lower, upper);\n    }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "BaseAbstractUnivariateRealSolver.java",
+       "    protected void verifyBracketing(final double lower,\n                                    final double upper) {\n        UnivariateRealSolverUtils.verifyBracketing(function, lower, upper);\n    }"
+      ],
+      [
+       "UnivariateRealSolverUtils.java",
+       "    public static void verifyBracketing(UnivariateRealFunction function,\n                                        final double lower,\n                                        final double upper) {\n        if (function == null) {\n            throw new NullArgumentException(LocalizedFormats.FUNCTION);\n        }\n        verifyInterval(lower, upper);\n        if (!isBracketing(function, lower, upper)) {\n            throw new NoBracketingException(lower, upper,\n                                            function.value(lower),\n                                            function.value(upper));\n        }\n    }"
+      ]
+     ]
+    },
+    {
+     "name": "getFunctionValueAccuracy",
+     "source_file": "BaseUnivariateRealSolver.java",
+     "signature": "double getFunctionValueAccuracy()",
+     "source": "    double getFunctionValueAccuracy();",
+     "is_abstract": true,
+     "impls": [
+      [
+       "BaseAbstractUnivariateRealSolver.java",
+       "    public double getFunctionValueAccuracy() {\n        return functionValueAccuracy;\n    }"
+      ]
+     ]
+    },
+    {
+     "name": "getAbsoluteAccuracy",
+     "source_file": "BaseUnivariateRealSolver.java",
+     "signature": "double getAbsoluteAccuracy()",
+     "source": "    double getAbsoluteAccuracy();",
+     "is_abstract": true,
+     "impls": [
+      [
+       "BaseAbstractUnivariateRealSolver.java",
+       "    public double getAbsoluteAccuracy() {\n        return absoluteAccuracy;\n    }"
+      ]
+     ]
+    }
+   ],
+   "field_siblings": [
+    {
+     "name": "BaseSecantSolver",
+     "signature": "protected BaseSecantSolver(double absoluteAccuracy, Method method)",
+     "shared_fields": [
+      "allowed",
+      "method"
+     ],
+     "is_constructor": true,
+     "source": "    protected BaseSecantSolver(final double absoluteAccuracy, final Method method) {\n        super(absoluteAccuracy);\n        this.allowed = AllowedSolution.ANY_SIDE;\n        this.method = method;\n    }",
+     "javadoc": "Construct a solver. @param absoluteAccuracy absolute accuracy @param method <em>Secant</em>-based root-finding method to use"
+    },
+    {
+     "name": "BaseSecantSolver",
+     "signature": "protected BaseSecantSolver(double relativeAccuracy, double absoluteAccuracy, Method method)",
+     "shared_fields": [
+      "allowed",
+      "method"
+     ],
+     "is_constructor": true,
+     "source": "    protected BaseSecantSolver(final double relativeAccuracy,\n                               final double absoluteAccuracy,\n                               final Method method) {\n        super(relativeAccuracy, absoluteAccuracy);\n        this.allowed = AllowedSolution.ANY_SIDE;\n        this.method = method;\n    }",
+     "javadoc": "Construct a solver. @param relativeAccuracy relative accuracy @param absoluteAccuracy absolute accuracy @param method <em>Secant</em>-based root-finding method to use"
+    },
+    {
+     "name": "BaseSecantSolver",
+     "signature": "protected BaseSecantSolver(double relativeAccuracy, double absoluteAccuracy, double functionValueAccuracy, Method method)",
+     "shared_fields": [
+      "allowed",
+      "method"
+     ],
+     "is_constructor": true,
+     "source": "    protected BaseSecantSolver(final double relativeAccuracy,\n                               final double absoluteAccuracy,\n                               final double functionValueAccuracy,\n                               final Method method) {\n        super(relativeAccuracy, absoluteAccuracy, functionValueAccuracy);\n        this.allowed = AllowedSolution.ANY_SIDE;\n        this.method = method;\n    }",
+     "javadoc": "Construct a solver. @param relativeAccuracy Maximum relative error. @param absoluteAccuracy Maximum absolute error. @param functionValueAccuracy Maximum function value error. @param method <em>Secant</em>-based root-finding method to use"
+    },
+    {
+     "name": "solve",
+     "signature": "public double solve(int maxEval, UnivariateRealFunction f, double min, double max, double startValue, AllowedSolution allowedSolution)",
+     "shared_fields": [
+      "allowed"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "{@inheritDoc}"
+    }
+   ]
+  }
+ ],
+ "package": "org.apache.commons.math.analysis.solvers",
+ "root_cause_reachable": [
+  "BaseSecantSolver.getMin",
+  "BaseSecantSolver.getMax",
+  "BaseSecantSolver.computeObjectiveValue",
+  "BaseSecantSolver.verifyBracketing",
+  "BaseSecantSolver.getFunctionValueAccuracy",
+  "BaseSecantSolver.getAbsoluteAccuracy",
+  "BaseSecantSolver.getRelativeAccuracy",
+  "FastMath.abs",
+  "FastMath.max",
+  "MathInternalError.<init>",
+  "MathInternalError.getContext",
+  "MathInternalError.addMessage",
+  "BaseAbstractUnivariateRealSolver.computeObjectiveValue",
+  "UnivariateRealIntegrator.getAbsoluteAccuracy",
+  "BaseAbstractUnivariateRealSolver.getFunctionValueAccuracy",
+  "BaseAbstractUnivariateRealSolver.getMax",
+  "BaseAbstractUnivariateRealSolver.getMin",
+  "UnivariateRealIntegrator.getRelativeAccuracy",
+  "BaseAbstractUnivariateRealSolver.verifyBracketing"
+ ],
+ "neighbourhood_notes": [],
+ "source_imports": [
+  "import org.apache.commons.math.util.FastMath;",
+  "import org.apache.commons.math.analysis.UnivariateRealFunction;",
+  "import org.apache.commons.math.exception.MathInternalError;"
+ ],
+ "reachable_edges": [
+  [
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getMin()"
+  ],
+  [
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getMax()"
+  ],
+  [
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].computeObjectiveValue(org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+  ],
+  [
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].verifyBracketing(org.apache.commons.math.analysis.solvers.BaseSecantSolver,org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+  ],
+  [
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getFunctionValueAccuracy()"
+  ],
+  [
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getAbsoluteAccuracy()"
+  ],
+  [
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getRelativeAccuracy()"
+  ],
+  [
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+   "[org.apache.commons.math.util.FastMath].abs(org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+  ],
+  [
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+   "[org.apache.commons.math.util.FastMath].max(org.apache.commons.math.analysis.solvers.BaseSecantSolver,org.apache.commons.math.analysis.solvers.BaseSecantSolver)"
+  ],
+  [
+   "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()",
+   "[org.apache.commons.math.exception.MathInternalError].<init>()"
+  ],
+  [
+   "[org.apache.commons.math.exception.MathInternalError].<init>()",
+   "[org.apache.commons.math.exception.MathInternalError].getContext()"
+  ],
+  [
+   "[org.apache.commons.math.exception.MathInternalError].<init>()",
+   "[org.apache.commons.math.exception.MathInternalError].addMessage(org.apache.commons.math.exception.MathInternalError,String)"
+  ]
+ ],
+ "reachable_depth": {
+  "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].doSolve()": 0,
+  "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getMin()": 1,
+  "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getMax()": 1,
+  "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].computeObjectiveValue(org.apache.commons.math.analysis.solvers.BaseSecantSolver)": 1,
+  "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].verifyBracketing(org.apache.commons.math.analysis.solvers.BaseSecantSolver,org.apache.commons.math.analysis.solvers.BaseSecantSolver)": 1,
+  "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getFunctionValueAccuracy()": 1,
+  "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getAbsoluteAccuracy()": 1,
+  "[org.apache.commons.math.analysis.solvers.BaseSecantSolver].getRelativeAccuracy()": 1,
+  "[org.apache.commons.math.util.FastMath].abs(org.apache.commons.math.analysis.solvers.BaseSecantSolver)": 1,
+  "[org.apache.commons.math.util.FastMath].max(org.apache.commons.math.analysis.solvers.BaseSecantSolver,org.apache.commons.math.analysis.solvers.BaseSecantSolver)": 1,
+  "[org.apache.commons.math.exception.MathInternalError].<init>()": 1,
+  "[org.apache.commons.math.exception.MathInternalError].getContext()": 2,
+  "[org.apache.commons.math.exception.MathInternalError].addMessage(org.apache.commons.math.exception.MathInternalError,String)": 2
+ }
+}

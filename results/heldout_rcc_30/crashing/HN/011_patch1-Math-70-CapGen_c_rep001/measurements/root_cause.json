@@ -1,0 +1,281 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+    "name": "solve",
+    "params": [
+     "UnivariateRealFunction",
+     "double",
+     "double",
+     "double"
+    ],
+    "ring": "seed",
+    "depth": 0
+   },
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.BrentSolver",
+    "name": "solve",
+    "params": [
+     "double",
+     "double",
+     "double"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+    "name": "callAndHandle",
+    "params": [
+     "UnivariateRealFunction",
+     "double",
+     "double",
+     "double",
+     "boolean"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+    "name": "callSolveWithInitial",
+    "params": [
+     "UnivariateRealFunction",
+     "double",
+     "double",
+     "double"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+    "name": "callSolveWithInitial",
+    "params": [
+     "UnivariateRealFunction",
+     "double",
+     "double",
+     "double",
+     "boolean"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+    "name": "exerciseCase",
+    "params": [
+     "UnivariateRealFunction",
+     "double",
+     "double",
+     "double",
+     "boolean"
+    ],
+    "ring": "caller",
+    "depth": 1
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BrentSolver",
+     "name": "solve",
+     "params": [
+      "double",
+      "double",
+      "double"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "callAndHandle",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double",
+      "boolean"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "callSolveWithInitial",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "callSolveWithInitial",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double",
+      "boolean"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "exerciseCase",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double",
+      "boolean"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)"
+  ],
+  "provenance": {
+   "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)": "introspector",
+   "org.apache.commons.math.analysis.solvers.BrentSolver.solve(double,double,double)": "source-scan",
+   "org.apache.commons.math.analysis.solvers.FuzzHarness.callAndHandle(UnivariateRealFunction,double,double,double,boolean)": "source-scan",
+   "org.apache.commons.math.analysis.solvers.FuzzHarness.callSolveWithInitial(UnivariateRealFunction,double,double,double)": "source-scan",
+   "org.apache.commons.math.analysis.solvers.FuzzHarness.callSolveWithInitial(UnivariateRealFunction,double,double,double,boolean)": "source-scan",
+   "org.apache.commons.math.analysis.solvers.FuzzHarness.exerciseCase(UnivariateRealFunction,double,double,double,boolean)": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+    "line": 72,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+    "line": 70,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+    "line": 71,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+    "line": 72,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+    "line": 73,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+    "name": "solve",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.apache.commons.math.analysis.solvers.BisectionSolverTest.testMath369()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java b/src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java\nindex 180caef..3f66927 100644\n--- a/src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java\n+++ b/src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java\n@@ -69,7 +69,7 @@ public class BisectionSolver extends UnivariateRealSolverImpl {\n     /** {@inheritDoc} */\n     public double solve(final UnivariateRealFunction f, double min, double max, double initial)\n         throws MaxIterationsExceededException, FunctionEvaluationException {\n-        return solve(f, min, max);\n+        return solve(min, max);\n     }\n \n     /** {@inheritDoc} */\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 9,
+  "probe_size": 7,
+  "frame_added": [
+   "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(UnivariateRealFunction,double,double,double)",
+   "org.apache.commons.math.analysis.solvers.BisectionSolver.solve(double,double)"
+  ],
+  "tests": [
+   "org.apache.commons.math.analysis.solvers.BisectionSolverTest::testMath369"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

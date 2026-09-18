@@ -1,0 +1,1448 @@
+[
+ {
+  "exception": "org.apache.commons.math.linear.InvalidMatrixException",
+  "message": "",
+  "causes": [
+   "org.apache.commons.math.MaxIterationsExceededException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "processGeneralBlock",
+     "params": []
+    },
+    "line": 890,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "findEigenvalues",
+     "params": []
+    },
+    "line": 658,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 246,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 142,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": []
+  },
+  "top_library_line": 890,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": []
+  },
+  "headline_site_line": 890,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "matrix must have at least one row",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.Array2DRowRealMatrix",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 123,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 170,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "-1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "computeGershgorinCircles",
+     "params": []
+    },
+    "line": 597,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 243,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 160,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "top_library_line": 597,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "headline_site_line": 597,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.linear.InvalidMatrixException",
+  "message": "",
+  "causes": [
+   "org.apache.commons.math.MaxIterationsExceededException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "processGeneralBlock",
+     "params": []
+    },
+    "line": 890,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "findEigenvalues",
+     "params": []
+    },
+    "line": 658,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 246,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 171,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 75,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": []
+  },
+  "top_library_line": 890,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": []
+  },
+  "headline_site_line": 890,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "-1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "computeGershgorinCircles",
+     "params": []
+    },
+    "line": 597,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 243,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 156,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "top_library_line": 597,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "headline_site_line": 597,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_005",
+  "source": "fuzz_out/attempt_005_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "-1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "computeGershgorinCircles",
+     "params": []
+    },
+    "line": 597,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 243,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 85,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "top_library_line": 597,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "headline_site_line": 597,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "-1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "computeGershgorinCircles",
+     "params": []
+    },
+    "line": 597,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 243,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 36,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "top_library_line": 597,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "headline_site_line": 597,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_007",
+  "source": "fuzz_out/attempt_007_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.linear.InvalidMatrixException",
+  "message": "",
+  "causes": [
+   "org.apache.commons.math.MaxIterationsExceededException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "processGeneralBlock",
+     "params": []
+    },
+    "line": 890,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "findEigenvalues",
+     "params": []
+    },
+    "line": 658,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 246,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 119,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": []
+  },
+  "top_library_line": 890,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": []
+  },
+  "headline_site_line": 890,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.linear.SingularMatrixException",
+  "message": "matrix is singular",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl.Solver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 399,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 144,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl.Solver",
+   "name": "solve",
+   "params": []
+  },
+  "top_library_line": 399,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl.Solver",
+   "name": "solve",
+   "params": []
+  },
+  "headline_site_line": 399,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_009",
+  "source": "fuzz_out/attempt_009_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "matrix must have at least one row",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.Array2DRowRealMatrix",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 123,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 156,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.linear.InvalidMatrixException",
+  "message": "",
+  "causes": [
+   "org.apache.commons.math.MaxIterationsExceededException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "processGeneralBlock",
+     "params": []
+    },
+    "line": 890,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "findEigenvalues",
+     "params": []
+    },
+    "line": 658,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 246,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 133,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": []
+  },
+  "top_library_line": 890,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": []
+  },
+  "headline_site_line": 890,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "matrix must have at least one row",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.Array2DRowRealMatrix",
+     "name": "setSubMatrix",
+     "params": []
+    },
+    "line": 327,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.Array2DRowRealMatrix",
+     "name": "copyIn",
+     "params": []
+    },
+    "line": 622,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.Array2DRowRealMatrix",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 95,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 184,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "-1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "computeGershgorinCircles",
+     "params": []
+    },
+    "line": 597,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 243,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 106,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "top_library_line": 597,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "headline_site_line": 597,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_013",
+  "source": "fuzz_out/attempt_013_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "-1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "computeGershgorinCircles",
+     "params": []
+    },
+    "line": 597,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 243,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 133,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "top_library_line": 597,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "headline_site_line": 597,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_015",
+  "source": "fuzz_out/attempt_015_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "-1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "computeGershgorinCircles",
+     "params": []
+    },
+    "line": 597,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 243,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 144,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "top_library_line": 597,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "headline_site_line": 597,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_018",
+  "source": "fuzz_out/attempt_018_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "-1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "computeGershgorinCircles",
+     "params": []
+    },
+    "line": 597,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 243,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 89,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "top_library_line": 597,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "headline_site_line": 597,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_021",
+  "source": "fuzz_out/attempt_021_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "-1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "computeGershgorinCircles",
+     "params": []
+    },
+    "line": 597,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 243,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 139,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "top_library_line": 597,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "headline_site_line": 597,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.linear.InvalidMatrixException",
+  "message": "",
+  "causes": [
+   "org.apache.commons.math.MaxIterationsExceededException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "processGeneralBlock",
+     "params": []
+    },
+    "line": 890,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "findEigenvalues",
+     "params": []
+    },
+    "line": 658,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 246,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 132,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": []
+  },
+  "top_library_line": 890,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": []
+  },
+  "headline_site_line": 890,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_023",
+  "source": "fuzz_out/attempt_023_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "matrix must have at least one row",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.Array2DRowRealMatrix",
+     "name": "setSubMatrix",
+     "params": []
+    },
+    "line": 327,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.Array2DRowRealMatrix",
+     "name": "copyIn",
+     "params": []
+    },
+    "line": 622,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.Array2DRowRealMatrix",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 95,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 203,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "-1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "computeGershgorinCircles",
+     "params": []
+    },
+    "line": 597,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 243,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 62,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "top_library_line": 597,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "headline_site_line": 597,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.linear.SingularMatrixException",
+  "message": "matrix is singular",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl.Solver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 399,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 228,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl.Solver",
+   "name": "solve",
+   "params": []
+  },
+  "top_library_line": 399,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl.Solver",
+   "name": "solve",
+   "params": []
+  },
+  "headline_site_line": 399,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_026",
+  "source": "fuzz_out/attempt_026_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "-1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "computeGershgorinCircles",
+     "params": []
+    },
+    "line": 597,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 243,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 146,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "top_library_line": 597,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "headline_site_line": 597,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_028",
+  "source": "fuzz_out/attempt_028_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.linear.InvalidMatrixException",
+  "message": "",
+  "causes": [
+   "org.apache.commons.math.MaxIterationsExceededException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "processGeneralBlock",
+     "params": []
+    },
+    "line": 890,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "findEigenvalues",
+     "params": []
+    },
+    "line": 658,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 246,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 130,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": []
+  },
+  "top_library_line": 890,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": []
+  },
+  "headline_site_line": 890,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_029",
+  "source": "fuzz_out/attempt_029_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "-1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "computeGershgorinCircles",
+     "params": []
+    },
+    "line": 597,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "decompose",
+     "params": []
+    },
+    "line": 243,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 205,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 166,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "top_library_line": 597,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "computeGershgorinCircles",
+   "params": []
+  },
+  "headline_site_line": 597,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

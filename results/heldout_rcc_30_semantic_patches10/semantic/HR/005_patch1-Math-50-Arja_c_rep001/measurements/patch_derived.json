@@ -1,0 +1,167 @@
+{
+ "granularity": "method",
+ "items": [
+  {
+   "class_fq": "org.apache.commons.math.analysis.integration.UnivariateRealIntegrator",
+   "name": "getAbsoluteAccuracy",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.integration.UnivariateRealIntegrator",
+   "name": "getRelativeAccuracy",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+   "name": "computeObjectiveValue",
+   "params": [
+    "double"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+   "name": "getFunctionValueAccuracy",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+   "name": "getMax",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+   "name": "getMin",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+   "name": "verifyBracketing",
+   "params": [
+    "double",
+    "double"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+   "name": "computeObjectiveValue",
+   "params": [
+    "BaseSecantSolver"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+   "name": "doSolve",
+   "params": [],
+   "ring": "seed",
+   "depth": 0
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+   "name": "getAbsoluteAccuracy",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+   "name": "getFunctionValueAccuracy",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+   "name": "getMax",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+   "name": "getMin",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+   "name": "getRelativeAccuracy",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+   "name": "verifyBracketing",
+   "params": [
+    "BaseSecantSolver",
+    "BaseSecantSolver"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.exception.MathInternalError",
+   "name": "<init>",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.exception.MathInternalError",
+   "name": "addMessage",
+   "params": [
+    "MathInternalError",
+    "String"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.exception.MathInternalError",
+   "name": "getContext",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.util.FastMath",
+   "name": "abs",
+   "params": [
+    "BaseSecantSolver"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.util.FastMath",
+   "name": "max",
+   "params": [
+    "BaseSecantSolver",
+    "BaseSecantSolver"
+   ],
+   "ring": "callee",
+   "depth": 1
+  }
+ ],
+ "multi": {},
+ "edges": [],
+ "unmatched": [],
+ "provenance": {}
+}

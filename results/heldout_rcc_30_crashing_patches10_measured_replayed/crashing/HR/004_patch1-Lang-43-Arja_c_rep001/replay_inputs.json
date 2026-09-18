@@ -1,0 +1,8 @@
+{
+  "classpath": "/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/004_patch1-Lang-43-Arja_c_rep001/Lang_43_buggy/target/classes:/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/004_patch1-Lang-43-Arja_c_rep001/Lang_43_buggy/target/tests:/datadrive/vuln-patch/defects4j/framework/projects/lib/junit-4.11.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar",
+  "corpus_sha256": {
+    "seed_000": "52d6e6a56b62af80fcbcbac9ec7f3f33f9e0525a2967cbb3bd52d828a2d48631",
+    "seed_001": "9c0c87dcefd1eb4862940a8cfde8a07fb32b3060cc3a183b00ebb57e438e51bd",
+    "seed_002": "ceec12762e66397b56dad64fd270bb3d694c78fb9cd665354383c0626dbab013"
+  }
+}

@@ -1,0 +1,74 @@
+{
+ "granularity": "method",
+ "items": [
+  {
+   "class_fq": "ArithmeticException",
+   "name": "<init>",
+   "params": [
+    "FieldUtils"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.joda.time.Duration",
+   "name": "standardDays",
+   "params": [
+    "long"
+   ],
+   "ring": "caller",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.joda.time.Duration",
+   "name": "standardHours",
+   "params": [
+    "long"
+   ],
+   "ring": "caller",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.joda.time.Duration",
+   "name": "standardMinutes",
+   "params": [
+    "long"
+   ],
+   "ring": "caller",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.joda.time.Duration",
+   "name": "standardSeconds",
+   "params": [
+    "long"
+   ],
+   "ring": "caller",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.joda.time.Duration",
+   "name": "withDurationAdded",
+   "params": [
+    "long",
+    "int"
+   ],
+   "ring": "caller",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": [
+    "long",
+    "int"
+   ],
+   "ring": "seed",
+   "depth": 0
+  }
+ ],
+ "multi": {},
+ "edges": [],
+ "unmatched": [],
+ "provenance": {}
+}

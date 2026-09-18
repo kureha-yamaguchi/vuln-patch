@@ -1,0 +1,385 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 80,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 81,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 82,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 83,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 84,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 85,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 103,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 104,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 105,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 106,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 107,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 108,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 126,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 127,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 128,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 129,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 130,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 131,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 148,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 149,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 150,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 151,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 152,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 153,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 388,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 389,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 390,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 391,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 392,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 393,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 394,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 395,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 407,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 408,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 409,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 410,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 411,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.Duration",
+   "line": 412,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 118,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 119,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 120,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 121,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 122,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 123,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 124,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 135,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 136,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 137,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 138,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 139,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 140,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 141,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 142,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 143,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 144,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 145,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 146,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 147,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 148,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 149,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 159,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 160,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 161,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 162,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 163,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 164,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 165,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 166,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 167,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 168,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 169,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 170,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 171,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 172,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 173,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.joda.time.field.FieldUtils",
+   "line": 174,
+   "ring": "seed"
+  }
+ ]
+}

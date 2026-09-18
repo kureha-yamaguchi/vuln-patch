@@ -1,0 +1,346 @@
+{
+  "acceptance_rate": 0.9666666666666667,
+  "accepted": 29,
+  "accepted_set_rcc": 1.0,
+  "attempts": 30,
+  "buggy_crash_rate": 0.9666666666666667,
+  "candidate_rcc": 0.9666666666666667,
+  "candidates": [
+    {
+      "accepted": true,
+      "attempt_label": "attempt_001",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_002",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_003",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_004",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_005",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_006",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_007",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_008",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_009",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_010",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_011",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_012",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_013",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_014",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_015",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_016",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_017",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_018",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_019",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_020",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_021",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_022",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_023",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_024",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_025",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_026",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_027",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_028",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_029",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_030",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+      ]
+    }
+  ],
+  "compile_rate": 0.9666666666666667,
+  "compiled": 29,
+  "compiled_set_rcc": 1.0,
+  "crashed_buggy": 29,
+  "replayed_candidates": 0,
+  "root_methods": [
+    "org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(Object,int,char)"
+  ]
+}

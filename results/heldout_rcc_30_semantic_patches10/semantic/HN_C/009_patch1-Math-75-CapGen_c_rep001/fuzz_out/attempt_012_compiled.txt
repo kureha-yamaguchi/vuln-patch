@@ -1,0 +1,66 @@
+DEDUP_TOKEN: 71d01e4b6ce67674
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.stat.FuzzHarness (took 66 ms, size +25%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001/Math_75_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7e6b76176cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 3208033651
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7e6bb867d700, 0x7e6bb867d900), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7e6bb8551b40,0x7e6bb8553b40), 
+INFO:       95 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001/Math_75_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.stat.Frequency (took 21 ms, size +17%)
+INFO: seed corpus: files: 95 min: 1b max: 18b total: 452b rss: 1293Mb
+INFO: Instrumented org.apache.commons.math.stat.Frequency$NaturalComparator (took 2 ms, size +7%)
+#96	INITED cov: 84 ft: 173 corp: 34/187b exec/s: 0 rss: 1293Mb
+#100	REDUCE cov: 84 ft: 173 corp: 34/186b lim: 18 exec/s: 0 rss: 1293Mb L: 3/18 MS: 8 CopyPart-Custom-ChangeByte-Custom-CopyPart-Custom-EraseBytes-Custom-
+#136	NEW    cov: 85 ft: 180 corp: 35/193b lim: 18 exec/s: 0 rss: 1293Mb L: 7/18 MS: 2 ChangeBinInt-Custom-
+#147	REDUCE cov: 85 ft: 180 corp: 35/192b lim: 18 exec/s: 0 rss: 1293Mb L: 6/18 MS: 2 EraseBytes-Custom-
+#153	NEW    cov: 86 ft: 181 corp: 36/208b lim: 18 exec/s: 0 rss: 1293Mb L: 16/18 MS: 2 EraseBytes-Custom-
+#157	NEW    cov: 86 ft: 185 corp: 37/226b lim: 18 exec/s: 0 rss: 1293Mb L: 18/18 MS: 8 ChangeBit-Custom-InsertRepeatedBytes-Custom-ChangeASCIIInt-Custom-ChangeBinInt-Custom-
+#231	NEW    cov: 87 ft: 186 corp: 38/244b lim: 18 exec/s: 0 rss: 1293Mb L: 18/18 MS: 8 ChangeBit-Custom-ChangeBit-Custom-CopyPart-Custom-CopyPart-Custom-
+#233	NEW    cov: 87 ft: 191 corp: 39/248b lim: 18 exec/s: 0 rss: 1293Mb L: 4/18 MS: 4 EraseBytes-Custom-ChangeBinInt-Custom-
+#235	NEW    cov: 87 ft: 197 corp: 40/254b lim: 18 exec/s: 0 rss: 1293Mb L: 6/18 MS: 4 CopyPart-Custom-ShuffleBytes-Custom-
+#243	NEW    cov: 87 ft: 200 corp: 41/262b lim: 18 exec/s: 0 rss: 1293Mb L: 8/18 MS: 6 ShuffleBytes-Custom-ChangeBit-Custom-CrossOver-Custom-
+#261	NEW    cov: 87 ft: 201 corp: 42/269b lim: 18 exec/s: 0 rss: 1293Mb L: 7/18 MS: 6 ShuffleBytes-Custom-ChangeBit-Custom-ChangeBinInt-Custom-
+#297	NEW    cov: 88 ft: 202 corp: 43/287b lim: 18 exec/s: 0 rss: 1293Mb L: 18/18 MS: 2 InsertRepeatedBytes-Custom-
+#300	NEW    cov: 88 ft: 203 corp: 44/301b lim: 18 exec/s: 0 rss: 1293Mb L: 14/18 MS: 6 EraseBytes-Custom-EraseBytes-Custom-InsertRepeatedBytes-Custom-
+#326	NEW    cov: 88 ft: 204 corp: 45/318b lim: 18 exec/s: 0 rss: 1293Mb L: 17/18 MS: 2 InsertByte-Custom-
+#332	NEW    cov: 88 ft: 207 corp: 46/320b lim: 18 exec/s: 0 rss: 1293Mb L: 2/18 MS: 2 ShuffleBytes-Custom-
+#355	NEW    cov: 88 ft: 211 corp: 47/323b lim: 18 exec/s: 0 rss: 1293Mb L: 3/18 MS: 6 InsertByte-Custom-ChangeByte-Custom-ChangeBinInt-Custom-
+#356	REDUCE cov: 88 ft: 211 corp: 47/322b lim: 18 exec/s: 0 rss: 1293Mb L: 3/18 MS: 2 EraseBytes-Custom-
+#381	NEW    cov: 88 ft: 213 corp: 48/325b lim: 18 exec/s: 0 rss: 1293Mb L: 3/18 MS: 10 CrossOver-Custom-EraseBytes-Custom-InsertByte-Custom-InsertByte-Custom-ChangeByte-Custom-
+#392	NEW    cov: 89 ft: 231 corp: 49/343b lim: 18 exec/s: 0 rss: 1293Mb L: 18/18 MS: 2 InsertRepeatedBytes-Custom-
+#405	NEW    cov: 90 ft: 232 corp: 50/361b lim: 18 exec/s: 0 rss: 1293Mb L: 18/18 MS: 6 ShuffleBytes-Custom-CrossOver-Custom-CMP-Custom- DE: "\003\000\000\000"-
+#410	NEW    cov: 91 ft: 233 corp: 51/372b lim: 18 exec/s: 0 rss: 1293Mb L: 11/18 MS: 10 InsertByte-Custom-ChangeBit-Custom-ShuffleBytes-Custom-PersAutoDict-Custom-InsertRepeatedBytes-Custom- DE: "\003\000\000\000"-
+#412	NEW    cov: 91 ft: 240 corp: 52/380b lim: 18 exec/s: 0 rss: 1293Mb L: 8/18 MS: 4 ChangeBinInt-Custom-ChangeBinInt-Custom-
+
+== Java Exception: java.lang.ClassCastException: java.lang.Object cannot be cast to java.lang.Comparable
+	at org.apache.commons.math.stat.Frequency.getPct(Frequency.java:303)
+	at org.apache.commons.math.stat.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:121)
+== libFuzzer crashing input ==
+MS: 2 InsertByte-Custom-; base unit: d2c7c9c1bd529341ca80201c20092c873ab1600e
+0xcd,0x66,0x97,0xcc,0x85,0xbb,0x65,0xc6,0xa8,
+\315f\227\314\205\273e\306\250
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001/Math_75_buggy/fuzz/attempt_012/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001/Math_75_buggy/fuzz/attempt_012/crashes/crash-3524047b3aaa16b09fb976250b82d2f79dc10a8c
+Base64: zWaXzIW7Zcao
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001/Math_75_buggy/fuzz/attempt_012/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/009_patch1-Math-75-CapGen_c_rep001/Math_75_buggy/fuzz/attempt_012/crashes/Crash_3524047b3aaa16b09fb976250b82d2f79dc10a8c.java
+

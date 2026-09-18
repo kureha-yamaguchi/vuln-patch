@@ -1,0 +1,44 @@
+DEDUP_TOKEN: 16d77b2745ea9def
+
+INFO: Loaded 315 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.util.FuzzHarness (took 63 ms, size +28%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/003_patch1-Math-99-ACS_c_rep001/Math_99_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7b6142976cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 1823122394
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7b61705e8b20, 0x7b61705e8d20), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7b617054d9a0,0x7b617054f9a0), 
+INFO:       96 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/003_patch1-Math-99-ACS_c_rep001/Math_99_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.util.MathUtils (took 29 ms, size +35%)
+INFO: seed corpus: files: 96 min: 1b max: 29b total: 313b rss: 1278Mb
+
+== Java Exception: java.lang.ArithmeticException: overflow: mul
+	at org.apache.commons.math.util.MathUtils.mulAndCheck(MathUtils.java:750)
+	at org.apache.commons.math.util.MathUtils.lcm(MathUtils.java:713)
+	at org.apache.commons.math.util.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:76)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+0x65,0x78,0x70,0x65,0x63,0x74,0x69,0x6e,0x67,0x20,0x41,0x72,0x69,0x74,0x68,0x6d,0x65,0x74,0x69,0x63,0x45,0x78,0x63,0x65,0x70,0x74,0x69,0x6f,0x6e,
+expecting ArithmeticException
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/003_patch1-Math-99-ACS_c_rep001/Math_99_buggy/fuzz/attempt_002/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/003_patch1-Math-99-ACS_c_rep001/Math_99_buggy/fuzz/attempt_002/crashes/crash-c263c2ca9c0152714e339a10f81e691b15043772
+Base64: ZXhwZWN0aW5nIEFyaXRobWV0aWNFeGNlcHRpb24=
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/003_patch1-Math-99-ACS_c_rep001/Math_99_buggy/fuzz/attempt_002/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/003_patch1-Math-99-ACS_c_rep001/Math_99_buggy/fuzz/attempt_002/crashes/Crash_c263c2ca9c0152714e339a10f81e691b15043772.java
+

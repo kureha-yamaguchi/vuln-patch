@@ -1,0 +1,48 @@
+DEDUP_TOKEN: 6eff85cf270ae57e
+
+INFO: Loaded 324 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 84 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.lang.text.FuzzHarness (took 63 ms, size +15%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/004_patch1-Lang-43-Arja_c_rep001/Lang_43_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x712b22f76cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 3144204860
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x712b506b9190, 0x712b506b9390), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x712b5057c380,0x712b5057e380), 
+INFO:        3 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/004_patch1-Lang-43-Arja_c_rep001/Lang_43_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.lang.text.ExtendedMessageFormat (took 17 ms, size +28%)
+INFO: seed corpus: files: 3 min: 5b max: 25b total: 48b rss: 1304Mb
+#4	INITED cov: 31 ft: 31 corp: 1/5b exec/s: 0 rss: 1304Mb
+#7	REDUCE cov: 31 ft: 31 corp: 1/3b lim: 5 exec/s: 0 rss: 1304Mb L: 3/3 MS: 6 ChangeByte-Custom-CrossOver-Custom-EraseBytes-Custom-
+#9	REDUCE cov: 31 ft: 31 corp: 1/2b lim: 5 exec/s: 0 rss: 1304Mb L: 2/2 MS: 4 InsertByte-Custom-EraseBytes-Custom-
+#40	REDUCE cov: 31 ft: 31 corp: 1/1b lim: 5 exec/s: 0 rss: 1304Mb L: 1/1 MS: 2 EraseBytes-Custom-
+
+== Java Exception: java.lang.IllegalArgumentException: Unmatched braces in the pattern.
+	at java.text.MessageFormat.applyPattern(MessageFormat.java:509)
+	at org.apache.commons.lang.text.ExtendedMessageFormat.applyPattern(ExtendedMessageFormat.java:144)
+	at org.apache.commons.lang.text.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:57)
+== libFuzzer crashing input ==
+MS: 10 CrossOver-Custom-InsertByte-Custom-CrossOver-Custom-ChangeByte-Custom-ChangeBit-Custom-; base unit: 23eb4d3f4155395a74e9d534f97ff4c1908f5aac
+0x27,0x7b,
+'{
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/004_patch1-Lang-43-Arja_c_rep001/Lang_43_buggy/fuzz/attempt_012/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/004_patch1-Lang-43-Arja_c_rep001/Lang_43_buggy/fuzz/attempt_012/crashes/crash-880923826d3adbb244c27029d42ed7ca18acd513
+Base64: J3s=
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/004_patch1-Lang-43-Arja_c_rep001/Lang_43_buggy/fuzz/attempt_012/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/004_patch1-Lang-43-Arja_c_rep001/Lang_43_buggy/fuzz/attempt_012/crashes/Crash_880923826d3adbb244c27029d42ed7ca18acd513.java
+

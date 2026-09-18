@@ -1,0 +1,126 @@
+{
+ "granularity": "method",
+ "items": [
+  {
+   "class_fq": "Math",
+   "name": "abs",
+   "params": [
+    "MathUtils"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "Math",
+   "name": "abs",
+   "params": [
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createArithmeticException",
+   "params": [
+    "String"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.fraction.Fraction",
+   "name": "addSub",
+   "params": [
+    "Fraction",
+    "boolean"
+   ],
+   "ring": "caller",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.fraction.Fraction",
+   "name": "getReducedFraction",
+   "params": [
+    "int",
+    "int"
+   ],
+   "ring": "caller",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.fraction.Fraction",
+   "name": "multiply",
+   "params": [
+    "Fraction"
+   ],
+   "ring": "caller",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.util.MathUtils",
+   "name": "gcd",
+   "params": [
+    "int",
+    "int"
+   ],
+   "ring": "seed",
+   "depth": 0
+  },
+  {
+   "class_fq": "org.apache.commons.math.util.MathUtils",
+   "name": "lcm",
+   "params": [
+    "int",
+    "int"
+   ],
+   "ring": "seed",
+   "depth": 0
+  },
+  {
+   "class_fq": "org.apache.commons.math.util.MathUtils",
+   "name": "mulAndCheck",
+   "params": [
+    "MathUtils",
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.util.MathUtils",
+   "name": "mulAndCheck",
+   "params": [
+    "int",
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "name": "testGcd",
+   "params": [],
+   "ring": "caller",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "name": "testLcm",
+   "params": [],
+   "ring": "caller",
+   "depth": 1
+  }
+ ],
+ "multi": {
+  "org.apache.commons.math.util.MathUtils.gcd(int,int)": [
+   "callee"
+  ],
+  "org.apache.commons.math.util.MathUtils.lcm(int,int)": [
+   "caller"
+  ]
+ },
+ "edges": [],
+ "unmatched": [],
+ "provenance": {}
+}

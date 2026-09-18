@@ -1,0 +1,677 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.math.fraction.Fraction",
+    "name": "<init>",
+    "params": [
+     "int",
+     "int"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.fraction.Fraction",
+    "name": "addSub",
+    "params": [
+     "Fraction",
+     "boolean"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.fraction.Fraction",
+    "name": "getReducedFraction",
+    "params": [
+     "int",
+     "int"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.fraction.Fraction",
+    "name": "multiply",
+    "params": [
+     "Fraction"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.util.FuzzHarness",
+    "name": "callTouchedFunctions",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.util.FuzzHarness",
+    "name": "checkArithmeticException",
+    "params": [
+     "String",
+     "int",
+     "int",
+     "boolean"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.util.FuzzHarness",
+    "name": "checkBoundaryFlipPowerOfTwoNeighbor",
+    "params": [
+     "int",
+     "boolean"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.util.FuzzHarness",
+    "name": "checkEquivalentFormsForLcm",
+    "params": [
+     "int"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.util.FuzzHarness",
+    "name": "checkGcdLcmConsistency",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.util.MathUtils",
+    "name": "gcd",
+    "params": [
+     "int",
+     "int"
+    ],
+    "ring": "seed",
+    "depth": 0
+   },
+   {
+    "class_fq": "org.apache.commons.math.util.MathUtils",
+    "name": "lcm",
+    "params": [
+     "int",
+     "int"
+    ],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.apache.commons.math.fraction.Fraction",
+     "name": "<init>",
+     "params": [
+      "int",
+      "int"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.util.MathUtils",
+     "name": "gcd",
+     "params": [
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.fraction.Fraction",
+     "name": "addSub",
+     "params": [
+      "Fraction",
+      "boolean"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.util.MathUtils",
+     "name": "gcd",
+     "params": [
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.fraction.Fraction",
+     "name": "getReducedFraction",
+     "params": [
+      "int",
+      "int"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.util.MathUtils",
+     "name": "gcd",
+     "params": [
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.fraction.Fraction",
+     "name": "multiply",
+     "params": [
+      "Fraction"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.util.MathUtils",
+     "name": "gcd",
+     "params": [
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.util.FuzzHarness",
+     "name": "callTouchedFunctions",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.util.MathUtils",
+     "name": "gcd",
+     "params": [
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.util.FuzzHarness",
+     "name": "callTouchedFunctions",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.util.MathUtils",
+     "name": "lcm",
+     "params": [
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.util.FuzzHarness",
+     "name": "checkArithmeticException",
+     "params": [
+      "String",
+      "int",
+      "int",
+      "boolean"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.util.MathUtils",
+     "name": "lcm",
+     "params": [
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.util.FuzzHarness",
+     "name": "checkBoundaryFlipPowerOfTwoNeighbor",
+     "params": [
+      "int",
+      "boolean"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.util.MathUtils",
+     "name": "lcm",
+     "params": [
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.util.FuzzHarness",
+     "name": "checkEquivalentFormsForLcm",
+     "params": [
+      "int"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.util.MathUtils",
+     "name": "lcm",
+     "params": [
+      "int",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.util.FuzzHarness",
+     "name": "checkGcdLcmConsistency",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.util.MathUtils",
+     "name": "lcm",
+     "params": [
+      "int",
+      "int"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+   "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+  ],
+  "provenance": {
+   "org.apache.commons.math.util.MathUtils.gcd(int,int)": "introspector",
+   "org.apache.commons.math.util.MathUtils.lcm(int,int)": "introspector",
+   "org.apache.commons.math.fraction.Fraction.<init>(int,int)": "source-scan",
+   "org.apache.commons.math.fraction.Fraction.addSub(Fraction,boolean)": "source-scan",
+   "org.apache.commons.math.fraction.Fraction.getReducedFraction(int,int)": "source-scan",
+   "org.apache.commons.math.fraction.Fraction.multiply(Fraction)": "source-scan",
+   "org.apache.commons.math.util.FuzzHarness.callTouchedFunctions(FuzzedDataProvider)": "source-scan",
+   "org.apache.commons.math.util.FuzzHarness.checkArithmeticException(String,int,int,boolean)": "source-scan",
+   "org.apache.commons.math.util.FuzzHarness.checkBoundaryFlipPowerOfTwoNeighbor(int,boolean)": "source-scan",
+   "org.apache.commons.math.util.FuzzHarness.checkEquivalentFormsForLcm(int)": "source-scan",
+   "org.apache.commons.math.util.FuzzHarness.checkGcdLcmConsistency(FuzzedDataProvider)": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 542,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 543,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 713,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 714,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 539,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 540,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 541,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 542,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 543,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 544,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 545,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 546,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 547,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 548,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 549,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 550,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 551,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 552,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 553,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 554,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 555,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 556,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 557,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 558,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 559,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 560,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 561,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 562,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 563,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 564,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 565,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 566,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 567,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 568,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 569,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 570,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 571,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 572,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 573,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 574,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 575,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 576,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 577,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 578,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 579,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 580,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 581,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 582,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 583,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 584,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 585,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 586,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 587,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 588,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 589,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 590,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 591,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 592,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 709,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 710,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 711,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 712,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 713,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 714,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.util.MathUtils",
+    "line": 715,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.apache.commons.math.util.MathUtilsTest.testGcd()",
+   "org.apache.commons.math.util.MathUtilsTest.testLcm()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/java/org/apache/commons/math/util/MathUtils.java b/src/java/org/apache/commons/math/util/MathUtils.java\nindex 806c888..d51ec7a 100644\n--- a/src/java/org/apache/commons/math/util/MathUtils.java\n+++ b/src/java/org/apache/commons/math/util/MathUtils.java\n@@ -540,11 +540,6 @@ public final class MathUtils {\n         int u = p;\n         int v = q;\n         if ((u == 0) || (v == 0)) {\n-            if ((u == Integer.MIN_VALUE) || (v == Integer.MIN_VALUE)) {\n-                throw MathRuntimeException.createArithmeticException(\n-                        \"overflow: gcd({0}, {1}) is 2^31\",\n-                        new Object[] { p, q });\n-            }\n             return (Math.abs(u) + Math.abs(v));\n         }\n         // keep u and v negative, as negative integers range down to\n@@ -716,9 +711,6 @@ public final class MathUtils {\n             return 0;\n         }\n         int lcm = Math.abs(mulAndCheck(a / gcd(a, b), b));\n-        if (lcm == Integer.MIN_VALUE){\n-            throw new ArithmeticException(\"overflow: lcm is 2^31\");\n-        }\n         return lcm;\n     }\n \n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 4,
+  "probe_size": 4,
+  "frame_added": [],
+  "tests": [
+   "org.apache.commons.math.util.MathUtilsTest::testGcd",
+   "org.apache.commons.math.util.MathUtilsTest::testLcm"
+  ],
+  "detail": "all 2 method(s) reached"
+ },
+ "notes": []
+}

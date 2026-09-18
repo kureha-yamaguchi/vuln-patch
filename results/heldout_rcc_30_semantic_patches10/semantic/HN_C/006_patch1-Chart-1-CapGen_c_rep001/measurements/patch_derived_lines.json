@@ -1,0 +1,935 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.jfree.chart.LegendItemCollection",
+   "line": 68,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.LegendItemCollection",
+   "line": 69,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.LegendItemCollection",
+   "line": 70,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.LegendItemCollection",
+   "line": 77,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.LegendItemCollection",
+   "line": 78,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.LegendItemCollection",
+   "line": 79,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1319,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1320,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1321,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1322,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1323,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1324,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1325,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1726,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1727,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1728,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1798,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1799,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.plot.CategoryPlot",
+   "line": 1800,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.AbstractRenderer",
+   "line": 622,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.AbstractRenderer",
+   "line": 623,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.AbstractRenderer",
+   "line": 624,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.AbstractRenderer",
+   "line": 625,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.AbstractRenderer",
+   "line": 626,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.AbstractRenderer",
+   "line": 627,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.AbstractRenderer",
+   "line": 628,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.AbstractRenderer",
+   "line": 629,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1417,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1418,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1419,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1420,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1421,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1422,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1423,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1424,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1425,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1426,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1427,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1428,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1429,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1430,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1431,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1432,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1433,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1434,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1435,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1436,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1437,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1438,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1439,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1440,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1441,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1442,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1443,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1444,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1445,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1446,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1447,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1448,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1449,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1450,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1451,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1452,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1453,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1454,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1455,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1456,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1457,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1458,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1459,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1460,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1469,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1470,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1471,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1472,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1473,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1474,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1475,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1476,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1477,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1478,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1479,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1480,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1481,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1482,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1483,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1484,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1485,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1486,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1487,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1488,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1489,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1490,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1491,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1492,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1493,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1494,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1495,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1496,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1497,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1498,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1499,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1500,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1501,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1502,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1503,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1504,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1505,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1506,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1507,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1508,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1509,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1510,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1511,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1512,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1513,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1514,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1515,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1516,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1517,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1518,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1519,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1520,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1521,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1522,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1523,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1524,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1790,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1791,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1792,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1793,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1794,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1795,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1796,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1797,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1798,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1799,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1800,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1801,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1802,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1803,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1804,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1805,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1806,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1807,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1808,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1809,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1810,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1811,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1812,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1813,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1814,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1815,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1816,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1817,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1818,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1819,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1820,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1821,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "line": 1822,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.AbstractObjectList",
+   "line": 108,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.AbstractObjectList",
+   "line": 109,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.AbstractObjectList",
+   "line": 110,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.AbstractObjectList",
+   "line": 111,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.AbstractObjectList",
+   "line": 112,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.AbstractObjectList",
+   "line": 113,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.AbstractObjectList",
+   "line": 114,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.ObjectList",
+   "line": 84,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.ObjectList",
+   "line": 85,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.ObjectList",
+   "line": 86,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 95,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 96,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 97,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 98,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 99,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 100,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 101,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 102,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 103,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 104,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 105,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 106,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 107,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 108,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 109,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.jfree.chart.util.SortOrder",
+   "line": 110,
+   "ring": "callee"
+  }
+ ]
+}

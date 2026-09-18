@@ -1,0 +1,27 @@
+{
+  "argv": [
+    "/datadrive/vuln-patch/.venv/bin/python",
+    "/datadrive/vuln-patch/src/java/run.py",
+    "-c",
+    "--patch_file",
+    "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Lang/patch1-Lang-43-CapGen.patch",
+    "--model",
+    "gpt-5.4",
+    "--candidate_budget",
+    "30",
+    "--coverage",
+    "--verify_timeout",
+    "20",
+    "--fuzz_timeout",
+    "20",
+    "--results_json",
+    "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/result.jsonl",
+    "--verify_relations",
+    "--synthesize_relations",
+    "--replay_relations_on_patched",
+    "--rule_compile_repair",
+    "--reference_impl",
+    "--naive",
+    "function"
+  ]
+}

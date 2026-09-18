@@ -1,0 +1,326 @@
+{
+  "acceptance_rate": 0.7666666666666667,
+  "accepted": 23,
+  "accepted_set_rcc": 1.0,
+  "attempts": 30,
+  "buggy_crash_rate": 0.7666666666666667,
+  "candidate_rcc": 0.7166666666666667,
+  "candidates": [
+    {
+      "accepted": true,
+      "attempt_label": "attempt_001",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_002",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 0.5,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_003",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_004",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_005",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 0.5,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_006",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_007",
+      "compiled": true,
+      "crashed_buggy": false,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_008",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 0.5,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_009",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_010",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 0.5,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_011",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_012",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_013",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_014",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 0.5,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_015",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_016",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_017",
+      "compiled": true,
+      "crashed_buggy": false,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_018",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_019",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_020",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_021",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_022",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_023",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_024",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_025",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 0.5,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_026",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_027",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_028",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 0.5,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_029",
+      "compiled": false,
+      "crashed_buggy": false,
+      "rcc": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_030",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+        "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+      ]
+    }
+  ],
+  "compile_rate": 0.8333333333333334,
+  "compiled": 25,
+  "compiled_set_rcc": 1.0,
+  "crashed_buggy": 23,
+  "root_methods": [
+    "org.apache.commons.math.util.MathUtils.gcd(int,int)",
+    "org.apache.commons.math.util.MathUtils.lcm(int,int)"
+  ]
+}

@@ -1,0 +1,151 @@
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.analysis.solvers.FuzzHarness (took 71 ms, size +18%)
+INFO: Instrumented org.apache.commons.math.analysis.UnivariateRealFunction (took 0 ms, size +0%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/005_patch1-Math-50-Arja_c_rep001/Math_50_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x70c92a176cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2527026654
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x70c958656910, 0x70c958656b10), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x70c9586151d0,0x70c9586171d0), 
+INFO:      137 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/005_patch1-Math-50-Arja_c_rep001/Math_50_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.analysis.solvers.FuzzHarness$1 (took 1 ms, size +17%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.RegulaFalsiSolver (took 2 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BaseSecantSolver (took 6 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BracketedUnivariateRealSolver (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BaseUnivariateRealSolver (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.AbstractUnivariateRealSolver (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolver (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver (took 8 ms, size +4%)
+INFO: Instrumented org.apache.commons.math.exception.MaxCountExceededException (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.exception.MathIllegalStateException (took 2 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.exception.util.ExceptionContextProvider (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.exception.TooManyEvaluationsException (took 0 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.exception.MathInternalError (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BaseSecantSolver$Method (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.util.Incrementor (took 2 ms, size +25%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.AllowedSolution (took 1 ms, size +9%)
+INFO: New number of coverage counters: 1024
+INFO: Instrumented org.apache.commons.math.util.MathUtils (took 52 ms, size +27%)
+INFO: Instrumented org.apache.commons.math.exception.util.Localizable (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.exception.NotPositiveException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.exception.NumberIsTooSmallException (took 2 ms, size +17%)
+INFO: Instrumented org.apache.commons.math.exception.MathIllegalNumberException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.exception.MathIllegalArgumentException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.exception.MathArithmeticException (took 2 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.exception.DimensionMismatchException (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.exception.NumberIsTooLargeException (took 1 ms, size +17%)
+INFO: Instrumented org.apache.commons.math.exception.NullArgumentException (took 0 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.exception.NotFiniteNumberException (took 0 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.exception.NonMonotonousSequenceException (took 1 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils (took 3 ms, size +14%)
+INFO: Instrumented org.apache.commons.math.exception.NotStrictlyPositiveException (took 0 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.exception.NoBracketingException (took 1 ms, size +8%)
+INFO: New number of coverage counters: 2048
+INFO: Instrumented org.apache.commons.math.util.FastMath (took 27 ms, size +22%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BaseSecantSolver$1 (took 0 ms, size +13%)
+INFO: seed corpus: files: 137 min: 1b max: 19b total: 1070b rss: 1308Mb
+INFO: New number of coverage counters: 4096
+INFO: Instrumented org.apache.commons.math.exception.util.LocalizedFormats (took 7 ms, size +7%)
+INFO: Instrumented org.apache.commons.math.exception.util.ExceptionContext (took 5 ms, size +23%)
+INFO: Instrumented org.apache.commons.math.exception.util.ArgUtils (took 0 ms, size +33%)
+#138	INITED cov: 413 ft: 461 corp: 16/107b exec/s: 0 rss: 1311Mb
+#189	NEW    cov: 413 ft: 462 corp: 17/113b lim: 9 exec/s: 0 rss: 1311Mb L: 6/9 MS: 2 ChangeBinInt-Custom-
+#194	NEW    cov: 413 ft: 468 corp: 18/119b lim: 9 exec/s: 0 rss: 1311Mb L: 6/9 MS: 10 ChangeASCIIInt-Custom-CrossOver-Custom-InsertByte-Custom-InsertRepeatedBytes-Custom-InsertByte-Custom-
+#235	NEW    cov: 413 ft: 471 corp: 19/125b lim: 9 exec/s: 0 rss: 1311Mb L: 6/9 MS: 2 ChangeASCIIInt-Custom-
+#250	NEW    cov: 413 ft: 475 corp: 20/134b lim: 9 exec/s: 0 rss: 1311Mb L: 9/9 MS: 10 CrossOver-Custom-ChangeByte-Custom-ChangeBinInt-Custom-ChangeByte-Custom-ShuffleBytes-Custom-
+#262	NEW    cov: 413 ft: 476 corp: 21/141b lim: 9 exec/s: 0 rss: 1311Mb L: 7/9 MS: 4 CrossOver-Custom-ChangeBit-Custom-
+#269	NEW    cov: 413 ft: 477 corp: 22/147b lim: 9 exec/s: 0 rss: 1311Mb L: 6/9 MS: 4 CrossOver-Custom-ChangeBit-Custom-
+#276	NEW    cov: 413 ft: 481 corp: 23/156b lim: 9 exec/s: 0 rss: 1311Mb L: 9/9 MS: 4 InsertByte-Custom-CrossOver-Custom-
+#304	NEW    cov: 413 ft: 482 corp: 24/165b lim: 9 exec/s: 0 rss: 1311Mb L: 9/9 MS: 6 InsertRepeatedBytes-Custom-InsertRepeatedBytes-Custom-ShuffleBytes-Custom-
+#316	NEW    cov: 413 ft: 484 corp: 25/172b lim: 9 exec/s: 0 rss: 1311Mb L: 7/9 MS: 4 CrossOver-Custom-EraseBytes-Custom-
+#322	REDUCE cov: 413 ft: 484 corp: 25/170b lim: 9 exec/s: 0 rss: 1311Mb L: 7/9 MS: 2 EraseBytes-Custom-
+#377	NEW    cov: 413 ft: 485 corp: 26/178b lim: 9 exec/s: 0 rss: 1311Mb L: 8/9 MS: 10 EraseBytes-Custom-EraseBytes-Custom-ShuffleBytes-Custom-ChangeBit-Custom-InsertRepeatedBytes-Custom-
+#518	REDUCE cov: 413 ft: 485 corp: 26/176b lim: 9 exec/s: 0 rss: 1311Mb L: 7/9 MS: 2 EraseBytes-Custom-
+#557	NEW    cov: 413 ft: 486 corp: 27/185b lim: 9 exec/s: 0 rss: 1311Mb L: 9/9 MS: 8 ChangeByte-Custom-ChangeByte-Custom-ChangeBinInt-Custom-CrossOver-Custom-
+#597	NEW    cov: 413 ft: 487 corp: 28/192b lim: 9 exec/s: 597 rss: 1311Mb L: 7/9 MS: 10 ChangeBit-Custom-CrossOver-Custom-ChangeByte-Custom-ShuffleBytes-Custom-CopyPart-Custom-
+#647	NEW    cov: 413 ft: 488 corp: 29/201b lim: 9 exec/s: 647 rss: 1311Mb L: 9/9 MS: 10 ChangeByte-Custom-ChangeASCIIInt-Custom-ShuffleBytes-Custom-CopyPart-Custom-InsertByte-Custom-
+#823	NEW    cov: 413 ft: 490 corp: 30/210b lim: 9 exec/s: 823 rss: 1311Mb L: 9/9 MS: 2 ChangeASCIIInt-Custom-
+#909	NEW    cov: 413 ft: 491 corp: 31/219b lim: 9 exec/s: 909 rss: 1311Mb L: 9/9 MS: 2 ChangeBinInt-Custom-
+#928	NEW    cov: 413 ft: 492 corp: 32/228b lim: 9 exec/s: 928 rss: 1311Mb L: 9/9 MS: 8 ShuffleBytes-Custom-ChangeBinInt-Custom-ChangeBinInt-Custom-InsertByte-Custom-
+#934	REDUCE cov: 413 ft: 492 corp: 32/227b lim: 9 exec/s: 934 rss: 1311Mb L: 8/9 MS: 2 EraseBytes-Custom-
+#1060	REDUCE cov: 413 ft: 492 corp: 32/226b lim: 9 exec/s: 1060 rss: 1311Mb L: 8/9 MS: 2 EraseBytes-Custom-
+#1144	NEW    cov: 413 ft: 493 corp: 33/235b lim: 9 exec/s: 1144 rss: 1311Mb L: 9/9 MS: 8 ChangeByte-Custom-CrossOver-Custom-ChangeBit-Custom-CopyPart-Custom-
+#1217	NEW    cov: 413 ft: 494 corp: 34/244b lim: 9 exec/s: 1217 rss: 1311Mb L: 9/9 MS: 2 CopyPart-Custom-
+#1242	NEW    cov: 413 ft: 495 corp: 35/250b lim: 9 exec/s: 1242 rss: 1311Mb L: 6/9 MS: 10 ChangeByte-Custom-InsertByte-Custom-CMP-Custom-ChangeByte-Custom-EraseBytes-Custom- DE: "\027V"-
+#1244	NEW    cov: 413 ft: 496 corp: 36/259b lim: 9 exec/s: 1244 rss: 1311Mb L: 9/9 MS: 4 ChangeASCIIInt-Custom-ChangeBinInt-Custom-
+#1257	REDUCE cov: 413 ft: 496 corp: 36/256b lim: 9 exec/s: 1257 rss: 1311Mb L: 6/9 MS: 6 ChangeBinInt-Custom-ChangeASCIIInt-Custom-EraseBytes-Custom-
+#1278	NEW    cov: 413 ft: 497 corp: 37/265b lim: 9 exec/s: 1278 rss: 1311Mb L: 9/9 MS: 2 ChangeASCIIInt-Custom-
+#1374	NEW    cov: 413 ft: 499 corp: 38/274b lim: 9 exec/s: 1374 rss: 1311Mb L: 9/9 MS: 2 ChangeBit-Custom-
+#1398	REDUCE cov: 413 ft: 499 corp: 38/273b lim: 9 exec/s: 1398 rss: 1311Mb L: 8/9 MS: 8 CrossOver-Custom-ChangeByte-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#1455	REDUCE cov: 413 ft: 499 corp: 38/270b lim: 9 exec/s: 1455 rss: 1311Mb L: 6/9 MS: 4 ChangeBit-Custom-EraseBytes-Custom-
+#1479	REDUCE cov: 413 ft: 499 corp: 38/267b lim: 9 exec/s: 1479 rss: 1311Mb L: 6/9 MS: 8 ChangeASCIIInt-Custom-ShuffleBytes-Custom-ChangeBinInt-Custom-EraseBytes-Custom-
+#1500	REDUCE cov: 413 ft: 499 corp: 38/264b lim: 9 exec/s: 1500 rss: 1311Mb L: 6/9 MS: 2 EraseBytes-Custom-
+#1554	REDUCE cov: 413 ft: 499 corp: 38/263b lim: 9 exec/s: 1554 rss: 1311Mb L: 7/9 MS: 8 CopyPart-Custom-InsertByte-Custom-PersAutoDict-Custom-EraseBytes-Custom- DE: "\027V"-
+#1626	REDUCE cov: 413 ft: 500 corp: 39/272b lim: 9 exec/s: 813 rss: 1311Mb L: 9/9 MS: 4 ChangeByte-Custom-CrossOver-Custom-
+#1797	REDUCE cov: 413 ft: 500 corp: 39/271b lim: 9 exec/s: 898 rss: 1311Mb L: 6/9 MS: 2 EraseBytes-Custom-
+#1838	REDUCE cov: 413 ft: 500 corp: 39/270b lim: 9 exec/s: 919 rss: 1311Mb L: 7/9 MS: 2 EraseBytes-Custom-
+#1935	REDUCE cov: 413 ft: 500 corp: 39/268b lim: 9 exec/s: 967 rss: 1311Mb L: 7/9 MS: 4 ChangeByte-Custom-EraseBytes-Custom-
+#2018	REDUCE cov: 413 ft: 500 corp: 39/267b lim: 9 exec/s: 1009 rss: 1311Mb L: 8/9 MS: 6 ChangeBit-Custom-ChangeASCIIInt-Custom-EraseBytes-Custom-
+#2048	pulse  cov: 413 ft: 500 corp: 39/267b lim: 9 exec/s: 1024 rss: 1311Mb
+#2094	REDUCE cov: 413 ft: 500 corp: 39/266b lim: 9 exec/s: 1047 rss: 1311Mb L: 8/9 MS: 2 EraseBytes-Custom-
+#2735	REDUCE cov: 413 ft: 500 corp: 39/264b lim: 15 exec/s: 911 rss: 1311Mb L: 7/9 MS: 2 EraseBytes-Custom-
+#2901	REDUCE cov: 413 ft: 500 corp: 39/263b lim: 15 exec/s: 967 rss: 1311Mb L: 7/9 MS: 2 EraseBytes-Custom-
+#3336	NEW    cov: 413 ft: 501 corp: 40/271b lim: 18 exec/s: 1112 rss: 1311Mb L: 8/9 MS: 10 ChangeBinInt-Custom-ChangeBinInt-Custom-CopyPart-Custom-ChangeByte-Custom-PersAutoDict-Custom- DE: "\027V"-
+#3602	REDUCE cov: 413 ft: 501 corp: 40/270b lim: 18 exec/s: 1200 rss: 1311Mb L: 6/9 MS: 2 EraseBytes-Custom-
+#3658	REDUCE cov: 413 ft: 501 corp: 40/268b lim: 18 exec/s: 914 rss: 1311Mb L: 7/9 MS: 2 EraseBytes-Custom-
+#3783	REDUCE cov: 413 ft: 501 corp: 40/267b lim: 18 exec/s: 945 rss: 1311Mb L: 6/9 MS: 10 ChangeByte-Custom-ChangeByte-Custom-PersAutoDict-Custom-CrossOver-Custom-ChangeBit-Custom- DE: "\027V"-
+#4009	REDUCE cov: 413 ft: 502 corp: 41/273b lim: 18 exec/s: 1002 rss: 1311Mb L: 6/9 MS: 2 ChangeBit-Custom-
+#4096	pulse  cov: 413 ft: 502 corp: 41/273b lim: 18 exec/s: 1024 rss: 1311Mb
+#4210	NEW    cov: 413 ft: 503 corp: 42/279b lim: 18 exec/s: 1052 rss: 1311Mb L: 6/9 MS: 2 ChangeBinInt-Custom-
+#4517	REDUCE cov: 413 ft: 503 corp: 42/278b lim: 18 exec/s: 1129 rss: 1311Mb L: 7/9 MS: 4 EraseBytes-Custom-InsertByte-Custom-
+#4743	REDUCE cov: 413 ft: 503 corp: 42/276b lim: 18 exec/s: 948 rss: 1311Mb L: 7/9 MS: 2 EraseBytes-Custom-
+#5404	REDUCE cov: 413 ft: 503 corp: 42/273b lim: 22 exec/s: 1080 rss: 1311Mb L: 6/9 MS: 2 EraseBytes-Custom-
+#5460	REDUCE cov: 413 ft: 503 corp: 42/272b lim: 22 exec/s: 1092 rss: 1311Mb L: 7/9 MS: 2 EraseBytes-Custom-
+#5968	REDUCE cov: 413 ft: 503 corp: 42/271b lim: 26 exec/s: 994 rss: 1311Mb L: 6/9 MS: 6 ChangeBinInt-Custom-PersAutoDict-Custom-EraseBytes-Custom- DE: "\027V"-
+#5994	REDUCE cov: 413 ft: 503 corp: 42/269b lim: 26 exec/s: 999 rss: 1311Mb L: 6/9 MS: 2 EraseBytes-Custom-
+#6745	REDUCE cov: 413 ft: 503 corp: 42/267b lim: 30 exec/s: 963 rss: 1311Mb L: 7/9 MS: 2 EraseBytes-Custom-
+#7626	REDUCE cov: 413 ft: 504 corp: 43/273b lim: 34 exec/s: 1089 rss: 1311Mb L: 6/9 MS: 2 ChangeASCIIInt-Custom-
+#8037	REDUCE cov: 413 ft: 504 corp: 43/271b lim: 34 exec/s: 1004 rss: 1311Mb L: 6/9 MS: 2 EraseBytes-Custom-
+#8192	pulse  cov: 413 ft: 504 corp: 43/271b lim: 34 exec/s: 1024 rss: 1311Mb
+#8237	REDUCE cov: 413 ft: 504 corp: 43/270b lim: 34 exec/s: 1029 rss: 1311Mb L: 7/9 MS: 10 ChangeBit-Custom-EraseBytes-Custom-InsertByte-Custom-CrossOver-Custom-ChangeASCIIInt-Custom-
+#8618	NEW    cov: 413 ft: 505 corp: 44/279b lim: 34 exec/s: 1077 rss: 1311Mb L: 9/9 MS: 2 InsertByte-Custom-
+#8744	REDUCE cov: 413 ft: 505 corp: 44/278b lim: 34 exec/s: 1093 rss: 1311Mb L: 6/9 MS: 2 EraseBytes-Custom-
+#9020	REDUCE cov: 413 ft: 505 corp: 44/277b lim: 34 exec/s: 1002 rss: 1311Mb L: 6/9 MS: 2 EraseBytes-Custom-
+#9050	REDUCE cov: 413 ft: 506 corp: 45/286b lim: 34 exec/s: 1005 rss: 1311Mb L: 9/9 MS: 10 InsertByte-Custom-InsertByte-Custom-ChangeBinInt-Custom-ChangeByte-Custom-CopyPart-Custom-
+#9474	REDUCE cov: 413 ft: 506 corp: 45/285b lim: 34 exec/s: 1052 rss: 1311Mb L: 6/9 MS: 8 PersAutoDict-Custom-InsertByte-Custom-EraseBytes-Custom-ChangeBinInt-Custom- DE: "\027V"-
+#9740	REDUCE cov: 413 ft: 506 corp: 45/284b lim: 34 exec/s: 1082 rss: 1311Mb L: 8/9 MS: 2 EraseBytes-Custom-
+#10248	REDUCE cov: 413 ft: 506 corp: 45/282b lim: 39 exec/s: 1024 rss: 1311Mb L: 6/9 MS: 6 EraseBytes-Custom-ChangeBinInt-Custom-ChangeByte-Custom-
+#11984	REDUCE cov: 413 ft: 506 corp: 45/279b lim: 54 exec/s: 998 rss: 1311Mb L: 6/9 MS: 2 EraseBytes-Custom-
+#12416	REDUCE cov: 413 ft: 506 corp: 45/278b lim: 54 exec/s: 1034 rss: 1311Mb L: 6/9 MS: 4 PersAutoDict-Custom-EraseBytes-Custom- DE: "\027V"-
+#14022	REDUCE cov: 413 ft: 510 corp: 46/284b lim: 64 exec/s: 1001 rss: 1311Mb L: 6/9 MS: 2 ChangeBit-Custom-
+#15663	REDUCE cov: 413 ft: 510 corp: 46/283b lim: 76 exec/s: 1044 rss: 1311Mb L: 6/9 MS: 2 EraseBytes-Custom-
+#16085	REDUCE cov: 413 ft: 510 corp: 46/281b lim: 76 exec/s: 1005 rss: 1311Mb L: 6/9 MS: 4 CrossOver-Custom-EraseBytes-Custom-
+#16384	pulse  cov: 413 ft: 510 corp: 46/281b lim: 76 exec/s: 1024 rss: 1311Mb
+#16758	REDUCE cov: 413 ft: 510 corp: 46/280b lim: 82 exec/s: 1047 rss: 1311Mb L: 6/9 MS: 6 ChangeASCIIInt-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#17744	REDUCE cov: 413 ft: 510 corp: 46/279b lim: 88 exec/s: 1043 rss: 1311Mb L: 6/9 MS: 2 EraseBytes-Custom-
+#18075	REDUCE cov: 413 ft: 510 corp: 46/278b lim: 88 exec/s: 1004 rss: 1311Mb L: 6/9 MS: 2 EraseBytes-Custom-
+#19853	REDUCE cov: 413 ft: 510 corp: 46/277b lim: 100 exec/s: 1044 rss: 1311Mb L: 7/9 MS: 6 CopyPart-Custom-ChangeASCIIInt-Custom-EraseBytes-Custom-
+#21073	DONE   cov: 413 ft: 510 corp: 46/277b lim: 112 exec/s: 1003 rss: 1311Mb
+###### Recommended dictionary. ######
+"\027V" # Uses: 1816
+###### End of recommended dictionary. ######
+Done 21073 runs in 21 second(s)

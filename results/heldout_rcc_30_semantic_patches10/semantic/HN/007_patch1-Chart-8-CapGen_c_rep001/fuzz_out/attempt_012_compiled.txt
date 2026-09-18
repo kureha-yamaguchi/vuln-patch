@@ -1,0 +1,43 @@
+
+INFO: Loaded 314 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.jfree.data.time.FuzzHarness (took 65 ms, size +16%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x792488176cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2279933127
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7924bc622210, 0x7924bc622410), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7924bc542fe0,0x7924bc544fe0), 
+INFO:       51 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.jfree.data.time.Week (took 20 ms, size +27%)
+INFO: Instrumented org.jfree.data.time.RegularTimePeriod (took 6 ms, size +44%)
+INFO: Instrumented org.jfree.data.time.TimePeriod (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.time.MonthConstants (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.time.TimePeriodFormatException (took 0 ms, size +22%)
+INFO: seed corpus: files: 51 min: 1b max: 17b total: 207b rss: 1286Mb
+INFO: Instrumented org.jfree.data.time.Year (took 7 ms, size +15%)
+#52	INITED cov: 104 ft: 115 corp: 4/15b exec/s: 0 rss: 1287Mb
+#74	NEW    cov: 104 ft: 116 corp: 5/20b lim: 5 exec/s: 0 rss: 1287Mb L: 5/5 MS: 4 CrossOver-Custom-ChangeBit-Custom-
+#135	REDUCE cov: 104 ft: 116 corp: 5/19b lim: 5 exec/s: 0 rss: 1287Mb L: 4/5 MS: 2 EraseBytes-Custom-
+#180	REDUCE cov: 105 ft: 118 corp: 6/24b lim: 5 exec/s: 0 rss: 1287Mb L: 5/5 MS: 10 CrossOver-Custom-InsertByte-Custom-ChangeBit-Custom-CopyPart-Custom-ChangeASCIIInt-Custom-
+#5028	REDUCE cov: 105 ft: 118 corp: 6/23b lim: 49 exec/s: 0 rss: 1288Mb L: 4/5 MS: 6 ChangeBit-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#82213	REDUCE cov: 105 ft: 118 corp: 6/22b lim: 809 exec/s: 82213 rss: 1342Mb L: 4/5 MS: 6 EraseBytes-Custom-ChangeASCIIInt-Custom-ChangeBit-Custom-
+#100000	DONE   cov: 105 ft: 118 corp: 6/22b lim: 980 exec/s: 100000 rss: 1514Mb
+Done 100000 runs in 1 second(s)

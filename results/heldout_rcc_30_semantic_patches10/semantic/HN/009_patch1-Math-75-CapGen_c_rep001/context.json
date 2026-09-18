@@ -1,0 +1,354 @@
+{
+ "modified_files": [
+  "src/main/java/org/apache/commons/math/stat/Frequency.java"
+ ],
+ "patch_text": "--- /src/main/java/org/apache/commons/math/stat/Frequency.java\n+++ /src/main/java/org/apache/commons/math/stat/Frequency.java\n@@ -300,7 +300,7 @@ public class Frequency implements Serializable {\n      */\n     @Deprecated\n     public double getPct(Object v) {\n-        return getCumPct((Comparable<?>) v);\n+        return getPct((Comparable<?>) v);\n     }\n \n     /**",
+ "functions": [
+  {
+   "func_name": "getPct",
+   "func_signature": "public double getPct(Object v)",
+   "func_source": "    public double getPct(Object v) {\n        return getCumPct((Comparable<?>) v);\n    }",
+   "func_class": "Frequency",
+   "func_class_fq": "org.apache.commons.math.stat.Frequency",
+   "func_param_types": [
+    "Object"
+   ],
+   "fi_name": "[org.apache.commons.math.stat.Frequency].getPct(Object)",
+   "overload_types": [
+    [
+     "Object"
+    ],
+    [
+     "Comparable<?>"
+    ],
+    [
+     "int"
+    ],
+    [
+     "long"
+    ],
+    [
+     "char"
+    ]
+   ],
+   "xrefs": [
+    "public void testPcts() {\n        f.addValue(oneL);\n        f.addValue(twoL);\n        f.addValue(oneI);\n        f.addValue(twoI);\n        f.addValue(threeL);\n        f.addValue(threeL);\n        f.addValue(3);\n        f.addValue(threeI);\n        assertEquals(\"one pct\",0.25,f.getPct(1),tolerance);\n        assertEquals(\"two pct\",0.25,f.getPct(Long.valueOf(2)),tolerance);\n        assertEquals(\"three pct\",0.5,f.getPct(threeL),tolerance);\n        // MATH-329\n        assertEquals(\"three (Object) pct\",0.5,f.getPct((Object) (Integer.valueOf(3))),tolerance);\n        assertEquals(\"five pct\",0,f.getPct(5),tolerance);\n        assertEquals(\"foo pct\",0,f.getPct(\"foo\"),tolerance);\n        assertEquals(\"one cum pct\",0.25,f.getCumPct(1),tolerance);\n        assertEquals(\"two cum pct\",0.50,f.getCumPct(Long.valueOf(2)),tolerance);\n        assertEquals(\"Integer argument\",0.50,f.getCumPct(Integer.valueOf(2)),tolerance);\n        assertEquals(\"three cum pct\",1.0,f.getCumPct(threeL),tolerance);\n        assertEquals(\"five cum pct\",1.0,f.getCumPct(5),tolerance);\n        assertEquals(\"zero cum pct\",0.0,f.getCumPct(0),tolerance);\n        assertEquals(\"foo cum pct\",0,f.getCumPct(\"foo\"),tolerance);\n    }"
+   ],
+   "xref_names": [
+    "[org.apache.commons.math.stat.FrequencyTest].testPcts()"
+   ],
+   "reachable_edges": [
+    [
+     "[org.apache.commons.math.stat.Frequency].getPct(Object)",
+     "[org.apache.commons.math.stat.Frequency].getCumPct(Comparable<?>)"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumPct(Comparable<?>)",
+     "[org.apache.commons.math.stat.Frequency].getSumFreq()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumPct(Comparable<?>)",
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getSumFreq()",
+     "[java.util.TreeMap<Comparable<?>,Long>].values()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getSumFreq()",
+     "[org.apache.commons.math.stat.Frequency].iterator()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getSumFreq()",
+     "[org.apache.commons.math.stat.Frequency].hasNext()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getSumFreq()",
+     "[org.apache.commons.math.stat.Frequency].next()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getSumFreq()",
+     "[org.apache.commons.math.stat.Frequency].longValue()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[org.apache.commons.math.stat.Frequency].getSumFreq()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[Integer].longValue()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(org.apache.commons.math.stat.Frequency)"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[java.util.TreeMap<Comparable<?>,Long>].comparator()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[org.apache.commons.math.stat.Frequency.NaturalComparator].<init>()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[java.util.TreeMap<Comparable<?>,Long>].get(Comparable<?>)"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[org.apache.commons.math.stat.Frequency].longValue()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[java.util.TreeMap<Comparable<?>,Long>].firstKey()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[org.apache.commons.math.stat.Frequency.NaturalComparator].compare(Comparable<?>,org.apache.commons.math.stat.Frequency)"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[java.util.TreeMap<Comparable<?>,Long>].lastKey()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[org.apache.commons.math.stat.Frequency.NaturalComparator].compare(Comparable<?>,org.apache.commons.math.stat.Frequency)"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[org.apache.commons.math.stat.Frequency].getSumFreq()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[org.apache.commons.math.stat.Frequency].valuesIterator()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[java.util.Iterator<Comparable<?>>].hasNext()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[java.util.Iterator<Comparable<?>>].next()"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[org.apache.commons.math.stat.Frequency.NaturalComparator].compare(Comparable<?>,org.apache.commons.math.stat.Frequency)"
+    ],
+    [
+     "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+     "[org.apache.commons.math.stat.Frequency].getCount(org.apache.commons.math.stat.Frequency)"
+    ]
+   ],
+   "reachable_depth": {
+    "[org.apache.commons.math.stat.Frequency].getPct(Object)": 0,
+    "[org.apache.commons.math.stat.Frequency].getCumPct(Comparable<?>)": 1,
+    "[org.apache.commons.math.stat.Frequency].getSumFreq()": 2,
+    "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)": 2,
+    "[java.util.TreeMap<Comparable<?>,Long>].values()": 3,
+    "[org.apache.commons.math.stat.Frequency].iterator()": 3,
+    "[org.apache.commons.math.stat.Frequency].hasNext()": 3,
+    "[org.apache.commons.math.stat.Frequency].next()": 3,
+    "[org.apache.commons.math.stat.Frequency].longValue()": 3,
+    "[Integer].longValue()": 3,
+    "[org.apache.commons.math.stat.Frequency].getCumFreq(org.apache.commons.math.stat.Frequency)": 3,
+    "[java.util.TreeMap<Comparable<?>,Long>].comparator()": 3,
+    "[org.apache.commons.math.stat.Frequency.NaturalComparator].<init>()": 3,
+    "[java.util.TreeMap<Comparable<?>,Long>].get(Comparable<?>)": 3,
+    "[java.util.TreeMap<Comparable<?>,Long>].firstKey()": 3,
+    "[org.apache.commons.math.stat.Frequency.NaturalComparator].compare(Comparable<?>,org.apache.commons.math.stat.Frequency)": 3,
+    "[java.util.TreeMap<Comparable<?>,Long>].lastKey()": 3,
+    "[org.apache.commons.math.stat.Frequency].valuesIterator()": 3,
+    "[java.util.Iterator<Comparable<?>>].hasNext()": 3,
+    "[java.util.Iterator<Comparable<?>>].next()": 3,
+    "[org.apache.commons.math.stat.Frequency].getCount(org.apache.commons.math.stat.Frequency)": 3
+   },
+   "reachable": [
+    "[org.apache.commons.math.stat.Frequency].getCumPct(Comparable<?>)",
+    "[org.apache.commons.math.stat.Frequency].getSumFreq()",
+    "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+    "[java.util.TreeMap<Comparable<?>,Long>].values()",
+    "[org.apache.commons.math.stat.Frequency].iterator()",
+    "[org.apache.commons.math.stat.Frequency].hasNext()",
+    "[org.apache.commons.math.stat.Frequency].next()",
+    "[org.apache.commons.math.stat.Frequency].longValue()",
+    "[Integer].longValue()",
+    "[org.apache.commons.math.stat.Frequency].getCumFreq(org.apache.commons.math.stat.Frequency)",
+    "[java.util.TreeMap<Comparable<?>,Long>].comparator()",
+    "[org.apache.commons.math.stat.Frequency.NaturalComparator].<init>()",
+    "[java.util.TreeMap<Comparable<?>,Long>].get(Comparable<?>)",
+    "[java.util.TreeMap<Comparable<?>,Long>].firstKey()",
+    "[org.apache.commons.math.stat.Frequency.NaturalComparator].compare(Comparable<?>,org.apache.commons.math.stat.Frequency)",
+    "[java.util.TreeMap<Comparable<?>,Long>].lastKey()",
+    "[org.apache.commons.math.stat.Frequency].valuesIterator()",
+    "[java.util.Iterator<Comparable<?>>].hasNext()",
+    "[java.util.Iterator<Comparable<?>>].next()",
+    "[org.apache.commons.math.stat.Frequency].getCount(org.apache.commons.math.stat.Frequency)",
+    "[org.apache.commons.math.stat.Frequency].getCumPct(Object)"
+   ],
+   "related_callees": [
+    {
+     "name": "getCumPct",
+     "source_file": "Frequency.java",
+     "signature": "public double getCumPct(Object v)",
+     "source": "    public double getCumPct(Object v) {\n        return getCumPct((Comparable<?>) v);\n\n    }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "Frequency.java",
+       "    public double getCumPct(Object v) {\n        return getCumPct((Comparable<?>) v);\n\n    }"
+      ],
+      [
+       "Frequency.java",
+       "    public double getCumPct(Comparable<?> v) {\n        final long sumFreq = getSumFreq();\n        if (sumFreq == 0) {\n            return Double.NaN;\n        }\n        return (double) getCumFreq(v) / (double) sumFreq;\n    }"
+      ],
+      [
+       "Frequency.java",
+       "    public double getCumPct(int v) {\n        return getCumPct(Long.valueOf(v));\n    }"
+      ],
+      [
+       "Frequency.java",
+       "    public double getCumPct(long v) {\n        return getCumPct(Long.valueOf(v));\n    }"
+      ]
+     ]
+    }
+   ],
+   "field_siblings": []
+  }
+ ],
+ "package": "org.apache.commons.math.stat",
+ "root_cause_reachable": [
+  "Frequency.getCumPct",
+  "Frequency.getSumFreq",
+  "Frequency.getCumFreq",
+  "Frequency.iterator",
+  "Frequency.hasNext",
+  "Frequency.next",
+  "Frequency.longValue",
+  "NaturalComparator.<init>",
+  "NaturalComparator.compare",
+  "Frequency.valuesIterator",
+  "Frequency.getCount"
+ ],
+ "neighbourhood_notes": [],
+ "source_imports": [
+  "import java.io.Serializable;",
+  "import java.text.NumberFormat;",
+  "import java.util.Iterator;",
+  "import java.util.Comparator;",
+  "import java.util.TreeMap;",
+  "import org.apache.commons.math.MathRuntimeException;"
+ ],
+ "reachable_edges": [
+  [
+   "[org.apache.commons.math.stat.Frequency].getPct(Object)",
+   "[org.apache.commons.math.stat.Frequency].getCumPct(Comparable<?>)"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumPct(Comparable<?>)",
+   "[org.apache.commons.math.stat.Frequency].getSumFreq()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumPct(Comparable<?>)",
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getSumFreq()",
+   "[java.util.TreeMap<Comparable<?>,Long>].values()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getSumFreq()",
+   "[org.apache.commons.math.stat.Frequency].iterator()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getSumFreq()",
+   "[org.apache.commons.math.stat.Frequency].hasNext()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getSumFreq()",
+   "[org.apache.commons.math.stat.Frequency].next()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getSumFreq()",
+   "[org.apache.commons.math.stat.Frequency].longValue()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[org.apache.commons.math.stat.Frequency].getSumFreq()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[Integer].longValue()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(org.apache.commons.math.stat.Frequency)"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[java.util.TreeMap<Comparable<?>,Long>].comparator()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[org.apache.commons.math.stat.Frequency.NaturalComparator].<init>()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[java.util.TreeMap<Comparable<?>,Long>].get(Comparable<?>)"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[org.apache.commons.math.stat.Frequency].longValue()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[java.util.TreeMap<Comparable<?>,Long>].firstKey()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[org.apache.commons.math.stat.Frequency.NaturalComparator].compare(Comparable<?>,org.apache.commons.math.stat.Frequency)"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[java.util.TreeMap<Comparable<?>,Long>].lastKey()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[org.apache.commons.math.stat.Frequency].valuesIterator()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[java.util.Iterator<Comparable<?>>].hasNext()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[java.util.Iterator<Comparable<?>>].next()"
+  ],
+  [
+   "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)",
+   "[org.apache.commons.math.stat.Frequency].getCount(org.apache.commons.math.stat.Frequency)"
+  ]
+ ],
+ "reachable_depth": {
+  "[org.apache.commons.math.stat.Frequency].getPct(Object)": 0,
+  "[org.apache.commons.math.stat.Frequency].getCumPct(Comparable<?>)": 1,
+  "[org.apache.commons.math.stat.Frequency].getSumFreq()": 2,
+  "[org.apache.commons.math.stat.Frequency].getCumFreq(Comparable<?>)": 2,
+  "[java.util.TreeMap<Comparable<?>,Long>].values()": 3,
+  "[org.apache.commons.math.stat.Frequency].iterator()": 3,
+  "[org.apache.commons.math.stat.Frequency].hasNext()": 3,
+  "[org.apache.commons.math.stat.Frequency].next()": 3,
+  "[org.apache.commons.math.stat.Frequency].longValue()": 3,
+  "[Integer].longValue()": 3,
+  "[org.apache.commons.math.stat.Frequency].getCumFreq(org.apache.commons.math.stat.Frequency)": 3,
+  "[java.util.TreeMap<Comparable<?>,Long>].comparator()": 3,
+  "[org.apache.commons.math.stat.Frequency.NaturalComparator].<init>()": 3,
+  "[java.util.TreeMap<Comparable<?>,Long>].get(Comparable<?>)": 3,
+  "[java.util.TreeMap<Comparable<?>,Long>].firstKey()": 3,
+  "[org.apache.commons.math.stat.Frequency.NaturalComparator].compare(Comparable<?>,org.apache.commons.math.stat.Frequency)": 3,
+  "[java.util.TreeMap<Comparable<?>,Long>].lastKey()": 3,
+  "[org.apache.commons.math.stat.Frequency].valuesIterator()": 3,
+  "[java.util.Iterator<Comparable<?>>].hasNext()": 3,
+  "[java.util.Iterator<Comparable<?>>].next()": 3,
+  "[org.apache.commons.math.stat.Frequency].getCount(org.apache.commons.math.stat.Frequency)": 3
+ }
+}

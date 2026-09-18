@@ -1,0 +1,187 @@
+{
+ "granularity": "method",
+ "items": [
+  {
+   "class_fq": "Integer",
+   "name": "longValue",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.Iterator",
+   "name": "hasNext",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.Iterator",
+   "name": "next",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.TreeMap",
+   "name": "comparator",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.TreeMap",
+   "name": "firstKey",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.TreeMap",
+   "name": "get",
+   "params": [
+    "Comparable"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.TreeMap",
+   "name": "lastKey",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.TreeMap",
+   "name": "values",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCount",
+   "params": [
+    "Frequency"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": [
+    "Comparable"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": [
+    "Frequency"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumPct",
+   "params": [
+    "Comparable"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumPct",
+   "params": [
+    "Object"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": [
+    "Object"
+   ],
+   "ring": "seed",
+   "depth": 0
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getSumFreq",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "hasNext",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "iterator",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "longValue",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "next",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "valuesIterator",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency.NaturalComparator",
+   "name": "<init>",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.Frequency.NaturalComparator",
+   "name": "compare",
+   "params": [
+    "Comparable",
+    "Frequency"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "name": "testPcts",
+   "params": [],
+   "ring": "caller",
+   "depth": 1
+  }
+ ],
+ "multi": {},
+ "edges": [],
+ "unmatched": [],
+ "provenance": {}
+}

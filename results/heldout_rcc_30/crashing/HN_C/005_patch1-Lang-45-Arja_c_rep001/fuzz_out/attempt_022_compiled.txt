@@ -1,0 +1,47 @@
+DEDUP_TOKEN: bb3e83a553a4a96b
+
+INFO: Loaded 324 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 84 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.lang.FuzzHarness (took 64 ms, size +25%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/005_patch1-Lang-45-Arja_c_rep001/Lang_45_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x75b718976cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 1350374689
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x75b744623b90, 0x75b744623d90), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x75b744588f90,0x75b74458af90), 
+INFO:       99 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/005_patch1-Lang-45-Arja_c_rep001/Lang_45_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.lang.WordUtils (took 13 ms, size +41%)
+INFO: seed corpus: files: 99 min: 1b max: 77b total: 1046b rss: 1290Mb
+INFO: New number of coverage counters: 1024
+INFO: New number of coverage counters: 2048
+INFO: Instrumented org.apache.commons.lang.StringUtils (took 80 ms, size +43%)
+
+== Java Exception: java.lang.StringIndexOutOfBoundsException: String index out of range: 4
+	at java.lang.String.substring(String.java:1963)
+	at org.apache.commons.lang.WordUtils.abbreviate(WordUtils.java:629)
+	at org.apache.commons.lang.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:72)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+0x36,
+6
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/005_patch1-Lang-45-Arja_c_rep001/Lang_45_buggy/fuzz/attempt_022/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/005_patch1-Lang-45-Arja_c_rep001/Lang_45_buggy/fuzz/attempt_022/crashes/crash-c1dfd96eea8cc2b62785275bca38ac261256e278
+Base64: Ng==
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/005_patch1-Lang-45-Arja_c_rep001/Lang_45_buggy/fuzz/attempt_022/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/005_patch1-Lang-45-Arja_c_rep001/Lang_45_buggy/fuzz/attempt_022/crashes/Crash_c1dfd96eea8cc2b62785275bca38ac261256e278.java
+

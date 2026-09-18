@@ -1,0 +1,54 @@
+
+INFO: Loaded 314 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.jfree.data.time.FuzzHarness (took 69 ms, size +19%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7b9a20776cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 968019965
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7b9ab465aab0, 0x7b9ab465acb0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7b9ab45dada0,0x7b9ab45dcda0), 
+INFO:       56 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.jfree.data.time.Week (took 20 ms, size +27%)
+INFO: Instrumented org.jfree.data.time.RegularTimePeriod (took 6 ms, size +44%)
+INFO: Instrumented org.jfree.data.time.TimePeriod (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.time.MonthConstants (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.time.TimePeriodFormatException (took 0 ms, size +22%)
+INFO: seed corpus: files: 56 min: 1b max: 17b total: 231b rss: 1299Mb
+#57	INITED cov: 99 ft: 101 corp: 4/24b exec/s: 0 rss: 1300Mb
+#58	REDUCE cov: 99 ft: 101 corp: 4/22b lim: 16 exec/s: 0 rss: 1300Mb L: 14/14 MS: 2 CrossOver-Custom-
+#78	REDUCE cov: 99 ft: 101 corp: 4/20b lim: 16 exec/s: 0 rss: 1300Mb L: 12/12 MS: 10 ChangeASCIIInt-Custom-CrossOver-Custom-CMP-Custom-ChangeBit-Custom-CrossOver-Custom- DE: "\000\000"-
+#107	NEW    cov: 101 ft: 103 corp: 5/35b lim: 16 exec/s: 0 rss: 1300Mb L: 15/15 MS: 8 PersAutoDict-Custom-PersAutoDict-Custom-ChangeBit-Custom-InsertRepeatedBytes-Custom- DE: "\000\000"-"\000\000"-
+#139	REDUCE cov: 101 ft: 103 corp: 5/31b lim: 16 exec/s: 0 rss: 1300Mb L: 8/15 MS: 4 CrossOver-Custom-EraseBytes-Custom-
+#176	REDUCE cov: 101 ft: 103 corp: 5/26b lim: 16 exec/s: 0 rss: 1300Mb L: 10/10 MS: 4 ChangeByte-Custom-EraseBytes-Custom-
+#178	REDUCE cov: 101 ft: 105 corp: 6/36b lim: 16 exec/s: 0 rss: 1300Mb L: 10/10 MS: 4 CMP-Custom-EraseBytes-Custom- DE: "\002\000"-
+#299	REDUCE cov: 101 ft: 105 corp: 6/34b lim: 16 exec/s: 0 rss: 1300Mb L: 8/10 MS: 2 EraseBytes-Custom-
+#516	REDUCE cov: 101 ft: 105 corp: 6/30b lim: 16 exec/s: 0 rss: 1300Mb L: 4/10 MS: 4 ChangeBit-Custom-EraseBytes-Custom-
+#715	REDUCE cov: 101 ft: 105 corp: 6/29b lim: 16 exec/s: 0 rss: 1300Mb L: 7/10 MS: 8 ChangeBit-Custom-EraseBytes-Custom-EraseBytes-Custom-InsertRepeatedBytes-Custom-
+#947	REDUCE cov: 101 ft: 105 corp: 6/28b lim: 16 exec/s: 0 rss: 1300Mb L: 3/10 MS: 4 EraseBytes-Custom-CrossOver-Custom-
+#1580	REDUCE cov: 101 ft: 105 corp: 6/27b lim: 20 exec/s: 0 rss: 1300Mb L: 9/9 MS: 6 CopyPart-Custom-CopyPart-Custom-EraseBytes-Custom-
+#4887	REDUCE cov: 101 ft: 105 corp: 6/26b lim: 52 exec/s: 0 rss: 1300Mb L: 8/8 MS: 4 ChangeBinInt-Custom-EraseBytes-Custom-
+#11543	REDUCE cov: 101 ft: 105 corp: 6/25b lim: 115 exec/s: 0 rss: 1304Mb L: 7/7 MS: 2 EraseBytes-Custom-
+#100000	DONE   cov: 101 ft: 105 corp: 6/25b lim: 992 exec/s: 100000 rss: 1638Mb
+###### Recommended dictionary. ######
+"\000\000" # Uses: 4554
+"\002\000" # Uses: 4451
+###### End of recommended dictionary. ######
+Done 100000 runs in 1 second(s)

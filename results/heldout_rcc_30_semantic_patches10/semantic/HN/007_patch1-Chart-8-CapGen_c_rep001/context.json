@@ -1,0 +1,64 @@
+{
+ "modified_files": [
+  "source/org/jfree/data/time/Week.java"
+ ],
+ "patch_text": "--- /source/org/jfree/data/time/Week.java\n+++ /source/org/jfree/data/time/Week.java\n@@ -172,7 +172,7 @@\n      */\n     public Week(Date time, TimeZone zone) {\n         // defer argument checking...\n-        this(time, RegularTimePeriod.DEFAULT_TIME_ZONE, Locale.getDefault());\n+       this(time, zone, Locale.getDefault());\n     }\n \n     /**\n",
+ "functions": [
+  {
+   "func_name": "Week",
+   "func_signature": "public Week(Date time, TimeZone zone)",
+   "func_source": "    public Week(Date time, TimeZone zone) {\n        // defer argument checking...\n        this(time, RegularTimePeriod.DEFAULT_TIME_ZONE, Locale.getDefault());\n    }",
+   "func_class": "Week",
+   "func_class_fq": "org.jfree.data.time.Week",
+   "func_param_types": [
+    "Date",
+    "TimeZone"
+   ],
+   "fi_name": null,
+   "overload_types": [
+    [],
+    [
+     "int",
+     "int"
+    ],
+    [
+     "int",
+     "Year"
+    ],
+    [
+     "Date"
+    ],
+    [
+     "Date",
+     "TimeZone"
+    ],
+    [
+     "Date",
+     "TimeZone",
+     "Locale"
+    ]
+   ],
+   "xrefs": [],
+   "xref_names": [],
+   "reachable_edges": [],
+   "reachable_depth": {},
+   "reachable": [],
+   "related_callees": [],
+   "field_siblings": []
+  }
+ ],
+ "package": "org.jfree.data.time",
+ "root_cause_reachable": [],
+ "neighbourhood_notes": [
+  "unresolved:Week"
+ ],
+ "source_imports": [
+  "import java.io.Serializable;",
+  "import java.util.Calendar;",
+  "import java.util.Date;",
+  "import java.util.Locale;",
+  "import java.util.TimeZone;"
+ ],
+ "reachable_edges": [],
+ "reachable_depth": {}
+}

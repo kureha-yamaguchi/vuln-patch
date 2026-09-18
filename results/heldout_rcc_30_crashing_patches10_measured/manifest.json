@@ -1,0 +1,711 @@
+{
+  "arms": [
+    "HN",
+    "HN_C",
+    "HR"
+  ],
+  "code_hash": "f3af713d376205bd950a3654d0bec4e53ee881665a8c0676e24aef84834c83b4",
+  "created_utc": "2026-09-17T11:02:12.690451+00:00",
+  "excluded_patches": [
+    {
+      "kind": "crashing",
+      "patch_id": "006_patch1-Math-58-Arja_c",
+      "reason": "HR generation failed"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "012_patch1-Math-85-CapGen_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/012_patch1-Math-85-CapGen_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "013_patch1-Lang-43-Elixir_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/013_patch1-Lang-43-Elixir_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "014_patch1-Lang-59-Elixir_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/014_patch1-Lang-59-Elixir_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "015_patch1-Math-58-Elixir_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/015_patch1-Math-58-Elixir_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "016_patch1-Math-70-Elixir_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/016_patch1-Math-70-Elixir_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "017_patch1-Math-85-Elixir_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/017_patch1-Math-85-Elixir_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "018_patch1-Math-70-HDRepair_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/018_patch1-Math-70-HDRepair_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "019_patch1-Math-70-JGenProg2015_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/019_patch1-Math-70-JGenProg2015_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "020_patch1-Lang-45-Jaid_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/020_patch1-Lang-45-Jaid_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "021_patch1-Math-85-Jaid_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/021_patch1-Math-85-Jaid_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "022_patch1-Lang-59-SOFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/022_patch1-Lang-59-SOFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "023_patch1-Math-58-SOFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/023_patch1-Math-58-SOFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "024_patch1-Math-70-SOFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/024_patch1-Math-70-SOFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "025_patch1-Math-85-SOFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/025_patch1-Math-85-SOFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "026_patch1-Lang-59-SequenceR_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/026_patch1-Lang-59-SequenceR_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "027_patch1-Math-58-SequenceR_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/027_patch1-Math-58-SequenceR_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "028_patch1-Math-85-SequenceR_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/028_patch1-Math-85-SequenceR_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "029_patch1-Lang-16-SimFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/029_patch1-Lang-16-SimFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "030_patch1-Lang-43-SimFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/030_patch1-Lang-43-SimFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "031_patch1-Lang-58-SimFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/031_patch1-Lang-58-SimFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "032_patch1-Math-70-SimFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/032_patch1-Math-70-SimFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "033_patch1-Lang-59-SketchFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/033_patch1-Lang-59-SketchFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "034_patch1-Math-70-SketchFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/034_patch1-Math-70-SketchFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "035_patch1-Lang-43-ssFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/035_patch1-Lang-43-ssFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "036_patch1-Lang-59-ssFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/036_patch1-Lang-59-ssFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "037_patch1-Math-70-ssFix_c",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/037_patch1-Math-70-ssFix_c_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "038_patch1-Lang-16-Arja-plausible_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/038_patch1-Lang-16-Arja-plausible_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "039_patch1-Lang-43-Arja-plausible_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/039_patch1-Lang-43-Arja-plausible_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "040_patch1-Lang-59-Arja-plausible_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/040_patch1-Lang-59-Arja-plausible_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "041_patch1-Lang-59-CapGen-plausible_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/041_patch1-Lang-59-CapGen-plausible_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "042_patch1-Math-85-CapGen-plausible_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/042_patch1-Math-85-CapGen-plausible_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "043_patch1-Chart-5-DeepRepair_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/043_patch1-Chart-5-DeepRepair_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "044_patch1-Lang-58-Elixir-plausible_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/044_patch1-Lang-58-Elixir-plausible_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "045_patch1-Math-85-HDRepair_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/045_patch1-Math-85-HDRepair_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "046_patch1-Chart-5-JGenProg2015-plausible_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/046_patch1-Chart-5-JGenProg2015-plausible_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "047_patch1-Math-85-Jaid-plausible_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/047_patch1-Math-85-Jaid-plausible_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "048_patch1-Math-58-Nopol2015-plausible_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/048_patch1-Math-58-Nopol2015-plausible_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "049_patch1-Math-85-Nopol2015-plausible_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/049_patch1-Math-85-Nopol2015-plausible_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "050_patch1-Lang-45-SimFix-plausible_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/050_patch1-Lang-45-SimFix-plausible_o_rep001/execution.json'"
+    },
+    {
+      "kind": "crashing",
+      "patch_id": "051_patch1-Math-85-SimFix-plausible_o",
+      "reason": "[Errno 2] No such file or directory: '/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/051_patch1-Math-85-SimFix-plausible_o_rep001/execution.json'"
+    }
+  ],
+  "git_sha": "1ac28e12b4447c6ad51717ff73beb5695a24b71a",
+  "jobs": [
+    {
+      "arm": "HN",
+      "bug_id": "85",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN/001_patch1-Math-85-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Math/patch1-Math-85-ACS.patch",
+      "patch_id": "001_patch1-Math-85-ACS_c",
+      "patch_sha256": "34a65c06776e2bb86da9a63c2c0b6a167d59c029a081be2ff9efbbaec9c3ed43",
+      "project": "Math",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/001_patch1-Math-85-ACS_c_rep001"
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "85",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN_C/001_patch1-Math-85-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Math/patch1-Math-85-ACS.patch",
+      "patch_id": "001_patch1-Math-85-ACS_c",
+      "patch_sha256": "34a65c06776e2bb86da9a63c2c0b6a167d59c029a081be2ff9efbbaec9c3ed43",
+      "project": "Math",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/001_patch1-Math-85-ACS_c_rep001"
+    },
+    {
+      "arm": "HR",
+      "bug_id": "85",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HR/001_patch1-Math-85-ACS_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/ACS/Math/patch1-Math-85-ACS.patch",
+      "patch_id": "001_patch1-Math-85-ACS_c",
+      "patch_sha256": "34a65c06776e2bb86da9a63c2c0b6a167d59c029a081be2ff9efbbaec9c3ed43",
+      "project": "Math",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/001_patch1-Math-85-ACS_c_rep001"
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "5",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Chart/patch1-Chart-5-Arja.patch",
+      "patch_id": "002_patch1-Chart-5-Arja_c",
+      "patch_sha256": "5d015d225ebdecb7800edf4fe5095257cb8ee179473992e7bcf8aafa61a206a7",
+      "project": "Chart",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001"
+    },
+    {
+      "arm": "HR",
+      "bug_id": "5",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HR/002_patch1-Chart-5-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Chart/patch1-Chart-5-Arja.patch",
+      "patch_id": "002_patch1-Chart-5-Arja_c",
+      "patch_sha256": "5d015d225ebdecb7800edf4fe5095257cb8ee179473992e7bcf8aafa61a206a7",
+      "project": "Chart",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/002_patch1-Chart-5-Arja_c_rep001"
+    },
+    {
+      "arm": "HN",
+      "bug_id": "5",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN/002_patch1-Chart-5-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Chart/patch1-Chart-5-Arja.patch",
+      "patch_id": "002_patch1-Chart-5-Arja_c",
+      "patch_sha256": "5d015d225ebdecb7800edf4fe5095257cb8ee179473992e7bcf8aafa61a206a7",
+      "project": "Chart",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/002_patch1-Chart-5-Arja_c_rep001"
+    },
+    {
+      "arm": "HR",
+      "bug_id": "20",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HR/003_patch1-Lang-20-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Lang/patch1-Lang-20-Arja.patch",
+      "patch_id": "003_patch1-Lang-20-Arja_c",
+      "patch_sha256": "8599d5aed293d46e3033eda9b364795fe0f9d58f93b171edad0aaf9d72e6252b",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/003_patch1-Lang-20-Arja_c_rep001"
+    },
+    {
+      "arm": "HN",
+      "bug_id": "20",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN/003_patch1-Lang-20-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Lang/patch1-Lang-20-Arja.patch",
+      "patch_id": "003_patch1-Lang-20-Arja_c",
+      "patch_sha256": "8599d5aed293d46e3033eda9b364795fe0f9d58f93b171edad0aaf9d72e6252b",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/003_patch1-Lang-20-Arja_c_rep001"
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "20",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN_C/003_patch1-Lang-20-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Lang/patch1-Lang-20-Arja.patch",
+      "patch_id": "003_patch1-Lang-20-Arja_c",
+      "patch_sha256": "8599d5aed293d46e3033eda9b364795fe0f9d58f93b171edad0aaf9d72e6252b",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/003_patch1-Lang-20-Arja_c_rep001"
+    },
+    {
+      "arm": "HN",
+      "bug_id": "43",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN/004_patch1-Lang-43-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Lang/patch1-Lang-43-Arja.patch",
+      "patch_id": "004_patch1-Lang-43-Arja_c",
+      "patch_sha256": "5eaec0a316812d1405d140cf557403028680bd4abc1c06931e32f367149c7da2",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/004_patch1-Lang-43-Arja_c_rep001"
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "43",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN_C/004_patch1-Lang-43-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Lang/patch1-Lang-43-Arja.patch",
+      "patch_id": "004_patch1-Lang-43-Arja_c",
+      "patch_sha256": "5eaec0a316812d1405d140cf557403028680bd4abc1c06931e32f367149c7da2",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/004_patch1-Lang-43-Arja_c_rep001"
+    },
+    {
+      "arm": "HR",
+      "bug_id": "43",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HR/004_patch1-Lang-43-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Lang/patch1-Lang-43-Arja.patch",
+      "patch_id": "004_patch1-Lang-43-Arja_c",
+      "patch_sha256": "5eaec0a316812d1405d140cf557403028680bd4abc1c06931e32f367149c7da2",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/004_patch1-Lang-43-Arja_c_rep001"
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "45",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN_C/005_patch1-Lang-45-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Lang/patch1-Lang-45-Arja.patch",
+      "patch_id": "005_patch1-Lang-45-Arja_c",
+      "patch_sha256": "ea06f6733342d0e89d81875ce861daf0d84b09a4cdb5d4793fdb8bb138f3be84",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/005_patch1-Lang-45-Arja_c_rep001"
+    },
+    {
+      "arm": "HR",
+      "bug_id": "45",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HR/005_patch1-Lang-45-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Lang/patch1-Lang-45-Arja.patch",
+      "patch_id": "005_patch1-Lang-45-Arja_c",
+      "patch_sha256": "ea06f6733342d0e89d81875ce861daf0d84b09a4cdb5d4793fdb8bb138f3be84",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/005_patch1-Lang-45-Arja_c_rep001"
+    },
+    {
+      "arm": "HN",
+      "bug_id": "45",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN/005_patch1-Lang-45-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Lang/patch1-Lang-45-Arja.patch",
+      "patch_id": "005_patch1-Lang-45-Arja_c",
+      "patch_sha256": "ea06f6733342d0e89d81875ce861daf0d84b09a4cdb5d4793fdb8bb138f3be84",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/005_patch1-Lang-45-Arja_c_rep001"
+    },
+    {
+      "arm": "HN",
+      "bug_id": "70",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN/007_patch1-Math-70-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Math/patch1-Math-70-Arja.patch",
+      "patch_id": "007_patch1-Math-70-Arja_c",
+      "patch_sha256": "341ddac50264d9e8c17e1a6dc705390813ce3a57649efd8df771cf570a160b33",
+      "project": "Math",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/007_patch1-Math-70-Arja_c_rep001"
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "70",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN_C/007_patch1-Math-70-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Math/patch1-Math-70-Arja.patch",
+      "patch_id": "007_patch1-Math-70-Arja_c",
+      "patch_sha256": "341ddac50264d9e8c17e1a6dc705390813ce3a57649efd8df771cf570a160b33",
+      "project": "Math",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/007_patch1-Math-70-Arja_c_rep001"
+    },
+    {
+      "arm": "HR",
+      "bug_id": "70",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HR/007_patch1-Math-70-Arja_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/Arja/Math/patch1-Math-70-Arja.patch",
+      "patch_id": "007_patch1-Math-70-Arja_c",
+      "patch_sha256": "341ddac50264d9e8c17e1a6dc705390813ce3a57649efd8df771cf570a160b33",
+      "project": "Math",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/007_patch1-Math-70-Arja_c_rep001"
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "43",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Lang/patch1-Lang-43-CapGen.patch",
+      "patch_id": "008_patch1-Lang-43-CapGen_c",
+      "patch_sha256": "5a0fb5402ba3b4e778d9084d28b754919b12523ca1ef3a731f1c4a753994e43a",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001"
+    },
+    {
+      "arm": "HR",
+      "bug_id": "43",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HR/008_patch1-Lang-43-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Lang/patch1-Lang-43-CapGen.patch",
+      "patch_id": "008_patch1-Lang-43-CapGen_c",
+      "patch_sha256": "5a0fb5402ba3b4e778d9084d28b754919b12523ca1ef3a731f1c4a753994e43a",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/008_patch1-Lang-43-CapGen_c_rep001"
+    },
+    {
+      "arm": "HN",
+      "bug_id": "43",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN/008_patch1-Lang-43-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Lang/patch1-Lang-43-CapGen.patch",
+      "patch_id": "008_patch1-Lang-43-CapGen_c",
+      "patch_sha256": "5a0fb5402ba3b4e778d9084d28b754919b12523ca1ef3a731f1c4a753994e43a",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/008_patch1-Lang-43-CapGen_c_rep001"
+    },
+    {
+      "arm": "HR",
+      "bug_id": "59",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HR/009_patch1-Lang-59-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Lang/patch1-Lang-59-CapGen.patch",
+      "patch_id": "009_patch1-Lang-59-CapGen_c",
+      "patch_sha256": "fb207e3345127761a9acd692ac6d25213ff87f72d11315f67e4643566d4b9d72",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/009_patch1-Lang-59-CapGen_c_rep001"
+    },
+    {
+      "arm": "HN",
+      "bug_id": "59",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN/009_patch1-Lang-59-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Lang/patch1-Lang-59-CapGen.patch",
+      "patch_id": "009_patch1-Lang-59-CapGen_c",
+      "patch_sha256": "fb207e3345127761a9acd692ac6d25213ff87f72d11315f67e4643566d4b9d72",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/009_patch1-Lang-59-CapGen_c_rep001"
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "59",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN_C/009_patch1-Lang-59-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Lang/patch1-Lang-59-CapGen.patch",
+      "patch_id": "009_patch1-Lang-59-CapGen_c",
+      "patch_sha256": "fb207e3345127761a9acd692ac6d25213ff87f72d11315f67e4643566d4b9d72",
+      "project": "Lang",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/009_patch1-Lang-59-CapGen_c_rep001"
+    },
+    {
+      "arm": "HN",
+      "bug_id": "58",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN/010_patch1-Math-58-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-58-CapGen.patch",
+      "patch_id": "010_patch1-Math-58-CapGen_c",
+      "patch_sha256": "2a99a3c7f3e55f8c649927649e54983ebd9a9c7f11fa2baefcf34805798c5175",
+      "project": "Math",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/010_patch1-Math-58-CapGen_c_rep001"
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "58",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN_C/010_patch1-Math-58-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-58-CapGen.patch",
+      "patch_id": "010_patch1-Math-58-CapGen_c",
+      "patch_sha256": "2a99a3c7f3e55f8c649927649e54983ebd9a9c7f11fa2baefcf34805798c5175",
+      "project": "Math",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/010_patch1-Math-58-CapGen_c_rep001"
+    },
+    {
+      "arm": "HR",
+      "bug_id": "58",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HR/010_patch1-Math-58-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-58-CapGen.patch",
+      "patch_id": "010_patch1-Math-58-CapGen_c",
+      "patch_sha256": "2a99a3c7f3e55f8c649927649e54983ebd9a9c7f11fa2baefcf34805798c5175",
+      "project": "Math",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/010_patch1-Math-58-CapGen_c_rep001"
+    },
+    {
+      "arm": "HN_C",
+      "bug_id": "70",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN_C/011_patch1-Math-70-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-70-CapGen.patch",
+      "patch_id": "011_patch1-Math-70-CapGen_c",
+      "patch_sha256": "8baadec12d5a8d1bd040df86e19ce2d9c78cf3041e380310a603f8d9220a0d85",
+      "project": "Math",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/011_patch1-Math-70-CapGen_c_rep001"
+    },
+    {
+      "arm": "HR",
+      "bug_id": "70",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HR/011_patch1-Math-70-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-70-CapGen.patch",
+      "patch_id": "011_patch1-Math-70-CapGen_c",
+      "patch_sha256": "8baadec12d5a8d1bd040df86e19ce2d9c78cf3041e380310a603f8d9220a0d85",
+      "project": "Math",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/011_patch1-Math-70-CapGen_c_rep001"
+    },
+    {
+      "arm": "HN",
+      "bug_id": "70",
+      "flag": "-c",
+      "kind": "crashing",
+      "leg": "crashing/HN/011_patch1-Math-70-CapGen_c_rep001",
+      "patch": "/datadrive/vuln-patch/drr/Patches/Dcorrect/CapGen/Math/patch1-Math-70-CapGen.patch",
+      "patch_id": "011_patch1-Math-70-CapGen_c",
+      "patch_sha256": "8baadec12d5a8d1bd040df86e19ce2d9c78cf3041e380310a603f8d9220a0d85",
+      "project": "Math",
+      "repetition": 1,
+      "source_leg": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/011_patch1-Math-70-CapGen_c_rep001"
+    }
+  ],
+  "options": {
+    "attempts": 30,
+    "bootstrap": 10000,
+    "checkout_root": "/datadrive/vuln-patch/results/heldout_rcc_30/checkouts",
+    "d4j_home": "/datadrive/vuln-patch/defects4j",
+    "kind": "crashing",
+    "max_patches": 10,
+    "measure_existing": "/datadrive/vuln-patch/results/heldout_rcc_30",
+    "model": "gpt-5.4",
+    "out": "/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured",
+    "patches": "/datadrive/vuln-patch/drr/Patches",
+    "repetitions": 1,
+    "seed": 20260916,
+    "verify_timeout": 20
+  },
+  "populations": {
+    "crashing": {
+      "bugs": [
+        [
+          "Chart",
+          "5"
+        ],
+        [
+          "Lang",
+          "20"
+        ],
+        [
+          "Lang",
+          "43"
+        ],
+        [
+          "Lang",
+          "45"
+        ],
+        [
+          "Lang",
+          "59"
+        ],
+        [
+          "Math",
+          "58"
+        ],
+        [
+          "Math",
+          "70"
+        ],
+        [
+          "Math",
+          "85"
+        ]
+      ],
+      "full_bugs": [
+        [
+          "Chart",
+          "5"
+        ],
+        [
+          "Lang",
+          "16"
+        ],
+        [
+          "Lang",
+          "20"
+        ],
+        [
+          "Lang",
+          "43"
+        ],
+        [
+          "Lang",
+          "45"
+        ],
+        [
+          "Lang",
+          "58"
+        ],
+        [
+          "Lang",
+          "59"
+        ],
+        [
+          "Math",
+          "58"
+        ],
+        [
+          "Math",
+          "70"
+        ],
+        [
+          "Math",
+          "85"
+        ]
+      ],
+      "full_patches": 51,
+      "patches": 10,
+      "selection": "first complete patch groups in source manifest order"
+    }
+  },
+  "schema": 2,
+  "source_code_hash": "723109f77851dd08c06d86162a177482bc07962d2031778fac9eb55db46ac09e",
+  "source_manifest_sha256": "ee8bb381672bae51978ccba7cfa6d0dc77c4d5e6189196592a9bb3b863d8b49a",
+  "source_run": "/datadrive/vuln-patch/results/heldout_rcc_30"
+}

@@ -1,0 +1,1475 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 425,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 426,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 427,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 428,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 429,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 430,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 431,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 432,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 433,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 434,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 435,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 436,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 437,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 438,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 439,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 440,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 441,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 442,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 443,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 444,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 445,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 446,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 447,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 448,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 449,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 450,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 451,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 452,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 453,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 454,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 455,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 456,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 457,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 458,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 459,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 460,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 461,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 462,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 463,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 464,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 465,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 466,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 467,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 468,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 469,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 470,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 482,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 483,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 484,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 485,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 486,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 487,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 488,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 489,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 490,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 491,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 492,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 493,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 494,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 495,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 496,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 530,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 531,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 532,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 533,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 534,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 535,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 536,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 537,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 538,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 539,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 540,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 541,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 542,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 543,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 544,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 545,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 546,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 547,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 548,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 549,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 550,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 551,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 552,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 553,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 554,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 555,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.fraction.Fraction",
+   "line": 556,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 539,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 540,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 541,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 542,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 543,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 544,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 545,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 546,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 547,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 548,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 549,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 550,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 551,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 552,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 553,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 554,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 555,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 556,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 557,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 558,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 559,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 560,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 561,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 562,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 563,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 564,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 565,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 566,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 567,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 568,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 569,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 570,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 571,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 572,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 573,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 574,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 575,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 576,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 577,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 578,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 579,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 580,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 581,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 582,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 583,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 584,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 585,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 586,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 587,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 588,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 589,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 590,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 591,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 592,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 709,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 710,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 711,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 712,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 713,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 714,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 715,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 747,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 748,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 749,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 750,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 751,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 752,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 753,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 765,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 766,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 767,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 768,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 769,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 770,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 771,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 772,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 773,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 774,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 775,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 776,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 777,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 778,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 779,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 780,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 781,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 782,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 783,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 784,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 785,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 786,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 787,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 788,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 789,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 790,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 791,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 792,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 793,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 794,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 795,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 796,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 797,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 798,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 799,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 800,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 801,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 802,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 803,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 804,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 805,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 806,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 807,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtils",
+   "line": 808,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 407,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 408,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 409,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 410,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 411,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 412,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 413,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 414,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 415,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 416,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 417,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 418,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 419,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 420,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 421,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 422,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 423,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 424,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 425,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 426,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 427,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 428,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 429,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 430,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 431,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 432,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 433,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 434,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 435,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 436,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 437,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 438,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 439,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 440,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 441,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 442,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 443,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 444,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 445,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 446,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 447,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 448,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 449,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 450,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 451,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 452,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 453,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 454,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 455,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 565,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 566,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 567,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 568,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 569,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 570,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 571,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 572,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 573,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 574,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 575,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 576,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 577,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 578,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 579,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 580,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 581,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 582,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 583,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 584,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 585,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 586,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 587,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 588,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 589,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 590,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 591,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 592,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 593,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 594,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 595,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 596,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 597,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 598,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 599,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 600,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 601,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 602,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 603,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 604,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 605,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 606,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 607,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 608,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.util.MathUtilsTest",
+   "line": 609,
+   "ring": "caller"
+  }
+ ]
+}
