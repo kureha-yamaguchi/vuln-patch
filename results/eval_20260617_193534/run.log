@@ -1,0 +1,1202 @@
+[overfitting] run 1 (have 0/10 distinct) -> project Time
+Found 1 bug-triggering test(s):
+  ✓ org.joda.time.tz.TestCompiler::testDateTimeZoneBuilder  [junit.framework.AssertionFailedError]
+
+bug kind: semantic
+{
+  "modified_files": [
+    "src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java"
+  ],
+  "patch_text": "--- /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java\n+++ /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java\n@@ -1457,9 +1457,8 @@\n             if (tailZone != null) {\n                 if (tailZone.iStartRecurrence.getNameKey()\n                     .equals(tailZone.iEndRecurrence.getNameKey())) {\n-                    if (ZoneInfoCompiler.verbose()) {\n-                        System.out.println(\"Fixing duplicate recurrent name key - \" +\n-                                           tailZone.iStartRecurrence.getNameKey());\n+                \tif (id == null) {\n+                \t\t  return null;\n                     }\n                     if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                         tailZone = new DSTZone(\n",
+  "functions": [
+    {
+      "func_name": "create",
+      "func_signature": "static PrecalculatedZone create(String id, boolean outputID, ArrayList<Transition> transitions, DSTZone tailZone)",
+      "func_source": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList<Transition> transitions,\n                                        DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n\n            Chronology chrono = ISOChronology.getInstanceUTC();\n\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay(), chrono);\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    if (ZoneInfoCompiler.verbose()) {\n                        System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                        System.out.println(\"     - \" + new DateTime(trans[i], chrono) +\n                                           \" - \" + new DateTime(trans[i + 1], chrono));\n                    }\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey()\n                    .equals(tailZone.iEndRecurrence.getNameKey())) {\n                    if (ZoneInfoCompiler.verbose()) {\n                        System.out.println(\"Fixing duplicate recurrent name key - \" +\n                                           tailZone.iStartRecurrence.getNameKey());\n                    }\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone\n                ((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": [
+        {
+          "name": "isTransitionFrom",
+          "source_file": "DateTimeZoneBuilder.java",
+          "signature": "public boolean isTransitionFrom(Transition other)",
+          "source": "        public boolean isTransitionFrom(Transition other) {\n            if (other == null) {\n                return true;\n            }\n            return iMillis > other.iMillis &&\n                (iWallOffset != other.iWallOffset ||\n                 //iStandardOffset != other.iStandardOffset ||\n                 !(iNameKey.equals(other.iNameKey)));\n        }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "getMillis",
+          "source_file": "DateTimeZoneBuilder.java",
+          "signature": "public long getMillis()",
+          "source": "        public long getMillis() {\n            return iMillis;\n        }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "getWallOffset",
+          "source_file": "DateTimeZoneBuilder.java",
+          "signature": "public int getWallOffset()",
+          "source": "        public int getWallOffset() {\n            return iWallOffset;\n        }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "getStandardOffset",
+          "source_file": "CachedDateTimeZone.java",
+          "signature": "public int getStandardOffset(long instant)",
+          "source": "    public int getStandardOffset(long instant) {\n        return getInfo(instant).getStandardOffset(instant);\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "CachedDateTimeZone.java",
+              "    public int getStandardOffset(long instant) {\n        return getInfo(instant).getStandardOffset(instant);\n    }"
+            ],
+            [
+              "CachedDateTimeZone.java",
+              "        public int getStandardOffset(long millis) {\n            if (iNextInfo == null || millis < iNextInfo.iPeriodStart) {\n                if (iStandardOffset == Integer.MIN_VALUE) {\n                    iStandardOffset = iZoneRef.getStandardOffset(iPeriodStart);\n                }\n                return iStandardOffset;\n            }\n            return iNextInfo.getStandardOffset(millis);\n        }"
+            ],
+            [
+              "DateTimeZoneBuilder.java",
+              "        public int getStandardOffset() {\n            return iStandardOffset;\n        }"
+            ],
+            [
+              "DateTimeZoneBuilder.java",
+              "        public int getStandardOffset() {\n            return iStandardOffset;\n        }"
+            ]
+          ]
+        },
+        {
+          "name": "getNameKey",
+          "source_file": "CachedDateTimeZone.java",
+          "signature": "public String getNameKey(long instant)",
+          "source": "    public String getNameKey(long instant) {\n        return getInfo(instant).getNameKey(instant);\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "CachedDateTimeZone.java",
+              "    public String getNameKey(long instant) {\n        return getInfo(instant).getNameKey(instant);\n    }"
+            ],
+            [
+              "CachedDateTimeZone.java",
+              "        public String getNameKey(long millis) {\n            if (iNextInfo == null || millis < iNextInfo.iPeriodStart) {\n                if (iNameKey == null) {\n                    iNameKey = iZoneRef.getNameKey(iPeriodStart);\n                }\n                return iNameKey;\n            }\n            return iNextInfo.getNameKey(millis);\n        }"
+            ],
+            [
+              "DateTimeZoneBuilder.java",
+              "        public String getNameKey() {\n            return iNameKey;\n        }"
+            ],
+            [
+              "DateTimeZoneBuilder.java",
+              "        public String getNameKey() {\n            return iRecurrence.getNameKey();\n        }"
+            ]
+          ]
+        },
+        {
+          "name": "equals",
+          "source_file": "CachedDateTimeZone.java",
+          "signature": "public boolean equals(Object obj)",
+          "source": "    public boolean equals(Object obj) {\n        if (this == obj) {\n            return true;\n        }\n        if (obj instanceof CachedDateTimeZone) {\n            return iZone.equals(((CachedDateTimeZone)obj).iZone);\n        }\n        return false;\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "CachedDateTimeZone.java",
+              "    public boolean equals(Object obj) {\n        if (this == obj) {\n            return true;\n        }\n        if (obj instanceof CachedDateTimeZone) {\n            return iZone.equals(((CachedDateTimeZone)obj).iZone);\n        }\n        return false;\n    }"
+            ],
+            [
+              "DateTimeZoneBuilder.java",
+              "        public boolean equals(Object obj) {\n            if (this == obj) {\n                return true;\n            }\n            if (obj instanceof OfYear) {\n                OfYear other = (OfYear)obj;\n                return\n                    iMode == other.iMode &&\n                    iMonthOfYear == other.iMonthOfYear &&\n                    iDayOfMonth == other.iDayOfMonth &&\n                    iDayOfWeek == other.iDayOfWeek &&\n                    iAdvance == other.iAdvance &&\n                    iMillisOfDay == other.iMillisOfDay;\n            }\n            return false;\n        }"
+            ],
+            [
+              "DateTimeZoneBuilder.java",
+              "        public boolean equals(Object obj) {\n            if (this == obj) {\n                return true;\n            }\n            if (obj instanceof Recurrence) {\n                Recurrence other = (Recurrence)obj;\n                return\n                    iSaveMillis == other.iSaveMillis &&\n                    iNameKey.equals(other.iNameKey) &&\n                    iOfYear.equals(other.iOfYear);\n            }\n            return false;\n        }"
+            ],
+            [
+              "DateTimeZoneBuilder.java",
+              "        public boolean equals(Object obj) {\n            if (this == obj) {\n                return true;\n            }\n            if (obj instanceof DSTZone) {\n                DSTZone other = (DSTZone)obj;\n                return\n                    getID().equals(other.getID()) &&\n                    iStandardOffset == other.iStandardOffset &&\n                    iStartRecurrence.equals(other.iStartRecurrence) &&\n                    iEndRecurrence.equals(other.iEndRecurrence);\n            }\n            return false;\n        }"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "package": "org.joda.time.tz",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.io.DataInput;",
+    "import java.io.DataInputStream;",
+    "import java.io.DataOutput;",
+    "import java.io.DataOutputStream;",
+    "import java.io.IOException;",
+    "import java.io.InputStream;",
+    "import java.io.OutputStream;",
+    "import java.text.DateFormatSymbols;",
+    "import java.util.ArrayList;",
+    "import java.util.Arrays;",
+    "import java.util.HashSet;",
+    "import java.util.Iterator;",
+    "import java.util.Locale;",
+    "import java.util.Set;",
+    "import org.joda.time.Chronology;",
+    "import org.joda.time.DateTime;",
+    "import org.joda.time.DateTimeUtils;",
+    "import org.joda.time.DateTimeZone;",
+    "import org.joda.time.Period;",
+    "import org.joda.time.PeriodType;",
+    "import org.joda.time.chrono.ISOChronology;"
+  ]
+}
+No ground-truth crash input captured — prompt will fall back to test-source anchoring.
+  [semantic] lifting assertion from org.joda.time.tz.TestCompiler::testDateTimeZoneBuilder
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.joda.time.tz` (`package org.joda.time.tz;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Time_11_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java
++++ /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java
+@@ -1457,9 +1457,8 @@
+             if (tailZone != null) {
+                 if (tailZone.iStartRecurrence.getNameKey()
+                     .equals(tailZone.iEndRecurrence.getNameKey())) {
+-                    if (ZoneInfoCompiler.verbose()) {
+-                        System.out.println("Fixing duplicate recurrent name key - " +
+-                                           tailZone.iStartRecurrence.getNameKey());
++                	if (id == null) {
++                		  return null;
+                     }
+                     if (tailZone.iStartRecurrence.getSaveMillis() > 0) {
+                         tailZone = new DSTZone(
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.DateFormatSymbols;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Set;
+import org.joda.time.Chronology;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.chrono.ISOChronology;
+</source_imports>
+
+Function `create`:
+<signature>
+static PrecalculatedZone create(String id, boolean outputID, ArrayList<Transition> transitions, DSTZone tailZone)
+</signature>
+<code>
+        static PrecalculatedZone create(String id, boolean outputID, ArrayList<Transition> transitions,
+                                        DSTZone tailZone) {
+            int size = transitions.size();
+            if (size == 0) {
+                throw new IllegalArgumentException();
+            }
+
+            long[] trans = new long[size];
+            int[] wallOffsets = new int[size];
+            int[] standardOffsets = new int[size];
+            String[] nameKeys = new String[size];
+
+            Transition last = null;
+            for (int i=0; i<size; i++) {
+                Transition tr = transitions.get(i);
+
+                if (!tr.isTransitionFrom(last)) {
+                    throw new IllegalArgumentException(id);
+                }
+
+                trans[i] = tr.getMillis();
+                wallOffsets[i] = tr.getWallOffset();
+                standardOffsets[i] = tr.getStandardOffset();
+                nameKeys[i] = tr.getNameKey();
+
+                last = tr;
+            }
+
+            // Some timezones (Australia) have the same name key for
+            // summer and winter which messes everything up. Fix it here.
+            String[] zoneNameData = new String[5];
+            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();
+            for (int j = 0; j < zoneStrings.length; j++) {
+                String[] set = zoneStrings[j];
+                if (set != null && set.length == 5 && id.equals(set[0])) {
+                    zoneNameData = set;
+                }
+            }
+
+            Chronology chrono = ISOChronology.getInstanceUTC();
+
+            for (int i = 0; i < nameKeys.length - 1; i++) {
+                String curNameKey = nameKeys[i];
+                String nextNameKey = nameKeys[i + 1];
+                long curOffset = wallOffsets[i];
+                long nextOffset = wallOffsets[i + 1];
+                long curStdOffset = standardOffsets[i];
+                long nextStdOffset = standardOffsets[i + 1];
+                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay(), chrono);
+                if (curOffset != nextOffset &&
+                        curStdOffset == nextStdOffset &&
+                        curNameKey.equals(nextNameKey) &&
+                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&
+                        curNameKey.equals(zoneNameData[2]) &&
+                        curNameKey.equals(zoneNameData[4])) {
+                    
+                    if (ZoneInfoCompiler.verbose()) {
+                        System.out.println("Fixing duplicate name key - " + nextNameKey);
+                        System.out.println("     - " + new DateTime(trans[i], chrono) +
+                                           " - " + new DateTime(trans[i + 1], chrono));
+                    }
+                    if (curOffset > nextOffset) {
+                        nameKeys[i] = (curNameKey + "-Summer").intern();
+                    } else if (curOffset < nextOffset) {
+                        nameKeys[i + 1] = (nextNameKey + "-Summer").intern();
+                        i++;
+                    }
+                }
+            }
+
+            if (tailZone != null) {
+                if (tailZone.iStartRecurrence.getNameKey()
+                    .equals(tailZone.iEndRecurrence.getNameKey())) {
+                    if (ZoneInfoCompiler.verbose()) {
+                        System.out.println("Fixing duplicate recurrent name key - " +
+                                           tailZone.iStartRecurrence.getNameKey());
+                    }
+                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {
+                        tailZone = new DSTZone(
+                            tailZone.getID(),
+                            tailZone.iStandardOffset,
+                            tailZone.iStartRecurrence.renameAppend("-Summer"),
+                            tailZone.iEndRecurrence);
+                    } else {
+                        tailZone = new DSTZone(
+                            tailZone.getID(),
+                            tailZone.iStandardOffset,
+                            tailZone.iStartRecurrence,
+                            tailZone.iEndRecurrence.renameAppend("-Summer"));
+                    }
+                }
+            }
+            
+            return new PrecalculatedZone
+                ((outputID ? id : ""), trans, wallOffsets, standardOffsets, nameKeys, tailZone);
+        }
+</code>
+Methods called by `create` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="isTransitionFrom" from="DateTimeZoneBuilder.java">
+<signature>
+public boolean isTransitionFrom(Transition other)
+</signature>
+<code>
+        public boolean isTransitionFrom(Transition other) {
+            if (other == null) {
+                return true;
+            }
+            return iMillis > other.iMillis &&
+                (iWallOffset != other.iWallOffset ||
+                 //iStandardOffset != other.iStandardOffset ||
+                 !(iNameKey.equals(other.iNameKey)));
+        }
+</code>
+</callee>
+<callee name="getMillis" from="DateTimeZoneBuilder.java">
+<signature>
+public long getMillis()
+</signature>
+<code>
+        public long getMillis() {
+            return iMillis;
+        }
+</code>
+</callee>
+<callee name="getWallOffset" from="DateTimeZoneBuilder.java">
+<signature>
+public int getWallOffset()
+</signature>
+<code>
+        public int getWallOffset() {
+            return iWallOffset;
+        }
+</code>
+</callee>
+<callee name="getStandardOffset" from="CachedDateTimeZone.java">
+<signature>
+public int getStandardOffset(long instant)
+</signature>
+<code>
+    public int getStandardOffset(long instant) {
+        return getInfo(instant).getStandardOffset(instant);
+    }
+</code>
+<implementation in="CachedDateTimeZone.java">
+    public int getStandardOffset(long instant) {
+        return getInfo(instant).getStandardOffset(instant);
+    }
+</implementation>
+<implementation in="CachedDateTimeZone.java">
+        public int getStandardOffset(long millis) {
+            if (iNextInfo == null || millis < iNextInfo.iPeriodStart) {
+                if (iStandardOffset == Integer.MIN_VALUE) {
+                    iStandardOffset = iZoneRef.getStandardOffset(iPeriodStart);
+                }
+                return iStandardOffset;
+            }
+            return iNextInfo.getStandardOffset(millis);
+        }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public int getStandardOffset() {
+            return iStandardOffset;
+        }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public int getStandardOffset() {
+            return iStandardOffset;
+        }
+</implementation>
+</callee>
+<callee name="getNameKey" from="CachedDateTimeZone.java">
+<signature>
+public String getNameKey(long instant)
+</signature>
+<code>
+    public String getNameKey(long instant) {
+        return getInfo(instant).getNameKey(instant);
+    }
+</code>
+<implementation in="CachedDateTimeZone.java">
+    public String getNameKey(long instant) {
+        return getInfo(instant).getNameKey(instant);
+    }
+</implementation>
+<implementation in="CachedDateTimeZone.java">
+        public String getNameKey(long millis) {
+            if (iNextInfo == null || millis < iNextInfo.iPeriodStart) {
+                if (iNameKey == null) {
+                    iNameKey = iZoneRef.getNameKey(iPeriodStart);
+                }
+                return iNameKey;
+            }
+            return iNextInfo.getNameKey(millis);
+        }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public String getNameKey() {
+            return iNameKey;
+        }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public String getNameKey() {
+            return iRecurrence.getNameKey();
+        }
+</implementation>
+</callee>
+<callee name="equals" from="CachedDateTimeZone.java">
+<signature>
+public boolean equals(Object obj)
+</signature>
+<code>
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj instanceof CachedDateTimeZone) {
+            return iZone.equals(((CachedDateTimeZone)obj).iZone);
+        }
+        return false;
+    }
+</code>
+<implementation in="CachedDateTimeZone.java">
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj instanceof CachedDateTimeZone) {
+            return iZone.equals(((CachedDateTimeZone)obj).iZone);
+        }
+        return false;
+    }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj instanceof OfYear) {
+                OfYear other = (OfYear)obj;
+                return
+                    iMode == other.iMode &&
+                    iMonthOfYear == other.iMonthOfYear &&
+                    iDayOfMonth == other.iDayOfMonth &&
+                    iDayOfWeek == other.iDayOfWeek &&
+                    iAdvance == other.iAdvance &&
+                    iMillisOfDay == other.iMillisOfDay;
+            }
+            return false;
+        }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj instanceof Recurrence) {
+                Recurrence other = (Recurrence)obj;
+                return
+                    iSaveMillis == other.iSaveMillis &&
+                    iNameKey.equals(other.iNameKey) &&
+                    iOfYear.equals(other.iOfYear);
+            }
+            return false;
+        }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj instanceof DSTZone) {
+                DSTZone other = (DSTZone)obj;
+                return
+                    getID().equals(other.getID()) &&
+                    iStandardOffset == other.iStandardOffset &&
+                    iStartRecurrence.equals(other.iStartRecurrence) &&
+                    iEndRecurrence.equals(other.iEndRecurrence);
+            }
+            return false;
+        }
+</implementation>
+</callee>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `TestCompiler`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.joda.time.tz.TestCompiler" method="testDateTimeZoneBuilder">
+    public void testDateTimeZoneBuilder() throws Exception {
+        // test multithreading, issue #18
+        getTestDataTimeZoneBuilder().toDateTimeZone("TestDTZ1", true);
+        final DateTimeZone[] zone = new DateTimeZone[1];
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                zone[0] = getTestDataTimeZoneBuilder().toDateTimeZone("TestDTZ2", true);
+            }
+        });
+        t.start();
+        t.join();
+        assertNotNull(zone[0]);
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.joda.time.tz;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+
+################################################
+  [semantic] lifting assertion from org.joda.time.tz.TestCompiler::testDateTimeZoneBuilder
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.joda.time.tz` (`package org.joda.time.tz;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Time_11_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java
++++ /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java
+@@ -1457,9 +1457,8 @@
+             if (tailZone != null) {
+                 if (tailZone.iStartRecurrence.getNameKey()
+                     .equals(tailZone.iEndRecurrence.getNameKey())) {
+-                    if (ZoneInfoCompiler.verbose()) {
+-                        System.out.println("Fixing duplicate recurrent name key - " +
+-                                           tailZone.iStartRecurrence.getNameKey());
++                	if (id == null) {
++                		  return null;
+                     }
+                     if (tailZone.iStartRecurrence.getSaveMillis() > 0) {
+                         tailZone = new DSTZone(
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.DateFormatSymbols;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Set;
+import org.joda.time.Chronology;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.chrono.ISOChronology;
+</source_imports>
+
+Function `create`:
+<signature>
+static PrecalculatedZone create(String id, boolean outputID, ArrayList<Transition> transitions, DSTZone tailZone)
+</signature>
+<code>
+        static PrecalculatedZone create(String id, boolean outputID, ArrayList<Transition> transitions,
+                                        DSTZone tailZone) {
+            int size = transitions.size();
+            if (size == 0) {
+                throw new IllegalArgumentException();
+            }
+
+            long[] trans = new long[size];
+            int[] wallOffsets = new int[size];
+            int[] standardOffsets = new int[size];
+            String[] nameKeys = new String[size];
+
+            Transition last = null;
+            for (int i=0; i<size; i++) {
+                Transition tr = transitions.get(i);
+
+                if (!tr.isTransitionFrom(last)) {
+                    throw new IllegalArgumentException(id);
+                }
+
+                trans[i] = tr.getMillis();
+                wallOffsets[i] = tr.getWallOffset();
+                standardOffsets[i] = tr.getStandardOffset();
+                nameKeys[i] = tr.getNameKey();
+
+                last = tr;
+            }
+
+            // Some timezones (Australia) have the same name key for
+            // summer and winter which messes everything up. Fix it here.
+            String[] zoneNameData = new String[5];
+            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();
+            for (int j = 0; j < zoneStrings.length; j++) {
+                String[] set = zoneStrings[j];
+                if (set != null && set.length == 5 && id.equals(set[0])) {
+                    zoneNameData = set;
+                }
+            }
+
+            Chronology chrono = ISOChronology.getInstanceUTC();
+
+            for (int i = 0; i < nameKeys.length - 1; i++) {
+                String curNameKey = nameKeys[i];
+                String nextNameKey = nameKeys[i + 1];
+                long curOffset = wallOffsets[i];
+                long nextOffset = wallOffsets[i + 1];
+                long curStdOffset = standardOffsets[i];
+                long nextStdOffset = standardOffsets[i + 1];
+                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay(), chrono);
+                if (curOffset != nextOffset &&
+                        curStdOffset == nextStdOffset &&
+                        curNameKey.equals(nextNameKey) &&
+                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&
+                        curNameKey.equals(zoneNameData[2]) &&
+                        curNameKey.equals(zoneNameData[4])) {
+                    
+                    if (ZoneInfoCompiler.verbose()) {
+                        System.out.println("Fixing duplicate name key - " + nextNameKey);
+                        System.out.println("     - " + new DateTime(trans[i], chrono) +
+                                           " - " + new DateTime(trans[i + 1], chrono));
+                    }
+                    if (curOffset > nextOffset) {
+                        nameKeys[i] = (curNameKey + "-Summer").intern();
+                    } else if (curOffset < nextOffset) {
+                        nameKeys[i + 1] = (nextNameKey + "-Summer").intern();
+                        i++;
+                    }
+                }
+            }
+
+            if (tailZone != null) {
+                if (tailZone.iStartRecurrence.getNameKey()
+                    .equals(tailZone.iEndRecurrence.getNameKey())) {
+                    if (ZoneInfoCompiler.verbose()) {
+                        System.out.println("Fixing duplicate recurrent name key - " +
+                                           tailZone.iStartRecurrence.getNameKey());
+                    }
+                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {
+                        tailZone = new DSTZone(
+                            tailZone.getID(),
+                            tailZone.iStandardOffset,
+                            tailZone.iStartRecurrence.renameAppend("-Summer"),
+                            tailZone.iEndRecurrence);
+                    } else {
+                        tailZone = new DSTZone(
+                            tailZone.getID(),
+                            tailZone.iStandardOffset,
+                            tailZone.iStartRecurrence,
+                            tailZone.iEndRecurrence.renameAppend("-Summer"));
+                    }
+                }
+            }
+            
+            return new PrecalculatedZone
+                ((outputID ? id : ""), trans, wallOffsets, standardOffsets, nameKeys, tailZone);
+        }
+</code>
+Methods called by `create` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="isTransitionFrom" from="DateTimeZoneBuilder.java">
+<signature>
+public boolean isTransitionFrom(Transition other)
+</signature>
+<code>
+        public boolean isTransitionFrom(Transition other) {
+            if (other == null) {
+                return true;
+            }
+            return iMillis > other.iMillis &&
+                (iWallOffset != other.iWallOffset ||
+                 //iStandardOffset != other.iStandardOffset ||
+                 !(iNameKey.equals(other.iNameKey)));
+        }
+</code>
+</callee>
+<callee name="getMillis" from="DateTimeZoneBuilder.java">
+<signature>
+public long getMillis()
+</signature>
+<code>
+        public long getMillis() {
+            return iMillis;
+        }
+</code>
+</callee>
+<callee name="getWallOffset" from="DateTimeZoneBuilder.java">
+<signature>
+public int getWallOffset()
+</signature>
+<code>
+        public int getWallOffset() {
+            return iWallOffset;
+        }
+</code>
+</callee>
+<callee name="getStandardOffset" from="CachedDateTimeZone.java">
+<signature>
+public int getStandardOffset(long instant)
+</signature>
+<code>
+    public int getStandardOffset(long instant) {
+        return getInfo(instant).getStandardOffset(instant);
+    }
+</code>
+<implementation in="CachedDateTimeZone.java">
+    public int getStandardOffset(long instant) {
+        return getInfo(instant).getStandardOffset(instant);
+    }
+</implementation>
+<implementation in="CachedDateTimeZone.java">
+        public int getStandardOffset(long millis) {
+            if (iNextInfo == null || millis < iNextInfo.iPeriodStart) {
+                if (iStandardOffset == Integer.MIN_VALUE) {
+                    iStandardOffset = iZoneRef.getStandardOffset(iPeriodStart);
+                }
+                return iStandardOffset;
+            }
+            return iNextInfo.getStandardOffset(millis);
+        }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public int getStandardOffset() {
+            return iStandardOffset;
+        }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public int getStandardOffset() {
+            return iStandardOffset;
+        }
+</implementation>
+</callee>
+<callee name="getNameKey" from="CachedDateTimeZone.java">
+<signature>
+public String getNameKey(long instant)
+</signature>
+<code>
+    public String getNameKey(long instant) {
+        return getInfo(instant).getNameKey(instant);
+    }
+</code>
+<implementation in="CachedDateTimeZone.java">
+    public String getNameKey(long instant) {
+        return getInfo(instant).getNameKey(instant);
+    }
+</implementation>
+<implementation in="CachedDateTimeZone.java">
+        public String getNameKey(long millis) {
+            if (iNextInfo == null || millis < iNextInfo.iPeriodStart) {
+                if (iNameKey == null) {
+                    iNameKey = iZoneRef.getNameKey(iPeriodStart);
+                }
+                return iNameKey;
+            }
+            return iNextInfo.getNameKey(millis);
+        }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public String getNameKey() {
+            return iNameKey;
+        }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public String getNameKey() {
+            return iRecurrence.getNameKey();
+        }
+</implementation>
+</callee>
+<callee name="equals" from="CachedDateTimeZone.java">
+<signature>
+public boolean equals(Object obj)
+</signature>
+<code>
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj instanceof CachedDateTimeZone) {
+            return iZone.equals(((CachedDateTimeZone)obj).iZone);
+        }
+        return false;
+    }
+</code>
+<implementation in="CachedDateTimeZone.java">
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj instanceof CachedDateTimeZone) {
+            return iZone.equals(((CachedDateTimeZone)obj).iZone);
+        }
+        return false;
+    }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj instanceof OfYear) {
+                OfYear other = (OfYear)obj;
+                return
+                    iMode == other.iMode &&
+                    iMonthOfYear == other.iMonthOfYear &&
+                    iDayOfMonth == other.iDayOfMonth &&
+                    iDayOfWeek == other.iDayOfWeek &&
+                    iAdvance == other.iAdvance &&
+                    iMillisOfDay == other.iMillisOfDay;
+            }
+            return false;
+        }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj instanceof Recurrence) {
+                Recurrence other = (Recurrence)obj;
+                return
+                    iSaveMillis == other.iSaveMillis &&
+                    iNameKey.equals(other.iNameKey) &&
+                    iOfYear.equals(other.iOfYear);
+            }
+            return false;
+        }
+</implementation>
+<implementation in="DateTimeZoneBuilder.java">
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj instanceof DSTZone) {
+                DSTZone other = (DSTZone)obj;
+                return
+                    getID().equals(other.getID()) &&
+                    iStandardOffset == other.iStandardOffset &&
+                    iStartRecurrence.equals(other.iStartRecurrence) &&
+                    iEndRecurrence.equals(other.iEndRecurrence);
+            }
+            return false;
+        }
+</implementation>
+</callee>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `TestCompiler`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.joda.time.tz.TestCompiler" method="testDateTimeZoneBuilder">
+    public void testDateTimeZoneBuilder() throws Exception {
+        // test multithreading, issue #18
+        getTestDataTimeZoneBuilder().toDateTimeZone("TestDTZ1", true);
+        final DateTimeZone[] zone = new DateTimeZone[1];
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                zone[0] = getTestDataTimeZoneBuilder().toDateTimeZone("TestDTZ2", true);
+            }
+        });
+        t.start();
+        t.join();
+        assertNotNull(zone[0]);
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.joda.time.tz;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+################################################
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+    return self._connection.handle_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+    raise exc
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 231, in _receive_event
+    raise RemoteProtocolError(msg)
+httpcore.RemoteProtocolError: Server disconnected without sending a response.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1037, in request
+    response = self._send_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_client.py", line 440, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_client.py", line 418, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 964, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+  File "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.RemoteProtocolError: Server disconnected without sending a response.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 448, in <module>
+    main()
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 341, in main
+    result = campaign.run(messages, selection.buggy_dir,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/java/campaign.py", line 189, in run
+    raw = self.generator.generate(current_messages)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/llm.py", line 152, in generate
+    stream = self._client.chat.completions.create(**params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1215, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1332, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1072, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+  (no record emitted; retrying)
+[overfitting] run 2 (have 0/10 distinct) -> project Time
+Found 1 bug-triggering test(s):
+  ✓ org.joda.time.TestPartial_Basics::testWith3  [junit.framework.AssertionFailedError]
+
+bug kind: semantic
+{
+  "modified_files": [
+    "src/main/java/org/joda/time/field/ZeroIsMaxDateTimeField.java"
+  ],
+  "patch_text": "--- /src/main/java/org/joda/time/field/ZeroIsMaxDateTimeField.java\t\n+++ /src/main/java/org/joda/time/field/ZeroIsMaxDateTimeField.java\n@@ -135,7 +135,7 @@\n      * @return the minimum value of 1\n      */\n     public int getMinimumValue(ReadablePartial instant, int[] values) {\n-        return 1;\n+    \treturn (getWrappedField().getMaximumValue()) + 1;\n     }\n \n     /**\n",
+  "functions": [],
+  "package": "org.joda.time.field",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import org.joda.time.DateTimeField;",
+    "import org.joda.time.DateTimeFieldType;",
+    "import org.joda.time.DurationField;",
+    "import org.joda.time.ReadablePartial;"
+  ]
+}
+No ground-truth crash input captured — prompt will fall back to test-source anchoring.
+  [semantic] lifting assertion from org.joda.time.TestPartial_Basics::testWith3
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.joda.time.field` (`package org.joda.time.field;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Time_4_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/joda/time/field/ZeroIsMaxDateTimeField.java	
++++ /src/main/java/org/joda/time/field/ZeroIsMaxDateTimeField.java
+@@ -135,7 +135,7 @@
+      * @return the minimum value of 1
+      */
+     public int getMinimumValue(ReadablePartial instant, int[] values) {
+-        return 1;
++    	return (getWrappedField().getMaximumValue()) + 1;
+     }
+ 
+     /**
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import org.joda.time.DateTimeField;
+import org.joda.time.DateTimeFieldType;
+import org.joda.time.DurationField;
+import org.joda.time.ReadablePartial;
+</source_imports>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `TestPartial_Basics`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.joda.time.TestPartial_Basics" method="testWith3">
+    public void testWith3() {
+        Partial test = createHourMinPartial();
+        try {
+            test.with(DateTimeFieldType.clockhourOfDay(), 6);
+            fail();
+        } catch (IllegalArgumentException ex) {}
+        check(test, 10, 20);
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.joda.time.field;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK

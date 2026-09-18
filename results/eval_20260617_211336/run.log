@@ -1,0 +1,1291 @@
+[overfitting] run 1 (have 0/10 distinct) -> project Time
+Found 1 bug-triggering test(s):
+  ✓ org.joda.time.tz.TestCompiler::testDateTimeZoneBuilder  [junit.framework.AssertionFailedError]
+
+bug kind: semantic
+{
+  "modified_files": [
+    "src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java"
+  ],
+  "patch_text": "--- /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java\n+++ /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java\n@@ -1151,8 +1151,7 @@\n                     // really matter which rule was chosen the 'start' and\n                     // which is chosen the 'end'. DSTZone works properly either\n                     // way.\n-                    return new DSTZone(id, iStandardOffset,\n-                                       startRule.iRecurrence, endRule.iRecurrence);\n+                \tSystem.out.println(\"Writing zoneinfo files\");\n                 }\n             }\n             return null;\n",
+  "functions": [
+    {
+      "func_name": "buildTailZone",
+      "func_signature": "public DSTZone buildTailZone(String id)",
+      "func_source": "        public DSTZone buildTailZone(String id) {\n            if (iRules.size() == 2) {\n                Rule startRule = iRules.get(0);\n                Rule endRule = iRules.get(1);\n                if (startRule.getToYear() == Integer.MAX_VALUE &&\n                    endRule.getToYear() == Integer.MAX_VALUE) {\n\n                    // With exactly two infinitely recurring rules left, a\n                    // simple DSTZone can be formed.\n\n                    // The order of rules can come in any order, and it doesn't\n                    // really matter which rule was chosen the 'start' and\n                    // which is chosen the 'end'. DSTZone works properly either\n                    // way.\n                    return new DSTZone(id, iStandardOffset,\n                                       startRule.iRecurrence, endRule.iRecurrence);\n                }\n            }\n            return null;\n        }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": [
+        {
+          "name": "getToYear",
+          "source_file": "DateTimeZoneBuilder.java",
+          "signature": "public int getToYear()",
+          "source": "        public int getToYear() {\n            return iToYear;\n        }",
+          "is_abstract": false,
+          "impls": []
+        }
+      ]
+    }
+  ],
+  "package": "org.joda.time.tz",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.io.DataInput;",
+    "import java.io.DataInputStream;",
+    "import java.io.DataOutput;",
+    "import java.io.DataOutputStream;",
+    "import java.io.IOException;",
+    "import java.io.InputStream;",
+    "import java.io.OutputStream;",
+    "import java.text.DateFormatSymbols;",
+    "import java.util.ArrayList;",
+    "import java.util.Arrays;",
+    "import java.util.HashSet;",
+    "import java.util.Iterator;",
+    "import java.util.Locale;",
+    "import java.util.Set;",
+    "import org.joda.time.Chronology;",
+    "import org.joda.time.DateTime;",
+    "import org.joda.time.DateTimeUtils;",
+    "import org.joda.time.DateTimeZone;",
+    "import org.joda.time.Period;",
+    "import org.joda.time.PeriodType;",
+    "import org.joda.time.chrono.ISOChronology;"
+  ]
+}
+No ground-truth crash input captured — prompt will fall back to test-source anchoring.
+  [semantic] lifting assertion from org.joda.time.tz.TestCompiler::testDateTimeZoneBuilder
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.joda.time.tz` (`package org.joda.time.tz;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Time_11_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java
++++ /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java
+@@ -1151,8 +1151,7 @@
+                     // really matter which rule was chosen the 'start' and
+                     // which is chosen the 'end'. DSTZone works properly either
+                     // way.
+-                    return new DSTZone(id, iStandardOffset,
+-                                       startRule.iRecurrence, endRule.iRecurrence);
++                	System.out.println("Writing zoneinfo files");
+                 }
+             }
+             return null;
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.DateFormatSymbols;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Set;
+import org.joda.time.Chronology;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.chrono.ISOChronology;
+</source_imports>
+
+Function `buildTailZone`:
+<signature>
+public DSTZone buildTailZone(String id)
+</signature>
+<code>
+        public DSTZone buildTailZone(String id) {
+            if (iRules.size() == 2) {
+                Rule startRule = iRules.get(0);
+                Rule endRule = iRules.get(1);
+                if (startRule.getToYear() == Integer.MAX_VALUE &&
+                    endRule.getToYear() == Integer.MAX_VALUE) {
+
+                    // With exactly two infinitely recurring rules left, a
+                    // simple DSTZone can be formed.
+
+                    // The order of rules can come in any order, and it doesn't
+                    // really matter which rule was chosen the 'start' and
+                    // which is chosen the 'end'. DSTZone works properly either
+                    // way.
+                    return new DSTZone(id, iStandardOffset,
+                                       startRule.iRecurrence, endRule.iRecurrence);
+                }
+            }
+            return null;
+        }
+</code>
+Methods called by `buildTailZone` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="getToYear" from="DateTimeZoneBuilder.java">
+<signature>
+public int getToYear()
+</signature>
+<code>
+        public int getToYear() {
+            return iToYear;
+        }
+</code>
+</callee>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `TestCompiler`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.joda.time.tz.TestCompiler" method="testDateTimeZoneBuilder">
+    public void testDateTimeZoneBuilder() throws Exception {
+        // test multithreading, issue #18
+        getTestDataTimeZoneBuilder().toDateTimeZone("TestDTZ1", true);
+        final DateTimeZone[] zone = new DateTimeZone[1];
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                zone[0] = getTestDataTimeZoneBuilder().toDateTimeZone("TestDTZ2", true);
+            }
+        });
+        t.start();
+        t.join();
+        assertNotNull(zone[0]);
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.joda.time.tz;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+
+################################################
+  [semantic] lifting assertion from org.joda.time.tz.TestCompiler::testDateTimeZoneBuilder
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.joda.time.tz` (`package org.joda.time.tz;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Time_11_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java
++++ /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java
+@@ -1151,8 +1151,7 @@
+                     // really matter which rule was chosen the 'start' and
+                     // which is chosen the 'end'. DSTZone works properly either
+                     // way.
+-                    return new DSTZone(id, iStandardOffset,
+-                                       startRule.iRecurrence, endRule.iRecurrence);
++                	System.out.println("Writing zoneinfo files");
+                 }
+             }
+             return null;
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.DateFormatSymbols;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Set;
+import org.joda.time.Chronology;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.chrono.ISOChronology;
+</source_imports>
+
+Function `buildTailZone`:
+<signature>
+public DSTZone buildTailZone(String id)
+</signature>
+<code>
+        public DSTZone buildTailZone(String id) {
+            if (iRules.size() == 2) {
+                Rule startRule = iRules.get(0);
+                Rule endRule = iRules.get(1);
+                if (startRule.getToYear() == Integer.MAX_VALUE &&
+                    endRule.getToYear() == Integer.MAX_VALUE) {
+
+                    // With exactly two infinitely recurring rules left, a
+                    // simple DSTZone can be formed.
+
+                    // The order of rules can come in any order, and it doesn't
+                    // really matter which rule was chosen the 'start' and
+                    // which is chosen the 'end'. DSTZone works properly either
+                    // way.
+                    return new DSTZone(id, iStandardOffset,
+                                       startRule.iRecurrence, endRule.iRecurrence);
+                }
+            }
+            return null;
+        }
+</code>
+Methods called by `buildTailZone` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="getToYear" from="DateTimeZoneBuilder.java">
+<signature>
+public int getToYear()
+</signature>
+<code>
+        public int getToYear() {
+            return iToYear;
+        }
+</code>
+</callee>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `TestCompiler`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.joda.time.tz.TestCompiler" method="testDateTimeZoneBuilder">
+    public void testDateTimeZoneBuilder() throws Exception {
+        // test multithreading, issue #18
+        getTestDataTimeZoneBuilder().toDateTimeZone("TestDTZ1", true);
+        final DateTimeZone[] zone = new DateTimeZone[1];
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                zone[0] = getTestDataTimeZoneBuilder().toDateTimeZone("TestDTZ2", true);
+            }
+        });
+        t.start();
+        t.join();
+        assertNotNull(zone[0]);
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.joda.time.tz;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+################################################
+
+==================== attempt 001/70 ====================
+--- raw LLM response ---
+package org.joda.time.tz;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        final long farFutureProbe =
+                new org.joda.time.DateTime(2500, 1, 1, 12, 0, 0, 0, org.joda.time.DateTimeZone.UTC).getMillis();
+
+        DateTimeZoneBuilder seedBuilder1 = new DateTimeZoneBuilder();
+        seedBuilder1.setStandardOffset(0);
+        seedBuilder1.addRecurringSavings(
+                "DST", 60 * 60 * 1000, 2000, Integer.MAX_VALUE,
+                'w', 3, 31, 0, false, 2 * 60 * 60 * 1000);
+        seedBuilder1.addRecurringSavings(
+                "STD", 0, 2000, Integer.MAX_VALUE,
+                'w', 10, 31, 0, false, 2 * 60 * 60 * 1000);
+
+        seedBuilder1.toDateTimeZone("TestDTZ1", true);
+
+        final org.joda.time.DateTimeZone[] zone = new org.joda.time.DateTimeZone[1];
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                DateTimeZoneBuilder seedBuilder2 = new DateTimeZoneBuilder();
+                seedBuilder2.setStandardOffset(0);
+                seedBuilder2.addRecurringSavings(
+                        "DST", 60 * 60 * 1000, 2000, Integer.MAX_VALUE,
+                        'w', 3, 31, 0, false, 2 * 60 * 60 * 1000);
+                seedBuilder2.addRecurringSavings(
+                        "STD", 0, 2000, Integer.MAX_VALUE,
+                        'w', 10, 31, 0, false, 2 * 60 * 60 * 1000);
+                zone[0] = seedBuilder2.toDateTimeZone("TestDTZ2", true);
+            }
+        });
+        t.start();
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+        }
+
+        if (zone[0] == null) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: assertNotNull(zone[0])");
+        }
+
+        if (zone[0].nextTransition(farFutureProbe) <= farFutureProbe) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: infinite recurring rules lost future transitions");
+        }
+
+        String fuzzId = data.consumeAsciiString(32);
+        if (fuzzId.length() == 0) {
+            fuzzId = "FuzzDTZ";
+        }
+
+        int standardOffset = data.consumeInt(-18 * 60 * 60 * 1000, 18 * 60 * 60 * 1000);
+        int dstSavings = data.consumeInt(1, 6 * 60 * 60 * 1000);
+        int startMonth = data.consumeInt(1, 12);
+        int endMonth = data.consumeInt(1, 12);
+        if (endMonth == startMonth) {
+            endMonth = (endMonth % 12) + 1;
+        }
+        int startDay = data.consumeInt(1, 28);
+        int endDay = data.consumeInt(1, 28);
+        int startMillis = data.consumeInt(0, 23) * 60 * 60 * 1000;
+        int endMillis = data.consumeInt(0, 23) * 60 * 60 * 1000;
+
+        try {
+            DateTimeZoneBuilder fuzzBuilder1 = new DateTimeZoneBuilder();
+            fuzzBuilder1.setStandardOffset(standardOffset);
+            fuzzBuilder1.addRecurringSavings(
+                    "DST", dstSavings, 2000, Integer.MAX_VALUE,
+                    'w', startMonth, startDay, 0, false, startMillis);
+            fuzzBuilder1.addRecurringSavings(
+                    "STD", 0, 2000, Integer.MAX_VALUE,
+                    'w', endMonth, endDay, 0, false, endMillis);
+
+            org.joda.time.DateTimeZone fuzzZone1 = fuzzBuilder1.toDateTimeZone(fuzzId, true);
+
+            if (fuzzZone1 == null) {
+                throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                        "semantic mismatch: toDateTimeZone returned null for two infinite recurring rules");
+            }
+
+            if (!fuzzId.equals(fuzzZone1.getID())) {
+                throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                        "semantic mismatch: toDateTimeZone(..., true) did not preserve the supplied id");
+            }
+
+            if (fuzzZone1.nextTransition(farFutureProbe) <= farFutureProbe) {
+                throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                        "semantic mismatch: fuzzed infinite recurring rules lost future transitions");
+            }
+
+            DateTimeZoneBuilder fuzzBuilder2 = new DateTimeZoneBuilder();
+            fuzzBuilder2.setStandardOffset(standardOffset);
+            fuzzBuilder2.addRecurringSavings(
+                    "DST", dstSavings, 2000, Integer.MAX_VALUE,
+                    'w', startMonth, startDay, 0, false, startMillis);
+            fuzzBuilder2.addRecurringSavings(
+                    "STD", 0, 2000, Integer.MAX_VALUE,
+                    'w', endMonth, endDay, 0, false, endMillis);
+
+            org.joda.time.DateTimeZone fuzzZone2 = fuzzBuilder2.toDateTimeZone(fuzzId, true);
+            if (fuzzZone2 == null) {
+                throw new RuntimeException(
+                        "metamorphic violation: identical builder inputs produced null on one call");
+            }
+
+            long probe =
+                    new org.joda.time.DateTime(
+                            2200,
+                            data.consumeInt(1, 12),
+                            data.consumeInt(1, 28),
+                            12,
+                            0,
+                            0,
+                            0,
+                            org.joda.time.DateTimeZone.UTC).getMillis();
+
+            String name1 = fuzzZone1.getNameKey(probe);
+            String name2 = fuzzZone2.getNameKey(probe);
+            boolean sameName = (name1 == null) ? (name2 == null) : name1.equals(name2);
+
+            if (fuzzZone1.getOffset(probe) != fuzzZone2.getOffset(probe)
+                    || fuzzZone1.getStandardOffset(probe) != fuzzZone2.getStandardOffset(probe)
+                    || fuzzZone1.nextTransition(probe) != fuzzZone2.nextTransition(probe)
+                    || fuzzZone1.previousTransition(probe) != fuzzZone2.previousTransition(probe)
+                    || !sameName
+                    || !fuzzZone1.getID().equals(fuzzZone2.getID())) {
+                throw new RuntimeException(
+                        "metamorphic violation: identical builder inputs produced different zone behavior");
+            }
+        } catch (IllegalArgumentException e) {
+            return;
+        } catch (ArithmeticException e) {
+            return;
+        }
+    }
+}
+  ↳ no crash (rc=0). Jazzer output tail:
+      "\001\000\000\001" # Uses: 247
+      "\027\337s\000" # Uses: 211
+      "\005\000\000\000\000\000\000\000" # Uses: 198
+      "\002\265\274\214" # Uses: 193
+      "\361L\3349\226\006\000\000" # Uses: 191
+      "\377\377\377\021" # Uses: 146
+      "\000\000\000\000\000\000\000\000" # Uses: 177
+      "\2264\236^\224\006\000\000" # Uses: 150
+      "\377\377\377\377\001\276\237k" # Uses: 96
+      "\200\304C[\235\006\000\000" # Uses: 96
+      "\002X\022\342" # Uses: 37
+      "\001\000\000\000\000\000\000\000" # Uses: 10
+      "\000\310\214S\234\006\000\000" # Uses: 10
+      ###### End of recommended dictionary. ######
+      Done 100000 runs in 31 second(s)
+✗ compiled but did NOT trigger on the buggy version (rc=0) — rejecting
+
+==================== attempt 002/70 (repair turn) ====================
+--- raw LLM response ---
+package org.joda.time.tz;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        final int standardOffset = data.consumeInt(-12 * 60 * 60 * 1000, 14 * 60 * 60 * 1000);
+        final int dstSavings = data.consumeInt(1, 3 * 60 * 60 * 1000);
+
+        final int startMonth = data.consumeInt(1, 12);
+        int tmpEndMonth = data.consumeInt(1, 12);
+        if (tmpEndMonth == startMonth) {
+            tmpEndMonth = (tmpEndMonth % 12) + 1;
+        }
+        final int endMonth = tmpEndMonth;
+
+        final int startDay = data.consumeInt(1, 28);
+        final int endDay = data.consumeInt(1, 28);
+        final int startMillis = data.consumeInt(0, (24 * 60 * 60 * 1000) - 1);
+        final int endMillis = data.consumeInt(0, (24 * 60 * 60 * 1000) - 1);
+
+        final String id1 = "TestDTZ1";
+        final String id2 = "TestDTZ2";
+
+        DateTimeZoneBuilder builder1 = new DateTimeZoneBuilder();
+        builder1.setStandardOffset(standardOffset);
+        builder1.addRecurringSavings(
+                "DST",
+                dstSavings,
+                2000,
+                Integer.MAX_VALUE,
+                'w',
+                startMonth,
+                startDay,
+                0,
+                false,
+                startMillis);
+        builder1.addRecurringSavings(
+                "STD",
+                0,
+                2000,
+                Integer.MAX_VALUE,
+                'w',
+                endMonth,
+                endDay,
+                0,
+                false,
+                endMillis);
+
+        builder1.toDateTimeZone(id1, true);
+
+        final org.joda.time.DateTimeZone[] zone = new org.joda.time.DateTimeZone[1];
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                DateTimeZoneBuilder builder2 = new DateTimeZoneBuilder();
+                builder2.setStandardOffset(standardOffset);
+                builder2.addRecurringSavings(
+                        "DST",
+                        dstSavings,
+                        2000,
+                        Integer.MAX_VALUE,
+                        'w',
+                        startMonth,
+                        startDay,
+                        0,
+                        false,
+                        startMillis);
+                builder2.addRecurringSavings(
+                        "STD",
+                        0,
+                        2000,
+                        Integer.MAX_VALUE,
+                        'w',
+                        endMonth,
+                        endDay,
+                        0,
+                        false,
+                        endMillis);
+                zone[0] = builder2.toDateTimeZone(id2, true);
+            }
+        });
+        t.start();
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (zone[0] == null) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: assertNotNull(zone[0])");
+        }
+
+        long farFutureProbe = 3155695200000000L;
+        long next = zone[0].nextTransition(farFutureProbe);
+        if (next <= farFutureProbe) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: infinite recurring rules lost tail transitions");
+        }
+
+        DateTimeZoneBuilder builder3 = new DateTimeZoneBuilder();
+        builder3.setStandardOffset(standardOffset);
+        builder3.addRecurringSavings(
+                "DST",
+                dstSavings,
+                2000,
+                Integer.MAX_VALUE,
+                'w',
+                startMonth,
+                startDay,
+                0,
+                false,
+                startMillis);
+        builder3.addRecurringSavings(
+                "STD",
+                0,
+                2000,
+                Integer.MAX_VALUE,
+                'w',
+                endMonth,
+                endDay,
+                0,
+                false,
+                endMillis);
+
+        org.joda.time.DateTimeZone zone2 = builder3.toDateTimeZone(id2, true);
+        long probe = 946684800000L + (long) data.consumeInt(0, 1000) * 31557600000L;
+
+        String name1 = zone[0].getNameKey(probe);
+        String name2 = zone2.getNameKey(probe);
+        boolean sameName = (name1 == null) ? (name2 == null) : name1.equals(name2);
+
+        if (zone[0].getOffset(probe) != zone2.getOffset(probe)
+                || zone[0].getStandardOffset(probe) != zone2.getStandardOffset(probe)
+                || zone[0].nextTransition(probe) != zone2.nextTransition(probe)
+                || zone[0].previousTransition(probe) != zone2.previousTransition(probe)
+                || !sameName) {
+            throw new RuntimeException(
+                    "metamorphic violation: identical builder inputs produced different zone behavior");
+        }
+    }
+}
+  ↳ no crash (rc=0). Jazzer output tail:
+      "u\300\211w\341\000\000\000" # Uses: 535
+      "\002\334\013[" # Uses: 562
+      "\001\0136\035\340\336,\254" # Uses: 520
+      "STD" # Uses: 533
+      "\000vu\237" # Uses: 549
+      "\001\000\000\000\000\000\000\000" # Uses: 575
+      "Coyhaiqu" # Uses: 586
+      "\001L" # Uses: 564
+      "\377\377\377\340\355\336$\000" # Uses: 552
+      ":\271\254\001" # Uses: 541
+      "Co_" # Uses: 535
+      "At_" # Uses: 511
+      "\307#\302\023E\"\000\000" # Uses: 157
+      ###### End of recommended dictionary. ######
+      Done 100000 runs in 24 second(s)
+✗ compiled but did NOT trigger on the buggy version (rc=0) — rejecting
+
+==================== attempt 003/70 (repair turn) ====================
+--- raw LLM response ---
+package org.joda.time.tz;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    private static DateTimeZoneBuilder makeTestDataTimeZoneBuilder(boolean reverseTailRuleOrder) {
+        DateTimeZoneBuilder builder = new DateTimeZoneBuilder();
+
+        builder.setStandardOffset(0);
+        builder.setFixedSavings("GMT", 0);
+
+        builder.addCutover(1996, 'w', 1, 1, 0, false, 0);
+        builder.setStandardOffset(0);
+
+        if (!reverseTailRuleOrder) {
+            builder.addRecurringSavings(
+                    "BST",
+                    60 * 60 * 1000,
+                    1996,
+                    Integer.MAX_VALUE,
+                    'w',
+                    3,
+                    -1,
+                    7,
+                    false,
+                    60 * 60 * 1000);
+            builder.addRecurringSavings(
+                    "GMT",
+                    0,
+                    1996,
+                    Integer.MAX_VALUE,
+                    'w',
+                    10,
+                    -1,
+                    7,
+                    false,
+                    2 * 60 * 60 * 1000);
+        } else {
+            builder.addRecurringSavings(
+                    "GMT",
+                    0,
+                    1996,
+                    Integer.MAX_VALUE,
+                    'w',
+                    10,
+                    -1,
+                    7,
+                    false,
+                    2 * 60 * 60 * 1000);
+            builder.addRecurringSavings(
+                    "BST",
+                    60 * 60 * 1000,
+                    1996,
+                    Integer.MAX_VALUE,
+                    'w',
+                    3,
+                    -1,
+                    7,
+                    false,
+                    60 * 60 * 1000);
+        }
+
+        return builder;
+    }
+
+    private static void compareZones(org.joda.time.DateTimeZone a, org.joda.time.DateTimeZone b, long instant) {
+        if (a.getOffset(instant) != b.getOffset(instant)) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: equivalent tail-rule order changed getOffset");
+        }
+
+        if (a.getStandardOffset(instant) != b.getStandardOffset(instant)) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: equivalent tail-rule order changed getStandardOffset");
+        }
+
+        String aName = a.getNameKey(instant);
+        String bName = b.getNameKey(instant);
+        boolean sameName = (aName == null) ? (bName == null) : aName.equals(bName);
+        if (!sameName) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: equivalent tail-rule order changed getNameKey");
+        }
+
+        long aNext = a.nextTransition(instant);
+        long bNext = b.nextTransition(instant);
+        if (aNext != bNext) {
+            throw new RuntimeException(
+                    "metamorphic violation: equivalent tail-rule order changed nextTransition");
+        }
+
+        long aPrev = a.previousTransition(instant);
+        long bPrev = b.previousTransition(instant);
+        if (aPrev != bPrev) {
+            throw new RuntimeException(
+                    "metamorphic violation: equivalent tail-rule order changed previousTransition");
+        }
+    }
+
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        final org.joda.time.DateTimeZone[] threadedZone = new org.joda.time.DateTimeZone[1];
+        final Throwable[] threadedError = new Throwable[1];
+
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                try {
+                    threadedZone[0] =
+                            makeTestDataTimeZoneBuilder(false).toDateTimeZone("TestDTZ2", true);
+                } catch (Throwable th) {
+                    threadedError[0] = th;
+                }
+            }
+        });
+
+        t.start();
+        org.joda.time.DateTimeZone mainZone =
+                makeTestDataTimeZoneBuilder(false).toDateTimeZone("TestDTZ1", true);
+
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (threadedError[0] != null) {
+            if (threadedError[0] instanceof RuntimeException) {
+                throw (RuntimeException) threadedError[0];
+            }
+            if (threadedError[0] instanceof Error) {
+                throw (Error) threadedError[0];
+            }
+            throw new RuntimeException(threadedError[0]);
+        }
+
+        if (threadedZone[0] == null) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: assertNotNull(zone[0])");
+        }
+
+        if (mainZone == null) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: toDateTimeZone(\"TestDTZ1\", true) returned null");
+        }
+
+        long farFutureProbe =
+                new org.joda.time.DateTime(2200, 1, 1, 12, 0, 0, 0, org.joda.time.DateTimeZone.UTC)
+                        .getMillis();
+
+        if (mainZone.nextTransition(farFutureProbe) <= farFutureProbe) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: infinite recurring rules lost future transitions");
+        }
+
+        if (threadedZone[0].nextTransition(farFutureProbe) <= farFutureProbe) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: threaded infinite recurring rules lost future transitions");
+        }
+
+        org.joda.time.DateTimeZone reversedZone =
+                makeTestDataTimeZoneBuilder(true).toDateTimeZone("TestDTZ3", true);
+
+        if (reversedZone == null) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: equivalent reversed tail-rule order returned null");
+        }
+
+        int extraYear = 1996 + data.consumeInt(0, 250);
+        int[] years = new int[] {1996, 1997, 2000, 2010, 2020, 2038, 2050, 2100, extraYear};
+        int[] months = new int[] {1, 3, 4, 7, 10, 11};
+
+        for (int i = 0; i < years.length; i++) {
+            for (int j = 0; j < months.length; j++) {
+                long instant =
+                        new org.joda.time.DateTime(
+                                        years[i],
+                                        months[j],
+                                        1,
+                                        12,
+                                        0,
+                                        0,
+                                        0,
+                                        org.joda.time.DateTimeZone.UTC)
+                                .getMillis();
+                compareZones(mainZone, reversedZone, instant);
+            }
+        }
+
+        long walk =
+                new org.joda.time.DateTime(1996, 1, 1, 0, 0, 0, 0, org.joda.time.DateTimeZone.UTC)
+                        .getMillis();
+
+        for (int i = 0; i < 16; i++) {
+            long nextA = mainZone.nextTransition(walk);
+            long nextB = reversedZone.nextTransition(walk);
+            if (nextA != nextB) {
+                throw new RuntimeException(
+                        "metamorphic violation: equivalent tail-rule order changed transition sequence");
+            }
+            compareZones(mainZone, reversedZone, nextA - 1);
+            compareZones(mainZone, reversedZone, nextA);
+            compareZones(mainZone, reversedZone, nextA + 1);
+            walk = nextA + 1;
+        }
+    }
+}
+  ↳ no crash (rc=0). Jazzer output tail:
+      #8192	pulse  cov: 589 ft: 1019 corp: 109/260b lim: 29 exec/s: 199 rss: 1081Mb
+      #9136	NEW    cov: 589 ft: 1020 corp: 110/264b lim: 38 exec/s: 203 rss: 1086Mb L: 4/15 MS: 2 ShuffleBytes-Custom-
+      #9582	NEW    cov: 589 ft: 1021 corp: 111/275b lim: 38 exec/s: 199 rss: 1086Mb L: 11/15 MS: 2 PersAutoDict-Custom- DE: "Coyhai_"-
+      #9881	REDUCE cov: 589 ft: 1021 corp: 111/274b lim: 38 exec/s: 201 rss: 1086Mb L: 2/15 MS: 8 ChangeByte-Custom-InsertByte-Custom-EraseBytes-Custom-ShuffleBytes-Custom-
+      #12010	NEW    cov: 589 ft: 1022 corp: 112/278b lim: 58 exec/s: 200 rss: 1086Mb L: 4/15 MS: 8 ChangeBit-Custom-PersAutoDict-Custom-ChangeByte-Custom-PersAutoDict-Custom- DE: "\000\000\000\007"-"\000\000\000\007"-
+      #12215	DONE   cov: 589 ft: 1022 corp: 112/278b lim: 58 exec/s: 200 rss: 1086Mb
+      ###### Recommended dictionary. ######
+      "GMT" # Uses: 222
+      "\000\000\000\007" # Uses: 158
+      "\001\351\007\303" # Uses: 124
+      "Coyhai_" # Uses: 96
+      "BST" # Uses: 95
+      "\210\003L\000" # Uses: 88
+      ###### End of recommended dictionary. ######
+      Done 12215 runs in 61 second(s)
+✗ compiled but did NOT trigger on the buggy version (rc=0) — rejecting
+
+==================== attempt 004/70 (repair turn) ====================
+--- raw LLM response ---
+package org.joda.time.tz;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    private static DateTimeZoneBuilder buildTailZoneBuilder(int standardOffset, int dstSavings, boolean reverseTailOrder) {
+        DateTimeZoneBuilder builder = new DateTimeZoneBuilder();
+        builder.setStandardOffset(standardOffset);
+
+        builder.addRecurringSavings(
+                "DST",
+                dstSavings,
+                2000,
+                2001,
+                'w',
+                3,
+                -1,
+                7,
+                false,
+                1 * 60 * 60 * 1000);
+        builder.addRecurringSavings(
+                "STD",
+                0,
+                2000,
+                2001,
+                'w',
+                10,
+                -1,
+                7,
+                false,
+                2 * 60 * 60 * 1000);
+
+        if (!reverseTailOrder) {
+            builder.addRecurringSavings(
+                    "DST",
+                    dstSavings,
+                    2002,
+                    Integer.MAX_VALUE,
+                    'w',
+                    3,
+                    -1,
+                    7,
+                    false,
+                    1 * 60 * 60 * 1000);
+            builder.addRecurringSavings(
+                    "STD",
+                    0,
+                    2002,
+                    Integer.MAX_VALUE,
+                    'w',
+                    10,
+                    -1,
+                    7,
+                    false,
+                    2 * 60 * 60 * 1000);
+        } else {
+            builder.addRecurringSavings(
+                    "STD",
+                    0,
+                    2002,
+                    Integer.MAX_VALUE,
+                    'w',
+                    10,
+                    -1,
+                    7,
+                    false,
+                    2 * 60 * 60 * 1000);
+            builder.addRecurringSavings(
+                    "DST",
+                    dstSavings,
+                    2002,
+                    Integer.MAX_VALUE,
+                    'w',
+                    3,
+                    -1,
+                    7,
+                    false,
+                    1 * 60 * 60 * 1000);
+        }
+
+        return builder;
+    }
+
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        final int standardOffset = data.consumeInt(-12 * 60 * 60 * 1000, 14 * 60 * 60 * 1000);
+        final int dstSavings = data.consumeInt(1, 3 * 60 * 60 * 1000);
+        final int futureYear = data.consumeInt(2500, 5000);
+
+        buildTailZoneBuilder(standardOffset, dstSavings, false).toDateTimeZone("TestDTZ1", true);
+
+        final org.joda.time.DateTimeZone[] zone = new org.joda.time.DateTimeZone[1];
+        final Throwable[] threadFailure = new Throwable[1];
+
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                zone[0] = buildTailZoneBuilder(standardOffset, dstSavings, false)
+                        .toDateTimeZone("TestDTZ2", true);
+            }
+        });
+        t.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            public void uncaughtException(Thread thread, Throwable throwable) {
+                threadFailure[0] = throwable;
+            }
+        });
+        t.start();
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (threadFailure[0] != null) {
+            if (threadFailure[0] instanceof RuntimeException) {
+                throw (RuntimeException) threadFailure[0];
+            }
+            if (threadFailure[0] instanceof Error) {
+                throw (Error) threadFailure[0];
+            }
+            throw new RuntimeException(threadFailure[0]);
+        }
+
+        if (zone[0] == null) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: assertNotNull(zone[0])");
+        }
+
+        long winterInstant = new org.joda.time.DateTime(
+                futureYear, 1, 15, 12, 0, 0, 0, org.joda.time.DateTimeZone.UTC).getMillis();
+        long summerInstant = new org.joda.time.DateTime(
+                futureYear, 7, 15, 12, 0, 0, 0, org.joda.time.DateTimeZone.UTC).getMillis();
+
+        int winterOffset = zone[0].getOffset(winterInstant);
+        if (winterOffset != standardOffset) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: winter offset " + winterOffset + " != " + standardOffset);
+        }
+
+        int summerOffset = zone[0].getOffset(summerInstant);
+        int expectedSummerOffset = standardOffset + dstSavings;
+        if (summerOffset != expectedSummerOffset) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: summer offset " + summerOffset + " != " + expectedSummerOffset);
+        }
+
+        org.joda.time.DateTimeZone reversed = buildTailZoneBuilder(standardOffset, dstSavings, true)
+                .toDateTimeZone("TestDTZ3", true);
+
+        if (reversed == null) {
+            throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow(
+                    "semantic mismatch: reversed equivalent tail-rule order returned null");
+        }
+
+        if (zone[0].getOffset(winterInstant) != reversed.getOffset(winterInstant)
+                || zone[0].getOffset(summerInstant) != reversed.getOffset(summerInstant)
+                || zone[0].getStandardOffset(winterInstant) != reversed.getStandardOffset(winterInstant)
+                || zone[0].getStandardOffset(summerInstant) != reversed.getStandardOffset(summerInstant)
+                || zone[0].nextTransition(winterInstant) != reversed.nextTransition(winterInstant)
+                || zone[0].previousTransition(summerInstant) != reversed.previousTransition(summerInstant)) {
+            throw new RuntimeException(
+                    "metamorphic violation: equivalent tail-rule order changed zone behavior");
+        }
+    }
+}
+  ↳ no crash (rc=0). Jazzer output tail:
+      #91763	DONE   cov: 527 ft: 634 corp: 44/352b lim: 769 exec/s: 1504 rss: 1042Mb
+      ###### Recommended dictionary. ######
+      "DST" # Uses: 891
+      "\020k\322\321" # Uses: 785
+      "\001\000\017:\024,7\342" # Uses: 781
+      "\004\000\000\000\000\000\000\000" # Uses: 796
+      "\005<\363\3054\017\000\000" # Uses: 720
+      "Coyhaiq_" # Uses: 696
+      "\377K\003\210" # Uses: 784
+      "\222\274.\002\000\000\000\000" # Uses: 734
+      "Aty_" # Uses: 732
+      "\377\372\033\010" # Uses: 716
+      "\002\020\361\014" # Uses: 293
+      ###### End of recommended dictionary. ######
+      Done 91763 runs in 61 second(s)
+✗ compiled but did NOT trigger on the buggy version (rc=0) — rejecting
+⟲ 3 repair turns failed in a row — resetting to a fresh prompt
+  [semantic] lifting assertion from org.joda.time.tz.TestCompiler::testDateTimeZoneBuilder
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.joda.time.tz` (`package org.joda.time.tz;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Time_11_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java
++++ /src/main/java/org/joda/time/tz/DateTimeZoneBuilder.java
+@@ -1151,8 +1151,7 @@
+                     // really matter which rule was chosen the 'start' and
+                     // which is chosen the 'end'. DSTZone works properly either
+                     // way.
+-                    return new DSTZone(id, iStandardOffset,
+-                                       startRule.iRecurrence, endRule.iRecurrence);
++                	System.out.println("Writing zoneinfo files");
+                 }
+             }
+             return null;
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.DateFormatSymbols;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Set;
+import org.joda.time.Chronology;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.chrono.ISOChronology;
+</source_imports>
+
+Function `buildTailZone`:
+<signature>
+public DSTZone buildTailZone(String id)
+</signature>
+<code>
+        public DSTZone buildTailZone(String id) {
+            if (iRules.size() == 2) {
+                Rule startRule = iRules.get(0);
+                Rule endRule = iRules.get(1);
+                if (startRule.getToYear() == Integer.MAX_VALUE &&
+                    endRule.getToYear() == Integer.MAX_VALUE) {
+
+                    // With exactly two infinitely recurring rules left, a
+                    // simple DSTZone can be formed.
+
+                    // The order of rules can come in any order, and it doesn't
+                    // really matter which rule was chosen the 'start' and
+                    // which is chosen the 'end'. DSTZone works properly either
+                    // way.
+                    return new DSTZone(id, iStandardOffset,
+                                       startRule.iRecurrence, endRule.iRecurrence);
+                }
+            }
+            return null;
+        }
+</code>
+Methods called by `buildTailZone` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="getToYear" from="DateTimeZoneBuilder.java">
+<signature>
+public int getToYear()
+</signature>
+<code>
+        public int getToYear() {
+            return iToYear;
+        }
+</code>
+</callee>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `TestCompiler`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.joda.time.tz.TestCompiler" method="testDateTimeZoneBuilder">
+    public void testDateTimeZoneBuilder() throws Exception {
+        // test multithreading, issue #18
+        getTestDataTimeZoneBuilder().toDateTimeZone("TestDTZ1", true);
+        final DateTimeZone[] zone = new DateTimeZone[1];
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                zone[0] = getTestDataTimeZoneBuilder().toDateTimeZone("TestDTZ2", true);
+            }
+        });
+        t.start();
+        t.join();
+        assertNotNull(zone[0]);
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.joda.time.tz;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>

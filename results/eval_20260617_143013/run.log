@@ -1,0 +1,2329 @@
+[overfitting] run 1 (have 0/10 distinct) -> project Chart
+Found 1 bug-triggering test(s):
+  ✓ org.jfree.chart.renderer.category.junit.AbstractCategoryItemRendererTests::test2947660  [junit.framework.AssertionFailedError]
+
+bug kind: semantic
+{
+  "modified_files": [
+    "source/org/jfree/chart/renderer/category/AbstractCategoryItemRenderer.java"
+  ],
+  "patch_text": "--- /source/org/jfree/chart/renderer/category/AbstractCategoryItemRenderer.java\n+++ /source/org/jfree/chart/renderer/category/AbstractCategoryItemRenderer.java\n@@ -1794,7 +1794,7 @@\n         }\n         int index = this.plot.getIndexOf(this);\n         CategoryDataset dataset = this.plot.getDataset(index);\n-        if (dataset != null) {\n+        if((dataset!=null)&&(!(dataset.equals(dataset)))){\n             return result;\n         }\n         int seriesCount = dataset.getRowCount();",
+  "functions": [
+    {
+      "func_name": "getLegendItems",
+      "func_signature": "public LegendItemCollection getLegendItems()",
+      "func_source": "    public LegendItemCollection getLegendItems() {\n        LegendItemCollection result = new LegendItemCollection();\n        if (this.plot == null) {\n            return result;\n        }\n        int index = this.plot.getIndexOf(this);\n        CategoryDataset dataset = this.plot.getDataset(index);\n        if (dataset != null) {\n            return result;\n        }\n        int seriesCount = dataset.getRowCount();\n        if (plot.getRowRenderingOrder().equals(SortOrder.ASCENDING)) {\n            for (int i = 0; i < seriesCount; i++) {\n                if (isSeriesVisibleInLegend(i)) {\n                    LegendItem item = getLegendItem(index, i);\n                    if (item != null) {\n                        result.add(item);\n                    }\n                }\n            }\n        }\n        else {\n            for (int i = seriesCount - 1; i >= 0; i--) {\n                if (isSeriesVisibleInLegend(i)) {\n                    LegendItem item = getLegendItem(index, i);\n                    if (item != null) {\n                        result.add(item);\n                    }\n                }\n            }\n        }\n        return result;\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": [
+        {
+          "name": "getRowCount",
+          "source_file": "AbstractCategoryItemRenderer.java",
+          "signature": "public int getRowCount()",
+          "source": "    public int getRowCount() {\n        return this.rowCount;\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "equals",
+          "source_file": "AbstractCategoryItemRenderer.java",
+          "signature": "public boolean equals(Object obj)",
+          "source": "    public boolean equals(Object obj) {\n\n        if (obj == this) {\n            return true;\n        }\n        if (!(obj instanceof AbstractCategoryItemRenderer)) {\n            return false;\n        }\n        AbstractCategoryItemRenderer that = (AbstractCategoryItemRenderer) obj;\n\n        if (!ObjectUtilities.equal(this.itemLabelGeneratorList,\n                that.itemLabelGeneratorList)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.baseItemLabelGenerator,\n                that.baseItemLabelGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.toolTipGeneratorList,\n                that.toolTipGeneratorList)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.baseToolTipGenerator,\n                that.baseToolTipGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.urlGeneratorList,\n                that.urlGeneratorList)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.baseURLGenerator,\n                that.baseURLGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.legendItemLabelGenerator,\n                that.legendItemLabelGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.legendItemToolTipGenerator,\n                that.legendItemToolTipGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.legendItemURLGenerator,\n                that.legendItemURLGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.backgroundAnnotations,\n                that.backgroundAnnotations)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.foregroundAnnotations,\n                that.foregroundAnnotations)) {\n            return false;\n        }\n        return super.equals(obj);\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "AbstractCategoryItemRenderer.java",
+              "    public boolean equals(Object obj) {\n\n        if (obj == this) {\n            return true;\n        }\n        if (!(obj instanceof AbstractCategoryItemRenderer)) {\n            return false;\n        }\n        AbstractCategoryItemRenderer that = (AbstractCategoryItemRenderer) obj;\n\n        if (!ObjectUtilities.equal(this.itemLabelGeneratorList,\n                that.itemLabelGeneratorList)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.baseItemLabelGenerator,\n                that.baseItemLabelGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.toolTipGeneratorList,\n                that.toolTipGeneratorList)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.baseToolTipGenerator,\n                that.baseToolTipGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.urlGeneratorList,\n                that.urlGeneratorList)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.baseURLGenerator,\n                that.baseURLGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.legendItemLabelGenerator,\n                that.legendItemLabelGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.legendItemToolTipGenerator,\n                that.legendItemToolTipGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.legendItemURLGenerator,\n                that.legendItemURLGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.backgroundAnnotations,\n                that.backgroundAnnotations)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.foregroundAnnotations,\n                that.foregroundAnnotations)) {\n            return false;\n        }\n        return super.equals(obj);\n    }"
+            ],
+            [
+              "AreaRenderer.java",
+              "    public boolean equals(Object obj) {\n        if (obj == this) {\n            return true;\n        }\n        if (!(obj instanceof AreaRenderer)) {\n            return false;\n        }\n        AreaRenderer that = (AreaRenderer) obj;\n        if (!this.endType.equals(that.endType)) {\n            return false;\n        }\n        return super.equals(obj);\n    }"
+            ],
+            [
+              "BarRenderer.java",
+              "    public boolean equals(Object obj) {\n        if (obj == this) {\n            return true;\n        }\n        if (!(obj instanceof BarRenderer)) {\n            return false;\n        }\n        BarRenderer that = (BarRenderer) obj;\n        if (this.base != that.base) {\n            return false;\n        }\n        if (this.itemMargin != that.itemMargin) {\n            return false;\n        }\n        if (this.drawBarOutline != that.drawBarOutline) {\n            return false;\n        }\n        if (this.maximumBarWidth != that.maximumBarWidth) {\n            return false;\n        }\n        if (this.minimumBarLength != that.minimumBarLength) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.gradientPaintTransformer,\n                that.gradientPaintTransformer)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.positiveItemLabelPositionFallback,\n            that.positiveItemLabelPositionFallback)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.negativeItemLabelPositionFallback,\n            that.negativeItemLabelPositionFallback)) {\n            return false;\n        }\n        if (!this.barPainter.equals(that.barPainter)) {\n            return false;\n        }\n        if (this.shadowsVisible != that.shadowsVisible) {\n            return false;\n        }\n        if (!PaintUtilities.equal(this.shadowPaint, that.shadowPaint)) {\n            return false;\n        }\n        if (this.shadowXOffset != that.shadowXOffset) {\n            return false;\n        }\n        if (this.shadowYOffset != that.shadowYOffset) {\n            return false;\n        }\n        return super.equals(obj);\n    }"
+            ],
+            [
+              "BarRenderer3D.java",
+              "    public boolean equals(Object obj) {\n        if (obj == this) {\n            return true;\n        }\n        if (!(obj instanceof BarRenderer3D)) {\n            return false;\n        }\n        BarRenderer3D that = (BarRenderer3D) obj;\n        if (this.xOffset != that.xOffset) {\n            return false;\n        }\n        if (this.yOffset != that.yOffset) {\n            return false;\n        }\n        if (!PaintUtilities.equal(this.wallPaint, that.wallPaint)) {\n            return false;\n        }\n        return super.equals(obj);\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "isSeriesVisibleInLegend",
+          "source_file": "CategoryItemRenderer.java",
+          "signature": "public boolean isSeriesVisibleInLegend(int series)",
+          "source": "    public boolean isSeriesVisibleInLegend(int series);",
+          "is_abstract": true,
+          "impls": []
+        },
+        {
+          "name": "getLegendItem",
+          "source_file": "CategoryItemRenderer.java",
+          "signature": "public LegendItem getLegendItem(int datasetIndex, int series)",
+          "source": "    public LegendItem getLegendItem(int datasetIndex, int series);",
+          "is_abstract": true,
+          "impls": [
+            [
+              "AbstractCategoryItemRenderer.java",
+              "    public LegendItem getLegendItem(int datasetIndex, int series) {\n\n        CategoryPlot p = getPlot();\n        if (p == null) {\n            return null;\n        }\n\n        // check that a legend item needs to be displayed...\n        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {\n            return null;\n        }\n\n        CategoryDataset dataset = p.getDataset(datasetIndex);\n        String label = this.legendItemLabelGenerator.generateLabel(dataset,\n                series);\n        String description = label;\n        String toolTipText = null;\n        if (this.legendItemToolTipGenerator != null) {\n            toolTipText = this.legendItemToolTipGenerator.generateLabel(\n                    dataset, series);\n        }\n        String urlText = null;\n        if (this.legendItemURLGenerator != null) {\n            urlText = this.legendItemURLGenerator.generateLabel(dataset,\n                    series);\n        }\n        Shape shape = lookupLegendShape(series);\n        Paint paint = lookupSeriesPaint(series);\n        Paint outlinePaint = lookupSeriesOutlinePaint(series);\n        Stroke outlineStroke = lookupSeriesOutlineStroke(series);\n\n        LegendItem item = new LegendItem(label, description, toolTipText,\n                urlText, shape, paint, outlineStroke, outlinePaint);\n        item.setLabelFont(lookupLegendTextFont(series));\n        Paint labelPaint = lookupLegendTextPaint(series);\n        if (labelPaint != null) {\n            item.setLabelPaint(labelPaint);\n        }\n        item.setSeriesKey(dataset.getRowKey(series));\n        item.setSeriesIndex(series);\n        item.setDataset(dataset);\n        item.setDatasetIndex(datasetIndex);\n        return item;\n    }"
+            ],
+            [
+              "AreaRenderer.java",
+              "    public LegendItem getLegendItem(int datasetIndex, int series) {\n\n        // if there is no plot, there is no dataset to access...\n        CategoryPlot cp = getPlot();\n        if (cp == null) {\n            return null;\n        }\n\n        // check that a legend item needs to be displayed...\n        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {\n            return null;\n        }\n\n        CategoryDataset dataset = cp.getDataset(datasetIndex);\n        String label = getLegendItemLabelGenerator().generateLabel(dataset,\n                series);\n        String description = label;\n        String toolTipText = null;\n        if (getLegendItemToolTipGenerator() != null) {\n            toolTipText = getLegendItemToolTipGenerator().generateLabel(\n                    dataset, series);\n        }\n        String urlText = null;\n        if (getLegendItemURLGenerator() != null) {\n            urlText = getLegendItemURLGenerator().generateLabel(dataset,\n                    series);\n        }\n        Shape shape = lookupLegendShape(series);\n        Paint paint = lookupSeriesPaint(series);\n        Paint outlinePaint = lookupSeriesOutlinePaint(series);\n        Stroke outlineStroke = lookupSeriesOutlineStroke(series);\n\n        LegendItem result = new LegendItem(label, description, toolTipText,\n                urlText, shape, paint, outlineStroke, outlinePaint);\n        result.setLabelFont(lookupLegendTextFont(series));\n        Paint labelPaint = lookupLegendTextPaint(series);\n        if (labelPaint != null) {\n            result.setLabelPaint(labelPaint);\n        }\n        result.setDataset(dataset);\n        result.setDatasetIndex(datasetIndex);\n        result.setSeriesKey(dataset.getRowKey(series));\n        result.setSeriesIndex(series);\n        return result;\n\n    }"
+            ],
+            [
+              "BarRenderer.java",
+              "    public LegendItem getLegendItem(int datasetIndex, int series) {\n\n        CategoryPlot cp = getPlot();\n        if (cp == null) {\n            return null;\n        }\n\n        // check that a legend item needs to be displayed...\n        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {\n            return null;\n        }\n\n        CategoryDataset dataset = cp.getDataset(datasetIndex);\n        String label = getLegendItemLabelGenerator().generateLabel(dataset,\n                series);\n        String description = label;\n        String toolTipText = null;\n        if (getLegendItemToolTipGenerator() != null) {\n            toolTipText = getLegendItemToolTipGenerator().generateLabel(\n                    dataset, series);\n        }\n        String urlText = null;\n        if (getLegendItemURLGenerator() != null) {\n            urlText = getLegendItemURLGenerator().generateLabel(dataset,\n                    series);\n        }\n        Shape shape = lookupLegendShape(series);\n        Paint paint = lookupSeriesPaint(series);\n        Paint outlinePaint = lookupSeriesOutlinePaint(series);\n        Stroke outlineStroke = lookupSeriesOutlineStroke(series);\n\n        LegendItem result = new LegendItem(label, description, toolTipText,\n                urlText, true, shape, true, paint, isDrawBarOutline(),\n                outlinePaint, outlineStroke, false, new Line2D.Float(),\n                new BasicStroke(1.0f), Color.black);\n        result.setLabelFont(lookupLegendTextFont(series));\n        Paint labelPaint = lookupLegendTextPaint(series);\n        if (labelPaint != null) {\n            result.setLabelPaint(labelPaint);\n        }\n        result.setDataset(dataset);\n        result.setDatasetIndex(datasetIndex);\n        result.setSeriesKey(dataset.getRowKey(series));\n        result.setSeriesIndex(series);\n        if (this.gradientPaintTransformer != null) {\n            result.setFillPaintTransformer(this.gradientPaintTransformer);\n        }\n        return result;\n    }"
+            ],
+            [
+              "BoxAndWhiskerRenderer.java",
+              "    public LegendItem getLegendItem(int datasetIndex, int series) {\n\n        CategoryPlot cp = getPlot();\n        if (cp == null) {\n            return null;\n        }\n\n        // check that a legend item needs to be displayed...\n        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {\n            return null;\n        }\n\n        CategoryDataset dataset = cp.getDataset(datasetIndex);\n        String label = getLegendItemLabelGenerator().generateLabel(dataset,\n                series);\n        String description = label;\n        String toolTipText = null;\n        if (getLegendItemToolTipGenerator() != null) {\n            toolTipText = getLegendItemToolTipGenerator().generateLabel(\n                    dataset, series);\n        }\n        String urlText = null;\n        if (getLegendItemURLGenerator() != null) {\n            urlText = getLegendItemURLGenerator().generateLabel(dataset,\n                    series);\n        }\n        Shape shape = lookupLegendShape(series);\n        Paint paint = lookupSeriesPaint(series);\n        Paint outlinePaint = lookupSeriesOutlinePaint(series);\n        Stroke outlineStroke = lookupSeriesOutlineStroke(series);\n        LegendItem result = new LegendItem(label, description, toolTipText,\n                urlText, shape, paint, outlineStroke, outlinePaint);\n        result.setLabelFont(lookupLegendTextFont(series));\n        Paint labelPaint = lookupLegendTextPaint(series);\n        if (labelPaint != null) {\n            result.setLabelPaint(labelPaint);\n        }\n        result.setDataset(dataset);\n        result.setDatasetIndex(datasetIndex);\n        result.setSeriesKey(dataset.getRowKey(series));\n        result.setSeriesIndex(series);\n        return result;\n\n    }"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "package": "org.jfree.chart.renderer.category",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.awt.AlphaComposite;",
+    "import java.awt.Composite;",
+    "import java.awt.Font;",
+    "import java.awt.GradientPaint;",
+    "import java.awt.Graphics2D;",
+    "import java.awt.Paint;",
+    "import java.awt.Rectangle;",
+    "import java.awt.Shape;",
+    "import java.awt.Stroke;",
+    "import java.awt.geom.Ellipse2D;",
+    "import java.awt.geom.Line2D;",
+    "import java.awt.geom.Point2D;",
+    "import java.awt.geom.Rectangle2D;",
+    "import java.io.Serializable;",
+    "import java.util.ArrayList;",
+    "import java.util.Iterator;",
+    "import java.util.List;",
+    "import org.jfree.chart.ChartRenderingInfo;",
+    "import org.jfree.chart.LegendItem;",
+    "import org.jfree.chart.LegendItemCollection;",
+    "import org.jfree.chart.RenderingSource;",
+    "import org.jfree.chart.annotations.CategoryAnnotation;",
+    "import org.jfree.chart.axis.CategoryAxis;",
+    "import org.jfree.chart.axis.ValueAxis;",
+    "import org.jfree.chart.entity.CategoryItemEntity;",
+    "import org.jfree.chart.entity.EntityCollection;",
+    "import org.jfree.chart.event.RendererChangeEvent;",
+    "import org.jfree.chart.labels.CategoryItemLabelGenerator;",
+    "import org.jfree.chart.labels.CategorySeriesLabelGenerator;",
+    "import org.jfree.chart.labels.CategoryToolTipGenerator;",
+    "import org.jfree.chart.labels.ItemLabelPosition;",
+    "import org.jfree.chart.labels.StandardCategorySeriesLabelGenerator;",
+    "import org.jfree.chart.plot.CategoryCrosshairState;",
+    "import org.jfree.chart.plot.CategoryMarker;",
+    "import org.jfree.chart.plot.CategoryPlot;",
+    "import org.jfree.chart.plot.DrawingSupplier;",
+    "import org.jfree.chart.plot.IntervalMarker;",
+    "import org.jfree.chart.plot.Marker;",
+    "import org.jfree.chart.plot.PlotOrientation;",
+    "import org.jfree.chart.plot.PlotRenderingInfo;",
+    "import org.jfree.chart.plot.ValueMarker;",
+    "import org.jfree.chart.renderer.AbstractRenderer;",
+    "import org.jfree.chart.text.TextUtilities;",
+    "import org.jfree.chart.urls.CategoryURLGenerator;",
+    "import org.jfree.chart.util.GradientPaintTransformer;",
+    "import org.jfree.chart.util.Layer;",
+    "import org.jfree.chart.util.LengthAdjustmentType;",
+    "import org.jfree.chart.util.ObjectList;",
+    "import org.jfree.chart.util.ObjectUtilities;",
+    "import org.jfree.chart.util.PublicCloneable;",
+    "import org.jfree.chart.util.RectangleAnchor;",
+    "import org.jfree.chart.util.RectangleEdge;",
+    "import org.jfree.chart.util.RectangleInsets;",
+    "import org.jfree.chart.util.SortOrder;",
+    "import org.jfree.data.Range;",
+    "import org.jfree.data.category.CategoryDataset;",
+    "import org.jfree.data.category.CategoryDatasetSelectionState;",
+    "import org.jfree.data.category.SelectableCategoryDataset;",
+    "import org.jfree.data.general.DatasetUtilities;"
+  ]
+}
+No ground-truth crash input captured — prompt will fall back to test-source anchoring.
+  [semantic] lifting assertion from org.jfree.chart.renderer.category.junit.AbstractCategoryItemRendererTests::test2947660
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.jfree.chart.renderer.category` (`package org.jfree.chart.renderer.category;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Chart_1_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /source/org/jfree/chart/renderer/category/AbstractCategoryItemRenderer.java
++++ /source/org/jfree/chart/renderer/category/AbstractCategoryItemRenderer.java
+@@ -1794,7 +1794,7 @@
+         }
+         int index = this.plot.getIndexOf(this);
+         CategoryDataset dataset = this.plot.getDataset(index);
+-        if (dataset != null) {
++        if((dataset!=null)&&(!(dataset.equals(dataset)))){
+             return result;
+         }
+         int seriesCount = dataset.getRowCount();
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.awt.AlphaComposite;
+import java.awt.Composite;
+import java.awt.Font;
+import java.awt.GradientPaint;
+import java.awt.Graphics2D;
+import java.awt.Paint;
+import java.awt.Rectangle;
+import java.awt.Shape;
+import java.awt.Stroke;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.jfree.chart.ChartRenderingInfo;
+import org.jfree.chart.LegendItem;
+import org.jfree.chart.LegendItemCollection;
+import org.jfree.chart.RenderingSource;
+import org.jfree.chart.annotations.CategoryAnnotation;
+import org.jfree.chart.axis.CategoryAxis;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.entity.CategoryItemEntity;
+import org.jfree.chart.entity.EntityCollection;
+import org.jfree.chart.event.RendererChangeEvent;
+import org.jfree.chart.labels.CategoryItemLabelGenerator;
+import org.jfree.chart.labels.CategorySeriesLabelGenerator;
+import org.jfree.chart.labels.CategoryToolTipGenerator;
+import org.jfree.chart.labels.ItemLabelPosition;
+import org.jfree.chart.labels.StandardCategorySeriesLabelGenerator;
+import org.jfree.chart.plot.CategoryCrosshairState;
+import org.jfree.chart.plot.CategoryMarker;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.DrawingSupplier;
+import org.jfree.chart.plot.IntervalMarker;
+import org.jfree.chart.plot.Marker;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.PlotRenderingInfo;
+import org.jfree.chart.plot.ValueMarker;
+import org.jfree.chart.renderer.AbstractRenderer;
+import org.jfree.chart.text.TextUtilities;
+import org.jfree.chart.urls.CategoryURLGenerator;
+import org.jfree.chart.util.GradientPaintTransformer;
+import org.jfree.chart.util.Layer;
+import org.jfree.chart.util.LengthAdjustmentType;
+import org.jfree.chart.util.ObjectList;
+import org.jfree.chart.util.ObjectUtilities;
+import org.jfree.chart.util.PublicCloneable;
+import org.jfree.chart.util.RectangleAnchor;
+import org.jfree.chart.util.RectangleEdge;
+import org.jfree.chart.util.RectangleInsets;
+import org.jfree.chart.util.SortOrder;
+import org.jfree.data.Range;
+import org.jfree.data.category.CategoryDataset;
+import org.jfree.data.category.CategoryDatasetSelectionState;
+import org.jfree.data.category.SelectableCategoryDataset;
+import org.jfree.data.general.DatasetUtilities;
+</source_imports>
+
+Function `getLegendItems`:
+<signature>
+public LegendItemCollection getLegendItems()
+</signature>
+<code>
+    public LegendItemCollection getLegendItems() {
+        LegendItemCollection result = new LegendItemCollection();
+        if (this.plot == null) {
+            return result;
+        }
+        int index = this.plot.getIndexOf(this);
+        CategoryDataset dataset = this.plot.getDataset(index);
+        if (dataset != null) {
+            return result;
+        }
+        int seriesCount = dataset.getRowCount();
+        if (plot.getRowRenderingOrder().equals(SortOrder.ASCENDING)) {
+            for (int i = 0; i < seriesCount; i++) {
+                if (isSeriesVisibleInLegend(i)) {
+                    LegendItem item = getLegendItem(index, i);
+                    if (item != null) {
+                        result.add(item);
+                    }
+                }
+            }
+        }
+        else {
+            for (int i = seriesCount - 1; i >= 0; i--) {
+                if (isSeriesVisibleInLegend(i)) {
+                    LegendItem item = getLegendItem(index, i);
+                    if (item != null) {
+                        result.add(item);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+</code>
+Methods called by `getLegendItems` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="getRowCount" from="AbstractCategoryItemRenderer.java">
+<signature>
+public int getRowCount()
+</signature>
+<code>
+    public int getRowCount() {
+        return this.rowCount;
+    }
+</code>
+</callee>
+<callee name="equals" from="AbstractCategoryItemRenderer.java">
+<signature>
+public boolean equals(Object obj)
+</signature>
+<code>
+    public boolean equals(Object obj) {
+
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof AbstractCategoryItemRenderer)) {
+            return false;
+        }
+        AbstractCategoryItemRenderer that = (AbstractCategoryItemRenderer) obj;
+
+        if (!ObjectUtilities.equal(this.itemLabelGeneratorList,
+                that.itemLabelGeneratorList)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.baseItemLabelGenerator,
+                that.baseItemLabelGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.toolTipGeneratorList,
+                that.toolTipGeneratorList)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.baseToolTipGenerator,
+                that.baseToolTipGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.urlGeneratorList,
+                that.urlGeneratorList)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.baseURLGenerator,
+                that.baseURLGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.legendItemLabelGenerator,
+                that.legendItemLabelGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.legendItemToolTipGenerator,
+                that.legendItemToolTipGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.legendItemURLGenerator,
+                that.legendItemURLGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.backgroundAnnotations,
+                that.backgroundAnnotations)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.foregroundAnnotations,
+                that.foregroundAnnotations)) {
+            return false;
+        }
+        return super.equals(obj);
+    }
+</code>
+<implementation in="AbstractCategoryItemRenderer.java">
+    public boolean equals(Object obj) {
+
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof AbstractCategoryItemRenderer)) {
+            return false;
+        }
+        AbstractCategoryItemRenderer that = (AbstractCategoryItemRenderer) obj;
+
+        if (!ObjectUtilities.equal(this.itemLabelGeneratorList,
+                that.itemLabelGeneratorList)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.baseItemLabelGenerator,
+                that.baseItemLabelGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.toolTipGeneratorList,
+                that.toolTipGeneratorList)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.baseToolTipGenerator,
+                that.baseToolTipGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.urlGeneratorList,
+                that.urlGeneratorList)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.baseURLGenerator,
+                that.baseURLGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.legendItemLabelGenerator,
+                that.legendItemLabelGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.legendItemToolTipGenerator,
+                that.legendItemToolTipGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.legendItemURLGenerator,
+                that.legendItemURLGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.backgroundAnnotations,
+                that.backgroundAnnotations)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.foregroundAnnotations,
+                that.foregroundAnnotations)) {
+            return false;
+        }
+        return super.equals(obj);
+    }
+</implementation>
+<implementation in="AreaRenderer.java">
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof AreaRenderer)) {
+            return false;
+        }
+        AreaRenderer that = (AreaRenderer) obj;
+        if (!this.endType.equals(that.endType)) {
+            return false;
+        }
+        return super.equals(obj);
+    }
+</implementation>
+<implementation in="BarRenderer.java">
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof BarRenderer)) {
+            return false;
+        }
+        BarRenderer that = (BarRenderer) obj;
+        if (this.base != that.base) {
+            return false;
+        }
+        if (this.itemMargin != that.itemMargin) {
+            return false;
+        }
+        if (this.drawBarOutline != that.drawBarOutline) {
+            return false;
+        }
+        if (this.maximumBarWidth != that.maximumBarWidth) {
+            return false;
+        }
+        if (this.minimumBarLength != that.minimumBarLength) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.gradientPaintTransformer,
+                that.gradientPaintTransformer)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.positiveItemLabelPositionFallback,
+            that.positiveItemLabelPositionFallback)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.negativeItemLabelPositionFallback,
+            that.negativeItemLabelPositionFallback)) {
+            return false;
+        }
+        if (!this.barPainter.equals(that.barPainter)) {
+            return false;
+        }
+        if (this.shadowsVisible != that.shadowsVisible) {
+            return false;
+        }
+        if (!PaintUtilities.equal(this.shadowPaint, that.shadowPaint)) {
+            return false;
+        }
+        if (this.shadowXOffset != that.shadowXOffset) {
+            return false;
+        }
+        if (this.shadowYOffset != that.shadowYOffset) {
+            return false;
+        }
+        return super.equals(obj);
+    }
+</implementation>
+<implementation in="BarRenderer3D.java">
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof BarRenderer3D)) {
+            return false;
+        }
+        BarRenderer3D that = (BarRenderer3D) obj;
+        if (this.xOffset != that.xOffset) {
+            return false;
+        }
+        if (this.yOffset != that.yOffset) {
+            return false;
+        }
+        if (!PaintUtilities.equal(this.wallPaint, that.wallPaint)) {
+            return false;
+        }
+        return super.equals(obj);
+    }
+</implementation>
+</callee>
+<callee name="isSeriesVisibleInLegend" from="CategoryItemRenderer.java" abstract="true">
+<signature>
+public boolean isSeriesVisibleInLegend(int series)
+</signature>
+<contract>
+    public boolean isSeriesVisibleInLegend(int series);
+</contract>
+</callee>
+<callee name="getLegendItem" from="CategoryItemRenderer.java" abstract="true">
+<signature>
+public LegendItem getLegendItem(int datasetIndex, int series)
+</signature>
+<contract>
+    public LegendItem getLegendItem(int datasetIndex, int series);
+</contract>
+<implementation in="AbstractCategoryItemRenderer.java">
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+
+        CategoryPlot p = getPlot();
+        if (p == null) {
+            return null;
+        }
+
+        // check that a legend item needs to be displayed...
+        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {
+            return null;
+        }
+
+        CategoryDataset dataset = p.getDataset(datasetIndex);
+        String label = this.legendItemLabelGenerator.generateLabel(dataset,
+                series);
+        String description = label;
+        String toolTipText = null;
+        if (this.legendItemToolTipGenerator != null) {
+            toolTipText = this.legendItemToolTipGenerator.generateLabel(
+                    dataset, series);
+        }
+        String urlText = null;
+        if (this.legendItemURLGenerator != null) {
+            urlText = this.legendItemURLGenerator.generateLabel(dataset,
+                    series);
+        }
+        Shape shape = lookupLegendShape(series);
+        Paint paint = lookupSeriesPaint(series);
+        Paint outlinePaint = lookupSeriesOutlinePaint(series);
+        Stroke outlineStroke = lookupSeriesOutlineStroke(series);
+
+        LegendItem item = new LegendItem(label, description, toolTipText,
+                urlText, shape, paint, outlineStroke, outlinePaint);
+        item.setLabelFont(lookupLegendTextFont(series));
+        Paint labelPaint = lookupLegendTextPaint(series);
+        if (labelPaint != null) {
+            item.setLabelPaint(labelPaint);
+        }
+        item.setSeriesKey(dataset.getRowKey(series));
+        item.setSeriesIndex(series);
+        item.setDataset(dataset);
+        item.setDatasetIndex(datasetIndex);
+        return item;
+    }
+</implementation>
+<implementation in="AreaRenderer.java">
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+
+        // if there is no plot, there is no dataset to access...
+        CategoryPlot cp = getPlot();
+        if (cp == null) {
+            return null;
+        }
+
+        // check that a legend item needs to be displayed...
+        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {
+            return null;
+        }
+
+        CategoryDataset dataset = cp.getDataset(datasetIndex);
+        String label = getLegendItemLabelGenerator().generateLabel(dataset,
+                series);
+        String description = label;
+        String toolTipText = null;
+        if (getLegendItemToolTipGenerator() != null) {
+            toolTipText = getLegendItemToolTipGenerator().generateLabel(
+                    dataset, series);
+        }
+        String urlText = null;
+        if (getLegendItemURLGenerator() != null) {
+            urlText = getLegendItemURLGenerator().generateLabel(dataset,
+                    series);
+        }
+        Shape shape = lookupLegendShape(series);
+        Paint paint = lookupSeriesPaint(series);
+        Paint outlinePaint = lookupSeriesOutlinePaint(series);
+        Stroke outlineStroke = lookupSeriesOutlineStroke(series);
+
+        LegendItem result = new LegendItem(label, description, toolTipText,
+                urlText, shape, paint, outlineStroke, outlinePaint);
+        result.setLabelFont(lookupLegendTextFont(series));
+        Paint labelPaint = lookupLegendTextPaint(series);
+        if (labelPaint != null) {
+            result.setLabelPaint(labelPaint);
+        }
+        result.setDataset(dataset);
+        result.setDatasetIndex(datasetIndex);
+        result.setSeriesKey(dataset.getRowKey(series));
+        result.setSeriesIndex(series);
+        return result;
+
+    }
+</implementation>
+<implementation in="BarRenderer.java">
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+
+        CategoryPlot cp = getPlot();
+        if (cp == null) {
+            return null;
+        }
+
+        // check that a legend item needs to be displayed...
+        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {
+            return null;
+        }
+
+        CategoryDataset dataset = cp.getDataset(datasetIndex);
+        String label = getLegendItemLabelGenerator().generateLabel(dataset,
+                series);
+        String description = label;
+        String toolTipText = null;
+        if (getLegendItemToolTipGenerator() != null) {
+            toolTipText = getLegendItemToolTipGenerator().generateLabel(
+                    dataset, series);
+        }
+        String urlText = null;
+        if (getLegendItemURLGenerator() != null) {
+            urlText = getLegendItemURLGenerator().generateLabel(dataset,
+                    series);
+        }
+        Shape shape = lookupLegendShape(series);
+        Paint paint = lookupSeriesPaint(series);
+        Paint outlinePaint = lookupSeriesOutlinePaint(series);
+        Stroke outlineStroke = lookupSeriesOutlineStroke(series);
+
+        LegendItem result = new LegendItem(label, description, toolTipText,
+                urlText, true, shape, true, paint, isDrawBarOutline(),
+                outlinePaint, outlineStroke, false, new Line2D.Float(),
+                new BasicStroke(1.0f), Color.black);
+        result.setLabelFont(lookupLegendTextFont(series));
+        Paint labelPaint = lookupLegendTextPaint(series);
+        if (labelPaint != null) {
+            result.setLabelPaint(labelPaint);
+        }
+        result.setDataset(dataset);
+        result.setDatasetIndex(datasetIndex);
+        result.setSeriesKey(dataset.getRowKey(series));
+        result.setSeriesIndex(series);
+        if (this.gradientPaintTransformer != null) {
+            result.setFillPaintTransformer(this.gradientPaintTransformer);
+        }
+        return result;
+    }
+</implementation>
+<implementation in="BoxAndWhiskerRenderer.java">
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+
+        CategoryPlot cp = getPlot();
+        if (cp == null) {
+            return null;
+        }
+
+        // check that a legend item needs to be displayed...
+        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {
+            return null;
+        }
+
+        CategoryDataset dataset = cp.getDataset(datasetIndex);
+        String label = getLegendItemLabelGenerator().generateLabel(dataset,
+                series);
+        String description = label;
+        String toolTipText = null;
+        if (getLegendItemToolTipGenerator() != null) {
+            toolTipText = getLegendItemToolTipGenerator().generateLabel(
+                    dataset, series);
+        }
+        String urlText = null;
+        if (getLegendItemURLGenerator() != null) {
+            urlText = getLegendItemURLGenerator().generateLabel(dataset,
+                    series);
+        }
+        Shape shape = lookupLegendShape(series);
+        Paint paint = lookupSeriesPaint(series);
+        Paint outlinePaint = lookupSeriesOutlinePaint(series);
+        Stroke outlineStroke = lookupSeriesOutlineStroke(series);
+        LegendItem result = new LegendItem(label, description, toolTipText,
+                urlText, shape, paint, outlineStroke, outlinePaint);
+        result.setLabelFont(lookupLegendTextFont(series));
+        Paint labelPaint = lookupLegendTextPaint(series);
+        if (labelPaint != null) {
+            result.setLabelPaint(labelPaint);
+        }
+        result.setDataset(dataset);
+        result.setDatasetIndex(datasetIndex);
+        result.setSeriesKey(dataset.getRowKey(series));
+        result.setSeriesIndex(series);
+        return result;
+
+    }
+</implementation>
+</callee>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `AbstractCategoryItemRendererTests`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.jfree.chart.renderer.category.junit.AbstractCategoryItemRendererTests" method="test2947660">
+    public void test2947660() {
+        AbstractCategoryItemRenderer r = new LineAndShapeRenderer();
+        assertNotNull(r.getLegendItems());
+        assertEquals(0, r.getLegendItems().getItemCount());
+
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        CategoryPlot plot = new CategoryPlot();
+        plot.setDataset(dataset);
+        plot.setRenderer(r);
+        assertEquals(0, r.getLegendItems().getItemCount());
+
+        dataset.addValue(1.0, "S1", "C1");
+        LegendItemCollection lic = r.getLegendItems();
+        assertEquals(1, lic.getItemCount());
+        assertEquals("S1", lic.get(0).getLabel());
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.jfree.chart.renderer.category;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+
+################################################
+  [semantic] lifting assertion from org.jfree.chart.renderer.category.junit.AbstractCategoryItemRendererTests::test2947660
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.jfree.chart.renderer.category` (`package org.jfree.chart.renderer.category;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Chart_1_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /source/org/jfree/chart/renderer/category/AbstractCategoryItemRenderer.java
++++ /source/org/jfree/chart/renderer/category/AbstractCategoryItemRenderer.java
+@@ -1794,7 +1794,7 @@
+         }
+         int index = this.plot.getIndexOf(this);
+         CategoryDataset dataset = this.plot.getDataset(index);
+-        if (dataset != null) {
++        if((dataset!=null)&&(!(dataset.equals(dataset)))){
+             return result;
+         }
+         int seriesCount = dataset.getRowCount();
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.awt.AlphaComposite;
+import java.awt.Composite;
+import java.awt.Font;
+import java.awt.GradientPaint;
+import java.awt.Graphics2D;
+import java.awt.Paint;
+import java.awt.Rectangle;
+import java.awt.Shape;
+import java.awt.Stroke;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.jfree.chart.ChartRenderingInfo;
+import org.jfree.chart.LegendItem;
+import org.jfree.chart.LegendItemCollection;
+import org.jfree.chart.RenderingSource;
+import org.jfree.chart.annotations.CategoryAnnotation;
+import org.jfree.chart.axis.CategoryAxis;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.entity.CategoryItemEntity;
+import org.jfree.chart.entity.EntityCollection;
+import org.jfree.chart.event.RendererChangeEvent;
+import org.jfree.chart.labels.CategoryItemLabelGenerator;
+import org.jfree.chart.labels.CategorySeriesLabelGenerator;
+import org.jfree.chart.labels.CategoryToolTipGenerator;
+import org.jfree.chart.labels.ItemLabelPosition;
+import org.jfree.chart.labels.StandardCategorySeriesLabelGenerator;
+import org.jfree.chart.plot.CategoryCrosshairState;
+import org.jfree.chart.plot.CategoryMarker;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.DrawingSupplier;
+import org.jfree.chart.plot.IntervalMarker;
+import org.jfree.chart.plot.Marker;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.PlotRenderingInfo;
+import org.jfree.chart.plot.ValueMarker;
+import org.jfree.chart.renderer.AbstractRenderer;
+import org.jfree.chart.text.TextUtilities;
+import org.jfree.chart.urls.CategoryURLGenerator;
+import org.jfree.chart.util.GradientPaintTransformer;
+import org.jfree.chart.util.Layer;
+import org.jfree.chart.util.LengthAdjustmentType;
+import org.jfree.chart.util.ObjectList;
+import org.jfree.chart.util.ObjectUtilities;
+import org.jfree.chart.util.PublicCloneable;
+import org.jfree.chart.util.RectangleAnchor;
+import org.jfree.chart.util.RectangleEdge;
+import org.jfree.chart.util.RectangleInsets;
+import org.jfree.chart.util.SortOrder;
+import org.jfree.data.Range;
+import org.jfree.data.category.CategoryDataset;
+import org.jfree.data.category.CategoryDatasetSelectionState;
+import org.jfree.data.category.SelectableCategoryDataset;
+import org.jfree.data.general.DatasetUtilities;
+</source_imports>
+
+Function `getLegendItems`:
+<signature>
+public LegendItemCollection getLegendItems()
+</signature>
+<code>
+    public LegendItemCollection getLegendItems() {
+        LegendItemCollection result = new LegendItemCollection();
+        if (this.plot == null) {
+            return result;
+        }
+        int index = this.plot.getIndexOf(this);
+        CategoryDataset dataset = this.plot.getDataset(index);
+        if (dataset != null) {
+            return result;
+        }
+        int seriesCount = dataset.getRowCount();
+        if (plot.getRowRenderingOrder().equals(SortOrder.ASCENDING)) {
+            for (int i = 0; i < seriesCount; i++) {
+                if (isSeriesVisibleInLegend(i)) {
+                    LegendItem item = getLegendItem(index, i);
+                    if (item != null) {
+                        result.add(item);
+                    }
+                }
+            }
+        }
+        else {
+            for (int i = seriesCount - 1; i >= 0; i--) {
+                if (isSeriesVisibleInLegend(i)) {
+                    LegendItem item = getLegendItem(index, i);
+                    if (item != null) {
+                        result.add(item);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+</code>
+Methods called by `getLegendItems` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="getRowCount" from="AbstractCategoryItemRenderer.java">
+<signature>
+public int getRowCount()
+</signature>
+<code>
+    public int getRowCount() {
+        return this.rowCount;
+    }
+</code>
+</callee>
+<callee name="equals" from="AbstractCategoryItemRenderer.java">
+<signature>
+public boolean equals(Object obj)
+</signature>
+<code>
+    public boolean equals(Object obj) {
+
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof AbstractCategoryItemRenderer)) {
+            return false;
+        }
+        AbstractCategoryItemRenderer that = (AbstractCategoryItemRenderer) obj;
+
+        if (!ObjectUtilities.equal(this.itemLabelGeneratorList,
+                that.itemLabelGeneratorList)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.baseItemLabelGenerator,
+                that.baseItemLabelGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.toolTipGeneratorList,
+                that.toolTipGeneratorList)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.baseToolTipGenerator,
+                that.baseToolTipGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.urlGeneratorList,
+                that.urlGeneratorList)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.baseURLGenerator,
+                that.baseURLGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.legendItemLabelGenerator,
+                that.legendItemLabelGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.legendItemToolTipGenerator,
+                that.legendItemToolTipGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.legendItemURLGenerator,
+                that.legendItemURLGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.backgroundAnnotations,
+                that.backgroundAnnotations)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.foregroundAnnotations,
+                that.foregroundAnnotations)) {
+            return false;
+        }
+        return super.equals(obj);
+    }
+</code>
+<implementation in="AbstractCategoryItemRenderer.java">
+    public boolean equals(Object obj) {
+
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof AbstractCategoryItemRenderer)) {
+            return false;
+        }
+        AbstractCategoryItemRenderer that = (AbstractCategoryItemRenderer) obj;
+
+        if (!ObjectUtilities.equal(this.itemLabelGeneratorList,
+                that.itemLabelGeneratorList)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.baseItemLabelGenerator,
+                that.baseItemLabelGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.toolTipGeneratorList,
+                that.toolTipGeneratorList)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.baseToolTipGenerator,
+                that.baseToolTipGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.urlGeneratorList,
+                that.urlGeneratorList)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.baseURLGenerator,
+                that.baseURLGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.legendItemLabelGenerator,
+                that.legendItemLabelGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.legendItemToolTipGenerator,
+                that.legendItemToolTipGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.legendItemURLGenerator,
+                that.legendItemURLGenerator)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.backgroundAnnotations,
+                that.backgroundAnnotations)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.foregroundAnnotations,
+                that.foregroundAnnotations)) {
+            return false;
+        }
+        return super.equals(obj);
+    }
+</implementation>
+<implementation in="AreaRenderer.java">
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof AreaRenderer)) {
+            return false;
+        }
+        AreaRenderer that = (AreaRenderer) obj;
+        if (!this.endType.equals(that.endType)) {
+            return false;
+        }
+        return super.equals(obj);
+    }
+</implementation>
+<implementation in="BarRenderer.java">
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof BarRenderer)) {
+            return false;
+        }
+        BarRenderer that = (BarRenderer) obj;
+        if (this.base != that.base) {
+            return false;
+        }
+        if (this.itemMargin != that.itemMargin) {
+            return false;
+        }
+        if (this.drawBarOutline != that.drawBarOutline) {
+            return false;
+        }
+        if (this.maximumBarWidth != that.maximumBarWidth) {
+            return false;
+        }
+        if (this.minimumBarLength != that.minimumBarLength) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.gradientPaintTransformer,
+                that.gradientPaintTransformer)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.positiveItemLabelPositionFallback,
+            that.positiveItemLabelPositionFallback)) {
+            return false;
+        }
+        if (!ObjectUtilities.equal(this.negativeItemLabelPositionFallback,
+            that.negativeItemLabelPositionFallback)) {
+            return false;
+        }
+        if (!this.barPainter.equals(that.barPainter)) {
+            return false;
+        }
+        if (this.shadowsVisible != that.shadowsVisible) {
+            return false;
+        }
+        if (!PaintUtilities.equal(this.shadowPaint, that.shadowPaint)) {
+            return false;
+        }
+        if (this.shadowXOffset != that.shadowXOffset) {
+            return false;
+        }
+        if (this.shadowYOffset != that.shadowYOffset) {
+            return false;
+        }
+        return super.equals(obj);
+    }
+</implementation>
+<implementation in="BarRenderer3D.java">
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof BarRenderer3D)) {
+            return false;
+        }
+        BarRenderer3D that = (BarRenderer3D) obj;
+        if (this.xOffset != that.xOffset) {
+            return false;
+        }
+        if (this.yOffset != that.yOffset) {
+            return false;
+        }
+        if (!PaintUtilities.equal(this.wallPaint, that.wallPaint)) {
+            return false;
+        }
+        return super.equals(obj);
+    }
+</implementation>
+</callee>
+<callee name="isSeriesVisibleInLegend" from="CategoryItemRenderer.java" abstract="true">
+<signature>
+public boolean isSeriesVisibleInLegend(int series)
+</signature>
+<contract>
+    public boolean isSeriesVisibleInLegend(int series);
+</contract>
+</callee>
+<callee name="getLegendItem" from="CategoryItemRenderer.java" abstract="true">
+<signature>
+public LegendItem getLegendItem(int datasetIndex, int series)
+</signature>
+<contract>
+    public LegendItem getLegendItem(int datasetIndex, int series);
+</contract>
+<implementation in="AbstractCategoryItemRenderer.java">
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+
+        CategoryPlot p = getPlot();
+        if (p == null) {
+            return null;
+        }
+
+        // check that a legend item needs to be displayed...
+        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {
+            return null;
+        }
+
+        CategoryDataset dataset = p.getDataset(datasetIndex);
+        String label = this.legendItemLabelGenerator.generateLabel(dataset,
+                series);
+        String description = label;
+        String toolTipText = null;
+        if (this.legendItemToolTipGenerator != null) {
+            toolTipText = this.legendItemToolTipGenerator.generateLabel(
+                    dataset, series);
+        }
+        String urlText = null;
+        if (this.legendItemURLGenerator != null) {
+            urlText = this.legendItemURLGenerator.generateLabel(dataset,
+                    series);
+        }
+        Shape shape = lookupLegendShape(series);
+        Paint paint = lookupSeriesPaint(series);
+        Paint outlinePaint = lookupSeriesOutlinePaint(series);
+        Stroke outlineStroke = lookupSeriesOutlineStroke(series);
+
+        LegendItem item = new LegendItem(label, description, toolTipText,
+                urlText, shape, paint, outlineStroke, outlinePaint);
+        item.setLabelFont(lookupLegendTextFont(series));
+        Paint labelPaint = lookupLegendTextPaint(series);
+        if (labelPaint != null) {
+            item.setLabelPaint(labelPaint);
+        }
+        item.setSeriesKey(dataset.getRowKey(series));
+        item.setSeriesIndex(series);
+        item.setDataset(dataset);
+        item.setDatasetIndex(datasetIndex);
+        return item;
+    }
+</implementation>
+<implementation in="AreaRenderer.java">
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+
+        // if there is no plot, there is no dataset to access...
+        CategoryPlot cp = getPlot();
+        if (cp == null) {
+            return null;
+        }
+
+        // check that a legend item needs to be displayed...
+        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {
+            return null;
+        }
+
+        CategoryDataset dataset = cp.getDataset(datasetIndex);
+        String label = getLegendItemLabelGenerator().generateLabel(dataset,
+                series);
+        String description = label;
+        String toolTipText = null;
+        if (getLegendItemToolTipGenerator() != null) {
+            toolTipText = getLegendItemToolTipGenerator().generateLabel(
+                    dataset, series);
+        }
+        String urlText = null;
+        if (getLegendItemURLGenerator() != null) {
+            urlText = getLegendItemURLGenerator().generateLabel(dataset,
+                    series);
+        }
+        Shape shape = lookupLegendShape(series);
+        Paint paint = lookupSeriesPaint(series);
+        Paint outlinePaint = lookupSeriesOutlinePaint(series);
+        Stroke outlineStroke = lookupSeriesOutlineStroke(series);
+
+        LegendItem result = new LegendItem(label, description, toolTipText,
+                urlText, shape, paint, outlineStroke, outlinePaint);
+        result.setLabelFont(lookupLegendTextFont(series));
+        Paint labelPaint = lookupLegendTextPaint(series);
+        if (labelPaint != null) {
+            result.setLabelPaint(labelPaint);
+        }
+        result.setDataset(dataset);
+        result.setDatasetIndex(datasetIndex);
+        result.setSeriesKey(dataset.getRowKey(series));
+        result.setSeriesIndex(series);
+        return result;
+
+    }
+</implementation>
+<implementation in="BarRenderer.java">
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+
+        CategoryPlot cp = getPlot();
+        if (cp == null) {
+            return null;
+        }
+
+        // check that a legend item needs to be displayed...
+        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {
+            return null;
+        }
+
+        CategoryDataset dataset = cp.getDataset(datasetIndex);
+        String label = getLegendItemLabelGenerator().generateLabel(dataset,
+                series);
+        String description = label;
+        String toolTipText = null;
+        if (getLegendItemToolTipGenerator() != null) {
+            toolTipText = getLegendItemToolTipGenerator().generateLabel(
+                    dataset, series);
+        }
+        String urlText = null;
+        if (getLegendItemURLGenerator() != null) {
+            urlText = getLegendItemURLGenerator().generateLabel(dataset,
+                    series);
+        }
+        Shape shape = lookupLegendShape(series);
+        Paint paint = lookupSeriesPaint(series);
+        Paint outlinePaint = lookupSeriesOutlinePaint(series);
+        Stroke outlineStroke = lookupSeriesOutlineStroke(series);
+
+        LegendItem result = new LegendItem(label, description, toolTipText,
+                urlText, true, shape, true, paint, isDrawBarOutline(),
+                outlinePaint, outlineStroke, false, new Line2D.Float(),
+                new BasicStroke(1.0f), Color.black);
+        result.setLabelFont(lookupLegendTextFont(series));
+        Paint labelPaint = lookupLegendTextPaint(series);
+        if (labelPaint != null) {
+            result.setLabelPaint(labelPaint);
+        }
+        result.setDataset(dataset);
+        result.setDatasetIndex(datasetIndex);
+        result.setSeriesKey(dataset.getRowKey(series));
+        result.setSeriesIndex(series);
+        if (this.gradientPaintTransformer != null) {
+            result.setFillPaintTransformer(this.gradientPaintTransformer);
+        }
+        return result;
+    }
+</implementation>
+<implementation in="BoxAndWhiskerRenderer.java">
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+
+        CategoryPlot cp = getPlot();
+        if (cp == null) {
+            return null;
+        }
+
+        // check that a legend item needs to be displayed...
+        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {
+            return null;
+        }
+
+        CategoryDataset dataset = cp.getDataset(datasetIndex);
+        String label = getLegendItemLabelGenerator().generateLabel(dataset,
+                series);
+        String description = label;
+        String toolTipText = null;
+        if (getLegendItemToolTipGenerator() != null) {
+            toolTipText = getLegendItemToolTipGenerator().generateLabel(
+                    dataset, series);
+        }
+        String urlText = null;
+        if (getLegendItemURLGenerator() != null) {
+            urlText = getLegendItemURLGenerator().generateLabel(dataset,
+                    series);
+        }
+        Shape shape = lookupLegendShape(series);
+        Paint paint = lookupSeriesPaint(series);
+        Paint outlinePaint = lookupSeriesOutlinePaint(series);
+        Stroke outlineStroke = lookupSeriesOutlineStroke(series);
+        LegendItem result = new LegendItem(label, description, toolTipText,
+                urlText, shape, paint, outlineStroke, outlinePaint);
+        result.setLabelFont(lookupLegendTextFont(series));
+        Paint labelPaint = lookupLegendTextPaint(series);
+        if (labelPaint != null) {
+            result.setLabelPaint(labelPaint);
+        }
+        result.setDataset(dataset);
+        result.setDatasetIndex(datasetIndex);
+        result.setSeriesKey(dataset.getRowKey(series));
+        result.setSeriesIndex(series);
+        return result;
+
+    }
+</implementation>
+</callee>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `AbstractCategoryItemRendererTests`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.jfree.chart.renderer.category.junit.AbstractCategoryItemRendererTests" method="test2947660">
+    public void test2947660() {
+        AbstractCategoryItemRenderer r = new LineAndShapeRenderer();
+        assertNotNull(r.getLegendItems());
+        assertEquals(0, r.getLegendItems().getItemCount());
+
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        CategoryPlot plot = new CategoryPlot();
+        plot.setDataset(dataset);
+        plot.setRenderer(r);
+        assertEquals(0, r.getLegendItems().getItemCount());
+
+        dataset.addValue(1.0, "S1", "C1");
+        LegendItemCollection lic = r.getLegendItems();
+        assertEquals(1, lic.getItemCount());
+        assertEquals("S1", lic.get(0).getLabel());
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.jfree.chart.renderer.category;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+################################################
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+    return self._connection.handle_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+    raise exc
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 231, in _receive_event
+    raise RemoteProtocolError(msg)
+httpcore.RemoteProtocolError: Server disconnected without sending a response.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1037, in request
+    response = self._send_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_client.py", line 440, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_client.py", line 418, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 964, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+  File "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.RemoteProtocolError: Server disconnected without sending a response.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 448, in <module>
+    main()
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 341, in main
+    result = campaign.run(messages, selection.buggy_dir,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/java/campaign.py", line 189, in run
+    raw = self.generator.generate(current_messages)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/llm.py", line 105, in generate
+    result = self._client.chat.completions.create(**params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1215, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1332, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1072, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+  (no record emitted; retrying)
+[overfitting] run 2 (have 0/10 distinct) -> project Math
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.math3.distribution.HypergeometricDistributionTest::testMath1021  [junit.framework.AssertionFailedError]
+
+bug kind: semantic
+{
+  "modified_files": [
+    "src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java"
+  ],
+  "patch_text": "--- /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java\n+++ /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java\n@@ -135,7 +135,7 @@\n             k = 1.0 / k;\n             tmp = mu + k * sigma;\n             if (tmp < upper) {\n-                upper = ((int) Math.ceil(tmp)) - 1;\n+            \ttmp = mu + (k * sigma);\n             }\n         }\n \n",
+  "functions": [
+    {
+      "func_name": "inverseCumulativeProbability",
+      "func_signature": "public int inverseCumulativeProbability(double p) throws OutOfRangeException",
+      "func_source": "    public int inverseCumulativeProbability(final double p) throws OutOfRangeException {\n        if (p < 0.0 || p > 1.0) {\n            throw new OutOfRangeException(p, 0, 1);\n        }\n\n        int lower = getSupportLowerBound();\n        if (p == 0.0) {\n            return lower;\n        }\n        if (lower == Integer.MIN_VALUE) {\n            if (checkedCumulativeProbability(lower) >= p) {\n                return lower;\n            }\n        } else {\n            lower -= 1; // this ensures cumulativeProbability(lower) < p, which\n                        // is important for the solving step\n        }\n\n        int upper = getSupportUpperBound();\n        if (p == 1.0) {\n            return upper;\n        }\n\n        // use the one-sided Chebyshev inequality to narrow the bracket\n        // cf. AbstractRealDistribution.inverseCumulativeProbability(double)\n        final double mu = getNumericalMean();\n        final double sigma = FastMath.sqrt(getNumericalVariance());\n        final boolean chebyshevApplies = !(Double.isInfinite(mu) || Double.isNaN(mu) ||\n                Double.isInfinite(sigma) || Double.isNaN(sigma) || sigma == 0.0);\n        if (chebyshevApplies) {\n            double k = FastMath.sqrt((1.0 - p) / p);\n            double tmp = mu - k * sigma;\n            if (tmp > lower) {\n                lower = ((int) Math.ceil(tmp)) - 1;\n            }\n            k = 1.0 / k;\n            tmp = mu + k * sigma;\n            if (tmp < upper) {\n                upper = ((int) Math.ceil(tmp)) - 1;\n            }\n        }\n\n        return solveInverseCumulativeProbability(p, lower, upper);\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": [
+        {
+          "name": "getSupportLowerBound",
+          "source_file": "IntegerDistribution.java",
+          "signature": "int getSupportLowerBound()",
+          "source": "    int getSupportLowerBound();",
+          "is_abstract": true,
+          "impls": [
+            [
+              "BetaDistribution.java",
+              "    public double getSupportLowerBound() {\n        return 0;\n    }"
+            ],
+            [
+              "BinomialDistribution.java",
+              "    public int getSupportLowerBound() {\n        return probabilityOfSuccess < 1.0 ? 0 : numberOfTrials;\n    }"
+            ],
+            [
+              "CauchyDistribution.java",
+              "    public double getSupportLowerBound() {\n        return Double.NEGATIVE_INFINITY;\n    }"
+            ],
+            [
+              "ChiSquaredDistribution.java",
+              "    public double getSupportLowerBound() {\n        return 0;\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "checkedCumulativeProbability",
+          "source_file": "AbstractIntegerDistribution.java",
+          "signature": "private double checkedCumulativeProbability(int argument) throws MathInternalError",
+          "source": "    private double checkedCumulativeProbability(int argument)\n        throws MathInternalError {\n        double result = Double.NaN;\n        result = cumulativeProbability(argument);\n        if (Double.isNaN(result)) {\n            throw new MathInternalError(LocalizedFormats\n                    .DISCRETE_CUMULATIVE_PROBABILITY_RETURNED_NAN, argument);\n        }\n        return result;\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "getSupportUpperBound",
+          "source_file": "IntegerDistribution.java",
+          "signature": "int getSupportUpperBound()",
+          "source": "    int getSupportUpperBound();",
+          "is_abstract": true,
+          "impls": [
+            [
+              "BetaDistribution.java",
+              "    public double getSupportUpperBound() {\n        return 1;\n    }"
+            ],
+            [
+              "BinomialDistribution.java",
+              "    public int getSupportUpperBound() {\n        return probabilityOfSuccess > 0.0 ? numberOfTrials : 0;\n    }"
+            ],
+            [
+              "CauchyDistribution.java",
+              "    public double getSupportUpperBound() {\n        return Double.POSITIVE_INFINITY;\n    }"
+            ],
+            [
+              "ChiSquaredDistribution.java",
+              "    public double getSupportUpperBound() {\n        return Double.POSITIVE_INFINITY;\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "getNumericalMean",
+          "source_file": "IntegerDistribution.java",
+          "signature": "double getNumericalMean()",
+          "source": "    double getNumericalMean();",
+          "is_abstract": true,
+          "impls": [
+            [
+              "BetaDistribution.java",
+              "    public double getNumericalMean() {\n        final double a = getAlpha();\n        return a / (a + getBeta());\n    }"
+            ],
+            [
+              "BinomialDistribution.java",
+              "    public double getNumericalMean() {\n        return numberOfTrials * probabilityOfSuccess;\n    }"
+            ],
+            [
+              "CauchyDistribution.java",
+              "    public double getNumericalMean() {\n        return Double.NaN;\n    }"
+            ],
+            [
+              "ChiSquaredDistribution.java",
+              "    public double getNumericalMean() {\n        return getDegreesOfFreedom();\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "getNumericalVariance",
+          "source_file": "IntegerDistribution.java",
+          "signature": "double getNumericalVariance()",
+          "source": "    double getNumericalVariance();",
+          "is_abstract": true,
+          "impls": [
+            [
+              "BetaDistribution.java",
+              "    public double getNumericalVariance() {\n        final double a = getAlpha();\n        final double b = getBeta();\n        final double alphabetasum = a + b;\n        return (a * b) / ((alphabetasum * alphabetasum) * (alphabetasum + 1));\n    }"
+            ],
+            [
+              "BinomialDistribution.java",
+              "    public double getNumericalVariance() {\n        final double p = probabilityOfSuccess;\n        return numberOfTrials * p * (1 - p);\n    }"
+            ],
+            [
+              "CauchyDistribution.java",
+              "    public double getNumericalVariance() {\n        return Double.NaN;\n    }"
+            ],
+            [
+              "ChiSquaredDistribution.java",
+              "    public double getNumericalVariance() {\n        return 2 * getDegreesOfFreedom();\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "solveInverseCumulativeProbability",
+          "source_file": "AbstractIntegerDistribution.java",
+          "signature": "protected int solveInverseCumulativeProbability(double p, int lower, int upper)",
+          "source": "    protected int solveInverseCumulativeProbability(final double p, int lower, int upper) {\n        while (lower + 1 < upper) {\n            int xm = (lower + upper) / 2;\n            if (xm < lower || xm > upper) {\n                /*\n                 * Overflow.\n                 * There will never be an overflow in both calculation methods\n                 * for xm at the same time\n                 */\n                xm = lower + (upper - lower) / 2;\n            }\n\n            double pm = checkedCumulativeProbability(xm);\n            if (pm >= p) {\n                upper = xm;\n            } else {\n                lower = xm;\n            }\n        }\n        return upper;\n    }",
+          "is_abstract": false,
+          "impls": []
+        }
+      ]
+    }
+  ],
+  "package": "org.apache.commons.math3.distribution",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.io.Serializable;",
+    "import org.apache.commons.math3.exception.MathInternalError;",
+    "import org.apache.commons.math3.exception.NotStrictlyPositiveException;",
+    "import org.apache.commons.math3.exception.NumberIsTooLargeException;",
+    "import org.apache.commons.math3.exception.OutOfRangeException;",
+    "import org.apache.commons.math3.exception.util.LocalizedFormats;",
+    "import org.apache.commons.math3.random.RandomGenerator;",
+    "import org.apache.commons.math3.random.RandomDataImpl;",
+    "import org.apache.commons.math3.util.FastMath;"
+  ]
+}
+No ground-truth crash input captured — prompt will fall back to test-source anchoring.
+  [semantic] lifting assertion from org.apache.commons.math3.distribution.HypergeometricDistributionTest::testMath1021
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.math3.distribution` (`package org.apache.commons.math3.distribution;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Math_2_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java
++++ /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java
+@@ -135,7 +135,7 @@
+             k = 1.0 / k;
+             tmp = mu + k * sigma;
+             if (tmp < upper) {
+-                upper = ((int) Math.ceil(tmp)) - 1;
++            	tmp = mu + (k * sigma);
+             }
+         }
+ 
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Serializable;
+import org.apache.commons.math3.exception.MathInternalError;
+import org.apache.commons.math3.exception.NotStrictlyPositiveException;
+import org.apache.commons.math3.exception.NumberIsTooLargeException;
+import org.apache.commons.math3.exception.OutOfRangeException;
+import org.apache.commons.math3.exception.util.LocalizedFormats;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.RandomDataImpl;
+import org.apache.commons.math3.util.FastMath;
+</source_imports>
+
+Function `inverseCumulativeProbability`:
+<signature>
+public int inverseCumulativeProbability(double p) throws OutOfRangeException
+</signature>
+<code>
+    public int inverseCumulativeProbability(final double p) throws OutOfRangeException {
+        if (p < 0.0 || p > 1.0) {
+            throw new OutOfRangeException(p, 0, 1);
+        }
+
+        int lower = getSupportLowerBound();
+        if (p == 0.0) {
+            return lower;
+        }
+        if (lower == Integer.MIN_VALUE) {
+            if (checkedCumulativeProbability(lower) >= p) {
+                return lower;
+            }
+        } else {
+            lower -= 1; // this ensures cumulativeProbability(lower) < p, which
+                        // is important for the solving step
+        }
+
+        int upper = getSupportUpperBound();
+        if (p == 1.0) {
+            return upper;
+        }
+
+        // use the one-sided Chebyshev inequality to narrow the bracket
+        // cf. AbstractRealDistribution.inverseCumulativeProbability(double)
+        final double mu = getNumericalMean();
+        final double sigma = FastMath.sqrt(getNumericalVariance());
+        final boolean chebyshevApplies = !(Double.isInfinite(mu) || Double.isNaN(mu) ||
+                Double.isInfinite(sigma) || Double.isNaN(sigma) || sigma == 0.0);
+        if (chebyshevApplies) {
+            double k = FastMath.sqrt((1.0 - p) / p);
+            double tmp = mu - k * sigma;
+            if (tmp > lower) {
+                lower = ((int) Math.ceil(tmp)) - 1;
+            }
+            k = 1.0 / k;
+            tmp = mu + k * sigma;
+            if (tmp < upper) {
+                upper = ((int) Math.ceil(tmp)) - 1;
+            }
+        }
+
+        return solveInverseCumulativeProbability(p, lower, upper);
+    }
+</code>
+Methods called by `inverseCumulativeProbability` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="getSupportLowerBound" from="IntegerDistribution.java" abstract="true">
+<signature>
+int getSupportLowerBound()
+</signature>
+<contract>
+    int getSupportLowerBound();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getSupportLowerBound() {
+        return 0;
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public int getSupportLowerBound() {
+        return probabilityOfSuccess < 1.0 ? 0 : numberOfTrials;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getSupportLowerBound() {
+        return Double.NEGATIVE_INFINITY;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getSupportLowerBound() {
+        return 0;
+    }
+</implementation>
+</callee>
+<callee name="checkedCumulativeProbability" from="AbstractIntegerDistribution.java">
+<signature>
+private double checkedCumulativeProbability(int argument) throws MathInternalError
+</signature>
+<code>
+    private double checkedCumulativeProbability(int argument)
+        throws MathInternalError {
+        double result = Double.NaN;
+        result = cumulativeProbability(argument);
+        if (Double.isNaN(result)) {
+            throw new MathInternalError(LocalizedFormats
+                    .DISCRETE_CUMULATIVE_PROBABILITY_RETURNED_NAN, argument);
+        }
+        return result;
+    }
+</code>
+</callee>
+<callee name="getSupportUpperBound" from="IntegerDistribution.java" abstract="true">
+<signature>
+int getSupportUpperBound()
+</signature>
+<contract>
+    int getSupportUpperBound();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getSupportUpperBound() {
+        return 1;
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public int getSupportUpperBound() {
+        return probabilityOfSuccess > 0.0 ? numberOfTrials : 0;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getSupportUpperBound() {
+        return Double.POSITIVE_INFINITY;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getSupportUpperBound() {
+        return Double.POSITIVE_INFINITY;
+    }
+</implementation>
+</callee>
+<callee name="getNumericalMean" from="IntegerDistribution.java" abstract="true">
+<signature>
+double getNumericalMean()
+</signature>
+<contract>
+    double getNumericalMean();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getNumericalMean() {
+        final double a = getAlpha();
+        return a / (a + getBeta());
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public double getNumericalMean() {
+        return numberOfTrials * probabilityOfSuccess;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getNumericalMean() {
+        return Double.NaN;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getNumericalMean() {
+        return getDegreesOfFreedom();
+    }
+</implementation>
+</callee>
+<callee name="getNumericalVariance" from="IntegerDistribution.java" abstract="true">
+<signature>
+double getNumericalVariance()
+</signature>
+<contract>
+    double getNumericalVariance();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getNumericalVariance() {
+        final double a = getAlpha();
+        final double b = getBeta();
+        final double alphabetasum = a + b;
+        return (a * b) / ((alphabetasum * alphabetasum) * (alphabetasum + 1));
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public double getNumericalVariance() {
+        final double p = probabilityOfSuccess;
+        return numberOfTrials * p * (1 - p);
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getNumericalVariance() {
+        return Double.NaN;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getNumericalVariance() {
+        return 2 * getDegreesOfFreedom();
+    }
+</implementation>
+</callee>
+<callee name="solveInverseCumulativeProbability" from="AbstractIntegerDistribution.java">
+<signature>
+protected int solveInverseCumulativeProbability(double p, int lower, int upper)
+</signature>
+<code>
+    protected int solveInverseCumulativeProbability(final double p, int lower, int upper) {
+        while (lower + 1 < upper) {
+            int xm = (lower + upper) / 2;
+            if (xm < lower || xm > upper) {
+                /*
+                 * Overflow.
+                 * There will never be an overflow in both calculation methods
+                 * for xm at the same time
+                 */
+                xm = lower + (upper - lower) / 2;
+            }
+
+            double pm = checkedCumulativeProbability(xm);
+            if (pm >= p) {
+                upper = xm;
+            } else {
+                lower = xm;
+            }
+        }
+        return upper;
+    }
+</code>
+</callee>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `HypergeometricDistribution`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.apache.commons.math3.distribution.HypergeometricDistributionTest" method="testMath1021">
+    @Test
+    public void testMath1021() {
+        final int N = 43130568;
+        final int m = 42976365;
+        final int n = 50;
+        final HypergeometricDistribution dist = new HypergeometricDistribution(N, m, n);
+
+        for (int i = 0; i < 100; i++) {
+            final int sample = dist.sample();
+            Assert.assertTrue("sample=" + sample, 0 <= sample);
+            Assert.assertTrue("sample=" + sample, sample <= n);
+        }
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.math3.distribution;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+
+################################################
+  [semantic] lifting assertion from org.apache.commons.math3.distribution.HypergeometricDistributionTest::testMath1021
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.math3.distribution` (`package org.apache.commons.math3.distribution;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Math_2_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java
++++ /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java
+@@ -135,7 +135,7 @@
+             k = 1.0 / k;
+             tmp = mu + k * sigma;
+             if (tmp < upper) {
+-                upper = ((int) Math.ceil(tmp)) - 1;
++            	tmp = mu + (k * sigma);
+             }
+         }
+ 
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Serializable;
+import org.apache.commons.math3.exception.MathInternalError;
+import org.apache.commons.math3.exception.NotStrictlyPositiveException;
+import org.apache.commons.math3.exception.NumberIsTooLargeException;
+import org.apache.commons.math3.exception.OutOfRangeException;
+import org.apache.commons.math3.exception.util.LocalizedFormats;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.RandomDataImpl;
+import org.apache.commons.math3.util.FastMath;
+</source_imports>
+
+Function `inverseCumulativeProbability`:
+<signature>
+public int inverseCumulativeProbability(double p) throws OutOfRangeException
+</signature>
+<code>
+    public int inverseCumulativeProbability(final double p) throws OutOfRangeException {
+        if (p < 0.0 || p > 1.0) {
+            throw new OutOfRangeException(p, 0, 1);
+        }
+
+        int lower = getSupportLowerBound();
+        if (p == 0.0) {
+            return lower;
+        }
+        if (lower == Integer.MIN_VALUE) {
+            if (checkedCumulativeProbability(lower) >= p) {
+                return lower;
+            }
+        } else {
+            lower -= 1; // this ensures cumulativeProbability(lower) < p, which
+                        // is important for the solving step
+        }
+
+        int upper = getSupportUpperBound();
+        if (p == 1.0) {
+            return upper;
+        }
+
+        // use the one-sided Chebyshev inequality to narrow the bracket
+        // cf. AbstractRealDistribution.inverseCumulativeProbability(double)
+        final double mu = getNumericalMean();
+        final double sigma = FastMath.sqrt(getNumericalVariance());
+        final boolean chebyshevApplies = !(Double.isInfinite(mu) || Double.isNaN(mu) ||
+                Double.isInfinite(sigma) || Double.isNaN(sigma) || sigma == 0.0);
+        if (chebyshevApplies) {
+            double k = FastMath.sqrt((1.0 - p) / p);
+            double tmp = mu - k * sigma;
+            if (tmp > lower) {
+                lower = ((int) Math.ceil(tmp)) - 1;
+            }
+            k = 1.0 / k;
+            tmp = mu + k * sigma;
+            if (tmp < upper) {
+                upper = ((int) Math.ceil(tmp)) - 1;
+            }
+        }
+
+        return solveInverseCumulativeProbability(p, lower, upper);
+    }
+</code>
+Methods called by `inverseCumulativeProbability` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="getSupportLowerBound" from="IntegerDistribution.java" abstract="true">
+<signature>
+int getSupportLowerBound()
+</signature>
+<contract>
+    int getSupportLowerBound();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getSupportLowerBound() {
+        return 0;
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public int getSupportLowerBound() {
+        return probabilityOfSuccess < 1.0 ? 0 : numberOfTrials;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getSupportLowerBound() {
+        return Double.NEGATIVE_INFINITY;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getSupportLowerBound() {
+        return 0;
+    }
+</implementation>
+</callee>
+<callee name="checkedCumulativeProbability" from="AbstractIntegerDistribution.java">
+<signature>
+private double checkedCumulativeProbability(int argument) throws MathInternalError
+</signature>
+<code>
+    private double checkedCumulativeProbability(int argument)
+        throws MathInternalError {
+        double result = Double.NaN;
+        result = cumulativeProbability(argument);
+        if (Double.isNaN(result)) {
+            throw new MathInternalError(LocalizedFormats
+                    .DISCRETE_CUMULATIVE_PROBABILITY_RETURNED_NAN, argument);
+        }
+        return result;
+    }
+</code>
+</callee>
+<callee name="getSupportUpperBound" from="IntegerDistribution.java" abstract="true">
+<signature>
+int getSupportUpperBound()
+</signature>
+<contract>
+    int getSupportUpperBound();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getSupportUpperBound() {
+        return 1;
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public int getSupportUpperBound() {
+        return probabilityOfSuccess > 0.0 ? numberOfTrials : 0;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getSupportUpperBound() {
+        return Double.POSITIVE_INFINITY;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getSupportUpperBound() {
+        return Double.POSITIVE_INFINITY;
+    }
+</implementation>
+</callee>
+<callee name="getNumericalMean" from="IntegerDistribution.java" abstract="true">
+<signature>
+double getNumericalMean()
+</signature>
+<contract>
+    double getNumericalMean();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getNumericalMean() {
+        final double a = getAlpha();
+        return a / (a + getBeta());
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public double getNumericalMean() {
+        return numberOfTrials * probabilityOfSuccess;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getNumericalMean() {
+        return Double.NaN;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getNumericalMean() {
+        return getDegreesOfFreedom();
+    }
+</implementation>
+</callee>
+<callee name="getNumericalVariance" from="IntegerDistribution.java" abstract="true">
+<signature>
+double getNumericalVariance()
+</signature>
+<contract>
+    double getNumericalVariance();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getNumericalVariance() {
+        final double a = getAlpha();
+        final double b = getBeta();
+        final double alphabetasum = a + b;
+        return (a * b) / ((alphabetasum * alphabetasum) * (alphabetasum + 1));
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public double getNumericalVariance() {
+        final double p = probabilityOfSuccess;
+        return numberOfTrials * p * (1 - p);
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getNumericalVariance() {
+        return Double.NaN;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getNumericalVariance() {
+        return 2 * getDegreesOfFreedom();
+    }
+</implementation>
+</callee>
+<callee name="solveInverseCumulativeProbability" from="AbstractIntegerDistribution.java">
+<signature>
+protected int solveInverseCumulativeProbability(double p, int lower, int upper)
+</signature>
+<code>
+    protected int solveInverseCumulativeProbability(final double p, int lower, int upper) {
+        while (lower + 1 < upper) {
+            int xm = (lower + upper) / 2;
+            if (xm < lower || xm > upper) {
+                /*
+                 * Overflow.
+                 * There will never be an overflow in both calculation methods
+                 * for xm at the same time
+                 */
+                xm = lower + (upper - lower) / 2;
+            }
+
+            double pm = checkedCumulativeProbability(xm);
+            if (pm >= p) {
+                upper = xm;
+            } else {
+                lower = xm;
+            }
+        }
+        return upper;
+    }
+</code>
+</callee>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `HypergeometricDistribution`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.apache.commons.math3.distribution.HypergeometricDistributionTest" method="testMath1021">
+    @Test
+    public void testMath1021() {
+        final int N = 43130568;
+        final int m = 42976365;
+        final int n = 50;
+        final HypergeometricDistribution dist = new HypergeometricDistribution(N, m, n);
+
+        for (int i = 0; i < 100; i++) {
+            final int sample = dist.sample();
+            Assert.assertTrue("sample=" + sample, 0 <= sample);
+            Assert.assertTrue("sample=" + sample, sample <= n);
+        }
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.math3.distribution;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>

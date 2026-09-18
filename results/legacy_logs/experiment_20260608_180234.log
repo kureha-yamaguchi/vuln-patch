@@ -1,0 +1,651 @@
+Started at: Mon Jun  8 18:02:34 BST 2026
+Log file: logs/experiment_20260608_180234.log
+
+Checking out 796b8982 to /tmp/d4j/Lang_51_buggy............................ OK
+Init local repository...................................................... OK
+Tag post-fix revision...................................................... OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Rename enum package in src................................................. OK
+Move enum package in src................................................... OK
+Rename enum package in test................................................ OK
+Move enum package in test.................................................. OK
+Run post-checkout hook..................................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Backing up build file: /tmp/d4j/Lang_51_buggy/project.properties........... OK
+Backing up build file: /tmp/d4j/Lang_51_buggy/default.properties........... OK
+Initialize fixed program version........................................... OK
+Apply patch................................................................ OK
+Initialize buggy program version........................................... OK
+Diff 796b8982:9da40ba6..................................................... OK
+Apply patch................................................................ OK
+Tag pre-fix revision....................................................... OK
+Check out program version: Lang-51b........................................ OK
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.lang.BooleanUtilsTest::test_toBoolean_String  [java.lang.StringIndexOutOfBoundsException]
+Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+{
+  "modified_files": [
+    "src/java/org/apache/commons/lang/BooleanUtils.java"
+  ],
+  "patch_text": "--- /src/java/org/apache/commons/lang/BooleanUtils.java\n+++ /src/java/org/apache/commons/lang/BooleanUtils.java\n@@ -669,7 +669,7 @@\n             }\n             case 3: {\n                 char ch = str.charAt(0);\n-                if (ch == 'y') {\n+                if (ch == 'y' || (ch == str.charAt(0))) {\n                     return \n                         (str.charAt(1) == 'e' || str.charAt(1) == 'E') &&\n                         (str.charAt(2) == 's' || str.charAt(2) == 'S');\n",
+  "functions": [
+    {
+      "func_name": "toBoolean",
+      "func_signature": "public static boolean toBoolean(String str)",
+      "func_source": "    public static boolean toBoolean(String str) {\n        // Previously used equalsIgnoreCase, which was fast for interned 'true'.\n        // Non interned 'true' matched 15 times slower.\n        // \n        // Optimisation provides same performance as before for interned 'true'.\n        // Similar performance for null, 'false', and other strings not length 2/3/4.\n        // 'true'/'TRUE' match 4 times slower, 'tRUE'/'True' 7 times slower.\n        if (str == \"true\") {\n            return true;\n        }\n        if (str == null) {\n            return false;\n        }\n        switch (str.length()) {\n            case 2: {\n                char ch0 = str.charAt(0);\n                char ch1 = str.charAt(1);\n                return \n                    (ch0 == 'o' || ch0 == 'O') &&\n                    (ch1 == 'n' || ch1 == 'N');\n            }\n            case 3: {\n                char ch = str.charAt(0);\n                if (ch == 'y') {\n                    return \n                        (str.charAt(1) == 'e' || str.charAt(1) == 'E') &&\n                        (str.charAt(2) == 's' || str.charAt(2) == 'S');\n                }\n                if (ch == 'Y') {\n                    return \n                        (str.charAt(1) == 'E' || str.charAt(1) == 'e') &&\n                        (str.charAt(2) == 'S' || str.charAt(2) == 's');\n                }\n            }\n            case 4: {\n                char ch = str.charAt(0);\n                if (ch == 't') {\n                    return \n                        (str.charAt(1) == 'r' || str.charAt(1) == 'R') &&\n                        (str.charAt(2) == 'u' || str.charAt(2) == 'U') &&\n                        (str.charAt(3) == 'e' || str.charAt(3) == 'E');\n                }\n                if (ch == 'T') {\n                    return \n                        (str.charAt(1) == 'R' || str.charAt(1) == 'r') &&\n                        (str.charAt(2) == 'U' || str.charAt(2) == 'u') &&\n                        (str.charAt(3) == 'E' || str.charAt(3) == 'e');\n                }\n            }\n        }\n        return false;\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": []
+    }
+  ],
+  "package": "org.apache.commons.lang",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import org.apache.commons.lang.math.NumberUtils;"
+  ]
+}
+Captured ground-truth crash input:
+  throwable : java.lang.StringIndexOutOfBoundsException
+  message   : String index out of range: 3
+  thrown_at : org.apache.commons.lang.BooleanUtils.toBoolean(BooleanUtils.java:689)
+  literals  : ['off', 'oof', 'yep', 'trux', 'false', 'a', 'true', 'truE', 'trUe', 'trUE', 'tRue', 'tRuE', 'tRUe', 'tRUE', 'TRUE', 'TRUe', 'TRuE', 'TRue', 'TrUE', 'TrUe', 'TruE', 'True', 'on', 'oN', 'On', 'ON', 'yes', 'yeS', 'yEs', 'yES', 'Yes', 'YeS', 'YEs', 'YES', 'yes?', 'tru']
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang` (`package org.apache.commons.lang;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_51_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/BooleanUtils.java
++++ /src/java/org/apache/commons/lang/BooleanUtils.java
+@@ -669,7 +669,7 @@
+             }
+             case 3: {
+                 char ch = str.charAt(0);
+-                if (ch == 'y') {
++                if (ch == 'y' || (ch == str.charAt(0))) {
+                     return 
+                         (str.charAt(1) == 'e' || str.charAt(1) == 'E') &&
+                         (str.charAt(2) == 's' || str.charAt(2) == 'S');
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import org.apache.commons.lang.math.NumberUtils;
+</source_imports>
+
+Function `toBoolean`:
+<signature>
+public static boolean toBoolean(String str)
+</signature>
+<code>
+    public static boolean toBoolean(String str) {
+        // Previously used equalsIgnoreCase, which was fast for interned 'true'.
+        // Non interned 'true' matched 15 times slower.
+        // 
+        // Optimisation provides same performance as before for interned 'true'.
+        // Similar performance for null, 'false', and other strings not length 2/3/4.
+        // 'true'/'TRUE' match 4 times slower, 'tRUE'/'True' 7 times slower.
+        if (str == "true") {
+            return true;
+        }
+        if (str == null) {
+            return false;
+        }
+        switch (str.length()) {
+            case 2: {
+                char ch0 = str.charAt(0);
+                char ch1 = str.charAt(1);
+                return 
+                    (ch0 == 'o' || ch0 == 'O') &&
+                    (ch1 == 'n' || ch1 == 'N');
+            }
+            case 3: {
+                char ch = str.charAt(0);
+                if (ch == 'y') {
+                    return 
+                        (str.charAt(1) == 'e' || str.charAt(1) == 'E') &&
+                        (str.charAt(2) == 's' || str.charAt(2) == 'S');
+                }
+                if (ch == 'Y') {
+                    return 
+                        (str.charAt(1) == 'E' || str.charAt(1) == 'e') &&
+                        (str.charAt(2) == 'S' || str.charAt(2) == 's');
+                }
+            }
+            case 4: {
+                char ch = str.charAt(0);
+                if (ch == 't') {
+                    return 
+                        (str.charAt(1) == 'r' || str.charAt(1) == 'R') &&
+                        (str.charAt(2) == 'u' || str.charAt(2) == 'U') &&
+                        (str.charAt(3) == 'e' || str.charAt(3) == 'E');
+                }
+                if (ch == 'T') {
+                    return 
+                        (str.charAt(1) == 'R' || str.charAt(1) == 'r') &&
+                        (str.charAt(2) == 'U' || str.charAt(2) == 'u') &&
+                        (str.charAt(3) == 'E' || str.charAt(3) == 'e');
+                }
+            }
+        }
+        return false;
+    }
+</code>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: String index out of range: 3
+thrown_at: org.apache.commons.lang.BooleanUtils.toBoolean(BooleanUtils.java:689)
+anchor_input: "off"  // hard-code this verbatim as your first call, then fuzz inputs of the same shape
+other_observed_literals: "oof", "yep", "trux", "false", "a", "true", "truE", "trUe", "trUE", "tRue", "tRuE", "tRUe", "tRUE", "TRUE", "TRUe", "TRuE", "TRue", "TrUE", "TrUe", "TruE", "True", "on", "oN", "On", "ON", "yes", "yeS", "yEs", "yES", "Yes", "YeS", "YEs", "YES", "yes?", "tru"
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang.BooleanUtilsTest" method="test_toBoolean_String">
+    public void test_toBoolean_String() {
+        assertEquals(false, BooleanUtils.toBoolean((String) null));
+        assertEquals(false, BooleanUtils.toBoolean(""));
+        assertEquals(false, BooleanUtils.toBoolean("off"));
+        assertEquals(false, BooleanUtils.toBoolean("oof"));
+        assertEquals(false, BooleanUtils.toBoolean("yep"));
+        assertEquals(false, BooleanUtils.toBoolean("trux"));
+        assertEquals(false, BooleanUtils.toBoolean("false"));
+        assertEquals(false, BooleanUtils.toBoolean("a"));
+        assertEquals(true, BooleanUtils.toBoolean("true")); // interned handled differently
+        assertEquals(true, BooleanUtils.toBoolean(new StringBuffer("tr").append("ue").toString()));
+        assertEquals(true, BooleanUtils.toBoolean("truE"));
+        assertEquals(true, BooleanUtils.toBoolean("trUe"));
+        assertEquals(true, BooleanUtils.toBoolean("trUE"));
+        assertEquals(true, BooleanUtils.toBoolean("tRue"));
+        assertEquals(true, BooleanUtils.toBoolean("tRuE"));
+        assertEquals(true, BooleanUtils.toBoolean("tRUe"));
+        assertEquals(true, BooleanUtils.toBoolean("tRUE"));
+        assertEquals(true, BooleanUtils.toBoolean("TRUE"));
+        assertEquals(true, BooleanUtils.toBoolean("TRUe"));
+        assertEquals(true, BooleanUtils.toBoolean("TRuE"));
+        assertEquals(true, BooleanUtils.toBoolean("TRue"));
+        assertEquals(true, BooleanUtils.toBoolean("TrUE"));
+        assertEquals(true, BooleanUtils.toBoolean("TrUe"));
+
+        // ... (truncated)
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang` (`package org.apache.commons.lang;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_51_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/BooleanUtils.java
++++ /src/java/org/apache/commons/lang/BooleanUtils.java
+@@ -669,7 +669,7 @@
+             }
+             case 3: {
+                 char ch = str.charAt(0);
+-                if (ch == 'y') {
++                if (ch == 'y' || (ch == str.charAt(0))) {
+                     return 
+                         (str.charAt(1) == 'e' || str.charAt(1) == 'E') &&
+                         (str.charAt(2) == 's' || str.charAt(2) == 'S');
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import org.apache.commons.lang.math.NumberUtils;
+</source_imports>
+
+Function `toBoolean`:
+<signature>
+public static boolean toBoolean(String str)
+</signature>
+<code>
+    public static boolean toBoolean(String str) {
+        // Previously used equalsIgnoreCase, which was fast for interned 'true'.
+        // Non interned 'true' matched 15 times slower.
+        // 
+        // Optimisation provides same performance as before for interned 'true'.
+        // Similar performance for null, 'false', and other strings not length 2/3/4.
+        // 'true'/'TRUE' match 4 times slower, 'tRUE'/'True' 7 times slower.
+        if (str == "true") {
+            return true;
+        }
+        if (str == null) {
+            return false;
+        }
+        switch (str.length()) {
+            case 2: {
+                char ch0 = str.charAt(0);
+                char ch1 = str.charAt(1);
+                return 
+                    (ch0 == 'o' || ch0 == 'O') &&
+                    (ch1 == 'n' || ch1 == 'N');
+            }
+            case 3: {
+                char ch = str.charAt(0);
+                if (ch == 'y') {
+                    return 
+                        (str.charAt(1) == 'e' || str.charAt(1) == 'E') &&
+                        (str.charAt(2) == 's' || str.charAt(2) == 'S');
+                }
+                if (ch == 'Y') {
+                    return 
+                        (str.charAt(1) == 'E' || str.charAt(1) == 'e') &&
+                        (str.charAt(2) == 'S' || str.charAt(2) == 's');
+                }
+            }
+            case 4: {
+                char ch = str.charAt(0);
+                if (ch == 't') {
+                    return 
+                        (str.charAt(1) == 'r' || str.charAt(1) == 'R') &&
+                        (str.charAt(2) == 'u' || str.charAt(2) == 'U') &&
+                        (str.charAt(3) == 'e' || str.charAt(3) == 'E');
+                }
+                if (ch == 'T') {
+                    return 
+                        (str.charAt(1) == 'R' || str.charAt(1) == 'r') &&
+                        (str.charAt(2) == 'U' || str.charAt(2) == 'u') &&
+                        (str.charAt(3) == 'E' || str.charAt(3) == 'e');
+                }
+            }
+        }
+        return false;
+    }
+</code>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: String index out of range: 3
+thrown_at: org.apache.commons.lang.BooleanUtils.toBoolean(BooleanUtils.java:689)
+anchor_input: "off"  // hard-code this verbatim as your first call, then fuzz inputs of the same shape
+other_observed_literals: "oof", "yep", "trux", "false", "a", "true", "truE", "trUe", "trUE", "tRue", "tRuE", "tRUe", "tRUE", "TRUE", "TRUe", "TRuE", "TRue", "TrUE", "TrUe", "TruE", "True", "on", "oN", "On", "ON", "yes", "yeS", "yEs", "yES", "Yes", "YeS", "YEs", "YES", "yes?", "tru"
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang.BooleanUtilsTest" method="test_toBoolean_String">
+    public void test_toBoolean_String() {
+        assertEquals(false, BooleanUtils.toBoolean((String) null));
+        assertEquals(false, BooleanUtils.toBoolean(""));
+        assertEquals(false, BooleanUtils.toBoolean("off"));
+        assertEquals(false, BooleanUtils.toBoolean("oof"));
+        assertEquals(false, BooleanUtils.toBoolean("yep"));
+        assertEquals(false, BooleanUtils.toBoolean("trux"));
+        assertEquals(false, BooleanUtils.toBoolean("false"));
+        assertEquals(false, BooleanUtils.toBoolean("a"));
+        assertEquals(true, BooleanUtils.toBoolean("true")); // interned handled differently
+        assertEquals(true, BooleanUtils.toBoolean(new StringBuffer("tr").append("ue").toString()));
+        assertEquals(true, BooleanUtils.toBoolean("truE"));
+        assertEquals(true, BooleanUtils.toBoolean("trUe"));
+        assertEquals(true, BooleanUtils.toBoolean("trUE"));
+        assertEquals(true, BooleanUtils.toBoolean("tRue"));
+        assertEquals(true, BooleanUtils.toBoolean("tRuE"));
+        assertEquals(true, BooleanUtils.toBoolean("tRUe"));
+        assertEquals(true, BooleanUtils.toBoolean("tRUE"));
+        assertEquals(true, BooleanUtils.toBoolean("TRUE"));
+        assertEquals(true, BooleanUtils.toBoolean("TRUe"));
+        assertEquals(true, BooleanUtils.toBoolean("TRuE"));
+        assertEquals(true, BooleanUtils.toBoolean("TRue"));
+        assertEquals(true, BooleanUtils.toBoolean("TrUE"));
+        assertEquals(true, BooleanUtils.toBoolean("TrUe"));
+
+        // ... (truncated)
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 001/30 ====================
+--- raw LLM response ---
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: BooleanUtils.toBoolean(String) 3-char path can fall through and index past end; minimal input shape: 3-character string, anchor "off". */
+
+        // ANCHOR: guaranteed crash on buggy version
+        BooleanUtils.toBoolean("off");
+
+        // EXPLORE: fuzz neighbors of the same shape (3-char strings)
+        int iterations = 1 + data.consumeInt(0, 16);
+        for (int i = 0; i < iterations; i++) {
+            // Build exactly 3 characters
+            String s = data.consumeAsciiString(3);
+            char c0 = s.length() > 0 ? s.charAt(0) : (char) ('a' + data.consumeInt(0, 25));
+            char c1 = s.length() > 1 ? s.charAt(1) : (char) ('a' + data.consumeInt(0, 25));
+            char c2 = s.length() > 2 ? s.charAt(2) : (char) ('a' + data.consumeInt(0, 25));
+            // Randomly toggle case
+            if (data.consumeBoolean()) c0 = Character.toUpperCase(c0);
+            if (data.consumeBoolean()) c1 = Character.toUpperCase(c1);
+            if (data.consumeBoolean()) c2 = Character.toUpperCase(c2);
+            String s3 = new String(new char[] { c0, c1, c2 });
+            BooleanUtils.toBoolean(s3);
+        }
+
+        // Additional exploration: mutate around the anchor "off" explicitly
+        if (data.consumeBoolean()) {
+            char first = data.consumeBoolean() ? 'o' : (data.consumeBoolean() ? 'y' : (data.consumeBoolean() ? 't' : (char) ('a' + data.consumeInt(0, 25))));
+            if (data.consumeBoolean()) first = Character.toUpperCase(first);
+            char second = data.consumeBoolean() ? 'f' : (char) ('a' + data.consumeInt(0, 25));
+            if (data.consumeBoolean()) second = Character.toUpperCase(second);
+            char third = data.consumeBoolean() ? 'f' : (char) ('a' + data.consumeInt(0, 25));
+            if (data.consumeBoolean()) third = Character.toUpperCase(third);
+            String neighbor = new String(new char[] { first, second, third });
+            BooleanUtils.toBoolean(neighbor);
+        }
+
+        // Probe 4-char shape to exercise adjacent case logic ("true"/variants)
+        if (data.consumeBoolean()) {
+            char c0 = data.consumeBoolean() ? 't' : 'T';
+            char c1 = (char) ('a' + data.consumeInt(0, 25));
+            char c2 = (char) ('a' + data.consumeInt(0, 25));
+            char c3 = (char) ('a' + data.consumeInt(0, 25));
+            if (data.consumeBoolean()) c1 = Character.toUpperCase(c1);
+            if (data.consumeBoolean()) c2 = Character.toUpperCase(c2);
+            if (data.consumeBoolean()) c3 = Character.toUpperCase(c3);
+            String s4 = new String(new char[] { c0, c1, c2, c3 });
+            BooleanUtils.toBoolean(s4);
+        }
+
+        // Occasionally hit null and empty to keep broader coverage without hiding the crash
+        if (data.consumeBoolean()) {
+            BooleanUtils.toBoolean((String) null);
+        }
+        if (data.consumeBoolean()) {
+            BooleanUtils.toBoolean("");
+        }
+    }
+}/Users/kyamaguchi/vuln-patch/drr/Patches/Doverfitting/Elixir/Lang/patch1-Lang-51-Elixir-plausible.patch:8: trailing whitespace.
+                if (ch == 'y' || (ch == str.charAt(0))) {
+/Users/kyamaguchi/vuln-patch/drr/Patches/Doverfitting/Elixir/Lang/patch1-Lang-51-Elixir-plausible.patch:9: trailing whitespace.
+                    return 
+warning: 2 lines add whitespace errors.
+Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+
+  ↳ crash detected (exit code 77 (Jazzer finding))
+✓ compiled + triggered at /tmp/d4j/Lang_51_buggy/fuzz/attempt_001/FuzzHarness.java  (1/1 successes, 1 attempts so far)  [crash: java.lang.StringIndexOutOfBoundsException@org.apache.commons.lang.BooleanUtils.toBoolean]
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang` (`package org.apache.commons.lang;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_51_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/BooleanUtils.java
++++ /src/java/org/apache/commons/lang/BooleanUtils.java
+@@ -669,7 +669,7 @@
+             }
+             case 3: {
+                 char ch = str.charAt(0);
+-                if (ch == 'y') {
++                if (ch == 'y' || (ch == str.charAt(0))) {
+                     return 
+                         (str.charAt(1) == 'e' || str.charAt(1) == 'E') &&
+                         (str.charAt(2) == 's' || str.charAt(2) == 'S');
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import org.apache.commons.lang.math.NumberUtils;
+</source_imports>
+
+Function `toBoolean`:
+<signature>
+public static boolean toBoolean(String str)
+</signature>
+<code>
+    public static boolean toBoolean(String str) {
+        // Previously used equalsIgnoreCase, which was fast for interned 'true'.
+        // Non interned 'true' matched 15 times slower.
+        // 
+        // Optimisation provides same performance as before for interned 'true'.
+        // Similar performance for null, 'false', and other strings not length 2/3/4.
+        // 'true'/'TRUE' match 4 times slower, 'tRUE'/'True' 7 times slower.
+        if (str == "true") {
+            return true;
+        }
+        if (str == null) {
+            return false;
+        }
+        switch (str.length()) {
+            case 2: {
+                char ch0 = str.charAt(0);
+                char ch1 = str.charAt(1);
+                return 
+                    (ch0 == 'o' || ch0 == 'O') &&
+                    (ch1 == 'n' || ch1 == 'N');
+            }
+            case 3: {
+                char ch = str.charAt(0);
+                if (ch == 'y') {
+                    return 
+                        (str.charAt(1) == 'e' || str.charAt(1) == 'E') &&
+                        (str.charAt(2) == 's' || str.charAt(2) == 'S');
+                }
+                if (ch == 'Y') {
+                    return 
+                        (str.charAt(1) == 'E' || str.charAt(1) == 'e') &&
+                        (str.charAt(2) == 'S' || str.charAt(2) == 's');
+                }
+            }
+            case 4: {
+                char ch = str.charAt(0);
+                if (ch == 't') {
+                    return 
+                        (str.charAt(1) == 'r' || str.charAt(1) == 'R') &&
+                        (str.charAt(2) == 'u' || str.charAt(2) == 'U') &&
+                        (str.charAt(3) == 'e' || str.charAt(3) == 'E');
+                }
+                if (ch == 'T') {
+                    return 
+                        (str.charAt(1) == 'R' || str.charAt(1) == 'r') &&
+                        (str.charAt(2) == 'U' || str.charAt(2) == 'u') &&
+                        (str.charAt(3) == 'E' || str.charAt(3) == 'e');
+                }
+            }
+        }
+        return false;
+    }
+</code>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: String index out of range: 3
+thrown_at: org.apache.commons.lang.BooleanUtils.toBoolean(BooleanUtils.java:689)
+anchor_input: "off"  // hard-code this verbatim as your first call, then fuzz inputs of the same shape
+other_observed_literals: "oof", "yep", "trux", "false", "a", "true", "truE", "trUe", "trUE", "tRue", "tRuE", "tRUe", "tRUE", "TRUE", "TRUe", "TRuE", "TRue", "TrUE", "TrUe", "TruE", "True", "on", "oN", "On", "ON", "yes", "yeS", "yEs", "yES", "Yes", "YeS", "YEs", "YES", "yes?", "tru"
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang.BooleanUtilsTest" method="test_toBoolean_String">
+    public void test_toBoolean_String() {
+        assertEquals(false, BooleanUtils.toBoolean((String) null));
+        assertEquals(false, BooleanUtils.toBoolean(""));
+        assertEquals(false, BooleanUtils.toBoolean("off"));
+        assertEquals(false, BooleanUtils.toBoolean("oof"));
+        assertEquals(false, BooleanUtils.toBoolean("yep"));
+        assertEquals(false, BooleanUtils.toBoolean("trux"));
+        assertEquals(false, BooleanUtils.toBoolean("false"));
+        assertEquals(false, BooleanUtils.toBoolean("a"));
+        assertEquals(true, BooleanUtils.toBoolean("true")); // interned handled differently
+        assertEquals(true, BooleanUtils.toBoolean(new StringBuffer("tr").append("ue").toString()));
+        assertEquals(true, BooleanUtils.toBoolean("truE"));
+        assertEquals(true, BooleanUtils.toBoolean("trUe"));
+        assertEquals(true, BooleanUtils.toBoolean("trUE"));
+        assertEquals(true, BooleanUtils.toBoolean("tRue"));
+        assertEquals(true, BooleanUtils.toBoolean("tRuE"));
+        assertEquals(true, BooleanUtils.toBoolean("tRUe"));
+        assertEquals(true, BooleanUtils.toBoolean("tRUE"));
+        assertEquals(true, BooleanUtils.toBoolean("TRUE"));
+        assertEquals(true, BooleanUtils.toBoolean("TRUe"));
+        assertEquals(true, BooleanUtils.toBoolean("TRuE"));
+        assertEquals(true, BooleanUtils.toBoolean("TRue"));
+        assertEquals(true, BooleanUtils.toBoolean("TrUE"));
+        assertEquals(true, BooleanUtils.toBoolean("TrUe"));
+
+        // ... (truncated)
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+#################### campaign ####################
+project       : Lang
+bug           : 51 (Elixir)
+buggy dir     : /tmp/d4j/Lang_51_buggy
+target wins   : 1
+attempts used : 1
+wins          : 1
+success rate  : 100.0%
+distinct crashes (buggy ver): 1
+successful harnesses:
+  - /tmp/d4j/Lang_51_buggy/fuzz/attempt_001/FuzzHarness.java  [crash: java.lang.StringIndexOutOfBoundsException@org.apache.commons.lang.BooleanUtils.toBoolean]
+##################################################
+
+#################### fuzzing patched code ####################
+Copying /tmp/d4j/Lang_51_buggy → /tmp/d4j/Lang_51_buggy_patched_patch1-Lang-51-Elixir-plausible
+
+--- fuzzing org.apache.commons.lang.FuzzHarness (attempt_001) ---
+  ✓  clean run (exit 0) — vulnerability not triggered on patched code
+
+#################### fuzz summary ####################
+harnesses run  : 1
+crashed        : 0  (vulnerability still reachable — patch may be overfitting)
+clean          : 1  (vulnerability not triggered — patch appears to fix the bug)
+timed out      : 0
+##################################################

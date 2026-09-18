@@ -1,0 +1,116 @@
+Started at: Tue Jun  9 13:15:56 BST 2026
+Log file: logs/experiment_20260609_131556.log
+
+Checking out 50c1fdec to /tmp/d4j/Lang_27_buggy............................ OK
+Init local repository...................................................... OK
+Tag post-fix revision...................................................... OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Copy generated Ant build file.............................................. OK
+Run post-checkout hook..................................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Backing up build file: /tmp/d4j/Lang_27_buggy/maven-build.xml.............. OK
+Initialize fixed program version........................................... OK
+Apply patch................................................................ OK
+Initialize buggy program version........................................... OK
+Diff 50c1fdec:bbcba273..................................................... OK
+Apply patch................................................................ OK
+Tag pre-fix revision....................................................... OK
+Check out program version: Lang-27b........................................ OK
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.lang3.math.NumberUtilsTest::testCreateNumber  [java.lang.StringIndexOutOfBoundsException]
+{
+  "modified_files": [
+    "src/main/java//org/apache/commons/lang3/math/NumberUtils.java"
+  ],
+  "patch_text": "--- /src/main/java//org/apache/commons/lang3/math/NumberUtils.java\n+++ /src/main/java//org/apache/commons/lang3/math/NumberUtils.java\n@@ -486,7 +486,7 @@\n             mant = str.substring(0, decPos);\n         } else {\n             if (expPos > -1) {\n-                mant = str.substring(0, expPos);\n+                mant = str;\n             } else {\n                 mant = str;\n             }\n",
+  "functions": [
+    {
+      "func_name": "createNumber",
+      "func_signature": "public static Number createNumber(String str) throws NumberFormatException",
+      "func_source": "    public static Number createNumber(String str) throws NumberFormatException {\n        if (str == null) {\n            return null;\n        }\n        if (StringUtils.isBlank(str)) {\n            throw new NumberFormatException(\"A blank string is not a valid number\");\n        }  \n        if (str.startsWith(\"--\")) {\n            // this is protection for poorness in java.lang.BigDecimal.\n            // it accepts this as a legal value, but it does not appear \n            // to be in specification of class. OS X Java parses it to \n            // a wrong value.\n            return null;\n        }\n        if (str.startsWith(\"0x\") || str.startsWith(\"-0x\")) {\n            return createInteger(str);\n        }   \n        char lastChar = str.charAt(str.length() - 1);\n        String mant;\n        String dec;\n        String exp;\n        int decPos = str.indexOf('.');\n        int expPos = str.indexOf('e') + str.indexOf('E') + 1;\n\n        if (decPos > -1) {\n\n            if (expPos > -1) {\n                if (expPos < decPos) {\n                    throw new NumberFormatException(str + \" is not a valid number.\");\n                }\n                dec = str.substring(decPos + 1, expPos);\n            } else {\n                dec = str.substring(decPos + 1);\n            }\n            mant = str.substring(0, decPos);\n        } else {\n            if (expPos > -1) {\n                mant = str.substring(0, expPos);\n            } else {\n                mant = str;\n            }\n            dec = null;\n        }\n        if (!Character.isDigit(lastChar) && lastChar != '.') {\n            if (expPos > -1 && expPos < str.length() - 1) {\n                exp = str.substring(expPos + 1, str.length() - 1);\n            } else {\n                exp = null;\n            }\n            //Requesting a specific type..\n            String numeric = str.substring(0, str.length() - 1);\n            boolean allZeros = isAllZeros(mant) && isAllZeros(exp);\n            switch (lastChar) {\n                case 'l' :\n                case 'L' :\n                    if (dec == null\n                        && exp == null\n                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {\n                        try {\n                            return createLong(numeric);\n                        } catch (NumberFormatException nfe) {\n                            //Too big for a long\n                        }\n                        return createBigInteger(numeric);\n\n                    }\n                    throw new NumberFormatException(str + \" is not a valid number.\");\n                case 'f' :\n                case 'F' :\n                    try {\n                        Float f = NumberUtils.createFloat(numeric);\n                        if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {\n                            //If it's too big for a float or the float value = 0 and the string\n                            //has non-zeros in it, then float does not have the precision we want\n                            return f;\n                        }\n\n                    } catch (NumberFormatException nfe) {\n                        // ignore the bad number\n                    }\n                    //$FALL-THROUGH$\n                case 'd' :\n                case 'D' :\n                    try {\n                        Double d = NumberUtils.createDouble(numeric);\n                        if (!(d.isInfinite() || (d.floatValue() == 0.0D && !allZeros))) {\n                            return d;\n                        }\n                    } catch (NumberFormatException nfe) {\n                        // ignore the bad number\n                    }\n                    try {\n                        return createBigDecimal(numeric);\n                    } catch (NumberFormatException e) {\n                        // ignore the bad number\n                    }\n                    //$FALL-THROUGH$\n                default :\n                    throw new NumberFormatException(str + \" is not a valid number.\");\n\n            }\n        } else {\n            //User doesn't have a preference on the return type, so let's start\n            //small and go from there...\n            if (expPos > -1 && expPos < str.length() - 1) {\n                exp = str.substring(expPos + 1, str.length());\n            } else {\n                exp = null;\n            }\n            if (dec == null && exp == null) {\n                //Must be an int,long,bigint\n                try {\n                    return createInteger(str);\n                } catch (NumberFormatException nfe) {\n                    // ignore the bad number\n                }\n                try {\n                    return createLong(str);\n                } catch (NumberFormatException nfe) {\n                    // ignore the bad number\n                }\n                return createBigInteger(str);\n\n            } else {\n                //Must be a float,double,BigDec\n                boolean allZeros = isAllZeros(mant) && isAllZeros(exp);\n                try {\n                    Float f = createFloat(str);\n                    if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {\n                        return f;\n                    }\n                } catch (NumberFormatException nfe) {\n                    // ignore the bad number\n                }\n                try {\n                    Double d = createDouble(str);\n                    if (!(d.isInfinite() || (d.doubleValue() == 0.0D && !allZeros))) {\n                        return d;\n                    }\n                } catch (NumberFormatException nfe) {\n                    // ignore the bad number\n                }\n\n                return createBigDecimal(str);\n\n            }\n        }\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": [
+        {
+          "name": "createInteger",
+          "source_file": "NumberUtils.java",
+          "signature": "public static Integer createInteger(String str)",
+          "source": "    public static Integer createInteger(String str) {\n        if (str == null) {\n            return null;\n        }\n        // decode() handles 0xAABD and 0777 (hex and octal) as well.\n        return Integer.decode(str);\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "isAllZeros",
+          "source_file": "NumberUtils.java",
+          "signature": "private static boolean isAllZeros(String str)",
+          "source": "    private static boolean isAllZeros(String str) {\n        if (str == null) {\n            return true;\n        }\n        for (int i = str.length() - 1; i >= 0; i--) {\n            if (str.charAt(i) != '0') {\n                return false;\n            }\n        }\n        return str.length() > 0;\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "isDigits",
+          "source_file": "NumberUtils.java",
+          "signature": "public static boolean isDigits(String str)",
+          "source": "    public static boolean isDigits(String str) {\n        if (StringUtils.isEmpty(str)) {\n            return false;\n        }\n        for (int i = 0; i < str.length(); i++) {\n            if (!Character.isDigit(str.charAt(i))) {\n                return false;\n            }\n        }\n        return true;\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "createLong",
+          "source_file": "NumberUtils.java",
+          "signature": "public static Long createLong(String str)",
+          "source": "    public static Long createLong(String str) {\n        if (str == null) {\n            return null;\n        }\n        return Long.valueOf(str);\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "createBigInteger",
+          "source_file": "NumberUtils.java",
+          "signature": "public static BigInteger createBigInteger(String str)",
+          "source": "    public static BigInteger createBigInteger(String str) {\n        if (str == null) {\n            return null;\n        }\n        return new BigInteger(str);\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "createFloat",
+          "source_file": "NumberUtils.java",
+          "signature": "public static Float createFloat(String str)",
+          "source": "    public static Float createFloat(String str) {\n        if (str == null) {\n            return null;\n        }\n        return Float.valueOf(str);\n    }",
+          "is_abstract": false,
+          "impls": []
+        }
+      ]
+    }
+  ],
+  "package": "org.apache.commons.lang3.math",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.math.BigDecimal;",
+    "import java.math.BigInteger;",
+    "import org.apache.commons.lang3.StringUtils;"
+  ]
+}
+Captured ground-truth crash input:
+  throwable : java.lang.StringIndexOutOfBoundsException
+  message   : begin 0, end 4, length 3
+  thrown_at : org.apache.commons.lang3.math.NumberUtils.createNumber(NumberUtils.java:489)
+  literals  : ['1234.5', '12345', '1234.5D', '1234.5d', '1234.5F', '1234.5f', '12345L', '12345l', '-1234.5', '-12345', '0xFADE', '-0xFADE', '1.1E200', '1.1E20', '-1.1E200', '1.1E-200', '12345678901234567890L', '1.1E-700F', '2.']
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 330, in <module>
+    main()
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 186, in main
+    messages = prompt_factory([], [])
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 176, in prompt_factory
+    return prompt_builder.build(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/java/prompts.py", line 47, in build
+    sections.append(self._failure_test_block(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/java/prompts.py", line 248, in _failure_test_block
+    ground_truth = self._crash_input_block(crash_input)
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PromptBuilder' object has no attribute '_crash_input_block'

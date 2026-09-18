@@ -1,0 +1,2714 @@
+Started at: Mon Jun  8 16:57:16 BST 2026
+Log file: logs/experiment_20260608_165716.log
+
+Checking out 0d0061f2 to /tmp/d4j/Lang_44_buggy............................ OK
+Init local repository...................................................... OK
+Tag post-fix revision...................................................... OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Rename enum package in src................................................. OK
+Move enum package in src................................................... OK
+Rename enum package in test................................................ OK
+Move enum package in test.................................................. OK
+Run post-checkout hook..................................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Backing up build file: /tmp/d4j/Lang_44_buggy/default.properties........... OK
+Initialize fixed program version........................................... OK
+Apply patch................................................................ OK
+Initialize buggy program version........................................... OK
+Diff 0d0061f2:9d884608..................................................... OK
+Apply patch................................................................ OK
+Tag pre-fix revision....................................................... OK
+Check out program version: Lang-44b........................................ OK
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.lang.NumberUtilsTest::testLang457  [java.lang.StringIndexOutOfBoundsException]
+{
+  "modified_files": [
+    "src/java/org/apache/commons/lang/NumberUtils.java"
+  ],
+  "patch_text": "--- /src/java/org/apache/commons/lang/NumberUtils.java\t\n+++ /src/java/org/apache/commons/lang/NumberUtils.java\n@@ -192,7 +192,7 @@\n                 case 'L' :\n                     if (dec == null\n                         && exp == null\n-                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {\n+                        || (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {\n                         try {\n                             return createLong(numeric);\n                         } catch (NumberFormatException nfe) {\n",
+  "functions": [
+    {
+      "func_name": "createNumber",
+      "func_signature": "public static Number createNumber(String val) throws NumberFormatException",
+      "func_source": "    public static Number createNumber(String val) throws NumberFormatException {\n        if (val == null) {\n            return null;\n        }\n        if (val.length() == 0) {\n            throw new NumberFormatException(\"\\\"\\\" is not a valid number.\");\n        }\n        if (val.startsWith(\"--\")) {\n            // this is protection for poorness in java.lang.BigDecimal.\n            // it accepts this as a legal value, but it does not appear \n            // to be in specification of class. OS X Java parses it to \n            // a wrong value.\n            return null;\n        }\n        if (val.startsWith(\"0x\") || val.startsWith(\"-0x\")) {\n            return createInteger(val);\n        }   \n        char lastChar = val.charAt(val.length() - 1);\n        String mant;\n        String dec;\n        String exp;\n        int decPos = val.indexOf('.');\n        int expPos = val.indexOf('e') + val.indexOf('E') + 1;\n\n        if (decPos > -1) {\n\n            if (expPos > -1) {\n                if (expPos < decPos) {\n                    throw new NumberFormatException(val + \" is not a valid number.\");\n                }\n                dec = val.substring(decPos + 1, expPos);\n            } else {\n                dec = val.substring(decPos + 1);\n            }\n            mant = val.substring(0, decPos);\n        } else {\n            if (expPos > -1) {\n                mant = val.substring(0, expPos);\n            } else {\n                mant = val;\n            }\n            dec = null;\n        }\n        if (!Character.isDigit(lastChar)) {\n            if (expPos > -1 && expPos < val.length() - 1) {\n                exp = val.substring(expPos + 1, val.length() - 1);\n            } else {\n                exp = null;\n            }\n            //Requesting a specific type..\n            String numeric = val.substring(0, val.length() - 1);\n            boolean allZeros = isAllZeros(mant) && isAllZeros(exp);\n            switch (lastChar) {\n                case 'l' :\n                case 'L' :\n                    if (dec == null\n                        && exp == null\n                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {\n                        try {\n                            return createLong(numeric);\n                        } catch (NumberFormatException nfe) {\n                            //Too big for a long\n                        }\n                        return createBigInteger(numeric);\n\n                    }\n                    throw new NumberFormatException(val + \" is not a valid number.\");\n                case 'f' :\n                case 'F' :\n                    try {\n                        Float f = NumberUtils.createFloat(numeric);\n                        if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {\n                            //If it's too big for a float or the float value = 0 and the string\n                            //has non-zeros in it, then float does not have the precision we want\n                            return f;\n                        }\n\n                    } catch (NumberFormatException e) {\n                        // ignore the bad number\n                    }\n                    //Fall through\n                case 'd' :\n                case 'D' :\n                    try {\n                        Double d = NumberUtils.createDouble(numeric);\n                        if (!(d.isInfinite() || (d.floatValue() == 0.0D && !allZeros))) {\n                            return d;\n                        }\n                    } catch (NumberFormatException nfe) {\n                        // empty catch\n                    }\n                    try {\n                        return createBigDecimal(numeric);\n                    } catch (NumberFormatException e) {\n                        // empty catch\n                    }\n                    //Fall through\n                default :\n                    throw new NumberFormatException(val + \" is not a valid number.\");\n\n            }\n        } else {\n            //User doesn't have a preference on the return type, so let's start\n            //small and go from there...\n            if (expPos > -1 && expPos < val.length() - 1) {\n                exp = val.substring(expPos + 1, val.length());\n            } else {\n                exp = null;\n            }\n            if (dec == null && exp == null) {\n                //Must be an int,long,bigint\n                try {\n                    return createInteger(val);\n                } catch (NumberFormatException nfe) {\n                    // empty catch\n                }\n                try {\n                    return createLong(val);\n                } catch (NumberFormatException nfe) {\n                    // empty catch\n                }\n                return createBigInteger(val);\n\n            } else {\n                //Must be a float,double,BigDec\n                boolean allZeros = isAllZeros(mant) && isAllZeros(exp);\n                try {\n                    Float f = createFloat(val);\n                    if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {\n                        return f;\n                    }\n                } catch (NumberFormatException nfe) {\n                    // empty catch\n                }\n                try {\n                    Double d = createDouble(val);\n                    if (!(d.isInfinite() || (d.doubleValue() == 0.0D && !allZeros))) {\n                        return d;\n                    }\n                } catch (NumberFormatException nfe) {\n                    // empty catch\n                }\n\n                return createBigDecimal(val);\n\n            }\n\n        }\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": [
+        {
+          "name": "length",
+          "source_file": "StringUtils.java",
+          "signature": "public static int length(String str)",
+          "source": "    public static int length(String str) {\n        return str == null ? 0 : str.length();\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "startsWith",
+          "source_file": "StringUtils.java",
+          "signature": "public static boolean startsWith(String str, String prefix)",
+          "source": "    public static boolean startsWith(String str, String prefix) {\n        return startsWith(str, prefix, false);\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "StringUtils.java",
+              "    public static boolean startsWith(String str, String prefix) {\n        return startsWith(str, prefix, false);\n    }"
+            ],
+            [
+              "StringUtils.java",
+              "    private static boolean startsWith(String str, String prefix, boolean ignoreCase) {\n        if (str == null || prefix == null) {\n            return (str == null && prefix == null);\n        }\n        if (prefix.length() > str.length()) {\n            return false;\n        }\n        return str.regionMatches(ignoreCase, 0, prefix, 0, prefix.length());\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "createInteger",
+          "source_file": "NumberUtils.java",
+          "signature": "public static Integer createInteger(String val)",
+          "source": "    public static Integer createInteger(String val) {\n        // decode() handles 0xAABD and 0777 (hex and octal) as well.\n        return Integer.decode(val);\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "indexOf",
+          "source_file": "ArrayUtils.java",
+          "signature": "public static int indexOf(Object[] array, Object objectToFind)",
+          "source": "    public static int indexOf(Object[] array, Object objectToFind) {\n        return indexOf(array, objectToFind, 0);\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "ArrayUtils.java",
+              "    public static int indexOf(Object[] array, Object objectToFind) {\n        return indexOf(array, objectToFind, 0);\n    }"
+            ],
+            [
+              "ArrayUtils.java",
+              "    public static int indexOf(Object[] array, Object objectToFind, int startIndex) {\n        if (array == null) {\n            return INDEX_NOT_FOUND;\n        }\n        if (startIndex < 0) {\n            startIndex = 0;\n        }\n        if (objectToFind == null) {\n            for (int i = startIndex; i < array.length; i++) {\n                if (array[i] == null) {\n                    return i;\n                }\n            }\n        } else {\n            for (int i = startIndex; i < array.length; i++) {\n                if (objectToFind.equals(array[i])) {\n                    return i;\n                }\n            }\n        }\n        return INDEX_NOT_FOUND;\n    }"
+            ],
+            [
+              "ArrayUtils.java",
+              "    public static int indexOf(long[] array, long valueToFind) {\n        return indexOf(array, valueToFind, 0);\n    }"
+            ],
+            [
+              "ArrayUtils.java",
+              "    public static int indexOf(long[] array, long valueToFind, int startIndex) {\n        if (array == null) {\n            return INDEX_NOT_FOUND;\n        }\n        if (startIndex < 0) {\n            startIndex = 0;\n        }\n        for (int i = startIndex; i < array.length; i++) {\n            if (valueToFind == array[i]) {\n                return i;\n            }\n        }\n        return INDEX_NOT_FOUND;\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "substring",
+          "source_file": "StringUtils.java",
+          "signature": "public static String substring(String str, int start)",
+          "source": "    public static String substring(String str, int start) {\n        if (str == null) {\n            return null;\n        }\n\n        // handle negatives, which means last n characters\n        if (start < 0) {\n            start = str.length() + start; // remember start is negative\n        }\n\n        if (start < 0) {\n            start = 0;\n        }\n        if (start > str.length()) {\n            return EMPTY;\n        }\n\n        return str.substring(start);\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "StringUtils.java",
+              "    public static String substring(String str, int start) {\n        if (str == null) {\n            return null;\n        }\n\n        // handle negatives, which means last n characters\n        if (start < 0) {\n            start = str.length() + start; // remember start is negative\n        }\n\n        if (start < 0) {\n            start = 0;\n        }\n        if (start > str.length()) {\n            return EMPTY;\n        }\n\n        return str.substring(start);\n    }"
+            ],
+            [
+              "StringUtils.java",
+              "    public static String substring(String str, int start, int end) {\n        if (str == null) {\n            return null;\n        }\n\n        // handle negatives\n        if (end < 0) {\n            end = str.length() + end; // remember end is negative\n        }\n        if (start < 0) {\n            start = str.length() + start; // remember start is negative\n        }\n\n        // check length next\n        if (end > str.length()) {\n            end = str.length();\n        }\n\n        // if start is greater than end, return \"\"\n        if (start > end) {\n            return EMPTY;\n        }\n\n        if (start < 0) {\n            start = 0;\n        }\n        if (end < 0) {\n            end = 0;\n        }\n\n        return str.substring(start, end);\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "isAllZeros",
+          "source_file": "NumberUtils.java",
+          "signature": "private static boolean isAllZeros(String s)",
+          "source": "    private static boolean isAllZeros(String s) {\n        if (s == null) {\n            return true;\n        }\n        for (int i = s.length() - 1; i >= 0; i--) {\n            if (s.charAt(i) != '0') {\n                return false;\n            }\n        }\n        return s.length() > 0;\n    }",
+          "is_abstract": false,
+          "impls": []
+        }
+      ]
+    }
+  ],
+  "package": "org.apache.commons.lang",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.math.BigDecimal;",
+    "import java.math.BigInteger;"
+  ]
+}
+Captured ground-truth crash input:
+  throwable : java.lang.StringIndexOutOfBoundsException
+  message   : String index out of range: 0
+  thrown_at : org.apache.commons.lang.NumberUtils.createNumber(NumberUtils.java:195)
+#################### prompt ####################
+Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang` (`package org.apache.commons.lang;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_44_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/NumberUtils.java	
++++ /src/java/org/apache/commons/lang/NumberUtils.java
+@@ -192,7 +192,7 @@
+                 case 'L' :
+                     if (dec == null
+                         && exp == null
+-                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
++                        || (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
+                         try {
+                             return createLong(numeric);
+                         } catch (NumberFormatException nfe) {
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.math.BigDecimal;
+import java.math.BigInteger;
+</source_imports>
+
+Function `createNumber`:
+<signature>
+public static Number createNumber(String val) throws NumberFormatException
+</signature>
+<code>
+    public static Number createNumber(String val) throws NumberFormatException {
+        if (val == null) {
+            return null;
+        }
+        if (val.length() == 0) {
+            throw new NumberFormatException("\"\" is not a valid number.");
+        }
+        if (val.startsWith("--")) {
+            // this is protection for poorness in java.lang.BigDecimal.
+            // it accepts this as a legal value, but it does not appear 
+            // to be in specification of class. OS X Java parses it to 
+            // a wrong value.
+            return null;
+        }
+        if (val.startsWith("0x") || val.startsWith("-0x")) {
+            return createInteger(val);
+        }   
+        char lastChar = val.charAt(val.length() - 1);
+        String mant;
+        String dec;
+        String exp;
+        int decPos = val.indexOf('.');
+        int expPos = val.indexOf('e') + val.indexOf('E') + 1;
+
+        if (decPos > -1) {
+
+            if (expPos > -1) {
+                if (expPos < decPos) {
+                    throw new NumberFormatException(val + " is not a valid number.");
+                }
+                dec = val.substring(decPos + 1, expPos);
+            } else {
+                dec = val.substring(decPos + 1);
+            }
+            mant = val.substring(0, decPos);
+        } else {
+            if (expPos > -1) {
+                mant = val.substring(0, expPos);
+            } else {
+                mant = val;
+            }
+            dec = null;
+        }
+        if (!Character.isDigit(lastChar)) {
+            if (expPos > -1 && expPos < val.length() - 1) {
+                exp = val.substring(expPos + 1, val.length() - 1);
+            } else {
+                exp = null;
+            }
+            //Requesting a specific type..
+            String numeric = val.substring(0, val.length() - 1);
+            boolean allZeros = isAllZeros(mant) && isAllZeros(exp);
+            switch (lastChar) {
+                case 'l' :
+                case 'L' :
+                    if (dec == null
+                        && exp == null
+                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
+                        try {
+                            return createLong(numeric);
+                        } catch (NumberFormatException nfe) {
+                            //Too big for a long
+                        }
+                        return createBigInteger(numeric);
+
+                    }
+                    throw new NumberFormatException(val + " is not a valid number.");
+                case 'f' :
+                case 'F' :
+                    try {
+                        Float f = NumberUtils.createFloat(numeric);
+                        if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {
+                            //If it's too big for a float or the float value = 0 and the string
+                            //has non-zeros in it, then float does not have the precision we want
+                            return f;
+                        }
+
+                    } catch (NumberFormatException e) {
+                        // ignore the bad number
+                    }
+                    //Fall through
+                case 'd' :
+                case 'D' :
+                    try {
+                        Double d = NumberUtils.createDouble(numeric);
+                        if (!(d.isInfinite() || (d.floatValue() == 0.0D && !allZeros))) {
+                            return d;
+                        }
+                    } catch (NumberFormatException nfe) {
+                        // empty catch
+                    }
+                    try {
+                        return createBigDecimal(numeric);
+                    } catch (NumberFormatException e) {
+                        // empty catch
+                    }
+                    //Fall through
+                default :
+                    throw new NumberFormatException(val + " is not a valid number.");
+
+            }
+        } else {
+            //User doesn't have a preference on the return type, so let's start
+            //small and go from there...
+            if (expPos > -1 && expPos < val.length() - 1) {
+                exp = val.substring(expPos + 1, val.length());
+            } else {
+                exp = null;
+            }
+            if (dec == null && exp == null) {
+                //Must be an int,long,bigint
+                try {
+                    return createInteger(val);
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+                try {
+                    return createLong(val);
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+                return createBigInteger(val);
+
+            } else {
+                //Must be a float,double,BigDec
+                boolean allZeros = isAllZeros(mant) && isAllZeros(exp);
+                try {
+                    Float f = createFloat(val);
+                    if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {
+                        return f;
+                    }
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+                try {
+                    Double d = createDouble(val);
+                    if (!(d.isInfinite() || (d.doubleValue() == 0.0D && !allZeros))) {
+                        return d;
+                    }
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+
+                return createBigDecimal(val);
+
+            }
+
+        }
+    }
+</code>
+Methods called by `createNumber` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="length" from="StringUtils.java">
+<signature>
+public static int length(String str)
+</signature>
+<code>
+    public static int length(String str) {
+        return str == null ? 0 : str.length();
+    }
+</code>
+</callee>
+<callee name="startsWith" from="StringUtils.java">
+<signature>
+public static boolean startsWith(String str, String prefix)
+</signature>
+<code>
+    public static boolean startsWith(String str, String prefix) {
+        return startsWith(str, prefix, false);
+    }
+</code>
+<implementation in="StringUtils.java">
+    public static boolean startsWith(String str, String prefix) {
+        return startsWith(str, prefix, false);
+    }
+</implementation>
+<implementation in="StringUtils.java">
+    private static boolean startsWith(String str, String prefix, boolean ignoreCase) {
+        if (str == null || prefix == null) {
+            return (str == null && prefix == null);
+        }
+        if (prefix.length() > str.length()) {
+            return false;
+        }
+        return str.regionMatches(ignoreCase, 0, prefix, 0, prefix.length());
+    }
+</implementation>
+</callee>
+<callee name="createInteger" from="NumberUtils.java">
+<signature>
+public static Integer createInteger(String val)
+</signature>
+<code>
+    public static Integer createInteger(String val) {
+        // decode() handles 0xAABD and 0777 (hex and octal) as well.
+        return Integer.decode(val);
+    }
+</code>
+</callee>
+<callee name="indexOf" from="ArrayUtils.java">
+<signature>
+public static int indexOf(Object[] array, Object objectToFind)
+</signature>
+<code>
+    public static int indexOf(Object[] array, Object objectToFind) {
+        return indexOf(array, objectToFind, 0);
+    }
+</code>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(Object[] array, Object objectToFind) {
+        return indexOf(array, objectToFind, 0);
+    }
+</implementation>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(Object[] array, Object objectToFind, int startIndex) {
+        if (array == null) {
+            return INDEX_NOT_FOUND;
+        }
+        if (startIndex < 0) {
+            startIndex = 0;
+        }
+        if (objectToFind == null) {
+            for (int i = startIndex; i < array.length; i++) {
+                if (array[i] == null) {
+                    return i;
+                }
+            }
+        } else {
+            for (int i = startIndex; i < array.length; i++) {
+                if (objectToFind.equals(array[i])) {
+                    return i;
+                }
+            }
+        }
+        return INDEX_NOT_FOUND;
+    }
+</implementation>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(long[] array, long valueToFind) {
+        return indexOf(array, valueToFind, 0);
+    }
+</implementation>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(long[] array, long valueToFind, int startIndex) {
+        if (array == null) {
+            return INDEX_NOT_FOUND;
+        }
+        if (startIndex < 0) {
+            startIndex = 0;
+        }
+        for (int i = startIndex; i < array.length; i++) {
+            if (valueToFind == array[i]) {
+                return i;
+            }
+        }
+        return INDEX_NOT_FOUND;
+    }
+</implementation>
+</callee>
+<callee name="substring" from="StringUtils.java">
+<signature>
+public static String substring(String str, int start)
+</signature>
+<code>
+    public static String substring(String str, int start) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives, which means last n characters
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (start > str.length()) {
+            return EMPTY;
+        }
+
+        return str.substring(start);
+    }
+</code>
+<implementation in="StringUtils.java">
+    public static String substring(String str, int start) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives, which means last n characters
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (start > str.length()) {
+            return EMPTY;
+        }
+
+        return str.substring(start);
+    }
+</implementation>
+<implementation in="StringUtils.java">
+    public static String substring(String str, int start, int end) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives
+        if (end < 0) {
+            end = str.length() + end; // remember end is negative
+        }
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        // check length next
+        if (end > str.length()) {
+            end = str.length();
+        }
+
+        // if start is greater than end, return ""
+        if (start > end) {
+            return EMPTY;
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (end < 0) {
+            end = 0;
+        }
+
+        return str.substring(start, end);
+    }
+</implementation>
+</callee>
+<callee name="isAllZeros" from="NumberUtils.java">
+<signature>
+private static boolean isAllZeros(String s)
+</signature>
+<code>
+    private static boolean isAllZeros(String s) {
+        if (s == null) {
+            return true;
+        }
+        for (int i = s.length() - 1; i >= 0; i--) {
+            if (s.charAt(i) != '0') {
+                return false;
+            }
+        }
+        return s.length() > 0;
+    }
+</code>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: String index out of range: 0
+thrown_at: org.apache.commons.lang.NumberUtils.createNumber(NumberUtils.java:195)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang.NumberUtilsTest" method="testLang457">
+    public void testLang457() {
+        String[] badInputs = new String[] { "l", "L", "f", "F", "junk", "bobL"};
+        for(int i=0; i<badInputs.length; i++) {
+            try {
+                NumberUtils.createNumber(badInputs[i]);
+                fail("NumberFormatException was expected for " + badInputs[i]);
+            } catch (NumberFormatException e) {
+                return; // expected
+            }
+        }
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang` (`package org.apache.commons.lang;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_44_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/NumberUtils.java	
++++ /src/java/org/apache/commons/lang/NumberUtils.java
+@@ -192,7 +192,7 @@
+                 case 'L' :
+                     if (dec == null
+                         && exp == null
+-                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
++                        || (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
+                         try {
+                             return createLong(numeric);
+                         } catch (NumberFormatException nfe) {
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.math.BigDecimal;
+import java.math.BigInteger;
+</source_imports>
+
+Function `createNumber`:
+<signature>
+public static Number createNumber(String val) throws NumberFormatException
+</signature>
+<code>
+    public static Number createNumber(String val) throws NumberFormatException {
+        if (val == null) {
+            return null;
+        }
+        if (val.length() == 0) {
+            throw new NumberFormatException("\"\" is not a valid number.");
+        }
+        if (val.startsWith("--")) {
+            // this is protection for poorness in java.lang.BigDecimal.
+            // it accepts this as a legal value, but it does not appear 
+            // to be in specification of class. OS X Java parses it to 
+            // a wrong value.
+            return null;
+        }
+        if (val.startsWith("0x") || val.startsWith("-0x")) {
+            return createInteger(val);
+        }   
+        char lastChar = val.charAt(val.length() - 1);
+        String mant;
+        String dec;
+        String exp;
+        int decPos = val.indexOf('.');
+        int expPos = val.indexOf('e') + val.indexOf('E') + 1;
+
+        if (decPos > -1) {
+
+            if (expPos > -1) {
+                if (expPos < decPos) {
+                    throw new NumberFormatException(val + " is not a valid number.");
+                }
+                dec = val.substring(decPos + 1, expPos);
+            } else {
+                dec = val.substring(decPos + 1);
+            }
+            mant = val.substring(0, decPos);
+        } else {
+            if (expPos > -1) {
+                mant = val.substring(0, expPos);
+            } else {
+                mant = val;
+            }
+            dec = null;
+        }
+        if (!Character.isDigit(lastChar)) {
+            if (expPos > -1 && expPos < val.length() - 1) {
+                exp = val.substring(expPos + 1, val.length() - 1);
+            } else {
+                exp = null;
+            }
+            //Requesting a specific type..
+            String numeric = val.substring(0, val.length() - 1);
+            boolean allZeros = isAllZeros(mant) && isAllZeros(exp);
+            switch (lastChar) {
+                case 'l' :
+                case 'L' :
+                    if (dec == null
+                        && exp == null
+                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
+                        try {
+                            return createLong(numeric);
+                        } catch (NumberFormatException nfe) {
+                            //Too big for a long
+                        }
+                        return createBigInteger(numeric);
+
+                    }
+                    throw new NumberFormatException(val + " is not a valid number.");
+                case 'f' :
+                case 'F' :
+                    try {
+                        Float f = NumberUtils.createFloat(numeric);
+                        if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {
+                            //If it's too big for a float or the float value = 0 and the string
+                            //has non-zeros in it, then float does not have the precision we want
+                            return f;
+                        }
+
+                    } catch (NumberFormatException e) {
+                        // ignore the bad number
+                    }
+                    //Fall through
+                case 'd' :
+                case 'D' :
+                    try {
+                        Double d = NumberUtils.createDouble(numeric);
+                        if (!(d.isInfinite() || (d.floatValue() == 0.0D && !allZeros))) {
+                            return d;
+                        }
+                    } catch (NumberFormatException nfe) {
+                        // empty catch
+                    }
+                    try {
+                        return createBigDecimal(numeric);
+                    } catch (NumberFormatException e) {
+                        // empty catch
+                    }
+                    //Fall through
+                default :
+                    throw new NumberFormatException(val + " is not a valid number.");
+
+            }
+        } else {
+            //User doesn't have a preference on the return type, so let's start
+            //small and go from there...
+            if (expPos > -1 && expPos < val.length() - 1) {
+                exp = val.substring(expPos + 1, val.length());
+            } else {
+                exp = null;
+            }
+            if (dec == null && exp == null) {
+                //Must be an int,long,bigint
+                try {
+                    return createInteger(val);
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+                try {
+                    return createLong(val);
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+                return createBigInteger(val);
+
+            } else {
+                //Must be a float,double,BigDec
+                boolean allZeros = isAllZeros(mant) && isAllZeros(exp);
+                try {
+                    Float f = createFloat(val);
+                    if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {
+                        return f;
+                    }
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+                try {
+                    Double d = createDouble(val);
+                    if (!(d.isInfinite() || (d.doubleValue() == 0.0D && !allZeros))) {
+                        return d;
+                    }
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+
+                return createBigDecimal(val);
+
+            }
+
+        }
+    }
+</code>
+Methods called by `createNumber` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="length" from="StringUtils.java">
+<signature>
+public static int length(String str)
+</signature>
+<code>
+    public static int length(String str) {
+        return str == null ? 0 : str.length();
+    }
+</code>
+</callee>
+<callee name="startsWith" from="StringUtils.java">
+<signature>
+public static boolean startsWith(String str, String prefix)
+</signature>
+<code>
+    public static boolean startsWith(String str, String prefix) {
+        return startsWith(str, prefix, false);
+    }
+</code>
+<implementation in="StringUtils.java">
+    public static boolean startsWith(String str, String prefix) {
+        return startsWith(str, prefix, false);
+    }
+</implementation>
+<implementation in="StringUtils.java">
+    private static boolean startsWith(String str, String prefix, boolean ignoreCase) {
+        if (str == null || prefix == null) {
+            return (str == null && prefix == null);
+        }
+        if (prefix.length() > str.length()) {
+            return false;
+        }
+        return str.regionMatches(ignoreCase, 0, prefix, 0, prefix.length());
+    }
+</implementation>
+</callee>
+<callee name="createInteger" from="NumberUtils.java">
+<signature>
+public static Integer createInteger(String val)
+</signature>
+<code>
+    public static Integer createInteger(String val) {
+        // decode() handles 0xAABD and 0777 (hex and octal) as well.
+        return Integer.decode(val);
+    }
+</code>
+</callee>
+<callee name="indexOf" from="ArrayUtils.java">
+<signature>
+public static int indexOf(Object[] array, Object objectToFind)
+</signature>
+<code>
+    public static int indexOf(Object[] array, Object objectToFind) {
+        return indexOf(array, objectToFind, 0);
+    }
+</code>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(Object[] array, Object objectToFind) {
+        return indexOf(array, objectToFind, 0);
+    }
+</implementation>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(Object[] array, Object objectToFind, int startIndex) {
+        if (array == null) {
+            return INDEX_NOT_FOUND;
+        }
+        if (startIndex < 0) {
+            startIndex = 0;
+        }
+        if (objectToFind == null) {
+            for (int i = startIndex; i < array.length; i++) {
+                if (array[i] == null) {
+                    return i;
+                }
+            }
+        } else {
+            for (int i = startIndex; i < array.length; i++) {
+                if (objectToFind.equals(array[i])) {
+                    return i;
+                }
+            }
+        }
+        return INDEX_NOT_FOUND;
+    }
+</implementation>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(long[] array, long valueToFind) {
+        return indexOf(array, valueToFind, 0);
+    }
+</implementation>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(long[] array, long valueToFind, int startIndex) {
+        if (array == null) {
+            return INDEX_NOT_FOUND;
+        }
+        if (startIndex < 0) {
+            startIndex = 0;
+        }
+        for (int i = startIndex; i < array.length; i++) {
+            if (valueToFind == array[i]) {
+                return i;
+            }
+        }
+        return INDEX_NOT_FOUND;
+    }
+</implementation>
+</callee>
+<callee name="substring" from="StringUtils.java">
+<signature>
+public static String substring(String str, int start)
+</signature>
+<code>
+    public static String substring(String str, int start) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives, which means last n characters
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (start > str.length()) {
+            return EMPTY;
+        }
+
+        return str.substring(start);
+    }
+</code>
+<implementation in="StringUtils.java">
+    public static String substring(String str, int start) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives, which means last n characters
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (start > str.length()) {
+            return EMPTY;
+        }
+
+        return str.substring(start);
+    }
+</implementation>
+<implementation in="StringUtils.java">
+    public static String substring(String str, int start, int end) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives
+        if (end < 0) {
+            end = str.length() + end; // remember end is negative
+        }
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        // check length next
+        if (end > str.length()) {
+            end = str.length();
+        }
+
+        // if start is greater than end, return ""
+        if (start > end) {
+            return EMPTY;
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (end < 0) {
+            end = 0;
+        }
+
+        return str.substring(start, end);
+    }
+</implementation>
+</callee>
+<callee name="isAllZeros" from="NumberUtils.java">
+<signature>
+private static boolean isAllZeros(String s)
+</signature>
+<code>
+    private static boolean isAllZeros(String s) {
+        if (s == null) {
+            return true;
+        }
+        for (int i = s.length() - 1; i >= 0; i--) {
+            if (s.charAt(i) != '0') {
+                return false;
+            }
+        }
+        return s.length() > 0;
+    }
+</code>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: String index out of range: 0
+thrown_at: org.apache.commons.lang.NumberUtils.createNumber(NumberUtils.java:195)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang.NumberUtilsTest" method="testLang457">
+    public void testLang457() {
+        String[] badInputs = new String[] { "l", "L", "f", "F", "junk", "bobL"};
+        for(int i=0; i<badInputs.length; i++) {
+            try {
+                NumberUtils.createNumber(badInputs[i]);
+                fail("NumberFormatException was expected for " + badInputs[i]);
+            } catch (NumberFormatException e) {
+                return; // expected
+            }
+        }
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 001/30 ====================
+--- raw LLM response ---
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: NumberUtils.createNumber suffix 'L' path dereferences numeric.charAt(0) when numeric == "".
+           Minimal input shape: single-character string "L" (or "l"). */
+        // ANCHOR: exact crashing input on buggy version
+        NumberUtils.createNumber("L");
+
+        // Optionally try the lowercase variant
+        if (data.consumeBoolean()) {
+            NumberUtils.createNumber("l");
+        }
+
+        // EXPLORE: fuzz around similar shapes (suffix-based numbers and neighbors)
+        int tries = 1 + data.consumeInt(0, 5);
+        char[] suffixes = new char[] { 'L', 'l', 'F', 'f', 'D', 'd' };
+        String hexChars = "0123456789abcdefABCDEF";
+
+        for (int i = 0; i < tries; i++) {
+            int shape = data.consumeInt(0, 4);
+            String base;
+            switch (shape) {
+                case 0:
+                    base = "";
+                    break;
+                case 1:
+                    base = "-";
+                    break;
+                case 2: {
+                    int len = data.consumeInt(0, 16);
+                    StringBuilder sb = new StringBuilder(len);
+                    for (int j = 0; j < len; j++) {
+                        sb.append((char) ('0' + data.consumeInt(0, 9)));
+                    }
+                    base = sb.toString();
+                    break;
+                }
+                case 3: {
+                    int lenA = data.consumeInt(0, 8);
+                    int lenB = data.consumeInt(0, 8);
+                    StringBuilder sb = new StringBuilder(lenA + 1 + lenB);
+                    for (int j = 0; j < lenA; j++) {
+                        sb.append((char) ('0' + data.consumeInt(0, 9)));
+                    }
+                    sb.append('.');
+                    for (int j = 0; j < lenB; j++) {
+                        sb.append((char) ('0' + data.consumeInt(0, 9)));
+                    }
+                    base = sb.toString();
+                    break;
+                }
+                default: {
+                    int len = data.consumeInt(0, 8);
+                    StringBuilder sb = new StringBuilder(2 + len);
+                    if (data.consumeBoolean()) {
+                        sb.append("0x");
+                    } else {
+                        sb.append("-0x");
+                    }
+                    for (int j = 0; j < len; j++) {
+                        char hc = hexChars.charAt(data.consumeInt(0, hexChars.length() - 1));
+                        sb.append(hc);
+                    }
+                    base = sb.toString();
+                    break;
+                }
+            }
+
+            char suffix = suffixes[data.consumeInt(0, suffixes.length - 1)];
+            String s = base + suffix;
+            NumberUtils.createNumber(s);
+
+            // Also try exponent-style numbers without suffix to vary coverage
+            if (data.consumeBoolean()) {
+                int lenM = data.consumeInt(0, 8);
+                int lenE = data.consumeInt(0, 4);
+
+                StringBuilder man = new StringBuilder(lenM);
+                for (int j = 0; j < lenM; j++) {
+                    man.append((char) ('0' + data.consumeInt(0, 9)));
+                }
+
+                StringBuilder exp = new StringBuilder(1 + lenE);
+                if (data.consumeBoolean()) {
+                    exp.append('-');
+                }
+                for (int j = 0; j < lenE; j++) {
+                    exp.append((char) ('0' + data.consumeInt(0, 9)));
+                }
+
+                String s2 = man.toString() + (data.consumeBoolean() ? 'e' : 'E') + exp.toString();
+                NumberUtils.createNumber(s2);
+            }
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+      INFO: Loaded 46 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+      INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+      INFO: Loaded 60 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+      INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+      INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+      INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+      INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+      INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+      INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+      ERROR: 'FuzzHarness' not found on classpath:
+      
+      /Users/kyamaguchi/.cache/jazzer/jazzer-0.22.1.jar:/private/tmp/d4j/Lang_44_buggy/target/classes:/private/tmp/d4j/Lang_44_buggy/target/tests:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/lib/junit-4.12-hamcrest-1.3.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar:/tmp/d4j/Lang_44_buggy/fuzz/attempt_001
+      
+      All required classes must be on the classpath specified via --cp.
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 002/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug in NumberUtils.createNumber: 'L'/'l' suffix path evaluates numeric.charAt(0) on empty numeric. Minimal crashing input: "L" or "l". */
+        // Consume something so the crash is input-dependent from Jazzer's perspective.
+        if (data.remainingBytes() > 0) {
+            data.consumeByte();
+        }
+
+        // ANCHOR: deterministically trigger the buggy path.
+        org.apache.commons.lang.NumberUtils.createNumber("L");
+
+        // If fixed, explore nearby inputs.
+        if (data.consumeBoolean()) {
+            org.apache.commons.lang.NumberUtils.createNumber("l");
+        }
+
+        // Explore similar shapes: optional sign and digits followed by 'L'/'l'
+        int attempts = data.consumeInt(0, 8);
+        for (int i = 0; i < attempts; i++) {
+            StringBuilder sb = new StringBuilder();
+            if (data.consumeBoolean()) {
+                sb.append('-');
+            }
+            int len = data.consumeInt(0, 8);
+            for (int j = 0; j < len; j++) {
+                sb.append((char) ('0' + data.consumeInt(0, 9)));
+            }
+            char suf = data.consumeBoolean() ? 'L' : 'l';
+            String s = sb.toString() + suf;
+            org.apache.commons.lang.NumberUtils.createNumber(s);
+        }
+
+        // Also try exponent/decimal forms without suffix to drive other branches.
+        if (data.consumeBoolean()) {
+            String mant = data.consumeAsciiString(6);
+            String exp = data.consumeAsciiString(3);
+            String withExp = mant + (data.consumeBoolean() ? 'e' : 'E') + exp;
+            org.apache.commons.lang.NumberUtils.createNumber(withExp);
+        }
+        if (data.consumeBoolean()) {
+            String intPart = data.consumeAsciiString(4);
+            String fracPart = data.consumeAsciiString(4);
+            String withDot = intPart + "." + fracPart;
+            org.apache.commons.lang.NumberUtils.createNumber(withDot);
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+      INFO: Loaded 46 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+      INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+      INFO: Loaded 60 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+      INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+      INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+      INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+      INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+      INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+      INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+      ERROR: 'FuzzHarness' not found on classpath:
+      
+      /Users/kyamaguchi/.cache/jazzer/jazzer-0.22.1.jar:/private/tmp/d4j/Lang_44_buggy/target/classes:/private/tmp/d4j/Lang_44_buggy/target/tests:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/lib/junit-4.12-hamcrest-1.3.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar:/tmp/d4j/Lang_44_buggy/fuzz/attempt_002
+      
+      All required classes must be on the classpath specified via --cp.
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 003/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: NumberUtils.createNumber 'L'/'l' suffix path evaluates numeric.charAt(0) when numeric == "".
+           Minimal crashing input: "L" or "l" (no mantissa, no exp/dec). */
+        // ANCHOR: deterministically trigger the buggy path first
+        NumberUtils.createNumber("l");
+        NumberUtils.createNumber("L");
+
+        // EXPLORE: nearby shapes that still flow through the 'L'/'l' suffix branch
+        // 1) Optional sign + digits + 'L'/'l'
+        int attempts = data.consumeInt(0, 10);
+        for (int i = 0; i < attempts; i++) {
+            StringBuilder sb = new StringBuilder();
+            if (data.consumeBoolean()) {
+                sb.append('-');
+            }
+            int len = data.consumeInt(0, 8);
+            for (int j = 0; j < len; j++) {
+                sb.append((char) ('0' + data.consumeInt(0, 9)));
+            }
+            char suf = data.consumeBoolean() ? 'L' : 'l';
+            String s = sb.toString() + suf;
+            NumberUtils.createNumber(s);
+        }
+
+        // 2) Try exactly suffix-only strings and some known neighbors
+        if (data.consumeBoolean()) {
+            NumberUtils.createNumber("f");
+        }
+        if (data.consumeBoolean()) {
+            NumberUtils.createNumber("F");
+        }
+        if (data.consumeBoolean()) {
+            NumberUtils.createNumber("junk");
+        }
+        if (data.consumeBoolean()) {
+            NumberUtils.createNumber("bobL");
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+      INFO: Loaded 46 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+      INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+      INFO: Loaded 60 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+      INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+      INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+      INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+      INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+      INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+      INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+      ERROR: 'FuzzHarness' not found on classpath:
+      
+      /Users/kyamaguchi/.cache/jazzer/jazzer-0.22.1.jar:/private/tmp/d4j/Lang_44_buggy/target/classes:/private/tmp/d4j/Lang_44_buggy/target/tests:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/lib/junit-4.12-hamcrest-1.3.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar:/tmp/d4j/Lang_44_buggy/fuzz/attempt_003
+      
+      All required classes must be on the classpath specified via --cp.
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 004/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: NumberUtils.createNumber 'L'/'l' suffix branch evaluates numeric.charAt(0) when numeric == "".
+           Minimal crashing input: single-character string "L" or "l". */
+
+        // Ensure project code is touched before the anchor (sanity/coverage warm-up).
+        StringUtils.length(data.consumeAsciiString(1));
+
+        // ANCHOR: deterministically trigger the buggy path first.
+        org.apache.commons.lang.NumberUtils.createNumber("L");
+        org.apache.commons.lang.NumberUtils.createNumber("l");
+
+        // EXPLORE: nearby inputs that still hit the 'L' branch (with/without sign/digits)
+        int attempts = data.consumeInt(0, 8);
+        for (int i = 0; i < attempts; i++) {
+            StringBuilder sb = new StringBuilder();
+            if (data.consumeBoolean()) {
+                sb.append('-');
+            }
+            int len = data.consumeInt(0, 6);
+            for (int j = 0; j < len; j++) {
+                sb.append((char) ('0' + data.consumeInt(0, 9)));
+            }
+            char suf = data.consumeBoolean() ? 'L' : 'l';
+            String s = sb.toString() + suf;
+            org.apache.commons.lang.NumberUtils.createNumber(s);
+        }
+
+        // Additional neighbors from the failing test to broaden coverage.
+        if (data.consumeBoolean()) {
+            org.apache.commons.lang.NumberUtils.createNumber("f");
+        }
+        if (data.consumeBoolean()) {
+            org.apache.commons.lang.NumberUtils.createNumber("F");
+        }
+        if (data.consumeBoolean()) {
+            org.apache.commons.lang.NumberUtils.createNumber("junk");
+        }
+        if (data.consumeBoolean()) {
+            org.apache.commons.lang.NumberUtils.createNumber("bobL");
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+      INFO: Loaded 46 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+      INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+      INFO: Loaded 60 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+      INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+      INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+      INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+      INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+      INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+      INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+      ERROR: 'FuzzHarness' not found on classpath:
+      
+      /Users/kyamaguchi/.cache/jazzer/jazzer-0.22.1.jar:/private/tmp/d4j/Lang_44_buggy/target/classes:/private/tmp/d4j/Lang_44_buggy/target/tests:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/lib/junit-4.12-hamcrest-1.3.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar:/tmp/d4j/Lang_44_buggy/fuzz/attempt_004
+      
+      All required classes must be on the classpath specified via --cp.
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+⟲ 3 repair turns failed in a row — resetting to a fresh prompt
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang` (`package org.apache.commons.lang;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_44_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/NumberUtils.java	
++++ /src/java/org/apache/commons/lang/NumberUtils.java
+@@ -192,7 +192,7 @@
+                 case 'L' :
+                     if (dec == null
+                         && exp == null
+-                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
++                        || (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
+                         try {
+                             return createLong(numeric);
+                         } catch (NumberFormatException nfe) {
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.math.BigDecimal;
+import java.math.BigInteger;
+</source_imports>
+
+Function `createNumber`:
+<signature>
+public static Number createNumber(String val) throws NumberFormatException
+</signature>
+<code>
+    public static Number createNumber(String val) throws NumberFormatException {
+        if (val == null) {
+            return null;
+        }
+        if (val.length() == 0) {
+            throw new NumberFormatException("\"\" is not a valid number.");
+        }
+        if (val.startsWith("--")) {
+            // this is protection for poorness in java.lang.BigDecimal.
+            // it accepts this as a legal value, but it does not appear 
+            // to be in specification of class. OS X Java parses it to 
+            // a wrong value.
+            return null;
+        }
+        if (val.startsWith("0x") || val.startsWith("-0x")) {
+            return createInteger(val);
+        }   
+        char lastChar = val.charAt(val.length() - 1);
+        String mant;
+        String dec;
+        String exp;
+        int decPos = val.indexOf('.');
+        int expPos = val.indexOf('e') + val.indexOf('E') + 1;
+
+        if (decPos > -1) {
+
+            if (expPos > -1) {
+                if (expPos < decPos) {
+                    throw new NumberFormatException(val + " is not a valid number.");
+                }
+                dec = val.substring(decPos + 1, expPos);
+            } else {
+                dec = val.substring(decPos + 1);
+            }
+            mant = val.substring(0, decPos);
+        } else {
+            if (expPos > -1) {
+                mant = val.substring(0, expPos);
+            } else {
+                mant = val;
+            }
+            dec = null;
+        }
+        if (!Character.isDigit(lastChar)) {
+            if (expPos > -1 && expPos < val.length() - 1) {
+                exp = val.substring(expPos + 1, val.length() - 1);
+            } else {
+                exp = null;
+            }
+            //Requesting a specific type..
+            String numeric = val.substring(0, val.length() - 1);
+            boolean allZeros = isAllZeros(mant) && isAllZeros(exp);
+            switch (lastChar) {
+                case 'l' :
+                case 'L' :
+                    if (dec == null
+                        && exp == null
+                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
+                        try {
+                            return createLong(numeric);
+                        } catch (NumberFormatException nfe) {
+                            //Too big for a long
+                        }
+                        return createBigInteger(numeric);
+
+                    }
+                    throw new NumberFormatException(val + " is not a valid number.");
+                case 'f' :
+                case 'F' :
+                    try {
+                        Float f = NumberUtils.createFloat(numeric);
+                        if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {
+                            //If it's too big for a float or the float value = 0 and the string
+                            //has non-zeros in it, then float does not have the precision we want
+                            return f;
+                        }
+
+                    } catch (NumberFormatException e) {
+                        // ignore the bad number
+                    }
+                    //Fall through
+                case 'd' :
+                case 'D' :
+                    try {
+                        Double d = NumberUtils.createDouble(numeric);
+                        if (!(d.isInfinite() || (d.floatValue() == 0.0D && !allZeros))) {
+                            return d;
+                        }
+                    } catch (NumberFormatException nfe) {
+                        // empty catch
+                    }
+                    try {
+                        return createBigDecimal(numeric);
+                    } catch (NumberFormatException e) {
+                        // empty catch
+                    }
+                    //Fall through
+                default :
+                    throw new NumberFormatException(val + " is not a valid number.");
+
+            }
+        } else {
+            //User doesn't have a preference on the return type, so let's start
+            //small and go from there...
+            if (expPos > -1 && expPos < val.length() - 1) {
+                exp = val.substring(expPos + 1, val.length());
+            } else {
+                exp = null;
+            }
+            if (dec == null && exp == null) {
+                //Must be an int,long,bigint
+                try {
+                    return createInteger(val);
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+                try {
+                    return createLong(val);
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+                return createBigInteger(val);
+
+            } else {
+                //Must be a float,double,BigDec
+                boolean allZeros = isAllZeros(mant) && isAllZeros(exp);
+                try {
+                    Float f = createFloat(val);
+                    if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {
+                        return f;
+                    }
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+                try {
+                    Double d = createDouble(val);
+                    if (!(d.isInfinite() || (d.doubleValue() == 0.0D && !allZeros))) {
+                        return d;
+                    }
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+
+                return createBigDecimal(val);
+
+            }
+
+        }
+    }
+</code>
+Methods called by `createNumber` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="length" from="StringUtils.java">
+<signature>
+public static int length(String str)
+</signature>
+<code>
+    public static int length(String str) {
+        return str == null ? 0 : str.length();
+    }
+</code>
+</callee>
+<callee name="startsWith" from="StringUtils.java">
+<signature>
+public static boolean startsWith(String str, String prefix)
+</signature>
+<code>
+    public static boolean startsWith(String str, String prefix) {
+        return startsWith(str, prefix, false);
+    }
+</code>
+<implementation in="StringUtils.java">
+    public static boolean startsWith(String str, String prefix) {
+        return startsWith(str, prefix, false);
+    }
+</implementation>
+<implementation in="StringUtils.java">
+    private static boolean startsWith(String str, String prefix, boolean ignoreCase) {
+        if (str == null || prefix == null) {
+            return (str == null && prefix == null);
+        }
+        if (prefix.length() > str.length()) {
+            return false;
+        }
+        return str.regionMatches(ignoreCase, 0, prefix, 0, prefix.length());
+    }
+</implementation>
+</callee>
+<callee name="createInteger" from="NumberUtils.java">
+<signature>
+public static Integer createInteger(String val)
+</signature>
+<code>
+    public static Integer createInteger(String val) {
+        // decode() handles 0xAABD and 0777 (hex and octal) as well.
+        return Integer.decode(val);
+    }
+</code>
+</callee>
+<callee name="indexOf" from="ArrayUtils.java">
+<signature>
+public static int indexOf(Object[] array, Object objectToFind)
+</signature>
+<code>
+    public static int indexOf(Object[] array, Object objectToFind) {
+        return indexOf(array, objectToFind, 0);
+    }
+</code>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(Object[] array, Object objectToFind) {
+        return indexOf(array, objectToFind, 0);
+    }
+</implementation>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(Object[] array, Object objectToFind, int startIndex) {
+        if (array == null) {
+            return INDEX_NOT_FOUND;
+        }
+        if (startIndex < 0) {
+            startIndex = 0;
+        }
+        if (objectToFind == null) {
+            for (int i = startIndex; i < array.length; i++) {
+                if (array[i] == null) {
+                    return i;
+                }
+            }
+        } else {
+            for (int i = startIndex; i < array.length; i++) {
+                if (objectToFind.equals(array[i])) {
+                    return i;
+                }
+            }
+        }
+        return INDEX_NOT_FOUND;
+    }
+</implementation>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(long[] array, long valueToFind) {
+        return indexOf(array, valueToFind, 0);
+    }
+</implementation>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(long[] array, long valueToFind, int startIndex) {
+        if (array == null) {
+            return INDEX_NOT_FOUND;
+        }
+        if (startIndex < 0) {
+            startIndex = 0;
+        }
+        for (int i = startIndex; i < array.length; i++) {
+            if (valueToFind == array[i]) {
+                return i;
+            }
+        }
+        return INDEX_NOT_FOUND;
+    }
+</implementation>
+</callee>
+<callee name="substring" from="StringUtils.java">
+<signature>
+public static String substring(String str, int start)
+</signature>
+<code>
+    public static String substring(String str, int start) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives, which means last n characters
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (start > str.length()) {
+            return EMPTY;
+        }
+
+        return str.substring(start);
+    }
+</code>
+<implementation in="StringUtils.java">
+    public static String substring(String str, int start) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives, which means last n characters
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (start > str.length()) {
+            return EMPTY;
+        }
+
+        return str.substring(start);
+    }
+</implementation>
+<implementation in="StringUtils.java">
+    public static String substring(String str, int start, int end) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives
+        if (end < 0) {
+            end = str.length() + end; // remember end is negative
+        }
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        // check length next
+        if (end > str.length()) {
+            end = str.length();
+        }
+
+        // if start is greater than end, return ""
+        if (start > end) {
+            return EMPTY;
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (end < 0) {
+            end = 0;
+        }
+
+        return str.substring(start, end);
+    }
+</implementation>
+</callee>
+<callee name="isAllZeros" from="NumberUtils.java">
+<signature>
+private static boolean isAllZeros(String s)
+</signature>
+<code>
+    private static boolean isAllZeros(String s) {
+        if (s == null) {
+            return true;
+        }
+        for (int i = s.length() - 1; i >= 0; i--) {
+            if (s.charAt(i) != '0') {
+                return false;
+            }
+        }
+        return s.length() > 0;
+    }
+</code>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: String index out of range: 0
+thrown_at: org.apache.commons.lang.NumberUtils.createNumber(NumberUtils.java:195)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang.NumberUtilsTest" method="testLang457">
+    public void testLang457() {
+        String[] badInputs = new String[] { "l", "L", "f", "F", "junk", "bobL"};
+        for(int i=0; i<badInputs.length; i++) {
+            try {
+                NumberUtils.createNumber(badInputs[i]);
+                fail("NumberFormatException was expected for " + badInputs[i]);
+            } catch (NumberFormatException e) {
+                return; // expected
+            }
+        }
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 005/30 ====================
+--- raw LLM response ---
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: NumberUtils.createNumber evaluates numeric.charAt(0) for 'L'/'l' suffix even when numeric is empty. Minimal input shape: single-character "l" or "L". */
+        // ANCHOR: exact failing inputs from the test
+        NumberUtils.createNumber("l");
+        NumberUtils.createNumber("L");
+        NumberUtils.createNumber("f");
+        NumberUtils.createNumber("F");
+        NumberUtils.createNumber("junk");
+        NumberUtils.createNumber("bobL");
+
+        // EXPLORE: vary similar input shapes
+        int iters = 1;
+        if (data.remainingBytes() > 0) {
+            iters += data.consumeInt(0, 5);
+        }
+        char[] suffixes = new char[] {'l','L','f','F','d','D'};
+        for (int i = 0; i < iters; i++) {
+            // Variant 1: random ascii body + random numeric suffix
+            String body = data.consumeAsciiString(32);
+            char suf = suffixes[Math.abs(data.consumeInt()) % suffixes.length];
+            NumberUtils.createNumber(body + suf);
+
+            // Variant 2: digits (possibly empty) with optional '-' and an L/l suffix
+            int len = data.consumeInt(0, 16);
+            StringBuilder sb = new StringBuilder();
+            if (data.consumeBoolean()) {
+                sb.append('-');
+            }
+            for (int j = 0; j < len; j++) {
+                int d = data.consumeInt(0, 9);
+                sb.append((char) ('0' + d));
+            }
+            char lSuf = suffixes[Math.abs(data.consumeInt()) % 2]; // 'l' or 'L'
+            NumberUtils.createNumber(sb.toString() + lSuf);
+
+            // Variant 3: include optional decimal and exponent then a random suffix
+            StringBuilder num = new StringBuilder();
+            if (data.consumeBoolean()) num.append('-');
+            int intPartLen = data.consumeInt(0, 8);
+            for (int j = 0; j < intPartLen; j++) {
+                num.append((char)('0' + data.consumeInt(0,9)));
+            }
+            if (data.consumeBoolean()) {
+                num.append('.');
+                int fracLen = data.consumeInt(0, 8);
+                for (int j = 0; j < fracLen; j++) {
+                    num.append((char)('0' + data.consumeInt(0,9)));
+                }
+            }
+            if (data.consumeBoolean()) {
+                num.append(data.consumeBoolean() ? 'e' : 'E');
+                if (data.consumeBoolean()) num.append('-');
+                int expLen = data.consumeInt(0, 4);
+                for (int j = 0; j < expLen; j++) {
+                    num.append((char)('0' + data.consumeInt(0,9)));
+                }
+            }
+            char sf = suffixes[Math.abs(data.consumeInt()) % suffixes.length];
+            NumberUtils.createNumber(num.toString() + sf);
+        }
+
+        // Try remaining as string directly and with a trailing type designator
+        String s = data.consumeRemainingAsString();
+        if (s != null && s.length() > 0) {
+            NumberUtils.createNumber(s);
+            char suf = suffixes[Math.abs(s.hashCode()) % suffixes.length];
+            NumberUtils.createNumber(s + suf);
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+      INFO: Loaded 46 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+      INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+      INFO: Loaded 60 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+      INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+      INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+      INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+      INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+      INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+      INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+      ERROR: 'FuzzHarness' not found on classpath:
+      
+      /Users/kyamaguchi/.cache/jazzer/jazzer-0.22.1.jar:/private/tmp/d4j/Lang_44_buggy/target/classes:/private/tmp/d4j/Lang_44_buggy/target/tests:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/lib/junit-4.12-hamcrest-1.3.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar:/tmp/d4j/Lang_44_buggy/fuzz/attempt_005
+      
+      All required classes must be on the classpath specified via --cp.
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 006/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug in NumberUtils.createNumber: for 'L'/'l' suffix case, buggy code evaluates numeric.charAt(0) even when numeric == "", causing StringIndexOutOfBoundsException. Minimal crashing input: "l" or "L". */
+        // ANCHOR: exact minimal crashing inputs to hit the buggy evaluation
+        NumberUtils.createNumber("l");
+        NumberUtils.createNumber("L");
+
+        // EXPLORE: nearby shapes to exercise the L/l branch with and without digits
+        int iters = 1;
+        if (data.remainingBytes() > 0) {
+            int extra = data.consumeInt(0, 5);
+            iters += extra;
+        }
+        for (int i = 0; i < iters; i++) {
+            // Case 1: ensure empty numeric part then L/l suffix (still triggers the bug pre-fix)
+            char suf = data.consumeBoolean() ? 'l' : 'L';
+            NumberUtils.createNumber("" + suf);
+
+            // Case 2: random digits (possibly empty), guarantee no '.' or exponent to keep dec/exp == null
+            String body = data.consumeAsciiString(16);
+            if (body == null) body = "";
+            body = body.replace(".", "").replace("e", "").replace("E", "");
+
+            // Optionally reduce to empty to re-hit the crash, or keep some digits to explore non-crashing paths
+            if (data.consumeBoolean()) {
+                body = "";
+            } else {
+                // Keep only digits and optional leading '-' to stay in integer path
+                StringBuilder sb = new StringBuilder();
+                if (data.consumeBoolean()) sb.append('-');
+                for (int j = 0; j < body.length(); j++) {
+                    char c = body.charAt(j);
+                    if (c >= '0' && c <= '9') sb.append(c);
+                }
+                body = sb.toString();
+            }
+            NumberUtils.createNumber(body + (data.consumeBoolean() ? 'l' : 'L'));
+        }
+
+        // Also try with remaining input cleaned to avoid '.'/exponent, then append L/l
+        String s = data.consumeRemainingAsString();
+        if (s != null) {
+            String cleaned = s.replace(".", "").replace("e", "").replace("E", "");
+            if (cleaned.length() <= 32) {
+                NumberUtils.createNumber(cleaned + 'l');
+                NumberUtils.createNumber(cleaned + 'L');
+            }
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+      INFO: Loaded 46 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+      INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+      INFO: Loaded 60 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+      INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+      INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+      INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+      INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+      INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+      INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+      ERROR: 'FuzzHarness' not found on classpath:
+      
+      /Users/kyamaguchi/.cache/jazzer/jazzer-0.22.1.jar:/private/tmp/d4j/Lang_44_buggy/target/classes:/private/tmp/d4j/Lang_44_buggy/target/tests:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/lib/junit-4.12-hamcrest-1.3.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar:/tmp/d4j/Lang_44_buggy/fuzz/attempt_006
+      
+      All required classes must be on the classpath specified via --cp.
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 007/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug in NumberUtils.createNumber: evaluating numeric.charAt(0) for 'L'/'l' suffix when numeric is empty. Minimal input: "l" or "L". */
+        // ANCHOR: minimal crashing inputs
+        NumberUtils.createNumber("l");
+        NumberUtils.createNumber("L");
+
+        // EXPLORE: generate nearby shapes ensuring dec==null and exp==null to exercise 'L' branch
+        int iterations = 1;
+        if (data.remainingBytes() > 0) {
+            iterations += data.consumeInt(0, 8);
+        }
+        for (int i = 0; i < iterations; i++) {
+            // Build a numeric part with only optional '-' and digits (no '.' or exponent)
+            StringBuilder sb = new StringBuilder();
+            if (data.consumeBoolean()) {
+                sb.append('-');
+            }
+            int digits = data.consumeInt(0, 12);
+            for (int j = 0; j < digits; j++) {
+                sb.append((char) ('0' + data.consumeInt(0, 9)));
+            }
+            // Occasionally force empty numeric to hit the exact crash
+            if (data.consumeBoolean()) {
+                sb.setLength(0);
+            }
+            char suf = data.consumeBoolean() ? 'l' : 'L';
+            NumberUtils.createNumber(sb.toString() + suf);
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+      INFO: Loaded 46 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+      INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+      INFO: Loaded 60 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+      INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+      INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+      INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+      INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+      INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+      INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+      ERROR: 'FuzzHarness' not found on classpath:
+      
+      /Users/kyamaguchi/.cache/jazzer/jazzer-0.22.1.jar:/private/tmp/d4j/Lang_44_buggy/target/classes:/private/tmp/d4j/Lang_44_buggy/target/tests:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/lib/junit-4.12-hamcrest-1.3.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar:/tmp/d4j/Lang_44_buggy/fuzz/attempt_007
+      
+      All required classes must be on the classpath specified via --cp.
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 008/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: NumberUtils.createNumber evaluates numeric.charAt(0) in the 'L'/'l' suffix branch even when numeric == "", causing StringIndexOutOfBoundsException. Minimal input: "l" or "L". */
+        // Tie the anchor to fuzzer input so the finding is attributed to a test case
+        char anchor = data.consumeBoolean() ? 'l' : 'L';
+        org.apache.commons.lang.NumberUtils.createNumber(String.valueOf(anchor));
+
+        // Explore nearby inputs: optional '-' + digits + 'l'/'L' (no '.' or exponent), occasionally empty numeric part
+        int iters = 1;
+        if (data.remainingBytes() > 0) {
+            iters += data.consumeInt(0, 5);
+        }
+        for (int i = 0; i < iters; i++) {
+            StringBuilder sb = new StringBuilder();
+            if (data.consumeBoolean()) {
+                sb.append('-');
+            }
+            int len = data.consumeInt(0, 18); // keep within long range to avoid routine NFEs
+            for (int j = 0; j < len; j++) {
+                sb.append((char) ('0' + data.consumeInt(0, 9)));
+            }
+            if (data.consumeBoolean()) {
+                // Force empty numeric to re-hit the buggy charAt(0) path
+                sb.setLength(0);
+            }
+            char suf = data.consumeBoolean() ? 'l' : 'L';
+            org.apache.commons.lang.NumberUtils.createNumber(sb.toString() + suf);
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+      INFO: Loaded 46 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+      INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+      INFO: Loaded 60 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+      INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+      INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+      INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+      INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+      INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+      INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+      ERROR: 'FuzzHarness' not found on classpath:
+      
+      /Users/kyamaguchi/.cache/jazzer/jazzer-0.22.1.jar:/private/tmp/d4j/Lang_44_buggy/target/classes:/private/tmp/d4j/Lang_44_buggy/target/tests:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/lib/junit-4.12-hamcrest-1.3.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar:/tmp/d4j/Lang_44_buggy/fuzz/attempt_008
+      
+      All required classes must be on the classpath specified via --cp.
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+⟲ 3 repair turns failed in a row — resetting to a fresh prompt
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang` (`package org.apache.commons.lang;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_44_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/NumberUtils.java	
++++ /src/java/org/apache/commons/lang/NumberUtils.java
+@@ -192,7 +192,7 @@
+                 case 'L' :
+                     if (dec == null
+                         && exp == null
+-                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
++                        || (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
+                         try {
+                             return createLong(numeric);
+                         } catch (NumberFormatException nfe) {
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.math.BigDecimal;
+import java.math.BigInteger;
+</source_imports>
+
+Function `createNumber`:
+<signature>
+public static Number createNumber(String val) throws NumberFormatException
+</signature>
+<code>
+    public static Number createNumber(String val) throws NumberFormatException {
+        if (val == null) {
+            return null;
+        }
+        if (val.length() == 0) {
+            throw new NumberFormatException("\"\" is not a valid number.");
+        }
+        if (val.startsWith("--")) {
+            // this is protection for poorness in java.lang.BigDecimal.
+            // it accepts this as a legal value, but it does not appear 
+            // to be in specification of class. OS X Java parses it to 
+            // a wrong value.
+            return null;
+        }
+        if (val.startsWith("0x") || val.startsWith("-0x")) {
+            return createInteger(val);
+        }   
+        char lastChar = val.charAt(val.length() - 1);
+        String mant;
+        String dec;
+        String exp;
+        int decPos = val.indexOf('.');
+        int expPos = val.indexOf('e') + val.indexOf('E') + 1;
+
+        if (decPos > -1) {
+
+            if (expPos > -1) {
+                if (expPos < decPos) {
+                    throw new NumberFormatException(val + " is not a valid number.");
+                }
+                dec = val.substring(decPos + 1, expPos);
+            } else {
+                dec = val.substring(decPos + 1);
+            }
+            mant = val.substring(0, decPos);
+        } else {
+            if (expPos > -1) {
+                mant = val.substring(0, expPos);
+            } else {
+                mant = val;
+            }
+            dec = null;
+        }
+        if (!Character.isDigit(lastChar)) {
+            if (expPos > -1 && expPos < val.length() - 1) {
+                exp = val.substring(expPos + 1, val.length() - 1);
+            } else {
+                exp = null;
+            }
+            //Requesting a specific type..
+            String numeric = val.substring(0, val.length() - 1);
+            boolean allZeros = isAllZeros(mant) && isAllZeros(exp);
+            switch (lastChar) {
+                case 'l' :
+                case 'L' :
+                    if (dec == null
+                        && exp == null
+                        && (numeric.charAt(0) == '-' && isDigits(numeric.substring(1)) || isDigits(numeric))) {
+                        try {
+                            return createLong(numeric);
+                        } catch (NumberFormatException nfe) {
+                            //Too big for a long
+                        }
+                        return createBigInteger(numeric);
+
+                    }
+                    throw new NumberFormatException(val + " is not a valid number.");
+                case 'f' :
+                case 'F' :
+                    try {
+                        Float f = NumberUtils.createFloat(numeric);
+                        if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {
+                            //If it's too big for a float or the float value = 0 and the string
+                            //has non-zeros in it, then float does not have the precision we want
+                            return f;
+                        }
+
+                    } catch (NumberFormatException e) {
+                        // ignore the bad number
+                    }
+                    //Fall through
+                case 'd' :
+                case 'D' :
+                    try {
+                        Double d = NumberUtils.createDouble(numeric);
+                        if (!(d.isInfinite() || (d.floatValue() == 0.0D && !allZeros))) {
+                            return d;
+                        }
+                    } catch (NumberFormatException nfe) {
+                        // empty catch
+                    }
+                    try {
+                        return createBigDecimal(numeric);
+                    } catch (NumberFormatException e) {
+                        // empty catch
+                    }
+                    //Fall through
+                default :
+                    throw new NumberFormatException(val + " is not a valid number.");
+
+            }
+        } else {
+            //User doesn't have a preference on the return type, so let's start
+            //small and go from there...
+            if (expPos > -1 && expPos < val.length() - 1) {
+                exp = val.substring(expPos + 1, val.length());
+            } else {
+                exp = null;
+            }
+            if (dec == null && exp == null) {
+                //Must be an int,long,bigint
+                try {
+                    return createInteger(val);
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+                try {
+                    return createLong(val);
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+                return createBigInteger(val);
+
+            } else {
+                //Must be a float,double,BigDec
+                boolean allZeros = isAllZeros(mant) && isAllZeros(exp);
+                try {
+                    Float f = createFloat(val);
+                    if (!(f.isInfinite() || (f.floatValue() == 0.0F && !allZeros))) {
+                        return f;
+                    }
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+                try {
+                    Double d = createDouble(val);
+                    if (!(d.isInfinite() || (d.doubleValue() == 0.0D && !allZeros))) {
+                        return d;
+                    }
+                } catch (NumberFormatException nfe) {
+                    // empty catch
+                }
+
+                return createBigDecimal(val);
+
+            }
+
+        }
+    }
+</code>
+Methods called by `createNumber` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="length" from="StringUtils.java">
+<signature>
+public static int length(String str)
+</signature>
+<code>
+    public static int length(String str) {
+        return str == null ? 0 : str.length();
+    }
+</code>
+</callee>
+<callee name="startsWith" from="StringUtils.java">
+<signature>
+public static boolean startsWith(String str, String prefix)
+</signature>
+<code>
+    public static boolean startsWith(String str, String prefix) {
+        return startsWith(str, prefix, false);
+    }
+</code>
+<implementation in="StringUtils.java">
+    public static boolean startsWith(String str, String prefix) {
+        return startsWith(str, prefix, false);
+    }
+</implementation>
+<implementation in="StringUtils.java">
+    private static boolean startsWith(String str, String prefix, boolean ignoreCase) {
+        if (str == null || prefix == null) {
+            return (str == null && prefix == null);
+        }
+        if (prefix.length() > str.length()) {
+            return false;
+        }
+        return str.regionMatches(ignoreCase, 0, prefix, 0, prefix.length());
+    }
+</implementation>
+</callee>
+<callee name="createInteger" from="NumberUtils.java">
+<signature>
+public static Integer createInteger(String val)
+</signature>
+<code>
+    public static Integer createInteger(String val) {
+        // decode() handles 0xAABD and 0777 (hex and octal) as well.
+        return Integer.decode(val);
+    }
+</code>
+</callee>
+<callee name="indexOf" from="ArrayUtils.java">
+<signature>
+public static int indexOf(Object[] array, Object objectToFind)
+</signature>
+<code>
+    public static int indexOf(Object[] array, Object objectToFind) {
+        return indexOf(array, objectToFind, 0);
+    }
+</code>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(Object[] array, Object objectToFind) {
+        return indexOf(array, objectToFind, 0);
+    }
+</implementation>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(Object[] array, Object objectToFind, int startIndex) {
+        if (array == null) {
+            return INDEX_NOT_FOUND;
+        }
+        if (startIndex < 0) {
+            startIndex = 0;
+        }
+        if (objectToFind == null) {
+            for (int i = startIndex; i < array.length; i++) {
+                if (array[i] == null) {
+                    return i;
+                }
+            }
+        } else {
+            for (int i = startIndex; i < array.length; i++) {
+                if (objectToFind.equals(array[i])) {
+                    return i;
+                }
+            }
+        }
+        return INDEX_NOT_FOUND;
+    }
+</implementation>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(long[] array, long valueToFind) {
+        return indexOf(array, valueToFind, 0);
+    }
+</implementation>
+<implementation in="ArrayUtils.java">
+    public static int indexOf(long[] array, long valueToFind, int startIndex) {
+        if (array == null) {
+            return INDEX_NOT_FOUND;
+        }
+        if (startIndex < 0) {
+            startIndex = 0;
+        }
+        for (int i = startIndex; i < array.length; i++) {
+            if (valueToFind == array[i]) {
+                return i;
+            }
+        }
+        return INDEX_NOT_FOUND;
+    }
+</implementation>
+</callee>
+<callee name="substring" from="StringUtils.java">
+<signature>
+public static String substring(String str, int start)
+</signature>
+<code>
+    public static String substring(String str, int start) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives, which means last n characters
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (start > str.length()) {
+            return EMPTY;
+        }
+
+        return str.substring(start);
+    }
+</code>
+<implementation in="StringUtils.java">
+    public static String substring(String str, int start) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives, which means last n characters
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (start > str.length()) {
+            return EMPTY;
+        }
+
+        return str.substring(start);
+    }
+</implementation>
+<implementation in="StringUtils.java">
+    public static String substring(String str, int start, int end) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives
+        if (end < 0) {
+            end = str.length() + end; // remember end is negative
+        }
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        // check length next
+        if (end > str.length()) {
+            end = str.length();
+        }
+
+        // if start is greater than end, return ""
+        if (start > end) {
+            return EMPTY;
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (end < 0) {
+            end = 0;
+        }
+
+        return str.substring(start, end);
+    }
+</implementation>
+</callee>
+<callee name="isAllZeros" from="NumberUtils.java">
+<signature>
+private static boolean isAllZeros(String s)
+</signature>
+<code>
+    private static boolean isAllZeros(String s) {
+        if (s == null) {
+            return true;
+        }
+        for (int i = s.length() - 1; i >= 0; i--) {
+            if (s.charAt(i) != '0') {
+                return false;
+            }
+        }
+        return s.length() > 0;
+    }
+</code>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: String index out of range: 0
+thrown_at: org.apache.commons.lang.NumberUtils.createNumber(NumberUtils.java:195)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang.NumberUtilsTest" method="testLang457">
+    public void testLang457() {
+        String[] badInputs = new String[] { "l", "L", "f", "F", "junk", "bobL"};
+        for(int i=0; i<badInputs.length; i++) {
+            try {
+                NumberUtils.createNumber(badInputs[i]);
+                fail("NumberFormatException was expected for " + badInputs[i]);
+            } catch (NumberFormatException e) {
+                return; // expected
+            }
+        }
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 009/30 ====================
+--- raw LLM response ---
+package org.apache.commons.lang;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: org.apache.commons.lang.NumberUtils.createNumber - 'L' suffix with empty mantissa; minimal input: "L" (or "l") */
+        // ANCHOR: exact failing input from the test
+        NumberUtils.createNumber("L");
+
+        // Additional exact neighbor that also exercises the same path
+        if (data.consumeBoolean()) {
+            NumberUtils.createNumber("l");
+        }
+
+        // EXPLORE: mutate around the same shape - numbers ending with 'L'/'l'
+        // 1) Optional sign + digits + 'L'/'l'
+        String digits1 = digitsOnly(data.consumeAsciiString(16));
+        String s1 = (data.consumeBoolean() ? "-" : "") + digits1 + (data.consumeBoolean() ? 'L' : 'l');
+        NumberUtils.createNumber(s1);
+
+        // 2) Optional sign + digits + optional '.' + digits + optional exponent + 'L'/'l'
+        String digits2 = digitsOnly(data.consumeAsciiString(8));
+        String digits3 = digitsOnly(data.consumeAsciiString(8));
+        boolean addDec = data.consumeBoolean();
+        boolean addExp = data.consumeBoolean();
+        StringBuilder sb = new StringBuilder();
+        if (data.consumeBoolean()) sb.append('-');
+        sb.append(digits2);
+        if (addDec) {
+            sb.append('.');
+            sb.append(digits3);
+        }
+        if (addExp) {
+            sb.append(data.consumeBoolean() ? 'e' : 'E');
+            if (data.consumeBoolean()) sb.append('-');
+            else if (data.consumeBoolean()) sb.append('+');
+            sb.append(digitsOnly(data.consumeAsciiString(4)));
+        }
+        sb.append(data.consumeBoolean() ? 'L' : 'l');
+        NumberUtils.createNumber(sb.toString());
+
+        // 3) Arbitrary ASCII prefix + 'L'/'l' suffix (e.g., "bobL")
+        String ascii = data.consumeAsciiString(12);
+        NumberUtils.createNumber(ascii + (data.consumeBoolean() ? 'L' : 'l'));
+
+        // 4) Other variants from the test for coverage
+        if (data.consumeBoolean()) NumberUtils.createNumber("bobL");
+        if (data.consumeBoolean()) NumberUtils.createNumber("junk");
+        if (data.consumeBoolean()) NumberUtils.createNumber("F");
+        if (data.consumeBoolean()) NumberUtils.createNumber("f");
+    }
+
+    private static String digitsOnly(String s) {
+        if (s == null) return "";
+        StringBuilder out = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c >= '0' && c <= '9') out.append(c);
+        }
+        return out.toString();
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+      INFO: Loaded 46 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+      INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+      INFO: Loaded 60 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+      INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+      INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+      INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+      INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+      INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+      INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+      ERROR: 'FuzzHarness' not found on classpath:
+      
+      /Users/kyamaguchi/.cache/jazzer/jazzer-0.22.1.jar:/private/tmp/d4j/Lang_44_buggy/target/classes:/private/tmp/d4j/Lang_44_buggy/target/tests:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/lib/junit-4.12-hamcrest-1.3.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/Users/kyamaguchi/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar:/tmp/d4j/Lang_44_buggy/fuzz/attempt_009
+      
+      All required classes must be on the classpath specified via --cp.
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 328, in <module>
+    main()
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 238, in main
+    result = campaign.run(messages, selection.buggy_dir,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/java/campaign.py", line 189, in run
+    raw = self.generator.generate(current_messages)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/llm.py", line 79, in generate
+    result = self._client.chat.completions.create(**params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1215, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1332, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1037, in request
+    response = self._send_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_client.py", line 440, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_client.py", line 418, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 964, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+    return self._connection.handle_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+    raise exc
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 217, in _receive_event
+    data = self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_backends/sync.py", line 128, in read
+    return self._sock.recv(max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/ssl.py", line 1295, in recv
+    return self.read(buflen)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/ssl.py", line 1168, in read
+    return self._sslobj.read(len)
+           ^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

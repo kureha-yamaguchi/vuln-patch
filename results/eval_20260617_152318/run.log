@@ -1,0 +1,459 @@
+[overfitting] run 1 (have 0/10 distinct) -> project Math
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.math.linear.EigenDecompositionImplTest::testMathpbx02  [junit.framework.AssertionFailedError]
+
+bug kind: semantic
+{
+  "modified_files": [
+    "src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java"
+  ],
+  "patch_text": "--- /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java\t\n+++ /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java\n@@ -1133,7 +1133,7 @@\n         if (1.5 * work[pingPong] < work[4 * (n - 1) + pingPong]) {\n             // flip array\n             int j = 4 * n - 1;\n-            for (int i = 0; i < j; i += 4) {\n+            for (int i = 0; i > j; i += 4) {\n                 for (int k = 0; k < 4; k += step) {\n                     final double tmp = work[i + k];\n                     work[i + k] = work[j - k];\n",
+  "functions": [
+    {
+      "func_name": "flipIfWarranted",
+      "func_signature": "private boolean flipIfWarranted(int n, int step)",
+      "func_source": "    private boolean flipIfWarranted(final int n, final int step) {\n        if (1.5 * work[pingPong] < work[4 * (n - 1) + pingPong]) {\n            // flip array\n            int j = 4 * n - 1;\n            for (int i = 0; i < j; i += 4) {\n                for (int k = 0; k < 4; k += step) {\n                    final double tmp = work[i + k];\n                    work[i + k] = work[j - k];\n                    work[j - k] = tmp;\n                }\n                j -= 4;\n            }\n            return true;\n        }\n        return false;\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": []
+    }
+  ],
+  "package": "org.apache.commons.math.linear",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.util.ArrayList;",
+    "import java.util.Arrays;",
+    "import java.util.List;",
+    "import org.apache.commons.math.MathRuntimeException;",
+    "import org.apache.commons.math.MaxIterationsExceededException;",
+    "import org.apache.commons.math.util.MathUtils;"
+  ]
+}
+No ground-truth crash input captured — prompt will fall back to test-source anchoring.
+  [semantic] lifting assertion from org.apache.commons.math.linear.EigenDecompositionImplTest::testMathpbx02
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.math.linear` (`package org.apache.commons.math.linear;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Math_80_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java	
++++ /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java
+@@ -1133,7 +1133,7 @@
+         if (1.5 * work[pingPong] < work[4 * (n - 1) + pingPong]) {
+             // flip array
+             int j = 4 * n - 1;
+-            for (int i = 0; i < j; i += 4) {
++            for (int i = 0; i > j; i += 4) {
+                 for (int k = 0; k < 4; k += step) {
+                     final double tmp = work[i + k];
+                     work[i + k] = work[j - k];
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.commons.math.MathRuntimeException;
+import org.apache.commons.math.MaxIterationsExceededException;
+import org.apache.commons.math.util.MathUtils;
+</source_imports>
+
+Function `flipIfWarranted`:
+<signature>
+private boolean flipIfWarranted(int n, int step)
+</signature>
+<code>
+    private boolean flipIfWarranted(final int n, final int step) {
+        if (1.5 * work[pingPong] < work[4 * (n - 1) + pingPong]) {
+            // flip array
+            int j = 4 * n - 1;
+            for (int i = 0; i < j; i += 4) {
+                for (int k = 0; k < 4; k += step) {
+                    final double tmp = work[i + k];
+                    work[i + k] = work[j - k];
+                    work[j - k] = tmp;
+                }
+                j -= 4;
+            }
+            return true;
+        }
+        return false;
+    }
+</code>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `EigenDecompositionImpl`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.apache.commons.math.linear.EigenDecompositionImplTest" method="testMathpbx02">
+    public void testMathpbx02() {
+
+        double[] mainTridiagonal = {
+        	  7484.860960227216, 18405.28129035345, 13855.225609560746,
+        	 10016.708722343366, 559.8117399576674, 6750.190788301587, 
+        	    71.21428769782159
+        };
+        double[] secondaryTridiagonal = {
+        	 -4175.088570476366,1975.7955858241994,5193.178422374075, 
+        	  1995.286659169179,75.34535882933804,-234.0808002076056
+        };
+
+        // the reference values have been computed using routine DSTEMR
+        // from the fortran library LAPACK version 3.2.1
+        double[] refEigenValues = {
+        		20654.744890306974412,16828.208208485466457,
+        		6893.155912634994820,6757.083016675340332,
+        		5887.799885688558788,64.309089923240379,
+        		57.992628792736340
+        };
+        RealVector[] refEigenVectors = {
+        		new ArrayRealVector(new double[] {-0.270356342026904, 0.852811091326997, 0.399639490702077, 0.198794657813990, 0.019739323307666, 0.000106983022327, -0.000001216636321}),
+        		new ArrayRealVector(new double[] {0.179995273578326,-0.402807848153042,0.701870993525734,0.555058211014888,0.068079148898236,0.000509139115227,-0.000007112235617}),
+        		new ArrayRealVector(new double[] {-0.399582721284727,-0.056629954519333,-0.514406488522827,0.711168164518580,0.225548081276367,0.125943999652923,-0.004321507456014}),
+        		new ArrayRealVector(new double[] {0.058515721572821,0.010200130057739,0.063516274916536,-0.090696087449378,-0.017148420432597,0.991318870265707,-0.034707338554096}),
+        		new ArrayRealVector(new double[] {0.855205995537564,0.327134656629775,-0.265382397060548,0.282690729026706,0.105736068025572,-0.009138126622039,0.000367751821196}),
+        		new ArrayRealVector(new double[] {-0.002913069901144,-0.005177515777101,0.041906334478672,-0.109315918416258,0.436192305456741,0.026307315639535,0.891797507436344}),
+        		new ArrayRealVector(new double[] {-0.005738311176435,-0.010207611670378,0.082662420517928,-0.215733886094368,0.861606487840411,-0.025478530652759,-0.451080697503958})
+        };
+
+        // the following line triggers the exception
+        EigenDecomposition decomposition =
+            new EigenDecompositionImpl(mainTridiagonal, secondaryTridiagonal, MathUtils.SAFE_MIN);
+
+        double[] eigenValues = decomposition.getRealEigenvalues();
+        for (int i = 0; i < refEigenValues.length; ++i) {
+            assertEquals(refEigenValues[i], eigenValues[i], 1.0e-3);
+            if (refEigenVectors[i].dotProduct(decomposition.getEigenvector(i)) < 0) {
+                assertEquals(0, refEigenVectors[i].add(decomposition.getEigenvector(i)).getNorm(), 1.0e-5);
+            } else {
+                assertEquals(0, refEigenVectors[i].subtract(decomposition.getEigenvector(i)).getNorm(), 1.0e-5);
+            }
+        }
+
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.math.linear;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+
+################################################
+  [semantic] lifting assertion from org.apache.commons.math.linear.EigenDecompositionImplTest::testMathpbx02
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.math.linear` (`package org.apache.commons.math.linear;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Math_80_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java	
++++ /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java
+@@ -1133,7 +1133,7 @@
+         if (1.5 * work[pingPong] < work[4 * (n - 1) + pingPong]) {
+             // flip array
+             int j = 4 * n - 1;
+-            for (int i = 0; i < j; i += 4) {
++            for (int i = 0; i > j; i += 4) {
+                 for (int k = 0; k < 4; k += step) {
+                     final double tmp = work[i + k];
+                     work[i + k] = work[j - k];
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.commons.math.MathRuntimeException;
+import org.apache.commons.math.MaxIterationsExceededException;
+import org.apache.commons.math.util.MathUtils;
+</source_imports>
+
+Function `flipIfWarranted`:
+<signature>
+private boolean flipIfWarranted(int n, int step)
+</signature>
+<code>
+    private boolean flipIfWarranted(final int n, final int step) {
+        if (1.5 * work[pingPong] < work[4 * (n - 1) + pingPong]) {
+            // flip array
+            int j = 4 * n - 1;
+            for (int i = 0; i < j; i += 4) {
+                for (int k = 0; k < 4; k += step) {
+                    final double tmp = work[i + k];
+                    work[i + k] = work[j - k];
+                    work[j - k] = tmp;
+                }
+                j -= 4;
+            }
+            return true;
+        }
+        return false;
+    }
+</code>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `EigenDecompositionImpl`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.apache.commons.math.linear.EigenDecompositionImplTest" method="testMathpbx02">
+    public void testMathpbx02() {
+
+        double[] mainTridiagonal = {
+        	  7484.860960227216, 18405.28129035345, 13855.225609560746,
+        	 10016.708722343366, 559.8117399576674, 6750.190788301587, 
+        	    71.21428769782159
+        };
+        double[] secondaryTridiagonal = {
+        	 -4175.088570476366,1975.7955858241994,5193.178422374075, 
+        	  1995.286659169179,75.34535882933804,-234.0808002076056
+        };
+
+        // the reference values have been computed using routine DSTEMR
+        // from the fortran library LAPACK version 3.2.1
+        double[] refEigenValues = {
+        		20654.744890306974412,16828.208208485466457,
+        		6893.155912634994820,6757.083016675340332,
+        		5887.799885688558788,64.309089923240379,
+        		57.992628792736340
+        };
+        RealVector[] refEigenVectors = {
+        		new ArrayRealVector(new double[] {-0.270356342026904, 0.852811091326997, 0.399639490702077, 0.198794657813990, 0.019739323307666, 0.000106983022327, -0.000001216636321}),
+        		new ArrayRealVector(new double[] {0.179995273578326,-0.402807848153042,0.701870993525734,0.555058211014888,0.068079148898236,0.000509139115227,-0.000007112235617}),
+        		new ArrayRealVector(new double[] {-0.399582721284727,-0.056629954519333,-0.514406488522827,0.711168164518580,0.225548081276367,0.125943999652923,-0.004321507456014}),
+        		new ArrayRealVector(new double[] {0.058515721572821,0.010200130057739,0.063516274916536,-0.090696087449378,-0.017148420432597,0.991318870265707,-0.034707338554096}),
+        		new ArrayRealVector(new double[] {0.855205995537564,0.327134656629775,-0.265382397060548,0.282690729026706,0.105736068025572,-0.009138126622039,0.000367751821196}),
+        		new ArrayRealVector(new double[] {-0.002913069901144,-0.005177515777101,0.041906334478672,-0.109315918416258,0.436192305456741,0.026307315639535,0.891797507436344}),
+        		new ArrayRealVector(new double[] {-0.005738311176435,-0.010207611670378,0.082662420517928,-0.215733886094368,0.861606487840411,-0.025478530652759,-0.451080697503958})
+        };
+
+        // the following line triggers the exception
+        EigenDecomposition decomposition =
+            new EigenDecompositionImpl(mainTridiagonal, secondaryTridiagonal, MathUtils.SAFE_MIN);
+
+        double[] eigenValues = decomposition.getRealEigenvalues();
+        for (int i = 0; i < refEigenValues.length; ++i) {
+            assertEquals(refEigenValues[i], eigenValues[i], 1.0e-3);
+            if (refEigenVectors[i].dotProduct(decomposition.getEigenvector(i)) < 0) {
+                assertEquals(0, refEigenVectors[i].add(decomposition.getEigenvector(i)).getNorm(), 1.0e-5);
+            } else {
+                assertEquals(0, refEigenVectors[i].subtract(decomposition.getEigenvector(i)).getNorm(), 1.0e-5);
+            }
+        }
+
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.math.linear;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+################################################
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+    return self._connection.handle_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+    raise exc
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 231, in _receive_event
+    raise RemoteProtocolError(msg)
+httpcore.RemoteProtocolError: Server disconnected without sending a response.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1037, in request
+    response = self._send_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_client.py", line 440, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_client.py", line 418, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 964, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+  File "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.RemoteProtocolError: Server disconnected without sending a response.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 448, in <module>
+    main()
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 341, in main
+    result = campaign.run(messages, selection.buggy_dir,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/java/campaign.py", line 189, in run
+    raw = self.generator.generate(current_messages)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/llm.py", line 119, in generate
+    result = self._client.chat.completions.create(**params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1215, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1332, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1072, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+  (no record emitted; retrying)
+[overfitting] run 2 (have 0/10 distinct) -> project Time

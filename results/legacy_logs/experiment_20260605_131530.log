@@ -1,0 +1,69 @@
+Started at: Fri Jun  5 13:15:30 BST 2026
+Log file: logs/experiment_20260605_131530.log
+
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.lang3.StringUtilsTest::testEscapeSurrogatePairs  [java.lang.StringIndexOutOfBoundsException]
+{
+  "modified_files": [
+    "src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java"
+  ],
+  "patch_text": "--- /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java\n+++ /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java\n@@ -92,7 +92,7 @@ public abstract class CharSequenceTranslator {\n //          // contract with translators is that they have to understand codepoints \n //          // and they just took care of a surrogate pair\n             for (int pt = 0; pt < consumed; pt++) {\n-                pos += Character.charCount(Character.codePointAt(input, pos));\n+                pos += Character.charCount(Character.codePointAt(input, true));\n             }\n         }\n     }",
+  "functions": [
+    {
+      "func_name": "translate",
+      "func_signature": "final public void translate(CharSequence input, Writer out) throws IOException",
+      "func_source": "    public final void translate(CharSequence input, Writer out) throws IOException {\n        if (out == null) {\n            throw new IllegalArgumentException(\"The Writer must not be null\");\n        }\n        if (input == null) {\n            return;\n        }\n        int pos = 0;\n        int len = input.length();\n        while (pos < len) {\n            int consumed = translate(input, pos, out);\n            if (consumed == 0) {\n                char[] c = Character.toChars(Character.codePointAt(input, pos));\n                out.write(c);\n                pos+= c.length;\n                continue;\n            }\n//          // contract with translators is that they have to understand codepoints \n//          // and they just took care of a surrogate pair\n            for (int pt = 0; pt < consumed; pt++) {\n                pos += Character.charCount(Character.codePointAt(input, pos));\n            }\n        }\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": [
+        {
+          "name": "translate",
+          "source_file": "CharSequenceTranslator.java",
+          "signature": "abstract public int translate(CharSequence input, int index, Writer out) throws IOException",
+          "source": "    public abstract int translate(CharSequence input, int index, Writer out) throws IOException;",
+          "is_abstract": true,
+          "impls": [
+            [
+              "AggregateTranslator.java",
+              "    public int translate(CharSequence input, int index, Writer out) throws IOException {\n        for (CharSequenceTranslator translator : translators) {\n            int consumed = translator.translate(input, index, out);\n            if(consumed != 0) {\n                return consumed;\n            }\n        }\n        return 0;\n    }"
+            ],
+            [
+              "CharSequenceTranslator.java",
+              "    public final String translate(CharSequence input) {\n        if (input == null) {\n            return null;\n        }\n        try {\n            StringWriter writer = new StringWriter(input.length() * 2);\n            translate(input, writer);\n            return writer.toString();\n        } catch (IOException ioe) {\n            // this should never ever happen while writing to a StringWriter\n            throw new RuntimeException(ioe);\n        }\n    }"
+            ],
+            [
+              "CodePointTranslator.java",
+              "    public final int translate(CharSequence input, int index, Writer out) throws IOException {\n        int codepoint = Character.codePointAt(input, index);\n        boolean consumed = translate(codepoint, out);\n        if (consumed) {\n            return 1;\n        } else {\n            return 0;\n        }\n    }"
+            ],
+            [
+              "LookupTranslator.java",
+              "    public int translate(CharSequence input, int index, Writer out) throws IOException {\n        int max = longest;\n        if (index + longest > input.length()) {\n            max = input.length() - index;\n        }\n        // descend so as to get a greedy algorithm\n        for (int i = max; i >= shortest; i--) {\n            CharSequence subSeq = input.subSequence(index, index + i);\n            CharSequence result = lookupMap.get(subSeq);\n            if (result != null) {\n                out.write(result.toString());\n                return i;\n            }\n        }\n        return 0;\n    }"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "package": "org.apache.commons.lang3.text.translate",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.io.IOException;",
+    "import java.io.StringWriter;",
+    "import java.io.Writer;",
+    "import java.util.Locale;"
+  ]
+}
+Captured ground-truth crash input:
+  throwable : java.lang.StringIndexOutOfBoundsException
+  message   : index 2,length 2
+  thrown_at : org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate(CharSequenceTranslator.java:95)
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 305, in <module>
+    main()
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 186, in main
+    messages = prompt_factory([], [])
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 176, in prompt_factory
+    return prompt_builder.build(
+           ^^^^^^^^^^^^^^^^^^^^^
+TypeError: PromptBuilder.build() got an unexpected keyword argument 'crash_input'

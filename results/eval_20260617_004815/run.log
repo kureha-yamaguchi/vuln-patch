@@ -1,0 +1,876 @@
+[overfitting] run 1 (have 0/10 distinct) -> project Closure
+Checking out 4597738e to /tmp/d4j/Closure_115_buggy........................ OK
+Init local repository...................................................... OK
+Tag post-fix revision...................................................... OK
+Run post-checkout hook..................................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Initialize fixed program version........................................... OK
+Apply patch................................................................ OK
+Initialize buggy program version........................................... OK
+Diff 4597738e:2d6e1c78..................................................... OK
+Apply patch................................................................ OK
+Tag pre-fix revision....................................................... OK
+Check out program version: Closure-115b.................................... OK
+Found 5 bug-triggering test(s):
+  ✓ com.google.javascript.jscomp.InlineFunctionsTest::testBug4944818  [junit.framework.AssertionFailedError]
+  ✓ com.google.javascript.jscomp.InlineFunctionsTest::testDoubleInlining1  [junit.framework.AssertionFailedError]
+  ✓ com.google.javascript.jscomp.InlineFunctionsTest::testNoInlineIfParametersModified8  [junit.framework.AssertionFailedError]
+  ✓ com.google.javascript.jscomp.InlineFunctionsTest::testNoInlineIfParametersModified9  [junit.framework.AssertionFailedError]
+  ✓ com.google.javascript.jscomp.InlineFunctionsTest::testInlineFunctions6  [junit.framework.AssertionFailedError]
+
+Closure 115 (ssFix) is not a crashing bug (trigger test fails on an assertion, or its failure type could not be determined) — out of scope for the crash pipeline. Skipping.
+  skipped (non_crashing)
+[overfitting] run 2 (have 0/10 distinct) -> project Math
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.math.linear.EigenDecompositionImplTest::testMath308  [java.lang.ArrayIndexOutOfBoundsException]
+{
+  "modified_files": [
+    "src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java"
+  ],
+  "patch_text": "--- /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java\t\n+++ /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java\n@@ -1534,7 +1534,7 @@\n                 double b1 = work[np - 2];\n                 double b2 = work[np - 6];\n                 final double gam = dN2;\n-                if (work[np - 8] > b2 || work[np - 4] > b1) {\n+                if(b2>0.0&&b2>b2*b1/(1+b2*b2)){\n                     return;\n                 }\n                 double a2 = (work[np - 8] / b2) * (1 + work[np - 4] / b1);\n",
+  "functions": [
+    {
+      "func_name": "computeShiftIncrement",
+      "func_signature": "private void computeShiftIncrement(int start, int end, int deflated)",
+      "func_source": "    private void computeShiftIncrement(final int start, final int end, final int deflated) {\n\n        final double cnst1 = 0.563;\n        final double cnst2 = 1.010;\n        final double cnst3 = 1.05;\n\n        // a negative dMin forces the shift to take that absolute value\n        // tType records the type of shift.\n        if (dMin <= 0.0) {\n            tau = -dMin;\n            tType = -1;\n            return;\n        }\n\n        int nn = 4 * end + pingPong - 1;\n        switch (deflated) {\n\n        case 0 : // no realEigenvalues deflated.\n            if (dMin == dN || dMin == dN1) {\n\n                double b1 = Math.sqrt(work[nn - 3]) * Math.sqrt(work[nn - 5]);\n                double b2 = Math.sqrt(work[nn - 7]) * Math.sqrt(work[nn - 9]);\n                double a2 = work[nn - 7] + work[nn - 5];\n\n                if (dMin == dN && dMin1 == dN1) {\n                    // cases 2 and 3.\n                    final double gap2 = dMin2 - a2 - dMin2 * 0.25;\n                    final double gap1 = a2 - dN - ((gap2 > 0.0 && gap2 > b2) ? (b2 / gap2) * b2 : (b1 + b2));\n                    if (gap1 > 0.0 && gap1 > b1) {\n                        tau   = Math.max(dN - (b1 / gap1) * b1, 0.5 * dMin);\n                        tType = -2;\n                    } else {\n                        double s = 0.0;\n                        if (dN > b1) {\n                            s = dN - b1;\n                        }\n                        if (a2 > (b1 + b2)) {\n                            s = Math.min(s, a2 - (b1 + b2));\n                        }\n                        tau   = Math.max(s, 0.333 * dMin);\n                        tType = -3;\n                    }\n                } else {\n                    // case 4.\n                    tType = -4;\n                    double s = 0.25 * dMin;\n                    double gam;\n                    int np;\n                    if (dMin == dN) {\n                        gam = dN;\n                        a2 = 0.0;\n                        if (work[nn - 5]  >  work[nn - 7]) {\n                            return;\n                        }\n                        b2 = work[nn - 5] / work[nn - 7];\n                        np = nn - 9;\n                    } else {\n                        np = nn - 2 * pingPong;\n                        b2 = work[np - 2];\n                        gam = dN1;\n                        if (work[np - 4]  >  work[np - 2]) {\n                            return;\n                        }\n                        a2 = work[np - 4] / work[np - 2];\n                        if (work[nn - 9]  >  work[nn - 11]) {\n                            return;\n                        }\n                        b2 = work[nn - 9] / work[nn - 11];\n                        np = nn - 13;\n                    }\n\n                    // approximate contribution to norm squared from i < nn-1.\n                    a2 = a2 + b2;\n                    for (int i4 = np; i4 >= 4 * start + 2 + pingPong; i4 -= 4) {\n                        if(b2 == 0.0) {\n                            break;\n                        }\n                        b1 = b2;\n                        if (work[i4]  >  work[i4 - 2]) {\n                            return;\n                        }\n                        b2 = b2 * (work[i4] / work[i4 - 2]);\n                        a2 = a2 + b2;\n                        if (100 * Math.max(b2, b1) < a2 || cnst1 < a2) {\n                            break;\n                        }\n                    }\n                    a2 = cnst3 * a2;\n\n                    // rayleigh quotient residual bound.\n                    if (a2 < cnst1) {\n                        s = gam * (1 - Math.sqrt(a2)) / (1 + a2);\n                    }\n                    tau = s;\n\n                }\n            } else if (dMin == dN2) {\n\n                // case 5.\n                tType = -5;\n                double s = 0.25 * dMin;\n\n                // compute contribution to norm squared from i > nn-2.\n                final int np = nn - 2 * pingPong;\n                double b1 = work[np - 2];\n                double b2 = work[np - 6];\n                final double gam = dN2;\n                if (work[np - 8] > b2 || work[np - 4] > b1) {\n                    return;\n                }\n                double a2 = (work[np - 8] / b2) * (1 + work[np - 4] / b1);\n\n                // approximate contribution to norm squared from i < nn-2.\n                if (end - start > 2) {\n                    b2 = work[nn - 13] / work[nn - 15];\n                    a2 = a2 + b2;\n                    for (int i4 = nn - 17; i4 >= 4 * start + 2 + pingPong; i4 -= 4) {\n                        if (b2 == 0.0) {\n                            break;\n                        }\n                        b1 = b2;\n                        if (work[i4]  >  work[i4 - 2]) {\n                            return;\n                        }\n                        b2 = b2 * (work[i4] / work[i4 - 2]);\n                        a2 = a2 + b2;\n                        if (100 * Math.max(b2, b1) < a2 || cnst1 < a2)  {\n                            break;\n                        }\n                    }\n                    a2 = cnst3 * a2;\n                }\n\n                if (a2 < cnst1) {\n                    tau = gam * (1 - Math.sqrt(a2)) / (1 + a2);\n                } else {\n                    tau = s;\n                }\n\n            } else {\n\n                // case 6, no information to guide us.\n                if (tType == -6) {\n                    g += 0.333 * (1 - g);\n                } else if (tType == -18) {\n                    g = 0.25 * 0.333;\n                } else {\n                    g = 0.25;\n                }\n                tau   = g * dMin;\n                tType = -6;\n\n            }\n            break;\n\n        case 1 : // one eigenvalue just deflated. use dMin1, dN1 for dMin and dN.\n            if (dMin1 == dN1 && dMin2 == dN2) {\n\n                // cases 7 and 8.\n                tType = -7;\n                double s = 0.333 * dMin1;\n                if (work[nn - 5] > work[nn - 7]) {\n                    return;\n                }\n                double b1 = work[nn - 5] / work[nn - 7];\n                double b2 = b1;\n                if (b2 != 0.0) {\n                    for (int i4 = 4 * end - 10 + pingPong; i4 >= 4 * start + 2 + pingPong; i4 -= 4) {\n                        final double oldB1 = b1;\n                        if (work[i4] > work[i4 - 2]) {\n                            return;\n                        }\n                        b1 = b1 * (work[i4] / work[i4 - 2]);\n                        b2 = b2 + b1;\n                        if (100 * Math.max(b1, oldB1) < b2) {\n                            break;\n                        }\n                    }\n                }\n                b2 = Math.sqrt(cnst3 * b2);\n                final double a2 = dMin1 / (1 + b2 * b2);\n                final double gap2 = 0.5 * dMin2 - a2;\n                if (gap2 > 0.0 && gap2 > b2 * a2) {\n                    tau = Math.max(s, a2 * (1 - cnst2 * a2 * (b2 / gap2) * b2));\n                } else {\n                    tau = Math.max(s, a2 * (1 - cnst2 * b2));\n                    tType = -8;\n                }\n            } else {\n\n                // case 9.\n                tau = 0.25 * dMin1;\n                if (dMin1 == dN1) {\n                    tau = 0.5 * dMin1;\n                }\n                tType = -9;\n            }\n            break;\n\n        case 2 : // two realEigenvalues deflated. use dMin2, dN2 for dMin and dN.\n\n            // cases 10 and 11.\n            if (dMin2 == dN2 && 2 * work[nn - 5] < work[nn - 7]) {\n                tType = -10;\n                final double s = 0.333 * dMin2;\n                if (work[nn - 5] > work[nn - 7]) {\n                    return;\n                }\n                double b1 = work[nn - 5] / work[nn - 7];\n                double b2 = b1;\n                if (b2 != 0.0){\n                    for (int i4 = 4 * end - 9 + pingPong; i4 >= 4 * start + 2 + pingPong; i4 -= 4) {\n                        if (work[i4] > work[i4 - 2]) {\n                            return;\n                        }\n                        b1 *= work[i4] / work[i4 - 2];\n                        b2 += b1;\n                        if (100 * b1 < b2) {\n                            break;\n                        }\n                    }\n                }\n                b2 = Math.sqrt(cnst3 * b2);\n                final double a2 = dMin2 / (1 + b2 * b2);\n                final double gap2 = work[nn - 7] + work[nn - 9] -\n                Math.sqrt(work[nn - 11]) * Math.sqrt(work[nn - 9]) - a2;\n                if (gap2 > 0.0 && gap2 > b2 * a2) {\n                    tau = Math.max(s, a2 * (1 - cnst2 * a2 * (b2 / gap2) * b2));\n                } else {\n                    tau = Math.max(s, a2 * (1 - cnst2 * b2));\n                }\n            } else {\n                tau   = 0.25 * dMin2;\n                tType = -11;\n            }\n            break;\n\n        default : // case 12, more than two realEigenvalues deflated. no information.\n            tau   = 0.0;\n            tType = -12;\n        }\n\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": []
+    }
+  ],
+  "package": "org.apache.commons.math.linear",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.util.ArrayList;",
+    "import java.util.Arrays;",
+    "import java.util.List;",
+    "import org.apache.commons.math.MathRuntimeException;",
+    "import org.apache.commons.math.MaxIterationsExceededException;",
+    "import org.apache.commons.math.util.MathUtils;"
+  ]
+}
+Captured ground-truth crash input:
+  throwable : java.lang.ArrayIndexOutOfBoundsException
+  message   : Index -1 out of bounds for length 30
+  thrown_at : org.apache.commons.math.linear.EigenDecompositionImpl.computeShiftIncrement(EigenDecompositionImpl.java:1544)
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.math.linear` (`package org.apache.commons.math.linear;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Math_81_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java	
++++ /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java
+@@ -1534,7 +1534,7 @@
+                 double b1 = work[np - 2];
+                 double b2 = work[np - 6];
+                 final double gam = dN2;
+-                if (work[np - 8] > b2 || work[np - 4] > b1) {
++                if(b2>0.0&&b2>b2*b1/(1+b2*b2)){
+                     return;
+                 }
+                 double a2 = (work[np - 8] / b2) * (1 + work[np - 4] / b1);
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.commons.math.MathRuntimeException;
+import org.apache.commons.math.MaxIterationsExceededException;
+import org.apache.commons.math.util.MathUtils;
+</source_imports>
+
+Function `computeShiftIncrement`:
+<signature>
+private void computeShiftIncrement(int start, int end, int deflated)
+</signature>
+<code>
+    private void computeShiftIncrement(final int start, final int end, final int deflated) {
+
+        final double cnst1 = 0.563;
+        final double cnst2 = 1.010;
+        final double cnst3 = 1.05;
+
+        // a negative dMin forces the shift to take that absolute value
+        // tType records the type of shift.
+        if (dMin <= 0.0) {
+            tau = -dMin;
+            tType = -1;
+            return;
+        }
+
+        int nn = 4 * end + pingPong - 1;
+        switch (deflated) {
+
+        case 0 : // no realEigenvalues deflated.
+            if (dMin == dN || dMin == dN1) {
+
+                double b1 = Math.sqrt(work[nn - 3]) * Math.sqrt(work[nn - 5]);
+                double b2 = Math.sqrt(work[nn - 7]) * Math.sqrt(work[nn - 9]);
+                double a2 = work[nn - 7] + work[nn - 5];
+
+                if (dMin == dN && dMin1 == dN1) {
+                    // cases 2 and 3.
+                    final double gap2 = dMin2 - a2 - dMin2 * 0.25;
+                    final double gap1 = a2 - dN - ((gap2 > 0.0 && gap2 > b2) ? (b2 / gap2) * b2 : (b1 + b2));
+                    if (gap1 > 0.0 && gap1 > b1) {
+                        tau   = Math.max(dN - (b1 / gap1) * b1, 0.5 * dMin);
+                        tType = -2;
+                    } else {
+                        double s = 0.0;
+                        if (dN > b1) {
+                            s = dN - b1;
+                        }
+                        if (a2 > (b1 + b2)) {
+                            s = Math.min(s, a2 - (b1 + b2));
+                        }
+                        tau   = Math.max(s, 0.333 * dMin);
+                        tType = -3;
+                    }
+                } else {
+                    // case 4.
+                    tType = -4;
+                    double s = 0.25 * dMin;
+                    double gam;
+                    int np;
+                    if (dMin == dN) {
+                        gam = dN;
+                        a2 = 0.0;
+                        if (work[nn - 5]  >  work[nn - 7]) {
+                            return;
+                        }
+                        b2 = work[nn - 5] / work[nn - 7];
+                        np = nn - 9;
+                    } else {
+                        np = nn - 2 * pingPong;
+                        b2 = work[np - 2];
+                        gam = dN1;
+                        if (work[np - 4]  >  work[np - 2]) {
+                            return;
+                        }
+                        a2 = work[np - 4] / work[np - 2];
+                        if (work[nn - 9]  >  work[nn - 11]) {
+                            return;
+                        }
+                        b2 = work[nn - 9] / work[nn - 11];
+                        np = nn - 13;
+                    }
+
+                    // approximate contribution to norm squared from i < nn-1.
+                    a2 = a2 + b2;
+                    for (int i4 = np; i4 >= 4 * start + 2 + pingPong; i4 -= 4) {
+                        if(b2 == 0.0) {
+                            break;
+                        }
+                        b1 = b2;
+                        if (work[i4]  >  work[i4 - 2]) {
+                            return;
+                        }
+                        b2 = b2 * (work[i4] / work[i4 - 2]);
+                        a2 = a2 + b2;
+                        if (100 * Math.max(b2, b1) < a2 || cnst1 < a2) {
+                            break;
+                        }
+                    }
+                    a2 = cnst3 * a2;
+
+                    // rayleigh quotient residual bound.
+                    if (a2 < cnst1) {
+                        s = gam * (1 - Math.sqrt(a2)) / (1 + a2);
+                    }
+                    tau = s;
+
+                }
+            } else if (dMin == dN2) {
+
+                // case 5.
+                tType = -5;
+                double s = 0.25 * dMin;
+
+                // compute contribution to norm squared from i > nn-2.
+                final int np = nn - 2 * pingPong;
+                double b1 = work[np - 2];
+                double b2 = work[np - 6];
+                final double gam = dN2;
+                if (work[np - 8] > b2 || work[np - 4] > b1) {
+                    return;
+                }
+                double a2 = (work[np - 8] / b2) * (1 + work[np - 4] / b1);
+
+                // approximate contribution to norm squared from i < nn-2.
+                if (end - start > 2) {
+                    b2 = work[nn - 13] / work[nn - 15];
+                    a2 = a2 + b2;
+                    for (int i4 = nn - 17; i4 >= 4 * start + 2 + pingPong; i4 -= 4) {
+                        if (b2 == 0.0) {
+                            break;
+                        }
+                        b1 = b2;
+                        if (work[i4]  >  work[i4 - 2]) {
+                            return;
+                        }
+                        b2 = b2 * (work[i4] / work[i4 - 2]);
+                        a2 = a2 + b2;
+                        if (100 * Math.max(b2, b1) < a2 || cnst1 < a2)  {
+                            break;
+                        }
+                    }
+                    a2 = cnst3 * a2;
+                }
+
+                if (a2 < cnst1) {
+                    tau = gam * (1 - Math.sqrt(a2)) / (1 + a2);
+                } else {
+                    tau = s;
+                }
+
+            } else {
+
+                // case 6, no information to guide us.
+                if (tType == -6) {
+                    g += 0.333 * (1 - g);
+                } else if (tType == -18) {
+                    g = 0.25 * 0.333;
+                } else {
+                    g = 0.25;
+                }
+                tau   = g * dMin;
+                tType = -6;
+
+            }
+            break;
+
+        case 1 : // one eigenvalue just deflated. use dMin1, dN1 for dMin and dN.
+            if (dMin1 == dN1 && dMin2 == dN2) {
+
+                // cases 7 and 8.
+                tType = -7;
+                double s = 0.333 * dMin1;
+                if (work[nn - 5] > work[nn - 7]) {
+                    return;
+                }
+                double b1 = work[nn - 5] / work[nn - 7];
+                double b2 = b1;
+                if (b2 != 0.0) {
+                    for (int i4 = 4 * end - 10 + pingPong; i4 >= 4 * start + 2 + pingPong; i4 -= 4) {
+                        final double oldB1 = b1;
+                        if (work[i4] > work[i4 - 2]) {
+                            return;
+                        }
+                        b1 = b1 * (work[i4] / work[i4 - 2]);
+                        b2 = b2 + b1;
+                        if (100 * Math.max(b1, oldB1) < b2) {
+                            break;
+                        }
+                    }
+                }
+                b2 = Math.sqrt(cnst3 * b2);
+                final double a2 = dMin1 / (1 + b2 * b2);
+                final double gap2 = 0.5 * dMin2 - a2;
+                if (gap2 > 0.0 && gap2 > b2 * a2) {
+                    tau = Math.max(s, a2 * (1 - cnst2 * a2 * (b2 / gap2) * b2));
+                } else {
+                    tau = Math.max(s, a2 * (1 - cnst2 * b2));
+                    tType = -8;
+                }
+            } else {
+
+                // case 9.
+                tau = 0.25 * dMin1;
+                if (dMin1 == dN1) {
+                    tau = 0.5 * dMin1;
+                }
+                tType = -9;
+            }
+            break;
+
+        case 2 : // two realEigenvalues deflated. use dMin2, dN2 for dMin and dN.
+
+            // cases 10 and 11.
+            if (dMin2 == dN2 && 2 * work[nn - 5] < work[nn - 7]) {
+                tType = -10;
+                final double s = 0.333 * dMin2;
+                if (work[nn - 5] > work[nn - 7]) {
+                    return;
+                }
+                double b1 = work[nn - 5] / work[nn - 7];
+                double b2 = b1;
+                if (b2 != 0.0){
+                    for (int i4 = 4 * end - 9 + pingPong; i4 >= 4 * start + 2 + pingPong; i4 -= 4) {
+                        if (work[i4] > work[i4 - 2]) {
+                            return;
+                        }
+                        b1 *= work[i4] / work[i4 - 2];
+                        b2 += b1;
+                        if (100 * b1 < b2) {
+                            break;
+                        }
+                    }
+                }
+                b2 = Math.sqrt(cnst3 * b2);
+                final double a2 = dMin2 / (1 + b2 * b2);
+                final double gap2 = work[nn - 7] + work[nn - 9] -
+                Math.sqrt(work[nn - 11]) * Math.sqrt(work[nn - 9]) - a2;
+                if (gap2 > 0.0 && gap2 > b2 * a2) {
+                    tau = Math.max(s, a2 * (1 - cnst2 * a2 * (b2 / gap2) * b2));
+                } else {
+                    tau = Math.max(s, a2 * (1 - cnst2 * b2));
+                }
+            } else {
+                tau   = 0.25 * dMin2;
+                tType = -11;
+            }
+            break;
+
+        default : // case 12, more than two realEigenvalues deflated. no information.
+            tau   = 0.0;
+            tType = -12;
+        }
+
+    }
+</code>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: identify the input PROPERTY that triggers the patched line (the root cause), then use FuzzedDataProvider to generate many varied REAL inputs that satisfy that property — different lengths, positions, and surrounding content — and drive them all through the real entry point. You are testing whether the patch fixes the root cause for ALL such inputs, not just the seed; overfitting patches special-case the seed.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `EigenDecompositionImpl`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+On the buggy version the root cause surfaces as: java.lang.ArrayIndexOutOfBoundsException (or a sibling failure with a different signature). Your harness must distinguish a genuine defect from the patch doing its job:
+  - The fixed code is SUPPOSED to reject invalid input cleanly. Any throwable that is a deliberate, documented rejection of bad input (a validation exception the API declares or is expected to raise for that input) is CORRECT post-fix behaviour — CATCH it inside fuzzerTestOneInput and return normally. Do not let it escape.
+  - Only let a throwable propagate uncaught when it signals the ROOT CAUSE itself: the code failing internally instead of guarding the input — e.g. an out-of-bounds access, NPE, arithmetic error, infinite loop, or a corrupted result deep inside the library, rather than a clean rejection at the boundary.
+Rule of thumb: if a careful, correct version of this method would still throw that exception for that input, it is NOT a bug — swallow it. If the throw means the method lost control of its own invariants, let it propagate.
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.ArrayIndexOutOfBoundsException
+message: Index -1 out of bounds for length 30
+thrown_at: org.apache.commons.math.linear.EigenDecompositionImpl.computeShiftIncrement(EigenDecompositionImpl.java:1544)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.math.linear.EigenDecompositionImplTest" method="testMath308">
+    public void testMath308() {
+
+        double[] mainTridiagonal = {
+            22.330154644539597, 46.65485522478641, 17.393672330044705, 54.46687435351116, 80.17800767709437
+        };
+        double[] secondaryTridiagonal = {
+            13.04450406501361, -5.977590941539671, 2.9040909856707517, 7.1570352792841225
+        };
+
+        // the reference values have been computed using routine DSTEMR
+        // from the fortran library LAPACK version 3.2.1
+        double[] refEigenValues = {
+            82.044413207204002, 53.456697699894512, 52.536278520113882, 18.847969733754262, 14.138204224043099
+        };
+        RealVector[] refEigenVectors = {
+            new ArrayRealVector(new double[] { -0.000462690386766, -0.002118073109055,  0.011530080757413,  0.252322434584915,  0.967572088232592 }),
+            new ArrayRealVector(new double[] {  0.314647769490148,  0.750806415553905, -0.167700312025760, -0.537092972407375,  0.143854968127780 }),
+            new ArrayRealVector(new double[] {  0.222368839324646,  0.514921891363332, -0.021377019336614,  0.801196801016305, -0.207446991247740 }),
+            new ArrayRealVector(new double[] {  0.713933751051495, -0.190582113553930,  0.671410443368332, -0.056056055955050,  0.006541576993581 }),
+            new ArrayRealVector(new double[] {  0.584677060845929, -0.367177264979103, -0.721453187784497,  0.052971054621812, -0.005740715188257 })
+        };
+
+        EigenDecomposition decomposition =
+            new EigenDecompositionI
+        // ... (truncated)
+</failing_test>
+
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.math.linear;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+
+################################################
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.math.linear` (`package org.apache.commons.math.linear;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Math_81_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java	
++++ /src/main/java/org/apache/commons/math/linear/EigenDecompositionImpl.java
+@@ -1534,7 +1534,7 @@
+                 double b1 = work[np - 2];
+                 double b2 = work[np - 6];
+                 final double gam = dN2;
+-                if (work[np - 8] > b2 || work[np - 4] > b1) {
++                if(b2>0.0&&b2>b2*b1/(1+b2*b2)){
+                     return;
+                 }
+                 double a2 = (work[np - 8] / b2) * (1 + work[np - 4] / b1);
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.commons.math.MathRuntimeException;
+import org.apache.commons.math.MaxIterationsExceededException;
+import org.apache.commons.math.util.MathUtils;
+</source_imports>
+
+Function `computeShiftIncrement`:
+<signature>
+private void computeShiftIncrement(int start, int end, int deflated)
+</signature>
+<code>
+    private void computeShiftIncrement(final int start, final int end, final int deflated) {
+
+        final double cnst1 = 0.563;
+        final double cnst2 = 1.010;
+        final double cnst3 = 1.05;
+
+        // a negative dMin forces the shift to take that absolute value
+        // tType records the type of shift.
+        if (dMin <= 0.0) {
+            tau = -dMin;
+            tType = -1;
+            return;
+        }
+
+        int nn = 4 * end + pingPong - 1;
+        switch (deflated) {
+
+        case 0 : // no realEigenvalues deflated.
+            if (dMin == dN || dMin == dN1) {
+
+                double b1 = Math.sqrt(work[nn - 3]) * Math.sqrt(work[nn - 5]);
+                double b2 = Math.sqrt(work[nn - 7]) * Math.sqrt(work[nn - 9]);
+                double a2 = work[nn - 7] + work[nn - 5];
+
+                if (dMin == dN && dMin1 == dN1) {
+                    // cases 2 and 3.
+                    final double gap2 = dMin2 - a2 - dMin2 * 0.25;
+                    final double gap1 = a2 - dN - ((gap2 > 0.0 && gap2 > b2) ? (b2 / gap2) * b2 : (b1 + b2));
+                    if (gap1 > 0.0 && gap1 > b1) {
+                        tau   = Math.max(dN - (b1 / gap1) * b1, 0.5 * dMin);
+                        tType = -2;
+                    } else {
+                        double s = 0.0;
+                        if (dN > b1) {
+                            s = dN - b1;
+                        }
+                        if (a2 > (b1 + b2)) {
+                            s = Math.min(s, a2 - (b1 + b2));
+                        }
+                        tau   = Math.max(s, 0.333 * dMin);
+                        tType = -3;
+                    }
+                } else {
+                    // case 4.
+                    tType = -4;
+                    double s = 0.25 * dMin;
+                    double gam;
+                    int np;
+                    if (dMin == dN) {
+                        gam = dN;
+                        a2 = 0.0;
+                        if (work[nn - 5]  >  work[nn - 7]) {
+                            return;
+                        }
+                        b2 = work[nn - 5] / work[nn - 7];
+                        np = nn - 9;
+                    } else {
+                        np = nn - 2 * pingPong;
+                        b2 = work[np - 2];
+                        gam = dN1;
+                        if (work[np - 4]  >  work[np - 2]) {
+                            return;
+                        }
+                        a2 = work[np - 4] / work[np - 2];
+                        if (work[nn - 9]  >  work[nn - 11]) {
+                            return;
+                        }
+                        b2 = work[nn - 9] / work[nn - 11];
+                        np = nn - 13;
+                    }
+
+                    // approximate contribution to norm squared from i < nn-1.
+                    a2 = a2 + b2;
+                    for (int i4 = np; i4 >= 4 * start + 2 + pingPong; i4 -= 4) {
+                        if(b2 == 0.0) {
+                            break;
+                        }
+                        b1 = b2;
+                        if (work[i4]  >  work[i4 - 2]) {
+                            return;
+                        }
+                        b2 = b2 * (work[i4] / work[i4 - 2]);
+                        a2 = a2 + b2;
+                        if (100 * Math.max(b2, b1) < a2 || cnst1 < a2) {
+                            break;
+                        }
+                    }
+                    a2 = cnst3 * a2;
+
+                    // rayleigh quotient residual bound.
+                    if (a2 < cnst1) {
+                        s = gam * (1 - Math.sqrt(a2)) / (1 + a2);
+                    }
+                    tau = s;
+
+                }
+            } else if (dMin == dN2) {
+
+                // case 5.
+                tType = -5;
+                double s = 0.25 * dMin;
+
+                // compute contribution to norm squared from i > nn-2.
+                final int np = nn - 2 * pingPong;
+                double b1 = work[np - 2];
+                double b2 = work[np - 6];
+                final double gam = dN2;
+                if (work[np - 8] > b2 || work[np - 4] > b1) {
+                    return;
+                }
+                double a2 = (work[np - 8] / b2) * (1 + work[np - 4] / b1);
+
+                // approximate contribution to norm squared from i < nn-2.
+                if (end - start > 2) {
+                    b2 = work[nn - 13] / work[nn - 15];
+                    a2 = a2 + b2;
+                    for (int i4 = nn - 17; i4 >= 4 * start + 2 + pingPong; i4 -= 4) {
+                        if (b2 == 0.0) {
+                            break;
+                        }
+                        b1 = b2;
+                        if (work[i4]  >  work[i4 - 2]) {
+                            return;
+                        }
+                        b2 = b2 * (work[i4] / work[i4 - 2]);
+                        a2 = a2 + b2;
+                        if (100 * Math.max(b2, b1) < a2 || cnst1 < a2)  {
+                            break;
+                        }
+                    }
+                    a2 = cnst3 * a2;
+                }
+
+                if (a2 < cnst1) {
+                    tau = gam * (1 - Math.sqrt(a2)) / (1 + a2);
+                } else {
+                    tau = s;
+                }
+
+            } else {
+
+                // case 6, no information to guide us.
+                if (tType == -6) {
+                    g += 0.333 * (1 - g);
+                } else if (tType == -18) {
+                    g = 0.25 * 0.333;
+                } else {
+                    g = 0.25;
+                }
+                tau   = g * dMin;
+                tType = -6;
+
+            }
+            break;
+
+        case 1 : // one eigenvalue just deflated. use dMin1, dN1 for dMin and dN.
+            if (dMin1 == dN1 && dMin2 == dN2) {
+
+                // cases 7 and 8.
+                tType = -7;
+                double s = 0.333 * dMin1;
+                if (work[nn - 5] > work[nn - 7]) {
+                    return;
+                }
+                double b1 = work[nn - 5] / work[nn - 7];
+                double b2 = b1;
+                if (b2 != 0.0) {
+                    for (int i4 = 4 * end - 10 + pingPong; i4 >= 4 * start + 2 + pingPong; i4 -= 4) {
+                        final double oldB1 = b1;
+                        if (work[i4] > work[i4 - 2]) {
+                            return;
+                        }
+                        b1 = b1 * (work[i4] / work[i4 - 2]);
+                        b2 = b2 + b1;
+                        if (100 * Math.max(b1, oldB1) < b2) {
+                            break;
+                        }
+                    }
+                }
+                b2 = Math.sqrt(cnst3 * b2);
+                final double a2 = dMin1 / (1 + b2 * b2);
+                final double gap2 = 0.5 * dMin2 - a2;
+                if (gap2 > 0.0 && gap2 > b2 * a2) {
+                    tau = Math.max(s, a2 * (1 - cnst2 * a2 * (b2 / gap2) * b2));
+                } else {
+                    tau = Math.max(s, a2 * (1 - cnst2 * b2));
+                    tType = -8;
+                }
+            } else {
+
+                // case 9.
+                tau = 0.25 * dMin1;
+                if (dMin1 == dN1) {
+                    tau = 0.5 * dMin1;
+                }
+                tType = -9;
+            }
+            break;
+
+        case 2 : // two realEigenvalues deflated. use dMin2, dN2 for dMin and dN.
+
+            // cases 10 and 11.
+            if (dMin2 == dN2 && 2 * work[nn - 5] < work[nn - 7]) {
+                tType = -10;
+                final double s = 0.333 * dMin2;
+                if (work[nn - 5] > work[nn - 7]) {
+                    return;
+                }
+                double b1 = work[nn - 5] / work[nn - 7];
+                double b2 = b1;
+                if (b2 != 0.0){
+                    for (int i4 = 4 * end - 9 + pingPong; i4 >= 4 * start + 2 + pingPong; i4 -= 4) {
+                        if (work[i4] > work[i4 - 2]) {
+                            return;
+                        }
+                        b1 *= work[i4] / work[i4 - 2];
+                        b2 += b1;
+                        if (100 * b1 < b2) {
+                            break;
+                        }
+                    }
+                }
+                b2 = Math.sqrt(cnst3 * b2);
+                final double a2 = dMin2 / (1 + b2 * b2);
+                final double gap2 = work[nn - 7] + work[nn - 9] -
+                Math.sqrt(work[nn - 11]) * Math.sqrt(work[nn - 9]) - a2;
+                if (gap2 > 0.0 && gap2 > b2 * a2) {
+                    tau = Math.max(s, a2 * (1 - cnst2 * a2 * (b2 / gap2) * b2));
+                } else {
+                    tau = Math.max(s, a2 * (1 - cnst2 * b2));
+                }
+            } else {
+                tau   = 0.25 * dMin2;
+                tType = -11;
+            }
+            break;
+
+        default : // case 12, more than two realEigenvalues deflated. no information.
+            tau   = 0.0;
+            tType = -12;
+        }
+
+    }
+</code>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: identify the input PROPERTY that triggers the patched line (the root cause), then use FuzzedDataProvider to generate many varied REAL inputs that satisfy that property — different lengths, positions, and surrounding content — and drive them all through the real entry point. You are testing whether the patch fixes the root cause for ALL such inputs, not just the seed; overfitting patches special-case the seed.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `EigenDecompositionImpl`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+On the buggy version the root cause surfaces as: java.lang.ArrayIndexOutOfBoundsException (or a sibling failure with a different signature). Your harness must distinguish a genuine defect from the patch doing its job:
+  - The fixed code is SUPPOSED to reject invalid input cleanly. Any throwable that is a deliberate, documented rejection of bad input (a validation exception the API declares or is expected to raise for that input) is CORRECT post-fix behaviour — CATCH it inside fuzzerTestOneInput and return normally. Do not let it escape.
+  - Only let a throwable propagate uncaught when it signals the ROOT CAUSE itself: the code failing internally instead of guarding the input — e.g. an out-of-bounds access, NPE, arithmetic error, infinite loop, or a corrupted result deep inside the library, rather than a clean rejection at the boundary.
+Rule of thumb: if a careful, correct version of this method would still throw that exception for that input, it is NOT a bug — swallow it. If the throw means the method lost control of its own invariants, let it propagate.
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.ArrayIndexOutOfBoundsException
+message: Index -1 out of bounds for length 30
+thrown_at: org.apache.commons.math.linear.EigenDecompositionImpl.computeShiftIncrement(EigenDecompositionImpl.java:1544)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.math.linear.EigenDecompositionImplTest" method="testMath308">
+    public void testMath308() {
+
+        double[] mainTridiagonal = {
+            22.330154644539597, 46.65485522478641, 17.393672330044705, 54.46687435351116, 80.17800767709437
+        };
+        double[] secondaryTridiagonal = {
+            13.04450406501361, -5.977590941539671, 2.9040909856707517, 7.1570352792841225
+        };
+
+        // the reference values have been computed using routine DSTEMR
+        // from the fortran library LAPACK version 3.2.1
+        double[] refEigenValues = {
+            82.044413207204002, 53.456697699894512, 52.536278520113882, 18.847969733754262, 14.138204224043099
+        };
+        RealVector[] refEigenVectors = {
+            new ArrayRealVector(new double[] { -0.000462690386766, -0.002118073109055,  0.011530080757413,  0.252322434584915,  0.967572088232592 }),
+            new ArrayRealVector(new double[] {  0.314647769490148,  0.750806415553905, -0.167700312025760, -0.537092972407375,  0.143854968127780 }),
+            new ArrayRealVector(new double[] {  0.222368839324646,  0.514921891363332, -0.021377019336614,  0.801196801016305, -0.207446991247740 }),
+            new ArrayRealVector(new double[] {  0.713933751051495, -0.190582113553930,  0.671410443368332, -0.056056055955050,  0.006541576993581 }),
+            new ArrayRealVector(new double[] {  0.584677060845929, -0.367177264979103, -0.721453187784497,  0.052971054621812, -0.005740715188257 })
+        };
+
+        EigenDecomposition decomposition =
+            new EigenDecompositionI
+        // ... (truncated)
+</failing_test>
+
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.math.linear;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+################################################
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 382, in <module>
+    main()
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 279, in main
+    result = campaign.run(messages, selection.buggy_dir,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/java/campaign.py", line 189, in run
+    raw = self.generator.generate(current_messages)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/llm.py", line 79, in generate
+    result = self._client.chat.completions.create(**params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1215, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1332, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1037, in request
+    response = self._send_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_client.py", line 440, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_client.py", line 418, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 964, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+    return self._connection.handle_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+    raise exc
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 217, in _receive_event
+    data = self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_backends/sync.py", line 128, in read
+    return self._sock.recv(max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+  (no record emitted; retrying)
+[overfitting] run 3 (have 0/10 distinct) -> project Closure
+Checking out b12d1d64 to /tmp/d4j/Closure_62_buggy......................... 

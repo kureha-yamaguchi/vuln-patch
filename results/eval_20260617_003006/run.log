@@ -1,0 +1,722 @@
+[overfitting] run 1 (have 0/10 distinct) -> project Lang
+Checking out b16235ad to /tmp/d4j/Lang_55_buggy............................ OK
+Init local repository...................................................... OK
+Tag post-fix revision...................................................... OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Rename enum package in src................................................. OK
+Move enum package in src................................................... OK
+Rename enum package in test................................................ OK
+Move enum package in test.................................................. OK
+Run post-checkout hook..................................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Backing up build file: /tmp/d4j/Lang_55_buggy/project.properties........... OK
+Backing up build file: /tmp/d4j/Lang_55_buggy/default.properties........... OK
+Initialize fixed program version........................................... OK
+Apply patch................................................................ OK
+Initialize buggy program version........................................... OK
+Diff b16235ad:de4952be..................................................... OK
+Apply patch................................................................ OK
+Tag pre-fix revision....................................................... OK
+Check out program version: Lang-55b........................................ OK
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.lang.time.StopWatchTest::testLang315  [junit.framework.AssertionFailedError]
+
+Lang 55 (Jaid) is not a crashing bug (trigger test fails on an assertion, or its failure type could not be determined) — out of scope for the crash pipeline. Skipping.
+  skipped (non_crashing)
+[overfitting] run 2 (have 0/10 distinct) -> project Time
+Checking out 3ba9ba79 to /tmp/d4j/Time_4_buggy............................. OK
+Init local repository...................................................... OK
+Tag post-fix revision...................................................... OK
+Apply patch................................................................ OK
+Copy generated Ant build file.............................................. OK
+Run post-checkout hook..................................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Backing up build file: /tmp/d4j/Time_4_buggy/maven-build.xml............... OK
+Initialize fixed program version........................................... OK
+Apply patch................................................................ OK
+Initialize buggy program version........................................... OK
+Diff 3ba9ba79:bcb04466..................................................... OK
+Apply patch................................................................ OK
+Tag pre-fix revision....................................................... OK
+Check out program version: Time-4b......................................... OK
+Found 1 bug-triggering test(s):
+  ✓ org.joda.time.TestPartial_Basics::testWith3  [junit.framework.AssertionFailedError]
+
+Time 4 (Arja) is not a crashing bug (trigger test fails on an assertion, or its failure type could not be determined) — out of scope for the crash pipeline. Skipping.
+  skipped (non_crashing)
+[overfitting] run 3 (have 0/10 distinct) -> project Time
+Checking out 57eb4cbb to /tmp/d4j/Time_11_buggy............................ OK
+Init local repository...................................................... OK
+Tag post-fix revision...................................................... OK
+Apply patch................................................................ OK
+Copy generated Ant build file.............................................. OK
+Run post-checkout hook..................................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Backing up build file: /tmp/d4j/Time_11_buggy/maven-build.xml.............. OK
+Initialize fixed program version........................................... OK
+Apply patch................................................................ OK
+Initialize buggy program version........................................... OK
+Diff 57eb4cbb:6d510475..................................................... OK
+Apply patch................................................................ OK
+Tag pre-fix revision....................................................... OK
+Check out program version: Time-11b........................................ OK
+Found 1 bug-triggering test(s):
+  ✓ org.joda.time.tz.TestCompiler::testDateTimeZoneBuilder  [junit.framework.AssertionFailedError]
+
+Time 11 (Arja) is not a crashing bug (trigger test fails on an assertion, or its failure type could not be determined) — out of scope for the crash pipeline. Skipping.
+  skipped (non_crashing)
+[overfitting] run 4 (have 0/10 distinct) -> project Time
+Found 1 bug-triggering test(s):
+  ✓ org.joda.time.tz.TestCompiler::testDateTimeZoneBuilder  [junit.framework.AssertionFailedError]
+
+Time 11 (Elixir) is not a crashing bug (trigger test fails on an assertion, or its failure type could not be determined) — out of scope for the crash pipeline. Skipping.
+  skipped (non_crashing)
+[overfitting] run 5 (have 0/10 distinct) -> project Math
+Checking out 38983e82 to /tmp/d4j/Math_82_buggy............................ OK
+Init local repository...................................................... OK
+Tag post-fix revision...................................................... OK
+Run post-checkout hook..................................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Initialize fixed program version........................................... OK
+Apply patch................................................................ OK
+Initialize buggy program version........................................... OK
+Diff 38983e82:dbdff075..................................................... OK
+Apply patch................................................................ OK
+Tag pre-fix revision....................................................... OK
+Check out program version: Math-82b........................................ OK
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.math.optimization.linear.SimplexSolverTest::testMath288  [junit.framework.AssertionFailedError]
+
+Math 82 (HDRepair) is not a crashing bug (trigger test fails on an assertion, or its failure type could not be determined) — out of scope for the crash pipeline. Skipping.
+  skipped (non_crashing)
+[overfitting] run 6 (have 0/10 distinct) -> project Math
+Checking out f4a4464b to /tmp/d4j/Math_70_buggy............................ OK
+Init local repository...................................................... OK
+Tag post-fix revision...................................................... OK
+Run post-checkout hook..................................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Initialize fixed program version........................................... OK
+Apply patch................................................................ OK
+Initialize buggy program version........................................... OK
+Diff f4a4464b:58f8b21d..................................................... OK
+Apply patch................................................................ OK
+Tag pre-fix revision....................................................... OK
+Check out program version: Math-70b........................................ OK
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.math.analysis.solvers.BisectionSolverTest::testMath369  [java.lang.NullPointerException]
+{
+  "modified_files": [
+    "src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java"
+  ],
+  "patch_text": "--- /src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java\t\n+++ /src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java\n@@ -69,7 +69,7 @@\n     /** {@inheritDoc} */\n     public double solve(final UnivariateRealFunction f, double min, double max, double initial)\n         throws MaxIterationsExceededException, FunctionEvaluationException {\n-        return solve(min, max);\n+        return solve(f, min, max);\n     }\n \n     /** {@inheritDoc} */\n@@ -88,7 +88,7 @@\n            fmin = f.value(min);\n            fm = f.value(m);\n \n-            if (fm * fmin > 0.0) {\n+            if (fm * fmin > 0.0||fmin == fm) {\n                 // max and m bracket the root.\n                 min = m;\n             } else {\n",
+  "functions": [
+    {
+      "func_name": "solve",
+      "func_signature": "public double solve(UnivariateRealFunction f, double min, double max) throws MaxIterationsExceededException, FunctionEvaluationException",
+      "func_source": "    public double solve(final UnivariateRealFunction f, double min, double max)\n        throws MaxIterationsExceededException, FunctionEvaluationException {\n\n        clearResult();\n        verifyInterval(min,max);\n        double m;\n        double fm;\n        double fmin;\n\n        int i = 0;\n        while (i < maximalIterationCount) {\n            m = UnivariateRealSolverUtils.midpoint(min, max);\n           fmin = f.value(min);\n           fm = f.value(m);\n\n            if (fm * fmin > 0.0) {\n                // max and m bracket the root.\n                min = m;\n            } else {\n                // min and m bracket the root.\n                max = m;\n            }\n\n            if (Math.abs(max - min) <= absoluteAccuracy) {\n                m = UnivariateRealSolverUtils.midpoint(min, max);\n                setResult(m, i);\n                return m;\n            }\n            ++i;\n        }\n\n        throw new MaxIterationsExceededException(maximalIterationCount);\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": [
+        {
+          "name": "clearResult",
+          "source_file": "UnivariateRealSolverImpl.java",
+          "signature": "final protected void clearResult()",
+          "source": "    protected final void clearResult() {\n        this.iterationCount = 0;\n        this.resultComputed = false;\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "verifyInterval",
+          "source_file": "UnivariateRealSolverImpl.java",
+          "signature": "protected void verifyInterval(double lower, double upper)",
+          "source": "    protected void verifyInterval(final double lower, final double upper) {\n        if (lower >= upper) {\n            throw MathRuntimeException.createIllegalArgumentException(\n                    \"endpoints do not specify an interval: [{0}, {1}]\",\n                    lower, upper);\n        }\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "midpoint",
+          "source_file": "UnivariateRealSolverUtils.java",
+          "signature": "public static double midpoint(double a, double b)",
+          "source": "    public static double midpoint(double a, double b) {\n        return (a + b) * .5;\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "setResult",
+          "source_file": "UnivariateRealSolverImpl.java",
+          "signature": "final protected void setResult(double newResult, int iterationCount)",
+          "source": "    protected final void setResult(final double newResult, final int iterationCount) {\n        this.result         = newResult;\n        this.iterationCount = iterationCount;\n        this.resultComputed = true;\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "UnivariateRealSolverImpl.java",
+              "    protected final void setResult(final double newResult, final int iterationCount) {\n        this.result         = newResult;\n        this.iterationCount = iterationCount;\n        this.resultComputed = true;\n    }"
+            ],
+            [
+              "UnivariateRealSolverImpl.java",
+              "    protected final void setResult(final double x, final double fx,\n                                   final int iterationCount) {\n        this.result         = x;\n        this.functionValue  = fx;\n        this.iterationCount = iterationCount;\n        this.resultComputed = true;\n    }"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "package": "org.apache.commons.math.analysis.solvers",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import org.apache.commons.math.FunctionEvaluationException;",
+    "import org.apache.commons.math.MaxIterationsExceededException;",
+    "import org.apache.commons.math.analysis.UnivariateRealFunction;"
+  ]
+}
+Captured ground-truth crash input:
+  throwable : java.lang.NullPointerException
+  thrown_at : org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:88)
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.math.analysis.solvers` (`package org.apache.commons.math.analysis.solvers;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Math_70_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java	
++++ /src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java
+@@ -69,7 +69,7 @@
+     /** {@inheritDoc} */
+     public double solve(final UnivariateRealFunction f, double min, double max, double initial)
+         throws MaxIterationsExceededException, FunctionEvaluationException {
+-        return solve(min, max);
++        return solve(f, min, max);
+     }
+ 
+     /** {@inheritDoc} */
+@@ -88,7 +88,7 @@
+            fmin = f.value(min);
+            fm = f.value(m);
+ 
+-            if (fm * fmin > 0.0) {
++            if (fm * fmin > 0.0||fmin == fm) {
+                 // max and m bracket the root.
+                 min = m;
+             } else {
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import org.apache.commons.math.FunctionEvaluationException;
+import org.apache.commons.math.MaxIterationsExceededException;
+import org.apache.commons.math.analysis.UnivariateRealFunction;
+</source_imports>
+
+Function `solve`:
+<signature>
+public double solve(UnivariateRealFunction f, double min, double max) throws MaxIterationsExceededException, FunctionEvaluationException
+</signature>
+<code>
+    public double solve(final UnivariateRealFunction f, double min, double max)
+        throws MaxIterationsExceededException, FunctionEvaluationException {
+
+        clearResult();
+        verifyInterval(min,max);
+        double m;
+        double fm;
+        double fmin;
+
+        int i = 0;
+        while (i < maximalIterationCount) {
+            m = UnivariateRealSolverUtils.midpoint(min, max);
+           fmin = f.value(min);
+           fm = f.value(m);
+
+            if (fm * fmin > 0.0) {
+                // max and m bracket the root.
+                min = m;
+            } else {
+                // min and m bracket the root.
+                max = m;
+            }
+
+            if (Math.abs(max - min) <= absoluteAccuracy) {
+                m = UnivariateRealSolverUtils.midpoint(min, max);
+                setResult(m, i);
+                return m;
+            }
+            ++i;
+        }
+
+        throw new MaxIterationsExceededException(maximalIterationCount);
+    }
+</code>
+Methods called by `solve` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="clearResult" from="UnivariateRealSolverImpl.java">
+<signature>
+final protected void clearResult()
+</signature>
+<code>
+    protected final void clearResult() {
+        this.iterationCount = 0;
+        this.resultComputed = false;
+    }
+</code>
+</callee>
+<callee name="verifyInterval" from="UnivariateRealSolverImpl.java">
+<signature>
+protected void verifyInterval(double lower, double upper)
+</signature>
+<code>
+    protected void verifyInterval(final double lower, final double upper) {
+        if (lower >= upper) {
+            throw MathRuntimeException.createIllegalArgumentException(
+                    "endpoints do not specify an interval: [{0}, {1}]",
+                    lower, upper);
+        }
+    }
+</code>
+</callee>
+<callee name="midpoint" from="UnivariateRealSolverUtils.java">
+<signature>
+public static double midpoint(double a, double b)
+</signature>
+<code>
+    public static double midpoint(double a, double b) {
+        return (a + b) * .5;
+    }
+</code>
+</callee>
+<callee name="setResult" from="UnivariateRealSolverImpl.java">
+<signature>
+final protected void setResult(double newResult, int iterationCount)
+</signature>
+<code>
+    protected final void setResult(final double newResult, final int iterationCount) {
+        this.result         = newResult;
+        this.iterationCount = iterationCount;
+        this.resultComputed = true;
+    }
+</code>
+<implementation in="UnivariateRealSolverImpl.java">
+    protected final void setResult(final double newResult, final int iterationCount) {
+        this.result         = newResult;
+        this.iterationCount = iterationCount;
+        this.resultComputed = true;
+    }
+</implementation>
+<implementation in="UnivariateRealSolverImpl.java">
+    protected final void setResult(final double x, final double fx,
+                                   final int iterationCount) {
+        this.result         = x;
+        this.functionValue  = fx;
+        this.iterationCount = iterationCount;
+        this.resultComputed = true;
+    }
+</implementation>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: identify the input PROPERTY that triggers the patched line (the root cause), then use FuzzedDataProvider to generate many varied REAL inputs that satisfy that property — different lengths, positions, and surrounding content — and drive them all through the real entry point. You are testing whether the patch fixes the root cause for ALL such inputs, not just the seed; overfitting patches special-case the seed.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `BisectionSolver`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+On the buggy version the root cause surfaces as: java.lang.NullPointerException (or a sibling failure with a different signature). Your harness must distinguish a genuine defect from the patch doing its job:
+  - The fixed code is SUPPOSED to reject invalid input cleanly. Any throwable that is a deliberate, documented rejection of bad input (a validation exception the API declares or is expected to raise for that input) is CORRECT post-fix behaviour — CATCH it inside fuzzerTestOneInput and return normally. Do not let it escape.
+  - Only let a throwable propagate uncaught when it signals the ROOT CAUSE itself: the code failing internally instead of guarding the input — e.g. an out-of-bounds access, NPE, arithmetic error, infinite loop, or a corrupted result deep inside the library, rather than a clean rejection at the boundary.
+Rule of thumb: if a careful, correct version of this method would still throw that exception for that input, it is NOT a bug — swallow it. If the throw means the method lost control of its own invariants, let it propagate.
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.NullPointerException
+thrown_at: org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:88)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.math.analysis.solvers.BisectionSolverTest" method="testMath369">
+    public void testMath369() throws Exception {
+        UnivariateRealFunction f = new SinFunction();
+        UnivariateRealSolver solver = new BisectionSolver();
+        assertEquals(Math.PI, solver.solve(f, 3.0, 3.2, 3.1), solver.getAbsoluteAccuracy());
+    }
+</failing_test>
+
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.math.analysis.solvers;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+
+################################################
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.math.analysis.solvers` (`package org.apache.commons.math.analysis.solvers;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Math_70_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java	
++++ /src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java
+@@ -69,7 +69,7 @@
+     /** {@inheritDoc} */
+     public double solve(final UnivariateRealFunction f, double min, double max, double initial)
+         throws MaxIterationsExceededException, FunctionEvaluationException {
+-        return solve(min, max);
++        return solve(f, min, max);
+     }
+ 
+     /** {@inheritDoc} */
+@@ -88,7 +88,7 @@
+            fmin = f.value(min);
+            fm = f.value(m);
+ 
+-            if (fm * fmin > 0.0) {
++            if (fm * fmin > 0.0||fmin == fm) {
+                 // max and m bracket the root.
+                 min = m;
+             } else {
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import org.apache.commons.math.FunctionEvaluationException;
+import org.apache.commons.math.MaxIterationsExceededException;
+import org.apache.commons.math.analysis.UnivariateRealFunction;
+</source_imports>
+
+Function `solve`:
+<signature>
+public double solve(UnivariateRealFunction f, double min, double max) throws MaxIterationsExceededException, FunctionEvaluationException
+</signature>
+<code>
+    public double solve(final UnivariateRealFunction f, double min, double max)
+        throws MaxIterationsExceededException, FunctionEvaluationException {
+
+        clearResult();
+        verifyInterval(min,max);
+        double m;
+        double fm;
+        double fmin;
+
+        int i = 0;
+        while (i < maximalIterationCount) {
+            m = UnivariateRealSolverUtils.midpoint(min, max);
+           fmin = f.value(min);
+           fm = f.value(m);
+
+            if (fm * fmin > 0.0) {
+                // max and m bracket the root.
+                min = m;
+            } else {
+                // min and m bracket the root.
+                max = m;
+            }
+
+            if (Math.abs(max - min) <= absoluteAccuracy) {
+                m = UnivariateRealSolverUtils.midpoint(min, max);
+                setResult(m, i);
+                return m;
+            }
+            ++i;
+        }
+
+        throw new MaxIterationsExceededException(maximalIterationCount);
+    }
+</code>
+Methods called by `solve` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="clearResult" from="UnivariateRealSolverImpl.java">
+<signature>
+final protected void clearResult()
+</signature>
+<code>
+    protected final void clearResult() {
+        this.iterationCount = 0;
+        this.resultComputed = false;
+    }
+</code>
+</callee>
+<callee name="verifyInterval" from="UnivariateRealSolverImpl.java">
+<signature>
+protected void verifyInterval(double lower, double upper)
+</signature>
+<code>
+    protected void verifyInterval(final double lower, final double upper) {
+        if (lower >= upper) {
+            throw MathRuntimeException.createIllegalArgumentException(
+                    "endpoints do not specify an interval: [{0}, {1}]",
+                    lower, upper);
+        }
+    }
+</code>
+</callee>
+<callee name="midpoint" from="UnivariateRealSolverUtils.java">
+<signature>
+public static double midpoint(double a, double b)
+</signature>
+<code>
+    public static double midpoint(double a, double b) {
+        return (a + b) * .5;
+    }
+</code>
+</callee>
+<callee name="setResult" from="UnivariateRealSolverImpl.java">
+<signature>
+final protected void setResult(double newResult, int iterationCount)
+</signature>
+<code>
+    protected final void setResult(final double newResult, final int iterationCount) {
+        this.result         = newResult;
+        this.iterationCount = iterationCount;
+        this.resultComputed = true;
+    }
+</code>
+<implementation in="UnivariateRealSolverImpl.java">
+    protected final void setResult(final double newResult, final int iterationCount) {
+        this.result         = newResult;
+        this.iterationCount = iterationCount;
+        this.resultComputed = true;
+    }
+</implementation>
+<implementation in="UnivariateRealSolverImpl.java">
+    protected final void setResult(final double x, final double fx,
+                                   final int iterationCount) {
+        this.result         = x;
+        this.functionValue  = fx;
+        this.iterationCount = iterationCount;
+        this.resultComputed = true;
+    }
+</implementation>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: identify the input PROPERTY that triggers the patched line (the root cause), then use FuzzedDataProvider to generate many varied REAL inputs that satisfy that property — different lengths, positions, and surrounding content — and drive them all through the real entry point. You are testing whether the patch fixes the root cause for ALL such inputs, not just the seed; overfitting patches special-case the seed.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `BisectionSolver`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+On the buggy version the root cause surfaces as: java.lang.NullPointerException (or a sibling failure with a different signature). Your harness must distinguish a genuine defect from the patch doing its job:
+  - The fixed code is SUPPOSED to reject invalid input cleanly. Any throwable that is a deliberate, documented rejection of bad input (a validation exception the API declares or is expected to raise for that input) is CORRECT post-fix behaviour — CATCH it inside fuzzerTestOneInput and return normally. Do not let it escape.
+  - Only let a throwable propagate uncaught when it signals the ROOT CAUSE itself: the code failing internally instead of guarding the input — e.g. an out-of-bounds access, NPE, arithmetic error, infinite loop, or a corrupted result deep inside the library, rather than a clean rejection at the boundary.
+Rule of thumb: if a careful, correct version of this method would still throw that exception for that input, it is NOT a bug — swallow it. If the throw means the method lost control of its own invariants, let it propagate.
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.NullPointerException
+thrown_at: org.apache.commons.math.analysis.solvers.BisectionSolver.solve(BisectionSolver.java:88)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.math.analysis.solvers.BisectionSolverTest" method="testMath369">
+    public void testMath369() throws Exception {
+        UnivariateRealFunction f = new SinFunction();
+        UnivariateRealSolver solver = new BisectionSolver();
+        assertEquals(Math.PI, solver.solve(f, 3.0, 3.2, 3.1), solver.getAbsoluteAccuracy());
+    }
+</failing_test>
+
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.math.analysis.solvers;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+################################################
+ Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection.py", line 101, in handle_request
+    raise exc
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection.py", line 78, in handle_request
+    stream = self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_sync/connection.py", line 124, in _connect
+    stream = self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_backends/sync.py", line 207, in connect_tcp
+    with map_exceptions(exc_map):
+  File "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectTimeout: timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1037, in request
+    response = self._send_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_client.py", line 440, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_client.py", line 418, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 964, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+  File "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectTimeout: timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 382, in <module>
+    main()
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 279, in main
+    result = campaign.run(messages, selection.buggy_dir,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/java/campaign.py", line 189, in run
+    raw = self.generator.generate(current_messages)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/llm.py", line 79, in generate
+    result = self._client.chat.completions.create(**params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1215, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1332, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1055, in request
+    raise APITimeoutError(request=request) from err
+openai.APITimeoutError: Request timed out.
+  (no record emitted; retrying)
+[overfitting] run 7 (have 0/10 distinct) -> project Chart
+Checking out 2266 to /tmp/d4j/Chart_1_buggy................................ OK
+Init local repository...................................................... OK
+Tag post-fix revision...................................................... OK
+Apply patch................................................................ OK
+Run post-checkout hook..................................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Initialize fixed program version........................................... OK
+Apply patch................................................................ OK
+Initialize buggy program version........................................... OK
+Diff 2266:2264............................................................. OK
+Apply patch................................................................ OK
+Tag pre-fix revision....................................................... OK
+Check out program version: Chart-1b........................................ OK
+Found 1 bug-triggering test(s):
+  ✓ org.jfree.chart.renderer.category.junit.AbstractCategoryItemRendererTests::test2947660  [junit.framework.AssertionFailedError]
+
+Chart 1 (SketchFix) is not a crashing bug (trigger test fails on an assertion, or its failure type could not be determined) — out of scope for the crash pipeline. Skipping.
+  skipped (non_crashing)
+[overfitting] run 8 (have 0/10 distinct) -> project Chart

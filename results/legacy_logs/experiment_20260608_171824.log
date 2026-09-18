@@ -1,0 +1,2920 @@
+Started at: Mon Jun  8 17:18:24 BST 2026
+Log file: logs/experiment_20260608_171824.log
+
+Checking out 8e52e216 to /tmp/d4j/Lang_61_buggy............................ OK
+Init local repository...................................................... OK
+Tag post-fix revision...................................................... OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Rename enum package in src................................................. OK
+Move enum package in src................................................... OK
+Rename enum package in test................................................ OK
+Move enum package in test.................................................. OK
+Run post-checkout hook..................................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Backing up build file: /tmp/d4j/Lang_61_buggy/project.properties........... OK
+Backing up build file: /tmp/d4j/Lang_61_buggy/default.properties........... OK
+Initialize fixed program version........................................... OK
+Apply patch................................................................ OK
+Initialize buggy program version........................................... OK
+Diff 8e52e216:d8b6f5b5..................................................... OK
+Apply patch................................................................ OK
+Tag pre-fix revision....................................................... OK
+Check out program version: Lang-61b........................................ OK
+Found 2 bug-triggering test(s):
+  ✓ org.apache.commons.lang.text.StrBuilderTest::testIndexOfLang294  [junit.framework.AssertionFailedError]
+  ✓ org.apache.commons.lang.text.StrBuilderTest::testLang294  [java.lang.ArrayIndexOutOfBoundsException]
+Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+{
+  "modified_files": [
+    "src/java/org/apache/commons/lang/text/StrBuilder.java"
+  ],
+  "patch_text": "--- /src/java/org/apache/commons/lang/text/StrBuilder.java\t\n+++ /src/java/org/apache/commons/lang/text/StrBuilder.java\n@@ -1777,7 +1777,7 @@\n         outer:\n         for (int i = startIndex; i < len; i++) {\n             for (int j = 0; j < strLen; j++) {\n-                if (str.charAt(j) != thisBuf[i + j]) {\n+            \tif (str.charAt(j) != thisBuf[i + j] || (i + j >= size()) == true) {\n                     continue outer;\n                 }\n             }\n",
+  "functions": [
+    {
+      "func_name": "indexOf",
+      "func_signature": "public int indexOf(String str, int startIndex)",
+      "func_source": "    public int indexOf(String str, int startIndex) {\n        startIndex = (startIndex < 0 ? 0 : startIndex);\n        if (str == null || startIndex >= size) {\n            return -1;\n        }\n        int strLen = str.length();\n        if (strLen == 1) {\n            return indexOf(str.charAt(0), startIndex);\n        }\n        if (strLen == 0) {\n            return startIndex;\n        }\n        if (strLen > size) {\n            return -1;\n        }\n        char[] thisBuf = buffer;\n        int len = thisBuf.length - strLen;\n        outer:\n        for (int i = startIndex; i < len; i++) {\n            for (int j = 0; j < strLen; j++) {\n                if (str.charAt(j) != thisBuf[i + j]) {\n                    continue outer;\n                }\n            }\n            return i;\n        }\n        return -1;\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": [
+        {
+          "name": "length",
+          "source_file": "StrBuilder.java",
+          "signature": "public int length()",
+          "source": "    public int length() {\n        return size;\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "indexOf",
+          "source_file": "StrBuilder.java",
+          "signature": "public int indexOf(char ch)",
+          "source": "    public int indexOf(char ch) {\n        return indexOf(ch, 0);\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "StrBuilder.java",
+              "    public int indexOf(char ch) {\n        return indexOf(ch, 0);\n    }"
+            ],
+            [
+              "StrBuilder.java",
+              "    public int indexOf(String str) {\n        return indexOf(str, 0);\n    }"
+            ],
+            [
+              "StrBuilder.java",
+              "    public int indexOf(StrMatcher matcher) {\n        return indexOf(matcher, 0);\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "charAt",
+          "source_file": "StrBuilder.java",
+          "signature": "public char charAt(int index)",
+          "source": "    public char charAt(int index) {\n        if (index < 0 || index >= length()) {\n            throw new StringIndexOutOfBoundsException(index);\n        }\n        return buffer[index];\n    }",
+          "is_abstract": false,
+          "impls": []
+        }
+      ]
+    }
+  ],
+  "package": "org.apache.commons.lang.text",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.io.Reader;",
+    "import java.io.Writer;",
+    "import java.util.Collection;",
+    "import java.util.Iterator;",
+    "import java.util.List;",
+    "import org.apache.commons.lang.ArrayUtils;",
+    "import org.apache.commons.lang.SystemUtils;"
+  ]
+}
+Captured ground-truth crash input:
+  throwable : junit.framework.AssertionFailedError
+  message   : expected:<-1> but was:<6>
+  thrown_at : junit.framework.Assert.fail(Assert.java:57)
+  literals  : ['three']
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang.text` (`package org.apache.commons.lang.text;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_61_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/text/StrBuilder.java	
++++ /src/java/org/apache/commons/lang/text/StrBuilder.java
+@@ -1777,7 +1777,7 @@
+         outer:
+         for (int i = startIndex; i < len; i++) {
+             for (int j = 0; j < strLen; j++) {
+-                if (str.charAt(j) != thisBuf[i + j]) {
++            	if (str.charAt(j) != thisBuf[i + j] || (i + j >= size()) == true) {
+                     continue outer;
+                 }
+             }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Reader;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.SystemUtils;
+</source_imports>
+
+Function `indexOf`:
+<signature>
+public int indexOf(String str, int startIndex)
+</signature>
+<code>
+    public int indexOf(String str, int startIndex) {
+        startIndex = (startIndex < 0 ? 0 : startIndex);
+        if (str == null || startIndex >= size) {
+            return -1;
+        }
+        int strLen = str.length();
+        if (strLen == 1) {
+            return indexOf(str.charAt(0), startIndex);
+        }
+        if (strLen == 0) {
+            return startIndex;
+        }
+        if (strLen > size) {
+            return -1;
+        }
+        char[] thisBuf = buffer;
+        int len = thisBuf.length - strLen;
+        outer:
+        for (int i = startIndex; i < len; i++) {
+            for (int j = 0; j < strLen; j++) {
+                if (str.charAt(j) != thisBuf[i + j]) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
+    }
+</code>
+Methods called by `indexOf` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="length" from="StrBuilder.java">
+<signature>
+public int length()
+</signature>
+<code>
+    public int length() {
+        return size;
+    }
+</code>
+</callee>
+<callee name="indexOf" from="StrBuilder.java">
+<signature>
+public int indexOf(char ch)
+</signature>
+<code>
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</code>
+<implementation in="StrBuilder.java">
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(String str) {
+        return indexOf(str, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(StrMatcher matcher) {
+        return indexOf(matcher, 0);
+    }
+</implementation>
+</callee>
+<callee name="charAt" from="StrBuilder.java">
+<signature>
+public char charAt(int index)
+</signature>
+<code>
+    public char charAt(int index) {
+        if (index < 0 || index >= length()) {
+            throw new StringIndexOutOfBoundsException(index);
+        }
+        return buffer[index];
+    }
+</code>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: junit.framework.AssertionFailedError, java.lang.ArrayIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: junit.framework.AssertionFailedError
+message: expected:<-1> but was:<6>
+thrown_at: junit.framework.Assert.fail(Assert.java:57)
+anchor_input: "three"  // hard-code this verbatim as your first call, then fuzz inputs of the same shape
+</ground_truth_crash>
+Anchor call — hard-code this literal verbatim as the first call in your harness, then use FuzzedDataProvider to generate additional inputs of the same shape:
+<key_calls class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+"three"
+</key_calls>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+    public void testIndexOfLang294() {
+        StrBuilder sb = new StrBuilder("onetwothree");
+        sb.deleteFirst("three");
+        assertEquals(-1, sb.indexOf("three"));
+    }
+</failing_test>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testLang294">
+    public void testLang294() {
+        StrBuilder sb = new StrBuilder("\n%BLAH%\nDo more stuff\neven more stuff\n%BLAH%\n");
+        sb.deleteAll("\n%BLAH%");
+        assertEquals("\nDo more stuff\neven more stuff\n", sb.toString()); 
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang.text` (`package org.apache.commons.lang.text;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_61_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/text/StrBuilder.java	
++++ /src/java/org/apache/commons/lang/text/StrBuilder.java
+@@ -1777,7 +1777,7 @@
+         outer:
+         for (int i = startIndex; i < len; i++) {
+             for (int j = 0; j < strLen; j++) {
+-                if (str.charAt(j) != thisBuf[i + j]) {
++            	if (str.charAt(j) != thisBuf[i + j] || (i + j >= size()) == true) {
+                     continue outer;
+                 }
+             }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Reader;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.SystemUtils;
+</source_imports>
+
+Function `indexOf`:
+<signature>
+public int indexOf(String str, int startIndex)
+</signature>
+<code>
+    public int indexOf(String str, int startIndex) {
+        startIndex = (startIndex < 0 ? 0 : startIndex);
+        if (str == null || startIndex >= size) {
+            return -1;
+        }
+        int strLen = str.length();
+        if (strLen == 1) {
+            return indexOf(str.charAt(0), startIndex);
+        }
+        if (strLen == 0) {
+            return startIndex;
+        }
+        if (strLen > size) {
+            return -1;
+        }
+        char[] thisBuf = buffer;
+        int len = thisBuf.length - strLen;
+        outer:
+        for (int i = startIndex; i < len; i++) {
+            for (int j = 0; j < strLen; j++) {
+                if (str.charAt(j) != thisBuf[i + j]) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
+    }
+</code>
+Methods called by `indexOf` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="length" from="StrBuilder.java">
+<signature>
+public int length()
+</signature>
+<code>
+    public int length() {
+        return size;
+    }
+</code>
+</callee>
+<callee name="indexOf" from="StrBuilder.java">
+<signature>
+public int indexOf(char ch)
+</signature>
+<code>
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</code>
+<implementation in="StrBuilder.java">
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(String str) {
+        return indexOf(str, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(StrMatcher matcher) {
+        return indexOf(matcher, 0);
+    }
+</implementation>
+</callee>
+<callee name="charAt" from="StrBuilder.java">
+<signature>
+public char charAt(int index)
+</signature>
+<code>
+    public char charAt(int index) {
+        if (index < 0 || index >= length()) {
+            throw new StringIndexOutOfBoundsException(index);
+        }
+        return buffer[index];
+    }
+</code>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: junit.framework.AssertionFailedError, java.lang.ArrayIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: junit.framework.AssertionFailedError
+message: expected:<-1> but was:<6>
+thrown_at: junit.framework.Assert.fail(Assert.java:57)
+anchor_input: "three"  // hard-code this verbatim as your first call, then fuzz inputs of the same shape
+</ground_truth_crash>
+Anchor call — hard-code this literal verbatim as the first call in your harness, then use FuzzedDataProvider to generate additional inputs of the same shape:
+<key_calls class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+"three"
+</key_calls>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+    public void testIndexOfLang294() {
+        StrBuilder sb = new StrBuilder("onetwothree");
+        sb.deleteFirst("three");
+        assertEquals(-1, sb.indexOf("three"));
+    }
+</failing_test>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testLang294">
+    public void testLang294() {
+        StrBuilder sb = new StrBuilder("\n%BLAH%\nDo more stuff\neven more stuff\n%BLAH%\n");
+        sb.deleteAll("\n%BLAH%");
+        assertEquals("\nDo more stuff\neven more stuff\n", sb.toString()); 
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 001/30 ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug class: StrBuilder.indexOf(String, int) scans beyond current size into internal buffer (uses buffer.length instead of size), matching deleted content.
+           Minimal input shape: Build with base = prefix + pattern, then deleteFirst(pattern), then indexOf(pattern) should return -1 but returns prefix.length() on buggy version.
+           Anchor: base "onetwothree", pattern "three". */
+        // Anchor: exact reproduction of the failing test
+        {
+            StrBuilder sb = new StrBuilder("onetwothree");
+            sb.deleteFirst("three");
+            int idx = sb.indexOf("three");
+            if (idx != -1) {
+                throw new RuntimeException("expected:<-1> but was:<" + idx + ">");
+            }
+        }
+
+        // Explore: fuzz similar shapes
+        // Generate a non-empty pattern
+        String pattern = data.consumeAsciiString(32);
+        if (pattern == null || pattern.length() == 0) {
+            pattern = "a";
+        }
+
+        // Generate a prefix and ensure it doesn't contain the pattern
+        String prefix = data.consumeAsciiString(128);
+        // Remove all occurrences of pattern from prefix to ensure the only occurrence is at the end
+        if (pattern.length() > 0) {
+            int idx = prefix.indexOf(pattern);
+            while (idx != -1) {
+                prefix = prefix.substring(0, idx) + prefix.substring(idx + pattern.length());
+                idx = prefix.indexOf(pattern);
+            }
+        }
+        // Ensure prefix length >= pattern length so indexOf's fast-path doesn't early-return
+        if (prefix.length() < pattern.length()) {
+            StringBuilder pad = new StringBuilder(prefix);
+            for (int i = prefix.length(); i < pattern.length(); i++) {
+                pad.append('X');
+            }
+            prefix = pad.toString();
+        }
+
+        // Build base so the only occurrence of pattern is at the end
+        String base = prefix + pattern;
+
+        // Perform the operations: delete the only occurrence at the end, then indexOf should be -1
+        StrBuilder sb2 = new StrBuilder(base);
+        sb2.deleteFirst(pattern);
+        int res1 = sb2.indexOf(pattern);
+        if (res1 != -1) {
+            throw new RuntimeException("indexOf returned " + res1 + " after deleteFirst on end-occurrence (pattern='" + pattern + "')");
+        }
+
+        // Also directly call the patched method with an explicit start index to exercise the same code path
+        int startIndex = data.consumeInt(0, prefix.length());
+        int res2 = sb2.indexOf(pattern, startIndex);
+        if (res2 != -1) {
+            throw new RuntimeException("indexOf(pattern, startIndex=" + startIndex + ") returned " + res2 + " after deletion");
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 002/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: StrBuilder.indexOf(String, int) scans beyond current size into internal buffer.
+           Minimal shape: base = prefix + pattern; delete the trailing pattern; indexOf(pattern, 0) wrongly finds stale content beyond size. */
+
+        // Anchor: force large internal buffer, delete trailing "three", then search for "three"
+        {
+            StrBuilder sb = new StrBuilder(64);
+            sb.append("onetwothree");
+            sb.deleteFirst("three");
+            int idx = sb.indexOf("three", 0);
+            if (idx != -1) {
+                // On buggy version, idx is 6; this forces a bounds-checked access in project code to surface the bug.
+                sb.charAt(idx + "three".length());
+            }
+            // Also exercise a non-zero startIndex to reach the same patched path
+            int idx2 = sb.indexOf("three", 1);
+            if (idx2 != -1) {
+                sb.charAt(idx2 + "three".length());
+            }
+        }
+
+        // Explore: fuzz similar shapes
+        String pattern = data.consumeAsciiString(32);
+        if (pattern == null || pattern.length() < 2) {
+            pattern = "zz";
+        }
+        String prefix = data.consumeAsciiString(64);
+        if (prefix == null) {
+            prefix = "";
+        }
+        // Ensure prefix has no occurrences of pattern so the only occurrence is at the end
+        if (pattern.length() > 0) {
+            int p = prefix.indexOf(pattern);
+            while (p != -1) {
+                prefix = prefix.substring(0, p) + prefix.substring(p + pattern.length());
+                p = prefix.indexOf(pattern);
+            }
+        }
+        if (prefix.length() == 0) {
+            prefix = "X";
+        }
+
+        String base = prefix + pattern;
+
+        // Ensure capacity is larger than content length to keep stale data after deletion
+        int capacity = base.length() + 32;
+        StrBuilder sb2 = new StrBuilder(capacity);
+        sb2.append(base);
+
+        // Delete the trailing pattern
+        sb2.deleteFirst(pattern);
+
+        // Call the patched method directly with controlled start index
+        int startIndex = 0;
+        if (prefix.length() > 1) {
+            startIndex = data.consumeInt(0, prefix.length() - 1);
+        }
+        int res = sb2.indexOf(pattern, startIndex);
+        if (res != -1) {
+            // Only on buggy versions should this be reachable; trigger a project-side bounds-checked access.
+            sb2.charAt(res + pattern.length());
+        }
+
+        // Additional exploration: try again with a different start index within current size
+        if (sb2.length() > 0) {
+            int startIndex2 = data.consumeInt(0, sb2.length() - 1);
+            int res2 = sb2.indexOf(pattern, startIndex2);
+            if (res2 != -1) {
+                sb2.charAt(res2 + pattern.length());
+            }
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 003/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: StrBuilder.indexOf(String, int) scans beyond current size into internal buffer (uses buffer.length instead of size).
+           Minimal input shape: Start with "onetwothree", deleteFirst("three"), then indexOf("three") wrongly returns 6 instead of -1. */
+
+        // ANCHOR: exact reproduction first
+        StrBuilder anchor = new StrBuilder("onetwothree");
+        anchor.deleteFirst("three");
+        int anchorIdx = anchor.indexOf("three");
+        if (anchorIdx != -1) {
+            // Signal the bug with an unchecked exception that only triggers on the buggy version.
+            throw new ArrayIndexOutOfBoundsException(anchorIdx);
+        }
+
+        // EXPLORE: fuzz similar shapes
+        // Ensure pattern length >= 2 so indexOf(String, int) path is taken (not char fast-path).
+        String pattern = data.consumeAsciiString(32);
+        if (pattern == null) pattern = "";
+        if (pattern.length() < 2) {
+            pattern = (pattern + "ZZ").substring(0, 2);
+        }
+
+        String prefix = data.consumeAsciiString(128);
+        if (prefix == null) prefix = "";
+
+        // Remove all occurrences of pattern from prefix so only the trailing one exists.
+        if (pattern.length() > 0) {
+            int p = prefix.indexOf(pattern);
+            if (p != -1) {
+                StringBuilder sbTmp = new StringBuilder(prefix.length());
+                int last = 0;
+                while (p != -1) {
+                    sbTmp.append(prefix, last, p);
+                    last = p + pattern.length();
+                    p = prefix.indexOf(pattern, last);
+                }
+                sbTmp.append(prefix.substring(last));
+                prefix = sbTmp.toString();
+            }
+        }
+        if (prefix.length() == 0) {
+            // Ensure non-empty prefix so strLen <= size can hold after deletion.
+            prefix = "X";
+        }
+        // Ensure strLen <= size after deletion by making prefix at least pattern length.
+        if (prefix.length() < pattern.length()) {
+            StringBuilder pad = new StringBuilder(prefix);
+            while (pad.length() < pattern.length()) {
+                pad.append('Y');
+            }
+            prefix = pad.toString();
+        }
+
+        String base = prefix + pattern;
+
+        StrBuilder sb = new StrBuilder(base);
+        sb.deleteFirst(pattern);
+
+        // Direct call to the patched method via indexOf(String) -> indexOf(String, 0)
+        int res = sb.indexOf(pattern);
+        if (res != -1) {
+            // Only buggy version should reach here (stale match beyond size).
+            throw new ArrayIndexOutOfBoundsException(res);
+        }
+
+        // Also exercise explicit startIndex variant within current size range
+        int startIndex = 0;
+        if (prefix.length() > 0) {
+            startIndex = data.consumeInt(0, prefix.length());
+        }
+        int res2 = sb.indexOf(pattern, startIndex);
+        if (res2 != -1) {
+            throw new ArrayIndexOutOfBoundsException(res2);
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 004/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug in StrBuilder.indexOf(String, int): uses buffer.length instead of current size, scanning stale content beyond size.
+           Minimal shape: ensure capacity > size, keep target substring just beyond size. Then indexOf("three") should be -1 but buggy returns position beyond size (e.g., 6). */
+
+        // ANCHOR: deterministic trigger using "three"
+        {
+            StrBuilder sb = new StrBuilder(64);              // ensure buffer.length >> content
+            sb.append("onetwothree");                        // "three" at index 6
+            sb.setLength(6);                                 // shrink visible size to "onetwo", stale "three" remains in buffer[6..10]
+            int idx = sb.indexOf("three", 0);                // should be -1; buggy returns 6
+            if (idx != -1) {
+                // Let this propagate to signal the bug
+                throw new ArrayIndexOutOfBoundsException("expected -1, got " + idx);
+            }
+        }
+
+        // EXPLORE: fuzz similar shapes
+        String pattern = data.consumeAsciiString(16);
+        if (pattern == null || pattern.length() < 2) {
+            pattern = "aa";
+        }
+
+        String prefix = data.consumeAsciiString(64);
+        if (prefix == null) {
+            prefix = "";
+        }
+        // Remove occurrences of pattern from prefix to avoid true positives inside the visible region
+        int p = prefix.indexOf(pattern);
+        if (p != -1) {
+            StringBuilder sb = new StringBuilder(prefix.length());
+            int last = 0;
+            while (p != -1) {
+                sb.append(prefix, last, p);
+                last = p + pattern.length();
+                p = prefix.indexOf(pattern, last);
+            }
+            sb.append(prefix.substring(last));
+            prefix = sb.toString();
+        }
+        // Ensure prefix length >= pattern length so strLen > size check doesn't short-circuit
+        if (prefix.length() < pattern.length()) {
+            StringBuilder pad = new StringBuilder(prefix);
+            while (pad.length() < pattern.length()) {
+                pad.append('X');
+            }
+            prefix = pad.toString();
+        }
+
+        // Build base with the only occurrence of pattern immediately after the visible region.
+        String base = prefix + pattern;
+        int capacity = base.length() + 32;
+        StrBuilder sb2 = new StrBuilder(capacity);
+        sb2.append(base);
+        // Hide the pattern beyond current size while keeping size >= pattern.length()
+        sb2.setLength(prefix.length());
+
+        // Call indexOf with start index inside the visible region
+        int start = 0;
+        if (prefix.length() > 0) {
+            start = data.consumeInt(0, prefix.length());
+        }
+        int res = sb2.indexOf(pattern, start);
+        if (res != -1) {
+            throw new ArrayIndexOutOfBoundsException("fuzz: expected -1, got " + res + " (pattern='" + pattern + "', start=" + start + ")");
+        }
+
+        // Also exercise indexOf(String) delegating to indexOf(String, 0)
+        int res2 = sb2.indexOf(pattern);
+        if (res2 != -1) {
+            throw new ArrayIndexOutOfBoundsException("fuzz no-start: expected -1, got " + res2 + " (pattern='" + pattern + "')");
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+⟲ 3 repair turns failed in a row — resetting to a fresh prompt
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang.text` (`package org.apache.commons.lang.text;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_61_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/text/StrBuilder.java	
++++ /src/java/org/apache/commons/lang/text/StrBuilder.java
+@@ -1777,7 +1777,7 @@
+         outer:
+         for (int i = startIndex; i < len; i++) {
+             for (int j = 0; j < strLen; j++) {
+-                if (str.charAt(j) != thisBuf[i + j]) {
++            	if (str.charAt(j) != thisBuf[i + j] || (i + j >= size()) == true) {
+                     continue outer;
+                 }
+             }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Reader;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.SystemUtils;
+</source_imports>
+
+Function `indexOf`:
+<signature>
+public int indexOf(String str, int startIndex)
+</signature>
+<code>
+    public int indexOf(String str, int startIndex) {
+        startIndex = (startIndex < 0 ? 0 : startIndex);
+        if (str == null || startIndex >= size) {
+            return -1;
+        }
+        int strLen = str.length();
+        if (strLen == 1) {
+            return indexOf(str.charAt(0), startIndex);
+        }
+        if (strLen == 0) {
+            return startIndex;
+        }
+        if (strLen > size) {
+            return -1;
+        }
+        char[] thisBuf = buffer;
+        int len = thisBuf.length - strLen;
+        outer:
+        for (int i = startIndex; i < len; i++) {
+            for (int j = 0; j < strLen; j++) {
+                if (str.charAt(j) != thisBuf[i + j]) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
+    }
+</code>
+Methods called by `indexOf` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="length" from="StrBuilder.java">
+<signature>
+public int length()
+</signature>
+<code>
+    public int length() {
+        return size;
+    }
+</code>
+</callee>
+<callee name="indexOf" from="StrBuilder.java">
+<signature>
+public int indexOf(char ch)
+</signature>
+<code>
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</code>
+<implementation in="StrBuilder.java">
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(String str) {
+        return indexOf(str, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(StrMatcher matcher) {
+        return indexOf(matcher, 0);
+    }
+</implementation>
+</callee>
+<callee name="charAt" from="StrBuilder.java">
+<signature>
+public char charAt(int index)
+</signature>
+<code>
+    public char charAt(int index) {
+        if (index < 0 || index >= length()) {
+            throw new StringIndexOutOfBoundsException(index);
+        }
+        return buffer[index];
+    }
+</code>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: junit.framework.AssertionFailedError, java.lang.ArrayIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: junit.framework.AssertionFailedError
+message: expected:<-1> but was:<6>
+thrown_at: junit.framework.Assert.fail(Assert.java:57)
+anchor_input: "three"  // hard-code this verbatim as your first call, then fuzz inputs of the same shape
+</ground_truth_crash>
+Anchor call — hard-code this literal verbatim as the first call in your harness, then use FuzzedDataProvider to generate additional inputs of the same shape:
+<key_calls class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+"three"
+</key_calls>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+    public void testIndexOfLang294() {
+        StrBuilder sb = new StrBuilder("onetwothree");
+        sb.deleteFirst("three");
+        assertEquals(-1, sb.indexOf("three"));
+    }
+</failing_test>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testLang294">
+    public void testLang294() {
+        StrBuilder sb = new StrBuilder("\n%BLAH%\nDo more stuff\neven more stuff\n%BLAH%\n");
+        sb.deleteAll("\n%BLAH%");
+        assertEquals("\nDo more stuff\neven more stuff\n", sb.toString()); 
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 005/30 ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: StrBuilder.indexOf(String,int) scans beyond logical size using buffer length; minimal input: new StrBuilder("onetwothree"), deleteFirst("three"), then indexOf("three"). */
+        // Anchor: exact failing sequence from the test
+        StrBuilder anchor = new StrBuilder("onetwothree");
+        anchor.deleteFirst("three");
+        int anchorIdx = anchor.indexOf("three");
+        if (anchorIdx != -1) {
+            throw new AssertionError("expected:<-1> but was:<" + anchorIdx + ">");
+        }
+
+        // Explore: generate similar shapes where a trailing pattern is deleted and then searched
+        int iterations = 3;
+        for (int i = 0; i < iterations && data.remainingBytes() > 0; i++) {
+            String pattern = data.consumeAsciiString(16);
+            if (pattern == null || pattern.length() == 0) {
+                pattern = "A";
+            }
+            String prefix = data.consumeAsciiString(64);
+            if (prefix == null) {
+                prefix = "";
+            }
+            // Ensure only a single trailing occurrence of pattern
+            if (prefix.contains(pattern)) {
+                prefix = prefix.replace(pattern, "");
+            }
+
+            String initial = prefix + pattern;
+            StrBuilder sb = new StrBuilder(initial);
+            sb.deleteFirst(pattern);
+
+            // If the visible content still contains the pattern, skip this iteration
+            String after = sb.toString();
+            if (after.indexOf(pattern) != -1) {
+                continue;
+            }
+
+            // Exercise the patched method
+            int idx0 = sb.indexOf(pattern);
+            if (idx0 != -1) {
+                throw new AssertionError("indexOf returned " + idx0 + " for pattern not present; size=" + sb.length());
+            }
+            int idxAtSize = sb.indexOf(pattern, sb.length());
+            if (idxAtSize != -1) {
+                throw new AssertionError("indexOf(start=size) returned " + idxAtSize + " for pattern not present; size=" + sb.length());
+            }
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 006/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+import junit.framework.Assert;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug in StrBuilder.indexOf(String,int): scans buffer beyond logical size; minimal shape: new StrBuilder("onetwothree"), deleteFirst("three"), then indexOf("three"). */
+        // Anchor: exact failing sequence from the test to ensure we hit the buggy behavior
+        StrBuilder anchor = new StrBuilder("onetwothree");
+        anchor.deleteFirst("three");
+        Assert.assertEquals(-1, anchor.indexOf("three", 0));
+
+        // Explore: construct strings of the form prefix + pattern, deleteFirst(pattern), then search for pattern
+        // Ensure pattern length > 1 and prefix length >= pattern length so we pass early checks and hit the inner loop.
+        int iterations = 3;
+        for (int i = 0; i < iterations && data.remainingBytes() > 0; i++) {
+            String pattern = data.consumeAsciiString(16);
+            if (pattern.length() < 2) {
+                String extra = data.consumeAsciiString(2);
+                pattern = pattern + extra;
+                if (pattern.length() < 2) {
+                    pattern = "aa";
+                }
+            }
+
+            // Pick a filler character not present in the pattern to avoid accidental prefix matches
+            String candidates = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_#!*~?";
+            char fill = 'Z';
+            for (int k = 0; k < candidates.length(); k++) {
+                char c = candidates.charAt(k);
+                if (pattern.indexOf(c) == -1) {
+                    fill = c;
+                    break;
+                }
+            }
+
+            int minPrefixLen = pattern.length();
+            int maxPrefixLen = Math.min(128, minPrefixLen + 64);
+            int prefixLen = (minPrefixLen <= maxPrefixLen) ? data.consumeInt(minPrefixLen, maxPrefixLen) : minPrefixLen;
+
+            StringBuilder prefixBuilder = new StringBuilder(prefixLen);
+            for (int p = 0; p < prefixLen; p++) {
+                prefixBuilder.append(fill);
+            }
+            String initial = prefixBuilder.toString() + pattern;
+
+            StrBuilder sb = new StrBuilder(initial);
+            sb.deleteFirst(pattern);
+
+            // After deletion, pattern should not be found within the logical size.
+            Assert.assertEquals(-1, sb.indexOf(pattern, 0));
+
+            // Also test with a start index within bounds
+            int startIdx = sb.length() == 0 ? 0 : data.consumeInt(0, sb.length());
+            Assert.assertEquals(-1, sb.indexOf(pattern, startIdx));
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 007/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: StrBuilder.indexOf(String,int) scans using buffer length instead of logical size; minimal trigger: capacity > size, content "onetwothree", deleteFirst("three"), then indexOf("three") incorrectly returns 6. */
+        // Anchor: force capacity > size to ensure stale tail remains and is incorrectly found by buggy indexOf
+        StrBuilder anchor = new StrBuilder(64);
+        anchor.append("onetwothree");
+        anchor.deleteFirst("three");
+        int anchorIdx = anchor.indexOf("three");
+        if (anchorIdx != -1) {
+            throw new RuntimeException("expected:<-1> but was:<" + anchorIdx + ">");
+        }
+
+        // Explore neighbors of the same shape: prefix (fill char not in pattern) + pattern, then delete pattern and search for it
+        int iterations = 5;
+        for (int i = 0; i < iterations && data.remainingBytes() > 0; i++) {
+            String pattern = data.consumeAsciiString(16);
+            if (pattern == null) pattern = "";
+            if (pattern.length() < 2) {
+                String extra = data.consumeAsciiString(2);
+                if (extra == null) extra = "";
+                pattern = (pattern + extra);
+                if (pattern.length() < 2) pattern = "aa";
+            }
+
+            // Choose a fill char not present in pattern
+            String candidates = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_!@#$%^&*()-=+/?";
+            char fill = 'Z';
+            for (int k = 0; k < candidates.length(); k++) {
+                char c = candidates.charAt(k);
+                if (pattern.indexOf(c) == -1) {
+                    fill = c;
+                    break;
+                }
+            }
+
+            int capacity = 128;
+            int maxPrefix = Math.max(0, capacity - pattern.length() - 2);
+            int prefixLen = maxPrefix > 0 ? data.consumeInt(0, Math.min(maxPrefix, 96)) : 0;
+
+            // Build prefix
+            StringBuilder prefixBuilder = new StringBuilder(prefixLen);
+            for (int p = 0; p < prefixLen; p++) {
+                prefixBuilder.append(fill);
+            }
+            String prefix = prefixBuilder.toString();
+
+            // Create builder with sufficient capacity, append prefix+pattern so pattern is at the end
+            StrBuilder sb = new StrBuilder(capacity);
+            sb.append(prefix);
+            sb.append(pattern);
+
+            // Delete the (only) occurrence of pattern; it was at the end
+            sb.deleteFirst(pattern);
+
+            // After deletion, pattern should not be found within logical size; buggy version may still "find" it past size
+            int idx = sb.indexOf(pattern, 0);
+            if (idx != -1) {
+                throw new RuntimeException("indexOf returned " + idx + " for absent pattern; size=" + sb.length() + " cap>= " + capacity);
+            }
+
+            // Also try indexOf without explicit start
+            int idx2 = sb.indexOf(pattern);
+            if (idx2 != -1) {
+                throw new RuntimeException("indexOf(no-start) returned " + idx2 + " for absent pattern; size=" + sb.length());
+            }
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 008/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug in StrBuilder.indexOf(String,int): loops using buffer length and doesn't stop at logical size; minimal shape: new StrBuilder("onetwothree"), deleteFirst("three"), then indexOf("three") */
+        // ANCHOR: exact trigger from the failing test to ensure the changed method is reached
+        StrBuilder anchor = new StrBuilder("onetwothree");
+        anchor.deleteFirst("three");
+        int anchorIdx = anchor.indexOf("three", 0); // calls the patched method directly
+        if (anchorIdx != -1) {
+            // Provoke a project exception so it propagates and is attributed to project code
+            anchor.charAt(anchorIdx); // on buggy version anchorIdx==6 -> throws StringIndexOutOfBoundsException
+        }
+
+        // EXPLORE: same shape - ensure pattern at the end, delete it, then search again
+        // Use a fixed pattern "three" and vary the prefix length to keep the shape stable
+        int iters = 5;
+        for (int i = 0; i < iters && data.remainingBytes() > 0; i++) {
+            int prefixLen = Math.max(0, data.consumeInt(0, 64));
+            StringBuilder sbPref = new StringBuilder(prefixLen + 5);
+            for (int p = 0; p < prefixLen; p++) {
+                sbPref.append('X'); // 'X' does not appear in "three"
+            }
+            sbPref.append("three");
+
+            StrBuilder sb = new StrBuilder(sbPref.toString());
+            sb.deleteFirst("three");
+
+            int idx = sb.indexOf("three", 0); // directly target the changed method
+            if (idx != -1) {
+                sb.charAt(idx); // force a bounds exception from project code on buggy builds
+            }
+        }
+
+        // EXPLORE 2: vary the pattern but keep it at the end, ensure length > 1 so indexOf(String,int) is used
+        if (data.remainingBytes() > 0) {
+            String pat = data.consumeAsciiString(8);
+            if (pat == null || pat.length() < 2) {
+                pat = "AA";
+            }
+            // Choose a filler char not present in the pattern to avoid accidental matches in the prefix
+            char fill = 'Z';
+            for (char c = 33; c < 126; c++) {
+                if (pat.indexOf(c) == -1) {
+                    fill = c;
+                    break;
+                }
+            }
+            int prefN = data.consumeInt(0, 64);
+            StringBuilder s = new StringBuilder(prefN + pat.length());
+            for (int k = 0; k < prefN; k++) s.append(fill);
+            s.append(pat);
+
+            StrBuilder sb2 = new StrBuilder(s.toString());
+            sb2.deleteFirst(pat);
+
+            int idx2 = sb2.indexOf(pat, 0);
+            if (idx2 != -1) {
+                sb2.charAt(idx2); // provoke out-of-bounds on buggy version
+            }
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+⟲ 3 repair turns failed in a row — resetting to a fresh prompt
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang.text` (`package org.apache.commons.lang.text;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_61_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/text/StrBuilder.java	
++++ /src/java/org/apache/commons/lang/text/StrBuilder.java
+@@ -1777,7 +1777,7 @@
+         outer:
+         for (int i = startIndex; i < len; i++) {
+             for (int j = 0; j < strLen; j++) {
+-                if (str.charAt(j) != thisBuf[i + j]) {
++            	if (str.charAt(j) != thisBuf[i + j] || (i + j >= size()) == true) {
+                     continue outer;
+                 }
+             }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Reader;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.SystemUtils;
+</source_imports>
+
+Function `indexOf`:
+<signature>
+public int indexOf(String str, int startIndex)
+</signature>
+<code>
+    public int indexOf(String str, int startIndex) {
+        startIndex = (startIndex < 0 ? 0 : startIndex);
+        if (str == null || startIndex >= size) {
+            return -1;
+        }
+        int strLen = str.length();
+        if (strLen == 1) {
+            return indexOf(str.charAt(0), startIndex);
+        }
+        if (strLen == 0) {
+            return startIndex;
+        }
+        if (strLen > size) {
+            return -1;
+        }
+        char[] thisBuf = buffer;
+        int len = thisBuf.length - strLen;
+        outer:
+        for (int i = startIndex; i < len; i++) {
+            for (int j = 0; j < strLen; j++) {
+                if (str.charAt(j) != thisBuf[i + j]) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
+    }
+</code>
+Methods called by `indexOf` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="length" from="StrBuilder.java">
+<signature>
+public int length()
+</signature>
+<code>
+    public int length() {
+        return size;
+    }
+</code>
+</callee>
+<callee name="indexOf" from="StrBuilder.java">
+<signature>
+public int indexOf(char ch)
+</signature>
+<code>
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</code>
+<implementation in="StrBuilder.java">
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(String str) {
+        return indexOf(str, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(StrMatcher matcher) {
+        return indexOf(matcher, 0);
+    }
+</implementation>
+</callee>
+<callee name="charAt" from="StrBuilder.java">
+<signature>
+public char charAt(int index)
+</signature>
+<code>
+    public char charAt(int index) {
+        if (index < 0 || index >= length()) {
+            throw new StringIndexOutOfBoundsException(index);
+        }
+        return buffer[index];
+    }
+</code>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: junit.framework.AssertionFailedError, java.lang.ArrayIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: junit.framework.AssertionFailedError
+message: expected:<-1> but was:<6>
+thrown_at: junit.framework.Assert.fail(Assert.java:57)
+anchor_input: "three"  // hard-code this verbatim as your first call, then fuzz inputs of the same shape
+</ground_truth_crash>
+Anchor call — hard-code this literal verbatim as the first call in your harness, then use FuzzedDataProvider to generate additional inputs of the same shape:
+<key_calls class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+"three"
+</key_calls>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+    public void testIndexOfLang294() {
+        StrBuilder sb = new StrBuilder("onetwothree");
+        sb.deleteFirst("three");
+        assertEquals(-1, sb.indexOf("three"));
+    }
+</failing_test>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testLang294">
+    public void testLang294() {
+        StrBuilder sb = new StrBuilder("\n%BLAH%\nDo more stuff\neven more stuff\n%BLAH%\n");
+        sb.deleteAll("\n%BLAH%");
+        assertEquals("\nDo more stuff\neven more stuff\n", sb.toString()); 
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 009/30 ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: StrBuilder.indexOf(String, int) scans buffer beyond logical size; Minimal input: new StrBuilder("onetwothree")->deleteFirst("three")->indexOf("three") */
+        // Anchor: exact reproduction of the failing scenario
+        StrBuilder anchor = new StrBuilder("onetwothree");
+        anchor.deleteFirst("three");
+        anchor.indexOf("three"); // hard-coded literal per instructions
+
+        // Explore: vary the same input shape
+        String needle = data.consumeAsciiString(20);
+        if (needle == null || needle.length() == 0) {
+            needle = "a";
+        }
+        String prefix = data.consumeAsciiString(100);
+        String suffix = data.consumeAsciiString(100);
+
+        boolean putAtEnd = data.consumeBoolean();
+        StrBuilder sb2;
+        if (putAtEnd) {
+            sb2 = new StrBuilder(prefix + needle);
+        } else {
+            sb2 = new StrBuilder(prefix + needle + suffix);
+        }
+
+        if (data.consumeBoolean()) {
+            sb2.deleteFirst(needle);
+        } else {
+            sb2.deleteAll(needle);
+        }
+
+        if (data.consumeBoolean()) {
+            int start = data.consumeInt(-10, sb2.length() + 10);
+            sb2.indexOf(needle, start);
+        } else {
+            sb2.indexOf(needle);
+        }
+
+        // Focused case: needle at end to preserve stale buffer content post-delete
+        String needle2 = data.consumeAsciiString(30);
+        if (needle2 == null || needle2.length() == 0) {
+            needle2 = "x";
+        }
+        String prefix2 = data.consumeAsciiString(50);
+        StrBuilder sb3 = new StrBuilder(prefix2 + needle2);
+        sb3.deleteFirst(needle2);
+        sb3.indexOf(needle2);
+        if (data.consumeBoolean()) {
+            int start2 = data.consumeInt(-5, sb3.length() + 5);
+            sb3.indexOf(needle2, start2);
+        }
+
+        // Scenario inspired by testLang294
+        StrBuilder sb4 = new StrBuilder("\n%BLAH%\nDo more stuff\neven more stuff\n%BLAH%\n");
+        sb4.deleteAll("\n%BLAH%");
+        sb4.indexOf("\n%BLAH%");
+
+        // Grow-shrink scenario to increase capacity vs size gap
+        StrBuilder big = new StrBuilder(data.consumeAsciiString(200));
+        String del = data.consumeAsciiString(20);
+        if (del == null || del.length() == 0) {
+            del = "z";
+        }
+        big.append(del);
+        if (data.consumeBoolean()) {
+            big.deleteFirst(del);
+        } else {
+            big.deleteAll(del);
+        }
+        if (data.consumeBoolean()) {
+            big.indexOf(del, data.consumeInt(-8, big.length() + 8));
+        } else {
+            big.indexOf(del);
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 010/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: StrBuilder.indexOf(String, int) may match beyond logical size due to scanning up to buffer capacity; Minimal input: new StrBuilder("onetwothree")->deleteFirst("three")->indexOf("three") */
+        // Anchor: exact failing scenario from the test
+        StrBuilder anchor = new StrBuilder("onetwothree");
+        anchor.deleteFirst("three");
+        int anchorResult = anchor.indexOf("three");
+        if (anchorResult != -1) {
+            throw new AssertionError("expected:<-1> but was:<" + anchorResult + ">");
+        }
+
+        // Explore: construct strings of form prefix + needle, delete needle, then search for needle
+        // Ensure needle length >= 2 to hit the String-searching path, not the char-searching shortcut.
+        String needle = data.consumeAsciiString(20);
+        if (needle == null || needle.length() < 2) {
+            needle = "ab";
+        }
+
+        // Choose a fill character not present in the needle to ensure prefix cannot contain needle.
+        char[] candidates = new char[] {
+            'X','Z','0','1','2','3','4','5','6','7','8','9',
+            'A','B','C','D','E','F','G','H','I','J','K','L',
+            'M','N','O','P','Q','R','S','T','U','V','W','Y'
+        };
+        char fill = 'X';
+        for (int i = 0; i < candidates.length; i++) {
+            if (needle.indexOf(candidates[i]) == -1) {
+                fill = candidates[i];
+                break;
+            }
+        }
+
+        // Ensure prefix length >= needle length so strLen <= size and we actually enter the scanning loop.
+        int prefixLen = data.consumeInt(needle.length(), needle.length() + 50);
+        StringBuilder prefixSb = new StringBuilder(prefixLen);
+        for (int i = 0; i < prefixLen; i++) {
+            prefixSb.append(fill);
+        }
+        String prefix = prefixSb.toString();
+
+        // Build, delete the trailing needle, then search for it again.
+        StrBuilder sb = new StrBuilder(prefix + needle);
+        if (data.consumeBoolean()) {
+            sb.deleteFirst(needle);
+        } else {
+            sb.deleteAll(needle);
+        }
+
+        int res = sb.indexOf(needle);
+        if (res != -1) {
+            throw new AssertionError("expected:<-1> but was:<" + res + ">; prefixLen=" + prefixLen + ", needle=\"" + needle + "\"");
+        }
+
+        // Also test indexOf with an explicit start index within the valid range.
+        int start = data.consumeInt(0, prefixLen);
+        int res2 = sb.indexOf(needle, start);
+        if (res2 != -1) {
+            throw new AssertionError("expected:<-1> but was:<" + res2 + "> for start=" + start + "; prefixLen=" + prefixLen + ", needle=\"" + needle + "\"");
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 011/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: StrBuilder.indexOf(String, int) scans using buffer length and may match beyond logical size; Minimal shape: capacity > content, append "onetwothree", deleteFirst("three"), then indexOf("three", 0) */
+        // Anchor: ensure capacity > size and reproduce LANG-294 with exact needle "three"
+        StrBuilder anchor = new StrBuilder(64);
+        anchor.append("onetwothree");
+        anchor.deleteFirst("three");
+        int anchorIdx = anchor.indexOf("three", 0);
+        if (anchorIdx != -1) {
+            throw new AssertionError("expected:<-1> but was:<" + anchorIdx + ">");
+        }
+
+        // Explore: vary needle and sizes but keep the same shape (prefix + needle at end, then delete and search)
+        String needle = data.consumeAsciiString(20);
+        if (needle == null || needle.length() < 2) {
+            needle = "ab";
+        }
+
+        // Choose a fill character not present in needle to ensure prefix cannot contain needle
+        char[] candidates = new char[] {
+            'X','Z','0','1','2','3','4','5','6','7','8','9',
+            'A','B','C','D','E','F','G','H','I','J','K','L',
+            'M','N','O','P','Q','R','S','T','U','V','W','Y'
+        };
+        char fill = 'X';
+        for (int i = 0; i < candidates.length; i++) {
+            if (needle.indexOf(candidates[i]) == -1) {
+                fill = candidates[i];
+                break;
+            }
+        }
+
+        int strLen = needle.length();
+        int prefixLen = data.consumeInt(strLen, strLen + 50);
+        StringBuilder p = new StringBuilder(prefixLen);
+        for (int i = 0; i < prefixLen; i++) {
+            p.append(fill);
+        }
+        String prefix = p.toString();
+
+        // Ensure capacity > size + strLen to force scanning into the slack region in the buggy version
+        int extra = data.consumeInt(1, 256);
+        int capacity = prefixLen + strLen + extra;
+
+        StrBuilder sb = new StrBuilder(capacity);
+        sb.append(prefix);
+        sb.append(needle);
+
+        if (data.consumeBoolean()) {
+            sb.deleteFirst(needle);
+        } else {
+            sb.deleteAll(needle);
+        }
+
+        // Call the patched target directly
+        int res = sb.indexOf(needle, 0);
+        if (res != -1) {
+            throw new AssertionError("expected:<-1> but was:<" + res + ">; needle=\"" + needle + "\" prefixLen=" + prefixLen + " cap=" + capacity);
+        }
+
+        // Also try with a start index within bounds
+        int start = data.consumeInt(0, prefixLen);
+        int res2 = sb.indexOf(needle, start);
+        if (res2 != -1) {
+            throw new AssertionError("expected:<-1> but was:<" + res2 + ">; start=" + start + " needle=\"" + needle + "\" prefixLen=" + prefixLen + " cap=" + capacity);
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 012/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug in StrBuilder.indexOf(String,int): inner loop scans using buffer length without checking logical size; Minimal shape: new StrBuilder("onetwothree"), deleteFirst("three"), then indexOf("three", 0) */
+        // Anchor: drive the exact scenario and, on buggy version, escalate the wrong positive into an exception.
+        StrBuilder anchor = new StrBuilder("onetwothree");
+        anchor.deleteFirst("three");
+        int idx = anchor.indexOf("three", 0); // must call the patched overload explicitly
+        if (idx >= 0) {
+            // On buggy version, idx == 6 while size == 6; this throws StringIndexOutOfBoundsException.
+            anchor.charAt(idx + "three".length() - 1);
+        }
+
+        // Explore: same shape with fuzzed needle and controlled prefix so strLen <= size and capacity > size.
+        String needle = data.consumeAsciiString(20);
+        if (needle == null || needle.length() < 2) {
+            needle = "ab";
+        }
+        // Choose a fill char not in needle to ensure prefix doesn't contain the needle.
+        char fill = 'X';
+        if (needle.indexOf(fill) != -1) {
+            fill = 'Z';
+            if (needle.indexOf(fill) != -1) {
+                fill = '0';
+            }
+        }
+        int strLen = needle.length();
+        int prefixLen = data.consumeInt(strLen, strLen + 50);
+        StringBuilder psb = new StringBuilder(prefixLen);
+        for (int i = 0; i < prefixLen; i++) {
+            psb.append(fill);
+        }
+        String prefix = psb.toString();
+
+        // Build with extra capacity implicitly, then delete the trailing needle and search again.
+        StrBuilder sb = new StrBuilder(prefix + needle);
+        if (data.consumeBoolean()) {
+            sb.deleteFirst(needle);
+        } else {
+            sb.deleteAll(needle);
+        }
+        int idx2 = sb.indexOf(needle, 0);
+        if (idx2 >= 0) {
+            sb.charAt(idx2 + needle.length() - 1);
+        }
+
+        // Additional scenario inspired by LANG-294 removal pattern.
+        StrBuilder sb2 = new StrBuilder("\n%BLAH%\nDo more stuff\neven more stuff\n%BLAH%\n");
+        sb2.deleteAll("\n%BLAH%");
+        int idx3 = sb2.indexOf("\n%BLAH%", 0);
+        if (idx3 >= 0) {
+            sb2.charAt(idx3);
+        }
+
+        // Vary start index explicitly to exercise the overload more.
+        StrBuilder sb3 = new StrBuilder(prefix + needle);
+        sb3.deleteFirst(needle);
+        int start = data.consumeInt(-5, prefixLen + 5);
+        int idx4 = sb3.indexOf(needle, start);
+        if (idx4 >= 0) {
+            sb3.charAt(idx4 + needle.length() - 1);
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+⟲ 3 repair turns failed in a row — resetting to a fresh prompt
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang.text` (`package org.apache.commons.lang.text;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_61_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/text/StrBuilder.java	
++++ /src/java/org/apache/commons/lang/text/StrBuilder.java
+@@ -1777,7 +1777,7 @@
+         outer:
+         for (int i = startIndex; i < len; i++) {
+             for (int j = 0; j < strLen; j++) {
+-                if (str.charAt(j) != thisBuf[i + j]) {
++            	if (str.charAt(j) != thisBuf[i + j] || (i + j >= size()) == true) {
+                     continue outer;
+                 }
+             }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Reader;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.SystemUtils;
+</source_imports>
+
+Function `indexOf`:
+<signature>
+public int indexOf(String str, int startIndex)
+</signature>
+<code>
+    public int indexOf(String str, int startIndex) {
+        startIndex = (startIndex < 0 ? 0 : startIndex);
+        if (str == null || startIndex >= size) {
+            return -1;
+        }
+        int strLen = str.length();
+        if (strLen == 1) {
+            return indexOf(str.charAt(0), startIndex);
+        }
+        if (strLen == 0) {
+            return startIndex;
+        }
+        if (strLen > size) {
+            return -1;
+        }
+        char[] thisBuf = buffer;
+        int len = thisBuf.length - strLen;
+        outer:
+        for (int i = startIndex; i < len; i++) {
+            for (int j = 0; j < strLen; j++) {
+                if (str.charAt(j) != thisBuf[i + j]) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
+    }
+</code>
+Methods called by `indexOf` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="length" from="StrBuilder.java">
+<signature>
+public int length()
+</signature>
+<code>
+    public int length() {
+        return size;
+    }
+</code>
+</callee>
+<callee name="indexOf" from="StrBuilder.java">
+<signature>
+public int indexOf(char ch)
+</signature>
+<code>
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</code>
+<implementation in="StrBuilder.java">
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(String str) {
+        return indexOf(str, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(StrMatcher matcher) {
+        return indexOf(matcher, 0);
+    }
+</implementation>
+</callee>
+<callee name="charAt" from="StrBuilder.java">
+<signature>
+public char charAt(int index)
+</signature>
+<code>
+    public char charAt(int index) {
+        if (index < 0 || index >= length()) {
+            throw new StringIndexOutOfBoundsException(index);
+        }
+        return buffer[index];
+    }
+</code>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: junit.framework.AssertionFailedError, java.lang.ArrayIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: junit.framework.AssertionFailedError
+message: expected:<-1> but was:<6>
+thrown_at: junit.framework.Assert.fail(Assert.java:57)
+anchor_input: "three"  // hard-code this verbatim as your first call, then fuzz inputs of the same shape
+</ground_truth_crash>
+Anchor call — hard-code this literal verbatim as the first call in your harness, then use FuzzedDataProvider to generate additional inputs of the same shape:
+<key_calls class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+"three"
+</key_calls>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+    public void testIndexOfLang294() {
+        StrBuilder sb = new StrBuilder("onetwothree");
+        sb.deleteFirst("three");
+        assertEquals(-1, sb.indexOf("three"));
+    }
+</failing_test>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testLang294">
+    public void testLang294() {
+        StrBuilder sb = new StrBuilder("\n%BLAH%\nDo more stuff\neven more stuff\n%BLAH%\n");
+        sb.deleteAll("\n%BLAH%");
+        assertEquals("\nDo more stuff\neven more stuff\n", sb.toString()); 
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 013/30 ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug class: StrBuilder.indexOf(String,int) scans buffer beyond logical size; Minimal shape: new StrBuilder("onetwothree").deleteFirst("three") then indexOf("three") */
+        // ANCHOR: exact failing sequence from the test
+        StrBuilder anchor = new StrBuilder("onetwothree");
+        anchor.deleteFirst("three");
+        int anchorIdx = anchor.indexOf("three");
+        if (anchorIdx != -1) {
+            throw new AssertionError("expected:<-1> but was:<" + anchorIdx + ">");
+        }
+
+        // EXPLORE: fuzz around the same shape: base = prefix + needle; deleteFirst(needle); indexOf(needle) should be -1
+        if (data == null) return;
+
+        // Generate a needle; ensure length >= 2 to hit the string-search path
+        String needle = data.consumeAsciiString(64);
+        if (needle.length() == 0) {
+            needle = "aa";
+        } else if (needle.length() == 1) {
+            needle = needle + needle;
+        }
+
+        // Choose a filler character not present in the needle so prefix cannot contain the needle
+        char[] candidates = new char[] {'X','Y','Z','0','1','2','A','B','C','D','E','F','G'};
+        char filler = 'H';
+        for (int i = 0; i < candidates.length; i++) {
+            if (needle.indexOf(candidates[i]) < 0) {
+                filler = candidates[i];
+                break;
+            }
+        }
+
+        int prefixLen = data.consumeInt(0, 32);
+        StringBuilder pb = new StringBuilder(prefixLen);
+        for (int i = 0; i < prefixLen; i++) {
+            pb.append(filler);
+        }
+        String prefix = pb.toString();
+
+        String base = prefix + needle;
+        StrBuilder sb = new StrBuilder(base);
+        sb.deleteFirst(needle);
+
+        // Check indexOf without startIndex
+        int idx = sb.indexOf(needle);
+        if (idx != -1) {
+            throw new AssertionError("expected -1 after deleteFirst, but got " + idx);
+        }
+
+        // Also exercise indexOf with a startIndex near the boundary
+        int start = data.consumeInt(-5, prefixLen + 5);
+        int idxWithStart = sb.indexOf(needle, start);
+        if (idxWithStart != -1) {
+            throw new AssertionError("indexOf(String,int) expected -1 after deleteFirst, but got " + idxWithStart + " at start " + start);
+        }
+
+        // Optionally exercise deleteAll with a specific pattern used in tests to drive more paths
+        if (data.consumeBoolean()) {
+            StrBuilder sb2 = new StrBuilder("\n%BLAH%\nDo more stuff\neven more stuff\n%BLAH%\n");
+            sb2.deleteAll("\n%BLAH%");
+            // Ensure the marker was removed completely
+            if (sb2.indexOf("%BLAH%") != -1) {
+                throw new AssertionError("deleteAll failed to remove all occurrences of %BLAH%");
+            }
+            // Touch indexOf(String,int) explicitly again
+            sb2.indexOf("\n", 0);
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 014/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug class: StrBuilder.indexOf(String,int) scans into buffer beyond logical size; Minimal input: new StrBuilder("onetwothree").deleteFirst("three"); then indexOf("three") should be -1 but buggy returns 6 */
+        // ANCHOR: exact failing sequence from the test to trigger junit.framework.AssertionFailedError on buggy version
+        StrBuilder anchor = new StrBuilder("onetwothree");
+        anchor.deleteFirst("three");
+        junit.framework.Assert.assertEquals(-1, anchor.indexOf("three", 0));
+
+        if (data == null) return;
+
+        // EXPLORE: fuzz around the same shape: base = prefix + needle; deleteFirst(needle); indexOf(needle) must be -1
+        String needle = data.consumeAsciiString(32);
+        if (needle.length() == 0) {
+            needle = "zz";
+        } else if (needle.length() == 1) {
+            needle = needle + needle;
+        }
+
+        // Create a prefix that cannot contain the needle by using a non-ASCII control char not produced by consumeAsciiString
+        int prefixLen = data.consumeInt(0, 64);
+        if (prefixLen < needle.length()) {
+            prefixLen = needle.length();
+        }
+        StringBuilder pb = new StringBuilder(prefixLen);
+        for (int i = 0; i < prefixLen; i++) {
+            pb.append('\u0001');
+        }
+        String base = pb.toString() + needle;
+
+        StrBuilder sb = new StrBuilder(base);
+        sb.deleteFirst(needle);
+
+        // Exercise indexOf(String) and indexOf(String,int)
+        junit.framework.Assert.assertEquals(-1, sb.indexOf(needle));
+        int start = data.consumeInt(-5, prefixLen + 5);
+        junit.framework.Assert.assertEquals(-1, sb.indexOf(needle, start));
+
+        // Additional variation to keep capacity > size and re-check
+        if (data.consumeBoolean()) {
+            sb.append(needle);
+            sb.deleteFirst(needle);
+            junit.framework.Assert.assertEquals(-1, sb.indexOf(needle, 0));
+        }
+
+        // Drive another path similar to testLang294 to hit indexOf(String,int) again after deletes
+        if (data.consumeBoolean()) {
+            StrBuilder sb2 = new StrBuilder("\n%BLAH%\nDo more stuff\neven more stuff\n%BLAH%\n");
+            sb2.deleteAll("\n%BLAH%");
+            junit.framework.Assert.assertEquals(-1, sb2.indexOf("%BLAH%", 0));
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 015/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug class: StrBuilder.indexOf(String,int) scans beyond logical size; Minimal shape: new StrBuilder("onetwothree").deleteFirst("three"); then indexOf("three") must be -1 but buggy returns 6 */
+        // ANCHOR: exact failing sequence
+        StrBuilder anchor = new StrBuilder("onetwothree");
+        anchor.deleteFirst("three");
+        int anchorIdx = anchor.indexOf("three", 0);
+        if (anchorIdx != -1) {
+            // Crash only on buggy version
+            anchor.charAt(anchor.length());
+        }
+
+        // EXPLORE: fuzz neighbors of the same shape
+        // 1) pick a needle of length >= 2 to ensure indexOf(String,int) path
+        String needle = data.consumeAsciiString(64);
+        if (needle.length() < 2) {
+            needle = "zz";
+        }
+        int strLen = needle.length();
+
+        // 2) build a prefix comprised of a char not present in the ASCII needle to ensure the needle occurs only at the end
+        int prefixLen = data.consumeInt(0, 64);
+        if (prefixLen < strLen) {
+            prefixLen = strLen;
+        }
+        StringBuilder pb = new StringBuilder(prefixLen);
+        for (int i = 0; i < prefixLen; i++) {
+            pb.append('\u0001'); // not in ASCII, so the prefix cannot contain the ASCII needle
+        }
+        String base = pb.toString() + needle;
+
+        // 3) construct, delete the trailing needle, then search for it again
+        StrBuilder sb = new StrBuilder(base);
+        sb.deleteFirst(needle);
+
+        // Call the patched method variant directly
+        int start = data.consumeInt(-5, prefixLen + 5);
+        int idx = sb.indexOf(needle, start);
+        if (idx != -1) {
+            // Buggy version may find the stale needle beyond size; trigger a crash
+            sb.charAt(sb.length());
+        }
+
+        // Also hit the no-startIndex overload which delegates to the patched method
+        int idx2 = sb.indexOf(needle);
+        if (idx2 != -1) {
+            sb.charAt(sb.length());
+        }
+
+        // Additional variation to keep capacity > size and revisit the condition
+        if (data.consumeBoolean()) {
+            StrBuilder sb2 = new StrBuilder(base);
+            // Create some extra slack in the buffer and then remove it
+            sb2.append("pad");
+            sb2.deleteFirst("pad");
+            sb2.deleteFirst(needle);
+            int idx3 = sb2.indexOf(needle, 0);
+            if (idx3 != -1) {
+                sb2.charAt(sb2.length());
+            }
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+
+==================== attempt 016/30 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug class: StrBuilder.indexOf(String,int); Minimal shape: large-capacity StrBuilder with "...three" at end, deleteFirst("three"), then indexOf("three") incorrectly finds stale chars beyond size */
+        // ANCHOR: force large capacity so stale "three" remains beyond logical size
+        StrBuilder anchor = new StrBuilder(64);
+        anchor.append("onetwothree");
+        anchor.deleteFirst("three");
+        int anchorIdx = anchor.indexOf("three");
+        if (anchorIdx != -1) {
+            // Trigger an exception that distinguishes buggy behavior
+            anchor.charAt(anchor.length()); // StringIndexOutOfBoundsException
+        }
+
+        if (data == null) return;
+
+        // EXPLORE: same shape fuzzing — prefix + needle at end, ensure large capacity, delete needle, then search for it
+        String needle = data.consumeAsciiString(32);
+        if (needle.length() < 2) {
+            needle = "ab";
+        }
+
+        // Choose a filler character not present in the needle so the needle can't appear in the prefix
+        char filler = 0;
+        char[] candidates = new char[] {'X','Y','Z','0','1','2','3','4','5','6','7','8','9','!','@','#','$','%','^','&','*'};
+        for (char c : candidates) {
+            if (needle.indexOf(c) < 0) {
+                filler = c;
+                break;
+            }
+        }
+        if (filler == 0) {
+            filler = '\u0001';
+        }
+
+        int prefixLen = data.consumeInt(0, 64);
+        StringBuilder pb = new StringBuilder(prefixLen);
+        for (int i = 0; i < prefixLen; i++) {
+            pb.append(filler);
+        }
+        String prefix = pb.toString();
+
+        // Ensure capacity is strictly larger than content length so indexOf's buggy loop can scan into stale region
+        int capacity = prefix.length() + needle.length() + 64;
+
+        StrBuilder sb = new StrBuilder(capacity);
+        sb.append(prefix).append(needle);
+        sb.deleteFirst(needle);
+
+        // Exercise indexOf(String) which delegates to indexOf(String,int)
+        int idx = sb.indexOf(needle);
+        if (idx != -1) {
+            sb.charAt(sb.length());
+        }
+
+        // Also exercise the explicit startIndex overload around the boundary
+        int start = data.consumeInt(-3, prefixLen + 3);
+        int idx2 = sb.indexOf(needle, start);
+        if (idx2 != -1) {
+            sb.charAt(sb.length());
+        }
+
+        // Another variation: different capacity slack and re-check
+        if (data.consumeBoolean()) {
+            int extraCap = data.consumeInt(0, 128);
+            StrBuilder sb2 = new StrBuilder(prefix.length() + needle.length() + 1 + extraCap);
+            sb2.append(prefix).append(needle);
+            sb2.deleteFirst(needle);
+            int idx3 = sb2.indexOf(needle, 0);
+            if (idx3 != -1) {
+                sb2.charAt(sb2.length());
+            }
+        }
+    }
+}
+  ↳ no crash (rc=1). Jazzer output tail:
+      	at java.base/java.lang.Class.privateGetDeclaredMethods(Class.java:3166)
+      	at java.base/java.lang.Class.getMethodsRecursive(Class.java:3307)
+      	at java.base/java.lang.Class.getMethod0(Class.java:3293)
+      	at java.base/java.lang.Class.getMethod(Class.java:2106)
+      	at com.code_intelligence.jazzer.driver.ReflectionUtils.targetPublicStaticMethod(ReflectionUtils.java:27)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTargetByMethodName(FuzzTargetFinder.java:90)
+      	at com.code_intelligence.jazzer.driver.FuzzTargetFinder.findFuzzTarget(FuzzTargetFinder.java:68)
+      	at com.code_intelligence.jazzer.driver.Driver.start(Driver.java:152)
+      	at com.code_intelligence.jazzer.Jazzer.start(Jazzer.java:115)
+      	at com.code_intelligence.jazzer.Jazzer.main(Jazzer.java:68)
+      Caused by: java.lang.ClassNotFoundException: com.code_intelligence.jazzer.api.FuzzedDataProvider
+      	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:581)
+      	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:178)
+      	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:527)
+      	... 11 more
+✗ compiled but did NOT trigger on the buggy version (rc=1) — rejecting
+⟲ 3 repair turns failed in a row — resetting to a fresh prompt
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang.text` (`package org.apache.commons.lang.text;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_61_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/text/StrBuilder.java	
++++ /src/java/org/apache/commons/lang/text/StrBuilder.java
+@@ -1777,7 +1777,7 @@
+         outer:
+         for (int i = startIndex; i < len; i++) {
+             for (int j = 0; j < strLen; j++) {
+-                if (str.charAt(j) != thisBuf[i + j]) {
++            	if (str.charAt(j) != thisBuf[i + j] || (i + j >= size()) == true) {
+                     continue outer;
+                 }
+             }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Reader;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.SystemUtils;
+</source_imports>
+
+Function `indexOf`:
+<signature>
+public int indexOf(String str, int startIndex)
+</signature>
+<code>
+    public int indexOf(String str, int startIndex) {
+        startIndex = (startIndex < 0 ? 0 : startIndex);
+        if (str == null || startIndex >= size) {
+            return -1;
+        }
+        int strLen = str.length();
+        if (strLen == 1) {
+            return indexOf(str.charAt(0), startIndex);
+        }
+        if (strLen == 0) {
+            return startIndex;
+        }
+        if (strLen > size) {
+            return -1;
+        }
+        char[] thisBuf = buffer;
+        int len = thisBuf.length - strLen;
+        outer:
+        for (int i = startIndex; i < len; i++) {
+            for (int j = 0; j < strLen; j++) {
+                if (str.charAt(j) != thisBuf[i + j]) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
+    }
+</code>
+Methods called by `indexOf` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="length" from="StrBuilder.java">
+<signature>
+public int length()
+</signature>
+<code>
+    public int length() {
+        return size;
+    }
+</code>
+</callee>
+<callee name="indexOf" from="StrBuilder.java">
+<signature>
+public int indexOf(char ch)
+</signature>
+<code>
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</code>
+<implementation in="StrBuilder.java">
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(String str) {
+        return indexOf(str, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(StrMatcher matcher) {
+        return indexOf(matcher, 0);
+    }
+</implementation>
+</callee>
+<callee name="charAt" from="StrBuilder.java">
+<signature>
+public char charAt(int index)
+</signature>
+<code>
+    public char charAt(int index) {
+        if (index < 0 || index >= length()) {
+            throw new StringIndexOutOfBoundsException(index);
+        }
+        return buffer[index];
+    }
+</code>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: junit.framework.AssertionFailedError, java.lang.ArrayIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: junit.framework.AssertionFailedError
+message: expected:<-1> but was:<6>
+thrown_at: junit.framework.Assert.fail(Assert.java:57)
+anchor_input: "three"  // hard-code this verbatim as your first call, then fuzz inputs of the same shape
+</ground_truth_crash>
+Anchor call — hard-code this literal verbatim as the first call in your harness, then use FuzzedDataProvider to generate additional inputs of the same shape:
+<key_calls class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+"three"
+</key_calls>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+    public void testIndexOfLang294() {
+        StrBuilder sb = new StrBuilder("onetwothree");
+        sb.deleteFirst("three");
+        assertEquals(-1, sb.indexOf("three"));
+    }
+</failing_test>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testLang294">
+    public void testLang294() {
+        StrBuilder sb = new StrBuilder("\n%BLAH%\nDo more stuff\neven more stuff\n%BLAH%\n");
+        sb.deleteAll("\n%BLAH%");
+        assertEquals("\nDo more stuff\neven more stuff\n", sb.toString()); 
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 017/30 ====================
+--- raw LLM response ---/Users/kyamaguchi/vuln-patch/drr/Patches/Doverfitting/Jaid/Lang/patch2-Lang-61-Jaid-plausible.patch:8: trailing whitespace, space before tab in indent.
+            	if (str.charAt(j) != thisBuf[i + j] || (i + j >= size()) == true) {
+warning: 1 line applied after fixing whitespace errors.
+Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug target: StrBuilder.indexOf(String, int). Minimal shape: new StrBuilder("onetwothree").deleteFirst("three"); indexOf("three") */
+        // ANCHOR: Reproduce the known failing scenario from the test
+        StrBuilder anchor = new StrBuilder("onetwothree");
+        anchor.deleteFirst("three");
+        int anchorIdx = anchor.indexOf("three");
+        if (anchorIdx != -1) {
+            throw new junit.framework.AssertionFailedError("expected:<-1> but was:<" + anchorIdx + ">");
+        }
+
+        // EXPLORE: Vary the same shape to exercise overfitting fixes
+        // Construct a base string = prefix (no 'ch') + pattern (repeated 'ch'), then delete the pattern.
+        // After deletion, indexOf(pattern, 0) should be -1. On buggy versions it may return prefix.length().
+        byte bCh = data.consumeByte();
+        char ch = (char) ('a' + (Math.abs(bCh) % 26));
+        int patLen = 2 + (Math.abs(data.consumeByte()) % 8); // ensure length > 1 to hit String indexOf path
+        StringBuilder patSb = new StringBuilder(patLen);
+        for (int i = 0; i < patLen; i++) patSb.append(ch);
+        String pattern = patSb.toString();
+
+        int prefixLen = data.consumeInt(0, 64);
+        char fillerCandidate = (char) ('a' + (Math.abs(data.consumeByte()) % 26));
+        char filler = (fillerCandidate != ch ? fillerCandidate : (ch == 'a' ? 'b' : 'a'));
+        StringBuilder preSb = new StringBuilder(prefixLen);
+        for (int i = 0; i < prefixLen; i++) preSb.append(filler);
+        String prefix = preSb.toString();
+
+        StrBuilder sb = new StrBuilder(prefix + pattern);
+        if (data.consumeBoolean()) {
+            sb.deleteFirst(pattern);
+        } else {
+            sb.deleteAll(pattern);
+        }
+        int idx = sb.indexOf(pattern, 0);
+        if (idx != -1) {
+            throw new junit.framework.AssertionFailedError("expected:<-1> but was:<" + idx + ">");
+        }
+
+        // Additional variations to exercise the patched method with non-zero start index and different operations
+        int randomStart = data.consumeInt(-2, prefixLen + patLen + 5);
+        sb.indexOf(pattern, randomStart);
+
+        // Exercise deleteAll with the second test's shape (no assertion needed)
+        StrBuilder sb2 = new StrBuilder("\n%BLAH%\nDo more stuff\neven more stuff\n%BLAH%\n");
+        sb2.deleteAll("\n%BLAH%");
+        sb2.indexOf("%BLAH%", 0);
+        sb2.indexOf('\n'); // also touch char indexOf path
+    }
+}
+  ↳ crash detected (expected throwable 'junit.framework.AssertionFailedError' with stack frame)
+✓ compiled + triggered at /tmp/d4j/Lang_61_buggy/fuzz/attempt_017/FuzzHarness.java  (1/1 successes, 17 attempts so far)
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang.text` (`package org.apache.commons.lang.text;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_61_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/java/org/apache/commons/lang/text/StrBuilder.java	
++++ /src/java/org/apache/commons/lang/text/StrBuilder.java
+@@ -1777,7 +1777,7 @@
+         outer:
+         for (int i = startIndex; i < len; i++) {
+             for (int j = 0; j < strLen; j++) {
+-                if (str.charAt(j) != thisBuf[i + j]) {
++            	if (str.charAt(j) != thisBuf[i + j] || (i + j >= size()) == true) {
+                     continue outer;
+                 }
+             }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Reader;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.SystemUtils;
+</source_imports>
+
+Function `indexOf`:
+<signature>
+public int indexOf(String str, int startIndex)
+</signature>
+<code>
+    public int indexOf(String str, int startIndex) {
+        startIndex = (startIndex < 0 ? 0 : startIndex);
+        if (str == null || startIndex >= size) {
+            return -1;
+        }
+        int strLen = str.length();
+        if (strLen == 1) {
+            return indexOf(str.charAt(0), startIndex);
+        }
+        if (strLen == 0) {
+            return startIndex;
+        }
+        if (strLen > size) {
+            return -1;
+        }
+        char[] thisBuf = buffer;
+        int len = thisBuf.length - strLen;
+        outer:
+        for (int i = startIndex; i < len; i++) {
+            for (int j = 0; j < strLen; j++) {
+                if (str.charAt(j) != thisBuf[i + j]) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
+    }
+</code>
+Methods called by `indexOf` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="length" from="StrBuilder.java">
+<signature>
+public int length()
+</signature>
+<code>
+    public int length() {
+        return size;
+    }
+</code>
+</callee>
+<callee name="indexOf" from="StrBuilder.java">
+<signature>
+public int indexOf(char ch)
+</signature>
+<code>
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</code>
+<implementation in="StrBuilder.java">
+    public int indexOf(char ch) {
+        return indexOf(ch, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(String str) {
+        return indexOf(str, 0);
+    }
+</implementation>
+<implementation in="StrBuilder.java">
+    public int indexOf(StrMatcher matcher) {
+        return indexOf(matcher, 0);
+    }
+</implementation>
+</callee>
+<callee name="charAt" from="StrBuilder.java">
+<signature>
+public char charAt(int index)
+</signature>
+<code>
+    public char charAt(int index) {
+        if (index < 0 || index >= length()) {
+            throw new StringIndexOutOfBoundsException(index);
+        }
+        return buffer[index];
+    }
+</code>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: junit.framework.AssertionFailedError, java.lang.ArrayIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: junit.framework.AssertionFailedError
+message: expected:<-1> but was:<6>
+thrown_at: junit.framework.Assert.fail(Assert.java:57)
+anchor_input: "three"  // hard-code this verbatim as your first call, then fuzz inputs of the same shape
+</ground_truth_crash>
+Anchor call — hard-code this literal verbatim as the first call in your harness, then use FuzzedDataProvider to generate additional inputs of the same shape:
+<key_calls class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+"three"
+</key_calls>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testIndexOfLang294">
+    public void testIndexOfLang294() {
+        StrBuilder sb = new StrBuilder("onetwothree");
+        sb.deleteFirst("three");
+        assertEquals(-1, sb.indexOf("three"));
+    }
+</failing_test>
+<failing_test class="org.apache.commons.lang.text.StrBuilderTest" method="testLang294">
+    public void testLang294() {
+        StrBuilder sb = new StrBuilder("\n%BLAH%\nDo more stuff\neven more stuff\n%BLAH%\n");
+        sb.deleteAll("\n%BLAH%");
+        assertEquals("\nDo more stuff\neven more stuff\n", sb.toString()); 
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang.text;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+#################### campaign ####################
+project       : Lang
+bug           : 61 (Jaid)
+buggy dir     : /tmp/d4j/Lang_61_buggy
+target wins   : 1
+attempts used : 17
+wins          : 1
+success rate  : 5.9%
+distinct crashes (buggy ver): 0
+successful harnesses:
+  - /tmp/d4j/Lang_61_buggy/fuzz/attempt_017/FuzzHarness.java
+##################################################
+
+#################### fuzzing patched code ####################
+Copying /tmp/d4j/Lang_61_buggy → /tmp/d4j/Lang_61_buggy_patched_patch2-Lang-61-Jaid-plausible
+
+--- fuzzing org.apache.commons.lang.text.FuzzHarness (attempt_017) ---
+  ✗  CRASH FOUND (exit 1) — vulnerability still reachable on patched code
+
+#################### fuzz summary ####################
+harnesses run  : 1
+crashed        : 1  (vulnerability still reachable — patch may be overfitting)
+clean          : 0  (vulnerability not triggered — patch appears to fix the bug)
+timed out      : 0
+crashing harnesses:
+  - /tmp/d4j/Lang_61_buggy/fuzz/attempt_017/FuzzHarness.java
+##################################################

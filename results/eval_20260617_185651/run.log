@@ -1,0 +1,560 @@
+[overfitting] run 1 (have 0/10 distinct) -> project Chart
+Found 1 bug-triggering test(s):
+  ✓ org.jfree.data.xy.junit.XYSeriesTests::testBug1955483  [java.lang.IndexOutOfBoundsException]
+
+bug kind: crashing
+{
+  "modified_files": [
+    "source//org/jfree/data/xy/XYSeries.java"
+  ],
+  "patch_text": "--- /source//org/jfree/data/xy/XYSeries.java\n+++ /source//org/jfree/data/xy/XYSeries.java\n@@ -561,7 +561,7 @@\n             // new item...otherwise it will be just -1 and we should just\n             // append the value to the list...\n             if (this.autoSort) {\n-                this.data.add(-index - 1, new XYDataItem(x, y));\n+                org.jfree.data.xy.XYSeries.this.data.add(new org.jfree.data.xy.XYDataItem(x, y));\n             }\n             else {\n                 this.data.add(new XYDataItem(x, y));\n",
+  "functions": [
+    {
+      "func_name": "addOrUpdate",
+      "func_signature": "public XYDataItem addOrUpdate(Number x, Number y)",
+      "func_source": "    public XYDataItem addOrUpdate(Number x, Number y) {\n        if (x == null) {\n            throw new IllegalArgumentException(\"Null 'x' argument.\");\n        }\n\n        // if we get to here, we know that duplicate X values are not permitted\n        XYDataItem overwritten = null;\n        int index = indexOf(x);\n        if (index >= 0 && !this.allowDuplicateXValues) {\n            XYDataItem existing = (XYDataItem) this.data.get(index);\n            try {\n                overwritten = (XYDataItem) existing.clone();\n            }\n            catch (CloneNotSupportedException e) {\n                throw new SeriesException(\"Couldn't clone XYDataItem!\");\n            }\n            existing.setY(y);\n        }\n        else {\n            // if the series is sorted, the negative index is a result from\n            // Collections.binarySearch() and tells us where to insert the\n            // new item...otherwise it will be just -1 and we should just\n            // append the value to the list...\n            if (this.autoSort) {\n                this.data.add(-index - 1, new XYDataItem(x, y));\n            }\n            else {\n                this.data.add(new XYDataItem(x, y));\n            }\n            // check if this addition will exceed the maximum item count...\n            if (getItemCount() > this.maximumItemCount) {\n                this.data.remove(0);\n            }\n        }\n        fireSeriesChanged();\n        return overwritten;\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": [
+        {
+          "name": "indexOf",
+          "source_file": "DefaultXYDataset.java",
+          "signature": "public int indexOf(Comparable seriesKey)",
+          "source": "    public int indexOf(Comparable seriesKey) {\n        return this.seriesKeys.indexOf(seriesKey);\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "DefaultXYDataset.java",
+              "    public int indexOf(Comparable seriesKey) {\n        return this.seriesKeys.indexOf(seriesKey);\n    }"
+            ],
+            [
+              "DefaultXYZDataset.java",
+              "    public int indexOf(Comparable seriesKey) {\n        return this.seriesKeys.indexOf(seriesKey);\n    }"
+            ],
+            [
+              "VectorSeriesCollection.java",
+              "    public int indexOf(VectorSeries series) {\n        if (series == null) {\n            throw new IllegalArgumentException(\"Null 'series' argument.\");\n        }\n        return this.data.indexOf(series);\n    }"
+            ],
+            [
+              "XYSeries.java",
+              "    public int indexOf(Number x) {\n        if (this.autoSort) {\n            return Collections.binarySearch(this.data, new XYDataItem(x, null));\n        }\n        else {\n            for (int i = 0; i < this.data.size(); i++) {\n                XYDataItem item = (XYDataItem) this.data.get(i);\n                if (item.getX().equals(x)) {\n                    return i;\n                }\n            }\n            return -1;\n        }\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "get",
+          "source_file": "MatrixSeries.java",
+          "signature": "public double get(int i, int j)",
+          "source": "    public double get(int i, int j) {\n        return this.data[i][j];\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "clone",
+          "source_file": "CategoryTableXYDataset.java",
+          "signature": "public Object clone() throws CloneNotSupportedException",
+          "source": "    public Object clone() throws CloneNotSupportedException {\n        CategoryTableXYDataset clone = (CategoryTableXYDataset) super.clone();\n        clone.values = (DefaultKeyedValues2D) this.values.clone();\n        clone.intervalDelegate = new IntervalXYDelegate(clone);\n        // need to configure the intervalDelegate to match the original\n        clone.intervalDelegate.setFixedIntervalWidth(getIntervalWidth());\n        clone.intervalDelegate.setAutoWidth(isAutoWidth());\n        clone.intervalDelegate.setIntervalPositionFactor(\n                getIntervalPositionFactor());\n        return clone;\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "CategoryTableXYDataset.java",
+              "    public Object clone() throws CloneNotSupportedException {\n        CategoryTableXYDataset clone = (CategoryTableXYDataset) super.clone();\n        clone.values = (DefaultKeyedValues2D) this.values.clone();\n        clone.intervalDelegate = new IntervalXYDelegate(clone);\n        // need to configure the intervalDelegate to match the original\n        clone.intervalDelegate.setFixedIntervalWidth(getIntervalWidth());\n        clone.intervalDelegate.setAutoWidth(isAutoWidth());\n        clone.intervalDelegate.setIntervalPositionFactor(\n                getIntervalPositionFactor());\n        return clone;\n    }"
+            ],
+            [
+              "DefaultIntervalXYDataset.java",
+              "    public Object clone() throws CloneNotSupportedException {\n        DefaultIntervalXYDataset clone\n                = (DefaultIntervalXYDataset) super.clone();\n        clone.seriesKeys = new java.util.ArrayList(this.seriesKeys);\n        clone.seriesList = new ArrayList(this.seriesList.size());\n        for (int i = 0; i < this.seriesList.size(); i++) {\n            double[][] data = (double[][]) this.seriesList.get(i);\n            double[] x = data[0];\n            double[] xStart = data[1];\n            double[] xEnd = data[2];\n            double[] y = data[3];\n            double[] yStart = data[4];\n            double[] yEnd = data[5];\n            double[] xx = new double[x.length];\n            double[] xxStart = new double[xStart.length];\n            double[] xxEnd = new double[xEnd.length];\n            double[] yy = new double[y.length];\n            double[] yyStart = new double[yStart.length];\n            double[] yyEnd = new double[yEnd.length];\n            System.arraycopy(x, 0, xx, 0, x.length);\n            System.arraycopy(xStart, 0, xxStart, 0, xStart.length);\n            System.arraycopy(xEnd, 0, xxEnd, 0, xEnd.length);\n            System.arraycopy(y, 0, yy, 0, y.length);\n            System.arraycopy(yStart, 0, yyStart, 0, yStart.length);\n            System.arraycopy(yEnd, 0, yyEnd, 0, yEnd.length);\n            clone.seriesList.add(i, new double[][] {xx, xxStart, xxEnd, yy,\n                    yyStart, yyEnd});\n        }\n        return clone;\n    }"
+            ],
+            [
+              "DefaultOHLCDataset.java",
+              "    public Object clone() throws CloneNotSupportedException {\n        DefaultOHLCDataset clone = (DefaultOHLCDataset) super.clone();\n        clone.data = new OHLCDataItem[this.data.length];\n        System.arraycopy(this.data, 0, clone.data, 0, this.data.length);\n        return clone;\n    }"
+            ],
+            [
+              "DefaultTableXYDataset.java",
+              "    public Object clone() throws CloneNotSupportedException {\n        DefaultTableXYDataset clone = (DefaultTableXYDataset) super.clone();\n        int seriesCount = this.data.size();\n        clone.data = new java.util.ArrayList(seriesCount);\n        for (int i = 0; i < seriesCount; i++) {\n            XYSeries series = (XYSeries) this.data.get(i);\n            clone.data.add(series.clone());\n        }\n\n        clone.intervalDelegate = new IntervalXYDelegate(clone);\n        // need to configure the intervalDelegate to match the original\n        clone.intervalDelegate.setFixedIntervalWidth(getIntervalWidth());\n        clone.intervalDelegate.setAutoWidth(isAutoWidth());\n        clone.intervalDelegate.setIntervalPositionFactor(\n                getIntervalPositionFactor());\n        clone.updateXPoints();\n        return clone;\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "setY",
+          "source_file": "XYDataItem.java",
+          "signature": "public void setY(double y)",
+          "source": "    public void setY(double y) {\n        setY(new Double(y));\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "XYDataItem.java",
+              "    public void setY(double y) {\n        setY(new Double(y));\n    }"
+            ],
+            [
+              "XYDataItem.java",
+              "    public void setY(Number y) {\n        this.y = y;\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "add",
+          "source_file": "CategoryTableXYDataset.java",
+          "signature": "public void add(double x, double y, String seriesName)",
+          "source": "    public void add(double x, double y, String seriesName) {\n        add(new Double(x), new Double(y), seriesName, true);\n    }",
+          "is_abstract": false,
+          "impls": [
+            [
+              "CategoryTableXYDataset.java",
+              "    public void add(double x, double y, String seriesName) {\n        add(new Double(x), new Double(y), seriesName, true);\n    }"
+            ],
+            [
+              "CategoryTableXYDataset.java",
+              "    public void add(Number x, Number y, String seriesName, boolean notify) {\n        this.values.addValue(y, (Comparable) x, seriesName);\n        if (notify) {\n            fireDatasetChanged();\n        }\n    }"
+            ],
+            [
+              "VectorSeries.java",
+              "    public void add(double x, double y, double deltaX, double deltaY) {\n        super.add(new VectorDataItem(x, y, deltaX, deltaY), true);\n    }"
+            ],
+            [
+              "XIntervalSeries.java",
+              "    public void add(double x, double xLow, double xHigh, double y) {\n        super.add(new XIntervalDataItem(x, xLow, xHigh, y), true);\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "getItemCount",
+          "source_file": "TableXYDataset.java",
+          "signature": "public int getItemCount()",
+          "source": "    public int getItemCount();",
+          "is_abstract": true,
+          "impls": [
+            [
+              "CategoryTableXYDataset.java",
+              "    public int getItemCount() {\n        return this.values.getRowCount();\n    }"
+            ],
+            [
+              "CategoryTableXYDataset.java",
+              "    public int getItemCount(int series) {\n        return getItemCount();  // all series have the same number of items in\n                                // this dataset\n    }"
+            ],
+            [
+              "DefaultHighLowDataset.java",
+              "    public int getItemCount(int series) {\n        return this.date.length;\n    }"
+            ],
+            [
+              "DefaultIntervalXYDataset.java",
+              "    public int getItemCount(int series) {\n        if ((series < 0) || (series >= getSeriesCount())) {\n            throw new IllegalArgumentException(\"Series index out of bounds\");\n        }\n        double[][] seriesArray = (double[][]) this.seriesList.get(series);\n        return seriesArray[0].length;\n    }"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "package": "org.jfree.data.xy",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.io.Serializable;",
+    "import java.util.Collections;",
+    "import java.util.List;",
+    "import org.jfree.chart.util.ObjectUtilities;",
+    "import org.jfree.data.general.Series;",
+    "import org.jfree.data.general.SeriesChangeEvent;",
+    "import org.jfree.data.general.SeriesException;"
+  ]
+}
+Captured ground-truth crash input:
+  throwable : java.lang.IndexOutOfBoundsException
+  message   : Index: -1, Size: 1
+  thrown_at : org.jfree.data.xy.XYSeries.addOrUpdate(XYSeries.java:564)
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.jfree.data.xy` (`package org.jfree.data.xy;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Chart_5_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /source//org/jfree/data/xy/XYSeries.java
++++ /source//org/jfree/data/xy/XYSeries.java
+@@ -561,7 +561,7 @@
+             // new item...otherwise it will be just -1 and we should just
+             // append the value to the list...
+             if (this.autoSort) {
+-                this.data.add(-index - 1, new XYDataItem(x, y));
++                org.jfree.data.xy.XYSeries.this.data.add(new org.jfree.data.xy.XYDataItem(x, y));
+             }
+             else {
+                 this.data.add(new XYDataItem(x, y));
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
+import org.jfree.chart.util.ObjectUtilities;
+import org.jfree.data.general.Series;
+import org.jfree.data.general.SeriesChangeEvent;
+import org.jfree.data.general.SeriesException;
+</source_imports>
+
+Function `addOrUpdate`:
+<signature>
+public XYDataItem addOrUpdate(Number x, Number y)
+</signature>
+<code>
+    public XYDataItem addOrUpdate(Number x, Number y) {
+        if (x == null) {
+            throw new IllegalArgumentException("Null 'x' argument.");
+        }
+
+        // if we get to here, we know that duplicate X values are not permitted
+        XYDataItem overwritten = null;
+        int index = indexOf(x);
+        if (index >= 0 && !this.allowDuplicateXValues) {
+            XYDataItem existing = (XYDataItem) this.data.get(index);
+            try {
+                overwritten = (XYDataItem) existing.clone();
+            }
+            catch (CloneNotSupportedException e) {
+                throw new SeriesException("Couldn't clone XYDataItem!");
+            }
+            existing.setY(y);
+        }
+        else {
+            // if the series is sorted, the negative index is a result from
+            // Collections.binarySearch() and tells us where to insert the
+            // new item...otherwise it will be just -1 and we should just
+            // append the value to the list...
+            if (this.autoSort) {
+                this.data.add(-index - 1, new XYDataItem(x, y));
+            }
+            else {
+                this.data.add(new XYDataItem(x, y));
+            }
+            // check if this addition will exceed the maximum item count...
+            if (getItemCount() > this.maximumItemCount) {
+                this.data.remove(0);
+            }
+        }
+        fireSeriesChanged();
+        return overwritten;
+    }
+</code>
+Methods called by `addOrUpdate` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="indexOf" from="DefaultXYDataset.java">
+<signature>
+public int indexOf(Comparable seriesKey)
+</signature>
+<code>
+    public int indexOf(Comparable seriesKey) {
+        return this.seriesKeys.indexOf(seriesKey);
+    }
+</code>
+<implementation in="DefaultXYDataset.java">
+    public int indexOf(Comparable seriesKey) {
+        return this.seriesKeys.indexOf(seriesKey);
+    }
+</implementation>
+<implementation in="DefaultXYZDataset.java">
+    public int indexOf(Comparable seriesKey) {
+        return this.seriesKeys.indexOf(seriesKey);
+    }
+</implementation>
+<implementation in="VectorSeriesCollection.java">
+    public int indexOf(VectorSeries series) {
+        if (series == null) {
+            throw new IllegalArgumentException("Null 'series' argument.");
+        }
+        return this.data.indexOf(series);
+    }
+</implementation>
+<implementation in="XYSeries.java">
+    public int indexOf(Number x) {
+        if (this.autoSort) {
+            return Collections.binarySearch(this.data, new XYDataItem(x, null));
+        }
+        else {
+            for (int i = 0; i < this.data.size(); i++) {
+                XYDataItem item = (XYDataItem) this.data.get(i);
+                if (item.getX().equals(x)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+    }
+</implementation>
+</callee>
+<callee name="get" from="MatrixSeries.java">
+<signature>
+public double get(int i, int j)
+</signature>
+<code>
+    public double get(int i, int j) {
+        return this.data[i][j];
+    }
+</code>
+</callee>
+<callee name="clone" from="CategoryTableXYDataset.java">
+<signature>
+public Object clone() throws CloneNotSupportedException
+</signature>
+<code>
+    public Object clone() throws CloneNotSupportedException {
+        CategoryTableXYDataset clone = (CategoryTableXYDataset) super.clone();
+        clone.values = (DefaultKeyedValues2D) this.values.clone();
+        clone.intervalDelegate = new IntervalXYDelegate(clone);
+        // need to configure the intervalDelegate to match the original
+        clone.intervalDelegate.setFixedIntervalWidth(getIntervalWidth());
+        clone.intervalDelegate.setAutoWidth(isAutoWidth());
+        clone.intervalDelegate.setIntervalPositionFactor(
+                getIntervalPositionFactor());
+        return clone;
+    }
+</code>
+<implementation in="CategoryTableXYDataset.java">
+    public Object clone() throws CloneNotSupportedException {
+        CategoryTableXYDataset clone = (CategoryTableXYDataset) super.clone();
+        clone.values = (DefaultKeyedValues2D) this.values.clone();
+        clone.intervalDelegate = new IntervalXYDelegate(clone);
+        // need to configure the intervalDelegate to match the original
+        clone.intervalDelegate.setFixedIntervalWidth(getIntervalWidth());
+        clone.intervalDelegate.setAutoWidth(isAutoWidth());
+        clone.intervalDelegate.setIntervalPositionFactor(
+                getIntervalPositionFactor());
+        return clone;
+    }
+</implementation>
+<implementation in="DefaultIntervalXYDataset.java">
+    public Object clone() throws CloneNotSupportedException {
+        DefaultIntervalXYDataset clone
+                = (DefaultIntervalXYDataset) super.clone();
+        clone.seriesKeys = new java.util.ArrayList(this.seriesKeys);
+        clone.seriesList = new ArrayList(this.seriesList.size());
+        for (int i = 0; i < this.seriesList.size(); i++) {
+            double[][] data = (double[][]) this.seriesList.get(i);
+            double[] x = data[0];
+            double[] xStart = data[1];
+            double[] xEnd = data[2];
+            double[] y = data[3];
+            double[] yStart = data[4];
+            double[] yEnd = data[5];
+            double[] xx = new double[x.length];
+            double[] xxStart = new double[xStart.length];
+            double[] xxEnd = new double[xEnd.length];
+            double[] yy = new double[y.length];
+            double[] yyStart = new double[yStart.length];
+            double[] yyEnd = new double[yEnd.length];
+            System.arraycopy(x, 0, xx, 0, x.length);
+            System.arraycopy(xStart, 0, xxStart, 0, xStart.length);
+            System.arraycopy(xEnd, 0, xxEnd, 0, xEnd.length);
+            System.arraycopy(y, 0, yy, 0, y.length);
+            System.arraycopy(yStart, 0, yyStart, 0, yStart.length);
+            System.arraycopy(yEnd, 0, yyEnd, 0, yEnd.length);
+            clone.seriesList.add(i, new double[][] {xx, xxStart, xxEnd, yy,
+                    yyStart, yyEnd});
+        }
+        return clone;
+    }
+</implementation>
+<implementation in="DefaultOHLCDataset.java">
+    public Object clone() throws CloneNotSupportedException {
+        DefaultOHLCDataset clone = (DefaultOHLCDataset) super.clone();
+        clone.data = new OHLCDataItem[this.data.length];
+        System.arraycopy(this.data, 0, clone.data, 0, this.data.length);
+        return clone;
+    }
+</implementation>
+<implementation in="DefaultTableXYDataset.java">
+    public Object clone() throws CloneNotSupportedException {
+        DefaultTableXYDataset clone = (DefaultTableXYDataset) super.clone();
+        int seriesCount = this.data.size();
+        clone.data = new java.util.ArrayList(seriesCount);
+        for (int i = 0; i < seriesCount; i++) {
+            XYSeries series = (XYSeries) this.data.get(i);
+            clone.data.add(series.clone());
+        }
+
+        clone.intervalDelegate = new IntervalXYDelegate(clone);
+        // need to configure the intervalDelegate to match the original
+        clone.intervalDelegate.setFixedIntervalWidth(getIntervalWidth());
+        clone.intervalDelegate.setAutoWidth(isAutoWidth());
+        clone.intervalDelegate.setIntervalPositionFactor(
+                getIntervalPositionFactor());
+        clone.updateXPoints();
+        return clone;
+    }
+</implementation>
+</callee>
+<callee name="setY" from="XYDataItem.java">
+<signature>
+public void setY(double y)
+</signature>
+<code>
+    public void setY(double y) {
+        setY(new Double(y));
+    }
+</code>
+<implementation in="XYDataItem.java">
+    public void setY(double y) {
+        setY(new Double(y));
+    }
+</implementation>
+<implementation in="XYDataItem.java">
+    public void setY(Number y) {
+        this.y = y;
+    }
+</implementation>
+</callee>
+<callee name="add" from="CategoryTableXYDataset.java">
+<signature>
+public void add(double x, double y, String seriesName)
+</signature>
+<code>
+    public void add(double x, double y, String seriesName) {
+        add(new Double(x), new Double(y), seriesName, true);
+    }
+</code>
+<implementation in="CategoryTableXYDataset.java">
+    public void add(double x, double y, String seriesName) {
+        add(new Double(x), new Double(y), seriesName, true);
+    }
+</implementation>
+<implementation in="CategoryTableXYDataset.java">
+    public void add(Number x, Number y, String seriesName, boolean notify) {
+        this.values.addValue(y, (Comparable) x, seriesName);
+        if (notify) {
+            fireDatasetChanged();
+        }
+    }
+</implementation>
+<implementation in="VectorSeries.java">
+    public void add(double x, double y, double deltaX, double deltaY) {
+        super.add(new VectorDataItem(x, y, deltaX, deltaY), true);
+    }
+</implementation>
+<implementation in="XIntervalSeries.java">
+    public void add(double x, double xLow, double xHigh, double y) {
+        super.add(new XIntervalDataItem(x, xLow, xHigh, y), true);
+    }
+</implementation>
+</callee>
+<callee name="getItemCount" from="TableXYDataset.java" abstract="true">
+<signature>
+public int getItemCount()
+</signature>
+<contract>
+    public int getItemCount();
+</contract>
+<implementation in="CategoryTableXYDataset.java">
+    public int getItemCount() {
+        return this.values.getRowCount();
+    }
+</implementation>
+<implementation in="CategoryTableXYDataset.java">
+    public int getItemCount(int series) {
+        return getItemCount();  // all series have the same number of items in
+                                // this dataset
+    }
+</implementation>
+<implementation in="DefaultHighLowDataset.java">
+    public int getItemCount(int series) {
+        return this.date.length;
+    }
+</implementation>
+<implementation in="DefaultIntervalXYDataset.java">
+    public int getItemCount(int series) {
+        if ((series < 0) || (series >= getSeriesCount())) {
+            throw new IllegalArgumentException("Series index out of bounds");
+        }
+        double[][] seriesArray = (double[][]) this.seriesList.get(series);
+        return seriesArray[0].length;
+    }
+</implementation>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: identify the input PROPERTY that triggers the patched line (the root cause), then use FuzzedDataProvider to generate many varied REAL inputs that satisfy that property — different lengths, positions, and surrounding content — and drive them all through the real entry point. You are testing whether the patch fixes the root cause for ALL such inputs, not just the seed; overfitting patches special-case the seed.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `XYSeriesTests`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+On the buggy version the root cause surfaces as: java.lang.IndexOutOfBoundsException (or a sibling failure with a different signature). Your harness must distinguish a genuine defect from the patch doing its job:
+  - The fixed code is SUPPOSED to reject invalid input cleanly. Any throwable that is a deliberate, documented rejection of bad input (a validation exception the API declares or is expected to raise for that input) is CORRECT post-fix behaviour — CATCH it inside fuzzerTestOneInput and return normally. Do not let it escape.
+  - Only let a throwable propagate uncaught when it signals the ROOT CAUSE itself: the code failing internally instead of guarding the input — e.g. an out-of-bounds access, NPE, arithmetic error, infinite loop, or a corrupted result deep inside the library, rather than a clean rejection at the boundary.
+Rule of thumb: if a careful, correct version of this method would still throw that exception for that input, it is NOT a bug — swallow it. If the throw means the method lost control of its own invariants, let it propagate.
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.IndexOutOfBoundsException
+message: Index: -1, Size: 1
+thrown_at: org.jfree.data.xy.XYSeries.addOrUpdate(XYSeries.java:564)
+</ground_truth_crash>
+<failing_test class="org.jfree.data.xy.junit.XYSeriesTests" method="testBug1955483">
+    public void testBug1955483() {
+        XYSeries series = new XYSeries("Series", true, true);
+        series.addOrUpdate(1.0, 1.0);
+        series.addOrUpdate(1.0, 2.0);
+        assertEquals(new Double(1.0), series.getY(0));
+        assertEquals(new Double(2.0), series.getY(1));
+        assertEquals(2, series.getItemCount());
+    }
+</failing_test>
+
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.jfree.data.xy;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+
+################################################
+Traceback (most recent call last):
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 448, in <module>
+    main()
+  File "/Users/kyamaguchi/vuln-patch/src/java/run.py", line 333, in main
+    generator=HarnessGenerator(temperature=0.6, top_p=1.0),
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/src/llm.py", line 75, in __init__
+    self._client = AzureOpenAI(
+                   ^^^^^^^^^^^^
+  File "/Users/kyamaguchi/vuln-patch/.venv/lib/python3.11/site-packages/openai/lib/azure.py", line 241, in __init__
+    raise ValueError(
+ValueError: Must provide one of the `base_url` or `azure_endpoint` arguments, or the `AZURE_OPENAI_ENDPOINT` environment variable
+  (no record emitted; retrying)
+[overfitting] run 2 (have 0/10 distinct) -> project Math

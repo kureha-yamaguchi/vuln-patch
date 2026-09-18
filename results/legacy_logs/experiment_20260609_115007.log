@@ -1,0 +1,1760 @@
+Started at: Tue Jun  9 11:50:07 BST 2026
+Log file: logs/experiment_20260609_115007.log
+
+Checking out 52bcd9b8 to /tmp/d4j/Lang_6_buggy............................. OK
+Init local repository...................................................... OK
+Tag post-fix revision...................................................... OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Apply patch................................................................ OK
+Run post-checkout hook..................................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Excluding broken/flaky tests............................................... OK
+Backing up build file: /tmp/d4j/Lang_6_buggy/default.properties............ OK
+Initialize fixed program version........................................... OK
+Apply patch................................................................ OK
+Initialize buggy program version........................................... OK
+Diff 52bcd9b8:f5a83bb9..................................................... OK
+Apply patch................................................................ OK
+Tag pre-fix revision....................................................... OK
+Check out program version: Lang-6b......................................... OK
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.lang3.StringUtilsTest::testEscapeSurrogatePairs  [java.lang.StringIndexOutOfBoundsException]
+Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+{
+  "modified_files": [
+    "src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java"
+  ],
+  "patch_text": "--- /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java\t\n+++ /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java\n@@ -92,7 +92,7 @@\n //          // contract with translators is that they have to understand codepoints \n //          // and they just took care of a surrogate pair\n             for (int pt = 0; pt < consumed; pt++) {\n-                pos += Character.charCount(Character.codePointAt(input, pos));\n+                pos+=Character.charCount(Character.codePointAt(input,0));\n             }\n         }\n     }\n",
+  "functions": [
+    {
+      "func_name": "translate",
+      "func_signature": "final public void translate(CharSequence input, Writer out) throws IOException",
+      "func_source": "    public final void translate(CharSequence input, Writer out) throws IOException {\n        if (out == null) {\n            throw new IllegalArgumentException(\"The Writer must not be null\");\n        }\n        if (input == null) {\n            return;\n        }\n        int pos = 0;\n        int len = input.length();\n        while (pos < len) {\n            int consumed = translate(input, pos, out);\n            if (consumed == 0) {\n                char[] c = Character.toChars(Character.codePointAt(input, pos));\n                out.write(c);\n                pos+= c.length;\n                continue;\n            }\n//          // contract with translators is that they have to understand codepoints \n//          // and they just took care of a surrogate pair\n            for (int pt = 0; pt < consumed; pt++) {\n                pos += Character.charCount(Character.codePointAt(input, pos));\n            }\n        }\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": [
+        {
+          "name": "translate",
+          "source_file": "CharSequenceTranslator.java",
+          "signature": "abstract public int translate(CharSequence input, int index, Writer out) throws IOException",
+          "source": "    public abstract int translate(CharSequence input, int index, Writer out) throws IOException;",
+          "is_abstract": true,
+          "impls": [
+            [
+              "AggregateTranslator.java",
+              "    public int translate(CharSequence input, int index, Writer out) throws IOException {\n        for (CharSequenceTranslator translator : translators) {\n            int consumed = translator.translate(input, index, out);\n            if(consumed != 0) {\n                return consumed;\n            }\n        }\n        return 0;\n    }"
+            ],
+            [
+              "CharSequenceTranslator.java",
+              "    public final String translate(CharSequence input) {\n        if (input == null) {\n            return null;\n        }\n        try {\n            StringWriter writer = new StringWriter(input.length() * 2);\n            translate(input, writer);\n            return writer.toString();\n        } catch (IOException ioe) {\n            // this should never ever happen while writing to a StringWriter\n            throw new RuntimeException(ioe);\n        }\n    }"
+            ],
+            [
+              "CodePointTranslator.java",
+              "    public final int translate(CharSequence input, int index, Writer out) throws IOException {\n        int codepoint = Character.codePointAt(input, index);\n        boolean consumed = translate(codepoint, out);\n        if (consumed) {\n            return 1;\n        } else {\n            return 0;\n        }\n    }"
+            ],
+            [
+              "LookupTranslator.java",
+              "    public int translate(CharSequence input, int index, Writer out) throws IOException {\n        int max = longest;\n        if (index + longest > input.length()) {\n            max = input.length() - index;\n        }\n        // descend so as to get a greedy algorithm\n        for (int i = max; i >= shortest; i--) {\n            CharSequence subSeq = input.subSequence(index, index + i);\n            CharSequence result = lookupMap.get(subSeq);\n            if (result != null) {\n                out.write(result.toString());\n                return i;\n            }\n        }\n        return 0;\n    }"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "package": "org.apache.commons.lang3.text.translate",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.io.IOException;",
+    "import java.io.StringWriter;",
+    "import java.io.Writer;",
+    "import java.util.Locale;"
+  ]
+}
+Captured ground-truth crash input:
+  throwable : java.lang.StringIndexOutOfBoundsException
+  message   : index 2,length 2
+  thrown_at : org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate(CharSequenceTranslator.java:95)
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang3.text.translate` (`package org.apache.commons.lang3.text.translate;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_6_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java	
++++ /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java
+@@ -92,7 +92,7 @@
+ //          // contract with translators is that they have to understand codepoints 
+ //          // and they just took care of a surrogate pair
+             for (int pt = 0; pt < consumed; pt++) {
+-                pos += Character.charCount(Character.codePointAt(input, pos));
++                pos+=Character.charCount(Character.codePointAt(input,0));
+             }
+         }
+     }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Locale;
+</source_imports>
+
+Function `translate`:
+<signature>
+final public void translate(CharSequence input, Writer out) throws IOException
+</signature>
+<code>
+    public final void translate(CharSequence input, Writer out) throws IOException {
+        if (out == null) {
+            throw new IllegalArgumentException("The Writer must not be null");
+        }
+        if (input == null) {
+            return;
+        }
+        int pos = 0;
+        int len = input.length();
+        while (pos < len) {
+            int consumed = translate(input, pos, out);
+            if (consumed == 0) {
+                char[] c = Character.toChars(Character.codePointAt(input, pos));
+                out.write(c);
+                pos+= c.length;
+                continue;
+            }
+//          // contract with translators is that they have to understand codepoints 
+//          // and they just took care of a surrogate pair
+            for (int pt = 0; pt < consumed; pt++) {
+                pos += Character.charCount(Character.codePointAt(input, pos));
+            }
+        }
+    }
+</code>
+Methods called by `translate` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="translate" from="CharSequenceTranslator.java" abstract="true">
+<signature>
+abstract public int translate(CharSequence input, int index, Writer out) throws IOException
+</signature>
+<contract>
+    public abstract int translate(CharSequence input, int index, Writer out) throws IOException;
+</contract>
+<implementation in="AggregateTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        for (CharSequenceTranslator translator : translators) {
+            int consumed = translator.translate(input, index, out);
+            if(consumed != 0) {
+                return consumed;
+            }
+        }
+        return 0;
+    }
+</implementation>
+<implementation in="CharSequenceTranslator.java">
+    public final String translate(CharSequence input) {
+        if (input == null) {
+            return null;
+        }
+        try {
+            StringWriter writer = new StringWriter(input.length() * 2);
+            translate(input, writer);
+            return writer.toString();
+        } catch (IOException ioe) {
+            // this should never ever happen while writing to a StringWriter
+            throw new RuntimeException(ioe);
+        }
+    }
+</implementation>
+<implementation in="CodePointTranslator.java">
+    public final int translate(CharSequence input, int index, Writer out) throws IOException {
+        int codepoint = Character.codePointAt(input, index);
+        boolean consumed = translate(codepoint, out);
+        if (consumed) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+</implementation>
+<implementation in="LookupTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        int max = longest;
+        if (index + longest > input.length()) {
+            max = input.length() - index;
+        }
+        // descend so as to get a greedy algorithm
+        for (int i = max; i >= shortest; i--) {
+            CharSequence subSeq = input.subSequence(index, index + i);
+            CharSequence result = lookupMap.get(subSeq);
+            if (result != null) {
+                out.write(result.toString());
+                return i;
+            }
+        }
+        return 0;
+    }
+</implementation>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: index 2,length 2
+thrown_at: org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate(CharSequenceTranslator.java:95)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang3.StringUtilsTest" method="testEscapeSurrogatePairs">
+    @Test
+    public void testEscapeSurrogatePairs() throws Exception {
+        assertEquals("\uD83D\uDE30", StringEscapeUtils.escapeCsv("\uD83D\uDE30"));
+        // Examples from https://en.wikipedia.org/wiki/UTF-16
+        assertEquals("\uD800\uDC00", StringEscapeUtils.escapeCsv("\uD800\uDC00"));
+        assertEquals("\uD834\uDD1E", StringEscapeUtils.escapeCsv("\uD834\uDD1E"));
+        assertEquals("\uDBFF\uDFFD", StringEscapeUtils.escapeCsv("\uDBFF\uDFFD"));
+        
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang3.text.translate;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang3.text.translate` (`package org.apache.commons.lang3.text.translate;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_6_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java	
++++ /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java
+@@ -92,7 +92,7 @@
+ //          // contract with translators is that they have to understand codepoints 
+ //          // and they just took care of a surrogate pair
+             for (int pt = 0; pt < consumed; pt++) {
+-                pos += Character.charCount(Character.codePointAt(input, pos));
++                pos+=Character.charCount(Character.codePointAt(input,0));
+             }
+         }
+     }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Locale;
+</source_imports>
+
+Function `translate`:
+<signature>
+final public void translate(CharSequence input, Writer out) throws IOException
+</signature>
+<code>
+    public final void translate(CharSequence input, Writer out) throws IOException {
+        if (out == null) {
+            throw new IllegalArgumentException("The Writer must not be null");
+        }
+        if (input == null) {
+            return;
+        }
+        int pos = 0;
+        int len = input.length();
+        while (pos < len) {
+            int consumed = translate(input, pos, out);
+            if (consumed == 0) {
+                char[] c = Character.toChars(Character.codePointAt(input, pos));
+                out.write(c);
+                pos+= c.length;
+                continue;
+            }
+//          // contract with translators is that they have to understand codepoints 
+//          // and they just took care of a surrogate pair
+            for (int pt = 0; pt < consumed; pt++) {
+                pos += Character.charCount(Character.codePointAt(input, pos));
+            }
+        }
+    }
+</code>
+Methods called by `translate` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="translate" from="CharSequenceTranslator.java" abstract="true">
+<signature>
+abstract public int translate(CharSequence input, int index, Writer out) throws IOException
+</signature>
+<contract>
+    public abstract int translate(CharSequence input, int index, Writer out) throws IOException;
+</contract>
+<implementation in="AggregateTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        for (CharSequenceTranslator translator : translators) {
+            int consumed = translator.translate(input, index, out);
+            if(consumed != 0) {
+                return consumed;
+            }
+        }
+        return 0;
+    }
+</implementation>
+<implementation in="CharSequenceTranslator.java">
+    public final String translate(CharSequence input) {
+        if (input == null) {
+            return null;
+        }
+        try {
+            StringWriter writer = new StringWriter(input.length() * 2);
+            translate(input, writer);
+            return writer.toString();
+        } catch (IOException ioe) {
+            // this should never ever happen while writing to a StringWriter
+            throw new RuntimeException(ioe);
+        }
+    }
+</implementation>
+<implementation in="CodePointTranslator.java">
+    public final int translate(CharSequence input, int index, Writer out) throws IOException {
+        int codepoint = Character.codePointAt(input, index);
+        boolean consumed = translate(codepoint, out);
+        if (consumed) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+</implementation>
+<implementation in="LookupTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        int max = longest;
+        if (index + longest > input.length()) {
+            max = input.length() - index;
+        }
+        // descend so as to get a greedy algorithm
+        for (int i = max; i >= shortest; i--) {
+            CharSequence subSeq = input.subSequence(index, index + i);
+            CharSequence result = lookupMap.get(subSeq);
+            if (result != null) {
+                out.write(result.toString());
+                return i;
+            }
+        }
+        return 0;
+    }
+</implementation>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: index 2,length 2
+thrown_at: org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate(CharSequenceTranslator.java:95)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang3.StringUtilsTest" method="testEscapeSurrogatePairs">
+    @Test
+    public void testEscapeSurrogatePairs() throws Exception {
+        assertEquals("\uD83D\uDE30", StringEscapeUtils.escapeCsv("\uD83D\uDE30"));
+        // Examples from https://en.wikipedia.org/wiki/UTF-16
+        assertEquals("\uD800\uDC00", StringEscapeUtils.escapeCsv("\uD800\uDC00"));
+        assertEquals("\uD834\uDD1E", StringEscapeUtils.escapeCsv("\uD834\uDD1E"));
+        assertEquals("\uDBFF\uDFFD", StringEscapeUtils.escapeCsv("\uDBFF\uDFFD"));
+        
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang3.text.translate;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 001/50 ====================
+--- raw LLM response ---
+package org.apache.commons.lang3.text.translate;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug class: CharSequenceTranslator.translate; Minimal input: a single UTF-16 surrogate pair (two chars: high surrogate + low surrogate), e.g., "\uD83D\uDE30". */
+
+        // ANCHOR: exact failing inputs from the test
+        String[] anchors = new String[] { "\uD83D\uDE30", "\uD800\uDC00", "\uD834\uDD1E", "\uDBFF\uDFFD" };
+        for (String s : anchors) {
+            // Route through StringEscapeUtils to hit CharSequenceTranslator.translate indirectly
+            org.apache.commons.lang3.StringEscapeUtils.escapeCsv(s);
+            // Directly hit CharSequenceTranslator.translate with a translator that consumes a surrogate pair as 2
+            try {
+                new ConsumingPairTranslator().translate(s, new java.io.StringWriter());
+            } catch (java.io.IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // EXPLORE: fuzz around the same shape (ensure there's at least one surrogate pair)
+        String fuzzInput;
+        if (data.consumeBoolean()) {
+            char high = (char) data.consumeInt(0xD800, 0xDBFF);
+            char low  = (char) data.consumeInt(0xDC00, 0xDFFF);
+            fuzzInput = new String(new char[] { high, low });
+        } else {
+            String prefix = data.consumeAsciiString(2);
+            String suffix = data.consumeAsciiString(2);
+            char high = (char) data.consumeInt(0xD800, 0xDBFF);
+            char low  = (char) data.consumeInt(0xDC00, 0xDFFF);
+            fuzzInput = prefix + new String(new char[] { high, low }) + suffix;
+        }
+
+        // Exercise both paths with fuzzed input
+        org.apache.commons.lang3.StringEscapeUtils.escapeCsv(fuzzInput);
+        try {
+            new ConsumingPairTranslator().translate(fuzzInput, new java.io.StringWriter());
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static final class ConsumingPairTranslator extends CharSequenceTranslator {
+        @Override
+        public int translate(CharSequence input, int index, java.io.Writer out) throws java.io.IOException {
+            if (input == null) {
+                return 0;
+            }
+            int len = input.length();
+            if (index + 1 < len) {
+                char c1 = input.charAt(index);
+                char c2 = input.charAt(index + 1);
+                if (Character.isHighSurrogate(c1) && Character.isLowSurrogate(c2)) {
+                    // Intentionally return 2 to trigger the pos-advancement loop over a surrogate pair
+                    return 2;
+                }
+            }
+            return 0;
+        }
+    }
+}
+  ↳ crash detected (exit code 77 (Jazzer finding))
+✓ compiled + triggered at /tmp/d4j/Lang_6_buggy/fuzz/attempt_001/FuzzHarness.java  (1/5 successes, 1 attempts so far)  [crash: java.lang.StringIndexOutOfBoundsException@org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate]
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang3.text.translate` (`package org.apache.commons.lang3.text.translate;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_6_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java	
++++ /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java
+@@ -92,7 +92,7 @@
+ //          // contract with translators is that they have to understand codepoints 
+ //          // and they just took care of a surrogate pair
+             for (int pt = 0; pt < consumed; pt++) {
+-                pos += Character.charCount(Character.codePointAt(input, pos));
++                pos+=Character.charCount(Character.codePointAt(input,0));
+             }
+         }
+     }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Locale;
+</source_imports>
+
+Function `translate`:
+<signature>
+final public void translate(CharSequence input, Writer out) throws IOException
+</signature>
+<code>
+    public final void translate(CharSequence input, Writer out) throws IOException {
+        if (out == null) {
+            throw new IllegalArgumentException("The Writer must not be null");
+        }
+        if (input == null) {
+            return;
+        }
+        int pos = 0;
+        int len = input.length();
+        while (pos < len) {
+            int consumed = translate(input, pos, out);
+            if (consumed == 0) {
+                char[] c = Character.toChars(Character.codePointAt(input, pos));
+                out.write(c);
+                pos+= c.length;
+                continue;
+            }
+//          // contract with translators is that they have to understand codepoints 
+//          // and they just took care of a surrogate pair
+            for (int pt = 0; pt < consumed; pt++) {
+                pos += Character.charCount(Character.codePointAt(input, pos));
+            }
+        }
+    }
+</code>
+Methods called by `translate` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="translate" from="CharSequenceTranslator.java" abstract="true">
+<signature>
+abstract public int translate(CharSequence input, int index, Writer out) throws IOException
+</signature>
+<contract>
+    public abstract int translate(CharSequence input, int index, Writer out) throws IOException;
+</contract>
+<implementation in="AggregateTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        for (CharSequenceTranslator translator : translators) {
+            int consumed = translator.translate(input, index, out);
+            if(consumed != 0) {
+                return consumed;
+            }
+        }
+        return 0;
+    }
+</implementation>
+<implementation in="CharSequenceTranslator.java">
+    public final String translate(CharSequence input) {
+        if (input == null) {
+            return null;
+        }
+        try {
+            StringWriter writer = new StringWriter(input.length() * 2);
+            translate(input, writer);
+            return writer.toString();
+        } catch (IOException ioe) {
+            // this should never ever happen while writing to a StringWriter
+            throw new RuntimeException(ioe);
+        }
+    }
+</implementation>
+<implementation in="CodePointTranslator.java">
+    public final int translate(CharSequence input, int index, Writer out) throws IOException {
+        int codepoint = Character.codePointAt(input, index);
+        boolean consumed = translate(codepoint, out);
+        if (consumed) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+</implementation>
+<implementation in="LookupTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        int max = longest;
+        if (index + longest > input.length()) {
+            max = input.length() - index;
+        }
+        // descend so as to get a greedy algorithm
+        for (int i = max; i >= shortest; i--) {
+            CharSequence subSeq = input.subSequence(index, index + i);
+            CharSequence result = lookupMap.get(subSeq);
+            if (result != null) {
+                out.write(result.toString());
+                return i;
+            }
+        }
+        return 0;
+    }
+</implementation>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: index 2,length 2
+thrown_at: org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate(CharSequenceTranslator.java:95)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang3.StringUtilsTest" method="testEscapeSurrogatePairs">
+    @Test
+    public void testEscapeSurrogatePairs() throws Exception {
+        assertEquals("\uD83D\uDE30", StringEscapeUtils.escapeCsv("\uD83D\uDE30"));
+        // Examples from https://en.wikipedia.org/wiki/UTF-16
+        assertEquals("\uD800\uDC00", StringEscapeUtils.escapeCsv("\uD800\uDC00"));
+        assertEquals("\uD834\uDD1E", StringEscapeUtils.escapeCsv("\uD834\uDD1E"));
+        assertEquals("\uDBFF\uDFFD", StringEscapeUtils.escapeCsv("\uDBFF\uDFFD"));
+        
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang3.text.translate;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 002/50 ====================
+--- raw LLM response ---
+package org.apache.commons.lang3.text.translate;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug class: CharSequenceTranslator.translate; minimal input: a single UTF-16 surrogate pair string (e.g., "\uD83D\uDE30") passed to StringEscapeUtils.escapeCsv */
+        // ANCHOR: exact failing test inputs
+        String[] seeds = new String[] {
+            "\uD83D\uDE30",
+            "\uD800\uDC00",
+            "\uD834\uDD1E",
+            "\uDBFF\uDFFD"
+        };
+        for (String s : seeds) {
+            org.apache.commons.lang3.StringEscapeUtils.escapeCsv(s);
+        }
+
+        // EXPLORE: generate a supplementary code point (surrogate pair) at start
+        int r = data.consumeInt();
+        int cp = 0x10000 + Math.floorMod(r, 0x10FFFF - 0x10000 + 1);
+        if (!Character.isSupplementaryCodePoint(cp)) {
+            cp = 0x10000 + (cp & 0x7FF);
+            if (!Character.isSupplementaryCodePoint(cp)) {
+                cp = 0x10000;
+            }
+        }
+        String base = new String(Character.toChars(cp));
+
+        // Vary CSV behavior to explore neighbors
+        String tail = data.consumeAsciiString(8);
+        String candidate;
+        switch (Math.floorMod(data.consumeInt(), 4)) {
+            case 0:
+                candidate = base;
+                break;
+            case 1:
+                candidate = base + tail;
+                break;
+            case 2:
+                candidate = base + "," + tail;
+                break;
+            default:
+                candidate = "\"" + base + tail + "\"";
+                break;
+        }
+
+        // Exercise StringEscapeUtils path
+        org.apache.commons.lang3.StringEscapeUtils.escapeCsv(candidate);
+
+        // Exercise CharSequenceTranslator.translate directly with a translator that "consumes" the whole input at index 0
+        CharSequenceTranslator greedy = new CharSequenceTranslator() {
+            @Override
+            public int translate(CharSequence input, int index, java.io.Writer out) throws java.io.IOException {
+                if (index == 0) {
+                    out.write(input.toString());
+                    return input.length(); // count chars, not code points, to trigger the pos-advancing logic
+                }
+                return 0;
+            }
+        };
+        // Hit the String-returning variant (internally uses the Writer-based translate)
+        greedy.translate(base);
+        // And explicitly hit the Writer-based variant
+        try {
+            java.io.StringWriter w = new java.io.StringWriter();
+            greedy.translate(candidate, w);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+  ↳ crash detected (exit code 77 (Jazzer finding))
+✓ compiled + triggered at /tmp/d4j/Lang_6_buggy/fuzz/attempt_002/FuzzHarness.java  (2/5 successes, 2 attempts so far)  [crash: java.lang.StringIndexOutOfBoundsException@org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate]
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang3.text.translate` (`package org.apache.commons.lang3.text.translate;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_6_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java	
++++ /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java
+@@ -92,7 +92,7 @@
+ //          // contract with translators is that they have to understand codepoints 
+ //          // and they just took care of a surrogate pair
+             for (int pt = 0; pt < consumed; pt++) {
+-                pos += Character.charCount(Character.codePointAt(input, pos));
++                pos+=Character.charCount(Character.codePointAt(input,0));
+             }
+         }
+     }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Locale;
+</source_imports>
+
+Function `translate`:
+<signature>
+final public void translate(CharSequence input, Writer out) throws IOException
+</signature>
+<code>
+    public final void translate(CharSequence input, Writer out) throws IOException {
+        if (out == null) {
+            throw new IllegalArgumentException("The Writer must not be null");
+        }
+        if (input == null) {
+            return;
+        }
+        int pos = 0;
+        int len = input.length();
+        while (pos < len) {
+            int consumed = translate(input, pos, out);
+            if (consumed == 0) {
+                char[] c = Character.toChars(Character.codePointAt(input, pos));
+                out.write(c);
+                pos+= c.length;
+                continue;
+            }
+//          // contract with translators is that they have to understand codepoints 
+//          // and they just took care of a surrogate pair
+            for (int pt = 0; pt < consumed; pt++) {
+                pos += Character.charCount(Character.codePointAt(input, pos));
+            }
+        }
+    }
+</code>
+Methods called by `translate` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="translate" from="CharSequenceTranslator.java" abstract="true">
+<signature>
+abstract public int translate(CharSequence input, int index, Writer out) throws IOException
+</signature>
+<contract>
+    public abstract int translate(CharSequence input, int index, Writer out) throws IOException;
+</contract>
+<implementation in="AggregateTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        for (CharSequenceTranslator translator : translators) {
+            int consumed = translator.translate(input, index, out);
+            if(consumed != 0) {
+                return consumed;
+            }
+        }
+        return 0;
+    }
+</implementation>
+<implementation in="CharSequenceTranslator.java">
+    public final String translate(CharSequence input) {
+        if (input == null) {
+            return null;
+        }
+        try {
+            StringWriter writer = new StringWriter(input.length() * 2);
+            translate(input, writer);
+            return writer.toString();
+        } catch (IOException ioe) {
+            // this should never ever happen while writing to a StringWriter
+            throw new RuntimeException(ioe);
+        }
+    }
+</implementation>
+<implementation in="CodePointTranslator.java">
+    public final int translate(CharSequence input, int index, Writer out) throws IOException {
+        int codepoint = Character.codePointAt(input, index);
+        boolean consumed = translate(codepoint, out);
+        if (consumed) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+</implementation>
+<implementation in="LookupTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        int max = longest;
+        if (index + longest > input.length()) {
+            max = input.length() - index;
+        }
+        // descend so as to get a greedy algorithm
+        for (int i = max; i >= shortest; i--) {
+            CharSequence subSeq = input.subSequence(index, index + i);
+            CharSequence result = lookupMap.get(subSeq);
+            if (result != null) {
+                out.write(result.toString());
+                return i;
+            }
+        }
+        return 0;
+    }
+</implementation>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: index 2,length 2
+thrown_at: org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate(CharSequenceTranslator.java:95)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang3.StringUtilsTest" method="testEscapeSurrogatePairs">
+    @Test
+    public void testEscapeSurrogatePairs() throws Exception {
+        assertEquals("\uD83D\uDE30", StringEscapeUtils.escapeCsv("\uD83D\uDE30"));
+        // Examples from https://en.wikipedia.org/wiki/UTF-16
+        assertEquals("\uD800\uDC00", StringEscapeUtils.escapeCsv("\uD800\uDC00"));
+        assertEquals("\uD834\uDD1E", StringEscapeUtils.escapeCsv("\uD834\uDD1E"));
+        assertEquals("\uDBFF\uDFFD", StringEscapeUtils.escapeCsv("\uDBFF\uDFFD"));
+        
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang3.text.translate;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 003/50 ====================
+--- raw LLM response ---
+package org.apache.commons.lang3.text.translate;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: CharSequenceTranslator.translate pos advancement for consumed > 0; minimal input: a 2-char surrogate pair string "\uD83D\uDE30" with a translator that consumes the entire input */
+        CharSequenceTranslator fullConsume = new CharSequenceTranslator() {
+            @Override
+            public int translate(CharSequence input, int index, java.io.Writer out) throws java.io.IOException {
+                if (index == 0) {
+                    out.write(input.toString());
+                    return input.length();
+                }
+                return 0;
+            }
+        };
+        try {
+            fullConsume.translate("\uD83D\uDE30", new java.io.StringWriter());
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        int iterations = 1;
+        try {
+            iterations = 1 + Math.abs(data.consumeInt()) % 5;
+        } catch (Throwable t) {
+            iterations = 1;
+        }
+        for (int i = 0; i < iterations; i++) {
+            String s;
+            boolean makeValidPair = data.consumeBoolean();
+            if (makeValidPair) {
+                char hi = (char) data.consumeInt(0xD800, 0xDBFF);
+                char lo = (char) data.consumeInt(0xDC00, 0xDFFF);
+                s = new String(new char[] { hi, lo });
+            } else {
+                if (data.consumeBoolean()) {
+                    s = "\uD83D\uDE30";
+                } else {
+                    char c1 = (char) data.consumeInt(0, 0xFFFF);
+                    char c2 = (char) data.consumeInt(0, 0xFFFF);
+                    s = new String(new char[] { c1, c2 });
+                }
+            }
+            try {
+                fullConsume.translate(s, new java.io.StringWriter());
+            } catch (java.io.IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+}
+  ↳ crash detected (exit code 77 (Jazzer finding))
+✓ compiled + triggered at /tmp/d4j/Lang_6_buggy/fuzz/attempt_003/FuzzHarness.java  (3/5 successes, 3 attempts so far)  [crash: java.lang.StringIndexOutOfBoundsException@org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate]
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang3.text.translate` (`package org.apache.commons.lang3.text.translate;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_6_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java	
++++ /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java
+@@ -92,7 +92,7 @@
+ //          // contract with translators is that they have to understand codepoints 
+ //          // and they just took care of a surrogate pair
+             for (int pt = 0; pt < consumed; pt++) {
+-                pos += Character.charCount(Character.codePointAt(input, pos));
++                pos+=Character.charCount(Character.codePointAt(input,0));
+             }
+         }
+     }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Locale;
+</source_imports>
+
+Function `translate`:
+<signature>
+final public void translate(CharSequence input, Writer out) throws IOException
+</signature>
+<code>
+    public final void translate(CharSequence input, Writer out) throws IOException {
+        if (out == null) {
+            throw new IllegalArgumentException("The Writer must not be null");
+        }
+        if (input == null) {
+            return;
+        }
+        int pos = 0;
+        int len = input.length();
+        while (pos < len) {
+            int consumed = translate(input, pos, out);
+            if (consumed == 0) {
+                char[] c = Character.toChars(Character.codePointAt(input, pos));
+                out.write(c);
+                pos+= c.length;
+                continue;
+            }
+//          // contract with translators is that they have to understand codepoints 
+//          // and they just took care of a surrogate pair
+            for (int pt = 0; pt < consumed; pt++) {
+                pos += Character.charCount(Character.codePointAt(input, pos));
+            }
+        }
+    }
+</code>
+Methods called by `translate` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="translate" from="CharSequenceTranslator.java" abstract="true">
+<signature>
+abstract public int translate(CharSequence input, int index, Writer out) throws IOException
+</signature>
+<contract>
+    public abstract int translate(CharSequence input, int index, Writer out) throws IOException;
+</contract>
+<implementation in="AggregateTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        for (CharSequenceTranslator translator : translators) {
+            int consumed = translator.translate(input, index, out);
+            if(consumed != 0) {
+                return consumed;
+            }
+        }
+        return 0;
+    }
+</implementation>
+<implementation in="CharSequenceTranslator.java">
+    public final String translate(CharSequence input) {
+        if (input == null) {
+            return null;
+        }
+        try {
+            StringWriter writer = new StringWriter(input.length() * 2);
+            translate(input, writer);
+            return writer.toString();
+        } catch (IOException ioe) {
+            // this should never ever happen while writing to a StringWriter
+            throw new RuntimeException(ioe);
+        }
+    }
+</implementation>
+<implementation in="CodePointTranslator.java">
+    public final int translate(CharSequence input, int index, Writer out) throws IOException {
+        int codepoint = Character.codePointAt(input, index);
+        boolean consumed = translate(codepoint, out);
+        if (consumed) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+</implementation>
+<implementation in="LookupTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        int max = longest;
+        if (index + longest > input.length()) {
+            max = input.length() - index;
+        }
+        // descend so as to get a greedy algorithm
+        for (int i = max; i >= shortest; i--) {
+            CharSequence subSeq = input.subSequence(index, index + i);
+            CharSequence result = lookupMap.get(subSeq);
+            if (result != null) {
+                out.write(result.toString());
+                return i;
+            }
+        }
+        return 0;
+    }
+</implementation>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: index 2,length 2
+thrown_at: org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate(CharSequenceTranslator.java:95)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang3.StringUtilsTest" method="testEscapeSurrogatePairs">
+    @Test
+    public void testEscapeSurrogatePairs() throws Exception {
+        assertEquals("\uD83D\uDE30", StringEscapeUtils.escapeCsv("\uD83D\uDE30"));
+        // Examples from https://en.wikipedia.org/wiki/UTF-16
+        assertEquals("\uD800\uDC00", StringEscapeUtils.escapeCsv("\uD800\uDC00"));
+        assertEquals("\uD834\uDD1E", StringEscapeUtils.escapeCsv("\uD834\uDD1E"));
+        assertEquals("\uDBFF\uDFFD", StringEscapeUtils.escapeCsv("\uDBFF\uDFFD"));
+        
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang3.text.translate;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 004/50 ====================
+--- raw LLM response ---
+package org.apache.commons.lang3.text.translate;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* Bug: CharSequenceTranslator.translate pos advancement uses wrong index for codePointAt, causing StringIndexOutOfBoundsException when a translator consumes by char count instead of code point count. Minimal input: a single supplementary Unicode code point (two UTF-16 chars), e.g., "\uD83D\uDE30", passed to StringEscapeUtils.escapeCsv or via a LookupTranslator mapping. */
+
+        // ANCHOR: Known crashers from the failing test
+        org.apache.commons.lang3.StringEscapeUtils.escapeCsv(new String(Character.toChars(0x1F630))); // U+1F630
+        org.apache.commons.lang3.StringEscapeUtils.escapeCsv(new String(Character.toChars(0x10000))); // U+10000
+        org.apache.commons.lang3.StringEscapeUtils.escapeCsv(new String(Character.toChars(0x1D11E))); // U+1D11E
+        org.apache.commons.lang3.StringEscapeUtils.escapeCsv(new String(Character.toChars(0x10FFFD))); // U+10FFFD
+
+        // Additional direct trigger via LookupTranslator mapping a surrogate pair (consumed by char length)
+        String oneSup = new String(Character.toChars(0x1F630));
+        LookupTranslator ltAnchor = new LookupTranslator(new CharSequence[][] { new CharSequence[] { oneSup, "X" } });
+        ltAnchor.translate(oneSup);
+
+        // EXPLORE: Fuzz around the same shape
+        int cp = 0x10000 + Math.abs(data.consumeInt()) % (0x10FFFF - 0x10000 + 1);
+        String supStr = new String(Character.toChars(cp));
+        String prefix = data.consumeAsciiString(8);
+        String suffix = data.consumeAsciiString(8);
+        String maybeQuote = data.consumeBoolean() ? "\"" : "";
+        String maybeComma = data.consumeBoolean() ? "," : "";
+        String maybeNl = data.consumeBoolean() ? "\n" : "";
+        String fuzzCsv = prefix + supStr + maybeQuote + maybeComma + suffix + maybeNl;
+        org.apache.commons.lang3.StringEscapeUtils.escapeCsv(fuzzCsv);
+
+        // More fuzz: multiple supplementary code points separated by CSV-significant chars
+        int extraCount = Math.abs(data.consumeInt()) % 3;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < extraCount; i++) {
+            int cp2 = 0x10000 + Math.abs(data.consumeInt()) % (0x10FFFF - 0x10000 + 1);
+            sb.append(Character.toChars(cp2));
+            if (data.consumeBoolean()) sb.append('"');
+            if (data.consumeBoolean()) sb.append(',');
+        }
+        String fuzz2 = sb.toString();
+        if (!fuzz2.isEmpty()) {
+            org.apache.commons.lang3.StringEscapeUtils.escapeCsv(fuzz2);
+        }
+
+        // Fuzz: LookupTranslator that consumes using char-length for a surrogate pair at position 0
+        LookupTranslator lt = new LookupTranslator(new CharSequence[][] {
+            new CharSequence[] { supStr, data.consumeBoolean() ? "R" : "S" }
+        });
+        lt.translate(supStr);
+    }
+}
+  ↳ crash detected (exit code 77 (Jazzer finding))
+✓ compiled + triggered at /tmp/d4j/Lang_6_buggy/fuzz/attempt_004/FuzzHarness.java  (4/5 successes, 4 attempts so far)  [crash: java.lang.StringIndexOutOfBoundsException@org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate]
+#################### prompt ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang3.text.translate` (`package org.apache.commons.lang3.text.translate;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_6_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java	
++++ /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java
+@@ -92,7 +92,7 @@
+ //          // contract with translators is that they have to understand codepoints 
+ //          // and they just took care of a surrogate pair
+             for (int pt = 0; pt < consumed; pt++) {
+-                pos += Character.charCount(Character.codePointAt(input, pos));
++                pos+=Character.charCount(Character.codePointAt(input,0));
+             }
+         }
+     }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Locale;
+</source_imports>
+
+Function `translate`:
+<signature>
+final public void translate(CharSequence input, Writer out) throws IOException
+</signature>
+<code>
+    public final void translate(CharSequence input, Writer out) throws IOException {
+        if (out == null) {
+            throw new IllegalArgumentException("The Writer must not be null");
+        }
+        if (input == null) {
+            return;
+        }
+        int pos = 0;
+        int len = input.length();
+        while (pos < len) {
+            int consumed = translate(input, pos, out);
+            if (consumed == 0) {
+                char[] c = Character.toChars(Character.codePointAt(input, pos));
+                out.write(c);
+                pos+= c.length;
+                continue;
+            }
+//          // contract with translators is that they have to understand codepoints 
+//          // and they just took care of a surrogate pair
+            for (int pt = 0; pt < consumed; pt++) {
+                pos += Character.charCount(Character.codePointAt(input, pos));
+            }
+        }
+    }
+</code>
+Methods called by `translate` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="translate" from="CharSequenceTranslator.java" abstract="true">
+<signature>
+abstract public int translate(CharSequence input, int index, Writer out) throws IOException
+</signature>
+<contract>
+    public abstract int translate(CharSequence input, int index, Writer out) throws IOException;
+</contract>
+<implementation in="AggregateTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        for (CharSequenceTranslator translator : translators) {
+            int consumed = translator.translate(input, index, out);
+            if(consumed != 0) {
+                return consumed;
+            }
+        }
+        return 0;
+    }
+</implementation>
+<implementation in="CharSequenceTranslator.java">
+    public final String translate(CharSequence input) {
+        if (input == null) {
+            return null;
+        }
+        try {
+            StringWriter writer = new StringWriter(input.length() * 2);
+            translate(input, writer);
+            return writer.toString();
+        } catch (IOException ioe) {
+            // this should never ever happen while writing to a StringWriter
+            throw new RuntimeException(ioe);
+        }
+    }
+</implementation>
+<implementation in="CodePointTranslator.java">
+    public final int translate(CharSequence input, int index, Writer out) throws IOException {
+        int codepoint = Character.codePointAt(input, index);
+        boolean consumed = translate(codepoint, out);
+        if (consumed) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+</implementation>
+<implementation in="LookupTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        int max = longest;
+        if (index + longest > input.length()) {
+            max = input.length() - index;
+        }
+        // descend so as to get a greedy algorithm
+        for (int i = max; i >= shortest; i--) {
+            CharSequence subSeq = input.subSequence(index, index + i);
+            CharSequence result = lookupMap.get(subSeq);
+            if (result != null) {
+                out.write(result.toString());
+                return i;
+            }
+        }
+        return 0;
+    }
+</implementation>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: index 2,length 2
+thrown_at: org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate(CharSequenceTranslator.java:95)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang3.StringUtilsTest" method="testEscapeSurrogatePairs">
+    @Test
+    public void testEscapeSurrogatePairs() throws Exception {
+        assertEquals("\uD83D\uDE30", StringEscapeUtils.escapeCsv("\uD83D\uDE30"));
+        // Examples from https://en.wikipedia.org/wiki/UTF-16
+        assertEquals("\uD800\uDC00", StringEscapeUtils.escapeCsv("\uD800\uDC00"));
+        assertEquals("\uD834\uDD1E", StringEscapeUtils.escapeCsv("\uD834\uDD1E"));
+        assertEquals("\uDBFF\uDFFD", StringEscapeUtils.escapeCsv("\uDBFF\uDFFD"));
+        
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang3.text.translate;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+==================== attempt 005/50 ====================
+--- raw LLM response ---
+package org.apache.commons.lang3.text.translate;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        /* (a) Bug class: CharSequenceTranslator.translate; (b) Minimal input shape: a single supplementary character (one UTF-16 surrogate pair). */
+        // ANCHOR: exact failing inputs from the test
+        String[] anchors = new String[] {
+            "\uD83D\uDE30",
+            "\uD800\uDC00",
+            "\uD834\uDD1E",
+            "\uDBFF\uDFFD"
+        };
+        for (String s : anchors) {
+            // This mirrors the failing test path
+            org.apache.commons.lang3.StringEscapeUtils.escapeCsv(s);
+        }
+
+        // Also drive the exact same inputs through CharSequenceTranslator.translate using a translator
+        // that consumes the whole input at index 0 (to stress the consumed>0 path).
+        WholeInputTranslator whole = new WholeInputTranslator();
+        for (String s : anchors) {
+            try {
+                java.io.StringWriter w = new java.io.StringWriter();
+                whole.translate(s, w);
+            } catch (java.io.IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // EXPLORE: build similar inputs (supplementary code points, optional CSV specials)
+        int n = data.consumeInt(1, 6);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            int cp = 0x10000 + Math.abs(data.consumeInt()) % (0x10FFFF - 0x10000 + 1);
+            sb.append(Character.toChars(cp));
+            if (data.consumeBoolean()) {
+                char special;
+                switch (Math.abs(data.consumeInt()) % 3) {
+                    case 0: special = ','; break;
+                    case 1: special = '"'; break;
+                    default: special = '\n'; break;
+                }
+                sb.append(special);
+            }
+        }
+        sb.append(data.consumeAsciiString(8));
+        String fuzz = sb.toString();
+
+        // Exercise through StringEscapeUtils (which delegates to CharSequenceTranslator internally)
+        org.apache.commons.lang3.StringEscapeUtils.escapeCsv(fuzz);
+
+        // And directly drive the consumed>0 path
+        try {
+            java.io.StringWriter w2 = new java.io.StringWriter();
+            whole.translate(fuzz, w2);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // Translator that consumes the entire input from index 0 and writes it unchanged.
+    static final class WholeInputTranslator extends CharSequenceTranslator {
+        @Override
+        public int translate(CharSequence input, int index, java.io.Writer out) throws java.io.IOException {
+            if (index != 0) {
+                return 0;
+            }
+            out.write(input == null ? "null" : input.toString());
+            return input == null ? 0 : input.length();
+        }
+    }
+}
+  ↳ crash detected (exit code 77 (Jazzer finding))
+✓ compiled + triggered at /tmp/d4j/Lang_6_buggy/fuzz/attempt_005/FuzzHarness.java  (5/5 successes, 5 attempts so far)  [crash: java.lang.StringIndexOutOfBoundsException@org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate]
+#################### prompt ####################
+/Users/kyamaguchi/vuln-patch/drr/Patches/Doverfitting/SequenceR/Lang/patch2-Lang-6-SequenceR.patch:4: trailing whitespace.
+//          // contract with translators is that they have to understand codepoints 
+warning: 1 line adds whitespace errors.
+Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.lang3.text.translate` (`package org.apache.commons.lang3.text.translate;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+
+Codebase: `Lang_6_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java	
++++ /src/main/java/org/apache/commons/lang3/text/translate/CharSequenceTranslator.java
+@@ -92,7 +92,7 @@
+ //          // contract with translators is that they have to understand codepoints 
+ //          // and they just took care of a surrogate pair
+             for (int pt = 0; pt < consumed; pt++) {
+-                pos += Character.charCount(Character.codePointAt(input, pos));
++                pos+=Character.charCount(Character.codePointAt(input,0));
+             }
+         }
+     }
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Locale;
+</source_imports>
+
+Function `translate`:
+<signature>
+final public void translate(CharSequence input, Writer out) throws IOException
+</signature>
+<code>
+    public final void translate(CharSequence input, Writer out) throws IOException {
+        if (out == null) {
+            throw new IllegalArgumentException("The Writer must not be null");
+        }
+        if (input == null) {
+            return;
+        }
+        int pos = 0;
+        int len = input.length();
+        while (pos < len) {
+            int consumed = translate(input, pos, out);
+            if (consumed == 0) {
+                char[] c = Character.toChars(Character.codePointAt(input, pos));
+                out.write(c);
+                pos+= c.length;
+                continue;
+            }
+//          // contract with translators is that they have to understand codepoints 
+//          // and they just took care of a surrogate pair
+            for (int pt = 0; pt < consumed; pt++) {
+                pos += Character.charCount(Character.codePointAt(input, pos));
+            }
+        }
+    }
+</code>
+Methods called by `translate` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="translate" from="CharSequenceTranslator.java" abstract="true">
+<signature>
+abstract public int translate(CharSequence input, int index, Writer out) throws IOException
+</signature>
+<contract>
+    public abstract int translate(CharSequence input, int index, Writer out) throws IOException;
+</contract>
+<implementation in="AggregateTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        for (CharSequenceTranslator translator : translators) {
+            int consumed = translator.translate(input, index, out);
+            if(consumed != 0) {
+                return consumed;
+            }
+        }
+        return 0;
+    }
+</implementation>
+<implementation in="CharSequenceTranslator.java">
+    public final String translate(CharSequence input) {
+        if (input == null) {
+            return null;
+        }
+        try {
+            StringWriter writer = new StringWriter(input.length() * 2);
+            translate(input, writer);
+            return writer.toString();
+        } catch (IOException ioe) {
+            // this should never ever happen while writing to a StringWriter
+            throw new RuntimeException(ioe);
+        }
+    }
+</implementation>
+<implementation in="CodePointTranslator.java">
+    public final int translate(CharSequence input, int index, Writer out) throws IOException {
+        int codepoint = Character.codePointAt(input, index);
+        boolean consumed = translate(codepoint, out);
+        if (consumed) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+</implementation>
+<implementation in="LookupTranslator.java">
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        int max = longest;
+        if (index + longest > input.length()) {
+            max = input.length() - index;
+        }
+        // descend so as to get a greedy algorithm
+        for (int i = max; i >= shortest; i--) {
+            CharSequence subSeq = input.subSequence(index, index + i);
+            CharSequence result = lookupMap.get(subSeq);
+            if (result != null) {
+                out.write(result.toString());
+                return i;
+            }
+        }
+        return 0;
+    }
+</implementation>
+</callee>
+
+The failing test below shows how to reach the bug. Use it with TWO strategies:
+
+1. ANCHOR: call the target with the exact input(s) from the test first. This is your guaranteed crash on the buggy version.
+
+2. EXPLORE: after the anchor, use FuzzedDataProvider to vary the same input shape. Overfitting patches typically fix only the seed input; fuzzed neighbours catch them.
+Expected throwable: java.lang.StringIndexOutOfBoundsException. Let it propagate uncaught from fuzzerTestOneInput. Catch only checked exceptions declared by the target (rethrow as RuntimeException).
+GROUND-TRUTH CRASH (captured by running the trigger test on the buggy version — this is the verified failure, trust it over anything inferred from the test body):
+<ground_truth_crash>
+throwable: java.lang.StringIndexOutOfBoundsException
+message: index 2,length 2
+thrown_at: org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate(CharSequenceTranslator.java:95)
+</ground_truth_crash>
+<failing_test class="org.apache.commons.lang3.StringUtilsTest" method="testEscapeSurrogatePairs">
+    @Test
+    public void testEscapeSurrogatePairs() throws Exception {
+        assertEquals("\uD83D\uDE30", StringEscapeUtils.escapeCsv("\uD83D\uDE30"));
+        // Examples from https://en.wikipedia.org/wiki/UTF-16
+        assertEquals("\uD800\uDC00", StringEscapeUtils.escapeCsv("\uD800\uDC00"));
+        assertEquals("\uD834\uDD1E", StringEscapeUtils.escapeCsv("\uD834\uDD1E"));
+        assertEquals("\uDBFF\uDFFD", StringEscapeUtils.escapeCsv("\uDBFF\uDFFD"));
+        
+    }
+</failing_test>
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+Catch only checked exceptions declared by the target (rethrow as RuntimeException); let everything else propagate.
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.lang3.text.translate;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+
+Before the construction code, add a `/* ... */` comment on the first line inside the entrypoint body identifying (a) the bug class and (b) the minimal input shape that reaches the fault. Nothing above the package line.
+################################################
+
+#################### campaign ####################
+project       : Lang
+bug           : 6 (SequenceR)
+buggy dir     : /tmp/d4j/Lang_6_buggy
+target wins   : 5
+attempts used : 5
+wins          : 5
+success rate  : 100.0%
+distinct crashes (buggy ver): 1
+successful harnesses:
+  - /tmp/d4j/Lang_6_buggy/fuzz/attempt_001/FuzzHarness.java  [crash: java.lang.StringIndexOutOfBoundsException@org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate]
+  - /tmp/d4j/Lang_6_buggy/fuzz/attempt_002/FuzzHarness.java  [crash: java.lang.StringIndexOutOfBoundsException@org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate]
+  - /tmp/d4j/Lang_6_buggy/fuzz/attempt_003/FuzzHarness.java  [crash: java.lang.StringIndexOutOfBoundsException@org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate]
+  - /tmp/d4j/Lang_6_buggy/fuzz/attempt_004/FuzzHarness.java  [crash: java.lang.StringIndexOutOfBoundsException@org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate]
+  - /tmp/d4j/Lang_6_buggy/fuzz/attempt_005/FuzzHarness.java  [crash: java.lang.StringIndexOutOfBoundsException@org.apache.commons.lang3.text.translate.CharSequenceTranslator.translate]
+##################################################
+
+#################### fuzzing patched code ####################
+Copying /tmp/d4j/Lang_6_buggy → /tmp/d4j/Lang_6_buggy_patched_patch2-Lang-6-SequenceR
+
+--- fuzzing org.apache.commons.lang3.text.translate.FuzzHarness (attempt_001) ---
+  ✓  clean run (exit 0) — vulnerability not triggered on patched code
+
+--- fuzzing org.apache.commons.lang3.text.translate.FuzzHarness (attempt_002) ---
+  ✓  clean run (exit 0) — vulnerability not triggered on patched code
+
+--- fuzzing org.apache.commons.lang3.text.translate.FuzzHarness (attempt_003) ---
+  ✓  clean run (exit 0) — vulnerability not triggered on patched code
+
+--- fuzzing org.apache.commons.lang3.text.translate.FuzzHarness (attempt_004) ---
+  ✓  clean run (exit 0) — vulnerability not triggered on patched code
+
+--- fuzzing org.apache.commons.lang3.text.translate.FuzzHarness (attempt_005) ---
+  ✓  clean run (exit 0) — vulnerability not triggered on patched code
+
+#################### fuzz summary ####################
+harnesses run  : 5
+crashed        : 0  (vulnerability still reachable — patch may be overfitting)
+clean          : 5  (vulnerability not triggered — patch appears to fix the bug)
+timed out      : 0
+##################################################

@@ -1,0 +1,1198 @@
+[overfitting] run 1 (have 0/10 distinct) -> project Math
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.math3.distribution.HypergeometricDistributionTest::testMath1021  [junit.framework.AssertionFailedError]
+
+bug kind: semantic
+{
+  "modified_files": [
+    "src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java"
+  ],
+  "patch_text": "--- /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java\t\n+++ /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java\n@@ -135,7 +135,7 @@\n             k = 1.0 / k;\n             tmp = mu + k * sigma;\n             if (tmp < upper) {\n-                upper = ((int) Math.ceil(tmp)) - 1;\n+            \ttmp=mu + k * sigma;\n             }\n         }\n \n",
+  "functions": [
+    {
+      "func_name": "inverseCumulativeProbability",
+      "func_signature": "public int inverseCumulativeProbability(double p) throws OutOfRangeException",
+      "func_source": "    public int inverseCumulativeProbability(final double p) throws OutOfRangeException {\n        if (p < 0.0 || p > 1.0) {\n            throw new OutOfRangeException(p, 0, 1);\n        }\n\n        int lower = getSupportLowerBound();\n        if (p == 0.0) {\n            return lower;\n        }\n        if (lower == Integer.MIN_VALUE) {\n            if (checkedCumulativeProbability(lower) >= p) {\n                return lower;\n            }\n        } else {\n            lower -= 1; // this ensures cumulativeProbability(lower) < p, which\n                        // is important for the solving step\n        }\n\n        int upper = getSupportUpperBound();\n        if (p == 1.0) {\n            return upper;\n        }\n\n        // use the one-sided Chebyshev inequality to narrow the bracket\n        // cf. AbstractRealDistribution.inverseCumulativeProbability(double)\n        final double mu = getNumericalMean();\n        final double sigma = FastMath.sqrt(getNumericalVariance());\n        final boolean chebyshevApplies = !(Double.isInfinite(mu) || Double.isNaN(mu) ||\n                Double.isInfinite(sigma) || Double.isNaN(sigma) || sigma == 0.0);\n        if (chebyshevApplies) {\n            double k = FastMath.sqrt((1.0 - p) / p);\n            double tmp = mu - k * sigma;\n            if (tmp > lower) {\n                lower = ((int) Math.ceil(tmp)) - 1;\n            }\n            k = 1.0 / k;\n            tmp = mu + k * sigma;\n            if (tmp < upper) {\n                upper = ((int) Math.ceil(tmp)) - 1;\n            }\n        }\n\n        return solveInverseCumulativeProbability(p, lower, upper);\n    }",
+      "xrefs": [],
+      "reachable": [],
+      "related_callees": [
+        {
+          "name": "getSupportLowerBound",
+          "source_file": "IntegerDistribution.java",
+          "signature": "int getSupportLowerBound()",
+          "source": "    int getSupportLowerBound();",
+          "is_abstract": true,
+          "impls": [
+            [
+              "BetaDistribution.java",
+              "    public double getSupportLowerBound() {\n        return 0;\n    }"
+            ],
+            [
+              "BinomialDistribution.java",
+              "    public int getSupportLowerBound() {\n        return probabilityOfSuccess < 1.0 ? 0 : numberOfTrials;\n    }"
+            ],
+            [
+              "CauchyDistribution.java",
+              "    public double getSupportLowerBound() {\n        return Double.NEGATIVE_INFINITY;\n    }"
+            ],
+            [
+              "ChiSquaredDistribution.java",
+              "    public double getSupportLowerBound() {\n        return 0;\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "checkedCumulativeProbability",
+          "source_file": "AbstractIntegerDistribution.java",
+          "signature": "private double checkedCumulativeProbability(int argument) throws MathInternalError",
+          "source": "    private double checkedCumulativeProbability(int argument)\n        throws MathInternalError {\n        double result = Double.NaN;\n        result = cumulativeProbability(argument);\n        if (Double.isNaN(result)) {\n            throw new MathInternalError(LocalizedFormats\n                    .DISCRETE_CUMULATIVE_PROBABILITY_RETURNED_NAN, argument);\n        }\n        return result;\n    }",
+          "is_abstract": false,
+          "impls": []
+        },
+        {
+          "name": "getSupportUpperBound",
+          "source_file": "IntegerDistribution.java",
+          "signature": "int getSupportUpperBound()",
+          "source": "    int getSupportUpperBound();",
+          "is_abstract": true,
+          "impls": [
+            [
+              "BetaDistribution.java",
+              "    public double getSupportUpperBound() {\n        return 1;\n    }"
+            ],
+            [
+              "BinomialDistribution.java",
+              "    public int getSupportUpperBound() {\n        return probabilityOfSuccess > 0.0 ? numberOfTrials : 0;\n    }"
+            ],
+            [
+              "CauchyDistribution.java",
+              "    public double getSupportUpperBound() {\n        return Double.POSITIVE_INFINITY;\n    }"
+            ],
+            [
+              "ChiSquaredDistribution.java",
+              "    public double getSupportUpperBound() {\n        return Double.POSITIVE_INFINITY;\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "getNumericalMean",
+          "source_file": "IntegerDistribution.java",
+          "signature": "double getNumericalMean()",
+          "source": "    double getNumericalMean();",
+          "is_abstract": true,
+          "impls": [
+            [
+              "BetaDistribution.java",
+              "    public double getNumericalMean() {\n        final double a = getAlpha();\n        return a / (a + getBeta());\n    }"
+            ],
+            [
+              "BinomialDistribution.java",
+              "    public double getNumericalMean() {\n        return numberOfTrials * probabilityOfSuccess;\n    }"
+            ],
+            [
+              "CauchyDistribution.java",
+              "    public double getNumericalMean() {\n        return Double.NaN;\n    }"
+            ],
+            [
+              "ChiSquaredDistribution.java",
+              "    public double getNumericalMean() {\n        return getDegreesOfFreedom();\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "getNumericalVariance",
+          "source_file": "IntegerDistribution.java",
+          "signature": "double getNumericalVariance()",
+          "source": "    double getNumericalVariance();",
+          "is_abstract": true,
+          "impls": [
+            [
+              "BetaDistribution.java",
+              "    public double getNumericalVariance() {\n        final double a = getAlpha();\n        final double b = getBeta();\n        final double alphabetasum = a + b;\n        return (a * b) / ((alphabetasum * alphabetasum) * (alphabetasum + 1));\n    }"
+            ],
+            [
+              "BinomialDistribution.java",
+              "    public double getNumericalVariance() {\n        final double p = probabilityOfSuccess;\n        return numberOfTrials * p * (1 - p);\n    }"
+            ],
+            [
+              "CauchyDistribution.java",
+              "    public double getNumericalVariance() {\n        return Double.NaN;\n    }"
+            ],
+            [
+              "ChiSquaredDistribution.java",
+              "    public double getNumericalVariance() {\n        return 2 * getDegreesOfFreedom();\n    }"
+            ]
+          ]
+        },
+        {
+          "name": "solveInverseCumulativeProbability",
+          "source_file": "AbstractIntegerDistribution.java",
+          "signature": "protected int solveInverseCumulativeProbability(double p, int lower, int upper)",
+          "source": "    protected int solveInverseCumulativeProbability(final double p, int lower, int upper) {\n        while (lower + 1 < upper) {\n            int xm = (lower + upper) / 2;\n            if (xm < lower || xm > upper) {\n                /*\n                 * Overflow.\n                 * There will never be an overflow in both calculation methods\n                 * for xm at the same time\n                 */\n                xm = lower + (upper - lower) / 2;\n            }\n\n            double pm = checkedCumulativeProbability(xm);\n            if (pm >= p) {\n                upper = xm;\n            } else {\n                lower = xm;\n            }\n        }\n        return upper;\n    }",
+          "is_abstract": false,
+          "impls": []
+        }
+      ]
+    }
+  ],
+  "package": "org.apache.commons.math3.distribution",
+  "root_cause_reachable": [],
+  "source_imports": [
+    "import java.io.Serializable;",
+    "import org.apache.commons.math3.exception.MathInternalError;",
+    "import org.apache.commons.math3.exception.NotStrictlyPositiveException;",
+    "import org.apache.commons.math3.exception.NumberIsTooLargeException;",
+    "import org.apache.commons.math3.exception.OutOfRangeException;",
+    "import org.apache.commons.math3.exception.util.LocalizedFormats;",
+    "import org.apache.commons.math3.random.RandomGenerator;",
+    "import org.apache.commons.math3.random.RandomDataImpl;",
+    "import org.apache.commons.math3.util.FastMath;"
+  ]
+}
+No ground-truth crash input captured — prompt will fall back to test-source anchoring.
+  [semantic] lifting assertion from org.apache.commons.math3.distribution.HypergeometricDistributionTest::testMath1021
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.math3.distribution` (`package org.apache.commons.math3.distribution;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Math_2_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java	
++++ /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java
+@@ -135,7 +135,7 @@
+             k = 1.0 / k;
+             tmp = mu + k * sigma;
+             if (tmp < upper) {
+-                upper = ((int) Math.ceil(tmp)) - 1;
++            	tmp=mu + k * sigma;
+             }
+         }
+ 
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Serializable;
+import org.apache.commons.math3.exception.MathInternalError;
+import org.apache.commons.math3.exception.NotStrictlyPositiveException;
+import org.apache.commons.math3.exception.NumberIsTooLargeException;
+import org.apache.commons.math3.exception.OutOfRangeException;
+import org.apache.commons.math3.exception.util.LocalizedFormats;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.RandomDataImpl;
+import org.apache.commons.math3.util.FastMath;
+</source_imports>
+
+Function `inverseCumulativeProbability`:
+<signature>
+public int inverseCumulativeProbability(double p) throws OutOfRangeException
+</signature>
+<code>
+    public int inverseCumulativeProbability(final double p) throws OutOfRangeException {
+        if (p < 0.0 || p > 1.0) {
+            throw new OutOfRangeException(p, 0, 1);
+        }
+
+        int lower = getSupportLowerBound();
+        if (p == 0.0) {
+            return lower;
+        }
+        if (lower == Integer.MIN_VALUE) {
+            if (checkedCumulativeProbability(lower) >= p) {
+                return lower;
+            }
+        } else {
+            lower -= 1; // this ensures cumulativeProbability(lower) < p, which
+                        // is important for the solving step
+        }
+
+        int upper = getSupportUpperBound();
+        if (p == 1.0) {
+            return upper;
+        }
+
+        // use the one-sided Chebyshev inequality to narrow the bracket
+        // cf. AbstractRealDistribution.inverseCumulativeProbability(double)
+        final double mu = getNumericalMean();
+        final double sigma = FastMath.sqrt(getNumericalVariance());
+        final boolean chebyshevApplies = !(Double.isInfinite(mu) || Double.isNaN(mu) ||
+                Double.isInfinite(sigma) || Double.isNaN(sigma) || sigma == 0.0);
+        if (chebyshevApplies) {
+            double k = FastMath.sqrt((1.0 - p) / p);
+            double tmp = mu - k * sigma;
+            if (tmp > lower) {
+                lower = ((int) Math.ceil(tmp)) - 1;
+            }
+            k = 1.0 / k;
+            tmp = mu + k * sigma;
+            if (tmp < upper) {
+                upper = ((int) Math.ceil(tmp)) - 1;
+            }
+        }
+
+        return solveInverseCumulativeProbability(p, lower, upper);
+    }
+</code>
+Methods called by `inverseCumulativeProbability` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="getSupportLowerBound" from="IntegerDistribution.java" abstract="true">
+<signature>
+int getSupportLowerBound()
+</signature>
+<contract>
+    int getSupportLowerBound();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getSupportLowerBound() {
+        return 0;
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public int getSupportLowerBound() {
+        return probabilityOfSuccess < 1.0 ? 0 : numberOfTrials;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getSupportLowerBound() {
+        return Double.NEGATIVE_INFINITY;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getSupportLowerBound() {
+        return 0;
+    }
+</implementation>
+</callee>
+<callee name="checkedCumulativeProbability" from="AbstractIntegerDistribution.java">
+<signature>
+private double checkedCumulativeProbability(int argument) throws MathInternalError
+</signature>
+<code>
+    private double checkedCumulativeProbability(int argument)
+        throws MathInternalError {
+        double result = Double.NaN;
+        result = cumulativeProbability(argument);
+        if (Double.isNaN(result)) {
+            throw new MathInternalError(LocalizedFormats
+                    .DISCRETE_CUMULATIVE_PROBABILITY_RETURNED_NAN, argument);
+        }
+        return result;
+    }
+</code>
+</callee>
+<callee name="getSupportUpperBound" from="IntegerDistribution.java" abstract="true">
+<signature>
+int getSupportUpperBound()
+</signature>
+<contract>
+    int getSupportUpperBound();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getSupportUpperBound() {
+        return 1;
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public int getSupportUpperBound() {
+        return probabilityOfSuccess > 0.0 ? numberOfTrials : 0;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getSupportUpperBound() {
+        return Double.POSITIVE_INFINITY;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getSupportUpperBound() {
+        return Double.POSITIVE_INFINITY;
+    }
+</implementation>
+</callee>
+<callee name="getNumericalMean" from="IntegerDistribution.java" abstract="true">
+<signature>
+double getNumericalMean()
+</signature>
+<contract>
+    double getNumericalMean();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getNumericalMean() {
+        final double a = getAlpha();
+        return a / (a + getBeta());
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public double getNumericalMean() {
+        return numberOfTrials * probabilityOfSuccess;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getNumericalMean() {
+        return Double.NaN;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getNumericalMean() {
+        return getDegreesOfFreedom();
+    }
+</implementation>
+</callee>
+<callee name="getNumericalVariance" from="IntegerDistribution.java" abstract="true">
+<signature>
+double getNumericalVariance()
+</signature>
+<contract>
+    double getNumericalVariance();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getNumericalVariance() {
+        final double a = getAlpha();
+        final double b = getBeta();
+        final double alphabetasum = a + b;
+        return (a * b) / ((alphabetasum * alphabetasum) * (alphabetasum + 1));
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public double getNumericalVariance() {
+        final double p = probabilityOfSuccess;
+        return numberOfTrials * p * (1 - p);
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getNumericalVariance() {
+        return Double.NaN;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getNumericalVariance() {
+        return 2 * getDegreesOfFreedom();
+    }
+</implementation>
+</callee>
+<callee name="solveInverseCumulativeProbability" from="AbstractIntegerDistribution.java">
+<signature>
+protected int solveInverseCumulativeProbability(double p, int lower, int upper)
+</signature>
+<code>
+    protected int solveInverseCumulativeProbability(final double p, int lower, int upper) {
+        while (lower + 1 < upper) {
+            int xm = (lower + upper) / 2;
+            if (xm < lower || xm > upper) {
+                /*
+                 * Overflow.
+                 * There will never be an overflow in both calculation methods
+                 * for xm at the same time
+                 */
+                xm = lower + (upper - lower) / 2;
+            }
+
+            double pm = checkedCumulativeProbability(xm);
+            if (pm >= p) {
+                upper = xm;
+            } else {
+                lower = xm;
+            }
+        }
+        return upper;
+    }
+</code>
+</callee>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `HypergeometricDistribution`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.apache.commons.math3.distribution.HypergeometricDistributionTest" method="testMath1021">
+    @Test
+    public void testMath1021() {
+        final int N = 43130568;
+        final int m = 42976365;
+        final int n = 50;
+        final HypergeometricDistribution dist = new HypergeometricDistribution(N, m, n);
+
+        for (int i = 0; i < 100; i++) {
+            final int sample = dist.sample();
+            Assert.assertTrue("sample=" + sample, 0 <= sample);
+            Assert.assertTrue("sample=" + sample, sample <= n);
+        }
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.math3.distribution;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>Running ant (compile)...................................................... OK
+Running ant (compile.tests)................................................ OK
+
+################################################
+  [semantic] lifting assertion from org.apache.commons.math3.distribution.HypergeometricDistributionTest::testMath1021
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.math3.distribution` (`package org.apache.commons.math3.distribution;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Math_2_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java	
++++ /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java
+@@ -135,7 +135,7 @@
+             k = 1.0 / k;
+             tmp = mu + k * sigma;
+             if (tmp < upper) {
+-                upper = ((int) Math.ceil(tmp)) - 1;
++            	tmp=mu + k * sigma;
+             }
+         }
+ 
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Serializable;
+import org.apache.commons.math3.exception.MathInternalError;
+import org.apache.commons.math3.exception.NotStrictlyPositiveException;
+import org.apache.commons.math3.exception.NumberIsTooLargeException;
+import org.apache.commons.math3.exception.OutOfRangeException;
+import org.apache.commons.math3.exception.util.LocalizedFormats;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.RandomDataImpl;
+import org.apache.commons.math3.util.FastMath;
+</source_imports>
+
+Function `inverseCumulativeProbability`:
+<signature>
+public int inverseCumulativeProbability(double p) throws OutOfRangeException
+</signature>
+<code>
+    public int inverseCumulativeProbability(final double p) throws OutOfRangeException {
+        if (p < 0.0 || p > 1.0) {
+            throw new OutOfRangeException(p, 0, 1);
+        }
+
+        int lower = getSupportLowerBound();
+        if (p == 0.0) {
+            return lower;
+        }
+        if (lower == Integer.MIN_VALUE) {
+            if (checkedCumulativeProbability(lower) >= p) {
+                return lower;
+            }
+        } else {
+            lower -= 1; // this ensures cumulativeProbability(lower) < p, which
+                        // is important for the solving step
+        }
+
+        int upper = getSupportUpperBound();
+        if (p == 1.0) {
+            return upper;
+        }
+
+        // use the one-sided Chebyshev inequality to narrow the bracket
+        // cf. AbstractRealDistribution.inverseCumulativeProbability(double)
+        final double mu = getNumericalMean();
+        final double sigma = FastMath.sqrt(getNumericalVariance());
+        final boolean chebyshevApplies = !(Double.isInfinite(mu) || Double.isNaN(mu) ||
+                Double.isInfinite(sigma) || Double.isNaN(sigma) || sigma == 0.0);
+        if (chebyshevApplies) {
+            double k = FastMath.sqrt((1.0 - p) / p);
+            double tmp = mu - k * sigma;
+            if (tmp > lower) {
+                lower = ((int) Math.ceil(tmp)) - 1;
+            }
+            k = 1.0 / k;
+            tmp = mu + k * sigma;
+            if (tmp < upper) {
+                upper = ((int) Math.ceil(tmp)) - 1;
+            }
+        }
+
+        return solveInverseCumulativeProbability(p, lower, upper);
+    }
+</code>
+Methods called by `inverseCumulativeProbability` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="getSupportLowerBound" from="IntegerDistribution.java" abstract="true">
+<signature>
+int getSupportLowerBound()
+</signature>
+<contract>
+    int getSupportLowerBound();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getSupportLowerBound() {
+        return 0;
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public int getSupportLowerBound() {
+        return probabilityOfSuccess < 1.0 ? 0 : numberOfTrials;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getSupportLowerBound() {
+        return Double.NEGATIVE_INFINITY;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getSupportLowerBound() {
+        return 0;
+    }
+</implementation>
+</callee>
+<callee name="checkedCumulativeProbability" from="AbstractIntegerDistribution.java">
+<signature>
+private double checkedCumulativeProbability(int argument) throws MathInternalError
+</signature>
+<code>
+    private double checkedCumulativeProbability(int argument)
+        throws MathInternalError {
+        double result = Double.NaN;
+        result = cumulativeProbability(argument);
+        if (Double.isNaN(result)) {
+            throw new MathInternalError(LocalizedFormats
+                    .DISCRETE_CUMULATIVE_PROBABILITY_RETURNED_NAN, argument);
+        }
+        return result;
+    }
+</code>
+</callee>
+<callee name="getSupportUpperBound" from="IntegerDistribution.java" abstract="true">
+<signature>
+int getSupportUpperBound()
+</signature>
+<contract>
+    int getSupportUpperBound();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getSupportUpperBound() {
+        return 1;
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public int getSupportUpperBound() {
+        return probabilityOfSuccess > 0.0 ? numberOfTrials : 0;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getSupportUpperBound() {
+        return Double.POSITIVE_INFINITY;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getSupportUpperBound() {
+        return Double.POSITIVE_INFINITY;
+    }
+</implementation>
+</callee>
+<callee name="getNumericalMean" from="IntegerDistribution.java" abstract="true">
+<signature>
+double getNumericalMean()
+</signature>
+<contract>
+    double getNumericalMean();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getNumericalMean() {
+        final double a = getAlpha();
+        return a / (a + getBeta());
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public double getNumericalMean() {
+        return numberOfTrials * probabilityOfSuccess;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getNumericalMean() {
+        return Double.NaN;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getNumericalMean() {
+        return getDegreesOfFreedom();
+    }
+</implementation>
+</callee>
+<callee name="getNumericalVariance" from="IntegerDistribution.java" abstract="true">
+<signature>
+double getNumericalVariance()
+</signature>
+<contract>
+    double getNumericalVariance();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getNumericalVariance() {
+        final double a = getAlpha();
+        final double b = getBeta();
+        final double alphabetasum = a + b;
+        return (a * b) / ((alphabetasum * alphabetasum) * (alphabetasum + 1));
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public double getNumericalVariance() {
+        final double p = probabilityOfSuccess;
+        return numberOfTrials * p * (1 - p);
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getNumericalVariance() {
+        return Double.NaN;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getNumericalVariance() {
+        return 2 * getDegreesOfFreedom();
+    }
+</implementation>
+</callee>
+<callee name="solveInverseCumulativeProbability" from="AbstractIntegerDistribution.java">
+<signature>
+protected int solveInverseCumulativeProbability(double p, int lower, int upper)
+</signature>
+<code>
+    protected int solveInverseCumulativeProbability(final double p, int lower, int upper) {
+        while (lower + 1 < upper) {
+            int xm = (lower + upper) / 2;
+            if (xm < lower || xm > upper) {
+                /*
+                 * Overflow.
+                 * There will never be an overflow in both calculation methods
+                 * for xm at the same time
+                 */
+                xm = lower + (upper - lower) / 2;
+            }
+
+            double pm = checkedCumulativeProbability(xm);
+            if (pm >= p) {
+                upper = xm;
+            } else {
+                lower = xm;
+            }
+        }
+        return upper;
+    }
+</code>
+</callee>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `HypergeometricDistribution`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.apache.commons.math3.distribution.HypergeometricDistributionTest" method="testMath1021">
+    @Test
+    public void testMath1021() {
+        final int N = 43130568;
+        final int m = 42976365;
+        final int n = 50;
+        final HypergeometricDistribution dist = new HypergeometricDistribution(N, m, n);
+
+        for (int i = 0; i < 100; i++) {
+            final int sample = dist.sample();
+            Assert.assertTrue("sample=" + sample, 0 <= sample);
+            Assert.assertTrue("sample=" + sample, sample <= n);
+        }
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.math3.distribution;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>
+################################################
+
+==================== invalid response (1/100) ====================
+✗ not a harness (empty response) — regenerating without spending an attempt
+
+==================== invalid response (2/100) ====================
+✗ not a harness (empty response) — regenerating without spending an attempt
+
+==================== invalid response (3/100) ====================
+✗ not a harness (empty response) — regenerating without spending an attempt
+
+==================== attempt 001/70 (repair turn) ====================
+--- raw LLM response ---
+package org.apache.commons.math3.distribution;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+import com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        final int N = 43130568;
+        final int m = 42976365;
+        final int n = 50;
+
+        final HypergeometricDistribution dist = new HypergeometricDistribution(N, m, n);
+        dist.reseedRandomGenerator(data.consumeInt());
+
+        for (int i = 0; i < 100; i++) {
+            final int sample = dist.sample();
+            if (!(0 <= sample)) {
+                throw new FuzzerSecurityIssueLow("semantic mismatch: sample=" + sample + ", expected 0 <= sample");
+            }
+            if (!(sample <= n)) {
+                throw new FuzzerSecurityIssueLow("semantic mismatch: sample=" + sample + ", expected sample <= 50");
+            }
+        }
+
+        final int knownX = data.consumeBoolean() ? 48 : 49;
+        final double cdfPrev = dist.cumulativeProbability(knownX - 1);
+        final double cdfHere = dist.cumulativeProbability(knownX);
+        if (!(cdfPrev < cdfHere)) {
+            return;
+        }
+
+        final double p = cdfPrev + (cdfHere - cdfPrev) / 2.0;
+        final int recovered = dist.inverseCumulativeProbability(p);
+        if (recovered != knownX) {
+            throw new RuntimeException(
+                "metamorphic violation: inverseCumulativeProbability(midpoint between cumulativeProbability(" +
+                (knownX - 1) + ") and cumulativeProbability(" + knownX + ")) != " + knownX +
+                ", got " + recovered);
+        }
+    }
+}
+  ↳ crash detected (exit code 77 (Jazzer finding))
+✓ compiled + triggered at /tmp/d4j/Math_2_buggy/fuzz/attempt_001/FuzzHarness.java  (1/5 successes, 1 attempts so far)  [crash: com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow@org.apache.commons.math3.distribution.FuzzHarness.fuzzerTestOneInput]
+  [semantic] lifting assertion from org.apache.commons.math3.distribution.HypergeometricDistributionTest::testMath1021
+#################### prompt (semantic) ####################
+Write a Jazzer harness. Rules:
+
+- Class named exactly `FuzzHarness`.
+- Entrypoint exactly:
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data)
+- Package: `org.apache.commons.math3.distribution` (`package org.apache.commons.math3.distribution;` at the top).
+  Same-package placement gives direct access to package-private members — no reflection.
+- Output raw Java only: no markdown fences, no prose. A leading `/* ... */` comment is allowed. Must compile with `javac` against the project classpath plus jazzer-api.jar.
+- Reach the fault through the library's REAL code, not a hand-built stand-in. You may construct and use classes that already exist in the library, but do NOT write your own subclass, anonymous class, mock, or stub of the patched class or any of its callees to force the crash. A harness that manufactures the crash with a custom implementation proves nothing about real usage and is rejected.
+
+Codebase: `Math_2_buggy`. The patch below touches the functions listed. Your harness must call those functions so the patched behaviour is reachable from the fuzz entrypoint.
+
+Patch under analysis:
+<patch>
+--- /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java	
++++ /src/main/java/org/apache/commons/math3/distribution/AbstractIntegerDistribution.java
+@@ -135,7 +135,7 @@
+             k = 1.0 / k;
+             tmp = mu + k * sigma;
+             if (tmp < upper) {
+-                upper = ((int) Math.ceil(tmp)) - 1;
++            	tmp=mu + k * sigma;
+             }
+         }
+ 
+
+</patch>
+
+Available imports from the modified file (copy exactly when you need these types):
+<source_imports>
+import java.io.Serializable;
+import org.apache.commons.math3.exception.MathInternalError;
+import org.apache.commons.math3.exception.NotStrictlyPositiveException;
+import org.apache.commons.math3.exception.NumberIsTooLargeException;
+import org.apache.commons.math3.exception.OutOfRangeException;
+import org.apache.commons.math3.exception.util.LocalizedFormats;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.RandomDataImpl;
+import org.apache.commons.math3.util.FastMath;
+</source_imports>
+
+Function `inverseCumulativeProbability`:
+<signature>
+public int inverseCumulativeProbability(double p) throws OutOfRangeException
+</signature>
+<code>
+    public int inverseCumulativeProbability(final double p) throws OutOfRangeException {
+        if (p < 0.0 || p > 1.0) {
+            throw new OutOfRangeException(p, 0, 1);
+        }
+
+        int lower = getSupportLowerBound();
+        if (p == 0.0) {
+            return lower;
+        }
+        if (lower == Integer.MIN_VALUE) {
+            if (checkedCumulativeProbability(lower) >= p) {
+                return lower;
+            }
+        } else {
+            lower -= 1; // this ensures cumulativeProbability(lower) < p, which
+                        // is important for the solving step
+        }
+
+        int upper = getSupportUpperBound();
+        if (p == 1.0) {
+            return upper;
+        }
+
+        // use the one-sided Chebyshev inequality to narrow the bracket
+        // cf. AbstractRealDistribution.inverseCumulativeProbability(double)
+        final double mu = getNumericalMean();
+        final double sigma = FastMath.sqrt(getNumericalVariance());
+        final boolean chebyshevApplies = !(Double.isInfinite(mu) || Double.isNaN(mu) ||
+                Double.isInfinite(sigma) || Double.isNaN(sigma) || sigma == 0.0);
+        if (chebyshevApplies) {
+            double k = FastMath.sqrt((1.0 - p) / p);
+            double tmp = mu - k * sigma;
+            if (tmp > lower) {
+                lower = ((int) Math.ceil(tmp)) - 1;
+            }
+            k = 1.0 / k;
+            tmp = mu + k * sigma;
+            if (tmp < upper) {
+                upper = ((int) Math.ceil(tmp)) - 1;
+            }
+        }
+
+        return solveInverseCumulativeProbability(p, lower, upper);
+    }
+</code>
+Methods called by `inverseCumulativeProbability` whose behaviour the patched code depends on. The body above shows how their results are USED; the declarations below show what they return and how real implementations behave. To reach the fault you usually need to drive the target through one of these implementations with an input that makes its return value exercise the patched path.
+<callee name="getSupportLowerBound" from="IntegerDistribution.java" abstract="true">
+<signature>
+int getSupportLowerBound()
+</signature>
+<contract>
+    int getSupportLowerBound();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getSupportLowerBound() {
+        return 0;
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public int getSupportLowerBound() {
+        return probabilityOfSuccess < 1.0 ? 0 : numberOfTrials;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getSupportLowerBound() {
+        return Double.NEGATIVE_INFINITY;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getSupportLowerBound() {
+        return 0;
+    }
+</implementation>
+</callee>
+<callee name="checkedCumulativeProbability" from="AbstractIntegerDistribution.java">
+<signature>
+private double checkedCumulativeProbability(int argument) throws MathInternalError
+</signature>
+<code>
+    private double checkedCumulativeProbability(int argument)
+        throws MathInternalError {
+        double result = Double.NaN;
+        result = cumulativeProbability(argument);
+        if (Double.isNaN(result)) {
+            throw new MathInternalError(LocalizedFormats
+                    .DISCRETE_CUMULATIVE_PROBABILITY_RETURNED_NAN, argument);
+        }
+        return result;
+    }
+</code>
+</callee>
+<callee name="getSupportUpperBound" from="IntegerDistribution.java" abstract="true">
+<signature>
+int getSupportUpperBound()
+</signature>
+<contract>
+    int getSupportUpperBound();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getSupportUpperBound() {
+        return 1;
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public int getSupportUpperBound() {
+        return probabilityOfSuccess > 0.0 ? numberOfTrials : 0;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getSupportUpperBound() {
+        return Double.POSITIVE_INFINITY;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getSupportUpperBound() {
+        return Double.POSITIVE_INFINITY;
+    }
+</implementation>
+</callee>
+<callee name="getNumericalMean" from="IntegerDistribution.java" abstract="true">
+<signature>
+double getNumericalMean()
+</signature>
+<contract>
+    double getNumericalMean();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getNumericalMean() {
+        final double a = getAlpha();
+        return a / (a + getBeta());
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public double getNumericalMean() {
+        return numberOfTrials * probabilityOfSuccess;
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getNumericalMean() {
+        return Double.NaN;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getNumericalMean() {
+        return getDegreesOfFreedom();
+    }
+</implementation>
+</callee>
+<callee name="getNumericalVariance" from="IntegerDistribution.java" abstract="true">
+<signature>
+double getNumericalVariance()
+</signature>
+<contract>
+    double getNumericalVariance();
+</contract>
+<implementation in="BetaDistribution.java">
+    public double getNumericalVariance() {
+        final double a = getAlpha();
+        final double b = getBeta();
+        final double alphabetasum = a + b;
+        return (a * b) / ((alphabetasum * alphabetasum) * (alphabetasum + 1));
+    }
+</implementation>
+<implementation in="BinomialDistribution.java">
+    public double getNumericalVariance() {
+        final double p = probabilityOfSuccess;
+        return numberOfTrials * p * (1 - p);
+    }
+</implementation>
+<implementation in="CauchyDistribution.java">
+    public double getNumericalVariance() {
+        return Double.NaN;
+    }
+</implementation>
+<implementation in="ChiSquaredDistribution.java">
+    public double getNumericalVariance() {
+        return 2 * getDegreesOfFreedom();
+    }
+</implementation>
+</callee>
+<callee name="solveInverseCumulativeProbability" from="AbstractIntegerDistribution.java">
+<signature>
+protected int solveInverseCumulativeProbability(double p, int lower, int upper)
+</signature>
+<code>
+    protected int solveInverseCumulativeProbability(final double p, int lower, int upper) {
+        while (lower + 1 < upper) {
+            int xm = (lower + upper) / 2;
+            if (xm < lower || xm > upper) {
+                /*
+                 * Overflow.
+                 * There will never be an overflow in both calculation methods
+                 * for xm at the same time
+                 */
+                xm = lower + (upper - lower) / 2;
+            }
+
+            double pm = checkedCumulativeProbability(xm);
+            if (pm >= p) {
+                upper = xm;
+            } else {
+                lower = xm;
+            }
+        }
+        return upper;
+    }
+</code>
+</callee>
+
+THIS IS A NON-CRASHING (SEMANTIC) BUG. The trigger test does not throw — it fails a JUnit assertion because the code returns a WRONG value. There is therefore no exception to catch. Your harness must SUPPLY the oracle:
+
+1. LIFT: read the failing test below and find its assertion (assertEquals / assertTrue / assertSame ...). Identify (a) the call(s) it makes on the real API and (b) the EXPECTED value it checks against. Copy both VERBATIM — do not infer or recompute the expected value; use the literal the test hard-codes.
+
+2. RECONSTRUCT: in fuzzerTestOneInput, make that same call through the real public API, exactly as the test does, to get the ACTUAL value.
+
+3. ASSERT: if the actual value does not equal the expected value, `throw new com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow("semantic mismatch: <what differed>")`. Jazzer reports that throw as a finding, exactly like a crash, so the rest of the pipeline scores it unchanged. If they match, return normally.
+
+4. THEN GENERALISE — but keep every assertion TRUSTED. The lifted pair tells you the answer for ONE input only. Do not invent an expected value for an arbitrary fuzzed input: an assertion you cannot justify will fire on CORRECT patches too (a false positive, the worst outcome). Extend coverage only in ways where the correct answer is independently known:
+
+  (a) CONSTRUCT THE INPUT FROM A KNOWN ANSWER. Pick a value with FuzzedDataProvider, build the canonical input that must map to it, and assert you recover it — the answer is trusted because you chose it first. E.g. fuzz an int n, format it, parse it back, assert == n.
+
+  (b) EQUIVALENCE TO THE SEED. The seed input has properties that fix its answer. Generate other inputs that SHARE those properties and must therefore share the seed's expected value, and assert they equal it. E.g. if the contract is case-insensitive and foo("abc")==X, then foo("ABC") and foo("Abc") must also ==X. This turns the one lifted value into an oracle for a whole family of inputs.
+
+  (c) METAMORPHIC RELATION between two real calls (see below) — trusted because it holds for ANY correct implementation.
+
+  GUARDRAIL: for any fuzzed input where you cannot justify the expected value by (a), (b), or (c), still CALL the API on it (this exercises the patched path), but do NOT assert on its result — just return. Assert only trusted answers; explore everything else without asserting.
+REAL ENTRY POINT: in production the bug is reached through the public API the failing test drives (here: `HypergeometricDistribution`). Drive your fuzzed input through that public API so it flows along the real call chain to the patched line. Prefer this over calling the patched method directly, and never reach it via a custom implementation of a library type.
+Lift the call and the expected value from THIS test (this attempt's target):
+<failing_test class="org.apache.commons.math3.distribution.HypergeometricDistributionTest" method="testMath1021">
+    @Test
+    public void testMath1021() {
+        final int N = 43130568;
+        final int m = 42976365;
+        final int n = 50;
+        final HypergeometricDistribution dist = new HypergeometricDistribution(N, m, n);
+
+        for (int i = 0; i < 100; i++) {
+            final int sample = dist.sample();
+            Assert.assertTrue("sample=" + sample, 0 <= sample);
+            Assert.assertTrue("sample=" + sample, sample <= n);
+        }
+    }
+</failing_test>
+METAMORPHIC CHECK (catches WRONG-OUTPUT bugs that never throw):
+Some overfitting patches don't crash — they return a wrong value. You cannot ask 'is this the right answer' (no reference is available), but you CAN assert a relation between two related calls of the target that must hold for ANY correct implementation. Add ONE such check after your normal calls: compute both sides from REAL library calls on the fuzzed input, and if they disagree, `throw new RuntimeException("metamorphic violation: <which relation>")`. Jazzer reports that as a finding, the same as a crash.
+
+Pick whichever ONE relation fits the patched function (skip this check only if none can possibly apply):
+- Round-trip / inverse: f(g(x)) == x  (e.g. decode(encode(x)), parse(format(v)), unescape(escape(s))).
+- Idempotence: f(f(x)) == f(x)  (e.g. normalise, trim, strip, canonicalise).
+- Equivalent inputs: two inputs that must map to the same result do  (e.g. case-insensitive parse: f(s) == f(s.toUpperCase()); leading-zero / whitespace variants of the same number).
+- Composition / split: f(a + b) relates to f(a) and f(b) consistently  (e.g. a translator/encoder applied to a concatenation equals the concatenation of the parts).
+- Oracle from the input itself: when the fuzzed input is CONSTRUCTED from a known value, the result must recover it (e.g. build the canonical string for a random int n, parse it, and assert it equals n).
+
+Rules: use only real library calls for BOTH sides (no hand-rolled reference). Only assert a relation that is TRUE for correct code — if a correct implementation could legally break it, do not use it (that would cause false positives). Guard the check so inputs where the relation does not apply (e.g. the input was itself rejected) are skipped, not reported.
+
+Use ONLY these FuzzedDataProvider methods (no invented overloads):
+
+    int     consumeInt()                    // any int
+    int     consumeInt(int min, int max)    // inclusive
+    byte    consumeByte()
+    boolean consumeBoolean()
+    String  consumeString(int maxLength)    // ONE arg
+    String  consumeAsciiString(int maxLength)
+    String  consumeRemainingAsString()
+    byte[]  consumeBytes(int maxLength)
+    byte[]  consumeRemainingAsBytes()
+    int     remainingBytes()
+
+
+Complete the skeleton below. Fill in ONLY the `// >>> YOUR CODE HERE <<<` region. Do NOT change the package, import, class name, or entrypoint. Do NOT add a `main` method. Add extra imports only if javac requires them, directly below the existing import.
+<skeleton>
+package org.apache.commons.math3.distribution;
+
+import com.code_intelligence.jazzer.api.FuzzedDataProvider;
+
+public class FuzzHarness {
+    public static void fuzzerTestOneInput(com.code_intelligence.jazzer.api.FuzzedDataProvider data) {
+        // >>> YOUR CODE HERE <<<
+    }
+}
+</skeleton>

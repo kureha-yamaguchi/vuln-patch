@@ -1,0 +1,7 @@
+Started at: Mon Jun  8 17:14:54 BST 2026
+Log file: logs/experiment_20260608_171454.log
+
+Found 1 bug-triggering test(s):
+  ✓ org.apache.commons.lang.time.StopWatchTest::testLang315  [junit.framework.AssertionFailedError]
+
+Lang 55 (Jaid) is not a crashing bug (trigger test fails on an assertion, or its failure type could not be determined) — out of scope for the crash pipeline. Skipping.
