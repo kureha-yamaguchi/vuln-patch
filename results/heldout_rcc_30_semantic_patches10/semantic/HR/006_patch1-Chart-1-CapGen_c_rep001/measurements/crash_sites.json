@@ -1,0 +1,905 @@
+[
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-series-count] semantic mismatch: expected 1 legend item after dataset.addValue(1.0, \"S1\", \"C1\") but got 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedOracles",
+     "params": []
+    },
+    "line": 70,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 13,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-series-count-groundtruth] semantic mismatch: expected=1 actual=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedOracles",
+     "params": []
+    },
+    "line": 40,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 12,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-series-count-inline] semantic mismatch: expected 1 legend item after dataset.addValue(1.0, \"S1\", \"C1\") but got 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 41,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-count-test2947660] semantic mismatch: expected=1 actual=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedOracles",
+     "params": []
+    },
+    "line": 41,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 13,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-count] semantic mismatch: expected itemCount=1 but got 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedOracles",
+     "params": []
+    },
+    "line": 55,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 12,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_005",
+  "source": "fuzz_out/attempt_005_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:nonzero-slot-count] semantic mismatch: expected 2 legend items for renderer slot 1 but was 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 63,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-count-groundtruth] semantic mismatch: expected itemCount=1 actual=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedTestOracle",
+     "params": []
+    },
+    "line": 72,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 13,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_007",
+  "source": "fuzz_out/attempt_007_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-junit-single-count] semantic mismatch: expected=1 actual=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedJUnitOracle",
+     "params": []
+    },
+    "line": 39,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-count-single-series] semantic mismatch: expected 1 but got 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedTestOracle",
+     "params": []
+    },
+    "line": 38,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_009",
+  "source": "fuzz_out/attempt_009_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:description-collection-agreement] consistency violation: directDescription=S1 collectionCount=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "checkDescriptionConsistencyAgainstDirectLegendItem",
+     "params": []
+    },
+    "line": 64,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 12,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-count-seed] semantic mismatch: expected itemCount=1 after dataset.addValue(1.0, \"S1\", \"C1\") but actual=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedTest2947660",
+     "params": []
+    },
+    "line": 43,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 13,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-count-junit] semantic mismatch: expected 1 but was 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedTest2947660Oracle",
+     "params": []
+    },
+    "line": 39,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:seed-single-count] semantic mismatch: expected 1 legend item after dataset.addValue(1.0, \"S1\", \"C1\") but was 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedSeedOracle",
+     "params": []
+    },
+    "line": 42,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 13,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_013",
+  "source": "fuzz_out/attempt_013_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-groundtruth-single-count] semantic mismatch: expected=1 actual=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedGroundTruthOracle",
+     "params": []
+    },
+    "line": 44,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 13,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_014",
+  "source": "fuzz_out/attempt_014_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:fresh-collection-snapshot] semantic mismatch: expected 1 legend item after first series addition but got 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 70,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_015",
+  "source": "fuzz_out/attempt_015_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:null-values-manual-count-before] consistency violation: legend item count must equal the number of visible series because getLegendItems() returns items for series, not cells; reported=0 manual=1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runNullValueSeriesMetamorphicOracle",
+     "params": []
+    },
+    "line": 82,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 13,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_016",
+  "source": "fuzz_out/attempt_016_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-count] semantic mismatch: expected 1 legend item after dataset.addValue(1.0, \"S1\", \"C1\") but got 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedAssertions",
+     "params": []
+    },
+    "line": 48,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 12,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_017",
+  "source": "fuzz_out/attempt_017_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-count-verbatim] semantic mismatch: expected=1 actual=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedTest2947660Oracles",
+     "params": []
+    },
+    "line": 53,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 12,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_018",
+  "source": "fuzz_out/attempt_018_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-count] semantic mismatch: expected 1 legend item after dataset.addValue(1.0, \"S1\", \"C1\") but got 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 45,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_019",
+  "source": "fuzz_out/attempt_019_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-verbatim-single-count] semantic mismatch: expected=1 actual=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedVerbatimTest2947660",
+     "params": []
+    },
+    "line": 46,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:seed-single-count] semantic mismatch: expected 1 legend item after adding one series but got 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 79,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_021",
+  "source": "fuzz_out/attempt_021_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-pairs-single-count] semantic mismatch: expected=1 actual=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedJUnitPairsFromTest2947660",
+     "params": []
+    },
+    "line": 57,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-count] semantic mismatch: expected 1 legend item after dataset.addValue(1.0, \"S1\", \"C1\") but got 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "oracle",
+     "params": []
+    },
+    "line": 10,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 65,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:direct-collection-tooltip-url] metamorphic violation: single visible series has direct legend item but collection has no first item directToolTip=TT-S1 directURL=URL-S1 itemCount=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "checkDirectVsCollectionTooltipAndUrlAgreement",
+     "params": []
+    },
+    "line": 70,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 21,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-verbatim-unique-single-count] semantic mismatch: expected 1 but got 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runExactTest2947660ViaUniqueHelper",
+     "params": []
+    },
+    "line": 42,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 14,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_026",
+  "source": "fuzz_out/attempt_026_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:verbatim-one-single-series] semantic mismatch: expectedItemCount=1 actualItemCount=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runVerbatimLiftedTestPairs",
+     "params": []
+    },
+    "line": 46,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-count-seed] semantic mismatch: expected 1 legend item after adding one series but was 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runExactLiftedSeedFromTest2947660",
+     "params": []
+    },
+    "line": 40,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 12,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_028",
+  "source": "fuzz_out/attempt_028_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-count-unique] semantic mismatch: expected=1 actual=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 47,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_029",
+  "source": "fuzz_out/attempt_029_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-single-count-exact-unique] semantic mismatch: expected 1 legend item after adding dataset value but got 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "runLiftedAssertionsFromTest2947660Exactly",
+     "params": []
+    },
+    "line": 39,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 12,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

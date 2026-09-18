@@ -1,0 +1,758 @@
+[
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-seed] semantic mismatch: expected MathIllegalStateException, got completed normally",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 71,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-seed] semantic mismatch: expected MathIllegalStateException for Math844 triangular sample but guess() returned normally",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 32,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-direct] semantic mismatch: expected MathIllegalStateException from ParameterGuesser.guess() on the trusted MATH-844 triangular sample, but the call completed normally",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 63,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-seed] semantic mismatch: HarmonicFitter.ParameterGuesser.guess() on the exact Math844 test input did not throw MathIllegalStateException",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 56,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-seed] semantic mismatch: expected MathIllegalStateException, got completed normally",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 45,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-exn] semantic mismatch: expected MathIllegalStateException for the triangular periodic sample from HarmonicFitterTest.testMath844, but guess() returned normally",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "checkLiftedMath844Oracle",
+     "params": []
+    },
+    "line": 30,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 10,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_007",
+  "source": "fuzz_out/attempt_007_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:exact-harmonic-replay] consistency violation: amplitude=0.5 omega=0.2 guessedA=0.46193976625562094 guessedOmega=0.21726139074383263 guessedPhi=-0.7712167040312187 maxAbsReplayErr=0.27425249068609364 tol=0.00500001",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "checkExactHarmonicReplayConsistency",
+     "params": []
+    },
+    "line": 89,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:seed-boundary] post-condition violation: guess() returned non-positive omega omega=0.0 xRange=30.0 firstX=0.0 lastX=30.0 amplitude=Infinity phase=-0.0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "checkStrictlyPositiveOmegaIfGuessReturns",
+     "params": []
+    },
+    "line": 85,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 34,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_009",
+  "source": "fuzz_out/attempt_009_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-lifted] semantic mismatch: expected MathIllegalStateException, got completed normally",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "checkLiftedMath844Oracle",
+     "params": []
+    },
+    "line": 48,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-direct] semantic mismatch: expected MathIllegalStateException for the documented Math844 seed, but guess() returned normally",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "checkLiftedMath844ThroughRealCode",
+     "params": []
+    },
+    "line": 31,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-degenerate-return] semantic mismatch: MATH-844 sample should not yield a degenerate returned oscillator a=Infinity omega=0.0 phi=-0.0 valueAt0=Infinity valueAt1=Infinity observedY0=0.0 observedY1=1.0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "checkMath844ReturnIsNotDegenerateModel",
+     "params": []
+    },
+    "line": 162,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 20,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:public-fit-zero-range-rejection] semantic mismatch: fit() threw unexpected org.apache.commons.math3.exception.ConvergenceException for count=4 sameX=686.0",
+  "causes": [
+   "org.apache.commons.math3.exception.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "probePublicFitRejection",
+     "params": []
+    },
+    "line": 59,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 29,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.general.LevenbergMarquardtOptimizer",
+     "name": "qrDecomposition",
+     "params": []
+    },
+    "line": 849,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.general.LevenbergMarquardtOptimizer",
+     "name": "doOptimize",
+     "params": []
+    },
+    "line": 313,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.direct.BaseAbstractMultivariateVectorOptimizer",
+     "name": "optimize",
+     "params": []
+    },
+    "line": 135,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.general.AbstractLeastSquaresOptimizer",
+     "name": "optimize",
+     "params": []
+    },
+    "line": 317,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.general.AbstractLeastSquaresOptimizer",
+     "name": "optimize",
+     "params": []
+    },
+    "line": 51,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.CurveFitter",
+     "name": "fit",
+     "params": []
+    },
+    "line": 161,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.CurveFitter",
+     "name": "fit",
+     "params": []
+    },
+    "line": 128,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+     "name": "fit",
+     "params": []
+    },
+    "line": 62,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter",
+     "name": "fit",
+     "params": []
+    },
+    "line": 77,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "probePublicFitRejection",
+     "params": []
+    },
+    "line": 36,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.general.LevenbergMarquardtOptimizer",
+   "name": "qrDecomposition",
+   "params": []
+  },
+  "top_library_line": 849,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_014",
+  "source": "fuzz_out/attempt_014_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-lifted] semantic mismatch: expected MathIllegalStateException, got completed normally",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "checkMath844LiftedOracle",
+     "params": []
+    },
+    "line": 96,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_015",
+  "source": "fuzz_out/attempt_015_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-exact-seed] semantic mismatch: expected MathIllegalStateException for the Math844 seed, but guess() returned normally",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 38,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_016",
+  "source": "fuzz_out/attempt_016_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-lifted] semantic mismatch: expected MathIllegalStateException, got completed normally",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "checkLiftedMath844ExceptionOracle",
+     "params": []
+    },
+    "line": 70,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 10,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_017",
+  "source": "fuzz_out/attempt_017_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-exception] semantic mismatch: expected MathIllegalStateException but guess() returned a=Infinity, omega=0.0, phi=-0.0, xOffset=-3.0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 36,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_019",
+  "source": "fuzz_out/attempt_019_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:x-scale-near-c2-zero] metamorphic violation: For the same y-values, changing x from start+i to start+scale*i is a pure reparameterization. The algorithm shown computes omega from c2/c3, which scales inversely with x-scale, while amplitude stays the same; therefore the two guessed oscillators must agree when evaluated at corresponding abscissae. A patch that merely deletes/avoids the c2==0 guard can return inconsistent parameters near that boundary. idx=3 eps=8.0 start1=503.0 start2=-813.0 scale=64.0 guess1[a,omega,phi]=[7.0,0.20943951023931953,1.1480015845551559] guess2[a,omega,phi]=[7.0,0.0032724923474893677,2.342461291388763] maxDiff=8.704148513061227E-14 maxAbs=6.964465019885918 ampDiff=0.0 omegaScaled1=13.40412865531645 omegaDiff=13.40085616296896",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "checkBoundaryFlipWithXScalingConsistency",
+     "params": []
+    },
+    "line": 142,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 12,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-expected-exception] semantic mismatch: expected MathIllegalStateException for the Math844 triangular sample, but guess() returned [Infinity, 0.0, -0.0]",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 47,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:phase-anchor-consistency] consistency violation: reported=(a=0.923879532511293,omega=1.0863069537190388,phi=2.3765077405690778) anchors=(0.8107471622470802,0.32935071146022266,-0.8997744423609604) expected=(1.0,0.0,-1.0) x=(-20.0,-18.4292036732051,-16.858407346410207) samplesPerPeriod=8 periods=1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 111,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-expected-exception] semantic mismatch: HarmonicFitter.ParameterGuesser.guess() returned normally for the exact Math844 seed where the real regression test expects MathIllegalStateException",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 49,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_026",
+  "source": "fuzz_out/attempt_026_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:math844-seed] semantic mismatch: expected MathIllegalStateException, got completed normally",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "checkSeedMath844Oracle",
+     "params": []
+    },
+    "line": 54,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 9,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_028",
+  "source": "fuzz_out/attempt_028_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:model-span] consistency violation: guess() returned coefficients for a flat harmonic model on a sample with wide variation observedSpan=6.0 modelSpan=NaN a=Infinity omega=0.0 phi=-0.0 xOffset=-8 xStep=1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 100,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_029",
+  "source": "fuzz_out/attempt_029_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:seed-exact-throws] semantic mismatch: expected MathIllegalStateException for the exact MATH-844 triangular sample, got completed normally",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "checkNearBoundaryAnalyticAgreement",
+     "params": []
+    },
+    "line": 68,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.fitting.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 16,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

@@ -1792,6 +1792,170 @@ recorder, or restate §5 against the section outputs.
 carries `git_sha` (`28203eb` here), stamped via `run_suite.sh`'s exported
 `GITSHA`.
 
+### 8.52 MERGE WITH KUREHA'S src/metrics (2026-09-05; local only, not pushed)
+Merged origin/main 56735ae (src/metrics: RCC(H_R), crashing holdout, 9/9
+= 1.0) into local main (6abf492); one conflict (run_jazzer kwargs)
+resolved on a single coverage code path (coverage_include, alias
+instrumentation_includes; both flags only when both given; off path
+pinned). Ported into src/java/measurements (a847466): frame repair of
+JaCoCo's exit-probe miss (Math-70 recovers exactly her two methods),
+trigger-test JaCoCo gate (--trigger_gate; also fills R-hat-1),
+fixed-budget re-measurement (--remeasure, build token `remeasure`,
+reusing her collect.harness_coverage), config constants unified, README
+§8 "Relation to src/metrics". Import rule: measurements may import
+metrics, never the reverse (tested). CROSS-CHECK on her 9 archived
+reports: RCC identical on all 9; |F| differs on 4/9 by exactly one method
+— her loader (fuzz_introspector.load_jvm_coverage) credits a method with
+the next N covered lines from its declaration, over-running into the next
+method (StringUtils.<clinit>, an uncovered UnivariateRealSolverImpl
+ctor); ours uses JaCoCo's METHOD counter and is a strict subset. Layout
+decision pending: move the language-agnostic core into src/metrics/ and
+keep src/java/measurements as the Java backend (not yet done).
+**RESOLVED (2026-09-05):** done, then finished — src/metrics/ is now
+core/ and nothing else (`core/ratios.py` renamed `core/definitions.py`),
+and Kureha's eight modules, being Defects4J/JaCoCo/Jazzer-specific, moved
+into the Java backend at src/java/measurements/d4j_rcc_sweep/ with her
+README beside them. No shims were left at the old paths; every reference
+was repointed. README §8 is now "Relation to `d4j_rcc_sweep`".
+**SECOND MERGE (2026-09-14, origin/main b66d37b; local only, not pushed):**
+upstream Kureha had meanwhile extended the same files IN PLACE at
+src/metrics/, so every one of our moves came back as a rename/rename or
+modify/delete conflict. Resolved the same way as before: her current
+versions now sit in src/java/measurements/d4j_rcc_sweep/ with the imports
+rewritten, and src/metrics/ is still core/ and nothing else. The sweep is
+now five metrics rather than RCC alone — new modules scores.py (absorbed
+rcc.py), patchset.py (P) and crashes.py (C), and the scripts renamed:
+sweep.py -> sweep_gate.py, rcc_sweep.py -> sweep_full.py, cli.py ->
+score_one.py, plus a new rescore.py. tests/test_metrics_rcc.py is now
+tests/test_metrics.py. Her five-metric re-score of the 2026-09-04 holdout
+run (metrics.jsonl / metrics_summary.md) came with it.
+
+### 8.51 H_N vs H_R PILOT (2026-09-04/05; evaluation only)
+**Runs:** pilot_HR_20260904_112437 and pilot_HN_20260904_150008 — 20 dev
+legs each (5 crashing + 5 semantic bugs, one correct + one overfitting
+patch per bug), same flags, both with --coverage (kept + all compiled
+harnesses, dyn + stat, method/line/branch). H_N = level B naive: patch +
+failing test kept, neighbourhood removed (verified from traces: 0/20
+legs carry <root_cause_reachable>/<xref>; harness prompt 10.6k vs 28.5k
+chars). CAVEAT: the rule-synthesis prompt's "Reachable API" line was NOT
+removed by --naive (9 occurrences in both arms) — a small leak to fix.
+**Verdicts:** H_R TP7 FN2 FP3 TN7 F1 0.74; H_N TP4 FN5 FP0 TN10 F1 0.62
+(recall 0.78 vs 0.44; naive raised no false alarms).
+**Coverage (kept harnesses, method level): RCC(R0) = 1.00 for BOTH arms;
+all-compiled candidates: 1.00 for both; compiled/accepted counts identical
+(114/99 vs 114/100).** PSC(method) 0.85 vs 0.80; line and branch RCC
+differ by ±0.1 in either direction across builds/sets. Static reach:
+0.64 (H_R) vs 0.45 (H_N) — naive harnesses call the seed less directly.
+**Reading:** level-B naive harnesses reach the developer's method exactly
+as often as conditioned ones, because the failing test + patch diff
+already localise the bug; the neighbourhood context changes WHAT the
+harnesses check (oracles/relations → +0.13 F1, +3 FP), not WHERE they
+go. Hypothesis RCC(H_N) << 1 is NOT supported at level B. A naive set
+that strips the patch/test too (level C, function-only / OSS-Fuzz-Gen
+style) is what the hypothesis actually needs; at level B the story is
+"conditioning buys oracles, not reach".
+**Second leak (found 2026-09-05 while closing the first):** the harness
+prompt's related-callees block (names/signatures/bodies of the methods the
+patched function calls) was never gated by --naive, so the H_N arm saw the
+callee half of the neighbourhood. Both leaks are now closed (synthesis
+"Reachable API" line + related-callees block; `naive_scope` recorded in
+the leg record). The level-B H_N arm must be RERUN with the closed flag
+before the reach result is quoted.
+**Trigger gate (ported from Kureha, run 2026-09-05 on pilot_HR):** 20/20
+legs pass — every developer-changed method is reached by the bug's own
+failing test, so R-hat is trustworthy on this population. Fixed-budget
+re-measurement could not run on pilot_HR (records predate the
+accepted_harnesses field); it is validated on the r1/r2 suites instead.
+**Level C naive** (`--naive function`: touched function source only, no
+patch, no failing test, no neighbourhood) implemented 2026-09-05 (7b18679),
+not yet run. Repetition plan reduced by the user to three suites: H_N r1
+(closed flag), H_R r2, H_N r2 → two draws per arm.
+**TWO DRAWS PER ARM (2026-09-05/06; pilot_HR r1+r2, pilot_HN r1+r2 with
+both leaks closed; all measured incl. trigger gate 20/20 and fixed-budget
+remeasure):** Reach identical in all four draws — RCC(dev method) = 1.00
+on kept, all-compiled and re-measured sets. Finer levels favour H_R
+consistently but slightly: dev lines 0.81 vs 0.74, fixed-method branches
+0.70 vs 0.66, PSC branches 0.68 vs 0.65. CSM 0.82 vs 0.67 (naive crashes
+land outside the developer's method more often); static reach 0.64 vs
+0.50. Verdicts (summary.md): H_R F1 0.74 / 0.63, H_N 0.50 / 0.43 — the
+arm gap (~0.2) exceeds the within-arm spread (~0.1). Per patch: Chart-3
+Elixir and Closure-62 Jaid caught 2/2 by H_R and 0/2 by H_N (the
+conditioning-dependent catches); Closure-33, Lang-6 SketchFix, Math-79
+never caught by either; Chart-7, Chart-9, Math-2 caught by both always.
+RCC(body branches) for caught vs missed overfitting legs: 0.64 vs 0.62 —
+coverage depth does NOT predict detection on this data. Re-measured F
+equals as-run F leg by leg. Remaining single-draw caveat below applies
+to the OLD partial-naive run only.
+**Single-draw caveat:** one run per arm; smoke/A-B showed verdict flips
+between same-code runs; repetitions on dev + bug bootstrap needed for
+CIs before any claim.
+
+### 8.50 ROOT-CAUSE MEASUREMENT LAYER (2026-09-04)
+**Built:** `src/java/measurements/` (MEASUREMENT ONLY; README for outsiders)
+implementing the paper's formal objects — P (patch-derived set: seeds +
+callers + callees, from the pipeline's own context dump), R-hat (same
+construction from the Defects4J developer patch, orientation verified;
+variants R0 = developer-changed methods, R1 = +trigger-test frames, full =
+with rings), F(H) (JaCoCo coverage via Jazzer `--coverage_dump`, per build)
+— and the five metrics RCR/RCC/RCP/PSC/CSM at method and line granularity,
+aggregate and PER RING, with `__dyn` marked in every F-dependent key
+(`stat` reserved). Firewall: root_cause.py is the only reader of the
+developer fix; a test fails if any pipeline module imports the package.
+**Pipeline hooks (flag-gated, off-path byte-identical, pinned by tests):**
+`context.json` per leg (always), `--coverage` (dumps, class snapshots, raw
+Jazzer output per run), `--naive` (level B: patch + failing test kept,
+neighbourhood removed). Also fixed diffcov.changed_lines_by_file's per-hunk
+deletion bookkeeping (now per change group, order-independent).
+**Smoke (measure_smoke_20260904_075108, 7 dev legs, 1.56M tokens):** all
+stages ok on every leg. Verdicts 4/7 as history; flips Math-32 FN,
+Lang-6 FP (both judgement-side: symmetric firings dismissed / unsound
+metamorphic relation accepted), Chart-26-c FP (never a stable leg — my
+selection error). **A/B (measure_ab_nocov/cov, idle VM):** flips REPRODUCE
+with the hook OFF (Math-32 FN, Lang-6 FP); cov arm Math-32 FN, Lang-6 TN —
+hook exonerated. Old-vs-new code context+prompt for Math-32 on the same
+checkout: byte-identical. Math-32 now FN 3/3 vs TP 2/2 in August: an
+era difference (code 0dce300 / model), not today's changes — unattributed.
+**First numbers (H_R only):** RCR = 1.0 everywhere (APR patch and developer
+fix touch the same method on all 5 bugs); RCC(seeds) = 1.0 everywhere,
+RCC(full rings) 0.7–1.0; RCP 0.01–0.13 (root cause is a tiny share of what
+harnesses execute); PSC(method) 0.82–1.0, PSC(line) 0.36–0.54; CSM 1.0 for
+crashing bugs (every crash in the developer-changed method, on the
+developer's line), 0.45–0.56 for Chart-26 where the false alarm's crash
+site (G2TextMeasurer.getStringWidth:78) lies OUTSIDE R-hat; semantic bugs
+give harness-only crashes (CSM undefined by design).
+**Known limits:** caller ring mostly empty (introspector does not resolve
+virtual calls); introspector mislabels receivers (Rectangle2D methods as
+`Axis.*`) — such entries land in `unmatched`, never in denominators;
+third-party jars are outside the JaCoCo population.
+**User decisions:** naive = level B; measure coverage on BOTH kept and all
+compiled harnesses (done). RULE (user, 2026-09-04): root-cause ground
+truth (R-hat) and the metrics on it — RCR, RCC, RCP, CSM — are post-hoc
+evaluation/measurement tools. A GENERIC pattern found in them (aggregate,
+dev bugs) may motivate a GENERAL mechanism applied uniformly; nothing
+bug-specific may flow from the developer fix, and nothing R-hat-based
+runs inside the pipeline — at run time only P-side signals (PSC, raw
+coverage of the shown neighbourhood) exist. Record which finding
+motivated which mechanism. **Holdout_v2 root-cause pass (69/69 legs, archived measurements):**
+RCR(R0) mean 0.928 — 64/69 legs' APR neighbourhood contains every
+developer-changed method; |R0| = 1 on 63 legs (near-binary, as Kureha's
+run also found). The 5 RCR=0 legs are ALL overfitting patches that
+changed a different method than the developer (Chart-25/Math-6/Math-71
+Arja, Math-88 SimFix, Math-33 SketchFix) and ALL 5 were caught, vs 12/18
+caught among RCR=1 overfits — "patched the wrong place" reads as an
+easier catch (n small; evaluation-only observation). Crash sites in the
+archive exist only from patched-side evidence blocks (10 library sites:
+3 callee ring, 7 outside; 112 harness-only) — thin by construction.
+Caller ring in this pass = introspector only (source-scan landed after
+the pass started).
+**Kureha's parallel implementation (origin 56735ae, src/metrics):** RCC
+only, method level, crashing holdout, one overfitting leg per bug, 9/9
+RCC=1.0 (saturated). To port into ours at merge: fixed-budget re-run
+mode (-runs=20000), trigger-test JaCoCo gate, stack-frame repair of the
+JaCoCo exit-probe miss (Math-70), sweep.py population check. Conflicts:
+run_jazzer kwargs, run.py record field, config JACOCO_*/D4J_HOME. NOTE:
+that run was the crashing holdout's FIRST pipeline execution (-n 3 -m 8).
+Next: H_N vs H_R pilot (running), merge decision.
+
 ### 8.49 FROZEN-QUEUE V2 + CERTIFICATION SWEEP (2026-08-26/27; analyse-only throughout)
 **User decisions recorded:** rerun ALL 69 frozen-queue entries at git
 9b63217 (current merged main; run-once exception explicit); certify the

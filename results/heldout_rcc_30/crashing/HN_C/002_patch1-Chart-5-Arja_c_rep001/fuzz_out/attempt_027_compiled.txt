@@ -1,0 +1,49 @@
+DEDUP_TOKEN: 819b5ab13c8e1ec4
+
+INFO: Loaded 314 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.jfree.data.xy.FuzzHarness (took 71 ms, size +31%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7af817776cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 1180279206
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7af8a067a210, 0x7af8a067a410), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7af8a04e1b50,0x7af8a04e3b50), 
+INFO:      390 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.jfree.data.xy.XYSeries (took 19 ms, size +24%)
+INFO: Instrumented org.jfree.data.general.Series (took 8 ms, size +24%)
+INFO: Instrumented org.jfree.data.general.SeriesException (took 0 ms, size +20%)
+INFO: seed corpus: files: 390 min: 1b max: 132b total: 24132b rss: 1313Mb
+INFO: Instrumented org.jfree.data.xy.XYDataItem (took 5 ms, size +28%)
+INFO: Instrumented org.jfree.data.general.SeriesChangeEvent (took 0 ms, size +20%)
+
+== Java Exception: org.jfree.data.general.SeriesException: X-value already exists.
+	at org.jfree.data.xy.XYSeries.add(XYSeries.java:383)
+	at org.jfree.data.xy.XYSeries.add(XYSeries.java:334)
+	at org.jfree.data.xy.XYSeries.add(XYSeries.java:315)
+	at org.jfree.data.xy.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:110)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+0xdc,0x20,0x20,0x20,0x20,0x20,0x2f,0x20,0x66,0x20,0x20,0x20,0x20,0x2f,0x20,0x66,0x20,0x0,
+\334     / f    / f \000
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/attempt_027/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/attempt_027/crashes/crash-0dba90109852c27d3e2005c9d71546342a6b53d6
+Base64: 3CAgICAgLyBmICAgIC8gZiAA
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/attempt_027/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/attempt_027/crashes/Crash_0dba90109852c27d3e2005c9d71546342a6b53d6.java
+

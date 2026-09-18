@@ -1,0 +1,115 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 127,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 128,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 129,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 130,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 131,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 132,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 133,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 134,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 135,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 143,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 144,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 145,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 146,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 147,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 148,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 149,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 150,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 151,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 173,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 174,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 175,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.jfree.data.time.Week",
+   "line": 176,
+   "ring": "seed"
+  }
+ ]
+}

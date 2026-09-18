@@ -1,0 +1,38 @@
+
+INFO: Loaded 324 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 84 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.lang.text.FuzzHarness (took 74 ms, size +44%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN/004_patch1-Lang-43-Arja_c_rep001/Lang_43_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x72047b576cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 3560292222
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7204a874a8d0, 0x7204a874aad0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7204a8733b00,0x7204a8735b00), 
+INFO:       45 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN/004_patch1-Lang-43-Arja_c_rep001/Lang_43_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.lang.text.ExtendedMessageFormat (took 15 ms, size +29%)
+INFO: seed corpus: files: 45 min: 2b max: 46b total: 560b rss: 1281Mb
+#46	INITED cov: 54 ft: 112 corp: 32/397b exec/s: 0 rss: 1282Mb
+#68	NEW    cov: 57 ft: 121 corp: 33/443b lim: 46 exec/s: 0 rss: 1282Mb L: 46/46 MS: 4 ChangeBinInt-Custom-CrossOver-Custom-
+#218	REDUCE cov: 57 ft: 121 corp: 33/437b lim: 46 exec/s: 0 rss: 1282Mb L: 9/46 MS: 10 ChangeByte-Custom-ChangeBit-Custom-ChangeBit-Custom-ChangeBit-Custom-EraseBytes-Custom-
+#350	REDUCE cov: 57 ft: 121 corp: 33/434b lim: 46 exec/s: 0 rss: 1282Mb L: 6/46 MS: 4 ChangeBit-Custom-EraseBytes-Custom-
+#546	REDUCE cov: 57 ft: 121 corp: 33/432b lim: 46 exec/s: 0 rss: 1282Mb L: 11/46 MS: 2 EraseBytes-Custom-
+#704	NEW    cov: 57 ft: 124 corp: 34/478b lim: 46 exec/s: 0 rss: 1282Mb L: 46/46 MS: 6 ShuffleBytes-Custom-ShuffleBytes-Custom-CrossOver-Custom-
+#836	NEW    cov: 57 ft: 125 corp: 35/524b lim: 46 exec/s: 0 rss: 1282Mb L: 46/46 MS: 4 CopyPart-Custom-CopyPart-Custom-
+#946	NEW    cov: 57 ft: 127 corp: 36/570b lim: 46 exec/s: 0 rss: 1282Mb L: 46/46 MS: 10 ShuffleBytes-Custom-ChangeByte-Custom-ShuffleBytes-Custom-ShuffleBytes-Custom-ChangeByte-Custom-

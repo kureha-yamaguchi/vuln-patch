@@ -1,0 +1,513 @@
+[
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "24",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 43,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NumberFormatException",
+  "message": "1.1L is not a valid number.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+     "name": "createNumber",
+     "params": []
+    },
+    "line": 521,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 79,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+   "name": "createNumber",
+   "params": []
+  },
+  "top_library_line": 521,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+   "name": "createNumber",
+   "params": []
+  },
+  "headline_site_line": 521,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NumberFormatException",
+  "message": "0.l is not a valid number.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+     "name": "createNumber",
+     "params": []
+    },
+    "line": 521,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 91,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+   "name": "createNumber",
+   "params": []
+  },
+  "top_library_line": 521,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+   "name": "createNumber",
+   "params": []
+  },
+  "headline_site_line": 521,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_005",
+  "source": "fuzz_out/attempt_005_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Expected valid number: +0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 33,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NumberFormatException",
+  "message": "For input string: \"A06055555\"",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+     "name": "createInteger",
+     "params": []
+    },
+    "line": 672,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+     "name": "createNumber",
+     "params": []
+    },
+    "line": 467,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "checkConsistency",
+     "params": []
+    },
+    "line": 95,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 20,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+   "name": "createInteger",
+   "params": []
+  },
+  "top_library_line": 672,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+   "name": "createInteger",
+   "params": []
+  },
+  "headline_site_line": 672,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Leading plus rejected for valid number: 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "requirePlusVariantAccepted",
+     "params": []
+    },
+    "line": 47,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 81,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Mismatch for input: .45l isNumber=true but createNumber threw java.lang.NumberFormatException",
+  "causes": [
+   "java.lang.NumberFormatException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "check",
+     "params": []
+    },
+    "line": 133,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 108,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+     "name": "createNumber",
+     "params": []
+    },
+    "line": 521,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "check",
+     "params": []
+    },
+    "line": 127,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+   "name": "createNumber",
+   "params": []
+  },
+  "top_library_line": 521,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_015",
+  "source": "fuzz_out/attempt_015_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NumberFormatException",
+  "message": "0.l is not a valid number.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+     "name": "createNumber",
+     "params": []
+    },
+    "line": 521,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "testOne",
+     "params": []
+    },
+    "line": 145,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 89,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+   "name": "createNumber",
+   "params": []
+  },
+  "top_library_line": 521,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+   "name": "createNumber",
+   "params": []
+  },
+  "headline_site_line": 521,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_017",
+  "source": "fuzz_out/attempt_017_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "NumberUtils.isNumber accepted invalid octal-style value: 09",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "checkCandidate",
+     "params": []
+    },
+    "line": 45,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 7,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "isNumber false but createNumber succeeded for: +0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "check",
+     "params": []
+    },
+    "line": 167,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 20,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "createNumber accepted but isNumber rejected: +0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "check",
+     "params": []
+    },
+    "line": 92,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 45,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "createNumber accepted but isNumber rejected: [+1]",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "checkConsistentWithCreateNumber",
+     "params": []
+    },
+    "line": 16,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "check",
+     "params": []
+    },
+    "line": 22,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 26,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NumberFormatException",
+  "message": "1.0L is not a valid number.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+     "name": "createNumber",
+     "params": []
+    },
+    "line": 521,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.lang3.math.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 25,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+   "name": "createNumber",
+   "params": []
+  },
+  "top_library_line": 521,
+  "headline_site": {
+   "class_fq": "org.apache.commons.lang3.math.NumberUtils",
+   "name": "createNumber",
+   "params": []
+  },
+  "headline_site_line": 521,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_029",
+  "source": "fuzz_out/attempt_029_compiled.txt"
+ }
+]

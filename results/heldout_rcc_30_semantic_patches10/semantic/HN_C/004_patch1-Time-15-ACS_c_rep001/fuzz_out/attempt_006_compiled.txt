@@ -1,0 +1,44 @@
+DEDUP_TOKEN: ee36a3a787e4d195
+
+INFO: Loaded 314 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.joda.time.field.FuzzHarness (took 66 ms, size +37%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/004_patch1-Time-15-ACS_c_rep001/Time_15_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7539f8176cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 3751239767
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x753a7861a7b0, 0x753a7861a9b0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x753a785da340,0x753a785dc340), 
+INFO:       57 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/004_patch1-Time-15-ACS_c_rep001/Time_15_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.joda.time.field.FieldUtils (took 13 ms, size +36%)
+INFO: Instrumented org.joda.time.IllegalFieldValueException (took 10 ms, size +8%)
+INFO: seed corpus: files: 57 min: 1b max: 17b total: 276b rss: 1279Mb
+
+== Java Exception: java.lang.ArithmeticException: Multiplication overflows a long: -9223372036854775808 * 2
+	at org.joda.time.field.FieldUtils.safeMultiply(FieldUtils.java:146)
+	at org.joda.time.field.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:93)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+0x32,
+2
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/004_patch1-Time-15-ACS_c_rep001/Time_15_buggy/fuzz/attempt_006/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/004_patch1-Time-15-ACS_c_rep001/Time_15_buggy/fuzz/attempt_006/crashes/crash-da4b9237bacccdf19c0760cab7aec4a8359010b0
+Base64: Mg==
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/004_patch1-Time-15-ACS_c_rep001/Time_15_buggy/fuzz/attempt_006/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/004_patch1-Time-15-ACS_c_rep001/Time_15_buggy/fuzz/attempt_006/crashes/Crash_da4b9237bacccdf19c0760cab7aec4a8359010b0.java
+

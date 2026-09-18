@@ -1,0 +1,97 @@
+DEDUP_TOKEN: 3e7015780dcb4719
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.linear.FuzzHarness (took 67 ms, size +27%)
+INFO: Instrumented org.apache.commons.math.linear.RealMatrix (took 2 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.AnyMatrix (took 0 ms, size +0%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001/Math_80_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7e410b376cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 3608641511
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7e419c651e90, 0x7e419c652090), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7e419c5a8280,0x7e419c5aa280), 
+INFO:       96 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001/Math_80_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: New number of coverage counters: 1024
+INFO: Instrumented org.apache.commons.math.linear.EigenDecompositionImpl (took 31 ms, size +17%)
+INFO: Instrumented org.apache.commons.math.linear.EigenDecomposition (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.InvalidMatrixException (took 1 ms, size +14%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException (took 10 ms, size +14%)
+INFO: Instrumented org.apache.commons.math.linear.DecompositionSolver (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.RealVector (took 1 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.MaxIterationsExceededException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.ConvergenceException (took 1 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.MathException (took 4 ms, size +26%)
+INFO: New number of coverage counters: 2048
+INFO: Instrumented org.apache.commons.math.linear.ArrayRealVector (took 52 ms, size +18%)
+INFO: Instrumented org.apache.commons.math.linear.MatrixIndexException (took 0 ms, size +17%)
+INFO: Instrumented org.apache.commons.math.linear.RealVectorFormat (took 4 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.util.CompositeFormat (took 3 ms, size +30%)
+INFO: Instrumented org.apache.commons.math.linear.MatrixUtils (took 11 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.linear.FieldMatrixPreservingVisitor (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.FieldMatrix (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.BigMatrix (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.FieldVector (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.Array2DRowRealMatrix (took 9 ms, size +17%)
+INFO: Instrumented org.apache.commons.math.linear.AbstractRealMatrix (took 16 ms, size +21%)
+INFO: New number of coverage counters: 4096
+INFO: Instrumented org.apache.commons.math.linear.BlockRealMatrix (took 19 ms, size +19%)
+INFO: Instrumented org.apache.commons.math.linear.Array2DRowFieldMatrix (took 9 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.linear.AbstractFieldMatrix (took 17 ms, size +18%)
+INFO: Instrumented org.apache.commons.math.linear.BlockFieldMatrix (took 16 ms, size +16%)
+INFO: Instrumented org.apache.commons.math.linear.RealMatrixChangingVisitor (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.RealMatrixPreservingVisitor (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.NonSquareMatrixException (took 0 ms, size +13%)
+INFO: seed corpus: files: 96 min: 17b max: 21b total: 1729b rss: 1300Mb
+INFO: Instrumented org.apache.commons.math.linear.TriDiagonalTransformer (took 2 ms, size +24%)
+INFO: Instrumented org.apache.commons.math.linear.AbstractRealMatrix$5 (took 0 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.linear.DefaultRealMatrixPreservingVisitor (took 1 ms, size +12%)
+#97	INITED cov: 309 ft: 778 corp: 22/385b exec/s: 0 rss: 1301Mb
+#100	REDUCE cov: 309 ft: 778 corp: 22/379b lim: 21 exec/s: 0 rss: 1301Mb L: 11/21 MS: 6 ChangeBit-Custom-ChangeBinInt-Custom-EraseBytes-Custom-
+#114	NEW    cov: 309 ft: 779 corp: 23/395b lim: 21 exec/s: 0 rss: 1302Mb L: 16/21 MS: 8 InsertByte-Custom-ChangeBinInt-Custom-InsertByte-Custom-EraseBytes-Custom-
+#125	NEW    cov: 310 ft: 780 corp: 24/408b lim: 21 exec/s: 0 rss: 1302Mb L: 13/21 MS: 2 EraseBytes-Custom-
+#138	NEW    cov: 310 ft: 781 corp: 25/429b lim: 21 exec/s: 0 rss: 1302Mb L: 21/21 MS: 6 CopyPart-Custom-CopyPart-Custom-CopyPart-Custom-
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$6 (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$5 (took 0 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$4 (took 0 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$3 (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$2 (took 0 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$1 (took 0 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$10 (took 0 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$9 (took 0 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$8 (took 0 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$7 (took 1 ms, size +9%)
+
+== Java Exception: org.apache.commons.math.linear.InvalidMatrixException: 
+	at org.apache.commons.math.linear.EigenDecompositionImpl.processGeneralBlock(EigenDecompositionImpl.java:890)
+	at org.apache.commons.math.linear.EigenDecompositionImpl.findEigenvalues(EigenDecompositionImpl.java:658)
+	at org.apache.commons.math.linear.EigenDecompositionImpl.decompose(EigenDecompositionImpl.java:246)
+	at org.apache.commons.math.linear.EigenDecompositionImpl.<init>(EigenDecompositionImpl.java:171)
+	at org.apache.commons.math.linear.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:75)
+Caused by: org.apache.commons.math.MaxIterationsExceededException: Maximal number of iterations (120) exceeded
+	... 5 more
+== libFuzzer crashing input ==
+MS: 2 InsertRepeatedBytes-Custom-; base unit: d22ff38db276c245a7e6ed9e1e271ab63109a75c
+0x30,0x26,0x26,0x26,0x2e,0x30,0x31,0x30,0x32,0x30,0x30,0x31,0x33,0x30,0x30,0x35,0x37,0x37,0x33,0x39,
+0&&&.010200130057739
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001/Math_80_buggy/fuzz/attempt_004/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001/Math_80_buggy/fuzz/attempt_004/crashes/crash-748e02a6607ea481c0fb566a4fea46f15b71bdce
+Base64: MCYmJi4wMTAyMDAxMzAwNTc3Mzk=
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001/Math_80_buggy/fuzz/attempt_004/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001/Math_80_buggy/fuzz/attempt_004/crashes/Crash_748e02a6607ea481c0fb566a4fea46f15b71bdce.java
+

@@ -1,0 +1,218 @@
+{
+ "granularity": "method",
+ "items": [
+  {
+   "class_fq": "IllegalArgumentException",
+   "name": "<init>",
+   "params": [
+    "String"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "RuntimeException",
+   "name": "<init>",
+   "params": [
+    "String"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "existing",
+   "name": "clone",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "existing",
+   "name": "setY",
+   "params": [
+    "Number"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "item",
+   "name": "getX",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.Collections",
+   "name": "binarySearch",
+   "params": [
+    "List",
+    "XYDataItem"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.List",
+   "name": "add",
+   "params": [
+    "XYDataItem"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.List",
+   "name": "add",
+   "params": [
+    "int",
+    "XYDataItem"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.List",
+   "name": "get",
+   "params": [
+    "XYSeries"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.List",
+   "name": "get",
+   "params": [
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.List",
+   "name": "remove",
+   "params": [
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "java.util.List",
+   "name": "size",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.data.gantt.TaskSeries",
+   "name": "get",
+   "params": [
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.data.general.Series",
+   "name": "fireSeriesChanged",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.data.general.SeriesException",
+   "name": "<init>",
+   "params": [
+    "String"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.data.xy.XYDataItem",
+   "name": "<init>",
+   "params": [
+    "Number",
+    "Number"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.data.xy.XYDataItem",
+   "name": "<init>",
+   "params": [
+    "Number",
+    "null"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "add",
+   "params": [
+    "XYDataItem"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": [
+    "Number",
+    "Number"
+   ],
+   "ring": "seed",
+   "depth": 0
+  },
+  {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "equals",
+   "params": [
+    "Number"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "fireSeriesChanged",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "getItemCount",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "indexOf",
+   "params": [
+    "Number"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "remove",
+   "params": [
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  }
+ ],
+ "multi": {},
+ "edges": [],
+ "unmatched": [],
+ "provenance": {}
+}

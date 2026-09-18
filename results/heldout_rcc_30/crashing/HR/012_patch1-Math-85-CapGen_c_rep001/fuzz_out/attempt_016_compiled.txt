@@ -1,0 +1,65 @@
+DEDUP_TOKEN: 94a544e66fe60b2f
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.analysis.solvers.FuzzHarness (took 74 ms, size +36%)
+INFO: Instrumented org.apache.commons.math.distribution.NormalDistribution (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.distribution.ContinuousDistribution (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.distribution.Distribution (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.distribution.HasDensity (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergenceException (took 2 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.MathException (took 6 ms, size +24%)
+INFO: Instrumented org.apache.commons.math.FunctionEvaluationException (took 3 ms, size +6%)
+INFO: Instrumented org.apache.commons.math.analysis.UnivariateRealFunction (took 0 ms, size +0%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/012_patch1-Math-85-CapGen_c_rep001/Math_85_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x74e11f776cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 1317093127
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x74e14c560c50, 0x74e14c560e50), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x74e14c4c66a0,0x74e14c4c86a0), 
+INFO:       56 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/012_patch1-Math-85-CapGen_c_rep001/Math_85_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.distribution.NormalDistributionImpl (took 6 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.distribution.AbstractContinuousDistribution (took 1 ms, size +7%)
+INFO: Instrumented org.apache.commons.math.distribution.AbstractDistribution (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.MaxIterationsExceededException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.distribution.AbstractContinuousDistribution$1 (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils (took 3 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.special.Erf (took 1 ms, size +19%)
+INFO: Instrumented org.apache.commons.math.special.Gamma (took 5 ms, size +20%)
+INFO: Instrumented org.apache.commons.math.util.ContinuedFraction (took 2 ms, size +20%)
+INFO: Instrumented org.apache.commons.math.special.Gamma$1 (took 1 ms, size +14%)
+INFO: Instrumented org.apache.commons.math.analysis.SinFunction (took 1 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.analysis.DifferentiableUnivariateRealFunction (took 0 ms, size +0%)
+
+== Java Exception: java.lang.RuntimeException: [oracle:sin-endpoint-accept] metamorphic violation: exact endpoint-root input should be accepted, not rejected input=0.0,0.0,1.05 cause=org.apache.commons.math.ConvergenceException: number of iterations=1, maximum iterations=1, initial=0, lower bound=0, upper bound=1.05, final a value=0, final b value=1, f(a)=0, f(b)=0.841
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.sineEndpointEqualityOracle(FuzzHarness.java:74)
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:16)
+Caused by: org.apache.commons.math.ConvergenceException: number of iterations=1, maximum iterations=1, initial=0, lower bound=0, upper bound=1.05, final a value=0, final b value=1, f(a)=0, f(b)=0.841
+	at org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealSolverUtils.java:199)
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.sineEndpointEqualityOracle(FuzzHarness.java:46)
+	... 1 more
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/012_patch1-Math-85-CapGen_c_rep001/Math_85_buggy/fuzz/attempt_016/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/012_patch1-Math-85-CapGen_c_rep001/Math_85_buggy/fuzz/attempt_016/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/012_patch1-Math-85-CapGen_c_rep001/Math_85_buggy/fuzz/attempt_016/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/012_patch1-Math-85-CapGen_c_rep001/Math_85_buggy/fuzz/attempt_016/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+

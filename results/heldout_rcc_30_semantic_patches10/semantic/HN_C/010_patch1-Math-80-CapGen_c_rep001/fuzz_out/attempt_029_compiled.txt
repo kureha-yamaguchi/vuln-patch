@@ -1,0 +1,89 @@
+DEDUP_TOKEN: 56590d41a459c3d3
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.linear.FuzzHarness (took 71 ms, size +31%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001/Math_80_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7b51d8576cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 1325998642
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7b52145bda40, 0x7b52145bdc40), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7b5214522960,0x7b5214524960), 
+INFO:      104 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001/Math_80_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: New number of coverage counters: 1024
+INFO: Instrumented org.apache.commons.math.linear.EigenDecompositionImpl (took 34 ms, size +17%)
+INFO: Instrumented org.apache.commons.math.linear.EigenDecomposition (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.InvalidMatrixException (took 1 ms, size +14%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException (took 10 ms, size +14%)
+INFO: Instrumented org.apache.commons.math.MaxIterationsExceededException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.ConvergenceException (took 1 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.MathException (took 5 ms, size +26%)
+INFO: Instrumented org.apache.commons.math.linear.DecompositionSolver (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.RealVector (took 1 ms, size +0%)
+INFO: New number of coverage counters: 2048
+INFO: Instrumented org.apache.commons.math.linear.ArrayRealVector (took 52 ms, size +18%)
+INFO: Instrumented org.apache.commons.math.linear.MatrixIndexException (took 0 ms, size +17%)
+INFO: Instrumented org.apache.commons.math.linear.RealVectorFormat (took 4 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.util.CompositeFormat (took 3 ms, size +30%)
+INFO: Instrumented org.apache.commons.math.linear.MatrixUtils (took 11 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.linear.BigMatrix (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.AnyMatrix (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.FieldVector (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.FieldMatrixPreservingVisitor (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.Array2DRowRealMatrix (took 9 ms, size +17%)
+INFO: Instrumented org.apache.commons.math.linear.AbstractRealMatrix (took 15 ms, size +21%)
+INFO: Instrumented org.apache.commons.math.linear.RealMatrix (took 0 ms, size +0%)
+INFO: New number of coverage counters: 4096
+INFO: Instrumented org.apache.commons.math.linear.BlockRealMatrix (took 19 ms, size +19%)
+INFO: Instrumented org.apache.commons.math.linear.Array2DRowFieldMatrix (took 9 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.linear.AbstractFieldMatrix (took 17 ms, size +18%)
+INFO: Instrumented org.apache.commons.math.linear.FieldMatrix (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.BlockFieldMatrix (took 16 ms, size +16%)
+INFO: Instrumented org.apache.commons.math.linear.NonSquareMatrixException (took 0 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.linear.RealMatrixPreservingVisitor (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.linear.RealMatrixChangingVisitor (took 0 ms, size +0%)
+INFO: seed corpus: files: 104 min: 11b max: 21b total: 1861b rss: 1290Mb
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$6 (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$5 (took 0 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$4 (took 0 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$3 (took 0 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$2 (took 0 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$1 (took 0 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$10 (took 0 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$9 (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$8 (took 0 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.MathRuntimeException$7 (took 0 ms, size +9%)
+
+== Java Exception: org.apache.commons.math.linear.InvalidMatrixException: 
+	at org.apache.commons.math.linear.EigenDecompositionImpl.processGeneralBlock(EigenDecompositionImpl.java:890)
+	at org.apache.commons.math.linear.EigenDecompositionImpl.findEigenvalues(EigenDecompositionImpl.java:658)
+	at org.apache.commons.math.linear.EigenDecompositionImpl.decompose(EigenDecompositionImpl.java:246)
+	at org.apache.commons.math.linear.EigenDecompositionImpl.<init>(EigenDecompositionImpl.java:205)
+	at org.apache.commons.math.linear.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:130)
+Caused by: org.apache.commons.math.MaxIterationsExceededException: Maximal number of iterations (120) exceeded
+	... 5 more
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+0x37,0x31,0x2e,0x32,0x31,0x34,0x32,0x38,0x37,0x36,0x2f,0x39,0x37,0x38,0x21,0x32,0x31,0x35,0x39,0x64,
+71.2142876/978!2159d
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001/Math_80_buggy/fuzz/attempt_029/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001/Math_80_buggy/fuzz/attempt_029/crashes/crash-cb556037110a44cea90cbd7f7c29e355812dcd64
+Base64: NzEuMjE0Mjg3Ni85NzghMjE1OWQ=
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001/Math_80_buggy/fuzz/attempt_029/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/010_patch1-Math-80-CapGen_c_rep001/Math_80_buggy/fuzz/attempt_029/crashes/Crash_cb556037110a44cea90cbd7f7c29e355812dcd64.java
+

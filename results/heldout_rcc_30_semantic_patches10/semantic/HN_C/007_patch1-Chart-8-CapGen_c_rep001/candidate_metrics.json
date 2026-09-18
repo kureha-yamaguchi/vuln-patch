@@ -1,0 +1,438 @@
+{
+  "acceptance_rate": 0.7666666666666667,
+  "accepted": 23,
+  "accepted_set_f_size": 33,
+  "accepted_set_psc": 1.0,
+  "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.030303030303030304,
+  "attempts": 30,
+  "buggy_crash_rate": 0.7666666666666667,
+  "candidate_f_size": 14.782608695652174,
+  "candidate_psc": 1.0,
+  "candidate_rcc": 0.7666666666666667,
+  "candidate_rcc_compiled": 1.0,
+  "candidate_rcp": 0.13060365941372806,
+  "candidates": [
+    {
+      "accepted": true,
+      "attempt_label": "attempt_001",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.3333333333333333,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_002",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 3,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.3333333333333333,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_003",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_004",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 24,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.041666666666666664,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_005",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 9,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.1111111111111111,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_006",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 27,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.037037037037037035,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_007",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 4,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.25,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_008",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 24,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.041666666666666664,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_009",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_010",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 26,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.038461538461538464,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_011",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 25,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.04,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_012",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 7,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.14285714285714285,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_013",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 21,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.047619047619047616,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_014",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_015",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 4,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.25,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_016",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_017",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 19,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.05263157894736842,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_018",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_019",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 4,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.25,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_020",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 4,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.25,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_021",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 22,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.045454545454545456,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_022",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 20,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.05,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_023",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_024",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 4,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.25,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_025",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 20,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.05,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_026",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 4,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.25,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_027",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 26,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.038461538461538464,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_028",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 21,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.047619047619047616,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_029",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_030",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 19,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.05263157894736842,
+      "root_methods_hit": [
+        "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+      ]
+    }
+  ],
+  "compile_rate": 0.7666666666666667,
+  "compiled": 23,
+  "compiled_set_f_size": 33,
+  "compiled_set_psc": 1.0,
+  "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.030303030303030304,
+  "crashed_buggy": 23,
+  "p_size": 1,
+  "p_unmatched": 0,
+  "r0_size": 1,
+  "rcr": 1.0,
+  "replayed_candidates": 0,
+  "root_methods": [
+    "org.jfree.data.time.Week.<init>(Date,TimeZone)"
+  ]
+}

@@ -22,9 +22,9 @@ import javalang
 import config
 from java.parsing.java_source import match_brace
 from java.bug_context.call_graph import (
-    arg_count, fi_method_name, is_project_fn, mangled_param_types,
-    project_prefix, qualified_label, reachable_of, receiver_of, short_name,
-    simple_type, with_timeout,
+    arg_count, bfs_callees_with_edges, fi_method_name, function_map,
+    is_project_fn, mangled_param_types, project_prefix, qualified_label,
+    reachable_of, receiver_of, short_name, simple_type, with_timeout,
 )
 try:
     from fuzz_introspector import commands as fi_commands
@@ -208,6 +208,19 @@ class TouchedFunction:
     # mangled name alone cannot say which function it denotes.
     overload_types: List[List[str]] = field(default_factory=list)
     xrefs: List[str] = field(default_factory=list)
+    # MEASUREMENT ONLY. The introspector mangled names of the callers whose
+    # SOURCE TEXT `xrefs` holds, in the same order and the same length.
+    # `xrefs` is what the prompt renders (unchanged); this is the identity
+    # a measurement needs to match a caller against a call graph or a
+    # coverage report, which source text cannot give. Never rendered.
+    xref_names: List[str] = field(default_factory=list)
+    # MEASUREMENT ONLY. The shape of the bounded callee walk behind
+    # `reachable`: `[[caller, callee], ...]` in traversal order, and
+    # {mangled name: BFS depth}. Written to the leg's context.json so a
+    # finished run can be read back as a graph. Never rendered, never fed
+    # to a prompt, a gate, or a verdict.
+    reachable_edges: List[List[str]] = field(default_factory=list)
+    reachable_depth: Dict[str, int] = field(default_factory=dict)
     # Statically reachable functions from this touched function, per
     # fuzz-introspector's call graph. This is the slice of the codebase
     # downstream of the root cause — the region where *sibling* bugs of
@@ -254,6 +267,15 @@ class PatchContext:
     # Gives the LLM the correct package paths for types like Range and
     # RectangleEdge that it otherwise consistently guesses wrong.
     source_imports: List[str] = field(default_factory=list)
+
+    # MEASUREMENT ONLY, the aggregate twin of the per-function fields: the
+    # union of every touched function's traversed callee edges and first-seen
+    # depths, which is the graph `root_cause_reachable` was cut out of. Not
+    # filtered the way `root_cause_reachable` is (no project-prefix drop, no
+    # touched-self exclusion) — a measurement wants the raw walk. Never
+    # rendered, never fed to a prompt, a gate, or a verdict.
+    reachable_edges: List[List[str]] = field(default_factory=list)
+    reachable_depth: Dict[str, int] = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -348,6 +370,25 @@ class TargetAnalyzer:
         root_cause_reachable = self._labels_for(
             self._dedupe(survivors, functions))
 
+        # MEASUREMENT ONLY: the union of the per-function walk shapes,
+        # order-preserving and deduped. Computed after `root_cause_reachable`
+        # and read by nothing upstream of it.
+        agg_edges: List[List[str]] = []
+        agg_depth: Dict[str, int] = {}
+        _edge_seen: set = set()
+        for fn in functions:
+            for edge in (fn.reachable_edges or []):
+                key = tuple(edge)
+                if key in _edge_seen:
+                    continue
+                _edge_seen.add(key)
+                agg_edges.append(list(edge))
+            for name, depth in (fn.reachable_depth or {}).items():
+                # Nearest wins when two touched functions reach the same
+                # name at different depths.
+                if name not in agg_depth or depth < agg_depth[name]:
+                    agg_depth[name] = depth
+
         return PatchContext(
             modified_files=modified_files,
             patch_text=patch_text,
@@ -356,6 +397,8 @@ class TargetAnalyzer:
             root_cause_reachable=root_cause_reachable,
             neighbourhood_notes=notes,
             source_imports=self._resolve_imports(modified_files, buggy_dir),
+            reachable_edges=agg_edges,
+            reachable_depth=agg_depth,
         )
 
     def _is_touched_self(self, mangled: str,
@@ -1365,14 +1408,22 @@ class TargetAnalyzer:
                 # add information; the copies just bloat the prompt.
                 seen: set = set()
                 distinct = []
+                # MEASUREMENT ONLY, collected in lockstep with `distinct`
+                # so index i of each names the same caller: the mangled
+                # name of the caller whose source text distinct[i] is. The
+                # prompt keeps rendering `xrefs` (the text) exactly as
+                # before; nothing reads `xref_names` on the prompt path.
+                caller_names = []
                 for x in xrefs:
                     src = x.function_source_code_as_text()
                     if src and src not in seen:
                         seen.add(src)
                         distinct.append(src)
+                        caller_names.append(getattr(x, 'name', '') or '')
                     if len(distinct) >= config.MAX_XREFS_PER_FUNCTION:
                         break
                 fn.xrefs = distinct
+                fn.xref_names = caller_names
             except Exception:
                 pass
             # Union two views of the callees: (1) introspector's static
@@ -1393,7 +1444,30 @@ class TargetAnalyzer:
                     seen.add(name)
                     merged.append(name)
             fn.reachable = merged
+            self._record_walk_shape(fn, project, mangled)
         return functions
+
+    def _record_walk_shape(self, fn: TouchedFunction, project,
+                           mangled: str) -> None:
+        """MEASUREMENT ONLY: re-walk the same bounded BFS `reachable_of`
+        just did and keep its SHAPE (edges + depths) on the function.
+
+        Separate from the reachability computation on purpose: `reachable`
+        is prompt-visible and must not change, so this runs beside it and
+        writes only the two measurement fields. Fail-soft — a walk that
+        raises leaves the fields empty, which reads as 'no shape recorded',
+        never as 'no edges exist'."""
+        try:
+            fmap = function_map(project)
+            if not fmap or mangled not in fmap:
+                return
+            _names, edges, depths = bfs_callees_with_edges(
+                fmap, mangled, self.reachable_node_cap,
+                self.reachable_max_depth)
+            fn.reachable_edges = [[a, b] for a, b in edges]
+            fn.reachable_depth = dict(depths)
+        except Exception:
+            pass
 
     def _source_callees(self, func_source: Optional[str],
                         index: Dict[str, List[str]],

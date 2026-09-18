@@ -1,0 +1,9 @@
+{
+ "class_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/001_patch1-Math-85-ACS_c_rep001/cov/classes_buggy"
+ ],
+ "source_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/001_patch1-Math-85-ACS_c_rep001/Math_85_buggy/src/java"
+ ],
+ "include_glob": "org.apache.commons.**"
+}

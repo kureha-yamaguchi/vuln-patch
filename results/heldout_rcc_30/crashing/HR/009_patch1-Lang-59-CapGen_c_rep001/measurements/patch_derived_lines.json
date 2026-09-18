@@ -1,0 +1,165 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 157,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 158,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 159,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 227,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 228,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 229,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 230,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 231,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 232,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 233,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 234,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 878,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 879,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 880,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 881,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 882,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 883,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 884,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 885,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 886,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 887,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 888,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 889,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 890,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 891,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 892,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 893,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 894,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 895,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 907,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 908,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 909,
+   "ring": "seed"
+  }
+ ]
+}

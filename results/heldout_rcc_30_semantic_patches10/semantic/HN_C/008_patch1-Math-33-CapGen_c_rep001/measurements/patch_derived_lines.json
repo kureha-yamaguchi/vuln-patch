@@ -1,0 +1,645 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.apache.commons.math3.linear.Array2DRowRealMatrix",
+   "line": 73,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.linear.Array2DRowRealMatrix",
+   "line": 74,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.linear.Array2DRowRealMatrix",
+   "line": 75,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.linear.Array2DRowRealMatrix",
+   "line": 76,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.linear.Array2DRowRealMatrix",
+   "line": 126,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.linear.Array2DRowRealMatrix",
+   "line": 127,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.linear.Array2DRowRealMatrix",
+   "line": 128,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.linear.Array2DRowRealMatrix",
+   "line": 129,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.linear.Array2DRowRealMatrix",
+   "line": 130,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.linear.Array2DRowRealMatrix",
+   "line": 131,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.linear.Array2DRowRealMatrix",
+   "line": 132,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.linear.RealMatrix",
+   "line": 389,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 185,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 186,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 187,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 188,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 189,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 190,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 191,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 192,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 193,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 194,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 195,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 196,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 197,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 198,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 199,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 200,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 201,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "line": 202,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 273,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 274,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 275,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 310,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 311,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 312,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 313,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 314,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 315,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 316,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 317,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 318,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 319,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 320,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 321,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 327,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 328,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 329,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 330,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 331,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 332,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 333,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 334,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 335,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 336,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 337,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 338,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 339,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 340,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 341,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 342,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 343,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 344,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 345,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 346,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 347,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 348,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 349,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 350,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 351,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 352,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 353,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 354,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 355,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 356,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 357,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 358,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 359,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 360,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 361,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 362,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 363,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 364,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 365,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 366,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 367,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 464,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 465,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 466,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 472,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 473,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 474,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 507,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 508,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 509,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 554,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 555,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "line": 556,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 47,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 48,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 49,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 50,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 51,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 52,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 53,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 54,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 55,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 56,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 57,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 58,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 59,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.optimization.linear.SimplexTableauTest",
+   "line": 60,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 88,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 89,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 90,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 91,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 92,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 93,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 94,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 95,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 114,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 115,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 116,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 117,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 118,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 119,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 120,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math3.util.Precision",
+   "line": 121,
+   "ring": "callee"
+  }
+ ]
+}

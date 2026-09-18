@@ -1,0 +1,9 @@
+{
+ "class_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/cov/classes_buggy"
+ ],
+ "source_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/source"
+ ],
+ "include_glob": "org.jfree.data.**"
+}

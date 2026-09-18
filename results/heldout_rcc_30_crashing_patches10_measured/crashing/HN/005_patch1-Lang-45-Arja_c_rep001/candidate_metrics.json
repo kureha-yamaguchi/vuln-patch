@@ -1,0 +1,317 @@
+{
+  "acceptance_rate": 1.0,
+  "accepted": 30,
+  "accepted_set_rcc": 1.0,
+  "attempts": 30,
+  "buggy_crash_rate": 1.0,
+  "candidate_rcc": 1.0,
+  "candidates": [
+    {
+      "accepted": true,
+      "attempt_label": "attempt_001",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_002",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_003",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_004",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_005",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_006",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_007",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_008",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_009",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_010",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_011",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_012",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_013",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_014",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_015",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_016",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_017",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_018",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_019",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_020",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_021",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_022",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_023",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_024",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_025",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_026",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_027",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_028",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_029",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_030",
+      "compiled": true,
+      "crashed_buggy": true,
+      "rcc": 1.0,
+      "root_methods_hit": [
+        "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+      ]
+    }
+  ],
+  "compile_rate": 1.0,
+  "compiled": 30,
+  "compiled_set_rcc": 1.0,
+  "crashed_buggy": 30,
+  "root_methods": [
+    "org.apache.commons.lang.WordUtils.abbreviate(String,int,int,String)"
+  ]
+}

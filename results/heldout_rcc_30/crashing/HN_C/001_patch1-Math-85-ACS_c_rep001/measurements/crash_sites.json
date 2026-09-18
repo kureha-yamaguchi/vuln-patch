@@ -1,0 +1,805 @@
+[
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "function is null",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 171,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 146,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "function is null",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 171,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 112,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "function is null",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 171,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 204,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "function is null",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 171,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 189,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_007",
+  "source": "fuzz_out/attempt_007_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "function is null",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 171,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 24,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "org.apache.commons.math.MathRuntimeException$4: function is null",
+  "causes": [
+   "org.apache.commons.math.MathRuntimeException$4"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 117,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 171,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 115,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "invalid bracketing parameters:  lower bound=0,  initial=0, upper bound=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 178,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 90,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_014",
+  "source": "fuzz_out/attempt_014_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "function is null",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 171,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 233,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_016",
+  "source": "fuzz_out/attempt_016_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "function is null",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 171,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 164,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_018",
+  "source": "fuzz_out/attempt_018_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "bad value for maximum iterations number: -100",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 174,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 96,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "org.apache.commons.math.ConvergenceException: number of iterations=1, maximum iterations=1, initial=-16, lower bound=-17, upper bound=17, final a value=-17, final b value=-15, f(a)=17, f(b)=15",
+  "causes": [
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 111,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 84,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "bad value for maximum iterations number: 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 174,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 230,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_023",
+  "source": "fuzz_out/attempt_023_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "function is null",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 171,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 106,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "org.apache.commons.math.ConvergenceException: number of iterations=1, maximum iterations=1, initial=1, lower bound=-1, upper bound=1, final a value=0, final b value=1, f(a)=0, f(b)=1",
+  "causes": [
+   "org.apache.commons.math.ConvergenceException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 109,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 199,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 63,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+   "name": "bracket",
+   "params": []
+  },
+  "top_library_line": 199,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_026",
+  "source": "fuzz_out/attempt_026_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "bad value for maximum iterations number: 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 174,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 103,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_028",
+  "source": "fuzz_out/attempt_028_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "function is null",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 282,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": []
+    },
+    "line": 171,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 120,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 282,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 282,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

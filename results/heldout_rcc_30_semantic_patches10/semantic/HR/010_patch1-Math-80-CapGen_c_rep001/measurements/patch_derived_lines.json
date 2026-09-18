@@ -1,0 +1,620 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 823,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 824,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 825,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 826,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 827,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 828,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 829,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 830,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 831,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 832,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 833,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 834,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 835,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 836,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 837,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 838,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 839,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 840,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 841,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 842,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 843,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 844,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 845,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 846,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 847,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 848,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 849,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 850,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 851,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 852,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 853,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 854,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 855,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 856,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 857,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 858,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 859,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 860,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 861,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 862,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 863,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 864,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 865,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 866,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 867,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 868,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 869,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 870,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 871,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 872,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 873,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 874,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 875,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 876,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 877,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 878,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 879,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 880,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 881,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 882,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 883,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 884,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 885,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 886,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 887,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 888,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 889,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 890,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 891,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 892,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 893,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 894,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 895,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 896,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 897,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 898,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 899,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 900,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 901,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 902,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 903,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 904,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 905,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 906,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 907,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 908,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 909,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 910,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 911,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 912,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 913,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 914,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 915,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 916,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 917,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 918,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 919,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 920,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 921,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 922,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 923,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 924,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 925,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 926,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 927,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 928,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 929,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1132,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1133,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1134,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1135,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1136,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1137,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1138,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1139,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1140,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1141,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1142,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1143,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1144,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1145,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1146,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "line": 1147,
+   "ring": "seed"
+  }
+ ]
+}

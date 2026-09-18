@@ -1,0 +1,13 @@
+{
+  "attempt_label": "attempt_008",
+  "coverage_xml": "/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/crashing/HR/010_patch1-Math-58-CapGen_c_rep001/replay/attempt_008/coverage.xml",
+  "deadline_snapshot": false,
+  "dump": "/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/crashing/HR/010_patch1-Math-58-CapGen_c_rep001/replay/attempt_008/normal.exec",
+  "elapsed_seconds": 24.141222200007178,
+  "leg": "crashing/HR/010_patch1-Math-58-CapGen_c_rep001",
+  "original_outcomes_preserved": true,
+  "returncode": 0,
+  "seed": 2517366584,
+  "source": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HR/010_patch1-Math-58-CapGen_c_rep001/harness_src/attempt_008.java",
+  "source_sha256": "943e73ffc1f3de72445db6dc5f6a5b5efa088d98bc7f309158ebcd0ecdd47ba8"
+}

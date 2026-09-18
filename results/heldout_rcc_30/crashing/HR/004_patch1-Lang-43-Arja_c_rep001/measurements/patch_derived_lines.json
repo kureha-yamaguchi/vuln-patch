@@ -1,0 +1,1225 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 142,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 143,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 144,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 145,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 146,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 147,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 148,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 149,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 150,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 151,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 152,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 153,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 154,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 155,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 156,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 157,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 158,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 159,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 160,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 161,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 162,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 163,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 164,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 165,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 166,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 167,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 168,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 169,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 170,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 171,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 172,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 173,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 174,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 175,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 176,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 177,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 178,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 179,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 180,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 181,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 182,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 183,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 184,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 185,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 186,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 187,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 188,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 189,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 190,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 191,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 192,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 193,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 194,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 195,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 196,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 197,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 198,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 199,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 200,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 201,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 202,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 203,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 204,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 205,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 206,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 344,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 345,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 346,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 347,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 348,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 349,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 350,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 351,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 352,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 353,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 354,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 355,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 356,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 357,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 358,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 359,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 360,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 361,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 362,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 363,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 364,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 365,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 366,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 367,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 368,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 369,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 370,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 371,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 372,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 373,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 374,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 375,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 376,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 377,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 378,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 379,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 402,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 403,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 404,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 405,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 417,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 418,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 419,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 420,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 421,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 422,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 423,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 424,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 425,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 426,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 427,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 428,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 429,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 430,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 431,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 432,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 433,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 434,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 435,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 436,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 437,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 438,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 439,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 440,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 441,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 442,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 443,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.ExtendedMessageFormat",
+   "line": 444,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 458,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 459,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 460,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 461,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 462,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 463,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 472,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 473,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 474,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 475,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 476,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 477,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 478,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 479,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 480,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 481,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 482,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 483,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 484,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 521,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 522,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 523,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 524,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 525,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 526,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 527,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 528,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 529,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 530,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 531,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 532,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 533,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 570,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 571,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 572,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 573,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 574,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 575,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 576,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 577,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 578,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 579,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 580,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 581,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 582,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 619,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 620,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 621,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 622,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 623,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 624,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 625,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 626,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 627,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 628,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 629,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 630,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 631,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 667,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 668,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 669,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 670,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 671,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 672,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 673,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 674,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 675,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 676,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 677,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 678,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 679,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 680,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 681,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 682,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 683,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 691,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 692,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 693,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 694,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 695,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 696,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 704,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 705,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 706,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 714,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 715,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 716,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 724,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 725,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 726,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 734,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 735,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 736,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1871,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1872,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1873,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1874,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1875,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1876,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1877,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1878,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1879,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1880,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1881,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1882,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1883,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1884,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1885,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1886,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1887,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.text.StrBuilder",
+   "line": 1888,
+   "ring": "callee"
+  }
+ ]
+}

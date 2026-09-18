@@ -1,0 +1,29 @@
+# H_N vs H_R PILOT (2026-09-04), arm HR. 20 dev patches: 5 crashing bugs +
+# 5 semantic bugs, one correct + one overfitting patch each. Both arms use
+# --coverage (kept + all compiled harnesses measured); HN adds --naive
+# (level B: patch + failing test kept, neighbourhood removed). Evaluation
+# only: RCR/RCC/RCP/CSM are computed post hoc and never fed back.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl --coverage"
+CASES=(
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SequenceR/Lang/patch1-Lang-6-SequenceR.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/SketchFix/Lang/patch1-Lang-6-SketchFix-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Lang/patch1-Lang-51-Jaid.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Elixir/Lang/patch1-Lang-51-Elixir-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Elixir/Chart/patch1-Chart-9-Elixir.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Jaid/Chart/patch1-Chart-9-Jaid-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Lang/patch1-Lang-27-SimFix.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/ssFix/Lang/patch1-Lang-27-ssFix-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Math/patch1-Math-32-Jaid.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/ssFix/Math/patch1-Math-79-ssFix-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Arja/Chart/patch1-Chart-3-Arja.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Elixir/Chart/patch1-Chart-3-Elixir-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SimFix/Chart/patch1-Chart-7-SimFix.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Chart/patch1-Chart-7-Arja-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-33-Jaid.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Jaid/Closure/patch1-Closure-33-Jaid-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Jaid/Closure/patch1-Closure-62-Jaid.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Jaid/Closure/patch1-Closure-62-Jaid-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/SOFix/Math/patch1-Math-2-SOFix.patch"
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Arja/Math/patch1-Math-2-Arja-plausible.patch"
+)

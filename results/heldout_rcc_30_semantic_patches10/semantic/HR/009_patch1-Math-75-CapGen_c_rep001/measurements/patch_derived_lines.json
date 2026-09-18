@@ -1,0 +1,805 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 59,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 60,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 61,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 203,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 204,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 205,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 214,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 215,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 216,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 217,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 218,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 219,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 220,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 221,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 232,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 233,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 234,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 243,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 244,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 245,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 246,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 247,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 248,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 249,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 250,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 251,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 252,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 253,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 254,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 255,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 256,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 257,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 265,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 266,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 267,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 275,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 276,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 277,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 285,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 286,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 287,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 302,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 303,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 304,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 315,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 316,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 317,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 318,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 319,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 320,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 321,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 330,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 331,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 332,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 341,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 342,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 343,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 352,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 353,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 354,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 368,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 369,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 370,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 381,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 382,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 383,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 384,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 385,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 386,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 387,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 388,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 389,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 390,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 391,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 392,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 393,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 394,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 395,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 396,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 397,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 398,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 399,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 400,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 401,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 402,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 403,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 404,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 405,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 406,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 407,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 408,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 409,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 410,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 411,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 412,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 413,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 414,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 415,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 416,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 417,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 418,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 419,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 420,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 421,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 431,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 432,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 433,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 443,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 444,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 445,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 455,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 456,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 457,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 474,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 475,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 476,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 477,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 490,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 491,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 492,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 493,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 494,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 495,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 496,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 507,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 508,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 509,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 520,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 521,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 522,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 533,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 534,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 535,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 560,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 561,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.Frequency",
+   "line": 562,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 135,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 136,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 137,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 138,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 139,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 140,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 141,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 142,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 143,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 144,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 145,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 146,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 147,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 148,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 149,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 150,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 151,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 152,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 153,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 154,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 155,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 156,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 157,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.math.stat.FrequencyTest",
+   "line": 158,
+   "ring": "caller"
+  }
+ ]
+}

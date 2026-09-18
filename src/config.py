@@ -321,7 +321,7 @@ APR_TOOLS = [
 D4J_CHECKOUT_ROOT = os.getenv('D4J_CHECKOUT_ROOT', '/tmp/d4j')
 
 # Root of the Defects4J checkout itself (the clone, not a materialised bug).
-# `src/metrics` reads the developer fix from
+# `java.measurements.d4j_rcc_sweep` reads the developer fix from
 # <D4J_HOME>/framework/projects/<Project>/patches/<id>.src.patch.
 D4J_HOME = os.getenv(
     'D4J_HOME',
@@ -331,7 +331,8 @@ D4J_HOME = os.getenv(
 
 # --- JaCoCo (coverage measurement only) -----------------------------------
 # Jazzer writes a JaCoCo .exec file with --coverage_dump. The JaCoCo command
-# line turns that binary dump into the jacoco.xml that `src/metrics` reads.
+# line turns that binary dump into the jacoco.xml the measurement layer
+# reads.
 # Measurement only: nothing in the harness pipeline depends on this jar.
 JACOCO_VERSION = os.getenv('JACOCO_VERSION', '0.8.12')
 JACOCO_CLI_JAR = os.getenv(

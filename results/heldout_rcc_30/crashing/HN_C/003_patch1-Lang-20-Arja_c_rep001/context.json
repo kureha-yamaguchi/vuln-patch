@@ -1,0 +1,441 @@
+{
+ "modified_files": [
+  "src/main/java/org/apache/commons/lang3/StringUtils.java"
+ ],
+ "patch_text": "--- /src/main/java/org/apache/commons/lang3/StringUtils.java\n+++ /src/main/java/org/apache/commons/lang3/StringUtils.java\n@@ -3295,7 +3295,7 @@\n             return EMPTY;\n         }\n         \n-        StringBuilder buf = new StringBuilder((array[startIndex] == null ? 16 : array[startIndex].toString().length()) + 1);\n+        StringBuilder buf=new StringBuilder(256);\n \n         for (int i = startIndex; i < endIndex; i++) {\n             if (i > startIndex) {\n@@ -3380,7 +3380,7 @@\n             return EMPTY;\n         }\n \n-        StringBuilder buf = new StringBuilder((array[startIndex] == null ? 16 : array[startIndex].toString().length()) + separator.length());\n+        StringBuilder buf=new StringBuilder(256);\n \n         for (int i = startIndex; i < endIndex; i++) {\n             if (i > startIndex) {\n",
+ "functions": [
+  {
+   "func_name": "join",
+   "func_signature": "public static String join(Object[] array, char separator, int startIndex, int endIndex)",
+   "func_source": "    public static String join(Object[] array, char separator, int startIndex, int endIndex) {\n        if (array == null) {\n            return null;\n        }\n        int noOfItems = (endIndex - startIndex);\n        if (noOfItems <= 0) {\n            return EMPTY;\n        }\n        \n        StringBuilder buf = new StringBuilder((array[startIndex] == null ? 16 : array[startIndex].toString().length()) + 1);\n\n        for (int i = startIndex; i < endIndex; i++) {\n            if (i > startIndex) {\n                buf.append(separator);\n            }\n            if (array[i] != null) {\n                buf.append(array[i]);\n            }\n        }\n        return buf.toString();\n    }",
+   "func_class": "StringUtils",
+   "func_class_fq": "org.apache.commons.lang3.StringUtils",
+   "func_param_types": [
+    "Object[]",
+    "char",
+    "int",
+    "int"
+   ],
+   "fi_name": "[org.apache.commons.lang3.StringUtils].join(Object[],char,int,int)",
+   "overload_types": [
+    [
+     "T"
+    ],
+    [
+     "Object[]",
+     "char"
+    ],
+    [
+     "Object[]",
+     "char",
+     "int",
+     "int"
+    ],
+    [
+     "Object[]",
+     "String"
+    ],
+    [
+     "Object[]",
+     "String",
+     "int",
+     "int"
+    ],
+    [
+     "Iterator<?>",
+     "char"
+    ],
+    [
+     "Iterator<?>",
+     "String"
+    ],
+    [
+     "Iterable<?>",
+     "char"
+    ],
+    [
+     "Iterable<?>",
+     "String"
+    ]
+   ],
+   "xrefs": [
+    "public void testJoin_ArrayChar() {\n        assertEquals(null, StringUtils.join((Object[]) null, ','));\n        assertEquals(TEXT_LIST_CHAR, StringUtils.join(ARRAY_LIST, SEPARATOR_CHAR));\n        assertEquals(\"\", StringUtils.join(EMPTY_ARRAY_LIST, SEPARATOR_CHAR));\n        assertEquals(\";;foo\", StringUtils.join(MIXED_ARRAY_LIST, SEPARATOR_CHAR));\n        assertEquals(\"foo;2\", StringUtils.join(MIXED_TYPE_LIST, SEPARATOR_CHAR));\n\n        assertEquals(\"/\", StringUtils.join(MIXED_ARRAY_LIST, '/', 0, MIXED_ARRAY_LIST.length-1));\n        assertEquals(\"foo\", StringUtils.join(MIXED_TYPE_LIST, '/', 0, 1));\n        assertEquals(\"null\", StringUtils.join(NULL_TO_STRING_LIST,'/', 0, 1));\n        assertEquals(\"foo/2\", StringUtils.join(MIXED_TYPE_LIST, '/', 0, 2));\n        assertEquals(\"2\", StringUtils.join(MIXED_TYPE_LIST, '/', 1, 2));\n        assertEquals(\"\", StringUtils.join(MIXED_TYPE_LIST, '/', 2, 1));\n    }"
+   ],
+   "xref_names": [
+    "[org.apache.commons.lang3.StringUtilsTest].testJoin_ArrayChar()"
+   ],
+   "reachable_edges": [
+    [
+     "[org.apache.commons.lang3.StringUtils].join(Object[],char,int,int)",
+     "[StringBuilder].<init>(int)"
+    ],
+    [
+     "[org.apache.commons.lang3.StringUtils].join(Object[],char,int,int)",
+     "[StringBuilder].append(char)"
+    ],
+    [
+     "[org.apache.commons.lang3.StringUtils].join(Object[],char,int,int)",
+     "[StringBuilder].append()"
+    ],
+    [
+     "[org.apache.commons.lang3.StringUtils].join(Object[],char,int,int)",
+     "[StringBuilder].toString()"
+    ]
+   ],
+   "reachable_depth": {
+    "[org.apache.commons.lang3.StringUtils].join(Object[],char,int,int)": 0,
+    "[StringBuilder].<init>(int)": 1,
+    "[StringBuilder].append(char)": 1,
+    "[StringBuilder].append()": 1,
+    "[StringBuilder].toString()": 1
+   },
+   "reachable": [
+    "[StringBuilder].<init>(int)",
+    "[StringBuilder].append(char)",
+    "[StringBuilder].append()",
+    "[StringBuilder].toString()",
+    "[org.apache.commons.lang3.StringUtils].length(CharSequence)",
+    "[org.apache.commons.lang3.CharRange].toString()"
+   ],
+   "related_callees": [
+    {
+     "name": "toString",
+     "source_file": "AnnotationUtils.java",
+     "signature": "public static String toString(Annotation a)",
+     "source": "    public static String toString(final Annotation a) {\n        ToStringBuilder builder = new ToStringBuilder(a, TO_STRING_STYLE);\n        for (Method m : a.annotationType().getDeclaredMethods()) {\n            if (m.getParameterTypes().length > 0) {\n                continue; //wtf?\n            }\n            try {\n                builder.append(m.getName(), m.invoke(a));\n            } catch (RuntimeException ex) {\n                throw ex;\n            } catch (Exception ex) {\n                throw new RuntimeException(ex);\n            }\n        }\n        return builder.build();\n    }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "AnnotationUtils.java",
+       "    public static String toString(final Annotation a) {\n        ToStringBuilder builder = new ToStringBuilder(a, TO_STRING_STYLE);\n        for (Method m : a.annotationType().getDeclaredMethods()) {\n            if (m.getParameterTypes().length > 0) {\n                continue; //wtf?\n            }\n            try {\n                builder.append(m.getName(), m.invoke(a));\n            } catch (RuntimeException ex) {\n                throw ex;\n            } catch (Exception ex) {\n                throw new RuntimeException(ex);\n            }\n        }\n        return builder.build();\n    }"
+      ],
+      [
+       "ArrayUtils.java",
+       "    public static String toString(Object array) {\n        return toString(array, \"{}\");\n    }"
+      ],
+      [
+       "ArrayUtils.java",
+       "    public static String toString(Object array, String stringIfNull) {\n        if (array == null) {\n            return stringIfNull;\n        }\n        return new ToStringBuilder(array, ToStringStyle.SIMPLE_STYLE).append(array).toString();\n    }"
+      ],
+      [
+       "BooleanUtils.java",
+       "    public static String toString(Boolean bool, String trueString, String falseString, String nullString) {\n        if (bool == null) {\n            return nullString;\n        }\n        return bool.booleanValue() ? trueString : falseString;\n    }"
+      ]
+     ]
+    },
+    {
+     "name": "length",
+     "source_file": "StringUtils.java",
+     "signature": "public static int length(CharSequence cs)",
+     "source": "    public static int length(CharSequence cs) {\n        return cs == null ? 0 : cs.length();\n    }",
+     "is_abstract": false,
+     "impls": []
+    }
+   ],
+   "field_siblings": [
+    {
+     "name": "trimToEmpty",
+     "signature": "public static String trimToEmpty(String str)",
+     "shared_fields": [
+      "EMPTY"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "<p>Removes control characters (char &lt;= 32) from both ends of this String returning an empty String (\"\") if the String is empty (\"\") after the trim or if it is {@code null}. <p>The String is trimmed using {@link String#trim()}. Trim removes start and end characters &lt;= 32. To strip whitespace use {@link #stripToEmp\u2026"
+    },
+    {
+     "name": "stripToEmpty",
+     "signature": "public static String stripToEmpty(String str)",
+     "shared_fields": [
+      "EMPTY"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "<p>Strips whitespace from the start and end of a String  returning an empty String if {@code null} input.</p> <p>This is similar to {@link #trimToEmpty(String)} but removes whitespace. Whitespace is defined by {@link Character#isWhitespace(char)}.</p> <pre> StringUtils.stripToEmpty(null)     = \"\" StringUtils.stripToEmp\u2026"
+    },
+    {
+     "name": "substring",
+     "signature": "public static String substring(String str, int start)",
+     "shared_fields": [
+      "EMPTY"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "<p>Gets a substring from the specified String avoiding exceptions.</p> <p>A negative start position can be used to start {@code n} characters from the end of the String.</p> <p>A {@code null} String will return {@code null}. An empty (\"\") String will return \"\".</p> <pre> StringUtils.substring(null, *)   = null StringUt\u2026"
+    },
+    {
+     "name": "substring",
+     "signature": "public static String substring(String str, int start, int end)",
+     "shared_fields": [
+      "EMPTY"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "<p>Gets a substring from the specified String avoiding exceptions.</p> <p>A negative start position can be used to start/end {@code n} characters from the end of the String.</p> <p>The returned substring starts with the character in the {@code start} position and ends before the {@code end} position. All position count\u2026"
+    },
+    {
+     "name": "left",
+     "signature": "public static String left(String str, int len)",
+     "shared_fields": [
+      "EMPTY"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "<p>Gets the leftmost {@code len} characters of a String.</p> <p>If {@code len} characters are not available, or the String is {@code null}, the String will be returned without an exception. An empty String is returned if len is negative.</p> <pre> StringUtils.left(null, *)    = null StringUtils.left(*, -ve)     = \"\" St\u2026"
+    }
+   ]
+  },
+  {
+   "func_name": "join",
+   "func_signature": "public static String join(Object[] array, String separator, int startIndex, int endIndex)",
+   "func_source": "    public static String join(Object[] array, String separator, int startIndex, int endIndex) {\n        if (array == null) {\n            return null;\n        }\n        if (separator == null) {\n            separator = EMPTY;\n        }\n\n        // endIndex - startIndex > 0:   Len = NofStrings *(len(firstString) + len(separator))\n        //           (Assuming that all Strings are roughly equally long)\n        int noOfItems = (endIndex - startIndex);\n        if (noOfItems <= 0) {\n            return EMPTY;\n        }\n\n        StringBuilder buf = new StringBuilder((array[startIndex] == null ? 16 : array[startIndex].toString().length()) + separator.length());\n\n        for (int i = startIndex; i < endIndex; i++) {\n            if (i > startIndex) {\n                buf.append(separator);\n            }\n            if (array[i] != null) {\n                buf.append(array[i]);\n            }\n        }\n        return buf.toString();\n    }",
+   "func_class": "StringUtils",
+   "func_class_fq": "org.apache.commons.lang3.StringUtils",
+   "func_param_types": [
+    "Object[]",
+    "String",
+    "int",
+    "int"
+   ],
+   "fi_name": "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)",
+   "overload_types": [
+    [
+     "T"
+    ],
+    [
+     "Object[]",
+     "char"
+    ],
+    [
+     "Object[]",
+     "char",
+     "int",
+     "int"
+    ],
+    [
+     "Object[]",
+     "String"
+    ],
+    [
+     "Object[]",
+     "String",
+     "int",
+     "int"
+    ],
+    [
+     "Iterator<?>",
+     "char"
+    ],
+    [
+     "Iterator<?>",
+     "String"
+    ],
+    [
+     "Iterable<?>",
+     "char"
+    ],
+    [
+     "Iterable<?>",
+     "String"
+    ]
+   ],
+   "xrefs": [
+    "public void testJoin_ArrayString() {\n        assertEquals(null, StringUtils.join((Object[]) null, null));\n        assertEquals(TEXT_LIST_NOSEP, StringUtils.join(ARRAY_LIST, null));\n        assertEquals(TEXT_LIST_NOSEP, StringUtils.join(ARRAY_LIST, \"\"));\n        \n        assertEquals(\"\", StringUtils.join(NULL_ARRAY_LIST, null));\n        \n        assertEquals(\"\", StringUtils.join(EMPTY_ARRAY_LIST, null));\n        assertEquals(\"\", StringUtils.join(EMPTY_ARRAY_LIST, \"\"));\n        assertEquals(\"\", StringUtils.join(EMPTY_ARRAY_LIST, SEPARATOR));\n\n        assertEquals(TEXT_LIST, StringUtils.join(ARRAY_LIST, SEPARATOR));\n        assertEquals(\",,foo\", StringUtils.join(MIXED_ARRAY_LIST, SEPARATOR));\n        assertEquals(\"foo,2\", StringUtils.join(MIXED_TYPE_LIST, SEPARATOR));\n\n        assertEquals(\"/\", StringUtils.join(MIXED_ARRAY_LIST, \"/\", 0, MIXED_ARRAY_LIST.length-1));\n        assertEquals(\"\", StringUtils.join(MIXED_ARRAY_LIST, \"\", 0, MIXED_ARRAY_LIST.length-1));\n        assertEquals(\"foo\", StringUtils.join(MIXED_TYPE_LIST, \"/\", 0, 1));\n        assertEquals(\"foo/2\", StringUtils.join(MIXED_TYPE_LIST, \"/\", 0, 2));\n        assertEquals(\"2\", StringUtils.join(MIXED_TYPE_LIST, \"/\", 1, 2));\n        assertEquals(\"\", StringUtils.join(MIXED_TYPE_LIST, \"/\", 2, 1));\n    }"
+   ],
+   "xref_names": [
+    "[org.apache.commons.lang3.StringUtilsTest].testJoin_ArrayString()"
+   ],
+   "reachable_edges": [
+    [
+     "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)",
+     "separator.length()"
+    ],
+    [
+     "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)",
+     "[StringBuilder].<init>(org.apache.commons.lang3.StringUtils)"
+    ],
+    [
+     "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)",
+     "[StringBuilder].append(org.apache.commons.lang3.StringUtils)"
+    ],
+    [
+     "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)",
+     "[StringBuilder].append()"
+    ],
+    [
+     "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)",
+     "[StringBuilder].toString()"
+    ]
+   ],
+   "reachable_depth": {
+    "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)": 0,
+    "separator.length()": 1,
+    "[StringBuilder].<init>(org.apache.commons.lang3.StringUtils)": 1,
+    "[StringBuilder].append(org.apache.commons.lang3.StringUtils)": 1,
+    "[StringBuilder].append()": 1,
+    "[StringBuilder].toString()": 1
+   },
+   "reachable": [
+    "separator.length()",
+    "[StringBuilder].<init>(org.apache.commons.lang3.StringUtils)",
+    "[StringBuilder].append(org.apache.commons.lang3.StringUtils)",
+    "[StringBuilder].append()",
+    "[StringBuilder].toString()",
+    "[org.apache.commons.lang3.StringUtils].length(CharSequence)",
+    "[org.apache.commons.lang3.CharRange].toString()"
+   ],
+   "related_callees": [
+    {
+     "name": "toString",
+     "source_file": "AnnotationUtils.java",
+     "signature": "public static String toString(Annotation a)",
+     "source": "    public static String toString(final Annotation a) {\n        ToStringBuilder builder = new ToStringBuilder(a, TO_STRING_STYLE);\n        for (Method m : a.annotationType().getDeclaredMethods()) {\n            if (m.getParameterTypes().length > 0) {\n                continue; //wtf?\n            }\n            try {\n                builder.append(m.getName(), m.invoke(a));\n            } catch (RuntimeException ex) {\n                throw ex;\n            } catch (Exception ex) {\n                throw new RuntimeException(ex);\n            }\n        }\n        return builder.build();\n    }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "AnnotationUtils.java",
+       "    public static String toString(final Annotation a) {\n        ToStringBuilder builder = new ToStringBuilder(a, TO_STRING_STYLE);\n        for (Method m : a.annotationType().getDeclaredMethods()) {\n            if (m.getParameterTypes().length > 0) {\n                continue; //wtf?\n            }\n            try {\n                builder.append(m.getName(), m.invoke(a));\n            } catch (RuntimeException ex) {\n                throw ex;\n            } catch (Exception ex) {\n                throw new RuntimeException(ex);\n            }\n        }\n        return builder.build();\n    }"
+      ],
+      [
+       "ArrayUtils.java",
+       "    public static String toString(Object array) {\n        return toString(array, \"{}\");\n    }"
+      ],
+      [
+       "ArrayUtils.java",
+       "    public static String toString(Object array, String stringIfNull) {\n        if (array == null) {\n            return stringIfNull;\n        }\n        return new ToStringBuilder(array, ToStringStyle.SIMPLE_STYLE).append(array).toString();\n    }"
+      ],
+      [
+       "BooleanUtils.java",
+       "    public static String toString(Boolean bool, String trueString, String falseString, String nullString) {\n        if (bool == null) {\n            return nullString;\n        }\n        return bool.booleanValue() ? trueString : falseString;\n    }"
+      ]
+     ]
+    },
+    {
+     "name": "length",
+     "source_file": "StringUtils.java",
+     "signature": "public static int length(CharSequence cs)",
+     "source": "    public static int length(CharSequence cs) {\n        return cs == null ? 0 : cs.length();\n    }",
+     "is_abstract": false,
+     "impls": []
+    }
+   ],
+   "field_siblings": [
+    {
+     "name": "trimToEmpty",
+     "signature": "public static String trimToEmpty(String str)",
+     "shared_fields": [
+      "EMPTY"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "<p>Removes control characters (char &lt;= 32) from both ends of this String returning an empty String (\"\") if the String is empty (\"\") after the trim or if it is {@code null}. <p>The String is trimmed using {@link String#trim()}. Trim removes start and end characters &lt;= 32. To strip whitespace use {@link #stripToEmp\u2026"
+    },
+    {
+     "name": "stripToEmpty",
+     "signature": "public static String stripToEmpty(String str)",
+     "shared_fields": [
+      "EMPTY"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "<p>Strips whitespace from the start and end of a String  returning an empty String if {@code null} input.</p> <p>This is similar to {@link #trimToEmpty(String)} but removes whitespace. Whitespace is defined by {@link Character#isWhitespace(char)}.</p> <pre> StringUtils.stripToEmpty(null)     = \"\" StringUtils.stripToEmp\u2026"
+    },
+    {
+     "name": "substring",
+     "signature": "public static String substring(String str, int start)",
+     "shared_fields": [
+      "EMPTY"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "<p>Gets a substring from the specified String avoiding exceptions.</p> <p>A negative start position can be used to start {@code n} characters from the end of the String.</p> <p>A {@code null} String will return {@code null}. An empty (\"\") String will return \"\".</p> <pre> StringUtils.substring(null, *)   = null StringUt\u2026"
+    },
+    {
+     "name": "substring",
+     "signature": "public static String substring(String str, int start, int end)",
+     "shared_fields": [
+      "EMPTY"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "<p>Gets a substring from the specified String avoiding exceptions.</p> <p>A negative start position can be used to start/end {@code n} characters from the end of the String.</p> <p>The returned substring starts with the character in the {@code start} position and ends before the {@code end} position. All position count\u2026"
+    },
+    {
+     "name": "left",
+     "signature": "public static String left(String str, int len)",
+     "shared_fields": [
+      "EMPTY"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "<p>Gets the leftmost {@code len} characters of a String.</p> <p>If {@code len} characters are not available, or the String is {@code null}, the String will be returned without an exception. An empty String is returned if len is negative.</p> <pre> StringUtils.left(null, *)    = null StringUtils.left(*, -ve)     = \"\" St\u2026"
+    }
+   ]
+  }
+ ],
+ "package": "org.apache.commons.lang3",
+ "root_cause_reachable": [
+  "StringUtils.length",
+  "CharRange.toString"
+ ],
+ "neighbourhood_notes": [],
+ "source_imports": [
+  "import java.lang.reflect.InvocationTargetException;",
+  "import java.lang.reflect.Method;",
+  "import java.util.ArrayList;",
+  "import java.util.Arrays;",
+  "import java.util.Iterator;",
+  "import java.util.List;",
+  "import java.util.Locale;",
+  "import java.util.regex.Pattern;"
+ ],
+ "reachable_edges": [
+  [
+   "[org.apache.commons.lang3.StringUtils].join(Object[],char,int,int)",
+   "[StringBuilder].<init>(int)"
+  ],
+  [
+   "[org.apache.commons.lang3.StringUtils].join(Object[],char,int,int)",
+   "[StringBuilder].append(char)"
+  ],
+  [
+   "[org.apache.commons.lang3.StringUtils].join(Object[],char,int,int)",
+   "[StringBuilder].append()"
+  ],
+  [
+   "[org.apache.commons.lang3.StringUtils].join(Object[],char,int,int)",
+   "[StringBuilder].toString()"
+  ],
+  [
+   "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)",
+   "separator.length()"
+  ],
+  [
+   "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)",
+   "[StringBuilder].<init>(org.apache.commons.lang3.StringUtils)"
+  ],
+  [
+   "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)",
+   "[StringBuilder].append(org.apache.commons.lang3.StringUtils)"
+  ],
+  [
+   "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)",
+   "[StringBuilder].append()"
+  ],
+  [
+   "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)",
+   "[StringBuilder].toString()"
+  ]
+ ],
+ "reachable_depth": {
+  "[org.apache.commons.lang3.StringUtils].join(Object[],char,int,int)": 0,
+  "[StringBuilder].<init>(int)": 1,
+  "[StringBuilder].append(char)": 1,
+  "[StringBuilder].append()": 1,
+  "[StringBuilder].toString()": 1,
+  "[org.apache.commons.lang3.StringUtils].join(Object[],String,int,int)": 0,
+  "separator.length()": 1,
+  "[StringBuilder].<init>(org.apache.commons.lang3.StringUtils)": 1,
+  "[StringBuilder].append(org.apache.commons.lang3.StringUtils)": 1
+ }
+}

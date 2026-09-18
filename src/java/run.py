@@ -25,6 +25,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import Optional
 
 sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents if (p / 'config.py').exists())))
 
@@ -41,7 +42,7 @@ from llm import (HarnessGenerator, reset_token_usage, token_usage,
                  usage_totals, enable_recording, reset_events, get_events,
                  record_event)
 from java.bug_context.patches import DeprecatedBugError, PatchSelector
-from java.harness.prompts import PromptBuilder
+from java.harness.prompts import PromptBuilder, naive_level_of
 from java.parsing.java_source import candidate_anchor_literals, expected_assert_literals
 from java.relations.judge_decision import adjudicate
 
@@ -821,6 +822,12 @@ def parse_args():
     parser.add_argument("-m", "--max_attempts", type=int, default=50,
                         help="Hard cap on total generation attempts "
                              "(default: 50)")
+    parser.add_argument("--candidate_budget", type=int, default=None,
+                        help="Comparison experiment: generate exactly N candidate "
+                             "responses (invalid responses and repairs count), "
+                             "record compile/buggy-acceptance outcomes and stop "
+                             "before extra retries or patched-build evaluation. "
+                             "Requires --coverage and --results_json; overrides -n/-m.")
     parser.add_argument("--max_repair_failures", type=int, default=3,
                         help="maximum number of failures in a row before resetting the prompt context")
     parser.add_argument("--reachable_node_cap", type=int, default=None,
@@ -979,6 +986,51 @@ def parse_args():
                              "OFF by default; feeds no verifier evidence and "
                              "no gate or verdict. See "
                              "docs/divcap-build-2026-08-10.md.")
+    parser.add_argument("--coverage", action="store_true",
+                        help="MEASUREMENT ONLY. Ask Jazzer for a JaCoCo "
+                             "execution-data dump from every harness run "
+                             "(the patched-build fuzz and the buggy-build "
+                             "keep-going scan), into <leg_dir>/cov/, "
+                             "alongside a classpath.json and a copy of the "
+                             "class files that were instrumented. The "
+                             "report is built POST-HOC by the measurements "
+                             "CLI, never in the pipeline. OFF by default; "
+                             "with the flag off the Jazzer command line and "
+                             "environment are byte-for-byte unchanged, and "
+                             "with it on nothing collected feeds a prompt, "
+                             "the verifier, a gate, or a verdict.")
+    parser.add_argument("--naive", nargs='?', default=None,
+                        const='neighbourhood',
+                        choices=['neighbourhood', 'function'],
+                        metavar="LEVEL",
+                        help="ABLATION LADDER. How much root-cause "
+                             "conditioning to strip out of the two "
+                             "model-facing prompts. Bare --naive means "
+                             "'neighbourhood'. "
+                             "'neighbourhood' (level B, the paper's H_N "
+                             "leg): drop every root-cause-NEIGHBOURHOOD "
+                             "insertion from the harness prompt (the "
+                             "variant-analysis / <root_cause_reachable> "
+                             "block with its coverage steering, the "
+                             "call-site <xref> examples, the <callee> "
+                             "declarations, and the reachable-region "
+                             "clause of the propagation rule) AND from "
+                             "the relation-synthesis prompt (the "
+                             "\"Reachable API\" line), leaving the patch, "
+                             "the failing test and every other section "
+                             "identical. "
+                             "'function' (level C, the OSS-Fuzz-Gen-style "
+                             "baseline): show the touched function(s) — "
+                             "declaring class, signature, body — plus the "
+                             "harness skeleton and the fuzzer API rules, "
+                             "and NOTHING that localises the bug: no "
+                             "patch, no failing test, no trigger "
+                             "exception, no neighbourhood; synthesis sees "
+                             "the method source alone, so no lifted-test "
+                             "oracle is possible and level C is meaningful "
+                             "for CRASHING bugs only. OFF by default; with "
+                             "the flag off the prompt text is byte-for-byte "
+                             "what it was.")
     parser.add_argument("--results_json", type=str, default=None,
                         metavar="PATH",
                         help="append a one-line JSON record describing this "
@@ -1066,6 +1118,185 @@ def _record_divcap(result, record_extras) -> None:
                  detail={'divergences': divergences})
 
 
+def _leg_dir(args) -> Optional[str]:
+    """The directory this LEG's artifacts go in — the one holding
+    result.jsonl and trace.md — or None when the caller gave no
+    `--results_json` (an ad-hoc run with nowhere to put them)."""
+    path = getattr(args, 'results_json', None)
+    if not path:
+        return None
+    return os.path.dirname(os.path.abspath(path))
+
+
+def _write_context_json(args, context) -> None:
+    """Write `<leg_dir>/context.json`: the analysis station's context dict
+    exactly as the trace already records it.
+
+    A FILE WRITE AND NOTHING ELSE. The dict is `context.as_dict()`, the
+    same object `record_event('analysis (TargetAnalyzer)')` is handed a few
+    lines above; persisting it changes no prompt, no command, and no
+    verdict. It exists because the measurements CLI needs the run's own
+    idea of the touched methods and their call-graph neighbourhood, and
+    trace.md is markdown prose that cannot be parsed back into one.
+    Fail-soft: a write error is reported and the run continues.
+    """
+    leg = _leg_dir(args)
+    if not leg:
+        return
+    try:
+        os.makedirs(leg, exist_ok=True)
+        with open(os.path.join(leg, 'context.json'), 'w',
+                  encoding='utf-8') as fh:
+            json.dump(context.as_dict(), fh, indent=1, default=str)
+    except (OSError, TypeError, ValueError) as exc:
+        print(f"  [context.json] not written ({exc})")
+
+
+def _coverage_include_glob(context) -> str:
+    """The Jazzer `--instrumentation_includes` glob for this project:
+    its package prefix plus '.**'.
+
+    Prefers `PatchContext.package` (the package the touched file declares);
+    falls back to the package of the touched functions' declaring class
+    when the file had none. Returns '' when neither is known — the caller
+    then leaves coverage off rather than instrumenting the whole JVM.
+    """
+    from java.bug_context.call_graph import project_prefix
+    package = getattr(context, 'package', None)
+    if not package:
+        for fn in (getattr(context, 'functions', None) or []):
+            fq = getattr(fn, 'func_class_fq', None)
+            if fq and '.' in fq:
+                package = fq.rsplit('.', 1)[0]
+                break
+    prefix = project_prefix(package)
+    return f"{prefix}.**" if prefix else ''
+
+
+def _coverage_setup(args, context):
+    """`(cov_dir, include_glob, out_dir)` for --coverage, or
+    `(None, '', None)` when the flag is off or the run has
+    nowhere/nothing to instrument.
+
+    Two directories, because the two artifacts are read by different
+    things: `<leg_dir>/cov` holds the JaCoCo `.exec` dumps the
+    measurements CLI turns into a report, and `<leg_dir>/fuzz_out` holds
+    the raw stdout+stderr of the same runs, which a human reads.
+    """
+    if not getattr(args, 'coverage', False):
+        return None, '', None
+    leg = _leg_dir(args)
+    if not leg:
+        print("  [coverage] --coverage needs --results_json to know where "
+              "the leg's artifacts go — coverage collection is OFF")
+        return None, '', None
+    glob_ = _coverage_include_glob(context)
+    if not glob_:
+        print("  [coverage] no package could be resolved for this patch — "
+              "coverage collection is OFF (instrumenting everything would "
+              "cost the fuzz budget and measure the JDK)")
+        return None, '', None
+    cov_dir = os.path.join(leg, 'cov')
+    out_dir = os.path.join(leg, 'fuzz_out')
+    try:
+        os.makedirs(cov_dir, exist_ok=True)
+        os.makedirs(out_dir, exist_ok=True)
+    except OSError as exc:
+        print(f"  [coverage] cannot create {cov_dir} ({exc}) — OFF")
+        return None, '', None
+    print(f"  [coverage] dumps -> {cov_dir}, raw output -> {out_dir} "
+          f"(includes {glob_})")
+    return cov_dir, glob_, out_dir
+
+
+def _coverage_src_dir(cov_dir):
+    """`<leg_dir>/harness_src` for a `--coverage` run, or None.
+
+    Where the acceptance gate copies every COMPILED candidate's harness
+    source (`fuzz_runner.HarnessVerifier._save_harness_source`), under the
+    same attempt id its `.exec` dump carries. `java.measurements.
+    static_reach` reads those files to build the STATIC fuzzer-reachable
+    set F_stat — what a harness could reach, as against what it did.
+
+    Derived from the coverage directory (`<leg_dir>/cov`) so the flag that
+    turns coverage on turns this on too, and nothing exists with the flag
+    off. Not created here: the verifier creates it on the first candidate,
+    so a leg that compiled nothing leaves no empty directory behind.
+    """
+    if not cov_dir:
+        return None
+    return os.path.join(os.path.dirname(os.path.abspath(cov_dir)),
+                        'harness_src')
+
+
+def _record_coverage(runners, cov_dir, record_extras, accepted=None) -> None:
+    """Persist this leg's coverage dump inventory into result.jsonl
+    (`coverage`).
+
+    `runners` are the objects that asked Jazzer for a dump: the patched-side
+    `FuzzRunner`, the buggy-side keep-going `FuzzRunner`, and the
+    `HarnessVerifier`, whose acceptance run covers EVERY compiled candidate
+    (build token `compiled`). `accepted` is the attempt labels of the
+    harnesses the acceptance gate KEPT, so the two harness sets — all
+    compiled, and the kept subset — can be told apart later without
+    re-deriving the gate's decision from the trace.
+
+    MEASUREMENT ONLY, and this is the boundary, stated where the records
+    are collected: `coverage` names files on disk for a post-hoc JaCoCo
+    report. It is deliberately NOT passed to any prompt, to the verifier's
+    evidence, or to any gate or verdict — a coverage number says nothing
+    about whether a patch is correct, and a decision that read one would be
+    reading a signal that has never been validated.
+    """
+    if not cov_dir:
+        return
+    dumps = []
+    outputs = []
+    sources = []
+    for runner in runners:
+        for rec in (getattr(runner, 'coverage_dumps', None) or []):
+            if rec not in dumps:
+                dumps.append(rec)
+        for path in (getattr(runner, 'coverage_outputs', None) or []):
+            if path not in outputs:
+                outputs.append(path)
+        for path in (getattr(runner, 'coverage_sources', None) or []):
+            if path not in sources:
+                sources.append(path)
+    classpath_path = os.path.join(cov_dir, 'classpath.json')
+    compiled_attempts = []
+    for rec in dumps:
+        if rec.get('build') == 'compiled' and \
+                rec.get('harness') not in compiled_attempts:
+            compiled_attempts.append(rec.get('harness'))
+    accepted_attempts = []
+    for name in (accepted or []):
+        if name and name not in accepted_attempts:
+            accepted_attempts.append(name)
+    record_extras['coverage'] = {
+        'dumps': dumps,
+        'outputs': outputs,
+        'classpath': (classpath_path if os.path.exists(classpath_path)
+                      else None),
+        'dir': cov_dir,
+        # Which harnesses each coverage set is over: every candidate that
+        # compiled and was run once by the acceptance gate, and the subset
+        # that gate kept. Measuring only the kept set lets the gate, not
+        # the prompt, decide the root-cause coverage number.
+        'compiled_attempts': compiled_attempts,
+        'accepted_attempts': accepted_attempts,
+        # The harness SOURCE of every compiled candidate, saved beside the
+        # dumps. Read by java.measurements.static_reach for F_stat.
+        'sources': sources,
+    }
+    record_event('deterministic', method='coverage',
+                 target='jazzer coverage dumps',
+                 output=(f"{sum(1 for d in dumps if d.get('exists'))}/"
+                         f"{len(dumps)} dump(s) written under {cov_dir}; "
+                         f"{len(outputs)} raw fuzz log(s)"),
+                 detail=record_extras['coverage'])
+
+
 def _emit_record(path, *, label, status, selection=None,
                  result=None, fuzz_results=None, bug_kind=None,
                  extras=None):
@@ -1096,7 +1327,8 @@ def _emit_record(path, *, label, status, selection=None,
             getattr(result, "accepted_trigger_details", []) or []),
         # Where each ACCEPTED harness's source and class live, so a later
         # pass can re-run the set without regenerating it. MEASUREMENT
-        # ONLY — `src/metrics` reads this to compute RCC. Nothing in the
+        # ONLY — the measurement layer reads this to compute RCC. Nothing
+        # in the
         # pipeline reads it back.
         "accepted_harnesses": [
             {"harness_path": getattr(br, "harness_path", ""),
@@ -1618,6 +1850,12 @@ def flag_overfitting(record_extras, site, reason, **detail):
 
 def main():
     args = parse_args()
+    if args.candidate_budget is not None:
+        if (args.candidate_budget < 1 or not args.coverage
+                or not args.results_json or not args.require_trigger):
+            raise SystemExit('--candidate_budget needs N > 0, --coverage, '
+                             '--results_json and the buggy trigger gate')
+        args.target_successes = args.max_attempts = args.candidate_budget
     # Token totals are process-global; start this patch's accounting from
     # zero so a future multi-patch-per-process driver can't accumulate.
     reset_token_usage()
@@ -1790,6 +2028,14 @@ def main():
                      output=context.as_dict())
     except Exception:
         pass
+    # Same station, same object, one extra artifact: the machine-readable
+    # twin of the trace entry above. File write only (see _write_context_json).
+    _write_context_json(args, context)
+    # --coverage (measurement only): where the Jazzer dumps go and what to
+    # instrument. (None, '') with the flag off, and then every reader below
+    # is a no-op.
+    _cov_dir, _cov_glob, _cov_out_dir = _coverage_setup(args, context)
+    _fr_lat = None      # the buggy-side keep-going runner, if it ever runs
 
     # Empty touched-function extraction silently disables everything that
     # keys on the patched method — the function blocks in the prompt,
@@ -1807,6 +2053,62 @@ def main():
         print("!! synthesis are disabled for this run.")
         print("!" * 60)
     record_extras = {"context_degraded": context_degraded}
+    _naive_level = naive_level_of(getattr(args, 'naive', False))
+    if _naive_level:
+        # ABLATION MARKER (measurement only): this leg's harnesses were
+        # generated from an ablated prompt. Written so a record can never
+        # be misread as a normal-arm result; read by nothing in this run.
+        record_extras['naive'] = True
+        # WHICH rung of the ladder. `naive: True` alone cannot tell a
+        # level-B leg (patch + failing test kept, neighbourhood dropped)
+        # from a level-C one (function source only), and the two are not
+        # comparable to each other or to the same baseline.
+        record_extras['naive_level'] = _naive_level
+        # Which model-facing prompt builders of this leg honoured the flag,
+        # and what each of them dropped. A leg record that says only
+        # `naive: True` cannot distinguish "the whole leg was
+        # unconditioned" from "the harness prompt was, and some other
+        # prompt still carried the neighbourhood" — which is exactly the
+        # leak the first --naive pilot shipped with.
+        if _naive_level == 'function':
+            record_extras['naive_scope'] = [
+                'harness_prompt (harness/prompts.py PromptBuilder: '
+                'function-only baseline — kept: hard constraints/package, '
+                'intro, per-function declaring class + <signature> + '
+                '<code>, FuzzedDataProvider reference, skeleton; dropped: '
+                'the patch block, source imports, <xref> call-sites, '
+                '<callee> declarations, field siblings, the failing-test '
+                'block incl. trigger exception/crash input/entry-point '
+                'hint/propagation rule, javadoc preconditions, sibling '
+                'hints, class context, the lifted-assertion and '
+                'synthesized-relation blocks, the metamorphic block, and '
+                'the variant-analysis <root_cause_reachable> block)',
+                'relation_synth (relations/relation_synth.py '
+                'RelationSynthesizer: context collapsed to the method '
+                'source + the class-under-test line; dropped: the failing '
+                'test, the patch and its added/removed lines, class '
+                'context, javadocs, source imports, "Reachable API", '
+                'trigger methods, mined tests, trigger summary, '
+                'divergences)',
+            ]
+        else:
+            record_extras['naive_scope'] = [
+                'harness_prompt (harness/prompts.py PromptBuilder: '
+                'variant-analysis <root_cause_reachable> block incl. '
+                'covered_functions/found_signatures coverage steering; '
+                '<xref> caller call-sites; <callee> declarations; the '
+                'propagation rule\'s reachable-region clause)',
+                'relation_synth (relations/relation_synth.py '
+                'RelationSynthesizer: "Reachable API" line)',
+            ]
+        if _naive_level == 'function' and bug_kind == 'semantic':
+            # Level C may not show the failing test, and a semantic bug's
+            # oracle is lifted OUT of that test — so no lifted-test oracle
+            # can exist on this leg. The run proceeds exactly as it would
+            # otherwise; this stamp is what lets the measurement layer hold
+            # these legs apart from the crashing ones the level is
+            # meaningful for, instead of pooling them into one number.
+            record_extras['naive_level_c_semantic'] = True
 
     # H4/H5: same-name overloads, shared-prefix method families, and the
     # class's readable no-arg state — the mechanically-listed raw material
@@ -2015,7 +2317,8 @@ def main():
             synthesizer = RelationSynthesizer(
                 HarnessGenerator(model=synth_model,
                                  temperature=0.3, top_p=1.0),
-                focused=getattr(args, 'focused_synthesis', False))
+                focused=getattr(args, 'focused_synthesis', False),
+                naive=getattr(args, 'naive', False))
             # P2.1: hand synthesis the bug's own failing test — the one
             # trusted source of the correct DIRECTION. Was '' for the whole
             # project history, so synthesis read only the buggy body and
@@ -2125,7 +2428,8 @@ def main():
     #    harness set spreads across all of the bug's failing behaviours rather
     #    than piling onto the first. The campaign passes no attempt index, so
     #    the closure keeps its own counter (one tick per fresh prompt build).
-    prompt_builder = PromptBuilder(language=args.language)
+    prompt_builder = PromptBuilder(language=args.language,
+                                  naive=getattr(args, 'naive', False))
     # Relations actually shown to the harness generator. Filled after
     # screening (6a-pre): at most 2 of this leg's OWN relations, best-first.
     # Pooled sibling-leg relations never enter the prompt — injected pool
@@ -2508,6 +2812,15 @@ def main():
             expected_exceptions=expected_exceptions,
             jazzer_api_jar=jazzer_api_jar,
             corpus_dir=corpus_dir,
+            # --coverage (measurement only): the acceptance run of EVERY
+            # compiled candidate is dumped under the build token
+            # `compiled`. All-None with the flag off.
+            coverage_dir=_cov_dir,
+            coverage_include=_cov_glob,
+            coverage_out_dir=_cov_out_dir,
+            # Its harness SOURCE goes next to them, for F_stat.
+            coverage_src_dir=_coverage_src_dir(_cov_dir),
+            coverage_checkout=selection.buggy_dir,
         )
 
     # ONE model, from the input parameters. The two-tier
@@ -2546,12 +2859,34 @@ def main():
         verifier=verifier,
         require_trigger=args.require_trigger,
         trigger_wrong_values=trigger_wrong_values,
+        function_only=_naive_level == 'function',
+        count_invalid_attempts=args.candidate_budget is not None,
+        max_invalid_responses=max(100, args.candidate_budget or 0),
     )
     result = campaign.run(messages, selection.buggy_dir,
                           prompt_factory=prompt_factory,
                           patch_text=context.patch_text)
 
     _print_summary(selection, result)
+
+    if args.candidate_budget is not None:
+        # Freeze H at the buggy acceptance gate, before any downstream
+        # filtering or extra retry can change the comparison population.
+        _record_coverage([verifier], _cov_dir, record_extras,
+                         accepted=[br.attempt_label
+                                   for br in result.successful_results])
+        record_extras['candidate_budget'] = args.candidate_budget
+        record_extras['candidate_attempts'] = result.candidate_attempts
+        _emit_record(args.results_json,
+                     label='correct' if args.correct else 'overfitting',
+                     status='candidate_experiment', selection=selection,
+                     result=result, bug_kind=bug_kind, extras=record_extras)
+        _write_trace_md(os.path.join(_leg_dir(args), 'trace.md'),
+                        f'{selection.project_name}-{selection.bug_id}',
+                        'correct' if args.correct else 'overfitting',
+                        get_events(), outcome='candidate_experiment (buggy build only)')
+        _print_token_usage()
+        return
 
     # RETRY (one aimed extra attempt): when the ACCEPTED set is dominated
     # by test-copy / crash-reproduction checks, an overfitting patch
@@ -2620,6 +2955,7 @@ def main():
                 verifier=verifier,
                 require_trigger=args.require_trigger,
                 trigger_wrong_values=trigger_wrong_values,
+                function_only=_naive_level == 'function',
             )
             _retry_result = _retry_campaign.run(
                 _retry_messages, selection.buggy_dir,
@@ -2690,9 +3026,15 @@ def main():
             timeout_seconds=args.fuzz_timeout,
             expected_exceptions=expected_exceptions,
             jazzer_api_jar=jazzer_api_jar,
+            coverage_dir=_cov_dir,
+            coverage_include=_cov_glob,
+            coverage_out_dir=_cov_out_dir,
         )
         if buggy_cp is None:
             buggy_cp = builder.test_classpath(selection.buggy_dir)
+        # --coverage: freeze the BUGGY build's class files for the post-hoc
+        # report, beside the patched ones. No-op with the flag off.
+        _fr_lat.snapshot_coverage_build(selection.buggy_dir, 'buggy')
         print("\n" + "#" * 20 + " latent-oracle scan (buggy) " + "#" * 20)
         for br in result.successful_results:
             try:
@@ -2737,6 +3079,7 @@ def main():
     # 7) Fuzz every successful harness against the patched code to check
     #    whether the vulnerability is still reachable (overfitting signal).
     fuzz_results = None
+    _runner = None
     if args.fuzz_timeout > 0 and result.successful_results:
         print("\n" + "#" * 20 + " fuzzing patched code " + "#" * 20)
         try:
@@ -2747,6 +3090,9 @@ def main():
                 jazzer_api_jar=jazzer_api_jar,
                 seed_literals=seed_literals,
                 diffcov=args.diffcov,
+                coverage_dir=_cov_dir,
+                coverage_include=_cov_glob,
+                coverage_out_dir=_cov_out_dir,
             )
             fuzz_results = _runner.run_all(
                 successful_results=result.successful_results,
@@ -2796,6 +3142,15 @@ def main():
             sys.exit(5)
         except Exception as exc:
             print(f"  patched-code fuzzing failed: {exc}")
+    # --coverage inventory for this leg, collected once from both runners
+    # that could have produced a dump. No-op with the flag off.
+    _record_coverage([r for r in (_runner, _fr_lat, verifier)
+                      if r is not None],
+                     _cov_dir, record_extras,
+                     accepted=[(br.attempt_label
+                                or os.path.basename(
+                                    os.path.dirname(br.harness_path)))
+                               for br in (result.successful_results or [])])
 
     # 7b) Differential-firing ATTRIBUTION check — mechanical, label-free,
     #     and independent of the LLM verifier (which judges oracle

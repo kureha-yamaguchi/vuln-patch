@@ -1,0 +1,13 @@
+{
+  "attempt_label": "attempt_017",
+  "coverage_xml": "/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/crashing/HN/008_patch1-Lang-43-CapGen_c_rep001/replay/attempt_017/coverage.xml",
+  "deadline_snapshot": true,
+  "dump": "/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/crashing/HN/008_patch1-Lang-43-CapGen_c_rep001/replay/attempt_017/live.exec",
+  "elapsed_seconds": 35.24088787099754,
+  "leg": "crashing/HN/008_patch1-Lang-43-CapGen_c_rep001",
+  "original_outcomes_preserved": true,
+  "returncode": -9,
+  "seed": 47507054,
+  "source": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN/008_patch1-Lang-43-CapGen_c_rep001/harness_src/attempt_017.java",
+  "source_sha256": "94903ca2b7f15dbf612f6243373e61fa7f769b66609614c329d505f2b3840611"
+}

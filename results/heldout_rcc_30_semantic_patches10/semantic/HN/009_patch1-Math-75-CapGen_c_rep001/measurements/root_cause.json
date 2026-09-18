@@ -1,0 +1,281 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.math.stat.Frequency",
+    "name": "getPct",
+    "params": [
+     "Object"
+    ],
+    "ring": "seed",
+    "depth": 0
+   },
+   {
+    "class_fq": "org.apache.commons.math.stat.Frequency",
+    "name": "toString",
+    "params": [],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+    "name": "additionalConstructedOracle",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+    "name": "checkAdditionalSiblingAgreement",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+    "name": "checkHiddenStateOnReadOnlyCall",
+    "params": [],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+    "name": "checkLiftedTestOracles",
+    "params": [],
+    "ring": "caller",
+    "depth": 1
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "toString",
+     "params": []
+    },
+    {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": [
+      "Object"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "additionalConstructedOracle",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": [
+      "Object"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "checkAdditionalSiblingAgreement",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": [
+      "Object"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "checkHiddenStateOnReadOnlyCall",
+     "params": []
+    },
+    {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": [
+      "Object"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "checkLiftedTestOracles",
+     "params": []
+    },
+    {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": [
+      "Object"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.apache.commons.math.stat.Frequency.getPct(Object)"
+  ],
+  "provenance": {
+   "org.apache.commons.math.stat.Frequency.getPct(Object)": "introspector",
+   "org.apache.commons.math.stat.Frequency.toString()": "source-scan",
+   "org.apache.commons.math.stat.FuzzHarness.additionalConstructedOracle(FuzzedDataProvider)": "source-scan",
+   "org.apache.commons.math.stat.FuzzHarness.checkAdditionalSiblingAgreement(FuzzedDataProvider)": "source-scan",
+   "org.apache.commons.math.stat.FuzzHarness.checkHiddenStateOnReadOnlyCall()": "source-scan",
+   "org.apache.commons.math.stat.FuzzHarness.checkLiftedTestOracles()": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 303,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 302,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 303,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 304,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 315,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 316,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 317,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 318,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 319,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 320,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 321,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 330,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 331,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 332,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 341,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 342,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 343,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 352,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 353,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.stat.Frequency",
+    "line": 354,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.apache.commons.math.stat.FrequencyTest.testPcts()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/main/java/org/apache/commons/math/stat/Frequency.java b/src/main/java/org/apache/commons/math/stat/Frequency.java\nindex 68c8bf2..c45d728 100644\n--- a/src/main/java/org/apache/commons/math/stat/Frequency.java\n+++ b/src/main/java/org/apache/commons/math/stat/Frequency.java\n@@ -300,7 +300,7 @@ public class Frequency implements Serializable {\n      */\n     @Deprecated\n     public double getPct(Object v) {\n-        return getPct((Comparable<?>) v);\n+        return getCumPct((Comparable<?>) v);\n     }\n \n     /**\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 14,
+  "probe_size": 14,
+  "frame_added": [],
+  "tests": [
+   "org.apache.commons.math.stat.FrequencyTest::testPcts"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

@@ -1,0 +1,442 @@
+{
+  "acceptance_rate": 0.8666666666666667,
+  "accepted": 26,
+  "accepted_set_f_size": 124,
+  "accepted_set_psc": 0.8571428571428571,
+  "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.008064516129032258,
+  "attempts": 30,
+  "buggy_crash_rate": 0.8666666666666667,
+  "candidate_f_size": 44.5,
+  "candidate_psc": 0.5659340659340659,
+  "candidate_rcc": 0.8333333333333334,
+  "candidate_rcc_compiled": 0.9615384615384616,
+  "candidate_rcp": 0.021752634600852198,
+  "candidates": [
+    {
+      "accepted": true,
+      "attempt_label": "attempt_001",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 53,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.018867924528301886,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_002",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_003",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 41,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.024390243902439025,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_004",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 54,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.018518518518518517,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_005",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_006",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 40,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.025,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_007",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 43,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.023255813953488372,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_008",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 43,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.023255813953488372,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_009",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 41,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.024390243902439025,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_010",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 39,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.02564102564102564,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_011",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 41,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.024390243902439025,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_012",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 41,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.024390243902439025,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_013",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 55,
+      "psc": 0.7142857142857143,
+      "rcc": 1.0,
+      "rcp": 0.01818181818181818,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_014",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_015",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.023809523809523808,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_016",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.023809523809523808,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_017",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 15,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": 0.0,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_018",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 43,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.023255813953488372,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_019",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 41,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.024390243902439025,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_020",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.023809523809523808,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_021",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 51,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.0196078431372549,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_022",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 43,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.023255813953488372,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_023",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 39,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.02564102564102564,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_024",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 40,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.025,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_025",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 41,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.024390243902439025,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_026",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 91,
+      "psc": 0.8571428571428571,
+      "rcc": 1.0,
+      "rcp": 0.01098901098901099,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_027",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 54,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.018518518518518517,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_028",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 40,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.025,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_029",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_030",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 42,
+      "psc": 0.5714285714285714,
+      "rcc": 1.0,
+      "rcp": 0.023809523809523808,
+      "root_methods_hit": [
+        "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+      ]
+    }
+  ],
+  "compile_rate": 0.8666666666666667,
+  "compiled": 26,
+  "compiled_set_f_size": 124,
+  "compiled_set_psc": 0.8571428571428571,
+  "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.008064516129032258,
+  "crashed_buggy": 26,
+  "p_size": 7,
+  "p_unmatched": 12,
+  "r0_size": 1,
+  "rcr": 1.0,
+  "replayed_candidates": 0,
+  "root_methods": [
+    "org.apache.commons.math.analysis.solvers.BaseSecantSolver.doSolve()"
+  ]
+}

@@ -69,10 +69,10 @@ def load_jsonl(path):
         return [json.loads(line) for line in fh if line.strip()]
 
 
-def patch_path(row):
+def patch_path(row, patches=PATCHES):
     """drr/Patches/<class>/<apr_tool>/<project>/<patch file>."""
     class_dir, _ = LABEL_DIR[row["drr_label"]]
-    return PATCHES / class_dir / row["apr_tool"] / row["project"] / row["patch"]
+    return patches / class_dir / row["apr_tool"] / row["project"] / row["patch"]
 
 
 def main():
@@ -83,6 +83,8 @@ def main():
     ap.add_argument("--out", type=Path, help="write here instead of stdout")
     ap.add_argument("--projects", default="",
                     help="space-separated allow-list; default = every project in the split")
+    ap.add_argument("--patches", type=Path, default=PATCHES,
+                    help="drr/Patches root (default: repository drr/Patches)")
     args = ap.parse_args()
 
     split_file, labels = POOLS[args.kind]
@@ -125,7 +127,7 @@ def main():
             repeats += 1
             continue
         seen.add(leg)
-        path = patch_path(row)
+        path = patch_path(row, args.patches)
         if not path.exists():
             missing.append(path)
             continue

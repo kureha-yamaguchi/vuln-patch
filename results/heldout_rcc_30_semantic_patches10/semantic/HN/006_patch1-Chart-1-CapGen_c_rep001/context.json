@@ -1,0 +1,393 @@
+{
+ "modified_files": [
+  "source/org/jfree/chart/renderer/category/AbstractCategoryItemRenderer.java"
+ ],
+ "patch_text": "--- /source/org/jfree/chart/renderer/category/AbstractCategoryItemRenderer.java\n+++ /source/org/jfree/chart/renderer/category/AbstractCategoryItemRenderer.java\n@@ -1794,7 +1794,7 @@\n         }\n         int index = this.plot.getIndexOf(this);\n         CategoryDataset dataset = this.plot.getDataset(index);\n-        if (dataset != null) {\n+        if (dataset == null) {\n             return result;\n         }\n         int seriesCount = dataset.getRowCount();\n",
+ "functions": [
+  {
+   "func_name": "getLegendItems",
+   "func_signature": "public LegendItemCollection getLegendItems()",
+   "func_source": "    public LegendItemCollection getLegendItems() {\n        LegendItemCollection result = new LegendItemCollection();\n        if (this.plot == null) {\n            return result;\n        }\n        int index = this.plot.getIndexOf(this);\n        CategoryDataset dataset = this.plot.getDataset(index);\n        if (dataset != null) {\n            return result;\n        }\n        int seriesCount = dataset.getRowCount();\n        if (plot.getRowRenderingOrder().equals(SortOrder.ASCENDING)) {\n            for (int i = 0; i < seriesCount; i++) {\n                if (isSeriesVisibleInLegend(i)) {\n                    LegendItem item = getLegendItem(index, i);\n                    if (item != null) {\n                        result.add(item);\n                    }\n                }\n            }\n        }\n        else {\n            for (int i = seriesCount - 1; i >= 0; i--) {\n                if (isSeriesVisibleInLegend(i)) {\n                    LegendItem item = getLegendItem(index, i);\n                    if (item != null) {\n                        result.add(item);\n                    }\n                }\n            }\n        }\n        return result;\n    }",
+   "func_class": "AbstractCategoryItemRenderer",
+   "func_class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "func_param_types": [],
+   "fi_name": "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+   "overload_types": [
+    []
+   ],
+   "xrefs": [],
+   "xref_names": [],
+   "reachable_edges": [
+    [
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+     "[org.jfree.chart.LegendItemCollection].<init>()"
+    ],
+    [
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+     "[org.jfree.chart.plot.CategoryPlot].getIndexOf()"
+    ],
+    [
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+     "[org.jfree.chart.plot.CategoryPlot].getDataset(int)"
+    ],
+    [
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+     "[org.jfree.data.category.CategoryDataset].getRowCount()"
+    ],
+    [
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+     "[org.jfree.chart.plot.CategoryPlot].getRowRenderingOrder()"
+    ],
+    [
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+     "[org.jfree.chart.util.SortOrder].equals(org.jfree.chart.util.SortOrder)"
+    ],
+    [
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].isSeriesVisibleInLegend(org.jfree.chart.renderer.category.AbstractCategoryItemRenderer)"
+    ],
+    [
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItem(int,org.jfree.chart.renderer.category.AbstractCategoryItemRenderer)"
+    ],
+    [
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+     "[org.jfree.chart.LegendItemCollection].add(org.jfree.chart.LegendItem)"
+    ],
+    [
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].isSeriesVisibleInLegend(org.jfree.chart.renderer.category.AbstractCategoryItemRenderer)"
+    ],
+    [
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItem(int,org.jfree.chart.renderer.category.AbstractCategoryItemRenderer)"
+    ],
+    [
+     "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+     "[org.jfree.chart.LegendItemCollection].add(org.jfree.chart.LegendItem)"
+    ],
+    [
+     "[org.jfree.chart.LegendItemCollection].<init>()",
+     "[java.util.ArrayList].<init>()"
+    ],
+    [
+     "[org.jfree.chart.plot.CategoryPlot].getDataset(int)",
+     "[org.jfree.chart.util.ObjectList].size()"
+    ],
+    [
+     "[org.jfree.chart.plot.CategoryPlot].getDataset(int)",
+     "[org.jfree.chart.util.ObjectList].get(int)"
+    ],
+    [
+     "[org.jfree.chart.LegendItemCollection].add(org.jfree.chart.LegendItem)",
+     "[java.util.List].add(org.jfree.chart.LegendItem)"
+    ],
+    [
+     "[org.jfree.chart.util.ObjectList].get(int)",
+     "[org.jfree.chart.util.AbstractObjectList].get(int)"
+    ]
+   ],
+   "reachable_depth": {
+    "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()": 0,
+    "[org.jfree.chart.LegendItemCollection].<init>()": 1,
+    "[org.jfree.chart.plot.CategoryPlot].getIndexOf()": 1,
+    "[org.jfree.chart.plot.CategoryPlot].getDataset(int)": 1,
+    "[org.jfree.data.category.CategoryDataset].getRowCount()": 1,
+    "[org.jfree.chart.plot.CategoryPlot].getRowRenderingOrder()": 1,
+    "[org.jfree.chart.util.SortOrder].equals(org.jfree.chart.util.SortOrder)": 1,
+    "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].isSeriesVisibleInLegend(org.jfree.chart.renderer.category.AbstractCategoryItemRenderer)": 1,
+    "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItem(int,org.jfree.chart.renderer.category.AbstractCategoryItemRenderer)": 1,
+    "[org.jfree.chart.LegendItemCollection].add(org.jfree.chart.LegendItem)": 1,
+    "[java.util.ArrayList].<init>()": 2,
+    "[org.jfree.chart.util.ObjectList].size()": 2,
+    "[org.jfree.chart.util.ObjectList].get(int)": 2,
+    "[java.util.List].add(org.jfree.chart.LegendItem)": 2,
+    "[org.jfree.chart.util.AbstractObjectList].get(int)": 3
+   },
+   "reachable": [
+    "[org.jfree.chart.LegendItemCollection].<init>()",
+    "[org.jfree.chart.plot.CategoryPlot].getIndexOf()",
+    "[org.jfree.chart.plot.CategoryPlot].getDataset(int)",
+    "[org.jfree.data.category.CategoryDataset].getRowCount()",
+    "[org.jfree.chart.plot.CategoryPlot].getRowRenderingOrder()",
+    "[org.jfree.chart.util.SortOrder].equals(org.jfree.chart.util.SortOrder)",
+    "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].isSeriesVisibleInLegend(org.jfree.chart.renderer.category.AbstractCategoryItemRenderer)",
+    "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItem(int,org.jfree.chart.renderer.category.AbstractCategoryItemRenderer)",
+    "[org.jfree.chart.LegendItemCollection].add(org.jfree.chart.LegendItem)",
+    "[java.util.ArrayList].<init>()",
+    "[org.jfree.chart.util.ObjectList].size()",
+    "[org.jfree.chart.util.ObjectList].get(int)",
+    "[java.util.List].add(org.jfree.chart.LegendItem)",
+    "[org.jfree.chart.util.AbstractObjectList].get(int)",
+    "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].equals(Object)",
+    "[org.jfree.chart.plot.CategoryPlot].getIndexOf(org.jfree.chart.renderer.category.CategoryItemRenderer)",
+    "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItem(int,int)",
+    "[org.jfree.chart.renderer.AbstractRenderer].isSeriesVisibleInLegend(int)"
+   ],
+   "related_callees": [
+    {
+     "name": "getRowCount",
+     "source_file": "AbstractCategoryItemRenderer.java",
+     "signature": "public int getRowCount()",
+     "source": "    public int getRowCount() {\n        return this.rowCount;\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "equals",
+     "source_file": "AbstractCategoryItemRenderer.java",
+     "signature": "public boolean equals(Object obj)",
+     "source": "    public boolean equals(Object obj) {\n\n        if (obj == this) {\n            return true;\n        }\n        if (!(obj instanceof AbstractCategoryItemRenderer)) {\n            return false;\n        }\n        AbstractCategoryItemRenderer that = (AbstractCategoryItemRenderer) obj;\n\n        if (!ObjectUtilities.equal(this.itemLabelGeneratorList,\n                that.itemLabelGeneratorList)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.baseItemLabelGenerator,\n                that.baseItemLabelGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.toolTipGeneratorList,\n                that.toolTipGeneratorList)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.baseToolTipGenerator,\n                that.baseToolTipGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.urlGeneratorList,\n                that.urlGeneratorList)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.baseURLGenerator,\n                that.baseURLGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.legendItemLabelGenerator,\n                that.legendItemLabelGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.legendItemToolTipGenerator,\n                that.legendItemToolTipGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.legendItemURLGenerator,\n                that.legendItemURLGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.backgroundAnnotations,\n                that.backgroundAnnotations)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.foregroundAnnotations,\n                that.foregroundAnnotations)) {\n            return false;\n        }\n        return super.equals(obj);\n    }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "AbstractCategoryItemRenderer.java",
+       "    public boolean equals(Object obj) {\n\n        if (obj == this) {\n            return true;\n        }\n        if (!(obj instanceof AbstractCategoryItemRenderer)) {\n            return false;\n        }\n        AbstractCategoryItemRenderer that = (AbstractCategoryItemRenderer) obj;\n\n        if (!ObjectUtilities.equal(this.itemLabelGeneratorList,\n                that.itemLabelGeneratorList)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.baseItemLabelGenerator,\n                that.baseItemLabelGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.toolTipGeneratorList,\n                that.toolTipGeneratorList)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.baseToolTipGenerator,\n                that.baseToolTipGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.urlGeneratorList,\n                that.urlGeneratorList)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.baseURLGenerator,\n                that.baseURLGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.legendItemLabelGenerator,\n                that.legendItemLabelGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.legendItemToolTipGenerator,\n                that.legendItemToolTipGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.legendItemURLGenerator,\n                that.legendItemURLGenerator)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.backgroundAnnotations,\n                that.backgroundAnnotations)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.foregroundAnnotations,\n                that.foregroundAnnotations)) {\n            return false;\n        }\n        return super.equals(obj);\n    }"
+      ],
+      [
+       "AreaRenderer.java",
+       "    public boolean equals(Object obj) {\n        if (obj == this) {\n            return true;\n        }\n        if (!(obj instanceof AreaRenderer)) {\n            return false;\n        }\n        AreaRenderer that = (AreaRenderer) obj;\n        if (!this.endType.equals(that.endType)) {\n            return false;\n        }\n        return super.equals(obj);\n    }"
+      ],
+      [
+       "BarRenderer.java",
+       "    public boolean equals(Object obj) {\n        if (obj == this) {\n            return true;\n        }\n        if (!(obj instanceof BarRenderer)) {\n            return false;\n        }\n        BarRenderer that = (BarRenderer) obj;\n        if (this.base != that.base) {\n            return false;\n        }\n        if (this.itemMargin != that.itemMargin) {\n            return false;\n        }\n        if (this.drawBarOutline != that.drawBarOutline) {\n            return false;\n        }\n        if (this.maximumBarWidth != that.maximumBarWidth) {\n            return false;\n        }\n        if (this.minimumBarLength != that.minimumBarLength) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.gradientPaintTransformer,\n                that.gradientPaintTransformer)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.positiveItemLabelPositionFallback,\n            that.positiveItemLabelPositionFallback)) {\n            return false;\n        }\n        if (!ObjectUtilities.equal(this.negativeItemLabelPositionFallback,\n            that.negativeItemLabelPositionFallback)) {\n            return false;\n        }\n        if (!this.barPainter.equals(that.barPainter)) {\n            return false;\n        }\n        if (this.shadowsVisible != that.shadowsVisible) {\n            return false;\n        }\n        if (!PaintUtilities.equal(this.shadowPaint, that.shadowPaint)) {\n            return false;\n        }\n        if (this.shadowXOffset != that.shadowXOffset) {\n            return false;\n        }\n        if (this.shadowYOffset != that.shadowYOffset) {\n            return false;\n        }\n        return super.equals(obj);\n    }"
+      ],
+      [
+       "BarRenderer3D.java",
+       "    public boolean equals(Object obj) {\n        if (obj == this) {\n            return true;\n        }\n        if (!(obj instanceof BarRenderer3D)) {\n            return false;\n        }\n        BarRenderer3D that = (BarRenderer3D) obj;\n        if (this.xOffset != that.xOffset) {\n            return false;\n        }\n        if (this.yOffset != that.yOffset) {\n            return false;\n        }\n        if (!PaintUtilities.equal(this.wallPaint, that.wallPaint)) {\n            return false;\n        }\n        return super.equals(obj);\n    }"
+      ]
+     ]
+    },
+    {
+     "name": "isSeriesVisibleInLegend",
+     "source_file": "CategoryItemRenderer.java",
+     "signature": "public boolean isSeriesVisibleInLegend(int series)",
+     "source": "    public boolean isSeriesVisibleInLegend(int series);",
+     "is_abstract": true,
+     "impls": []
+    },
+    {
+     "name": "getLegendItem",
+     "source_file": "CategoryItemRenderer.java",
+     "signature": "public LegendItem getLegendItem(int datasetIndex, int series)",
+     "source": "    public LegendItem getLegendItem(int datasetIndex, int series);",
+     "is_abstract": true,
+     "impls": [
+      [
+       "AbstractCategoryItemRenderer.java",
+       "    public LegendItem getLegendItem(int datasetIndex, int series) {\n\n        CategoryPlot p = getPlot();\n        if (p == null) {\n            return null;\n        }\n\n        // check that a legend item needs to be displayed...\n        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {\n            return null;\n        }\n\n        CategoryDataset dataset = p.getDataset(datasetIndex);\n        String label = this.legendItemLabelGenerator.generateLabel(dataset,\n                series);\n        String description = label;\n        String toolTipText = null;\n        if (this.legendItemToolTipGenerator != null) {\n            toolTipText = this.legendItemToolTipGenerator.generateLabel(\n                    dataset, series);\n        }\n        String urlText = null;\n        if (this.legendItemURLGenerator != null) {\n            urlText = this.legendItemURLGenerator.generateLabel(dataset,\n                    series);\n        }\n        Shape shape = lookupLegendShape(series);\n        Paint paint = lookupSeriesPaint(series);\n        Paint outlinePaint = lookupSeriesOutlinePaint(series);\n        Stroke outlineStroke = lookupSeriesOutlineStroke(series);\n\n        LegendItem item = new LegendItem(label, description, toolTipText,\n                urlText, shape, paint, outlineStroke, outlinePaint);\n        item.setLabelFont(lookupLegendTextFont(series));\n        Paint labelPaint = lookupLegendTextPaint(series);\n        if (labelPaint != null) {\n            item.setLabelPaint(labelPaint);\n        }\n        item.setSeriesKey(dataset.getRowKey(series));\n        item.setSeriesIndex(series);\n        item.setDataset(dataset);\n        item.setDatasetIndex(datasetIndex);\n        return item;\n    }"
+      ],
+      [
+       "AreaRenderer.java",
+       "    public LegendItem getLegendItem(int datasetIndex, int series) {\n\n        // if there is no plot, there is no dataset to access...\n        CategoryPlot cp = getPlot();\n        if (cp == null) {\n            return null;\n        }\n\n        // check that a legend item needs to be displayed...\n        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {\n            return null;\n        }\n\n        CategoryDataset dataset = cp.getDataset(datasetIndex);\n        String label = getLegendItemLabelGenerator().generateLabel(dataset,\n                series);\n        String description = label;\n        String toolTipText = null;\n        if (getLegendItemToolTipGenerator() != null) {\n            toolTipText = getLegendItemToolTipGenerator().generateLabel(\n                    dataset, series);\n        }\n        String urlText = null;\n        if (getLegendItemURLGenerator() != null) {\n            urlText = getLegendItemURLGenerator().generateLabel(dataset,\n                    series);\n        }\n        Shape shape = lookupLegendShape(series);\n        Paint paint = lookupSeriesPaint(series);\n        Paint outlinePaint = lookupSeriesOutlinePaint(series);\n        Stroke outlineStroke = lookupSeriesOutlineStroke(series);\n\n        LegendItem result = new LegendItem(label, description, toolTipText,\n                urlText, shape, paint, outlineStroke, outlinePaint);\n        result.setLabelFont(lookupLegendTextFont(series));\n        Paint labelPaint = lookupLegendTextPaint(series);\n        if (labelPaint != null) {\n            result.setLabelPaint(labelPaint);\n        }\n        result.setDataset(dataset);\n        result.setDatasetIndex(datasetIndex);\n        result.setSeriesKey(dataset.getRowKey(series));\n        result.setSeriesIndex(series);\n        return result;\n\n    }"
+      ],
+      [
+       "BarRenderer.java",
+       "    public LegendItem getLegendItem(int datasetIndex, int series) {\n\n        CategoryPlot cp = getPlot();\n        if (cp == null) {\n            return null;\n        }\n\n        // check that a legend item needs to be displayed...\n        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {\n            return null;\n        }\n\n        CategoryDataset dataset = cp.getDataset(datasetIndex);\n        String label = getLegendItemLabelGenerator().generateLabel(dataset,\n                series);\n        String description = label;\n        String toolTipText = null;\n        if (getLegendItemToolTipGenerator() != null) {\n            toolTipText = getLegendItemToolTipGenerator().generateLabel(\n                    dataset, series);\n        }\n        String urlText = null;\n        if (getLegendItemURLGenerator() != null) {\n            urlText = getLegendItemURLGenerator().generateLabel(dataset,\n                    series);\n        }\n        Shape shape = lookupLegendShape(series);\n        Paint paint = lookupSeriesPaint(series);\n        Paint outlinePaint = lookupSeriesOutlinePaint(series);\n        Stroke outlineStroke = lookupSeriesOutlineStroke(series);\n\n        LegendItem result = new LegendItem(label, description, toolTipText,\n                urlText, true, shape, true, paint, isDrawBarOutline(),\n                outlinePaint, outlineStroke, false, new Line2D.Float(),\n                new BasicStroke(1.0f), Color.black);\n        result.setLabelFont(lookupLegendTextFont(series));\n        Paint labelPaint = lookupLegendTextPaint(series);\n        if (labelPaint != null) {\n            result.setLabelPaint(labelPaint);\n        }\n        result.setDataset(dataset);\n        result.setDatasetIndex(datasetIndex);\n        result.setSeriesKey(dataset.getRowKey(series));\n        result.setSeriesIndex(series);\n        if (this.gradientPaintTransformer != null) {\n            result.setFillPaintTransformer(this.gradientPaintTransformer);\n        }\n        return result;\n    }"
+      ],
+      [
+       "BoxAndWhiskerRenderer.java",
+       "    public LegendItem getLegendItem(int datasetIndex, int series) {\n\n        CategoryPlot cp = getPlot();\n        if (cp == null) {\n            return null;\n        }\n\n        // check that a legend item needs to be displayed...\n        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {\n            return null;\n        }\n\n        CategoryDataset dataset = cp.getDataset(datasetIndex);\n        String label = getLegendItemLabelGenerator().generateLabel(dataset,\n                series);\n        String description = label;\n        String toolTipText = null;\n        if (getLegendItemToolTipGenerator() != null) {\n            toolTipText = getLegendItemToolTipGenerator().generateLabel(\n                    dataset, series);\n        }\n        String urlText = null;\n        if (getLegendItemURLGenerator() != null) {\n            urlText = getLegendItemURLGenerator().generateLabel(dataset,\n                    series);\n        }\n        Shape shape = lookupLegendShape(series);\n        Paint paint = lookupSeriesPaint(series);\n        Paint outlinePaint = lookupSeriesOutlinePaint(series);\n        Stroke outlineStroke = lookupSeriesOutlineStroke(series);\n        LegendItem result = new LegendItem(label, description, toolTipText,\n                urlText, shape, paint, outlineStroke, outlinePaint);\n        result.setLabelFont(lookupLegendTextFont(series));\n        Paint labelPaint = lookupLegendTextPaint(series);\n        if (labelPaint != null) {\n            result.setLabelPaint(labelPaint);\n        }\n        result.setDataset(dataset);\n        result.setDatasetIndex(datasetIndex);\n        result.setSeriesKey(dataset.getRowKey(series));\n        result.setSeriesIndex(series);\n        return result;\n\n    }"
+      ]
+     ]
+    }
+   ],
+   "field_siblings": [
+    {
+     "name": "getPlot",
+     "signature": "public CategoryPlot getPlot()",
+     "shared_fields": [
+      "plot"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Returns the plot that the renderer has been assigned to (where <code>null</code> indicates that the renderer is not currently assigned to a plot). @return The plot (possibly <code>null</code>). @see #setPlot(CategoryPlot)"
+    },
+    {
+     "name": "setPlot",
+     "signature": "public void setPlot(CategoryPlot plot)",
+     "shared_fields": [
+      "plot"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Sets the plot that the renderer has been assigned to.  This method is usually called by the {@link CategoryPlot}, in normal usage you shouldn't need to call this method directly. @param plot  the plot (<code>null</code> not permitted). @see #getPlot()"
+    },
+    {
+     "name": "updateCrosshairValues",
+     "signature": "protected void updateCrosshairValues(CategoryCrosshairState crosshairState, Comparable rowKey, Comparable columnKey, double value, int datasetIndex, double transX, double transY, PlotOrientation orientation)",
+     "shared_fields": [
+      "plot"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Considers the current (x, y) coordinate and updates the crosshair point if it meets the criteria (usually means the (x, y) coordinate is the closest to the anchor point so far). @param crosshairState  the crosshair state (<code>null</code> permitted, but the method does nothing in that case). @param rowKey  the row key\u2026"
+    },
+    {
+     "name": "drawAnnotations",
+     "signature": "public void drawAnnotations(Graphics2D g2, Rectangle2D dataArea, CategoryAxis domainAxis, ValueAxis rangeAxis, Layer layer, PlotRenderingInfo info)",
+     "shared_fields": [
+      "plot"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Draws all the annotations for the specified layer. @param g2  the graphics device. @param dataArea  the data area. @param domainAxis  the domain axis. @param rangeAxis  the range axis. @param layer  the layer. @param info  the plot rendering info. @since 1.2.0"
+    }
+   ]
+  }
+ ],
+ "package": "org.jfree.chart.renderer.category",
+ "root_cause_reachable": [
+  "LegendItemCollection.<init>",
+  "CategoryPlot.getIndexOf()",
+  "CategoryPlot.getDataset",
+  "CategoryPlot.getRowRenderingOrder",
+  "SortOrder.equals",
+  "AbstractCategoryItemRenderer.isSeriesVisibleInLegend",
+  "AbstractCategoryItemRenderer.getLegendItem",
+  "LegendItemCollection.add",
+  "ObjectList.size",
+  "ObjectList.get",
+  "AbstractObjectList.get",
+  "AbstractCategoryItemRenderer.equals",
+  "CategoryPlot.getIndexOf(CategoryItemRenderer)",
+  "AbstractRenderer.isSeriesVisibleInLegend"
+ ],
+ "neighbourhood_notes": [],
+ "source_imports": [
+  "import java.awt.AlphaComposite;",
+  "import java.awt.Composite;",
+  "import java.awt.Font;",
+  "import java.awt.GradientPaint;",
+  "import java.awt.Graphics2D;",
+  "import java.awt.Paint;",
+  "import java.awt.Rectangle;",
+  "import java.awt.Shape;",
+  "import java.awt.Stroke;",
+  "import java.awt.geom.Ellipse2D;",
+  "import java.awt.geom.Line2D;",
+  "import java.awt.geom.Point2D;",
+  "import java.awt.geom.Rectangle2D;",
+  "import java.io.Serializable;",
+  "import java.util.ArrayList;",
+  "import java.util.Iterator;",
+  "import java.util.List;",
+  "import org.jfree.chart.ChartRenderingInfo;",
+  "import org.jfree.chart.LegendItem;",
+  "import org.jfree.chart.LegendItemCollection;",
+  "import org.jfree.chart.RenderingSource;",
+  "import org.jfree.chart.annotations.CategoryAnnotation;",
+  "import org.jfree.chart.axis.CategoryAxis;",
+  "import org.jfree.chart.axis.ValueAxis;",
+  "import org.jfree.chart.entity.CategoryItemEntity;",
+  "import org.jfree.chart.entity.EntityCollection;",
+  "import org.jfree.chart.event.RendererChangeEvent;",
+  "import org.jfree.chart.labels.CategoryItemLabelGenerator;",
+  "import org.jfree.chart.labels.CategorySeriesLabelGenerator;",
+  "import org.jfree.chart.labels.CategoryToolTipGenerator;",
+  "import org.jfree.chart.labels.ItemLabelPosition;",
+  "import org.jfree.chart.labels.StandardCategorySeriesLabelGenerator;",
+  "import org.jfree.chart.plot.CategoryCrosshairState;",
+  "import org.jfree.chart.plot.CategoryMarker;",
+  "import org.jfree.chart.plot.CategoryPlot;",
+  "import org.jfree.chart.plot.DrawingSupplier;",
+  "import org.jfree.chart.plot.IntervalMarker;",
+  "import org.jfree.chart.plot.Marker;",
+  "import org.jfree.chart.plot.PlotOrientation;",
+  "import org.jfree.chart.plot.PlotRenderingInfo;",
+  "import org.jfree.chart.plot.ValueMarker;",
+  "import org.jfree.chart.renderer.AbstractRenderer;",
+  "import org.jfree.chart.text.TextUtilities;",
+  "import org.jfree.chart.urls.CategoryURLGenerator;",
+  "import org.jfree.chart.util.GradientPaintTransformer;",
+  "import org.jfree.chart.util.Layer;",
+  "import org.jfree.chart.util.LengthAdjustmentType;",
+  "import org.jfree.chart.util.ObjectList;",
+  "import org.jfree.chart.util.ObjectUtilities;",
+  "import org.jfree.chart.util.PublicCloneable;",
+  "import org.jfree.chart.util.RectangleAnchor;",
+  "import org.jfree.chart.util.RectangleEdge;",
+  "import org.jfree.chart.util.RectangleInsets;",
+  "import org.jfree.chart.util.SortOrder;",
+  "import org.jfree.data.Range;",
+  "import org.jfree.data.category.CategoryDataset;",
+  "import org.jfree.data.category.CategoryDatasetSelectionState;",
+  "import org.jfree.data.category.SelectableCategoryDataset;",
+  "import org.jfree.data.general.DatasetUtilities;"
+ ],
+ "reachable_edges": [
+  [
+   "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+   "[org.jfree.chart.LegendItemCollection].<init>()"
+  ],
+  [
+   "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+   "[org.jfree.chart.plot.CategoryPlot].getIndexOf()"
+  ],
+  [
+   "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+   "[org.jfree.chart.plot.CategoryPlot].getDataset(int)"
+  ],
+  [
+   "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+   "[org.jfree.data.category.CategoryDataset].getRowCount()"
+  ],
+  [
+   "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+   "[org.jfree.chart.plot.CategoryPlot].getRowRenderingOrder()"
+  ],
+  [
+   "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+   "[org.jfree.chart.util.SortOrder].equals(org.jfree.chart.util.SortOrder)"
+  ],
+  [
+   "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+   "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].isSeriesVisibleInLegend(org.jfree.chart.renderer.category.AbstractCategoryItemRenderer)"
+  ],
+  [
+   "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+   "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItem(int,org.jfree.chart.renderer.category.AbstractCategoryItemRenderer)"
+  ],
+  [
+   "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()",
+   "[org.jfree.chart.LegendItemCollection].add(org.jfree.chart.LegendItem)"
+  ],
+  [
+   "[org.jfree.chart.LegendItemCollection].<init>()",
+   "[java.util.ArrayList].<init>()"
+  ],
+  [
+   "[org.jfree.chart.plot.CategoryPlot].getDataset(int)",
+   "[org.jfree.chart.util.ObjectList].size()"
+  ],
+  [
+   "[org.jfree.chart.plot.CategoryPlot].getDataset(int)",
+   "[org.jfree.chart.util.ObjectList].get(int)"
+  ],
+  [
+   "[org.jfree.chart.LegendItemCollection].add(org.jfree.chart.LegendItem)",
+   "[java.util.List].add(org.jfree.chart.LegendItem)"
+  ],
+  [
+   "[org.jfree.chart.util.ObjectList].get(int)",
+   "[org.jfree.chart.util.AbstractObjectList].get(int)"
+  ]
+ ],
+ "reachable_depth": {
+  "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItems()": 0,
+  "[org.jfree.chart.LegendItemCollection].<init>()": 1,
+  "[org.jfree.chart.plot.CategoryPlot].getIndexOf()": 1,
+  "[org.jfree.chart.plot.CategoryPlot].getDataset(int)": 1,
+  "[org.jfree.data.category.CategoryDataset].getRowCount()": 1,
+  "[org.jfree.chart.plot.CategoryPlot].getRowRenderingOrder()": 1,
+  "[org.jfree.chart.util.SortOrder].equals(org.jfree.chart.util.SortOrder)": 1,
+  "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].isSeriesVisibleInLegend(org.jfree.chart.renderer.category.AbstractCategoryItemRenderer)": 1,
+  "[org.jfree.chart.renderer.category.AbstractCategoryItemRenderer].getLegendItem(int,org.jfree.chart.renderer.category.AbstractCategoryItemRenderer)": 1,
+  "[org.jfree.chart.LegendItemCollection].add(org.jfree.chart.LegendItem)": 1,
+  "[java.util.ArrayList].<init>()": 2,
+  "[org.jfree.chart.util.ObjectList].size()": 2,
+  "[org.jfree.chart.util.ObjectList].get(int)": 2,
+  "[java.util.List].add(org.jfree.chart.LegendItem)": 2,
+  "[org.jfree.chart.util.AbstractObjectList].get(int)": 3
+ }
+}

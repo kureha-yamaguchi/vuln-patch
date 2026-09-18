@@ -1,0 +1,9 @@
+{
+ "class_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/semantic/HN_C/003_patch1-Math-99-ACS_c_rep001/cov/classes_buggy"
+ ],
+ "source_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/003_patch1-Math-99-ACS_c_rep001/Math_99_buggy/src/java"
+ ],
+ "include_glob": "org.apache.commons.**"
+}

@@ -1,0 +1,428 @@
+{
+  "acceptance_rate": 0.6,
+  "accepted": 18,
+  "accepted_set_f_size": 12,
+  "accepted_set_psc": 1.0,
+  "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.08333333333333333,
+  "attempts": 30,
+  "buggy_crash_rate": 0.6,
+  "candidate_f_size": 12,
+  "candidate_psc": 1.0,
+  "candidate_rcc": 0.6,
+  "candidate_rcc_compiled": 1.0,
+  "candidate_rcp": 0.08333333333333333,
+  "candidates": [
+    {
+      "accepted": false,
+      "attempt_label": "attempt_001",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_002",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_003",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_004",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_005",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_006",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_007",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_008",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_009",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_010",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_011",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_012",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_013",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_014",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_015",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_016",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_017",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_018",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_019",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_020",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_021",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_022",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_023",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_024",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_025",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_026",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_027",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_028",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_029",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_030",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 12,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.08333333333333333,
+      "root_methods_hit": [
+        "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+      ]
+    }
+  ],
+  "compile_rate": 0.6,
+  "compiled": 18,
+  "compiled_set_f_size": 12,
+  "compiled_set_psc": 1.0,
+  "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.08333333333333333,
+  "crashed_buggy": 18,
+  "p_size": 2,
+  "p_unmatched": 0,
+  "r0_size": 1,
+  "rcr": 1.0,
+  "replayed_candidates": 0,
+  "root_methods": [
+    "org.apache.commons.lang3.math.NumberUtils.isNumber(String)"
+  ]
+}

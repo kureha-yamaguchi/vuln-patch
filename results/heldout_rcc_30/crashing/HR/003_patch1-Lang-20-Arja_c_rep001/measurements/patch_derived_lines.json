@@ -1,0 +1,515 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 235,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 236,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 237,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 238,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 239,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 240,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 241,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 242,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 243,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 244,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 245,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 246,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 247,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 248,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.CharRange",
+   "line": 249,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3289,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3290,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3291,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3292,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3293,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3294,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3295,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3296,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3297,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3298,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3299,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3300,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3301,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3302,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3303,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3304,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3305,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3306,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3307,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3308,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3309,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3368,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3369,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3370,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3371,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3372,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3373,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3374,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3375,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3376,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3377,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3378,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3379,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3380,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3381,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3382,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3383,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3384,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3385,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3386,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3387,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3388,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3389,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3390,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3391,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3392,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3393,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 3394,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 4793,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 4794,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtils",
+   "line": 4795,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 200,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 201,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 202,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 203,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 204,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 205,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 206,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 207,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 208,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 209,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 210,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 211,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 212,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 213,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 215,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 216,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 217,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 218,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 219,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 220,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 221,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 222,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 223,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 224,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 225,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 226,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 227,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 228,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 229,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 230,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 231,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 232,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 233,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 234,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 235,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang3.StringUtilsTest",
+   "line": 236,
+   "ring": "caller"
+  }
+ ]
+}

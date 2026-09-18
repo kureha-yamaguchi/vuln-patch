@@ -1,0 +1,1211 @@
+[
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 245,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 27,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 133,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 148,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 25,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_005",
+  "source": "fuzz_out/attempt_005_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 63,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'x' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 542,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "exerciseSeries",
+     "params": []
+    },
+    "line": 81,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 93,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 542,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 542,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 175,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_009",
+  "source": "fuzz_out/attempt_009_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 100,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 103,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 100,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 95,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_013",
+  "source": "fuzz_out/attempt_013_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'x' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 542,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 89,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 542,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 542,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_014",
+  "source": "fuzz_out/attempt_014_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 113,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_015",
+  "source": "fuzz_out/attempt_015_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -2, Size: 2",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 91,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_016",
+  "source": "fuzz_out/attempt_016_compiled.txt"
+ },
+ {
+  "exception": "org.jfree.data.general.SeriesException",
+  "message": "X-value already exists.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "add",
+     "params": []
+    },
+    "line": 373,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "add",
+     "params": []
+    },
+    "line": 334,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "add",
+     "params": []
+    },
+    "line": 315,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 90,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "add",
+   "params": []
+  },
+  "top_library_line": 373,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "add",
+   "params": []
+  },
+  "headline_site_line": 373,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_017",
+  "source": "fuzz_out/attempt_017_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 2",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 88,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_018",
+  "source": "fuzz_out/attempt_018_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 130,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_019",
+  "source": "fuzz_out/attempt_019_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 134,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 2",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 121,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_021",
+  "source": "fuzz_out/attempt_021_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 144,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 117,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_023",
+  "source": "fuzz_out/attempt_023_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NumberFormatException",
+  "message": "For input string: \"\u0000\u0000\u0000\u0000\u0000\"",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "lambda$fuzzerTestOneInput$0",
+     "params": []
+    },
+    "line": 25,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 55,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 153,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: -1, Size: 1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 564,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 21,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 564,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 564,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_026",
+  "source": "fuzz_out/attempt_026_compiled.txt"
+ },
+ {
+  "exception": "org.jfree.data.general.SeriesException",
+  "message": "X-value already exists.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "add",
+     "params": []
+    },
+    "line": 383,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "add",
+     "params": []
+    },
+    "line": 334,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "add",
+     "params": []
+    },
+    "line": 315,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 110,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "add",
+   "params": []
+  },
+  "top_library_line": 383,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "add",
+   "params": []
+  },
+  "headline_site_line": 383,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NumberFormatException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 51,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_028",
+  "source": "fuzz_out/attempt_028_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "Null 'x' argument.",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "addOrUpdate",
+     "params": []
+    },
+    "line": 542,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 130,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "top_library_line": 542,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "addOrUpdate",
+   "params": []
+  },
+  "headline_site_line": 542,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_029",
+  "source": "fuzz_out/attempt_029_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IndexOutOfBoundsException",
+  "message": "Index: 0, Size: 0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.XYSeries",
+     "name": "setMaximumItemCount",
+     "params": []
+    },
+    "line": 228,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.data.xy.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 25,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "setMaximumItemCount",
+   "params": []
+  },
+  "top_library_line": 228,
+  "headline_site": {
+   "class_fq": "org.jfree.data.xy.XYSeries",
+   "name": "setMaximumItemCount",
+   "params": []
+  },
+  "headline_site_line": 228,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

@@ -1,0 +1,1074 @@
+[
+ {
+  "exception": "org.apache.commons.math.MaxIterationsExceededException",
+  "message": "Maximal number of iterations (100) exceeded",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 107,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 46,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "name": "solve",
+   "params": []
+  },
+  "top_library_line": 107,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "name": "solve",
+   "params": []
+  },
+  "headline_site_line": 107,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "endpoints do not specify an interval: [0, 0]",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl",
+     "name": "verifyInterval",
+     "params": []
+    },
+    "line": 209,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 80,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 120,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "endpoints do not specify an interval: [0, 0]",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl",
+     "name": "verifyInterval",
+     "params": []
+    },
+    "line": 209,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 80,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 144,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "endpoints do not specify an interval: [0, 0]",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl",
+     "name": "verifyInterval",
+     "params": []
+    },
+    "line": 209,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 80,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 84,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "endpoints do not specify an interval: [0, 0]",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl",
+     "name": "verifyInterval",
+     "params": []
+    },
+    "line": 209,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 80,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 160,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "endpoints do not specify an interval: [0, 0]",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl",
+     "name": "verifyInterval",
+     "params": []
+    },
+    "line": 209,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 80,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 185,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 88,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 43,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "name": "solve",
+   "params": []
+  },
+  "top_library_line": 88,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "name": "solve",
+   "params": []
+  },
+  "headline_site_line": 88,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_014",
+  "source": "fuzz_out/attempt_014_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "endpoints do not specify an interval: [0, 0]",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl",
+     "name": "verifyInterval",
+     "params": []
+    },
+    "line": 209,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 80,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 45,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_016",
+  "source": "fuzz_out/attempt_016_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "endpoints do not specify an interval: [0, 0]",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl",
+     "name": "verifyInterval",
+     "params": []
+    },
+    "line": 209,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 80,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 192,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_018",
+  "source": "fuzz_out/attempt_018_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "endpoints do not specify an interval: [0, 0]",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl",
+     "name": "verifyInterval",
+     "params": []
+    },
+    "line": 209,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 80,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 115,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 88,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 76,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "name": "solve",
+   "params": []
+  },
+  "top_library_line": 88,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "name": "solve",
+   "params": []
+  },
+  "headline_site_line": 88,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_021",
+  "source": "fuzz_out/attempt_021_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "endpoints do not specify an interval: [0, 0]",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl",
+     "name": "verifyInterval",
+     "params": []
+    },
+    "line": 209,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 80,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 120,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_023",
+  "source": "fuzz_out/attempt_023_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "endpoints do not specify an interval: [0, 0]",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl",
+     "name": "verifyInterval",
+     "params": []
+    },
+    "line": 209,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 80,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 130,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "java.lang.RuntimeException",
+  "message": "org.apache.commons.math.MaxIterationsExceededException: Maximal number of iterations (100) exceeded",
+  "causes": [
+   "org.apache.commons.math.MaxIterationsExceededException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 77,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 107,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 73,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "name": "solve",
+   "params": []
+  },
+  "top_library_line": 107,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 88,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 66,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 72,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 60,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "name": "solve",
+   "params": []
+  },
+  "top_library_line": 88,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "name": "solve",
+   "params": []
+  },
+  "headline_site_line": 88,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_029",
+  "source": "fuzz_out/attempt_029_compiled.txt"
+ }
+]

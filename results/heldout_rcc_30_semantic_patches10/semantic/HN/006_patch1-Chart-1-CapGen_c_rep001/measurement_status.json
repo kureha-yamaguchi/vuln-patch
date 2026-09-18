@@ -1,0 +1,15 @@
+{
+  "bug_id": "1",
+  "done": [
+    "checkout",
+    "patch_derived",
+    "patch_derived_lines",
+    "root_cause",
+    "trigger_gate",
+    "coverage",
+    "crash_sites"
+  ],
+  "errors": {},
+  "leg": "006_patch1-Chart-1-CapGen_c_rep001",
+  "project": "Chart"
+}

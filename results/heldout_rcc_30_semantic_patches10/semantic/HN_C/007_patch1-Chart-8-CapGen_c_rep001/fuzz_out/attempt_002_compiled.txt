@@ -1,0 +1,49 @@
+DEDUP_TOKEN: cb0fe351353f1ed7
+
+INFO: Loaded 314 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.jfree.data.time.FuzzHarness (took 66 ms, size +27%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7a5ac2176cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2583313005
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7a5b246e7f70, 0x7a5b246e8170), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7a5b24537bd0,0x7a5b24539bd0), 
+INFO:       42 files found in /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.jfree.data.time.Week (took 19 ms, size +27%)
+INFO: Instrumented org.jfree.data.time.RegularTimePeriod (took 7 ms, size +44%)
+INFO: Instrumented org.jfree.data.time.TimePeriod (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.time.MonthConstants (took 0 ms, size +0%)
+INFO: Instrumented org.jfree.data.time.TimePeriodFormatException (took 0 ms, size +22%)
+INFO: Instrumented org.jfree.data.time.Year (took 7 ms, size +15%)
+INFO: seed corpus: files: 42 min: 2b max: 17b total: 155b rss: 1290Mb
+
+== Java Exception: java.lang.IllegalArgumentException: Null 'time' argument.
+	at org.jfree.data.time.Week.<init>(Week.java:190)
+	at org.jfree.data.time.Week.<init>(Week.java:175)
+	at org.jfree.data.time.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:39)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+0x32,0x35,
+25
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/attempt_002/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/attempt_002/crashes/crash-f6e1126cedebf23e1463aee73f9df08783640400
+Base64: MjU=
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/attempt_002/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HN_C/007_patch1-Chart-8-CapGen_c_rep001/Chart_8_buggy/fuzz/attempt_002/crashes/Crash_f6e1126cedebf23e1463aee73f9df08783640400.java
+

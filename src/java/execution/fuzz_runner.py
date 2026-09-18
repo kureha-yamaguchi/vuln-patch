@@ -158,6 +158,8 @@ def run_jazzer(jazzer_standalone_jar: str,
                input_file: Optional[str] = None,
                diffcov_out: Optional[str] = None,
                coverage_dump: Optional[str] = None,
+               coverage_include: Optional[str] = None,
+               output_dump: Optional[str] = None,
                instrumentation_includes: Optional[str] = None,
                ) -> JazzerOutcome:
     """Run one Jazzer harness against `project_cp` and report whether it
@@ -171,17 +173,20 @@ def run_jazzer(jazzer_standalone_jar: str,
     without its usual finding banner.
 
     `coverage_dump` asks Jazzer to write a JaCoCo .exec file on exit, and
-    `instrumentation_includes` (e.g. 'org.apache.commons.lang3.**') limits
-    what Jazzer instruments. Both are MEASUREMENT ONLY, for `src/metrics`;
-    they are off unless a caller passes them, and nothing about a normal run
-    changes when they are off.
+    `coverage_include` (alias `instrumentation_includes`, e.g.
+    'org.apache.commons.lang3.**') limits what Jazzer instruments. Both are
+    MEASUREMENT ONLY (`src/java/measurements`); the two flags are added
+    only when BOTH are given, and nothing about a normal run changes when
+    they are off. `instrumentation_includes` exists so the
+    `d4j_rcc_sweep` re-measurement pass and the `--coverage` hook share one
+    code path.
 
     Jazzer writes the coverage dump from a JVM shutdown hook. Neither of
     this runner's abnormal exits runs one: the wall-clock cap below SIGKILLs
     the JVM, and libFuzzer ends a finding run from native code. So a
     measurement run must mute the harness oracles and finish its own budget.
     A missing dump is an infrastructure error, never zero coverage —
-    `metrics.reached` refuses to read it as one.
+    `java.measurements.d4j_rcc_sweep.reached` refuses to read it as one.
 
     `jazzer_api_jar` is the jazzer-api jar containing FuzzedDataProvider.
     The standalone driver jar does NOT bundle the API classes in every
@@ -190,6 +195,22 @@ def run_jazzer(jazzer_standalone_jar: str,
     reflect on the harness entrypoint with ClassNotFoundException on
     com.code_intelligence.jazzer.api.FuzzedDataProvider. Defaults to
     config.JAZZER_API_JAR.
+
+    `coverage_dump` / `coverage_include` are the --coverage measurement
+    hook: when BOTH are given, Jazzer is asked to write JaCoCo execution
+    data for the named package glob to that path. MEASUREMENT ONLY — the
+    dump is a file for a post-hoc report and is never read by this run.
+    When either is missing (the flag's off state) the command list below is
+    byte-for-byte the one it has always been.
+
+    `output_dump` is the same hook's other half: the RAW combined
+    stdout+stderr of this run, saved to that path. The `.exec` file says
+    which lines were executed; the raw log is the only place the run's own
+    account of itself survives (which oracles fired, what libFuzzer did
+    with the corpus, how a timed-out run was spending its budget), and it
+    is otherwise discarded once the caller has taken the fields it wants.
+    MEASUREMENT ONLY, and a plain file write: the returned outcome is
+    identical whether or not it is set.
     """
     if jazzer_api_jar is None:
         jazzer_api_jar = config.JAZZER_API_JAR
@@ -209,14 +230,7 @@ def run_jazzer(jazzer_standalone_jar: str,
         f'--target_class={target_class}',
         f'--reproducer_path={artifact_dir}',
     ]
-    if coverage_dump:
-        try:
-            os.unlink(coverage_dump)   # never read a previous run's dump
-        except OSError:
-            pass
-        cmd.append(f'--coverage_dump={coverage_dump}')
-    if instrumentation_includes:
-        cmd.append(f'--instrumentation_includes={instrumentation_includes}')
+    coverage_include = coverage_include or instrumentation_includes
     if keep_going > 0:
         # Continue past the first finding and collect up to `keep_going`
         # DISTINCT crashes (deduped by Jazzer on stack signature). This is
@@ -225,6 +239,20 @@ def run_jazzer(jazzer_standalone_jar: str,
         # so a sound oracle isn't hidden behind an unsound sibling that
         # fired on some other input.
         cmd.append(f'--keep_going={keep_going}')
+    if coverage_dump and coverage_include:
+        # --coverage (measurement only). Two Jazzer flags and nothing else;
+        # they are Jazzer's own, so they go before the '--' separator that
+        # starts libFuzzer's arguments. The flag strings are built in
+        # `coverage_flags`, which the measurement layer imports too — one
+        # definition of the pair, and the import only ever points this way
+        # (the pipeline never reads java.measurements).
+        from java.execution.coverage_flags import jazzer_coverage_args
+        os.makedirs(os.path.dirname(coverage_dump) or '.', exist_ok=True)
+        try:
+            os.unlink(coverage_dump)   # never merge a previous run's dump
+        except OSError:
+            pass
+        cmd += jazzer_coverage_args(coverage_dump, coverage_include)
     if input_file:
         # Single-input REPLAY: a regular file passed positionally is
         # executed once, not fuzzed (mirrors the corpus_dir positional
@@ -292,6 +320,19 @@ def run_jazzer(jazzer_standalone_jar: str,
             stderr = stderr.decode('utf-8', 'replace')
 
     combined = f"{stdout}\n{stderr}"
+    if output_dump:
+        # --coverage (measurement only). Written AFTER the run and after the
+        # timeout branch, so a run killed on the wall-clock cap leaves its
+        # partial log behind rather than nothing. Fail-soft: a write error
+        # costs the measurement, never the run.
+        try:
+            os.makedirs(os.path.dirname(output_dump) or '.', exist_ok=True)
+            with open(output_dump, 'w', encoding='utf-8',
+                      errors='replace') as fh:
+                fh.write(combined)
+        except OSError as exc:
+            print(f"  [coverage] raw output not saved to {output_dump}: "
+                  f"{exc}")
     crash_reason = (None if timed_out
                     else _looks_like_crash(returncode, combined,
                                            expected_exceptions))
@@ -1158,7 +1199,208 @@ class PatchedProjectBuilder:
             os.unlink(norm_path)
 
 
-class FuzzRunner:
+def d4j_export(prop: str, checkout_dir: str) -> str:
+    """`defects4j export -p <prop> -w <checkout_dir>`, or '' on any failure.
+
+    One place where a Defects4J layout property is asked for, so the
+    coverage snapshot below and anything after it agree on how the answer
+    is obtained. Never raises: a checkout that cannot answer leaves the
+    caller with an empty string to record as "unknown", which is what a
+    measurement wants — not a dead run.
+    """
+    try:
+        proc = subprocess.run(
+            ['defects4j', 'export', '-p', prop, '-w', checkout_dir],
+            capture_output=True, text=True, timeout=120,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ''
+    if proc.returncode != 0:
+        return ''
+    # `defects4j export` prints progress lines to stdout on some versions;
+    # the value is the last non-empty line.
+    lines = [ln.strip() for ln in (proc.stdout or '').splitlines()
+             if ln.strip()]
+    return lines[-1] if lines else ''
+
+
+def snapshot_coverage_classpath(checkout_dir: str, cov_dir: str,
+                                build: str, include_glob: str) -> dict:
+    """--coverage (measurement only): freeze what a post-hoc JaCoCo report
+    will need about `checkout_dir`, into `<cov_dir>/`.
+
+    Two things happen here, and both exist for the same reason — the
+    checkout does not outlive the run:
+
+      * the compiled class directory (`dir.bin.classes`) is COPIED to
+        `<cov_dir>/classes_<build>/`. JaCoCo resolves an execution-data
+        dump against the exact class files that were instrumented; the
+        patched working copy is removed (`build_patched_dir` deletes it on
+        any failure, and the run harness prunes checkouts afterwards), so a
+        report built later against a rebuilt tree would silently mis-map
+        or drop classes.
+      * the paths are recorded in `<cov_dir>/classpath.json`, MERGED with
+        whatever a previous build already wrote there, so one file
+        describes both the patched and the buggy side of a leg.
+
+    Fail-soft throughout: anything that goes wrong is reported and leaves
+    the coverage artifacts incomplete, never the run failed.
+    """
+    info = {'class_dirs': [], 'source_dirs': [], 'include_glob': include_glob}
+    try:
+        os.makedirs(cov_dir, exist_ok=True)
+        bin_classes = d4j_export('dir.bin.classes', checkout_dir)
+        src_classes = d4j_export('dir.src.classes', checkout_dir)
+        snapshot = os.path.join(cov_dir, f'classes_{build}')
+        if bin_classes:
+            abs_bin = (bin_classes if os.path.isabs(bin_classes)
+                       else os.path.join(checkout_dir, bin_classes))
+            if os.path.isdir(abs_bin):
+                if os.path.isdir(snapshot):
+                    shutil.rmtree(snapshot, ignore_errors=True)
+                shutil.copytree(abs_bin, snapshot)
+                info['class_dirs'].append(snapshot)
+            else:
+                print(f"  [coverage] {build}: compiled classes dir "
+                      f"{abs_bin} does not exist — not snapshotted")
+        if src_classes:
+            abs_src = (src_classes if os.path.isabs(src_classes)
+                       else os.path.join(checkout_dir, src_classes))
+            info['source_dirs'].append(abs_src)
+
+        path = os.path.join(cov_dir, 'classpath.json')
+        merged = info
+        if os.path.exists(path):
+            try:
+                with open(path, encoding='utf-8') as fh:
+                    prev = json.load(fh)
+                merged = {
+                    'class_dirs': _merge_paths(prev.get('class_dirs'),
+                                               info['class_dirs']),
+                    'source_dirs': _merge_paths(prev.get('source_dirs'),
+                                                info['source_dirs']),
+                    'include_glob': include_glob or prev.get('include_glob'),
+                }
+            except (OSError, ValueError):
+                merged = info
+        with open(path, 'w', encoding='utf-8') as fh:
+            json.dump(merged, fh, indent=1)
+        return merged
+    except (OSError, shutil.Error) as exc:
+        print(f"  [coverage] classpath snapshot for {build} skipped: {exc}")
+        return info
+
+
+def _merge_paths(existing, new) -> list:
+    """Order-preserving union of two path lists (either may be None)."""
+    out = list(existing or [])
+    for item in (new or []):
+        if item not in out:
+            out.append(item)
+    return out
+
+
+class _CoverageDumps:
+    """The --coverage (measurement-only) dump plumbing, shared by the two
+    classes that invoke Jazzer.
+
+    `FuzzRunner` and `HarnessVerifier` both run harnesses, and with
+    `--coverage` on both leave the same two artifacts behind per run: a
+    JaCoCo `.exec` dump under `<leg_dir>/cov` and the raw fuzzer output
+    under `<leg_dir>/fuzz_out`, named `<harness>_<build>`. The three build
+    tokens are `patched` (FuzzRunner's patched-side fuzz), `buggy` (its
+    keep-going scan of the KEPT harnesses on the buggy build) and
+    `compiled` (the verifier's acceptance run of EVERY compiled
+    candidate, which is also the buggy build — see the measurements
+    README, "Kept versus all compiled harnesses").
+
+    The verifier leaves a third artifact, the candidate's harness SOURCE
+    under `<leg_dir>/harness_src/<attempt>.java`; only it does, because it
+    is the only object that ever sees a rejected candidate. See
+    `HarnessVerifier._save_harness_source`.
+
+    No token may contain an underscore: the measurement side splits a
+    dump's name on the LAST underscore to recover (harness, build).
+
+    Everything here is inert with the flag off: `_coverage_on()` is False,
+    the two path helpers return None, and `run_jazzer` is then called with
+    exactly the arguments it always was.
+    """
+
+    def _coverage_init(self,
+                       coverage_dir: Optional[str],
+                       coverage_include: Optional[str],
+                       coverage_out_dir: Optional[str]) -> None:
+        # --coverage: the leg's <leg_dir>/cov directory and the package glob
+        # to instrument. Both None/'' with the flag off, and then every
+        # branch that reads them is skipped. Measurement only.
+        self.coverage_dir = coverage_dir
+        self.coverage_include = coverage_include
+        # <leg_dir>/fuzz_out — where the raw stdout+stderr of each
+        # instrumented run is saved. Same flag, same off state.
+        self.coverage_out_dir = coverage_out_dir
+        # One entry per dump this object asked Jazzer for, and one path per
+        # raw log it saved. Read only by run.py's _record_coverage, which
+        # writes them to result.jsonl.
+        self.coverage_dumps: List[dict] = []
+        self.coverage_outputs: List[str] = []
+        # One path per harness SOURCE saved beside the dumps. Only the
+        # verifier fills this in (it is the one object that sees every
+        # compiled candidate); it stays empty everywhere else, and with
+        # the flag off.
+        self.coverage_sources: List[str] = []
+
+    def _coverage_on(self) -> bool:
+        return bool(self.coverage_dir and self.coverage_include)
+
+    def _coverage_dump_path(self, harness_id: str, build: str):
+        """`<leg_dir>/cov/<harness_id>_<build>.exec`, or None with the flag
+        off. Recorded on `self.coverage_dumps` as it is handed out so the
+        leg record lists every dump that was asked for — including one
+        Jazzer failed to write, which is information a silently missing
+        file is not."""
+        if not self._coverage_on():
+            return None
+        path = os.path.join(self.coverage_dir,
+                            f'{harness_id or "harness"}_{build}.exec')
+        self.coverage_dumps.append({'harness': harness_id or 'harness',
+                                    'build': build, 'path': path,
+                                    'exists': False})
+        return path
+
+    def _coverage_output_path(self, harness_id: str, build: str):
+        """`<leg_dir>/fuzz_out/<harness_id>_<build>.txt`, or None with the
+        flag off. Same harness/build naming as the `.exec` dumps, so the
+        two artifacts of one run sit under the same name in two
+        directories."""
+        if not self._coverage_on() or not self.coverage_out_dir:
+            return None
+        path = os.path.join(self.coverage_out_dir,
+                            f'{harness_id or "harness"}_{build}.txt')
+        if path not in self.coverage_outputs:
+            self.coverage_outputs.append(path)
+        return path
+
+    def _note_coverage_dump(self, path) -> None:
+        """Mark whether Jazzer actually produced the dump."""
+        if not path:
+            return
+        for rec in self.coverage_dumps:
+            if rec['path'] == path:
+                rec['exists'] = os.path.exists(path)
+                rec['bytes'] = (os.path.getsize(path)
+                                if rec['exists'] else 0)
+
+    def snapshot_coverage_build(self, checkout_dir: str, build: str) -> None:
+        """Freeze the class files / source dirs of one checkout for the
+        post-hoc report. No-op with the flag off."""
+        if not self._coverage_on():
+            return
+        snapshot_coverage_classpath(checkout_dir, self.coverage_dir,
+                                    build, self.coverage_include)
+
+
+class FuzzRunner(_CoverageDumps):
     """Run Jazzer on each compiled harness against a patched project and
     report whether it still finds a crash."""
 
@@ -1168,7 +1410,10 @@ class FuzzRunner:
                  expected_exceptions: Optional[List[str]] = None,
                  jazzer_api_jar: Optional[str] = None,
                  seed_literals: Optional[List[str]] = None,
-                 diffcov: bool = False):
+                 diffcov: bool = False,
+                 coverage_dir: Optional[str] = None,
+                 coverage_include: Optional[str] = None,
+                 coverage_out_dir: Optional[str] = None):
         self.jazzer_standalone_jar = jazzer_standalone_jar
         self.timeout_seconds = timeout_seconds
         self.expected_exceptions = expected_exceptions or []
@@ -1187,6 +1432,9 @@ class FuzzRunner:
         # patched-side fuzz. Off by default; measurement only.
         self.diffcov = diffcov
         self.diffcov_plan = None
+        # --coverage (measurement only): where the dumps go and what to
+        # instrument. See _CoverageDumps; all-None with the flag off.
+        self._coverage_init(coverage_dir, coverage_include, coverage_out_dir)
 
     def run_all(self,
                 successful_results: List[BuildResult],
@@ -1197,6 +1445,10 @@ class FuzzRunner:
         patched_dir = builder.build_patched_dir(buggy_dir, patch_path)
         self.diffcov_plan = builder.diffcov_plan
         patched_cp = builder.classpath(patched_dir, fallback_buggy_dir=buggy_dir)
+        # --coverage: copy the patched build's class files out BEFORE the
+        # fuzz — the working copy does not survive the run, and JaCoCo needs
+        # the exact classes that were instrumented. No-op with the flag off.
+        self.snapshot_coverage_build(patched_dir, 'patched')
 
         results = []
         for br in successful_results:
@@ -1268,6 +1520,9 @@ class FuzzRunner:
         instead of meeting its first-ever execution on the patched
         build. Returns '' on any error (caller treats that as
         no-information, never as 'all oracles exercised')."""
+        _cov_id = os.path.basename(os.path.dirname(harness_path))
+        _cov_dump = self._coverage_dump_path(_cov_id, 'buggy')
+        _cov_out = self._coverage_output_path(_cov_id, 'buggy')
         try:
             outcome = run_jazzer(
                 jazzer_standalone_jar=self.jazzer_standalone_jar,
@@ -1278,10 +1533,16 @@ class FuzzRunner:
                 expected_exceptions=self.expected_exceptions,
                 jazzer_api_jar=self.jazzer_api_jar,
                 keep_going=keep_going,
+                coverage_dump=_cov_dump,
+                coverage_include=(self.coverage_include
+                                  if self._coverage_on() else None),
+                output_dump=_cov_out,
             )
         except Exception as exc:
             print(f"  (buggy keep-going run failed: {exc})")
             return ''
+        finally:
+            self._note_coverage_dump(_cov_dump)
         return outcome.stdout + '\n' + outcome.stderr
 
     def _run_one(self, build_result: BuildResult,
@@ -1343,6 +1604,9 @@ class FuzzRunner:
         # hfix11): same checks, different fencing luck. Continuing past
         # early findings lets every oracle have its turn; the judge
         # already handles multiple headlines (collect_fired_oracles).
+        _cov_id = build_result.attempt_label or os.path.basename(harness_dir)
+        _cov_dump = self._coverage_dump_path(_cov_id, 'patched')
+        _cov_out = self._coverage_output_path(_cov_id, 'patched')
         outcome = run_jazzer(
             jazzer_standalone_jar=self.jazzer_standalone_jar,
             target_class=build_result.class_name,
@@ -1355,7 +1619,12 @@ class FuzzRunner:
             keep_going=8,
             diffcov_out=(os.path.join(harness_dir, 'diffcov.out')
                          if self.diffcov else None),
+            coverage_dump=_cov_dump,
+            coverage_include=(self.coverage_include
+                              if self._coverage_on() else None),
+            output_dump=_cov_out,
         )
+        self._note_coverage_dump(_cov_dump)
         if outcome.diffcov is not None:
             _hit = sum(1 for n in outcome.diffcov.values() if n)
             print(f"  [diffcov] {_hit}/{len(outcome.diffcov)} changed "
@@ -2160,7 +2429,7 @@ class VerificationResult:
     stderr: str
 
 
-class HarnessVerifier:
+class HarnessVerifier(_CoverageDumps):
     """Run a freshly compiled harness against the *buggy* checkout for a
     short budget and report whether it crashes.
 
@@ -2179,7 +2448,12 @@ class HarnessVerifier:
                  timeout_seconds: int = config.VERIFY_TIMEOUT_SECONDS,
                  expected_exceptions: Optional[List[str]] = None,
                  jazzer_api_jar: Optional[str] = None,
-                 corpus_dir: Optional[str] = None):
+                 corpus_dir: Optional[str] = None,
+                 coverage_dir: Optional[str] = None,
+                 coverage_include: Optional[str] = None,
+                 coverage_out_dir: Optional[str] = None,
+                 coverage_src_dir: Optional[str] = None,
+                 coverage_checkout: Optional[str] = None):
         self.jazzer_standalone_jar = jazzer_standalone_jar
         self.buggy_classpath = buggy_classpath
         self.timeout_seconds = timeout_seconds
@@ -2195,19 +2469,89 @@ class HarnessVerifier:
         # to reach the trigger quickly, and known-valid inputs start the
         # search in the right neighbourhood.
         self.corpus_dir = corpus_dir
+        # --coverage (measurement only): this run is the ONLY place every
+        # compiled candidate is executed — the ones this gate rejects are
+        # never run again — so it is where the "all compiled harnesses"
+        # coverage set has to be collected, under the build token
+        # `compiled`. All-None with the flag off, and then the Jazzer
+        # command below is byte-identical to what it always was.
+        self._coverage_init(coverage_dir, coverage_include, coverage_out_dir)
+        # <leg_dir>/harness_src — where each compiled candidate's harness
+        # SOURCE is copied, under the same attempt id as its `.exec` dump.
+        # The static fuzzer-reachable set F_stat is read out of those files
+        # (java.measurements.static_reach), and this run is the only place
+        # a REJECTED candidate's source is ever seen. Same flag, same off
+        # state: None here means nothing is written and nothing is
+        # recorded.
+        self.coverage_src_dir = coverage_src_dir
+        # The buggy checkout, whose class files a post-hoc JaCoCo report
+        # needs; snapshotted once, lazily, on the first instrumented run.
+        self.coverage_checkout = coverage_checkout
+        self._coverage_snapshotted = False
+
+    def _save_harness_source(self, build_result, harness_id: str) -> None:
+        """Copy this candidate's harness `.java` to
+        `<leg_dir>/harness_src/<attempt>.java`. No-op with the flag off.
+
+        MEASUREMENT ONLY, and fail-soft: a copy that does not happen costs
+        one harness in a later static-reach set and nothing else. The file
+        name is the attempt id the `.exec` dump carries, so the two
+        artifacts of one candidate line up by name."""
+        if not self._coverage_on() or not self.coverage_src_dir:
+            return
+        src = getattr(build_result, 'harness_path', '') or ''
+        if not src:
+            return
+        dest = os.path.join(self.coverage_src_dir,
+                            f'{harness_id or "harness"}.java')
+        try:
+            os.makedirs(self.coverage_src_dir, exist_ok=True)
+            shutil.copyfile(src, dest)
+        except OSError:
+            return
+        if dest not in self.coverage_sources:
+            self.coverage_sources.append(dest)
+
+    def _coverage_snapshot_once(self) -> None:
+        """Freeze the buggy build's classes for the `compiled` dumps.
+
+        The latent-oracle scan snapshots the same build, but only when the
+        campaign kept at least one harness — and a leg that kept none is
+        exactly the leg whose compiled-candidate coverage is worth having,
+        so the verifier cannot rely on it. No-op with the flag off, and
+        once per verifier either way."""
+        if self._coverage_snapshotted or not self._coverage_on():
+            return
+        self._coverage_snapshotted = True
+        if self.coverage_checkout:
+            self.snapshot_coverage_build(self.coverage_checkout, 'buggy')
 
     def verify(self, build_result: BuildResult) -> VerificationResult:
         harness_dir = os.path.dirname(build_result.harness_path)
-        outcome = run_jazzer(
-            jazzer_standalone_jar=self.jazzer_standalone_jar,
-            target_class=build_result.class_name,
-            harness_dir=harness_dir,
-            project_cp=self.buggy_classpath,
-            timeout_seconds=self.timeout_seconds,
-            expected_exceptions=self.expected_exceptions,
-            jazzer_api_jar=self.jazzer_api_jar,
-            corpus_dir=self.corpus_dir,
-        )
+        # --coverage: `compiled` = the buggy build, every compiled
+        # candidate. Both paths are None with the flag off.
+        self._coverage_snapshot_once()
+        _cov_id = build_result.attempt_label or os.path.basename(harness_dir)
+        _cov_dump = self._coverage_dump_path(_cov_id, 'compiled')
+        _cov_out = self._coverage_output_path(_cov_id, 'compiled')
+        self._save_harness_source(build_result, _cov_id)
+        try:
+            outcome = run_jazzer(
+                jazzer_standalone_jar=self.jazzer_standalone_jar,
+                target_class=build_result.class_name,
+                harness_dir=harness_dir,
+                project_cp=self.buggy_classpath,
+                timeout_seconds=self.timeout_seconds,
+                expected_exceptions=self.expected_exceptions,
+                jazzer_api_jar=self.jazzer_api_jar,
+                corpus_dir=self.corpus_dir,
+                coverage_dump=_cov_dump,
+                coverage_include=(self.coverage_include
+                                  if self._coverage_on() else None),
+                output_dump=_cov_out,
+            )
+        finally:
+            self._note_coverage_dump(_cov_dump)
         combined = outcome.combined_output
         if outcome.triggered:
             print(f"  ↳ crash detected ({outcome.crash_reason})")

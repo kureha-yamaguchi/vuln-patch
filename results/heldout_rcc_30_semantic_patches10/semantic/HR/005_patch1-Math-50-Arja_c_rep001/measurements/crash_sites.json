@@ -1,0 +1,664 @@
+[
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631] semantic mismatch: completed normally with result=3.4341896575482003 pinnedBuggyResult=3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 40,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-seed] semantic mismatch: expected TooManyEvaluationsException for maxEval=3624",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 75,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-throw] semantic mismatch: expected TooManyEvaluationsException for solve(3624,f,1,10) but completed normally with result=3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 31,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-return] semantic mismatch: expected TooManyEvaluationsException but call returned root=3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 19,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-throw] semantic mismatch: completed normally with result 3.4341896575482003 expected TooManyEvaluationsException; pinnedBuggyReturn=3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkIssue631PinnedThrow",
+     "params": []
+    },
+    "line": 39,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 13,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_005",
+  "source": "fuzz_out/attempt_005_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-must-throw] semantic mismatch: exact lifted test input returned root=3.4341896575482003 evaluations=3624 maxEval=3624",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 33,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-pinned] semantic mismatch: expected TooManyEvaluationsException but solve returned root=3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 20,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.exception.TooManyEvaluationsException",
+  "message": "illegal state: maximal count (3,622) exceeded: evaluations",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+     "name": "incrementEvaluationCount",
+     "params": []
+    },
+    "line": 296,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+     "name": "computeObjectiveValue",
+     "params": []
+    },
+    "line": 153,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+     "name": "doSolve",
+     "params": []
+    },
+    "line": 161,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 190,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 117,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BaseSecantSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 124,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+     "name": "solve",
+     "params": []
+    },
+    "line": 195,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 22,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+   "name": "incrementEvaluationCount",
+   "params": []
+  },
+  "top_library_line": 296,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+   "name": "incrementEvaluationCount",
+   "params": []
+  },
+  "headline_site_line": 296,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-pinned] semantic mismatch: expected TooManyEvaluationsException but completed normally with result 3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkIssue631PinnedThrow",
+     "params": []
+    },
+    "line": 39,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-pinned-value] semantic mismatch: expected TooManyEvaluationsException but solve returned pinned buggy value root=3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkIssue631PinnedBehavior",
+     "params": []
+    },
+    "line": 25,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 16,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_013",
+  "source": "fuzz_out/attempt_013_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-exact] semantic mismatch: expected TooManyEvaluationsException, but solve returned root=3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 28,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_015",
+  "source": "fuzz_out/attempt_015_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-nonthrow] semantic mismatch: expected TooManyEvaluationsException but solver returned root=3.4341896575482003 for maxEval=3624",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 31,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_017",
+  "source": "fuzz_out/attempt_017_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:eval-count-consistency] consistency violation: reportedEvaluations=42 empiricalCalls=44 result=-7.133000000000001 min=-8.133 max=-6.133 maxEval=71",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 60,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_018",
+  "source": "fuzz_out/attempt_018_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-exact] semantic mismatch: expected TooManyEvaluationsException but solve returned pinned buggy root 3.4341896575482003 for maxEval=3624",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 36,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-pinned] semantic mismatch: expected TooManyEvaluationsException but solve returned pinned buggy root=3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 33,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-missing-throw] semantic mismatch: expected TooManyEvaluationsException from solver.solve(3624, f, 1, 10) but solver returned the known-buggy root 3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 28,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-exact-throw] semantic mismatch: expected TooManyEvaluationsException for solve(3624,f,1.0,10.0) but completed normally with result=3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 87,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-missing-throw] semantic mismatch: expected TooManyEvaluationsException but solver returned root=3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 20,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:issue631-ground-truth] semantic mismatch: expected TooManyEvaluationsException for solve(3624,f,1,10) but completed normally with result=3.4341896575482003",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkIssue631PinnedBehavior",
+     "params": []
+    },
+    "line": 37,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 10,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_028",
+  "source": "fuzz_out/attempt_028_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:allowed-nonconvergence] semantic mismatch: expected TooManyEvaluationsException for allowed=ANY_SIDE on issue631 seed",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkAllowedSolutionIrrelevantForSeedIssue",
+     "params": []
+    },
+    "line": 52,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 16,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_029",
+  "source": "fuzz_out/attempt_029_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:post-return-budget-probe] semantic mismatch: solve(3624,exp(x)-PI^3,[1,10]) returned normally with root=3.4341896575482003 min=1.0 max=10.0 evalsAtReturn=3624 but an immediate protected computeObjectiveValue(root) was rejected for exhausted evaluations",
+  "causes": [
+   "org.apache.commons.math.exception.TooManyEvaluationsException"
+  ],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkPostReturnBudgetProbeOnIssue631",
+     "params": []
+    },
+    "line": 62,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 11,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+     "name": "incrementEvaluationCount",
+     "params": []
+    },
+    "line": 296,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+     "name": "computeObjectiveValue",
+     "params": []
+    },
+    "line": 153,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "checkPostReturnBudgetProbeOnIssue631",
+     "params": []
+    },
+    "line": 60,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.analysis.solvers.BaseAbstractUnivariateRealSolver",
+   "name": "incrementEvaluationCount",
+   "params": []
+  },
+  "top_library_line": 296,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

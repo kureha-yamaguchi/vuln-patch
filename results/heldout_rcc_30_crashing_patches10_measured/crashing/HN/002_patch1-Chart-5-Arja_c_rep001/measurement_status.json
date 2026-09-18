@@ -1,0 +1,15 @@
+{
+  "bug_id": "5",
+  "done": [
+    "checkout",
+    "patch_derived",
+    "patch_derived_lines",
+    "root_cause",
+    "trigger_gate",
+    "coverage",
+    "crash_sites"
+  ],
+  "errors": {},
+  "leg": "002_patch1-Chart-5-Arja_c_rep001",
+  "project": "Chart"
+}

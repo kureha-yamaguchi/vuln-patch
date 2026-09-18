@@ -1,0 +1,9 @@
+{
+ "class_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/010_patch1-Math-58-CapGen_c_rep001/cov/classes_buggy"
+ ],
+ "source_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/010_patch1-Math-58-CapGen_c_rep001/Math_58_buggy/src/main/java"
+ ],
+ "include_glob": "org.apache.commons.**"
+}

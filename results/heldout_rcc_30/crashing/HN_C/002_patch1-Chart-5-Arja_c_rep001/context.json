@@ -1,0 +1,487 @@
+{
+ "modified_files": [
+  "source/org/jfree/data/xy/XYSeries.java"
+ ],
+ "patch_text": "--- /source/org/jfree/data/xy/XYSeries.java\n+++ /source/org/jfree/data/xy/XYSeries.java\n@@ -560,12 +560,7 @@\n             // Collections.binarySearch() and tells us where to insert the\n             // new item...otherwise it will be just -1 and we should just\n             // append the value to the list...\n-            if (this.autoSort) {\n-                this.data.add(-index - 1, new XYDataItem(x, y));\n-            }\n-            else {\n-                this.data.add(new XYDataItem(x, y));\n-            }\n+        \t\tadd(x,y,true);\n             // check if this addition will exceed the maximum item count...\n             if (getItemCount() > this.maximumItemCount) {\n                 this.data.remove(0);\n\n\n",
+ "functions": [
+  {
+   "func_name": "addOrUpdate",
+   "func_signature": "public XYDataItem addOrUpdate(Number x, Number y)",
+   "func_source": "    public XYDataItem addOrUpdate(Number x, Number y) {\n        if (x == null) {\n            throw new IllegalArgumentException(\"Null 'x' argument.\");\n        }\n\n        // if we get to here, we know that duplicate X values are not permitted\n        XYDataItem overwritten = null;\n        int index = indexOf(x);\n        if (index >= 0 && !this.allowDuplicateXValues) {\n            XYDataItem existing = (XYDataItem) this.data.get(index);\n            try {\n                overwritten = (XYDataItem) existing.clone();\n            }\n            catch (CloneNotSupportedException e) {\n                throw new SeriesException(\"Couldn't clone XYDataItem!\");\n            }\n            existing.setY(y);\n        }\n        else {\n            // if the series is sorted, the negative index is a result from\n            // Collections.binarySearch() and tells us where to insert the\n            // new item...otherwise it will be just -1 and we should just\n            // append the value to the list...\n            if (this.autoSort) {\n                this.data.add(-index - 1, new XYDataItem(x, y));\n            }\n            else {\n                this.data.add(new XYDataItem(x, y));\n            }\n            // check if this addition will exceed the maximum item count...\n            if (getItemCount() > this.maximumItemCount) {\n                this.data.remove(0);\n            }\n        }\n        fireSeriesChanged();\n        return overwritten;\n    }",
+   "func_class": "XYSeries",
+   "func_class_fq": "org.jfree.data.xy.XYSeries",
+   "func_param_types": [
+    "Number",
+    "Number"
+   ],
+   "fi_name": "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "overload_types": [
+    [
+     "double",
+     "double"
+    ],
+    [
+     "Number",
+     "Number"
+    ]
+   ],
+   "xrefs": [],
+   "xref_names": [],
+   "reachable_edges": [
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "[IllegalArgumentException].<init>(String)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "[org.jfree.data.xy.XYSeries].indexOf(Number)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "[java.util.List].get(int)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "existing.clone()"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "[org.jfree.data.general.SeriesException].<init>(String)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "existing.setY(Number)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "[org.jfree.data.xy.XYDataItem].<init>(Number,Number)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "[java.util.List].add(int,org.jfree.data.xy.XYDataItem)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "[org.jfree.data.xy.XYDataItem].<init>(Number,Number)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "[java.util.List].add(org.jfree.data.xy.XYDataItem)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "[org.jfree.data.xy.XYSeries].getItemCount()"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "[java.util.List].remove(int)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+     "[org.jfree.data.xy.XYSeries].fireSeriesChanged()"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+     "[org.jfree.data.xy.XYDataItem].<init>(Number,null)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+     "[java.util.Collections].binarySearch(java.util.List,org.jfree.data.xy.XYDataItem)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+     "[java.util.List].size()"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+     "[java.util.List].get(org.jfree.data.xy.XYSeries)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+     "item.getX()"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+     "[org.jfree.data.xy.XYSeries].equals(Number)"
+    ],
+    [
+     "[org.jfree.data.general.SeriesException].<init>(String)",
+     "[RuntimeException].<init>(String)"
+    ],
+    [
+     "[org.jfree.data.xy.XYDataItem].<init>(Number,Number)",
+     "[IllegalArgumentException].<init>(String)"
+    ],
+    [
+     "[org.jfree.data.xy.XYSeries].getItemCount()",
+     "[java.util.List].size()"
+    ]
+   ],
+   "reachable_depth": {
+    "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)": 0,
+    "[IllegalArgumentException].<init>(String)": 1,
+    "[org.jfree.data.xy.XYSeries].indexOf(Number)": 1,
+    "[java.util.List].get(int)": 1,
+    "existing.clone()": 1,
+    "[org.jfree.data.general.SeriesException].<init>(String)": 1,
+    "existing.setY(Number)": 1,
+    "[org.jfree.data.xy.XYDataItem].<init>(Number,Number)": 1,
+    "[java.util.List].add(int,org.jfree.data.xy.XYDataItem)": 1,
+    "[java.util.List].add(org.jfree.data.xy.XYDataItem)": 1,
+    "[org.jfree.data.xy.XYSeries].getItemCount()": 1,
+    "[java.util.List].remove(int)": 1,
+    "[org.jfree.data.xy.XYSeries].fireSeriesChanged()": 1,
+    "[org.jfree.data.xy.XYDataItem].<init>(Number,null)": 2,
+    "[java.util.Collections].binarySearch(java.util.List,org.jfree.data.xy.XYDataItem)": 2,
+    "[java.util.List].size()": 2,
+    "[java.util.List].get(org.jfree.data.xy.XYSeries)": 2,
+    "item.getX()": 2,
+    "[org.jfree.data.xy.XYSeries].equals(Number)": 2,
+    "[RuntimeException].<init>(String)": 2
+   },
+   "reachable": [
+    "[IllegalArgumentException].<init>(String)",
+    "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+    "[java.util.List].get(int)",
+    "existing.clone()",
+    "[org.jfree.data.general.SeriesException].<init>(String)",
+    "existing.setY(Number)",
+    "[org.jfree.data.xy.XYDataItem].<init>(Number,Number)",
+    "[java.util.List].add(int,org.jfree.data.xy.XYDataItem)",
+    "[java.util.List].add(org.jfree.data.xy.XYDataItem)",
+    "[org.jfree.data.xy.XYSeries].getItemCount()",
+    "[java.util.List].remove(int)",
+    "[org.jfree.data.xy.XYSeries].fireSeriesChanged()",
+    "[org.jfree.data.xy.XYDataItem].<init>(Number,null)",
+    "[java.util.Collections].binarySearch(java.util.List,org.jfree.data.xy.XYDataItem)",
+    "[java.util.List].size()",
+    "[java.util.List].get(org.jfree.data.xy.XYSeries)",
+    "item.getX()",
+    "[org.jfree.data.xy.XYSeries].equals(Number)",
+    "[RuntimeException].<init>(String)",
+    "[org.jfree.data.xy.XYSeries].add(org.jfree.data.xy.XYDataItem)",
+    "[org.jfree.data.general.Series].fireSeriesChanged()",
+    "[org.jfree.data.gantt.TaskSeries].get(int)",
+    "[org.jfree.data.xy.XYSeries].remove(int)"
+   ],
+   "related_callees": [
+    {
+     "name": "indexOf",
+     "source_file": "DefaultXYDataset.java",
+     "signature": "public int indexOf(Comparable seriesKey)",
+     "source": "    public int indexOf(Comparable seriesKey) {\n        return this.seriesKeys.indexOf(seriesKey);\n    }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "DefaultXYDataset.java",
+       "    public int indexOf(Comparable seriesKey) {\n        return this.seriesKeys.indexOf(seriesKey);\n    }"
+      ],
+      [
+       "DefaultXYZDataset.java",
+       "    public int indexOf(Comparable seriesKey) {\n        return this.seriesKeys.indexOf(seriesKey);\n    }"
+      ],
+      [
+       "VectorSeriesCollection.java",
+       "    public int indexOf(VectorSeries series) {\n        if (series == null) {\n            throw new IllegalArgumentException(\"Null 'series' argument.\");\n        }\n        return this.data.indexOf(series);\n    }"
+      ],
+      [
+       "XYSeries.java",
+       "    public int indexOf(Number x) {\n        if (this.autoSort) {\n            return Collections.binarySearch(this.data, new XYDataItem(x, null));\n        }\n        else {\n            for (int i = 0; i < this.data.size(); i++) {\n                XYDataItem item = (XYDataItem) this.data.get(i);\n                if (item.getX().equals(x)) {\n                    return i;\n                }\n            }\n            return -1;\n        }\n    }"
+      ]
+     ]
+    },
+    {
+     "name": "get",
+     "source_file": "MatrixSeries.java",
+     "signature": "public double get(int i, int j)",
+     "source": "    public double get(int i, int j) {\n        return this.data[i][j];\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "clone",
+     "source_file": "CategoryTableXYDataset.java",
+     "signature": "public Object clone() throws CloneNotSupportedException",
+     "source": "    public Object clone() throws CloneNotSupportedException {\n        CategoryTableXYDataset clone = (CategoryTableXYDataset) super.clone();\n        clone.values = (DefaultKeyedValues2D) this.values.clone();\n        clone.intervalDelegate = new IntervalXYDelegate(clone);\n        // need to configure the intervalDelegate to match the original\n        clone.intervalDelegate.setFixedIntervalWidth(getIntervalWidth());\n        clone.intervalDelegate.setAutoWidth(isAutoWidth());\n        clone.intervalDelegate.setIntervalPositionFactor(\n                getIntervalPositionFactor());\n        return clone;\n    }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "CategoryTableXYDataset.java",
+       "    public Object clone() throws CloneNotSupportedException {\n        CategoryTableXYDataset clone = (CategoryTableXYDataset) super.clone();\n        clone.values = (DefaultKeyedValues2D) this.values.clone();\n        clone.intervalDelegate = new IntervalXYDelegate(clone);\n        // need to configure the intervalDelegate to match the original\n        clone.intervalDelegate.setFixedIntervalWidth(getIntervalWidth());\n        clone.intervalDelegate.setAutoWidth(isAutoWidth());\n        clone.intervalDelegate.setIntervalPositionFactor(\n                getIntervalPositionFactor());\n        return clone;\n    }"
+      ],
+      [
+       "DefaultIntervalXYDataset.java",
+       "    public Object clone() throws CloneNotSupportedException {\n        DefaultIntervalXYDataset clone\n                = (DefaultIntervalXYDataset) super.clone();\n        clone.seriesKeys = new java.util.ArrayList(this.seriesKeys);\n        clone.seriesList = new ArrayList(this.seriesList.size());\n        for (int i = 0; i < this.seriesList.size(); i++) {\n            double[][] data = (double[][]) this.seriesList.get(i);\n            double[] x = data[0];\n            double[] xStart = data[1];\n            double[] xEnd = data[2];\n            double[] y = data[3];\n            double[] yStart = data[4];\n            double[] yEnd = data[5];\n            double[] xx = new double[x.length];\n            double[] xxStart = new double[xStart.length];\n            double[] xxEnd = new double[xEnd.length];\n            double[] yy = new double[y.length];\n            double[] yyStart = new double[yStart.length];\n            double[] yyEnd = new double[yEnd.length];\n            System.arraycopy(x, 0, xx, 0, x.length);\n            System.arraycopy(xStart, 0, xxStart, 0, xStart.length);\n            System.arraycopy(xEnd, 0, xxEnd, 0, xEnd.length);\n            System.arraycopy(y, 0, yy, 0, y.length);\n            System.arraycopy(yStart, 0, yyStart, 0, yStart.length);\n            System.arraycopy(yEnd, 0, yyEnd, 0, yEnd.length);\n            clone.seriesList.add(i, new double[][] {xx, xxStart, xxEnd, yy,\n                    yyStart, yyEnd});\n        }\n        return clone;\n    }"
+      ],
+      [
+       "DefaultOHLCDataset.java",
+       "    public Object clone() throws CloneNotSupportedException {\n        DefaultOHLCDataset clone = (DefaultOHLCDataset) super.clone();\n        clone.data = new OHLCDataItem[this.data.length];\n        System.arraycopy(this.data, 0, clone.data, 0, this.data.length);\n        return clone;\n    }"
+      ],
+      [
+       "DefaultTableXYDataset.java",
+       "    public Object clone() throws CloneNotSupportedException {\n        DefaultTableXYDataset clone = (DefaultTableXYDataset) super.clone();\n        int seriesCount = this.data.size();\n        clone.data = new java.util.ArrayList(seriesCount);\n        for (int i = 0; i < seriesCount; i++) {\n            XYSeries series = (XYSeries) this.data.get(i);\n            clone.data.add(series.clone());\n        }\n\n        clone.intervalDelegate = new IntervalXYDelegate(clone);\n        // need to configure the intervalDelegate to match the original\n        clone.intervalDelegate.setFixedIntervalWidth(getIntervalWidth());\n        clone.intervalDelegate.setAutoWidth(isAutoWidth());\n        clone.intervalDelegate.setIntervalPositionFactor(\n                getIntervalPositionFactor());\n        clone.updateXPoints();\n        return clone;\n    }"
+      ]
+     ]
+    },
+    {
+     "name": "setY",
+     "source_file": "XYDataItem.java",
+     "signature": "public void setY(double y)",
+     "source": "    public void setY(double y) {\n        setY(new Double(y));\n    }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "XYDataItem.java",
+       "    public void setY(double y) {\n        setY(new Double(y));\n    }"
+      ],
+      [
+       "XYDataItem.java",
+       "    public void setY(Number y) {\n        this.y = y;\n    }"
+      ]
+     ]
+    },
+    {
+     "name": "add",
+     "source_file": "CategoryTableXYDataset.java",
+     "signature": "public void add(double x, double y, String seriesName)",
+     "source": "    public void add(double x, double y, String seriesName) {\n        add(new Double(x), new Double(y), seriesName, true);\n    }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "CategoryTableXYDataset.java",
+       "    public void add(double x, double y, String seriesName) {\n        add(new Double(x), new Double(y), seriesName, true);\n    }"
+      ],
+      [
+       "CategoryTableXYDataset.java",
+       "    public void add(Number x, Number y, String seriesName, boolean notify) {\n        this.values.addValue(y, (Comparable) x, seriesName);\n        if (notify) {\n            fireDatasetChanged();\n        }\n    }"
+      ],
+      [
+       "VectorSeries.java",
+       "    public void add(double x, double y, double deltaX, double deltaY) {\n        super.add(new VectorDataItem(x, y, deltaX, deltaY), true);\n    }"
+      ],
+      [
+       "XIntervalSeries.java",
+       "    public void add(double x, double xLow, double xHigh, double y) {\n        super.add(new XIntervalDataItem(x, xLow, xHigh, y), true);\n    }"
+      ]
+     ]
+    },
+    {
+     "name": "getItemCount",
+     "source_file": "TableXYDataset.java",
+     "signature": "public int getItemCount()",
+     "source": "    public int getItemCount();",
+     "is_abstract": true,
+     "impls": [
+      [
+       "CategoryTableXYDataset.java",
+       "    public int getItemCount() {\n        return this.values.getRowCount();\n    }"
+      ],
+      [
+       "CategoryTableXYDataset.java",
+       "    public int getItemCount(int series) {\n        return getItemCount();  // all series have the same number of items in\n                                // this dataset\n    }"
+      ],
+      [
+       "DefaultHighLowDataset.java",
+       "    public int getItemCount(int series) {\n        return this.date.length;\n    }"
+      ],
+      [
+       "DefaultIntervalXYDataset.java",
+       "    public int getItemCount(int series) {\n        if ((series < 0) || (series >= getSeriesCount())) {\n            throw new IllegalArgumentException(\"Series index out of bounds\");\n        }\n        double[][] seriesArray = (double[][]) this.seriesList.get(series);\n        return seriesArray[0].length;\n    }"
+      ]
+     ]
+    }
+   ],
+   "field_siblings": [
+    {
+     "name": "equals",
+     "signature": "public boolean equals(Object obj)",
+     "shared_fields": [
+      "allowDuplicateXValues",
+      "autoSort",
+      "data",
+      "maximumItemCount"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Tests this series for equality with an arbitrary object. @param obj  the object to test against for equality (<code>null</code> permitted). @return A boolean."
+    },
+    {
+     "name": "XYSeries",
+     "signature": "public XYSeries(Comparable key, boolean autoSort, boolean allowDuplicateXValues)",
+     "shared_fields": [
+      "allowDuplicateXValues",
+      "autoSort",
+      "data"
+     ],
+     "is_constructor": true,
+     "source": "    public XYSeries(Comparable key,\n                    boolean autoSort,\n                    boolean allowDuplicateXValues) {\n        super(key);\n        this.data = new java.util.ArrayList();\n        this.autoSort = autoSort;\n        this.allowDuplicateXValues = allowDuplicateXValues;\n    }",
+     "javadoc": "Constructs a new xy-series that contains no data.  You can specify whether or not duplicate x-values are allowed for the series. @param key  the series key (<code>null</code> not permitted). @param autoSort  a flag that controls whether or not the items in the series are sorted. @param allowDuplicateXValues  a flag tha\u2026"
+    },
+    {
+     "name": "hashCode",
+     "signature": "public int hashCode()",
+     "shared_fields": [
+      "allowDuplicateXValues",
+      "autoSort",
+      "maximumItemCount"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Returns a hash code. @return A hash code."
+    },
+    {
+     "name": "setMaximumItemCount",
+     "signature": "public void setMaximumItemCount(int maximum)",
+     "shared_fields": [
+      "data",
+      "maximumItemCount"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Sets the maximum number of items that will be retained in the series. If you add a new item to the series such that the number of items will exceed the maximum item count, then the first element in the series is automatically removed, ensuring that the maximum item count is not exceeded. <p> Typically this value is set\u2026"
+    },
+    {
+     "name": "getAutoSort",
+     "signature": "public boolean getAutoSort()",
+     "shared_fields": [
+      "autoSort"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Returns the flag that controls whether the items in the series are automatically sorted.  There is no setter for this flag, it must be defined in the series constructor. @return A boolean."
+    }
+   ]
+  }
+ ],
+ "package": "org.jfree.data.xy",
+ "root_cause_reachable": [
+  "XYSeries.indexOf",
+  "SeriesException.<init>",
+  "XYDataItem.<init>",
+  "XYSeries.getItemCount",
+  "XYSeries.fireSeriesChanged",
+  "XYSeries.equals",
+  "XYSeries.add",
+  "Series.fireSeriesChanged",
+  "TaskSeries.get",
+  "XYSeries.remove"
+ ],
+ "neighbourhood_notes": [],
+ "source_imports": [
+  "import java.io.Serializable;",
+  "import java.util.Collections;",
+  "import java.util.List;",
+  "import org.jfree.chart.util.ObjectUtilities;",
+  "import org.jfree.data.general.Series;",
+  "import org.jfree.data.general.SeriesChangeEvent;",
+  "import org.jfree.data.general.SeriesException;"
+ ],
+ "reachable_edges": [
+  [
+   "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "[IllegalArgumentException].<init>(String)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "[org.jfree.data.xy.XYSeries].indexOf(Number)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "[java.util.List].get(int)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "existing.clone()"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "[org.jfree.data.general.SeriesException].<init>(String)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "existing.setY(Number)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "[org.jfree.data.xy.XYDataItem].<init>(Number,Number)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "[java.util.List].add(int,org.jfree.data.xy.XYDataItem)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "[java.util.List].add(org.jfree.data.xy.XYDataItem)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "[org.jfree.data.xy.XYSeries].getItemCount()"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "[java.util.List].remove(int)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)",
+   "[org.jfree.data.xy.XYSeries].fireSeriesChanged()"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+   "[org.jfree.data.xy.XYDataItem].<init>(Number,null)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+   "[java.util.Collections].binarySearch(java.util.List,org.jfree.data.xy.XYDataItem)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+   "[java.util.List].size()"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+   "[java.util.List].get(org.jfree.data.xy.XYSeries)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+   "item.getX()"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].indexOf(Number)",
+   "[org.jfree.data.xy.XYSeries].equals(Number)"
+  ],
+  [
+   "[org.jfree.data.general.SeriesException].<init>(String)",
+   "[RuntimeException].<init>(String)"
+  ],
+  [
+   "[org.jfree.data.xy.XYDataItem].<init>(Number,Number)",
+   "[IllegalArgumentException].<init>(String)"
+  ],
+  [
+   "[org.jfree.data.xy.XYSeries].getItemCount()",
+   "[java.util.List].size()"
+  ]
+ ],
+ "reachable_depth": {
+  "[org.jfree.data.xy.XYSeries].addOrUpdate(Number,Number)": 0,
+  "[IllegalArgumentException].<init>(String)": 1,
+  "[org.jfree.data.xy.XYSeries].indexOf(Number)": 1,
+  "[java.util.List].get(int)": 1,
+  "existing.clone()": 1,
+  "[org.jfree.data.general.SeriesException].<init>(String)": 1,
+  "existing.setY(Number)": 1,
+  "[org.jfree.data.xy.XYDataItem].<init>(Number,Number)": 1,
+  "[java.util.List].add(int,org.jfree.data.xy.XYDataItem)": 1,
+  "[java.util.List].add(org.jfree.data.xy.XYDataItem)": 1,
+  "[org.jfree.data.xy.XYSeries].getItemCount()": 1,
+  "[java.util.List].remove(int)": 1,
+  "[org.jfree.data.xy.XYSeries].fireSeriesChanged()": 1,
+  "[org.jfree.data.xy.XYDataItem].<init>(Number,null)": 2,
+  "[java.util.Collections].binarySearch(java.util.List,org.jfree.data.xy.XYDataItem)": 2,
+  "[java.util.List].size()": 2,
+  "[java.util.List].get(org.jfree.data.xy.XYSeries)": 2,
+  "item.getX()": 2,
+  "[org.jfree.data.xy.XYSeries].equals(Number)": 2,
+  "[RuntimeException].<init>(String)": 2
+ }
+}

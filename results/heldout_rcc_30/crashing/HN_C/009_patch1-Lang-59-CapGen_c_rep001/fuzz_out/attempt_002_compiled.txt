@@ -1,0 +1,66 @@
+DEDUP_TOKEN: 559c754a7c92f029
+
+INFO: Loaded 324 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 84 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.lang.text.FuzzHarness (took 64 ms, size +27%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/009_patch1-Lang-59-CapGen_c_rep001/Lang_59_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7a9e70576cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2289433955
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7a9ed07530b0, 0x7a9ed07532b0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7a9ed0568130,0x7a9ed056a130), 
+INFO:       38 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/009_patch1-Lang-59-CapGen_c_rep001/Lang_59_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: New number of coverage counters: 1024
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder (took 56 ms, size +27%)
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder$StrBuilderWriter (took 3 ms, size +8%)
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder$StrBuilderReader (took 4 ms, size +33%)
+INFO: Instrumented org.apache.commons.lang.text.StrTokenizer (took 30 ms, size +16%)
+INFO: Instrumented org.apache.commons.lang.text.StrBuilder$StrBuilderTokenizer (took 1 ms, size +12%)
+INFO: seed corpus: files: 38 min: 1b max: 8b total: 200b rss: 1304Mb
+#39	INITED cov: 47 ft: 47 corp: 9/31b exec/s: 0 rss: 1304Mb
+#47	NEW    cov: 49 ft: 49 corp: 10/37b lim: 8 exec/s: 0 rss: 1304Mb L: 6/8 MS: 6 InsertByte-Custom-CMP-Custom-ChangeByte-Custom- DE: "\001\000\000\000"-
+#89	REDUCE cov: 49 ft: 49 corp: 10/35b lim: 8 exec/s: 0 rss: 1304Mb L: 2/8 MS: 4 ChangeBit-Custom-CrossOver-Custom-
+#90	REDUCE cov: 49 ft: 49 corp: 10/32b lim: 8 exec/s: 0 rss: 1304Mb L: 3/8 MS: 2 EraseBytes-Custom-
+#276	REDUCE cov: 49 ft: 49 corp: 10/31b lim: 8 exec/s: 0 rss: 1304Mb L: 5/8 MS: 2 EraseBytes-Custom-
+#400	NEW    cov: 53 ft: 53 corp: 11/38b lim: 8 exec/s: 0 rss: 1304Mb L: 7/8 MS: 8 ChangeByte-Custom-CrossOver-Custom-PersAutoDict-Custom-InsertByte-Custom- DE: "\001\000\000\000"-
+#409	NEW    cov: 55 ft: 55 corp: 12/46b lim: 8 exec/s: 0 rss: 1304Mb L: 8/8 MS: 8 ChangeBinInt-Custom-InsertByte-Custom-CrossOver-Custom-CrossOver-Custom-
+#429	NEW    cov: 55 ft: 64 corp: 13/53b lim: 8 exec/s: 0 rss: 1304Mb L: 7/8 MS: 10 PersAutoDict-Custom-EraseBytes-Custom-ChangeBit-Custom-CrossOver-Custom-PersAutoDict-Custom- DE: "\001\000\000\000"-"\001\000\000\000"-
+#434	NEW    cov: 58 ft: 67 corp: 14/61b lim: 8 exec/s: 0 rss: 1304Mb L: 8/8 MS: 10 ChangeBit-Custom-ChangeByte-Custom-InsertRepeatedBytes-Custom-PersAutoDict-Custom-ShuffleBytes-Custom- DE: "\001\000\000\000"-
+#459	NEW    cov: 59 ft: 68 corp: 15/69b lim: 8 exec/s: 0 rss: 1304Mb L: 8/8 MS: 10 ChangeBit-Custom-ChangeBit-Custom-CopyPart-Custom-PersAutoDict-Custom-ChangeByte-Custom- DE: "\001\000\000\000"-
+#499	NEW    cov: 61 ft: 79 corp: 16/77b lim: 8 exec/s: 0 rss: 1304Mb L: 8/8 MS: 10 ShuffleBytes-Custom-ChangeBit-Custom-ChangeByte-Custom-ChangeBinInt-Custom-ShuffleBytes-Custom-
+#602	REDUCE cov: 61 ft: 79 corp: 16/76b lim: 8 exec/s: 0 rss: 1304Mb L: 5/8 MS: 6 ChangeByte-Custom-EraseBytes-Custom-CopyPart-Custom-
+#733	NEW    cov: 62 ft: 80 corp: 17/84b lim: 8 exec/s: 0 rss: 1304Mb L: 8/8 MS: 2 PersAutoDict-Custom- DE: "\001\000\000\000"-
+#946	NEW    cov: 63 ft: 81 corp: 18/92b lim: 8 exec/s: 0 rss: 1304Mb L: 8/8 MS: 6 InsertByte-Custom-CopyPart-Custom-CrossOver-Custom-
+#1063	NEW    cov: 64 ft: 82 corp: 19/100b lim: 8 exec/s: 0 rss: 1304Mb L: 8/8 MS: 4 ChangeByte-Custom-ChangeBit-Custom-
+#1140	NEW    cov: 64 ft: 90 corp: 20/108b lim: 8 exec/s: 0 rss: 1304Mb L: 8/8 MS: 4 ChangeASCIIInt-Custom-ChangeByte-Custom-
+#1442	REDUCE cov: 64 ft: 91 corp: 21/116b lim: 8 exec/s: 0 rss: 1304Mb L: 8/8 MS: 4 CrossOver-Custom-ChangeASCIIInt-Custom-
+#1846	NEW    cov: 64 ft: 93 corp: 22/125b lim: 11 exec/s: 0 rss: 1304Mb L: 9/9 MS: 8 ShuffleBytes-Custom-CopyPart-Custom-ShuffleBytes-Custom-ChangeBinInt-Custom-
+
+== Java Exception: java.lang.NullPointerException
+	at org.apache.commons.lang.text.StrBuilder.appendFixedWidthPadRight(StrBuilder.java:882)
+	at org.apache.commons.lang.text.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:102)
+== libFuzzer crashing input ==
+MS: 2 CMP-Custom- DE: "\370\000"-; base unit: 93bbea89513d7e950a24a19a71853cb7133c8235
+0xef,0x30,0x0,0x30,0xf8,0x0,0x0,0x0,0x6b,0x0,
+\3570\0000\370\000\000\000k\000
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/009_patch1-Lang-59-CapGen_c_rep001/Lang_59_buggy/fuzz/attempt_002/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/009_patch1-Lang-59-CapGen_c_rep001/Lang_59_buggy/fuzz/attempt_002/crashes/crash-3c3e46ce9275e2575fee0b606566f748e6cb17c7
+Base64: 7zAAMPgAAABrAA==
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/009_patch1-Lang-59-CapGen_c_rep001/Lang_59_buggy/fuzz/attempt_002/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/009_patch1-Lang-59-CapGen_c_rep001/Lang_59_buggy/fuzz/attempt_002/crashes/Crash_3c3e46ce9275e2575fee0b606566f748e6cb17c7.java
+

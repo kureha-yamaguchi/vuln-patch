@@ -1,0 +1,10 @@
+# A/B for the two crashing legs that flipped in measure_smoke (2026-09-04):
+# same code, idle VM, serial suites; this arm: nocov. If both arms wobble the
+# same way the flips are draw variance; if only the cov arm flips, the
+# coverage hook is implicated.
+MODEL="gpt-5.4"
+COMMON="-n 5 -m 12 --fuzz_timeout 20 --verify_timeout 20 --verify_relations --synthesize_relations --replay_relations_on_patched --rule_compile_repair --reference_impl"
+CASES=(
+  "-o patchfile:/home/code/drr/Patches/Doverfitting/Elixir/Math/patch1-Math-32-Elixir-plausible.patch"
+  "-c patchfile:/home/code/drr/Patches/Dcorrect/Elixir/Lang/patch1-Lang-6-Elixir.patch"
+)

@@ -1,0 +1,49 @@
+DEDUP_TOKEN: d4307ca57a5edd36
+
+INFO: Loaded 325 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 84 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.lang3.FuzzHarness (took 69 ms, size +29%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/003_patch1-Lang-20-Arja_c_rep001/Lang_20_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7eb649d76cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 1797675896
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7eb678700fe0, 0x7eb6787011e0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7eb6786e7f10,0x7eb6786e9f10), 
+INFO:       80 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/003_patch1-Lang-20-Arja_c_rep001/Lang_20_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: New number of coverage counters: 1024
+INFO: New number of coverage counters: 2048
+WARN: Some hooks could not be applied to class files built for Java 7 or lower.
+                       Ensure that the fuzz target and its dependencies are compiled with
+                       -target 8 or higher to identify as many bugs as possible.
+INFO: Instrumented org.apache.commons.lang3.StringUtils (took 87 ms, size +37%)
+INFO: seed corpus: files: 80 min: 1b max: 95b total: 2625b rss: 1293Mb
+#81	INITED cov: 48 ft: 57 corp: 16/190b exec/s: 0 rss: 1293Mb
+
+== Java Exception: java.lang.ArrayIndexOutOfBoundsException: -370546199
+	at org.apache.commons.lang3.StringUtils.join(StringUtils.java:3298)
+	at org.apache.commons.lang3.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:82)
+== libFuzzer crashing input ==
+MS: 4 CrossOver-Custom-InsertRepeatedBytes-Custom-; base unit: e84ae4602b9a97852d752f121674fa3af72e9535
+0x0,0x0,0x0,0x69,0x0,0x0,0x0,0x2c,0xff,0xff,0xff,0xff,0xe9,0xe9,0xe9,0xe9,0xe9,0xe9,0xe9,0xe9,0xe9,0xe9,0xe9,0xff,0xff,
+\000\000\000i\000\000\000,\377\377\377\377\351\351\351\351\351\351\351\351\351\351\351\377\377
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/003_patch1-Lang-20-Arja_c_rep001/Lang_20_buggy/fuzz/attempt_012/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/003_patch1-Lang-20-Arja_c_rep001/Lang_20_buggy/fuzz/attempt_012/crashes/crash-4ada82e55aa4fd37ba45915bd500e10feb491250
+Base64: AAAAaQAAACz/////6enp6enp6enp6en//w==
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/003_patch1-Lang-20-Arja_c_rep001/Lang_20_buggy/fuzz/attempt_012/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/003_patch1-Lang-20-Arja_c_rep001/Lang_20_buggy/fuzz/attempt_012/crashes/Crash_4ada82e55aa4fd37ba45915bd500e10feb491250.java
+

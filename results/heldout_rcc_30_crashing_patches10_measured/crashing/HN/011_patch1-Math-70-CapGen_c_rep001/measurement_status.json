@@ -1,0 +1,15 @@
+{
+  "bug_id": "70",
+  "done": [
+    "checkout",
+    "patch_derived",
+    "patch_derived_lines",
+    "root_cause",
+    "trigger_gate",
+    "coverage",
+    "crash_sites"
+  ],
+  "errors": {},
+  "leg": "011_patch1-Math-70-CapGen_c_rep001",
+  "project": "Math"
+}

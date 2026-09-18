@@ -1,0 +1,48 @@
+DEDUP_TOKEN: 73d140cefe41511f
+
+INFO: Loaded 314 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.jfree.data.xy.FuzzHarness (took 68 ms, size +21%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7fed96f76cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 1828264503
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7feee0631df0, 0x7feee0631ff0), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7feee05ccd20,0x7feee05ced20), 
+INFO:       17 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.jfree.data.xy.XYSeries (took 20 ms, size +24%)
+INFO: Instrumented org.jfree.data.general.Series (took 8 ms, size +24%)
+INFO: Instrumented org.jfree.data.general.SeriesException (took 0 ms, size +20%)
+INFO: Instrumented org.jfree.data.xy.XYDataItem (took 6 ms, size +28%)
+INFO: Instrumented org.jfree.data.general.SeriesChangeEvent (took 0 ms, size +20%)
+
+== Java Exception: java.lang.IndexOutOfBoundsException: Index: -1, Size: 1
+	at java.util.ArrayList.rangeCheckForAdd(ArrayList.java:667)
+	at java.util.ArrayList.add(ArrayList.java:479)
+	at org.jfree.data.xy.XYSeries.addOrUpdate(XYSeries.java:564)
+	at org.jfree.data.xy.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:245)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/attempt_001/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/attempt_001/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/attempt_001/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/attempt_001/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+

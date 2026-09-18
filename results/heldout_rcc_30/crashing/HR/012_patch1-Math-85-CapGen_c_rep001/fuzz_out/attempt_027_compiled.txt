@@ -1,0 +1,59 @@
+DEDUP_TOKEN: aa849c458c3fe93c
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.analysis.solvers.FuzzHarness (took 74 ms, size +71%)
+INFO: Instrumented org.apache.commons.math.distribution.NormalDistribution (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.distribution.ContinuousDistribution (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.distribution.Distribution (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.distribution.HasDensity (took 0 ms, size +0%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/012_patch1-Math-85-CapGen_c_rep001/Math_85_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7ebf50376cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2930617160
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7ebf84597d50, 0x7ebf84597f50), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7ebf844b5980,0x7ebf844b7980), 
+INFO:       56 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/012_patch1-Math-85-CapGen_c_rep001/Math_85_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.distribution.NormalDistributionImpl (took 7 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.distribution.AbstractContinuousDistribution (took 2 ms, size +7%)
+INFO: Instrumented org.apache.commons.math.distribution.AbstractDistribution (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.ConvergenceException (took 1 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.MathException (took 5 ms, size +25%)
+INFO: Instrumented org.apache.commons.math.analysis.UnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.MaxIterationsExceededException (took 1 ms, size +10%)
+INFO: Instrumented org.apache.commons.math.distribution.AbstractContinuousDistribution$1 (took 1 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.FunctionEvaluationException (took 3 ms, size +6%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils (took 4 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.special.Erf (took 1 ms, size +19%)
+INFO: Instrumented org.apache.commons.math.special.Gamma (took 5 ms, size +20%)
+INFO: Instrumented org.apache.commons.math.util.ContinuedFraction (took 2 ms, size +20%)
+INFO: Instrumented org.apache.commons.math.special.Gamma$1 (took 1 ms, size +14%)
+
+== Java Exception: java.lang.RuntimeException: [oracle:constructed-interval-delta] metamorphic violation: interval mass from inverse-constructed bounds disagrees with probability delta a=-6 b=-5 pA=9.865886441140503E-10 pB=2.8665157209006864E-7 xA=-1.7976931348623157E308 xB=-1.7976931348623157E308 reported=0.0 independent=2.856649834459546E-7
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.runConstructedIntervalDeltaOracle(FuzzHarness.java:99)
+	at org.apache.commons.math.analysis.solvers.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:11)
+== libFuzzer crashing input ==
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+
+
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/012_patch1-Math-85-CapGen_c_rep001/Math_85_buggy/fuzz/attempt_027/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/012_patch1-Math-85-CapGen_c_rep001/Math_85_buggy/fuzz/attempt_027/crashes/crash-da39a3ee5e6b4b0d3255bfef95601890afd80709
+Base64: 
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/012_patch1-Math-85-CapGen_c_rep001/Math_85_buggy/fuzz/attempt_027/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/012_patch1-Math-85-CapGen_c_rep001/Math_85_buggy/fuzz/attempt_027/crashes/Crash_da39a3ee5e6b4b0d3255bfef95601890afd80709.java
+

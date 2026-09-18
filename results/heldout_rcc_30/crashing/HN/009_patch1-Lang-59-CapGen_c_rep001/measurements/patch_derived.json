@@ -1,0 +1,71 @@
+{
+ "granularity": "method",
+ "items": [
+  {
+   "class_fq": "Object",
+   "name": "toString",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.lang.text.StrBuilder",
+   "name": "appendFixedWidthPadRight",
+   "params": [
+    "Object",
+    "int",
+    "char"
+   ],
+   "ring": "seed",
+   "depth": 0
+  },
+  {
+   "class_fq": "org.apache.commons.lang.text.StrBuilder",
+   "name": "ensureCapacity",
+   "params": [
+    "StrBuilder"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.lang.text.StrBuilder",
+   "name": "ensureCapacity",
+   "params": [
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "org.apache.commons.lang.text.StrBuilder",
+   "name": "getNullText",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "str",
+   "name": "getChars",
+   "params": [
+    "int",
+    "StrBuilder",
+    "char[]",
+    "int"
+   ],
+   "ring": "callee",
+   "depth": 1
+  },
+  {
+   "class_fq": "str",
+   "name": "length",
+   "params": [],
+   "ring": "callee",
+   "depth": 1
+  }
+ ],
+ "multi": {},
+ "edges": [],
+ "unmatched": [],
+ "provenance": {}
+}

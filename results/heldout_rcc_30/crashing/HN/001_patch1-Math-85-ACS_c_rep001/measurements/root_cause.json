@@ -1,0 +1,463 @@
+{
+ "methods": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+    "name": "anchorDirectBracketAndOracle",
+    "params": [],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+    "name": "exploreBracketOracle",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+    "name": "exploreBracketOverloads",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+    "name": "fuzzerTestOneInput",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+    "name": "runExplore",
+    "params": [
+     "FuzzedDataProvider"
+    ],
+    "ring": "caller",
+    "depth": 1
+   },
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "name": "bracket",
+    "params": [
+     "UnivariateRealFunction",
+     "double",
+     "double",
+     "double",
+     "int"
+    ],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [
+   [
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "anchorDirectBracketAndOracle",
+     "params": []
+    },
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "exploreBracketOracle",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "exploreBracketOverloads",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double",
+      "int"
+     ]
+    }
+   ],
+   [
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.FuzzHarness",
+     "name": "runExplore",
+     "params": [
+      "FuzzedDataProvider"
+     ]
+    },
+    {
+     "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+     "name": "bracket",
+     "params": [
+      "UnivariateRealFunction",
+      "double",
+      "double",
+      "double",
+      "int"
+     ]
+    }
+   ]
+  ],
+  "unmatched": [
+   "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)"
+  ],
+  "provenance": {
+   "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double,int)": "introspector",
+   "org.apache.commons.math.analysis.solvers.FuzzHarness.anchorDirectBracketAndOracle()": "source-scan",
+   "org.apache.commons.math.analysis.solvers.FuzzHarness.exploreBracketOracle(FuzzedDataProvider)": "source-scan",
+   "org.apache.commons.math.analysis.solvers.FuzzHarness.exploreBracketOverloads(FuzzedDataProvider)": "source-scan",
+   "org.apache.commons.math.analysis.solvers.FuzzHarness.fuzzerTestOneInput(FuzzedDataProvider)": "source-scan",
+   "org.apache.commons.math.analysis.solvers.FuzzHarness.runExplore(FuzzedDataProvider)": "source-scan"
+  }
+ },
+ "lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 198,
+    "ring": "seed"
+   }
+  ]
+ },
+ "body_lines": {
+  "granularity": "line",
+  "items": [
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 165,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 166,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 167,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 168,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 169,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 170,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 171,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 172,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 173,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 174,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 175,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 176,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 177,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 178,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 179,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 180,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 181,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 182,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 183,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 184,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 185,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 186,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 187,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 188,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 189,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 190,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 191,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 192,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 193,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 194,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 195,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 196,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 197,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 198,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 199,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 200,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 201,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 202,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 203,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 204,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 205,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 206,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 207,
+    "ring": "seed"
+   },
+   {
+    "class_top_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "line": 208,
+    "ring": "seed"
+   }
+  ]
+ },
+ "manifest": {
+  "granularity": "method",
+  "items": [
+   {
+    "class_fq": "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils",
+    "name": "bracket",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   },
+   {
+    "class_fq": "org.apache.commons.math.distribution.AbstractContinuousDistribution",
+    "name": "inverseCumulativeProbability",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   },
+   {
+    "class_fq": "org.apache.commons.math.distribution.NormalDistributionImpl",
+    "name": "inverseCumulativeProbability",
+    "params": [],
+    "ring": "seed",
+    "depth": 0
+   }
+  ],
+  "multi": {},
+  "edges": [],
+  "unmatched": [
+   "org.apache.commons.math.distribution.NormalDistributionTest.testMath280()"
+  ],
+  "provenance": {}
+ },
+ "patch_text": "diff --git a/src/java/org/apache/commons/math/analysis/solvers/UnivariateRealSolverUtils.java b/src/java/org/apache/commons/math/analysis/solvers/UnivariateRealSolverUtils.java\nindex e6398f6..bf3e4bf 100644\n--- a/src/java/org/apache/commons/math/analysis/solvers/UnivariateRealSolverUtils.java\n+++ b/src/java/org/apache/commons/math/analysis/solvers/UnivariateRealSolverUtils.java\n@@ -195,7 +195,7 @@ public class UnivariateRealSolverUtils {\n         } while ((fa * fb > 0.0) && (numIterations < maximumIterations) && \n                 ((a > lowerBound) || (b < upperBound)));\n    \n-        if (fa * fb > 0.0 ) {\n+        if (fa * fb >= 0.0 ) {\n             throw new ConvergenceException(\n                       \"number of iterations={0}, maximum iterations={1}, \" +\n                       \"initial={2}, lower bound={3}, upper bound={4}, final a value={5}, \" +\n",
+ "route": "d4j_src_patch",
+ "direction_assumed": "fixed_to_buggy",
+ "unmapped_hunks": [],
+ "manifest_source": "failing_tests",
+ "trigger_gate": {
+  "passed": true,
+  "missed": [],
+  "unresolved": [],
+  "reached_size": 31,
+  "probe_size": 29,
+  "frame_added": [
+   "org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils.bracket(UnivariateRealFunction,double,double,double)",
+   "org.apache.commons.math.distribution.NormalDistributionImpl.inverseCumulativeProbability(double)"
+  ],
+  "tests": [
+   "org.apache.commons.math.distribution.NormalDistributionTest::testMath280"
+  ],
+  "detail": "all 1 method(s) reached"
+ },
+ "notes": []
+}

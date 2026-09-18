@@ -1,0 +1,9 @@
+{
+ "class_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/semantic/HR/001_patch1-Lang-24-ACS_c_rep001/cov/classes_buggy"
+ ],
+ "source_dirs": [
+  "/datadrive/vuln-patch/results/heldout_rcc_30_semantic_patches10/checkouts/semantic/HR/001_patch1-Lang-24-ACS_c_rep001/Lang_24_buggy/src/main/java"
+ ],
+ "include_glob": "org.apache.commons.**"
+}

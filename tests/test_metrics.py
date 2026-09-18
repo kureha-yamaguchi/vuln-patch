@@ -22,9 +22,9 @@ import pytest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'src'))
 
-from metrics import crashes, reached, scores             # noqa: E402
-from metrics import region as region_mod                 # noqa: E402
-from metrics.keys import (MethodKey, key_from_mangled,   # noqa: E402
+from java.measurements.d4j_rcc_sweep import crashes, reached, scores             # noqa: E402
+from java.measurements.d4j_rcc_sweep import region as region_mod                 # noqa: E402
+from java.measurements.d4j_rcc_sweep.keys import (MethodKey, key_from_mangled,   # noqa: E402
                           normalise_type)
 
 FIXTURES = os.path.join(ROOT, 'tests', 'fixtures')

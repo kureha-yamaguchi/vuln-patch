@@ -1,0 +1,15 @@
+{
+  "bug_id": "25",
+  "done": [
+    "checkout",
+    "patch_derived",
+    "patch_derived_lines",
+    "root_cause",
+    "trigger_gate",
+    "coverage",
+    "crash_sites"
+  ],
+  "errors": {},
+  "leg": "002_patch1-Math-25-ACS_c_rep001",
+  "project": "Math"
+}

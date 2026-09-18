@@ -1,0 +1,119 @@
+{
+ "modified_files": [
+  "src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java"
+ ],
+ "patch_text": "--- /src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java\n+++ /src/main/java/org/apache/commons/math/analysis/solvers/BisectionSolver.java\n@@ -69,7 +69,8 @@ public class BisectionSolver extends UnivariateRealSolverImpl {\n     /** {@inheritDoc} */\n     public double solve(final UnivariateRealFunction f, double min, double max, double initial)\n         throws MaxIterationsExceededException, FunctionEvaluationException {\n-        return solve(min, max);\n+        return solve(f,min, max)\n+;\n     }\n \n     /** {@inheritDoc} */",
+ "functions": [
+  {
+   "func_name": "solve",
+   "func_signature": "public double solve(UnivariateRealFunction f, double min, double max, double initial) throws MaxIterationsExceededException, FunctionEvaluationException",
+   "func_source": "    public double solve(final UnivariateRealFunction f, double min, double max, double initial)\n        throws MaxIterationsExceededException, FunctionEvaluationException {\n        return solve(min, max);\n    }",
+   "func_class": "BisectionSolver",
+   "func_class_fq": "org.apache.commons.math.analysis.solvers.BisectionSolver",
+   "func_param_types": [
+    "UnivariateRealFunction",
+    "double",
+    "double",
+    "double"
+   ],
+   "fi_name": "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(org.apache.commons.math.analysis.UnivariateRealFunction,double,double,double)",
+   "overload_types": [
+    [
+     "double",
+     "double",
+     "double"
+    ],
+    [
+     "double",
+     "double"
+    ],
+    [
+     "UnivariateRealFunction",
+     "double",
+     "double",
+     "double"
+    ],
+    [
+     "UnivariateRealFunction",
+     "double",
+     "double"
+    ]
+   ],
+   "xrefs": [],
+   "xref_names": [],
+   "reachable_edges": [
+    [
+     "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(org.apache.commons.math.analysis.UnivariateRealFunction,double,double,double)",
+     "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(double,double)"
+    ],
+    [
+     "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(double,double)",
+     "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(org.apache.commons.math.analysis.solvers.BisectionSolver,double,double)"
+    ]
+   ],
+   "reachable_depth": {
+    "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(org.apache.commons.math.analysis.UnivariateRealFunction,double,double,double)": 0,
+    "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(double,double)": 1,
+    "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(org.apache.commons.math.analysis.solvers.BisectionSolver,double,double)": 2
+   },
+   "reachable": [
+    "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(double,double)",
+    "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(org.apache.commons.math.analysis.solvers.BisectionSolver,double,double)"
+   ],
+   "related_callees": [
+    {
+     "name": "solve",
+     "source_file": "UnivariateRealSolver.java",
+     "signature": "double solve(double min, double max) throws ConvergenceException, FunctionEvaluationException",
+     "source": "    double solve(double min, double max) throws ConvergenceException,\n        FunctionEvaluationException;",
+     "is_abstract": true,
+     "impls": [
+      [
+       "BisectionSolver.java",
+       "    public double solve(double min, double max, double initial)\n        throws MaxIterationsExceededException, FunctionEvaluationException {\n        return solve(f, min, max);\n    }"
+      ],
+      [
+       "BisectionSolver.java",
+       "    public double solve(double min, double max)\n        throws MaxIterationsExceededException, FunctionEvaluationException {\n        return solve(f, min, max);\n    }"
+      ],
+      [
+       "BisectionSolver.java",
+       "    public double solve(final UnivariateRealFunction f, double min, double max)\n        throws MaxIterationsExceededException, FunctionEvaluationException {\n\n        clearResult();\n        verifyInterval(min,max);\n        double m;\n        double fm;\n        double fmin;\n\n        int i = 0;\n        while (i < maximalIterationCount) {\n            m = UnivariateRealSolverUtils.midpoint(min, max);\n           fmin = f.value(min);\n           fm = f.value(m);\n\n            if (fm * fmin > 0.0) {\n                // max and m bracket the root.\n                min = m;\n            } else {\n                // min and m bracket the root.\n                max = m;\n            }\n\n            if (Math.abs(max - min) <= absoluteAccuracy) {\n                m = UnivariateRealSolverUtils.midpoint(min, max);\n                setResult(m, i);\n                return m;\n            }\n            ++i;\n        }\n\n        throw new MaxIterationsExceededException(maximalIterationCount);\n    }"
+      ],
+      [
+       "BrentSolver.java",
+       "    public double solve(double min, double max)\n        throws MaxIterationsExceededException, FunctionEvaluationException {\n        return solve(f, min, max);\n    }"
+      ]
+     ]
+    }
+   ],
+   "field_siblings": []
+  }
+ ],
+ "package": "org.apache.commons.math.analysis.solvers",
+ "root_cause_reachable": [
+  "BisectionSolver.solve(double, double)",
+  "BisectionSolver.solve(BisectionSolver, double, double)"
+ ],
+ "neighbourhood_notes": [],
+ "source_imports": [
+  "import org.apache.commons.math.FunctionEvaluationException;",
+  "import org.apache.commons.math.MaxIterationsExceededException;",
+  "import org.apache.commons.math.analysis.UnivariateRealFunction;"
+ ],
+ "reachable_edges": [
+  [
+   "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(org.apache.commons.math.analysis.UnivariateRealFunction,double,double,double)",
+   "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(double,double)"
+  ],
+  [
+   "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(double,double)",
+   "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(org.apache.commons.math.analysis.solvers.BisectionSolver,double,double)"
+  ]
+ ],
+ "reachable_depth": {
+  "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(org.apache.commons.math.analysis.UnivariateRealFunction,double,double,double)": 0,
+  "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(double,double)": 1,
+  "[org.apache.commons.math.analysis.solvers.BisectionSolver].solve(org.apache.commons.math.analysis.solvers.BisectionSolver,double,double)": 2
+ }
+}

@@ -1,0 +1,801 @@
+[
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "copyArray",
+     "params": []
+    },
+    "line": 374,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "createTableau",
+     "params": []
+    },
+    "line": 211,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 117,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 214,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "top_library_line": 374,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "headline_site_line": 374,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "copyArray",
+     "params": []
+    },
+    "line": 374,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "createTableau",
+     "params": []
+    },
+    "line": 211,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 180,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "top_library_line": 374,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "headline_site_line": 374,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "copyArray",
+     "params": []
+    },
+    "line": 374,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "createTableau",
+     "params": []
+    },
+    "line": 211,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 77,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "top_library_line": 374,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "headline_site_line": 374,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "copyArray",
+     "params": []
+    },
+    "line": 374,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "createTableau",
+     "params": []
+    },
+    "line": 211,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 90,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "top_library_line": 374,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "headline_site_line": 374,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_007",
+  "source": "fuzz_out/attempt_007_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "copyArray",
+     "params": []
+    },
+    "line": 374,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "createTableau",
+     "params": []
+    },
+    "line": 211,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 191,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "top_library_line": 374,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "headline_site_line": 374,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "copyArray",
+     "params": []
+    },
+    "line": 374,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "createTableau",
+     "params": []
+    },
+    "line": 211,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 227,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "top_library_line": 374,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "headline_site_line": 374,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_013",
+  "source": "fuzz_out/attempt_013_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math3.optimization.linear.NoFeasibleSolutionException",
+  "message": "no feasible solution",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+     "name": "solvePhase1",
+     "params": []
+    },
+    "line": 179,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+     "name": "doOptimize",
+     "params": []
+    },
+    "line": 195,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.AbstractLinearOptimizer",
+     "name": "optimize",
+     "params": []
+    },
+    "line": 147,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "runOptimizeCase",
+     "params": []
+    },
+    "line": 31,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 17,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "name": "solvePhase1",
+   "params": []
+  },
+  "top_library_line": 179,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "name": "solvePhase1",
+   "params": []
+  },
+  "headline_site_line": 179,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_016",
+  "source": "fuzz_out/attempt_016_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math3.optimization.linear.NoFeasibleSolutionException",
+  "message": "no feasible solution",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+     "name": "solvePhase1",
+     "params": []
+    },
+    "line": 179,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 90,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "name": "solvePhase1",
+   "params": []
+  },
+  "top_library_line": 179,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "name": "solvePhase1",
+   "params": []
+  },
+  "headline_site_line": 179,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_019",
+  "source": "fuzz_out/attempt_019_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "copyArray",
+     "params": []
+    },
+    "line": 374,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "createTableau",
+     "params": []
+    },
+    "line": 211,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 63,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "top_library_line": 374,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "headline_site_line": 374,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.LinearConstraint",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 129,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 211,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.LinearConstraint",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 129,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.LinearConstraint",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 129,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math3.optimization.linear.NoFeasibleSolutionException",
+  "message": "no feasible solution",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+     "name": "solvePhase1",
+     "params": []
+    },
+    "line": 179,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+     "name": "doOptimize",
+     "params": []
+    },
+    "line": 195,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.AbstractLinearOptimizer",
+     "name": "optimize",
+     "params": []
+    },
+    "line": 147,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 87,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "name": "solvePhase1",
+   "params": []
+  },
+  "top_library_line": 179,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexSolver",
+   "name": "solvePhase1",
+   "params": []
+  },
+  "headline_site_line": 179,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_026",
+  "source": "fuzz_out/attempt_026_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "copyArray",
+     "params": []
+    },
+    "line": 374,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "createTableau",
+     "params": []
+    },
+    "line": 211,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 105,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "top_library_line": 374,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "headline_site_line": 374,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "copyArray",
+     "params": []
+    },
+    "line": 374,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "createTableau",
+     "params": []
+    },
+    "line": 211,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 204,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "top_library_line": 374,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.SimplexTableau",
+   "name": "copyArray",
+   "params": []
+  },
+  "headline_site_line": 374,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_028",
+  "source": "fuzz_out/attempt_028_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.LinearConstraint",
+     "name": "<init>",
+     "params": []
+    },
+    "line": 129,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "runScenario",
+     "params": []
+    },
+    "line": 38,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math3.optimization.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 13,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.LinearConstraint",
+   "name": "<init>",
+   "params": []
+  },
+  "top_library_line": 129,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math3.optimization.linear.LinearConstraint",
+   "name": "<init>",
+   "params": []
+  },
+  "headline_site_line": 129,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

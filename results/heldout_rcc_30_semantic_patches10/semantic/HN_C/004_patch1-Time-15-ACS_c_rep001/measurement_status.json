@@ -1,0 +1,15 @@
+{
+  "bug_id": "15",
+  "done": [
+    "checkout",
+    "patch_derived",
+    "patch_derived_lines",
+    "root_cause",
+    "trigger_gate",
+    "coverage",
+    "crash_sites"
+  ],
+  "errors": {},
+  "leg": "004_patch1-Time-15-ACS_c_rep001",
+  "project": "Time"
+}

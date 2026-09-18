@@ -1,0 +1,470 @@
+{
+ "granularity": "line",
+ "items": [
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 737,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 738,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 739,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 740,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 741,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 742,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 850,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 851,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 852,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 853,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 854,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 855,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 856,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 857,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 858,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 859,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 5278,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 5279,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.StringUtils",
+   "line": 5280,
+   "ring": "callee"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 605,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 606,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 607,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 608,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 609,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 610,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 611,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 612,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 613,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 614,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 615,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 616,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 617,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 618,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 619,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 620,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 621,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 622,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 623,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 624,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 625,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 626,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 627,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 628,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 629,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 630,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 631,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 632,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 633,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 634,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 635,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 636,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 637,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 638,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 639,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 640,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 641,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtils",
+   "line": 642,
+   "ring": "seed"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 366,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 367,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 368,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 369,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 370,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 371,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 372,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 373,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 374,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 375,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 376,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 377,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 378,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 379,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 380,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 381,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 382,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 383,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 384,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 385,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 386,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 387,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 388,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 389,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 390,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 391,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 392,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 393,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 394,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 395,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 396,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 397,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 398,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 399,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 400,
+   "ring": "caller"
+  },
+  {
+   "class_top_fq": "org.apache.commons.lang.WordUtilsTest",
+   "line": 401,
+   "ring": "caller"
+  }
+ ]
+}

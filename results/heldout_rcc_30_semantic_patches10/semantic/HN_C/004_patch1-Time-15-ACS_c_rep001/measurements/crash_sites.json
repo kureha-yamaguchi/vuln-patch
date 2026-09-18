@@ -1,0 +1,967 @@
+[
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Expected overflow for safeMultiply(-9223372036854775808, -1), got -9223372036854775808",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 79,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: 19762815271174144 * 4601389",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 95,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: -9223372036854775808 * -2147483648",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 70,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: 4242109374006296575 * 255",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 9,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: -3170549530831618054 * -3",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 52,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_005",
+  "source": "fuzz_out/attempt_005_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: -9223372036854775808 * 2",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 93,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Expected overflow for -9223372036854775808 * -1 but got -9223372036854775808",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "checkSafeMultiply",
+     "params": []
+    },
+    "line": 63,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 50,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_007",
+  "source": "fuzz_out/attempt_007_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: -3074457345618258603 * -3",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 70,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Expected overflow but got result: -9223372036854775808 * -1 = -9223372036854775808",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "checkMultiply",
+     "params": []
+    },
+    "line": 79,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 67,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_009",
+  "source": "fuzz_out/attempt_009_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: 7363439266820521983 * -7",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 124,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: 9223372036854775807 * 2147483647",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 85,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalStateException",
+  "message": "Expected overflow for Long.MIN_VALUE * -1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 64,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArrayIndexOutOfBoundsException",
+  "message": "13",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 46,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_013",
+  "source": "fuzz_out/attempt_013_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: 9223372036854775807 * 3276799",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 94,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_014",
+  "source": "fuzz_out/attempt_014_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: -9223372036854775808 * 35",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 175,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_015",
+  "source": "fuzz_out/attempt_015_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Expected ArithmeticException for -9223372036854775808 * -1 but got -9223372036854775808",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 90,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_016",
+  "source": "fuzz_out/attempt_016_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Expected ArithmeticException for -9223372036854775808 * -1 but got -9223372036854775808",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "checkMultiply",
+     "params": []
+    },
+    "line": 93,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 8,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_018",
+  "source": "fuzz_out/attempt_018_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: 9223372036854775807 * 2",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 82,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_019",
+  "source": "fuzz_out/attempt_019_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: 1008806316531384319 * 234881025",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 162,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: 9223372036854775807 * -2147483648",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 75,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_021",
+  "source": "fuzz_out/attempt_021_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Expected ArithmeticException for overflow: -9223372036854775808 * -1, got -9223372036854775808",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "checkSafeMultiply",
+     "params": []
+    },
+    "line": 95,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 62,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Expected overflow for -9223372036854775808 * -1 but got -9223372036854775808",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "checkSafeMultiply",
+     "params": []
+    },
+    "line": 84,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 61,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "java.lang.IllegalStateException",
+  "message": "safeMultiply failed to throw on overflow: -9223372036854775808 * -1 = -9223372036854775808",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 87,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_026",
+  "source": "fuzz_out/attempt_026_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: 9223372036854775807 * 2",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 113,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ },
+ {
+  "exception": "java.lang.AssertionError",
+  "message": "Expected overflow not detected for -9223372036854775808 * -1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 91,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_028",
+  "source": "fuzz_out/attempt_028_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: 9223372036854775807 * 2",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 92,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_029",
+  "source": "fuzz_out/attempt_029_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ArithmeticException",
+  "message": "Multiplication overflows a long: -9223372036854775808 * 2",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FieldUtils",
+     "name": "safeMultiply",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.joda.time.field.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 100,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "top_library_line": 146,
+  "headline_site": {
+   "class_fq": "org.joda.time.field.FieldUtils",
+   "name": "safeMultiply",
+   "params": []
+  },
+  "headline_site_line": 146,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

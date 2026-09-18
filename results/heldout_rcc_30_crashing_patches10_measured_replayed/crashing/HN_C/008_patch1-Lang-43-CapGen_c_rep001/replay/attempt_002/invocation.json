@@ -1,0 +1,34 @@
+{
+  "attempt_label": "attempt_002",
+  "compile": [
+    "javac",
+    "-encoding",
+    "UTF-8",
+    "-cp",
+    "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/cov/classes_buggy:/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/Lang_43_buggy/target/classes:/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/Lang_43_buggy/target/tests:/datadrive/vuln-patch/defects4j/framework/projects/lib/junit-4.11.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar:/home/azureuser/.cache/jazzer/jazzer-api-0.22.1.jar",
+    "-d",
+    "/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/replay/attempt_002/classes",
+    "/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/replay/attempt_002/FuzzHarness.java"
+  ],
+  "leg": "crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001",
+  "replay": [
+    "java",
+    "-javaagent:/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/support/deadline.jar=35000,/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/replay/attempt_002/live.exec",
+    "-cp",
+    "/home/azureuser/.cache/jazzer/jazzer-0.22.1.jar:/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/cov/classes_buggy:/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/Lang_43_buggy/target/classes:/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/Lang_43_buggy/target/tests:/datadrive/vuln-patch/defects4j/framework/projects/lib/junit-4.11.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/cglib.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/asm.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/easymock.jar:/datadrive/vuln-patch/defects4j/framework/projects/Lang/lib/commons-io.jar:/home/azureuser/.cache/jazzer/jazzer-api-0.22.1.jar:/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/replay/attempt_002/classes",
+    "com.code_intelligence.jazzer.Jazzer",
+    "--target_class=org.apache.commons.lang.text.FuzzHarness",
+    "--reproducer_path=/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/replay/attempt_002",
+    "--coverage_dump=/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/replay/attempt_002/normal.exec",
+    "--instrumentation_includes=org.apache.commons.**",
+    "--",
+    "-max_total_time=20",
+    "-runs=100000",
+    "-seed=2929520676",
+    "-artifact_prefix=/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/replay/attempt_002/",
+    "/datadrive/vuln-patch/results/heldout_rcc_30_crashing_patches10_measured_replayed/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/replay/attempt_002/corpus"
+  ],
+  "seed": 2929520676,
+  "source": "/datadrive/vuln-patch/results/heldout_rcc_30/crashing/HN_C/008_patch1-Lang-43-CapGen_c_rep001/harness_src/attempt_002.java",
+  "source_sha256": "567bb06d99272b638d25106badd5d796f26a949f24f3cb7cb198c7588e17ff0f"
+}

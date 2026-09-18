@@ -1,0 +1,64 @@
+DEDUP_TOKEN: b625b5866cbde190
+
+INFO: Loaded 314 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.jfree.data.xy.FuzzHarness (took 68 ms, size +27%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x75ba09b76cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2239696710
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x75ba70567330, 0x75ba70567530), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x75ba704ca960,0x75ba704cc960), 
+INFO:       17 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.jfree.data.xy.XYSeries (took 21 ms, size +24%)
+INFO: Instrumented org.jfree.data.general.Series (took 9 ms, size +24%)
+INFO: Instrumented org.jfree.data.general.SeriesException (took 0 ms, size +20%)
+INFO: Instrumented org.jfree.data.xy.XYDataItem (took 5 ms, size +28%)
+INFO: Instrumented org.jfree.data.general.SeriesChangeEvent (took 0 ms, size +20%)
+INFO: seed corpus: files: 17 min: 3b max: 6b total: 68b rss: 1275Mb
+#18	INITED cov: 43 ft: 43 corp: 2/9b exec/s: 0 rss: 1275Mb
+#40	REDUCE cov: 43 ft: 43 corp: 2/5b lim: 6 exec/s: 0 rss: 1276Mb L: 2/3 MS: 4 CrossOver-Custom-CrossOver-Custom-
+#47	REDUCE cov: 43 ft: 43 corp: 2/4b lim: 6 exec/s: 0 rss: 1276Mb L: 1/3 MS: 4 ShuffleBytes-Custom-EraseBytes-Custom-
+#54	REDUCE cov: 43 ft: 43 corp: 2/3b lim: 6 exec/s: 0 rss: 1276Mb L: 2/2 MS: 4 InsertByte-Custom-EraseBytes-Custom-
+#100	REDUCE cov: 47 ft: 48 corp: 3/9b lim: 6 exec/s: 0 rss: 1276Mb L: 6/6 MS: 2 InsertRepeatedBytes-Custom-
+#166	REDUCE cov: 47 ft: 48 corp: 3/8b lim: 6 exec/s: 0 rss: 1276Mb L: 1/6 MS: 2 EraseBytes-Custom-
+#401	REDUCE cov: 48 ft: 49 corp: 4/16b lim: 8 exec/s: 0 rss: 1276Mb L: 8/8 MS: 10 InsertRepeatedBytes-Custom-ChangeASCIIInt-Custom-ChangeBinInt-Custom-CrossOver-Custom-CrossOver-Custom-
+#717	NEW    cov: 62 ft: 75 corp: 5/25b lim: 11 exec/s: 0 rss: 1276Mb L: 9/9 MS: 2 InsertByte-Custom-
+#757	NEW    cov: 63 ft: 84 corp: 6/36b lim: 11 exec/s: 0 rss: 1276Mb L: 11/11 MS: 10 ChangeBinInt-Custom-CrossOver-Custom-ShuffleBytes-Custom-ChangeASCIIInt-Custom-CopyPart-Custom-
+#759	NEW    cov: 63 ft: 111 corp: 7/47b lim: 11 exec/s: 0 rss: 1276Mb L: 11/11 MS: 4 CrossOver-Custom-CrossOver-Custom-
+#760	NEW    cov: 63 ft: 116 corp: 8/58b lim: 11 exec/s: 0 rss: 1276Mb L: 11/11 MS: 2 ChangeBinInt-Custom-
+#761	NEW    cov: 64 ft: 117 corp: 9/68b lim: 11 exec/s: 0 rss: 1276Mb L: 10/11 MS: 2 InsertByte-Custom-
+#778	NEW    cov: 65 ft: 118 corp: 10/79b lim: 11 exec/s: 0 rss: 1276Mb L: 11/11 MS: 4 CopyPart-Custom-ChangeASCIIInt-Custom-
+#795	NEW    cov: 66 ft: 125 corp: 11/88b lim: 11 exec/s: 0 rss: 1276Mb L: 9/11 MS: 4 EraseBytes-Custom-ChangeBinInt-Custom-
+#836	NEW    cov: 66 ft: 129 corp: 12/99b lim: 11 exec/s: 0 rss: 1276Mb L: 11/11 MS: 2 ShuffleBytes-Custom-
+
+== Java Exception: java.lang.IndexOutOfBoundsException: Index: -1, Size: 1
+	at java.util.ArrayList.rangeCheckForAdd(ArrayList.java:667)
+	at java.util.ArrayList.add(ArrayList.java:479)
+	at org.jfree.data.xy.XYSeries.addOrUpdate(XYSeries.java:564)
+	at org.jfree.data.xy.FuzzHarness.fuzzerTestOneInput(FuzzHarness.java:27)
+== libFuzzer crashing input ==
+MS: 10 CopyPart-Custom-ChangeBinInt-Custom-CopyPart-Custom-CopyPart-Custom-InsertRepeatedBytes-Custom-; base unit: b6589fc6ab0dc82cf12099d1c2d40ab994e8410c
+0x2,0xc9,0xc9,0xc9,0xc9,0x30,0x2,0x30,0x2,
+\002\311\311\311\3110\0020\002
+artifact_prefix='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/attempt_002/crashes/'; Test unit written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/attempt_002/crashes/crash-2e2e874c0b039f2ace1af53be11c3d476393632b
+Base64: AsnJyckwAjAC
+reproducer_path='/datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/attempt_002/crashes'; Java reproducer written to /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HN_C/002_patch1-Chart-5-Arja_c_rep001/Chart_5_buggy/fuzz/attempt_002/crashes/Crash_2e2e874c0b039f2ace1af53be11c3d476393632b.java
+

@@ -1,0 +1,230 @@
+{
+ "modified_files": [
+  "src/main/java/org/apache/commons/math3/optimization/fitting/HarmonicFitter.java"
+ ],
+ "patch_text": "--- /src/main/java/org/apache/commons/math3/optimization/fitting/HarmonicFitter.java\n+++ /src/main/java/org/apache/commons/math3/optimization/fitting/HarmonicFitter.java\n@@ -324,6 +324,9 @@\n                     // procedure cannot produce sensible results.\n \n                 a = FastMath.sqrt(c1 / c2);\n+//ACS's patch begin\n+\tif (c2==0.0){throw new MathIllegalStateException();}\n+//ACS's patch end\n                 omega = FastMath.sqrt(c2 / c3);\n             }\n         }\n",
+ "functions": [
+  {
+   "func_name": "guessAOmega",
+   "func_signature": "private void guessAOmega()",
+   "func_source": "        private void guessAOmega() {\n            // initialize the sums for the linear model between the two integrals\n            double sx2 = 0;\n            double sy2 = 0;\n            double sxy = 0;\n            double sxz = 0;\n            double syz = 0;\n\n            double currentX = observations[0].getX();\n            double currentY = observations[0].getY();\n            double f2Integral = 0;\n            double fPrime2Integral = 0;\n            final double startX = currentX;\n            for (int i = 1; i < observations.length; ++i) {\n                // one step forward\n                final double previousX = currentX;\n                final double previousY = currentY;\n                currentX = observations[i].getX();\n                currentY = observations[i].getY();\n\n                // update the integrals of f<sup>2</sup> and f'<sup>2</sup>\n                // considering a linear model for f (and therefore constant f')\n                final double dx = currentX - previousX;\n                final double dy = currentY - previousY;\n                final double f2StepIntegral =\n                    dx * (previousY * previousY + previousY * currentY + currentY * currentY) / 3;\n                final double fPrime2StepIntegral = dy * dy / dx;\n\n                final double x = currentX - startX;\n                f2Integral += f2StepIntegral;\n                fPrime2Integral += fPrime2StepIntegral;\n\n                sx2 += x * x;\n                sy2 += f2Integral * f2Integral;\n                sxy += x * f2Integral;\n                sxz += x * fPrime2Integral;\n                syz += f2Integral * fPrime2Integral;\n            }\n\n            // compute the amplitude and pulsation coefficients\n            double c1 = sy2 * sxz - sxy * syz;\n            double c2 = sxy * sxz - sx2 * syz;\n            double c3 = sx2 * sy2 - sxy * sxy;\n            if ((c1 / c2 < 0) || (c2 / c3 < 0)) {\n                final int last = observations.length - 1;\n                // Range of the observations, assuming that the\n                // observations are sorted.\n                final double xRange = observations[last].getX() - observations[0].getX();\n                if (xRange == 0) {\n                    throw new ZeroException();\n                }\n                omega = 2 * Math.PI / xRange;\n\n                double yMin = Double.POSITIVE_INFINITY;\n                double yMax = Double.NEGATIVE_INFINITY;\n                for (int i = 1; i < observations.length; ++i) {\n                    final double y = observations[i].getY();\n                    if (y < yMin) {\n                        yMin = y;\n                    }\n                    if (y > yMax) {\n                        yMax = y;\n                    }\n                }\n                a = 0.5 * (yMax - yMin);\n            } else {\n                    // In some ill-conditioned cases (cf. MATH-844), the guesser\n                    // procedure cannot produce sensible results.\n\n                a = FastMath.sqrt(c1 / c2);\n                omega = FastMath.sqrt(c2 / c3);\n            }\n        }",
+   "func_class": "HarmonicFitter.ParameterGuesser",
+   "func_class_fq": "org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser",
+   "func_param_types": [],
+   "fi_name": "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+   "overload_types": [
+    []
+   ],
+   "xrefs": [
+    "public double[] guess() {\n            sortObservations();\n            guessAOmega();\n            guessPhi();\n            return new double[] { a, omega, phi };\n        }"
+   ],
+   "xref_names": [
+    "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guess()"
+   ],
+   "reachable_edges": [
+    [
+     "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+     "observations[0].getX()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+     "observations[0].getY()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+     "observations[i].getX()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+     "observations[i].getY()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+     "observations[last].getX()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+     "observations[0].getX()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+     "[org.apache.commons.math3.exception.ZeroException].<init>()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+     "observations[i].getY()"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+     "[org.apache.commons.math3.util.FastMath].sqrt(org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser)"
+    ],
+    [
+     "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+     "[org.apache.commons.math3.util.FastMath].sqrt(org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser)"
+    ],
+    [
+     "[org.apache.commons.math3.exception.ZeroException].<init>()",
+     "[org.apache.commons.math3.exception.ZeroException].<init>(org.apache.commons.math3.exception.ZeroException)"
+    ]
+   ],
+   "reachable_depth": {
+    "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()": 0,
+    "observations[0].getX()": 1,
+    "observations[0].getY()": 1,
+    "observations[i].getX()": 1,
+    "observations[i].getY()": 1,
+    "observations[last].getX()": 1,
+    "[org.apache.commons.math3.exception.ZeroException].<init>()": 1,
+    "[org.apache.commons.math3.util.FastMath].sqrt(org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser)": 1,
+    "[org.apache.commons.math3.exception.ZeroException].<init>(org.apache.commons.math3.exception.ZeroException)": 2
+   },
+   "reachable": [
+    "observations[0].getX()",
+    "observations[0].getY()",
+    "observations[i].getX()",
+    "observations[i].getY()",
+    "observations[last].getX()",
+    "[org.apache.commons.math3.exception.ZeroException].<init>()",
+    "[org.apache.commons.math3.util.FastMath].sqrt(org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser)",
+    "[org.apache.commons.math3.exception.ZeroException].<init>(org.apache.commons.math3.exception.ZeroException)",
+    "[org.apache.commons.math3.geometry.euclidean.oned.Vector1D].getX()",
+    "[org.apache.commons.math3.geometry.euclidean.threed.Vector3D].getY()"
+   ],
+   "related_callees": [
+    {
+     "name": "getX",
+     "source_file": "WeightedObservedPoint.java",
+     "signature": "public double getX()",
+     "source": "    public double getX() {\n        return x;\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "getY",
+     "source_file": "WeightedObservedPoint.java",
+     "signature": "public double getY()",
+     "source": "    public double getY() {\n        return y;\n    }",
+     "is_abstract": false,
+     "impls": []
+    }
+   ],
+   "field_siblings": [
+    {
+     "name": "guess",
+     "signature": "public double[] guess()",
+     "shared_fields": [
+      "a",
+      "omega"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Estimate a first guess of the coefficients. @return the guessed coefficients, in the following order: <ul> <li>Amplitude</li> <li>Angular frequency</li> <li>Phase</li> </ul>"
+    },
+    {
+     "name": "guessPhi",
+     "signature": "private void guessPhi()",
+     "shared_fields": [
+      "observations",
+      "omega"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Estimate a first guess of the phase."
+    },
+    {
+     "name": "ParameterGuesser",
+     "signature": "public ParameterGuesser(WeightedObservedPoint[] observations)",
+     "shared_fields": [
+      "observations"
+     ],
+     "is_constructor": true,
+     "source": "        public ParameterGuesser(WeightedObservedPoint[] observations) {\n            if (observations.length < 4) {\n                throw new NumberIsTooSmallException(LocalizedFormats.INSUFFICIENT_OBSERVED_POINTS_IN_SAMPLE,\n                                                    observations.length, 4, true);\n            }\n\n            this.observations = observations.clone();\n        }",
+     "javadoc": "Simple constructor. @param observations sampled observations @throws NumberIsTooSmallException if the sample is too short or if the first guess cannot be computed."
+    },
+    {
+     "name": "CurveFitter.CurveFitter",
+     "signature": "public CurveFitter(DifferentiableMultivariateVectorOptimizer optimizer)",
+     "shared_fields": [
+      "observations"
+     ],
+     "is_constructor": true,
+     "source": "    public CurveFitter(final DifferentiableMultivariateVectorOptimizer optimizer) {\n        this.optimizer = optimizer;\n        observations = new ArrayList<WeightedObservedPoint>();\n    }",
+     "javadoc": "Simple constructor. @param optimizer optimizer to use for the fitting"
+    },
+    {
+     "name": "sortObservations",
+     "signature": "private void sortObservations()",
+     "shared_fields": [
+      "observations"
+     ],
+     "is_constructor": false,
+     "source": null,
+     "javadoc": "Sort the observations with respect to the abscissa."
+    }
+   ]
+  }
+ ],
+ "package": "org.apache.commons.math3.optimization.fitting",
+ "root_cause_reachable": [
+  "ZeroException.<init>()",
+  "FastMath.sqrt",
+  "ZeroException.<init>(ZeroException)",
+  "Vector1D.getX",
+  "Vector3D.getY"
+ ],
+ "neighbourhood_notes": [],
+ "source_imports": [
+  "import org.apache.commons.math3.optimization.DifferentiableMultivariateVectorOptimizer;",
+  "import org.apache.commons.math3.analysis.function.HarmonicOscillator;",
+  "import org.apache.commons.math3.exception.ZeroException;",
+  "import org.apache.commons.math3.exception.NumberIsTooSmallException;",
+  "import org.apache.commons.math3.exception.MathIllegalStateException;",
+  "import org.apache.commons.math3.exception.util.LocalizedFormats;",
+  "import org.apache.commons.math3.util.FastMath;"
+ ],
+ "reachable_edges": [
+  [
+   "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+   "observations[0].getX()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+   "observations[0].getY()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+   "observations[i].getX()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+   "observations[i].getY()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+   "observations[last].getX()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+   "[org.apache.commons.math3.exception.ZeroException].<init>()"
+  ],
+  [
+   "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()",
+   "[org.apache.commons.math3.util.FastMath].sqrt(org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser)"
+  ],
+  [
+   "[org.apache.commons.math3.exception.ZeroException].<init>()",
+   "[org.apache.commons.math3.exception.ZeroException].<init>(org.apache.commons.math3.exception.ZeroException)"
+  ]
+ ],
+ "reachable_depth": {
+  "[org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser].guessAOmega()": 0,
+  "observations[0].getX()": 1,
+  "observations[0].getY()": 1,
+  "observations[i].getX()": 1,
+  "observations[i].getY()": 1,
+  "observations[last].getX()": 1,
+  "[org.apache.commons.math3.exception.ZeroException].<init>()": 1,
+  "[org.apache.commons.math3.util.FastMath].sqrt(org.apache.commons.math3.optimization.fitting.HarmonicFitter.ParameterGuesser)": 1,
+  "[org.apache.commons.math3.exception.ZeroException].<init>(org.apache.commons.math3.exception.ZeroException)": 2
+ }
+}

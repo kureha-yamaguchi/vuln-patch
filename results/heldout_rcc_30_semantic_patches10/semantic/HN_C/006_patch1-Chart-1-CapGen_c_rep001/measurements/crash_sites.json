@@ -1,0 +1,617 @@
+[
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 59,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 59,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 90,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 90,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_009",
+  "source": "fuzz_out/attempt_009_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 49,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 71,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_013",
+  "source": "fuzz_out/attempt_013_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 72,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_015",
+  "source": "fuzz_out/attempt_015_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 56,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_017",
+  "source": "fuzz_out/attempt_017_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 81,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_019",
+  "source": "fuzz_out/attempt_019_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 91,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_021",
+  "source": "fuzz_out/attempt_021_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 110,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 96,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 78,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_026",
+  "source": "fuzz_out/attempt_026_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 79,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_028",
+  "source": "fuzz_out/attempt_028_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+     "name": "getLegendItems",
+     "params": []
+    },
+    "line": 1800,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.jfree.chart.renderer.category.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 96,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "top_library_line": 1800,
+  "headline_site": {
+   "class_fq": "org.jfree.chart.renderer.category.AbstractCategoryItemRenderer",
+   "name": "getLegendItems",
+   "params": []
+  },
+  "headline_site_line": 1800,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

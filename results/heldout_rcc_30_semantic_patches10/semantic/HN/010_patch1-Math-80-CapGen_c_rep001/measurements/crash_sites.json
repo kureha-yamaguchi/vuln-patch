@@ -1,0 +1,413 @@
+[
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-eigenvalue] semantic mismatch: index=1 expected=16828.208208485466 actual=20654.74511575945 tolerance=0.001",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "checkLiftedOracleFromTest",
+     "params": []
+    },
+    "line": 62,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 10,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-eigenvalue-1] semantic mismatch: expected=16828.208208485466 actual=20654.74511575945 index=1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "assertApprox",
+     "params": []
+    },
+    "line": 245,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "runLiftedSeedOracles",
+     "params": []
+    },
+    "line": 46,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 36,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:fixed-eigenvalue-1] semantic mismatch: getRealEigenvalues()[1] expected=16828.208208485466 actual=20654.74511575945 tol=0.001",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "assertCloseFixedEigenvalue",
+     "params": []
+    },
+    "line": 334,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "runLiftedOracle",
+     "params": []
+    },
+    "line": 55,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 38,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_007",
+  "source": "fuzz_out/attempt_007_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-eigenvalues] semantic mismatch: index=1 expected=16828.208208485466 actual=20654.74511575945",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 41,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-ref-eigenvalues] semantic mismatch: index=1 expected=16828.208208485466 actual=20654.74511575945",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 47,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-eigenvalues] semantic mismatch: index=1 expected=16828.208208485466 actual=20654.74511575945",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 41,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:seed-eigenvalue-1] semantic mismatch: expected=16828.208208485466 actual=20654.74511575945",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "seedEigenvalueAlarm",
+     "params": []
+    },
+    "line": 95,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "liftedSeedOracle",
+     "params": []
+    },
+    "line": 69,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 38,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_015",
+  "source": "fuzz_out/attempt_015_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-eigenvalues] semantic mismatch: expected=16828.208208485466 actual=20654.74511575945 index=1",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "exerciseLiftedOracle",
+     "params": []
+    },
+    "line": 56,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 35,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_017",
+  "source": "fuzz_out/attempt_017_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-eigenvalue] semantic mismatch: index=1 expected=16828.208208485466 actual=20654.74511575945 tol=0.001",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "liftedTestOracle",
+     "params": []
+    },
+    "line": 56,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 10,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:seed-eigenvalues] semantic mismatch: index=1 expected=16828.208208485466 actual=20654.74511575945",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 43,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-eigenvalues] semantic mismatch: index=1 expected=16828.208208485466 actual=20654.74511575945",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "checkLiftedSeedOracles",
+     "params": []
+    },
+    "line": 59,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 38,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_025",
+  "source": "fuzz_out/attempt_025_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-eigenvalues] semantic mismatch: index=1 expected=16828.208208485466 actual=20654.74511575945",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 47,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ },
+ {
+  "exception": "com.code_intelligence.jazzer.api.FuzzerSecurityIssueLow",
+  "message": "[oracle:lifted-eigenvalues] semantic mismatch: index=1 expected=16828.208208485466 actual=20654.74511575945",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "runLiftedOracle",
+     "params": []
+    },
+    "line": 55,
+    "harness": true
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.linear.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 9,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

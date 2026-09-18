@@ -86,9 +86,41 @@ def function_map(project) -> Dict[str, object]:
 def bfs_callees(fmap: Dict[str, object], start: str,
                 cap: int, max_depth: int) -> List[str]:
     """BFS the call graph from `start` via each profile's `base_callsites`
-    (immediate callees), bounded by `cap` nodes and `max_depth` levels."""
+    (immediate callees), bounded by `cap` nodes and `max_depth` levels.
+
+    Thin wrapper over `bfs_callees_with_edges` — same traversal, same
+    results, same order — kept because every caller on the prompt path
+    wants only the names."""
+    names, _edges, _depths = bfs_callees_with_edges(
+        fmap, start, cap, max_depth)
+    return names
+
+
+def bfs_callees_with_edges(
+        fmap: Dict[str, object], start: str, cap: int, max_depth: int,
+) -> Tuple[List[str], List[Tuple[str, str]], Dict[str, int]]:
+    """The same bounded BFS as `bfs_callees`, also reporting the SHAPE of
+    the walk: the traversed edges and the depth each name was first
+    reached at.
+
+    Returns `(names, edges, depths)`:
+
+      * `names`  — exactly what `bfs_callees` returns (same members, same
+        order): the newly-discovered callees, capped at `cap`.
+      * `edges`  — `(caller, callee)` for every call site the walk
+        actually looked at, in traversal order, including edges back to an
+        already-seen node (those are real edges; they just add no new
+        name). MEASUREMENT ONLY.
+      * `depths` — `{name: depth}` for each name in `names`, plus `start`
+        at depth 0. MEASUREMENT ONLY.
+
+    The extra two outputs never touch a prompt: they exist so a run can be
+    read back as a graph after the fact.
+    """
     seen = {start}
     out: List[str] = []
+    edges: List[Tuple[str, str]] = []
+    depths: Dict[str, int] = {start: 0}
     queue: List[Tuple[str, int]] = [(start, 0)]
     while queue and len(out) < cap:
         name, depth = queue.pop(0)
@@ -102,15 +134,19 @@ def bfs_callees(fmap: Dict[str, object], start: str,
                 dst = cs
             else:
                 dst = getattr(cs, 'dst_function_name', None)
-            if not dst or dst in seen:
+            if not dst:
+                continue
+            edges.append((name, dst))
+            if dst in seen:
                 continue
             seen.add(dst)
             out.append(dst)
+            depths[dst] = depth + 1
             if len(out) >= cap:
                 break
             if depth + 1 < max_depth:
                 queue.append((dst, depth + 1))
-    return out
+    return out, edges, depths
 
 
 def with_timeout(fn, seconds):

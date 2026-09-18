@@ -1,0 +1,162 @@
+{
+ "modified_files": [
+  "src/main/java/org/apache/commons/math/optimization/fitting/GaussianFitter.java"
+ ],
+ "patch_text": "--- /src/main/java/org/apache/commons/math/optimization/fitting/GaussianFitter.java\n+++ /src/main/java/org/apache/commons/math/optimization/fitting/GaussianFitter.java\n@@ -118,7 +118,8 @@ public class GaussianFitter extends CurveFitter {\n      */\n     public double[] fit() {\n         final double[] guess = (new ParameterGuesser(getObservations())).guess();\n-        return fit(new Gaussian.Parametric(), guess);\n+        return fit( guess)\n+;\n     }\n \n     /**",
+ "functions": [
+  {
+   "func_name": "fit",
+   "func_signature": "public double[] fit()",
+   "func_source": "    public double[] fit() {\n        final double[] guess = (new ParameterGuesser(getObservations())).guess();\n        return fit(new Gaussian.Parametric(), guess);\n    }",
+   "func_class": "GaussianFitter",
+   "func_class_fq": "org.apache.commons.math.optimization.fitting.GaussianFitter",
+   "func_param_types": [],
+   "fi_name": "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit()",
+   "overload_types": [
+    [
+     "double[]"
+    ],
+    []
+   ],
+   "xrefs": [
+    "@Test\n    public void testFit01()\n    throws OptimizationException {\n        GaussianFitter fitter = new GaussianFitter(new LevenbergMarquardtOptimizer());\n        addDatasetToGaussianFitter(DATASET1, fitter);\n        double[] parameters = fitter.fit();\n\n        Assert.assertEquals(3496978.1837704973, parameters[0], 1e-4);\n        Assert.assertEquals(4.054933085999146, parameters[1], 1e-4);\n        Assert.assertEquals(0.015039355620304326, parameters[2], 1e-4);\n    }",
+    "@Test(expected=MathIllegalArgumentException.class)\n    public void testFit02()\n    throws OptimizationException {\n        GaussianFitter fitter = new GaussianFitter(new LevenbergMarquardtOptimizer());\n        fitter.fit();\n    }",
+    "@Test(expected=MathIllegalArgumentException.class)\n    public void testFit03()\n    throws OptimizationException {\n        GaussianFitter fitter = new GaussianFitter(new LevenbergMarquardtOptimizer());\n        addDatasetToGaussianFitter(new double[][] {\n            {4.0254623,  531026.0},\n            {4.02804905, 664002.0}},\n            fitter);\n        fitter.fit();\n    }",
+    "@Test\n    public void testFit04()\n    throws OptimizationException \n    {\n        GaussianFitter fitter = new GaussianFitter(new LevenbergMarquardtOptimizer());\n        addDatasetToGaussianFitter(DATASET2, fitter);\n        double[] parameters = fitter.fit();\n\n        Assert.assertEquals(233003.2967252038, parameters[0], 1e-4);\n        Assert.assertEquals(-10.654887521095983, parameters[1], 1e-4);\n        Assert.assertEquals(4.335937353196641, parameters[2], 1e-4);\n    }",
+    "@Test\n    public void testFit05()\n    throws OptimizationException {\n        GaussianFitter fitter = new GaussianFitter(new LevenbergMarquardtOptimizer());\n        addDatasetToGaussianFitter(DATASET3, fitter);\n        double[] parameters = fitter.fit();\n\n        Assert.assertEquals(283863.81929180305, parameters[0], 1e-4);\n        Assert.assertEquals(-13.29641995105174, parameters[1], 1e-4);\n        Assert.assertEquals(1.7297330293549908, parameters[2], 1e-4);\n    }"
+   ],
+   "xref_names": [
+    "[org.apache.commons.math.optimization.fitting.GaussianFitterTest].testFit01()",
+    "[org.apache.commons.math.optimization.fitting.GaussianFitterTest].testFit02()",
+    "[org.apache.commons.math.optimization.fitting.GaussianFitterTest].testFit03()",
+    "[org.apache.commons.math.optimization.fitting.GaussianFitterTest].testFit04()",
+    "[org.apache.commons.math.optimization.fitting.GaussianFitterTest].testFit05()"
+   ],
+   "reachable_edges": [
+    [
+     "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit()",
+     "(new ParameterGuesser(getObservations())).guess()"
+    ],
+    [
+     "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit()",
+     "[org.apache.commons.math.analysis.function.Gaussian.Parametric].<init>()"
+    ],
+    [
+     "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit()",
+     "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit(org.apache.commons.math.analysis.function.Gaussian.Parametric,org.apache.commons.math.optimization.fitting.GaussianFitter)"
+    ]
+   ],
+   "reachable_depth": {
+    "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit()": 0,
+    "(new ParameterGuesser(getObservations())).guess()": 1,
+    "[org.apache.commons.math.analysis.function.Gaussian.Parametric].<init>()": 1,
+    "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit(org.apache.commons.math.analysis.function.Gaussian.Parametric,org.apache.commons.math.optimization.fitting.GaussianFitter)": 1
+   },
+   "reachable": [
+    "(new ParameterGuesser(getObservations())).guess()",
+    "[org.apache.commons.math.analysis.function.Gaussian.Parametric].<init>()",
+    "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit(org.apache.commons.math.analysis.function.Gaussian.Parametric,org.apache.commons.math.optimization.fitting.GaussianFitter)",
+    "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit(double[])",
+    "[org.apache.commons.math.optimization.fitting.CurveFitter].getObservations()",
+    "[org.apache.commons.math.optimization.fitting.HarmonicFitter.ParameterGuesser].guess()"
+   ],
+   "related_callees": [
+    {
+     "name": "guess",
+     "source_file": "GaussianFitter.java",
+     "signature": "public double[] guess()",
+     "source": "        public double[] guess() {\n            if (parameters == null) {\n                parameters = basicGuess(observations);\n            }\n            return parameters.clone();\n        }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "GaussianFitter.java",
+       "        public double[] guess() {\n            if (parameters == null) {\n                parameters = basicGuess(observations);\n            }\n            return parameters.clone();\n        }"
+      ],
+      [
+       "HarmonicFitter.java",
+       "        public double[] guess() {\n            sortObservations();\n            guessAOmega();\n            guessPhi();\n            return new double[] { a, omega, phi };\n        }"
+      ]
+     ]
+    },
+    {
+     "name": "getObservations",
+     "source_file": "CurveFitter.java",
+     "signature": "public WeightedObservedPoint[] getObservations()",
+     "source": "    public WeightedObservedPoint[] getObservations() {\n        return observations.toArray(new WeightedObservedPoint[observations.size()]);\n    }",
+     "is_abstract": false,
+     "impls": []
+    },
+    {
+     "name": "fit",
+     "source_file": "CurveFitter.java",
+     "signature": "public double[] fit(ParametricUnivariateRealFunction f, double[] initialGuess)",
+     "source": "    public double[] fit(final ParametricUnivariateRealFunction f, final double[] initialGuess) {\n        return fit(Integer.MAX_VALUE, f, initialGuess);\n    }",
+     "is_abstract": false,
+     "impls": [
+      [
+       "CurveFitter.java",
+       "    public double[] fit(final ParametricUnivariateRealFunction f, final double[] initialGuess) {\n        return fit(Integer.MAX_VALUE, f, initialGuess);\n    }"
+      ],
+      [
+       "CurveFitter.java",
+       "    public double[] fit(int maxEval, final ParametricUnivariateRealFunction f,\n                        final double[] initialGuess) {\n        // prepare least squares problem\n        double[] target  = new double[observations.size()];\n        double[] weights = new double[observations.size()];\n        int i = 0;\n        for (WeightedObservedPoint point : observations) {\n            target[i]  = point.getY();\n            weights[i] = point.getWeight();\n            ++i;\n        }\n\n        // perform the fit\n        VectorialPointValuePair optimum =\n            optimizer.optimize(maxEval, new TheoreticalValuesFunction(f),\n                               target, weights, initialGuess);\n\n        // extract the coefficients\n        return optimum.getPointRef();\n    }"
+      ],
+      [
+       "GaussianFitter.java",
+       "    public double[] fit(double[] initialGuess) {\n        final ParametricUnivariateRealFunction f = new ParametricUnivariateRealFunction() {\n                private final ParametricUnivariateRealFunction g = new Gaussian.Parametric();\n\n                public double value(double x, double[] p) {\n                    double v = Double.POSITIVE_INFINITY;\n                    try {\n                        v = g.value(x, p);\n                    } catch (NotStrictlyPositiveException e) {\n                        // Do nothing.\n                    }\n                    return v;\n                }\n\n                public double[] gradient(double x, double[] p) {\n                    double[] v = { Double.POSITIVE_INFINITY,\n                                   Double.POSITIVE_INFINITY,\n                                   Double.POSITIVE_INFINITY };\n                    try {\n                        v = g.gradient(x, p);\n                    } catch (NotStrictlyPositiveException e) {\n                        // Do nothing.\n                    }\n                    return v;\n                }\n            };\n\n        return fit(f, initialGuess);\n    }"
+      ],
+      [
+       "HarmonicFitter.java",
+       "    public double[] fit(double[] initialGuess) {\n        return fit(new HarmonicOscillator.Parametric(), initialGuess);\n    }"
+      ]
+     ]
+    }
+   ],
+   "field_siblings": []
+  }
+ ],
+ "package": "org.apache.commons.math.optimization.fitting",
+ "root_cause_reachable": [
+  "Parametric.<init>",
+  "GaussianFitter.fit(Parametric, GaussianFitter)",
+  "GaussianFitter.fit(double[])",
+  "CurveFitter.getObservations",
+  "ParameterGuesser.guess"
+ ],
+ "neighbourhood_notes": [],
+ "source_imports": [
+  "import java.util.Arrays;",
+  "import java.util.Comparator;",
+  "import org.apache.commons.math.analysis.function.Gaussian;",
+  "import org.apache.commons.math.analysis.ParametricUnivariateRealFunction;",
+  "import org.apache.commons.math.exception.NullArgumentException;",
+  "import org.apache.commons.math.exception.NumberIsTooSmallException;",
+  "import org.apache.commons.math.exception.OutOfRangeException;",
+  "import org.apache.commons.math.exception.ZeroException;",
+  "import org.apache.commons.math.exception.NotStrictlyPositiveException;",
+  "import org.apache.commons.math.exception.util.LocalizedFormats;",
+  "import org.apache.commons.math.optimization.DifferentiableMultivariateVectorialOptimizer;",
+  "import org.apache.commons.math.optimization.fitting.CurveFitter;",
+  "import org.apache.commons.math.optimization.fitting.WeightedObservedPoint;"
+ ],
+ "reachable_edges": [
+  [
+   "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit()",
+   "(new ParameterGuesser(getObservations())).guess()"
+  ],
+  [
+   "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit()",
+   "[org.apache.commons.math.analysis.function.Gaussian.Parametric].<init>()"
+  ],
+  [
+   "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit()",
+   "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit(org.apache.commons.math.analysis.function.Gaussian.Parametric,org.apache.commons.math.optimization.fitting.GaussianFitter)"
+  ]
+ ],
+ "reachable_depth": {
+  "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit()": 0,
+  "(new ParameterGuesser(getObservations())).guess()": 1,
+  "[org.apache.commons.math.analysis.function.Gaussian.Parametric].<init>()": 1,
+  "[org.apache.commons.math.optimization.fitting.GaussianFitter].fit(org.apache.commons.math.analysis.function.Gaussian.Parametric,org.apache.commons.math.optimization.fitting.GaussianFitter)": 1
+ }
+}

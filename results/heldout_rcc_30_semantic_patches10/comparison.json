@@ -1,0 +1,1371 @@
+{
+  "arms": [
+    "HN",
+    "HN_C",
+    "HR"
+  ],
+  "bootstrap": 10000,
+  "complete": true,
+  "errors": [],
+  "excluded_patches": [],
+  "expected_legs": 30,
+  "groups": {
+    "semantic": {
+      "estimates": {
+        "HN": {
+          "acceptance_rate": {
+            "ci95": [
+              0.66,
+              0.8733333333333333
+            ],
+            "defined_bugs": 10,
+            "mean": 0.77
+          },
+          "accepted_set_f_size": {
+            "ci95": [
+              20.797500000000003,
+              63.80249999999996
+            ],
+            "defined_bugs": 10,
+            "mean": 41.1
+          },
+          "accepted_set_psc": {
+            "ci95": [
+              0.547069597069597,
+              0.8821428571428571
+            ],
+            "defined_bugs": 10,
+            "mean": 0.7217490842490842
+          },
+          "accepted_set_rcc": {
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "defined_bugs": 10,
+            "mean": 1.0
+          },
+          "accepted_set_rcp": {
+            "ci95": [
+              0.025938190155368156,
+              0.3782172998065205
+            ],
+            "defined_bugs": 10,
+            "mean": 0.17580188499840468
+          },
+          "buggy_crash_rate": {
+            "ci95": [
+              0.66,
+              0.8733333333333333
+            ],
+            "defined_bugs": 10,
+            "mean": 0.77
+          },
+          "candidate_f_size": {
+            "ci95": [
+              14.362,
+              56.861374999999974
+            ],
+            "defined_bugs": 10,
+            "mean": 34.12461172161172
+          },
+          "candidate_psc": {
+            "ci95": [
+              0.5130769230769231,
+              0.8679006504989264
+            ],
+            "defined_bugs": 10,
+            "mean": 0.6958051660982696
+          },
+          "candidate_rcc": {
+            "ci95": [
+              0.6566666666666666,
+              0.8733333333333333
+            ],
+            "defined_bugs": 10,
+            "mean": 0.7666666666666667
+          },
+          "candidate_rcc_compiled": {
+            "ci95": [
+              0.928,
+              1.0
+            ],
+            "defined_bugs": 10,
+            "mean": 0.976
+          },
+          "candidate_rcp": {
+            "ci95": [
+              0.038389220044453644,
+              0.38705444801592903
+            ],
+            "defined_bugs": 10,
+            "mean": 0.1864286444764749
+          },
+          "compile_rate": {
+            "ci95": [
+              0.6766666666666666,
+              0.8866666666666667
+            ],
+            "defined_bugs": 10,
+            "mean": 0.7866666666666666
+          },
+          "p_size": {
+            "ci95": [
+              3.8,
+              8.0
+            ],
+            "defined_bugs": 10,
+            "mean": 5.8
+          },
+          "r0_size": {
+            "ci95": [
+              1.0,
+              1.3
+            ],
+            "defined_bugs": 10,
+            "mean": 1.1
+          },
+          "rcr": {
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "defined_bugs": 10,
+            "mean": 1.0
+          }
+        },
+        "HN_C": {
+          "acceptance_rate": {
+            "ci95": [
+              0.6066666666666667,
+              0.8300000000000001
+            ],
+            "defined_bugs": 10,
+            "mean": 0.7233333333333334
+          },
+          "accepted_set_f_size": {
+            "ci95": [
+              39.7,
+              189.3
+            ],
+            "defined_bugs": 10,
+            "mean": 107.4
+          },
+          "accepted_set_psc": {
+            "ci95": [
+              0.5857142857142857,
+              0.9098901098901099
+            ],
+            "defined_bugs": 10,
+            "mean": 0.7573260073260073
+          },
+          "accepted_set_rcc": {
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "defined_bugs": 10,
+            "mean": 1.0
+          },
+          "accepted_set_rcp": {
+            "ci95": [
+              0.016499892312752857,
+              0.341125556071092
+            ],
+            "defined_bugs": 10,
+            "mean": 0.138432542507437
+          },
+          "buggy_crash_rate": {
+            "ci95": [
+              0.6066666666666667,
+              0.8300000000000001
+            ],
+            "defined_bugs": 10,
+            "mean": 0.7233333333333334
+          },
+          "candidate_f_size": {
+            "ci95": [
+              12.02776331834083,
+              67.4038304597701
+            ],
+            "defined_bugs": 10,
+            "mean": 36.78244390683446
+          },
+          "candidate_psc": {
+            "ci95": [
+              0.3309809212817833,
+              0.6867116954724711
+            ],
+            "defined_bugs": 10,
+            "mean": 0.5073767618077962
+          },
+          "candidate_rcc": {
+            "ci95": [
+              0.4633333333333333,
+              0.8100416666666661
+            ],
+            "defined_bugs": 10,
+            "mean": 0.6516666666666666
+          },
+          "candidate_rcc_compiled": {
+            "ci95": [
+              0.5718171078602112,
+              0.9494520090382159
+            ],
+            "defined_bugs": 10,
+            "mean": 0.7873048968911038
+          },
+          "candidate_rcp": {
+            "ci95": [
+              0.04845412369809276,
+              0.4055687942786667
+            ],
+            "defined_bugs": 10,
+            "mean": 0.19687510410328862
+          },
+          "compile_rate": {
+            "ci95": [
+              0.7333333333333334,
+              0.8966666666666667
+            ],
+            "defined_bugs": 10,
+            "mean": 0.8200000000000001
+          },
+          "p_size": {
+            "ci95": [
+              3.8,
+              8.0
+            ],
+            "defined_bugs": 10,
+            "mean": 5.8
+          },
+          "r0_size": {
+            "ci95": [
+              1.0,
+              1.3
+            ],
+            "defined_bugs": 10,
+            "mean": 1.1
+          },
+          "rcr": {
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "defined_bugs": 10,
+            "mean": 1.0
+          }
+        },
+        "HR": {
+          "acceptance_rate": {
+            "ci95": [
+              0.6066666666666667,
+              0.84
+            ],
+            "defined_bugs": 10,
+            "mean": 0.7233333333333334
+          },
+          "accepted_set_f_size": {
+            "ci95": [
+              31.797500000000003,
+              135.9
+            ],
+            "defined_bugs": 10,
+            "mean": 80
+          },
+          "accepted_set_psc": {
+            "ci95": [
+              0.6075045787545788,
+              0.9380952380952381
+            ],
+            "defined_bugs": 10,
+            "mean": 0.7882783882783883
+          },
+          "accepted_set_rcc": {
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "defined_bugs": 10,
+            "mean": 1.0
+          },
+          "accepted_set_rcp": {
+            "ci95": [
+              0.01990392691067086,
+              0.3430487804878049
+            ],
+            "defined_bugs": 10,
+            "mean": 0.14113951891083368
+          },
+          "buggy_crash_rate": {
+            "ci95": [
+              0.6066666666666667,
+              0.84
+            ],
+            "defined_bugs": 10,
+            "mean": 0.7233333333333334
+          },
+          "candidate_f_size": {
+            "ci95": [
+              17.01643795945434,
+              61.66403382138294
+            ],
+            "defined_bugs": 10,
+            "mean": 38.02788765385317
+          },
+          "candidate_psc": {
+            "ci95": [
+              0.5277289377289377,
+              0.8691375205254516
+            ],
+            "defined_bugs": 10,
+            "mean": 0.7037839459391183
+          },
+          "candidate_rcc": {
+            "ci95": [
+              0.6616666666666666,
+              0.9133333333333333
+            ],
+            "defined_bugs": 10,
+            "mean": 0.795
+          },
+          "candidate_rcc_compiled": {
+            "ci95": [
+              0.958,
+              1.0
+            ],
+            "defined_bugs": 10,
+            "mean": 0.986
+          },
+          "candidate_rcp": {
+            "ci95": [
+              0.03819766582874296,
+              0.38369471568338503
+            ],
+            "defined_bugs": 10,
+            "mean": 0.18108694414317736
+          },
+          "compile_rate": {
+            "ci95": [
+              0.6733333333333333,
+              0.9233333333333333
+            ],
+            "defined_bugs": 10,
+            "mean": 0.8066666666666666
+          },
+          "p_size": {
+            "ci95": [
+              3.8,
+              8.0
+            ],
+            "defined_bugs": 10,
+            "mean": 5.8
+          },
+          "r0_size": {
+            "ci95": [
+              1.0,
+              1.3
+            ],
+            "defined_bugs": 10,
+            "mean": 1.1
+          },
+          "rcr": {
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "defined_bugs": 10,
+            "mean": 1.0
+          }
+        },
+        "HR-HN": {
+          "acceptance_rate": {
+            "ci95": [
+              -0.08333333333333334,
+              -0.01333333333333333
+            ],
+            "defined_bugs": 10,
+            "mean": -0.04666666666666667
+          },
+          "accepted_set_f_size": {
+            "ci95": [
+              10.397500000000003,
+              73.80749999999989
+            ],
+            "defined_bugs": 10,
+            "mean": 38.9
+          },
+          "accepted_set_psc": {
+            "ci95": [
+              0.016666666666666663,
+              0.12115384615384614
+            ],
+            "defined_bugs": 10,
+            "mean": 0.06652930402930403
+          },
+          "accepted_set_rcc": {
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "defined_bugs": 10,
+            "mean": 0.0
+          },
+          "accepted_set_rcp": {
+            "ci95": [
+              -0.09480974423109888,
+              -0.002713515406162476
+            ],
+            "defined_bugs": 10,
+            "mean": -0.03466236608757103
+          },
+          "buggy_crash_rate": {
+            "ci95": [
+              -0.08333333333333334,
+              -0.01333333333333333
+            ],
+            "defined_bugs": 10,
+            "mean": -0.04666666666666667
+          },
+          "candidate_f_size": {
+            "ci95": [
+              1.01608333333333,
+              7.189339579386129
+            ],
+            "defined_bugs": 10,
+            "mean": 3.9032759322414488
+          },
+          "candidate_psc": {
+            "ci95": [
+              -0.0011494252873563205,
+              0.02109713275230518
+            ],
+            "defined_bugs": 10,
+            "mean": 0.007978779840848809
+          },
+          "candidate_rcc": {
+            "ci95": [
+              -0.016666666666666663,
+              0.07333333333333332
+            ],
+            "defined_bugs": 10,
+            "mean": 0.028333333333333332
+          },
+          "candidate_rcc_compiled": {
+            "ci95": [
+              0.0,
+              0.029999999999999992
+            ],
+            "defined_bugs": 10,
+            "mean": 0.009999999999999998
+          },
+          "candidate_rcp": {
+            "ci95": [
+              -0.01931295486306339,
+              0.00419786392670469
+            ],
+            "defined_bugs": 10,
+            "mean": -0.00534170033329751
+          },
+          "compile_rate": {
+            "ci95": [
+              -0.023333333333333327,
+              0.06333333333333332
+            ],
+            "defined_bugs": 10,
+            "mean": 0.019999999999999997
+          },
+          "p_size": {
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "defined_bugs": 10,
+            "mean": 0
+          },
+          "r0_size": {
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "defined_bugs": 10,
+            "mean": 0
+          },
+          "rcr": {
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "defined_bugs": 10,
+            "mean": 0.0
+          }
+        },
+        "HR-HN_C": {
+          "acceptance_rate": {
+            "ci95": [
+              -0.1666666666666667,
+              0.18
+            ],
+            "defined_bugs": 10,
+            "mean": -1.1102230246251566e-17
+          },
+          "accepted_set_f_size": {
+            "ci95": [
+              -77.4,
+              13.802499999999965
+            ],
+            "defined_bugs": 10,
+            "mean": -27.4
+          },
+          "accepted_set_psc": {
+            "ci95": [
+              0.0,
+              0.0761904761904762
+            ],
+            "defined_bugs": 10,
+            "mean": 0.030952380952380953
+          },
+          "accepted_set_rcc": {
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "defined_bugs": 10,
+            "mean": 0.0
+          },
+          "accepted_set_rcp": {
+            "ci95": [
+              -0.0018679523226481796,
+              0.007457320689392796
+            ],
+            "defined_bugs": 10,
+            "mean": 0.0027069764033966766
+          },
+          "buggy_crash_rate": {
+            "ci95": [
+              -0.1666666666666667,
+              0.18
+            ],
+            "defined_bugs": 10,
+            "mean": -1.1102230246251566e-17
+          },
+          "candidate_f_size": {
+            "ci95": [
+              -8.854448213476514,
+              8.77261936605443
+            ],
+            "defined_bugs": 10,
+            "mean": 1.2454437470187079
+          },
+          "candidate_psc": {
+            "ci95": [
+              0.0626926759383656,
+              0.3558205648119441
+            ],
+            "defined_bugs": 10,
+            "mean": 0.19640718413132208
+          },
+          "candidate_rcc": {
+            "ci95": [
+              -0.05666666666666669,
+              0.35000000000000003
+            ],
+            "defined_bugs": 10,
+            "mean": 0.14333333333333334
+          },
+          "candidate_rcc_compiled": {
+            "ci95": [
+              0.031409372236958444,
+              0.4194344767301662
+            ],
+            "defined_bugs": 10,
+            "mean": 0.1986951031088962
+          },
+          "candidate_rcp": {
+            "ci95": [
+              -0.07304064204166677,
+              0.025848023522635183
+            ],
+            "defined_bugs": 10,
+            "mean": -0.015788159960111254
+          },
+          "compile_rate": {
+            "ci95": [
+              -0.18666666666666668,
+              0.15666666666666668
+            ],
+            "defined_bugs": 10,
+            "mean": -0.013333333333333341
+          },
+          "p_size": {
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "defined_bugs": 10,
+            "mean": 0
+          },
+          "r0_size": {
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "defined_bugs": 10,
+            "mean": 0
+          },
+          "rcr": {
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "defined_bugs": 10,
+            "mean": 0.0
+          }
+        }
+      },
+      "n_bugs": 10,
+      "n_legs_per_arm": 10,
+      "per_bug": [
+        {
+          "HN": {
+            "acceptance_rate": 0.9666666666666667,
+            "accepted_set_f_size": 97,
+            "accepted_set_psc": 0.46153846153846156,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.010309278350515464,
+            "buggy_crash_rate": 0.9666666666666667,
+            "candidate_f_size": 97.86666666666666,
+            "candidate_psc": 0.4641025641025641,
+            "candidate_rcc": 1.0,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.010254224645217285,
+            "compile_rate": 1.0,
+            "p_size": 13,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HN_C": {
+            "acceptance_rate": 0.5,
+            "accepted_set_f_size": 395,
+            "accepted_set_psc": 0.6923076923076923,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.002531645569620253,
+            "buggy_crash_rate": 0.5,
+            "candidate_f_size": 142.4,
+            "candidate_psc": 0.49743589743589745,
+            "candidate_rcc": 0.5,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.007504834320046173,
+            "compile_rate": 0.5,
+            "p_size": 13,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HR": {
+            "acceptance_rate": 0.9666666666666667,
+            "accepted_set_f_size": 188,
+            "accepted_set_psc": 0.6923076923076923,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.005319148936170213,
+            "buggy_crash_rate": 0.9666666666666667,
+            "candidate_f_size": 104.5,
+            "candidate_psc": 0.48205128205128206,
+            "candidate_rcc": 1.0,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.009854567139709372,
+            "compile_rate": 1.0,
+            "p_size": 13,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "bug_id": "1",
+          "project": "Chart"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.6333333333333333,
+            "accepted_set_f_size": 24,
+            "accepted_set_psc": 1.0,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.041666666666666664,
+            "buggy_crash_rate": 0.6333333333333333,
+            "candidate_f_size": 13,
+            "candidate_psc": 1.0,
+            "candidate_rcc": 0.7666666666666667,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.08225536216751607,
+            "compile_rate": 0.7666666666666667,
+            "p_size": 1,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HN_C": {
+            "acceptance_rate": 0.7666666666666667,
+            "accepted_set_f_size": 33,
+            "accepted_set_psc": 1.0,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.030303030303030304,
+            "buggy_crash_rate": 0.7666666666666667,
+            "candidate_f_size": 14.782608695652174,
+            "candidate_psc": 1.0,
+            "candidate_rcc": 0.7666666666666667,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.13060365941372806,
+            "compile_rate": 0.7666666666666667,
+            "p_size": 1,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HR": {
+            "acceptance_rate": 0.5666666666666667,
+            "accepted_set_f_size": 24,
+            "accepted_set_psc": 1.0,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.041666666666666664,
+            "buggy_crash_rate": 0.5666666666666667,
+            "candidate_f_size": 13.464285714285714,
+            "candidate_psc": 1.0,
+            "candidate_rcc": 0.9333333333333333,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.08873661061161062,
+            "compile_rate": 0.9333333333333333,
+            "p_size": 1,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "bug_id": "8",
+          "project": "Chart"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.6,
+            "accepted_set_f_size": 12,
+            "accepted_set_psc": 1.0,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.08333333333333333,
+            "buggy_crash_rate": 0.6,
+            "candidate_f_size": 12,
+            "candidate_psc": 1.0,
+            "candidate_rcc": 0.6,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.08333333333333333,
+            "compile_rate": 0.6,
+            "p_size": 2,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HN_C": {
+            "acceptance_rate": 0.43333333333333335,
+            "accepted_set_f_size": 13,
+            "accepted_set_psc": 1.0,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.07692307692307693,
+            "buggy_crash_rate": 0.43333333333333335,
+            "candidate_f_size": 4.888888888888889,
+            "candidate_psc": 0.9629629629629629,
+            "candidate_rcc": 0.8666666666666667,
+            "candidate_rcc_compiled": 0.9629629629629629,
+            "candidate_rcp": 0.3311197349658888,
+            "compile_rate": 0.9,
+            "p_size": 2,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HR": {
+            "acceptance_rate": 0.5,
+            "accepted_set_f_size": 12,
+            "accepted_set_psc": 1.0,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.08333333333333333,
+            "buggy_crash_rate": 0.5,
+            "candidate_f_size": 11.466666666666667,
+            "candidate_psc": 1.0,
+            "candidate_rcc": 0.5,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.09444444444444444,
+            "compile_rate": 0.5,
+            "p_size": 2,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "bug_id": "24",
+          "project": "Lang"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.8333333333333334,
+            "accepted_set_f_size": 68,
+            "accepted_set_psc": 0.5,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.014705882352941176,
+            "buggy_crash_rate": 0.8333333333333334,
+            "candidate_f_size": 20.04,
+            "candidate_psc": 0.4866666666666667,
+            "candidate_rcc": 0.8333333333333334,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.057193828351012534,
+            "compile_rate": 0.8333333333333334,
+            "p_size": 6,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HN_C": {
+            "acceptance_rate": 0.7333333333333333,
+            "accepted_set_f_size": 83,
+            "accepted_set_psc": 0.5,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.012048192771084338,
+            "buggy_crash_rate": 0.7333333333333333,
+            "candidate_f_size": 17.90909090909091,
+            "candidate_psc": 0.06818181818181818,
+            "candidate_rcc": 0.1,
+            "candidate_rcc_compiled": 0.13636363636363635,
+            "candidate_rcp": 0.003945707070707071,
+            "compile_rate": 0.7333333333333333,
+            "p_size": 6,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HR": {
+            "acceptance_rate": 0.7666666666666667,
+            "accepted_set_f_size": 164,
+            "accepted_set_psc": 0.6666666666666666,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.006097560975609756,
+            "buggy_crash_rate": 0.7666666666666667,
+            "candidate_f_size": 33.46153846153846,
+            "candidate_psc": 0.5,
+            "candidate_rcc": 0.8666666666666667,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.046743657559332366,
+            "compile_rate": 0.8666666666666667,
+            "p_size": 6,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "bug_id": "25",
+          "project": "Math"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.9333333333333333,
+            "accepted_set_f_size": 102,
+            "accepted_set_psc": 0.875,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.00980392156862745,
+            "buggy_crash_rate": 0.9333333333333333,
+            "candidate_f_size": 101.10714285714286,
+            "candidate_psc": 0.875,
+            "candidate_rcc": 0.9333333333333333,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.009890589899326067,
+            "compile_rate": 0.9333333333333333,
+            "p_size": 8,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HN_C": {
+            "acceptance_rate": 0.4666666666666667,
+            "accepted_set_f_size": 248,
+            "accepted_set_psc": 1.0,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.004032258064516129,
+            "buggy_crash_rate": 0.4666666666666667,
+            "candidate_f_size": 103.2,
+            "candidate_psc": 0.575,
+            "candidate_rcc": 0.7,
+            "candidate_rcc_compiled": 0.84,
+            "candidate_rcp": 0.008661916171512818,
+            "compile_rate": 0.8333333333333334,
+            "p_size": 8,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HR": {
+            "acceptance_rate": 0.9,
+            "accepted_set_f_size": 255,
+            "accepted_set_psc": 1.0,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.00392156862745098,
+            "buggy_crash_rate": 0.9,
+            "candidate_f_size": 104.25925925925925,
+            "candidate_psc": 0.875,
+            "candidate_rcc": 0.9,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.009806896261498676,
+            "compile_rate": 0.9,
+            "p_size": 8,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "bug_id": "33",
+          "project": "Math"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.8666666666666667,
+            "accepted_set_f_size": 42,
+            "accepted_set_psc": 0.8571428571428571,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.023809523809523808,
+            "buggy_crash_rate": 0.8666666666666667,
+            "candidate_f_size": 41.5,
+            "candidate_psc": 0.8571428571428571,
+            "candidate_rcc": 0.8666666666666667,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.024220032840722494,
+            "compile_rate": 0.8666666666666667,
+            "p_size": 7,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HN_C": {
+            "acceptance_rate": 0.8666666666666667,
+            "accepted_set_f_size": 124,
+            "accepted_set_psc": 0.8571428571428571,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.008064516129032258,
+            "buggy_crash_rate": 0.8666666666666667,
+            "candidate_f_size": 44.5,
+            "candidate_psc": 0.5659340659340659,
+            "candidate_rcc": 0.8333333333333334,
+            "candidate_rcc_compiled": 0.9615384615384616,
+            "candidate_rcp": 0.021752634600852198,
+            "compile_rate": 0.8666666666666667,
+            "p_size": 7,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HR": {
+            "acceptance_rate": 0.7,
+            "accepted_set_f_size": 75,
+            "accepted_set_psc": 0.8571428571428571,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.013333333333333334,
+            "buggy_crash_rate": 0.7,
+            "candidate_f_size": 53.41379310344828,
+            "candidate_psc": 0.8522167487684729,
+            "candidate_rcc": 0.9666666666666667,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.02130447607125259,
+            "compile_rate": 0.9666666666666667,
+            "p_size": 7,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "bug_id": "50",
+          "project": "Math"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.9666666666666667,
+            "accepted_set_f_size": 20,
+            "accepted_set_psc": 0.8571428571428571,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.05,
+            "buggy_crash_rate": 0.9666666666666667,
+            "candidate_f_size": 15,
+            "candidate_psc": 0.7684729064039408,
+            "candidate_rcc": 0.9666666666666667,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.06769861441714757,
+            "compile_rate": 0.9666666666666667,
+            "p_size": 7,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HN_C": {
+            "acceptance_rate": 0.7666666666666667,
+            "accepted_set_f_size": 23,
+            "accepted_set_psc": 0.8571428571428571,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.043478260869565216,
+            "buggy_crash_rate": 0.7666666666666667,
+            "candidate_f_size": 8.92,
+            "candidate_psc": 0.5599999999999999,
+            "candidate_rcc": 0.7,
+            "candidate_rcc_compiled": 0.84,
+            "candidate_rcp": 0.10832323232323232,
+            "compile_rate": 0.8333333333333334,
+            "p_size": 7,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HR": {
+            "acceptance_rate": 1.0,
+            "accepted_set_f_size": 30,
+            "accepted_set_psc": 1.0,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.03333333333333333,
+            "buggy_crash_rate": 1.0,
+            "candidate_f_size": 13.233333333333333,
+            "candidate_psc": 0.7619047619047619,
+            "candidate_rcc": 1.0,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.07789013274307392,
+            "compile_rate": 1.0,
+            "p_size": 7,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "bug_id": "75",
+          "project": "Math"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.43333333333333335,
+            "accepted_set_f_size": 41,
+            "accepted_set_psc": 1.0,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.024390243902439025,
+            "buggy_crash_rate": 0.43333333333333335,
+            "candidate_f_size": 36.69230769230769,
+            "candidate_psc": 1.0,
+            "candidate_rcc": 0.43333333333333335,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.02944045911047346,
+            "compile_rate": 0.43333333333333335,
+            "p_size": 2,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HN_C": {
+            "acceptance_rate": 0.8,
+            "accepted_set_f_size": 144,
+            "accepted_set_psc": 1.0,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.006944444444444444,
+            "buggy_crash_rate": 0.8,
+            "candidate_f_size": 23.458333333333332,
+            "candidate_psc": 0.25,
+            "candidate_rcc": 0.2,
+            "candidate_rcc_compiled": 0.25,
+            "candidate_rcp": 0.004524507352103971,
+            "compile_rate": 0.8,
+            "p_size": 2,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HR": {
+            "acceptance_rate": 0.4,
+            "accepted_set_f_size": 41,
+            "accepted_set_psc": 1.0,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.024390243902439025,
+            "buggy_crash_rate": 0.4,
+            "candidate_f_size": 41,
+            "candidate_psc": 1.0,
+            "candidate_rcc": 0.4,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 0.024390243902439025,
+            "compile_rate": 0.4,
+            "p_size": 2,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "bug_id": "80",
+          "project": "Math"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.8333333333333334,
+            "accepted_set_f_size": 4,
+            "accepted_set_psc": 0.5,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.5,
+            "buggy_crash_rate": 0.8333333333333334,
+            "candidate_f_size": 3.04,
+            "candidate_psc": 0.33999999999999997,
+            "candidate_rcc": 0.6333333333333333,
+            "candidate_rcc_compiled": 0.76,
+            "candidate_rcp": 0.5,
+            "compile_rate": 0.8333333333333334,
+            "p_size": 6,
+            "r0_size": 2,
+            "rcr": 1.0
+          },
+          "HN_C": {
+            "acceptance_rate": 1.0,
+            "accepted_set_f_size": 10,
+            "accepted_set_psc": 0.5,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.2,
+            "buggy_crash_rate": 1.0,
+            "candidate_f_size": 6.8,
+            "candidate_psc": 0.43333333333333335,
+            "candidate_rcc": 0.9166666666666666,
+            "candidate_rcc_compiled": 0.9166666666666666,
+            "candidate_rcp": 0.3523148148148148,
+            "compile_rate": 1.0,
+            "p_size": 6,
+            "r0_size": 2,
+            "rcr": 1.0
+          },
+          "HR": {
+            "acceptance_rate": 0.7666666666666667,
+            "accepted_set_f_size": 10,
+            "accepted_set_psc": 0.5,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 0.2,
+            "buggy_crash_rate": 0.7666666666666667,
+            "candidate_f_size": 4.48,
+            "candidate_psc": 0.4,
+            "candidate_rcc": 0.7166666666666667,
+            "candidate_rcc_compiled": 0.86,
+            "candidate_rcp": 0.4376984126984127,
+            "compile_rate": 0.8333333333333334,
+            "p_size": 6,
+            "r0_size": 2,
+            "rcr": 1.0
+          },
+          "bug_id": "99",
+          "project": "Math"
+        },
+        {
+          "HN": {
+            "acceptance_rate": 0.6333333333333333,
+            "accepted_set_f_size": 1,
+            "accepted_set_psc": 0.16666666666666666,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 1.0,
+            "buggy_crash_rate": 0.6333333333333333,
+            "candidate_f_size": 1,
+            "candidate_psc": 0.16666666666666666,
+            "candidate_rcc": 0.6333333333333333,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 1.0,
+            "compile_rate": 0.6333333333333333,
+            "p_size": 6,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HN_C": {
+            "acceptance_rate": 0.9,
+            "accepted_set_f_size": 1,
+            "accepted_set_psc": 0.16666666666666666,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 1.0,
+            "buggy_crash_rate": 0.9,
+            "candidate_f_size": 0.9655172413793104,
+            "candidate_psc": 0.16091954022988506,
+            "candidate_rcc": 0.9333333333333333,
+            "candidate_rcc_compiled": 0.9655172413793104,
+            "candidate_rcp": 1.0,
+            "compile_rate": 0.9666666666666667,
+            "p_size": 6,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "HR": {
+            "acceptance_rate": 0.6666666666666666,
+            "accepted_set_f_size": 1,
+            "accepted_set_psc": 0.16666666666666666,
+            "accepted_set_rcc": 1.0,
+            "accepted_set_rcp": 1.0,
+            "buggy_crash_rate": 0.6666666666666666,
+            "candidate_f_size": 1,
+            "candidate_psc": 0.16666666666666666,
+            "candidate_rcc": 0.6666666666666666,
+            "candidate_rcc_compiled": 1.0,
+            "candidate_rcp": 1.0,
+            "compile_rate": 0.6666666666666666,
+            "p_size": 6,
+            "r0_size": 1,
+            "rcr": 1.0
+          },
+          "bug_id": "15",
+          "project": "Time"
+        }
+      ],
+      "totals": {
+        "HN": {
+          "accepted": 231,
+          "attempts": 300,
+          "compiled": 236,
+          "crashed_buggy": 231
+        },
+        "HN_C": {
+          "accepted": 217,
+          "attempts": 300,
+          "compiled": 246,
+          "crashed_buggy": 217
+        },
+        "HR": {
+          "accepted": 217,
+          "attempts": 300,
+          "compiled": 242,
+          "crashed_buggy": 217
+        }
+      }
+    }
+  },
+  "populations": {
+    "semantic": {
+      "bugs": [
+        [
+          "Chart",
+          "1"
+        ],
+        [
+          "Chart",
+          "8"
+        ],
+        [
+          "Lang",
+          "24"
+        ],
+        [
+          "Math",
+          "25"
+        ],
+        [
+          "Math",
+          "33"
+        ],
+        [
+          "Math",
+          "50"
+        ],
+        [
+          "Math",
+          "75"
+        ],
+        [
+          "Math",
+          "80"
+        ],
+        [
+          "Math",
+          "99"
+        ],
+        [
+          "Time",
+          "15"
+        ]
+      ],
+      "full_bugs": [
+        [
+          "Chart",
+          "1"
+        ],
+        [
+          "Chart",
+          "15"
+        ],
+        [
+          "Chart",
+          "25"
+        ],
+        [
+          "Chart",
+          "8"
+        ],
+        [
+          "Closure",
+          "115"
+        ],
+        [
+          "Closure",
+          "126"
+        ],
+        [
+          "Closure",
+          "18"
+        ],
+        [
+          "Closure",
+          "31"
+        ],
+        [
+          "Closure",
+          "57"
+        ],
+        [
+          "Lang",
+          "21"
+        ],
+        [
+          "Lang",
+          "24"
+        ],
+        [
+          "Lang",
+          "38"
+        ],
+        [
+          "Lang",
+          "55"
+        ],
+        [
+          "Math",
+          "25"
+        ],
+        [
+          "Math",
+          "33"
+        ],
+        [
+          "Math",
+          "34"
+        ],
+        [
+          "Math",
+          "41"
+        ],
+        [
+          "Math",
+          "50"
+        ],
+        [
+          "Math",
+          "6"
+        ],
+        [
+          "Math",
+          "63"
+        ],
+        [
+          "Math",
+          "71"
+        ],
+        [
+          "Math",
+          "75"
+        ],
+        [
+          "Math",
+          "80"
+        ],
+        [
+          "Math",
+          "88"
+        ],
+        [
+          "Math",
+          "99"
+        ],
+        [
+          "Time",
+          "15"
+        ],
+        [
+          "Time",
+          "19"
+        ]
+      ],
+      "full_patches": 69,
+      "input_sha256": {
+        "suites/labels/excluded.jsonl": "1e306ecf18f7c19e78f08dd1bd1b31b37e60de8e6c77818db5c4e66a2f4d9633",
+        "suites/labels/verified_correct.jsonl": "41e4220ab7a30fb1c6e1ebe5fc4a4243d37fb3aa405cca81f2591a4f04521f93",
+        "suites/labels/verified_incorrect.jsonl": "26fc364e4fae170621f031992e1091483e0afd86bf7ac4e059098db155f07169",
+        "suites/splits/semantic_split.jsonl": "86b688df4a2d1a131c8712486556f689d2ce27f7943aa5eb0c939018269abd37"
+      },
+      "patches": 10,
+      "selection": "first patches in certified queue order"
+    }
+  },
+  "replay": null,
+  "scored_legs": 30,
+  "seed": 20260916,
+  "source_run": null
+}

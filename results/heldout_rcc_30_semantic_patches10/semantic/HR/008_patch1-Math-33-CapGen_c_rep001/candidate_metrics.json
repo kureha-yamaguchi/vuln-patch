@@ -1,0 +1,446 @@
+{
+  "acceptance_rate": 0.9,
+  "accepted": 27,
+  "accepted_set_f_size": 255,
+  "accepted_set_psc": 1.0,
+  "accepted_set_rcc": 1.0,
+  "accepted_set_rcp": 0.00392156862745098,
+  "attempts": 30,
+  "buggy_crash_rate": 0.9,
+  "candidate_f_size": 104.25925925925925,
+  "candidate_psc": 0.875,
+  "candidate_rcc": 0.9,
+  "candidate_rcc_compiled": 1.0,
+  "candidate_rcp": 0.009806896261498676,
+  "candidates": [
+    {
+      "accepted": true,
+      "attempt_label": "attempt_001",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 102,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.00980392156862745,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_002",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_003",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 94,
+      "psc": 0.75,
+      "rcc": 1.0,
+      "rcp": 0.010638297872340425,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_004",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 103,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.009708737864077669,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_005",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 100,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.01,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_006",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_007",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_008",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_009",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_010",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_011",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_012",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_013",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 115,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.008695652173913044,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_014",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 102,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.00980392156862745,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_015",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 99,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.010101010101010102,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_016",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_017",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 207,
+      "psc": 0.625,
+      "rcc": 1.0,
+      "rcp": 0.004830917874396135,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_018",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 81,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.012345679012345678,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_019",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_020",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_021",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_022",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 1.0,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_023",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 94,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.010638297872340425,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_024",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_025",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 102,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.00980392156862745,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": false,
+      "attempt_label": "attempt_026",
+      "compiled": false,
+      "coverage_origin": "not_compiled",
+      "crashed_buggy": false,
+      "f_size": 0,
+      "psc": 0.0,
+      "rcc": 0.0,
+      "rcp": null,
+      "root_methods_hit": []
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_027",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_028",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_029",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    },
+    {
+      "accepted": true,
+      "attempt_label": "attempt_030",
+      "compiled": true,
+      "coverage_origin": "original",
+      "crashed_buggy": true,
+      "f_size": 101,
+      "psc": 0.875,
+      "rcc": 1.0,
+      "rcp": 0.009900990099009901,
+      "root_methods_hit": [
+        "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+      ]
+    }
+  ],
+  "compile_rate": 0.9,
+  "compiled": 27,
+  "compiled_set_f_size": 255,
+  "compiled_set_psc": 1.0,
+  "compiled_set_rcc": 1.0,
+  "compiled_set_rcp": 0.00392156862745098,
+  "crashed_buggy": 27,
+  "p_size": 8,
+  "p_unmatched": 7,
+  "r0_size": 1,
+  "rcr": 1.0,
+  "replayed_candidates": 0,
+  "root_methods": [
+    "org.apache.commons.math3.optimization.linear.SimplexTableau.dropPhase1Objective()"
+  ]
+}

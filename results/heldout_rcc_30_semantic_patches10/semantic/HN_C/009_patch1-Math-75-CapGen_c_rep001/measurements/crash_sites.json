@@ -1,0 +1,1144 @@
+[
+ {
+  "exception": "java.lang.IllegalStateException",
+  "message": "Inconsistent getPct overloads: object=0.9583333333333334, comparable=0.875, query=0, count=24, type=0",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 63,
+    "harness": true
+   }
+  ],
+  "top_library": null,
+  "top_library_line": null,
+  "headline_site": null,
+  "headline_site_line": null,
+  "site_kind": "harness_only",
+  "build": "compiled",
+  "harness": "attempt_001",
+  "source": "fuzz_out/attempt_001_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ClassCastException",
+  "message": "[B cannot be cast to java.lang.Comparable",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 50,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": []
+  },
+  "top_library_line": 303,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": []
+  },
+  "headline_site_line": 303,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_002",
+  "source": "fuzz_out/attempt_002_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "instance of class java.lang.Integer not comparable to existing values",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "addValue",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 59,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_003",
+  "source": "fuzz_out/attempt_003_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumFreq",
+     "params": []
+    },
+    "line": 395,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumPct",
+     "params": []
+    },
+    "line": 495,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 66,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "top_library_line": 395,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "headline_site_line": 395,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_004",
+  "source": "fuzz_out/attempt_004_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ClassCastException",
+  "message": "[B cannot be cast to java.lang.Comparable",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 75,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": []
+  },
+  "top_library_line": 303,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": []
+  },
+  "headline_site_line": 303,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_006",
+  "source": "fuzz_out/attempt_006_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ClassCastException",
+  "message": "[B cannot be cast to java.lang.Comparable",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 56,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": []
+  },
+  "top_library_line": 303,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": []
+  },
+  "headline_site_line": 303,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_008",
+  "source": "fuzz_out/attempt_008_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumFreq",
+     "params": []
+    },
+    "line": 395,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumPct",
+     "params": []
+    },
+    "line": 495,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 74,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "top_library_line": 395,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "headline_site_line": 395,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_009",
+  "source": "fuzz_out/attempt_009_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumFreq",
+     "params": []
+    },
+    "line": 395,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumPct",
+     "params": []
+    },
+    "line": 495,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 152,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "top_library_line": 395,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "headline_site_line": 395,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_010",
+  "source": "fuzz_out/attempt_010_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "instance of class java.lang.Integer not comparable to existing values",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "addValue",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "addValue",
+     "params": []
+    },
+    "line": 114,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 73,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_011",
+  "source": "fuzz_out/attempt_011_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ClassCastException",
+  "message": "java.lang.Object cannot be cast to java.lang.Comparable",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 121,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": []
+  },
+  "top_library_line": 303,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": []
+  },
+  "headline_site_line": 303,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_012",
+  "source": "fuzz_out/attempt_012_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "instance of class java.lang.Integer not comparable to existing values",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "addValue",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 172,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_014",
+  "source": "fuzz_out/attempt_014_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "addValue",
+     "params": []
+    },
+    "line": 138,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 79,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "addValue",
+   "params": []
+  },
+  "top_library_line": 138,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "addValue",
+   "params": []
+  },
+  "headline_site_line": 138,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_016",
+  "source": "fuzz_out/attempt_016_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ClassCastException",
+  "message": "[B cannot be cast to java.lang.Comparable",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 70,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": []
+  },
+  "top_library_line": 303,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": []
+  },
+  "headline_site_line": 303,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_017",
+  "source": "fuzz_out/attempt_017_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "instance of class java.lang.Long not comparable to existing values",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "addValue",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "addValue",
+     "params": []
+    },
+    "line": 168,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 14,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_018",
+  "source": "fuzz_out/attempt_018_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "instance of class java.lang.Long not comparable to existing values",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "addValue",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "addValue",
+     "params": []
+    },
+    "line": 158,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 13,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_019",
+  "source": "fuzz_out/attempt_019_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumFreq",
+     "params": []
+    },
+    "line": 395,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumPct",
+     "params": []
+    },
+    "line": 495,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 99,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "top_library_line": 395,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "headline_site_line": 395,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_020",
+  "source": "fuzz_out/attempt_020_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumFreq",
+     "params": []
+    },
+    "line": 395,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumPct",
+     "params": []
+    },
+    "line": 495,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 160,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "top_library_line": 395,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "headline_site_line": 395,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_021",
+  "source": "fuzz_out/attempt_021_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumFreq",
+     "params": []
+    },
+    "line": 395,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumPct",
+     "params": []
+    },
+    "line": 495,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 204,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "top_library_line": 395,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "headline_site_line": 395,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_022",
+  "source": "fuzz_out/attempt_022_compiled.txt"
+ },
+ {
+  "exception": "java.lang.ClassCastException",
+  "message": "java.lang.Object cannot be cast to java.lang.Comparable",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 212,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": []
+  },
+  "top_library_line": 303,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getPct",
+   "params": []
+  },
+  "headline_site_line": 303,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_023",
+  "source": "fuzz_out/attempt_023_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumFreq",
+     "params": []
+    },
+    "line": 395,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCumPct",
+     "params": []
+    },
+    "line": 495,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 303,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 136,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "top_library_line": 395,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCumFreq",
+   "params": []
+  },
+  "headline_site_line": 395,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_024",
+  "source": "fuzz_out/attempt_024_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getCount",
+     "params": []
+    },
+    "line": 249,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "getPct",
+     "params": []
+    },
+    "line": 320,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 28,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCount",
+   "params": []
+  },
+  "top_library_line": 249,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "getCount",
+   "params": []
+  },
+  "headline_site_line": 249,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_027",
+  "source": "fuzz_out/attempt_027_compiled.txt"
+ },
+ {
+  "exception": "org.apache.commons.math.MathRuntimeException$4",
+  "message": "instance of class java.lang.Byte not comparable to existing values",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.MathRuntimeException",
+     "name": "createIllegalArgumentException",
+     "params": []
+    },
+    "line": 305,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "addValue",
+     "params": []
+    },
+    "line": 146,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 45,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "top_library_line": 305,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.MathRuntimeException",
+   "name": "createIllegalArgumentException",
+   "params": []
+  },
+  "headline_site_line": 305,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_029",
+  "source": "fuzz_out/attempt_029_compiled.txt"
+ },
+ {
+  "exception": "java.lang.NullPointerException",
+  "message": "",
+  "causes": [],
+  "frames": [
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.Frequency",
+     "name": "addValue",
+     "params": []
+    },
+    "line": 138,
+    "harness": false
+   },
+   {
+    "method": {
+     "class_fq": "org.apache.commons.math.stat.FuzzHarness",
+     "name": "fuzzerTestOneInput",
+     "params": []
+    },
+    "line": 81,
+    "harness": true
+   }
+  ],
+  "top_library": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "addValue",
+   "params": []
+  },
+  "top_library_line": 138,
+  "headline_site": {
+   "class_fq": "org.apache.commons.math.stat.Frequency",
+   "name": "addValue",
+   "params": []
+  },
+  "headline_site_line": 138,
+  "site_kind": "library",
+  "build": "compiled",
+  "harness": "attempt_030",
+  "source": "fuzz_out/attempt_030_compiled.txt"
+ }
+]

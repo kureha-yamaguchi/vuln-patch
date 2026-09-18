@@ -1,0 +1,64 @@
+
+INFO: Loaded 316 hooks from com.code_intelligence.jazzer.runtime.TraceCmpHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.runtime.TraceDivHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.runtime.TraceIndirHooks
+INFO: Loaded 4 hooks from com.code_intelligence.jazzer.runtime.NativeLibHooks
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ClojureLangHooks
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.Deserialization
+INFO: Loaded 5 hooks from com.code_intelligence.jazzer.sanitizers.ExpressionLanguageInjection
+INFO: Loaded 70 hooks from com.code_intelligence.jazzer.sanitizers.LdapInjection
+INFO: Loaded 50 hooks from com.code_intelligence.jazzer.sanitizers.NamingContextLookup
+INFO: Loaded 1 hooks from com.code_intelligence.jazzer.sanitizers.OsCommandInjection
+INFO: Loaded 76 hooks from com.code_intelligence.jazzer.sanitizers.ReflectiveCall
+INFO: Loaded 8 hooks from com.code_intelligence.jazzer.sanitizers.RegexInjection
+INFO: Loaded 16 hooks from com.code_intelligence.jazzer.sanitizers.RegexRoadblocks
+INFO: Loaded 18 hooks from com.code_intelligence.jazzer.sanitizers.ScriptEngineInjection
+INFO: Loaded 2 hooks from com.code_intelligence.jazzer.sanitizers.ServerSideRequestForgery
+INFO: Loaded 19 hooks from com.code_intelligence.jazzer.sanitizers.SqlInjection
+INFO: Loaded 6 hooks from com.code_intelligence.jazzer.sanitizers.XPathInjection
+INFO: Instrumented org.apache.commons.math.analysis.solvers.FuzzHarness (took 67 ms, size +34%)
+INFO: Instrumented org.apache.commons.math.FunctionEvaluationException (took 7 ms, size +5%)
+INFO: Instrumented org.apache.commons.math.MathException (took 6 ms, size +25%)
+INFO: Instrumented org.apache.commons.math.MaxIterationsExceededException (took 1 ms, size +9%)
+INFO: Instrumented org.apache.commons.math.ConvergenceException (took 2 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.analysis.UnivariateRealFunction (took 0 ms, size +0%)
+INFO: using inputs from: /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/011_patch1-Math-70-CapGen_c_rep001/Math_70_buggy/fuzz/corpus
+INFO: found LLVMFuzzerCustomMutator (0x7aaeb1d76cd0). Disabling -len_control by default.
+INFO: libFuzzer ignores flags that start with '--'
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 3549813222
+INFO: Loaded 1 modules   (512 inline 8-bit counters): 512 [0x7aaee05b8c20, 0x7aaee05b8e20), 
+INFO: Loaded 1 PC tables (512 PCs): 512 [0x7aaee05914d0,0x7aaee05934d0), 
+INFO:       29 files found in /datadrive/vuln-patch/results/heldout_rcc_30/checkouts/crashing/HR/011_patch1-Math-70-CapGen_c_rep001/Math_70_buggy/fuzz/corpus
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: Instrumented org.apache.commons.math.analysis.SinFunction (took 2 ms, size +11%)
+INFO: Instrumented org.apache.commons.math.analysis.DifferentiableUnivariateRealFunction (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.BisectionSolver (took 3 ms, size +13%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverImpl (took 6 ms, size +12%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolver (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithm (took 0 ms, size +0%)
+INFO: Instrumented org.apache.commons.math.ConvergingAlgorithmImpl (took 4 ms, size +8%)
+INFO: Instrumented org.apache.commons.math.analysis.solvers.UnivariateRealSolverUtils (took 3 ms, size +13%)
+INFO: seed corpus: files: 29 min: 1b max: 4b total: 100b rss: 1290Mb
+#30	INITED cov: 42 ft: 59 corp: 5/11b exec/s: 0 rss: 1290Mb
+#50	NEW    cov: 42 ft: 64 corp: 6/12b lim: 4 exec/s: 0 rss: 1290Mb L: 1/4 MS: 10 ChangeBinInt-Custom-ChangeByte-Custom-ChangeBit-Custom-ShuffleBytes-Custom-EraseBytes-Custom-
+#191	NEW    cov: 42 ft: 67 corp: 7/15b lim: 4 exec/s: 0 rss: 1290Mb L: 3/4 MS: 2 ChangeBinInt-Custom-
+#207	REDUCE cov: 42 ft: 67 corp: 7/14b lim: 4 exec/s: 0 rss: 1290Mb L: 2/4 MS: 2 EraseBytes-Custom-
+#323	REDUCE cov: 42 ft: 69 corp: 8/16b lim: 4 exec/s: 0 rss: 1290Mb L: 2/4 MS: 2 ChangeBinInt-Custom-
+#545	NEW    cov: 42 ft: 70 corp: 9/21b lim: 6 exec/s: 0 rss: 1290Mb L: 5/5 MS: 4 ShuffleBytes-Custom-InsertByte-Custom-
+#554	NEW    cov: 42 ft: 71 corp: 10/27b lim: 6 exec/s: 0 rss: 1290Mb L: 6/6 MS: 8 ShuffleBytes-Custom-InsertByte-Custom-EraseBytes-Custom-InsertRepeatedBytes-Custom-
+#559	NEW    cov: 42 ft: 72 corp: 11/32b lim: 6 exec/s: 0 rss: 1290Mb L: 5/6 MS: 10 CrossOver-Custom-ChangeByte-Custom-ChangeASCIIInt-Custom-CMP-Custom-ChangeBinInt-Custom- DE: "\001\000\000\002"-
+#565	NEW    cov: 42 ft: 73 corp: 12/38b lim: 6 exec/s: 0 rss: 1290Mb L: 6/6 MS: 2 PersAutoDict-Custom- DE: "\001\000\000\002"-
+#701	REDUCE cov: 42 ft: 73 corp: 12/37b lim: 6 exec/s: 0 rss: 1290Mb L: 5/6 MS: 2 EraseBytes-Custom-
+#924	NEW    cov: 44 ft: 75 corp: 13/45b lim: 8 exec/s: 0 rss: 1290Mb L: 8/8 MS: 6 ShuffleBytes-Custom-InsertByte-Custom-InsertByte-Custom-
+#964	NEW    cov: 44 ft: 76 corp: 14/53b lim: 8 exec/s: 0 rss: 1290Mb L: 8/8 MS: 10 PersAutoDict-Custom-PersAutoDict-Custom-CrossOver-Custom-PersAutoDict-Custom-ChangeBit-Custom- DE: "\001\000\000\002"-"\001\000\000\002"-"\001\000\000\002"-
+#1183	REDUCE cov: 44 ft: 76 corp: 14/52b lim: 8 exec/s: 0 rss: 1290Mb L: 7/8 MS: 8 ShuffleBytes-Custom-ChangeByte-Custom-ChangeBinInt-Custom-EraseBytes-Custom-
+#1496	REDUCE cov: 44 ft: 76 corp: 14/51b lim: 11 exec/s: 0 rss: 1290Mb L: 5/8 MS: 6 PersAutoDict-Custom-EraseBytes-Custom-ShuffleBytes-Custom- DE: "\001\000\000\002"-
+#1514	NEW    cov: 46 ft: 88 corp: 15/54b lim: 11 exec/s: 0 rss: 1290Mb L: 3/8 MS: 6 InsertByte-Custom-CrossOver-Custom-ChangeBit-Custom-
+#1585	REDUCE cov: 46 ft: 88 corp: 15/53b lim: 11 exec/s: 0 rss: 1290Mb L: 2/8 MS: 2 EraseBytes-Custom-
+#1601	REDUCE cov: 46 ft: 88 corp: 15/52b lim: 11 exec/s: 0 rss: 1290Mb L: 1/8 MS: 2 EraseBytes-Custom-
+#100000	DONE   cov: 46 ft: 88 corp: 15/52b lim: 985 exec/s: 0 rss: 1290Mb
+###### Recommended dictionary. ######
+"\001\000\000\002" # Uses: 8005
+###### End of recommended dictionary. ######
+Done 100000 runs in 0 second(s)

@@ -1,0 +1,49 @@
+The patch under test.
+
+<patch>
+--- a/src/main/java/org/ex/Alpha.java
++++ b/src/main/java/org/ex/Alpha.java
+@@ -10,7 +10,7 @@ public class Alpha {
+-        return helper(input, flags);
++        return helper(input, flags & MASK);
+</patch>
+
+Function `transform`:
+<signature>
+public String transform(String input, int flags)
+</signature>
+<code>
+    public String transform(String input, int flags) {
+        return Beta.helper(input, flags & MASK);
+    }
+</code>
+Call-site examples (use these as a guide for constructing the target call):
+<xref>
+public void drive(String input) {
+        String out = alpha.transform(input, 0);
+        report(out);
+    }
+</xref>
+Methods called by `transform` whose behaviour the patched code depends on.
+<callee name="helper" from="Beta.java">
+<signature>
+static String helper(String input)
+</signature>
+</callee>
+
+The project's own test(s) below FAIL on the buggy code.
+<failing_test class="org.ex.AlphaTest" method="testTransform">
+    public void testTransform() {
+        assertEquals("ok", new Alpha().transform("x", 1));
+    }
+</failing_test>
+
+The patched lines sit at the head of the region below. A sibling bug is one
+that lives in this region and stems from the SAME root cause as the reported
+failure.
+<root_cause_reachable>
+- Beta.helper
+- Gamma.absent
+- !!! not a label !!!
+</root_cause_reachable>
+(+7 more reachable functions omitted.)

@@ -1,0 +1,32 @@
+{
+ "granularity": "method",
+ "items": [
+  {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "flipIfWarranted",
+   "params": [
+    "int",
+    "int"
+   ],
+   "ring": "seed",
+   "depth": 0
+  },
+  {
+   "class_fq": "org.apache.commons.math.linear.EigenDecompositionImpl",
+   "name": "processGeneralBlock",
+   "params": [
+    "int"
+   ],
+   "ring": "caller",
+   "depth": 1
+  }
+ ],
+ "multi": {
+  "org.apache.commons.math.linear.EigenDecompositionImpl.flipIfWarranted(int,int)": [
+   "callee"
+  ]
+ },
+ "edges": [],
+ "unmatched": [],
+ "provenance": {}
+}
