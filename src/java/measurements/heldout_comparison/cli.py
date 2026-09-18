@@ -374,6 +374,9 @@ def parser():
                    help='measure completed patch groups in an existing run; no generation')
     p.add_argument('--manifest', type=Path, help=argparse.SUPPRESS)
     p.add_argument('--measure-job', type=int, default=None, help=argparse.SUPPRESS)
+    p.add_argument('--report-only', type=Path, metavar='RUN_DIR',
+                   help='rescore an existing run from its own artifacts and rewrite its '
+                        'report; no generation, no measurement, no model calls')
     p.add_argument('-N', '--attempts', type=int, default=30, metavar='N', help='candidate responses per patch/arm (default: 30)')
     p.add_argument('--repetitions', type=int, default=1, help='independent campaigns per patch/arm (default: 1)')
     p.add_argument('--model', default='gpt-5.4')
@@ -398,6 +401,12 @@ def main(argv=None):
                 raise ValueError('measurement worker requires a manifest')
             manifest = report.read_json(args.manifest)
             return measure_job(manifest, manifest['jobs'][args.measure_job], args.manifest.parent)
+        if args.report_only is not None:
+            # Rescore in place. Every input is already on disk, so this
+            # rewrites comparison.{md,json} and candidate_metrics.jsonl
+            # without rerunning a build, a campaign or a measurement.
+            out = args.report_only.resolve()
+            return summarize(report.read_json(out / 'manifest.json'), out)
         args.out = output_dir(args.attempts, args.kind, args.max_patches, args.measure_existing)
         manifest = prepare_run(args)
         for kind, pop in manifest['populations'].items():

@@ -92,24 +92,65 @@ For each patch and arm, the report includes:
 - Compilation proportion: candidates that compiled / N.
 - Buggy-crash proportion: compiled candidates that crashed / N.
 - Acceptance proportion: candidates passing the full acceptance gate / N.
-- Each candidate's RCC and the mean across N candidates.
-- Accepted-set RCC: coverage of the union of accepted candidates.
+- Five method-level set metrics, per candidate and per harness set.
 
 A crash can still fail a later acceptance check, so crash and acceptance
-proportions are recorded separately. RCC is method-level coverage of R0, the
-methods changed by the developer fix, using each candidate's buggy acceptance
-execution. It reuses the measurement CLI, JaCoCo parsing and stack-frame repair.
-Developer-fix measurements run after generation has finished for all arms.
+proportions are recorded separately. Every set metric uses each candidate's
+buggy acceptance execution. The report reuses the measurement CLI, JaCoCo
+parsing and stack-frame repair. Developer-fix measurements run after
+generation has finished for all arms.
 
-Pre-execution rejects and empty accepted sets score zero when R0 is defined.
-Missing coverage, unresolved methods, empty R0 or a failed triggering-test gate
-are unknown measurements, never zeros.
+### The five set metrics
+
+| Metric | Formula | Reads |
+|---|---|---|
+| RCC | \|R0 n F\| / \|R0\| | coverage |
+| RCP | \|R0 n F\| / \|F\| | coverage |
+| PSC | \|P n F\| / \|P\| | coverage, `patch_derived.json` |
+| RCR | \|R0 n P\| / \|R0\| | `patch_derived.json` only |
+| \|F(H)\| | count of project methods the set ran | coverage |
+
+**R0, not the full region.** R is the seed ring of `root_cause.json` — the
+methods the developer fix changed. The full ringed region is not used
+because the archived `root_cause.json` files disagree between arms on their
+caller/callee rings (8 of the 10 crashing patch groups) while their seed
+rings are identical in all 10. A denominator that changes with the arm
+cannot compare arms.
+
+**P is arm-independent.** `patch_derived.json` is written by the analysis
+step, which runs before any prompt is built, so it is byte-identical in all
+three arms. RCR therefore describes the patch, not the arm. The arms differ
+in how much of P the prompt *showed* the model, which is what PSC measures.
+P is filtered exactly as `metrics.core.definitions` filters it: JDK callees
+are removed, mislabelled-receiver accessors are removed, and members that do
+not resolve against the coverage population are counted (`p_unmatched`) and
+excluded from the denominator.
+
+**Two denominators, stated per column.** RCC and PSC count a pre-execution
+reject as zero: it ran nothing, so it reached none of R0 and none of P. RCP
+divides by \|F\|, so a candidate that ran nothing leaves RCP *undefined*
+rather than zero. Every per-candidate mean is therefore over compiled
+candidates only, except the legacy `candidate_rcc`, which keeps its
+all-attempts denominator. `candidate_rcc_compiled` is the same quantity on
+the compiled denominator, and the two columns sit side by side so that a
+compile-rate gap is never read as a coverage gap.
+
+Accepted-set RCP is undefined for a leg that accepted nothing. Each estimate
+carries `defined_bugs`, the number of bugs its interval describes, and the
+report names any metric that falls short of the full bug count.
+
+Missing coverage, unresolved R0 methods, empty R0 or a failed
+triggering-test gate are unknown measurements, never zeros.
 
 Means give bugs equal weight, averaging patches/repetitions within each bug.
 **95% bootstrap confidence intervals** resample whole bugs, preserving all arms
 and candidates together. The JSON report includes paired `HR-HN` and `HR-HN_C`
-differences. The Markdown table shows only the three arms, with compilation,
-acceptance, mean candidate RCC and accepted-set RCC. These intervals describe variation across bugs, not independent
+differences for every metric, and those paired differences are what separates
+the arms; three overlapping per-arm intervals over 8 or 10 bugs do not.
+The Markdown report shows the three arms in three tables: outcomes and RCC,
+then |F(H)| and RCP, then PSC, RCR and the set sizes. A per-bug table lists
+|R0|, |P| and RCR, so the size of each denominator is visible next to the
+ratio built on it. These intervals describe variation across bugs, not independent
 candidate draws or run-to-run randomness. Defaults are 10,000 resamples and
 seed 20260916, configurable with `--bootstrap` and `--seed`.
 
@@ -126,6 +167,21 @@ Failed jobs remain recorded while other jobs continue. If any measurement is
 missing, the command exits with status 2 and writes `comparison-INCOMPLETE.md`
 instead of a complete report. A partial bug-kind population is never reported
 as the full heldout set.
+
+## Rescore an existing run
+
+To recompute every metric from a finished run's own artifacts, without
+generation, measurement or model calls:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m java.measurements.heldout_comparison.cli \
+  --report-only results/heldout_rcc_30_semantic_patches10
+```
+
+This rewrites `comparison.md`, `comparison.json` and
+`candidate_metrics.jsonl` in place from `manifest.json` and the artifacts it
+points at. Use it after a change to the metric definitions. It exits 2 and
+writes `comparison-INCOMPLETE.md` if any leg cannot be scored.
 
 ## Replay missing rejected-candidate coverage
 

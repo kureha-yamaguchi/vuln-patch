@@ -62,17 +62,27 @@ def make_leg(tmp_path, outcomes):
         ms.add(loc.MethodRef('p.C', name, ()), loc.SEED)
     report.write_json(leg / 'measurements/root_cause.json',
                       {'methods': ms.to_dict(), 'trigger_gate': {'passed': True}})
+    # P holds one root method, one method outside R0, and one JDK callee the
+    # project's coverage can never contain.
+    ps = loc.MethodSet()
+    ps.add(loc.MethodRef('p.C', 'a', ()), loc.SEED)
+    ps.add(loc.MethodRef('p.C', 'c', ()), loc.CALLEE, 1)
+    ps.add(loc.MethodRef('java.lang.StringBuilder', 'append', ()), loc.CALLEE, 1)
+    report.write_json(leg / 'measurements/patch_derived.json', ps.to_dict())
     report.write_json(leg / 'cov/classpath.json', {'include_glob': 'p.**'})
     for i, attempt in enumerate(attempts):
         if not attempt['compiled']:
             continue
         # Each compiled candidate covers a different seed. Neither candidate
-        # covers all of R0, but their accepted union does.
+        # covers all of R0, but their accepted union does. Method 'c' is
+        # outside R0 and always covered, so |F| exceeds |R0 n F|.
         xml = '<report><package name="p"><class name="p/C" sourcefilename="C.java">'
         for j, method in enumerate(('a', 'b')):
             hit = int(i % 2 == j)
             xml += (f'<method name="{method}" desc="()V" line="{j + 1}">'
                     f'<counter type="METHOD" missed="{1-hit}" covered="{hit}"/></method>')
+        xml += ('<method name="c" desc="()V" line="3">'
+                '<counter type="METHOD" missed="0" covered="1"/></method>')
         xml += '</class></package></report>'
         name = attempt['attempt_label']
         (leg / 'cov' / f'{name}_compiled.xml').write_text(xml)
@@ -87,6 +97,61 @@ def test_candidate_mean_differs_from_accepted_union(tmp_path):
     assert scores['accepted_set_rcc'] == 1
     assert scores['compile_rate'] == pytest.approx(2 / 3)
     assert [a['rcc'] for a in scores['candidates']] == [.5, .5, 0]
+
+
+def test_precision_patch_set_and_recovery(tmp_path):
+    """RCP, PSC, |F(H)| and RCR, per candidate and per accepted set."""
+    leg = make_leg(tmp_path, [(True, True), (True, True), (False, False)])
+    scores = report.score_leg(leg, 3)
+    # F is {a, c} then {b, c}; the reject ran nothing.
+    assert [c['f_size'] for c in scores['candidates']] == [2, 2, 0]
+    assert [c['rcp'] for c in scores['candidates']] == [.5, .5, None]
+    assert [c['psc'] for c in scores['candidates']] == [1, .5, 0]
+    # Means over compiled candidates only; the reject leaves RCP undefined.
+    assert scores['candidate_f_size'] == 2
+    assert scores['candidate_rcp'] == .5
+    assert scores['candidate_psc'] == pytest.approx(.75)
+    assert scores['candidate_rcc_compiled'] == .5
+    # The accepted union is {a, b, c}: all of R0 plus one method outside it.
+    assert scores['accepted_set_f_size'] == 3
+    assert scores['accepted_set_rcp'] == pytest.approx(2 / 3)
+    assert scores['accepted_set_psc'] == 1
+    # RCR reads no coverage: P recovers 'a' but not 'b'.
+    assert scores['rcr'] == .5
+    assert (scores['r0_size'], scores['p_size']) == (2, 2)
+
+
+def test_jdk_callees_never_enter_the_patch_derived_denominator(tmp_path):
+    leg = make_leg(tmp_path, [(True, True)])
+    written = loc.MethodSet.from_dict(report.read_json(leg / 'measurements/patch_derived.json'))
+    assert len(written.refs()) == 3
+    # |P| is 2: java.lang.StringBuilder.append is not a project method.
+    assert report.score_leg(leg, 1)['p_size'] == 2
+
+
+def test_precision_is_undefined_not_zero_without_an_accepted_set(tmp_path):
+    scores = report.score_leg(make_leg(tmp_path, [(True, False)]), 1)
+    assert scores['accepted_set_rcc'] == 0
+    assert scores['accepted_set_f_size'] == 0
+    assert scores['accepted_set_psc'] == 0
+    assert scores['accepted_set_rcp'] is None
+    # The compiled candidate still spent its budget somewhere.
+    assert scores['candidate_rcp'] == .5
+
+
+def test_undefined_legs_shrink_the_bug_count_not_the_mean():
+    """A bug with no defined value leaves the metric, and is counted out."""
+    rows = []
+    for bug, value in [('1', .4), ('2', None)]:
+        for arm in ('HN', 'HR'):
+            rows.append(dict(project='P', bug_id=bug, patch_id='0', repetition=1, arm=arm,
+                             attempts=30, compiled=15, accepted=10, crashed_buggy=10,
+                             **{m: 1.0 for m in report.METRICS}))
+            rows[-1]['accepted_set_rcp'] = value
+    summary = report.paired_summary(rows, [('P', '1'), ('P', '2')], bootstrap=200)
+    stat = summary['estimates']['HR']['accepted_set_rcp']
+    assert stat['mean'] == .4 and stat['defined_bugs'] == 1
+    assert summary['estimates']['HR']['candidate_rcp']['defined_bugs'] == 2
 
 
 def test_empty_harness_set_is_zero_not_missing(tmp_path):
@@ -127,7 +192,8 @@ def test_bug_weighting_and_paired_bootstrap():
                                  **{m: base + delta for m in report.METRICS}))
     summary = report.paired_summary(rows, [('P', '1'), ('P', '2')], bootstrap=200)
     assert summary['estimates']['HN']['candidate_rcc']['mean'] == .25  # not .45
-    assert summary['estimates']['HR-HN']['candidate_rcc'] == {'mean': .25, 'ci95': [.25, .25]}
+    assert summary['estimates']['HR-HN']['candidate_rcc'] == {
+        'mean': .25, 'ci95': [.25, .25], 'defined_bugs': 2}
     with pytest.raises(ValueError, match='unpaired'):
         report.paired_summary(rows[:-1], [('P', '1'), ('P', '2')], bootstrap=20)
 
@@ -254,8 +320,10 @@ def test_three_arm_bootstrap_keeps_level_c_paired():
     summary = report.paired_summary(rows, [('P', '1'), ('P', '2')],
                                     bootstrap=200, arms=tuple(cli.ARMS))
     assert summary['n_legs_per_arm'] == 2
-    assert summary['estimates']['HR-HN']['candidate_rcc'] == {'mean': .25, 'ci95': [.25, .25]}
-    assert summary['estimates']['HR-HN_C']['candidate_rcc'] == {'mean': .375, 'ci95': [.25, .5]}
+    assert summary['estimates']['HR-HN']['candidate_rcc'] == {
+        'mean': .25, 'ci95': [.25, .25], 'defined_bugs': 2}
+    assert summary['estimates']['HR-HN_C']['candidate_rcc'] == {
+        'mean': .375, 'ci95': [.25, .5], 'defined_bugs': 2}
     missing_c = [r for r in rows if r['arm'] != 'HN_C']
     with pytest.raises(ValueError, match='unpaired'):
         report.paired_summary(missing_c, [('P', '1'), ('P', '2')], arms=tuple(cli.ARMS))
